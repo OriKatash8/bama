@@ -1,0 +1,40 @@
+import type { ID, Timestamp } from './common';
+import type { MediaRole } from './media';
+
+export type BookingStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
+
+export type CrewSlot = {
+  id: ID;
+  role: MediaRole;
+  professionalId: ID | null;
+  status: 'open' | 'filled';
+};
+
+export type Project = {
+  id: ID;
+  clientId: ID;
+  title: string;
+  description: string;
+  startDate: Timestamp;
+  endDate: Timestamp;
+  crew: CrewSlot[];
+  status: 'draft' | 'open' | 'in_progress' | 'completed' | 'cancelled';
+  createdAt: Timestamp;
+};
+
+export type Booking = {
+  id: ID;
+  projectId: ID;
+  clientId: ID;
+  professionalId: ID;
+  role: MediaRole;
+  status: BookingStatus;
+  rate: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
