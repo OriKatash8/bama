@@ -1,8 +1,10 @@
+import type { Timestamp } from '@core/types/common';
+
 export function formatCurrency(amount: number, currency = 'USD'): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
-export function formatDate(timestamp: { seconds: number }): string {
+export function formatDate(timestamp: Pick<Timestamp, 'seconds'>): string {
   return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -17,7 +19,7 @@ export function formatDuration(minutes: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-export function formatRelativeTime(timestamp: { seconds: number }): string {
+export function formatRelativeTime(timestamp: Pick<Timestamp, 'seconds'>): string {
   const diff = Math.floor((Date.now() - timestamp.seconds * 1000) / 1000);
   if (diff < 60) return 'just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;

@@ -8,7 +8,7 @@ export type User = {
   email: string;
   displayName: string;
   photoURL: string | null;
-  role: UserRole;
+  role: UserRole | null;
   createdAt: Timestamp;
 };
 
