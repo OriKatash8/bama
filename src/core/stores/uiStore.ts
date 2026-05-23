@@ -1,0 +1,34 @@
+import { create } from 'zustand';
+
+export type ToastType = 'success' | 'error' | 'info';
+
+export type Toast = {
+  id: string;
+  message: string;
+  type: ToastType;
+};
+
+type UiState = {
+  isLoading: boolean;
+  toasts: Toast[];
+  setLoading: (loading: boolean) => void;
+  showToast: (message: string, type?: ToastType) => void;
+  dismissToast: (id: string) => void;
+};
+
+export const useUiStore = create<UiState>((set) => ({
+  isLoading: false,
+  toasts: [],
+  setLoading: (isLoading) => set({ isLoading }),
+  showToast: (message, type = 'info') =>
+    set((state) => ({
+      toasts: [
+        ...state.toasts,
+        { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, message, type },
+      ],
+    })),
+  dismissToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
+}));
