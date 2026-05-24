@@ -1,7 +1,7 @@
 import { useUiStore } from '../uiStore';
 
 beforeEach(() => {
-  useUiStore.setState({ isLoading: false, toasts: [] });
+  useUiStore.setState({ isLoading: false, toasts: [], isNewProfessional: false });
 });
 
 describe('uiStore', () => {
@@ -44,5 +44,22 @@ describe('uiStore', () => {
     useUiStore.getState().dismissToast(firstId);
     expect(useUiStore.getState().toasts).toHaveLength(1);
     expect(useUiStore.getState().toasts[0].message).toBe('Second');
+  });
+});
+
+describe('isNewProfessional', () => {
+  it('defaults to false', () => {
+    expect(useUiStore.getState().isNewProfessional).toBe(false);
+  });
+
+  it('setNewProfessional sets it to true', () => {
+    useUiStore.getState().setNewProfessional(true);
+    expect(useUiStore.getState().isNewProfessional).toBe(true);
+  });
+
+  it('setNewProfessional sets it back to false', () => {
+    useUiStore.getState().setNewProfessional(true);
+    useUiStore.getState().setNewProfessional(false);
+    expect(useUiStore.getState().isNewProfessional).toBe(false);
   });
 });

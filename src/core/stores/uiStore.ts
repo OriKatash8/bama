@@ -11,14 +11,17 @@ export type Toast = {
 type UiState = {
   isLoading: boolean;
   toasts: Toast[];
+  isNewProfessional: boolean;
   setLoading: (loading: boolean) => void;
   showToast: (message: string, type?: ToastType) => void;
   dismissToast: (id: string) => void;
+  setNewProfessional: (val: boolean) => void;
 };
 
 export const useUiStore = create<UiState>((set) => ({
   isLoading: false,
   toasts: [],
+  isNewProfessional: false,
   setLoading: (isLoading) => set({ isLoading }),
   showToast: (message, type = 'info') =>
     set((state) => ({
@@ -31,4 +34,5 @@ export const useUiStore = create<UiState>((set) => ({
     set((state) => ({
       toasts: state.toasts.filter((t) => t.id !== id),
     })),
+  setNewProfessional: (isNewProfessional) => set({ isNewProfessional }),
 }));
