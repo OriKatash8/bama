@@ -1,1 +1,3 @@
-﻿// hooks will be exported from here
+﻿export { useLogin } from './useLogin';
+export { useRegister } from './useRegister';
+export { useForgotPassword } from './useForgotPassword';
