@@ -1,9 +1,10 @@
-import { View, Text } from 'react-native';
+import { Screen } from '@components/layout/Screen';
+import { LoginForm } from '@features/auth/components/LoginForm';
 
-export default function AuthScreen() {
+export default function LoginScreen() {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Auth</Text>
-    </View>
+    <Screen>
+      <LoginForm />
+    </Screen>
   );
 }
