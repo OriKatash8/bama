@@ -34,6 +34,7 @@ export default function ProfessionalProfileScreen() {
       setIsEditing(true);
       setNewProfessional(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -123,7 +124,13 @@ export default function ProfessionalProfileScreen() {
         onPriceListChange={setPriceList}
       />
       <StarRating rating={profile?.rating ?? 0} reviewCount={profile?.reviewCount ?? 0} />
-      <PortfolioGrid assets={assets} isEditing={isEditing} onAdd={upload} onRemove={remove} />
+      <PortfolioGrid
+        assets={assets}
+        isEditing={isEditing}
+        onAdd={upload}
+        onRemove={remove}
+        onError={(msg) => showToast(msg, 'error')}
+      />
     </Screen>
   );
 }

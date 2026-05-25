@@ -6,12 +6,12 @@ import { uploadFile } from '@core/firebase/storage';
 export function useClientProfile() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function save(name: string, photoUri: string | null): Promise<void> {
     if (!user) return;
-    setIsLoading(true);
+    setIsSaving(true);
     setError(null);
     try {
       let photoURL = user.photoURL;
@@ -23,10 +23,11 @@ export function useClientProfile() {
       setUser({ ...user, displayName: name, photoURL });
     } catch (e: any) {
       setError(e.message ?? 'Failed to save profile');
+      throw e;
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   }
 
-  return { user, isLoading, error, save };
+  return { user, isSaving, error, save };
 }

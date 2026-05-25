@@ -65,14 +65,16 @@ describe('useClientProfile', () => {
     expect(useAuthStore.getState().user?.displayName).toBe('New Name');
   });
 
-  it('sets error and clears isLoading on save failure', async () => {
+  it('sets error and clears isSaving on save failure', async () => {
     mockUpdateDocument.mockRejectedValue(new Error('Network error'));
     const { result } = renderHook(() => useClientProfile());
     await act(async () => {
-      await result.current.save('New Name', null);
+      try {
+        await result.current.save('New Name', null);
+      } catch {}
     });
     expect(result.current.error).toBe('Network error');
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isSaving).toBe(false);
   });
 
   it('preserves existing photoURL when photoUri is null', async () => {

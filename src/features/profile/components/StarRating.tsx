@@ -11,7 +11,7 @@ export function StarRating({ rating, reviewCount }: StarRatingProps) {
       <View style={styles.stars}>
         {[1, 2, 3, 4, 5].map((i) => (
           <Text key={i} style={styles.star}>
-            {rating >= i - 0.25 ? '★' : rating >= i - 0.75 ? '⯨' : '☆'}
+            {rating >= i - 0.5 ? '★' : '☆'}
           </Text>
         ))}
       </View>

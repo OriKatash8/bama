@@ -72,14 +72,14 @@ describe('usePortfolio', () => {
     );
   });
 
-  it('remove deletes file from storage then document from Firestore', async () => {
-    mockDeleteFile.mockResolvedValue(undefined);
+  it('remove deletes Firestore document then best-effort deletes Storage file', async () => {
     mockDeleteDocument.mockResolvedValue(undefined);
+    mockDeleteFile.mockResolvedValue(undefined);
     const { result } = renderHook(() => usePortfolio());
     await act(async () => {
       await result.current.remove('asset123');
     });
-    expect(mockDeleteFile).toHaveBeenCalledWith('portfolio/u1/asset123');
     expect(mockDeleteDocument).toHaveBeenCalledWith('users/u1/portfolio/asset123');
+    expect(mockDeleteFile).toHaveBeenCalledWith('portfolio/u1/asset123');
   });
 });

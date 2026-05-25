@@ -38,6 +38,8 @@ export function useProfile() {
         setIsLoading(false);
       }
     );
+    // One-shot fetch intentional: review submission is out of scope, so cards won't change
+    // during a session. The profile sub-doc (rating/reviewCount) stays live-subscribed above.
     queryByField<Review>('reviews', 'professionalId', user.id)
       .then(setReviews)
       .catch((e: any) => setError(e.message ?? 'Failed to load reviews'));

@@ -5,9 +5,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { useClientProfile } from '@features/profile/hooks/useClientProfile';
+import { useUiStore } from '@core/stores/uiStore';
 
 export default function ClientProfileScreen() {
-  const { user, isLoading, save } = useClientProfile();
+  const { user, isSaving, save } = useClientProfile();
+  const { showToast } = useUiStore();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.displayName ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -21,8 +23,8 @@ export default function ClientProfileScreen() {
             <TouchableOpacity onPress={handleCancel} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn} disabled={isLoading}>
-              <Text style={[styles.headerBtnText, styles.save, isLoading && { opacity: 0.4 }]}>Save</Text>
+            <TouchableOpacity onPress={handleSave} style={styles.headerBtn} disabled={isSaving}>
+              <Text style={[styles.headerBtnText, styles.save, isSaving && { opacity: 0.4 }]}>Save</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -31,7 +33,7 @@ export default function ClientProfileScreen() {
           </TouchableOpacity>
         ),
     });
-  }, [isEditing, name, photoUri, isLoading]);
+  }, [isEditing, name, photoUri, isSaving]);
 
   async function handlePhotoPress() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -44,9 +46,13 @@ export default function ClientProfileScreen() {
   }
 
   async function handleSave() {
-    await save(name, photoUri);
-    setIsEditing(false);
-    setPhotoUri(null);
+    try {
+      await save(name, photoUri);
+      setIsEditing(false);
+      setPhotoUri(null);
+    } catch (e: any) {
+      showToast(e.message ?? 'Failed to save profile', 'error');
+    }
   }
 
   function handleCancel() {

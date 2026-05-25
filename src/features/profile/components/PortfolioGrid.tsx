@@ -11,9 +11,10 @@ type PortfolioGridProps = {
   isEditing: boolean;
   onAdd?: (uri: string) => Promise<void>;
   onRemove?: (assetId: string) => Promise<void>;
+  onError?: (message: string) => void;
 };
 
-export function PortfolioGrid({ assets, isEditing, onAdd, onRemove }: PortfolioGridProps) {
+export function PortfolioGrid({ assets, isEditing, onAdd, onRemove, onError }: PortfolioGridProps) {
   const [fullscreenUri, setFullscreenUri] = useState<string | null>(null);
 
   async function handleAdd() {
@@ -21,7 +22,13 @@ export function PortfolioGrid({ assets, isEditing, onAdd, onRemove }: PortfolioG
       mediaTypes: ['images'] as const,
       quality: 0.9,
     });
-    if (!result.canceled && onAdd) await onAdd(result.assets[0].uri);
+    if (!result.canceled && onAdd) {
+      try {
+        await onAdd(result.assets[0].uri);
+      } catch (e: any) {
+        onError?.(e.message ?? 'Failed to upload photo');
+      }
+    }
   }
 
   return (

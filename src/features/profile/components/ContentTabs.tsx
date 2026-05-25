@@ -48,7 +48,7 @@ export function ContentTabs({
           </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.content}>
+      <View>
         {activeTab === 'equipment' && (
           <EquipmentList items={equipment} isEditing={isEditing} onChange={onEquipmentChange} />
         )}
@@ -74,5 +74,4 @@ const styles = StyleSheet.create({
   pillActive: { backgroundColor: '#fff' },
   pillText: { fontSize: 13, color: '#666', fontWeight: '500' },
   pillTextActive: { color: '#000', fontWeight: '600' },
-  content: {},
 });
