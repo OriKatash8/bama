@@ -1,5 +1,6 @@
 import type { ID, Timestamp } from './common';
 import type { MediaRole } from './media';
+import type { PriceEntry } from './project';
 
 export type UserRole = 'client' | 'professional';
 
@@ -23,8 +24,9 @@ export type ProfessionalProfile = {
   userId: ID;
   roles: MediaRole[];
   bio: string;
-  hourlyRate: number | null;
   availability: 'available' | 'busy' | 'unavailable';
   rating: number;
   reviewCount: number;
+  equipment: string[];
+  priceList: PriceEntry[];
 };

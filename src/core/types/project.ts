@@ -38,3 +38,18 @@ export type Booking = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
+
+export type PriceEntry = {
+  service: string;
+  price: number;
+};
+
+export type Review = {
+  id: ID;
+  professionalId: ID;
+  authorId: ID;
+  authorName: string;
+  rating: number;
+  body: string;
+  createdAt: Timestamp;
+};
