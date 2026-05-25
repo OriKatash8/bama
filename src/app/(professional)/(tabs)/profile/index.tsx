@@ -16,9 +16,9 @@ import type { MediaRole } from '@core/types/media';
 import type { PriceEntry } from '@core/types/project';
 
 export default function ProfessionalProfileScreen() {
-  const { user, profile, reviews, isLoading, save } = useProfile();
+  const { user, profile, reviews, isLoading, isSaving, save } = useProfile();
   const { assets, upload, remove } = usePortfolio();
-  const { isNewProfessional, setNewProfessional } = useUiStore();
+  const { isNewProfessional, setNewProfessional, showToast } = useUiStore();
   const navigation = useNavigation();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -57,8 +57,8 @@ export default function ProfessionalProfileScreen() {
             <TouchableOpacity onPress={handleCancel} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, styles.save]}>Save</Text>
+            <TouchableOpacity onPress={handleSave} style={styles.headerBtn} disabled={isSaving}>
+              <Text style={[styles.headerBtnText, styles.save, isSaving && { opacity: 0.4 }]}>Save</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -67,7 +67,7 @@ export default function ProfessionalProfileScreen() {
           </TouchableOpacity>
         ),
     });
-  }, [isEditing, name, photoUri, roles, bio, equipment, priceList]);
+  }, [isEditing, name, photoUri, roles, bio, equipment, priceList, isSaving]);
 
   async function handlePhotoPress() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -80,9 +80,13 @@ export default function ProfessionalProfileScreen() {
   }
 
   async function handleSave() {
-    await save({ name, photoUri, roles, bio, equipment, priceList });
-    setIsEditing(false);
-    setPhotoUri(null);
+    try {
+      await save({ name, photoUri, roles, bio, equipment, priceList });
+      setIsEditing(false);
+      setPhotoUri(null);
+    } catch (e: any) {
+      showToast(e.message ?? 'Failed to save profile', 'error');
+    }
   }
 
   function handleCancel() {

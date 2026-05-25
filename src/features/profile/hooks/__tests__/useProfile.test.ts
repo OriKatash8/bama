@@ -105,14 +105,18 @@ describe('useProfile', () => {
     mockUpdateDocument.mockRejectedValue(new Error('Firestore error'));
     const { result } = renderHook(() => useProfile());
     await act(async () => {
-      await result.current.save({
-        name: 'New Name',
-        photoUri: null,
-        roles: [],
-        bio: '',
-        equipment: [],
-        priceList: [],
-      });
+      try {
+        await result.current.save({
+          name: 'New Name',
+          photoUri: null,
+          roles: [],
+          bio: '',
+          equipment: [],
+          priceList: [],
+        });
+      } catch (e) {
+        // Expected to throw
+      }
     });
     expect(result.current.error).toBe('Firestore error');
   });

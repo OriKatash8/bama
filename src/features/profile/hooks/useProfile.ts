@@ -26,6 +26,7 @@ export function useProfile() {
   const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export function useProfile() {
   async function save({ name, photoUri, roles, bio, equipment, priceList }: SaveFields) {
     if (!user) return;
     setError(null);
+    setIsSaving(true);
     try {
       let photoURL = user.photoURL;
       if (photoUri && photoUri !== user.photoURL) {
@@ -62,8 +64,11 @@ export function useProfile() {
       setUser({ ...user, displayName: name, photoURL });
     } catch (e: any) {
       setError(e.message ?? 'Failed to save profile');
+      throw e;
+    } finally {
+      setIsSaving(false);
     }
   }
 
-  return { user, profile, reviews, isLoading, error, save };
+  return { user, profile, reviews, isLoading, isSaving, error, save };
 }
