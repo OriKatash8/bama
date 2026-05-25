@@ -43,16 +43,18 @@ beforeEach(() => {
 });
 
 describe('useProfile', () => {
-  it('subscribes to profile sub-doc at correct path', () => {
-    renderHook(() => useProfile());
+  it('subscribes to profile sub-doc at correct path', async () => {
+    const { result } = renderHook(() => useProfile());
+    await act(async () => {});
     expect(mockSubscribeToDocument).toHaveBeenCalledWith(
       'users/u1/profile/data',
       expect.any(Function)
     );
   });
 
-  it('fetches reviews by professionalId', () => {
-    renderHook(() => useProfile());
+  it('fetches reviews by professionalId', async () => {
+    const { result } = renderHook(() => useProfile());
+    await act(async () => {});
     expect(mockQueryByField).toHaveBeenCalledWith('reviews', 'professionalId', 'u1');
   });
 

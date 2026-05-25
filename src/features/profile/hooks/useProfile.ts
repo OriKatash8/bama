@@ -37,7 +37,9 @@ export function useProfile() {
         setIsLoading(false);
       }
     );
-    queryByField<Review>('reviews', 'professionalId', user.id).then(setReviews);
+    queryByField<Review>('reviews', 'professionalId', user.id)
+      .then(setReviews)
+      .catch((e: any) => setError(e.message ?? 'Failed to load reviews'));
     return unsub;
   }, [user?.id]);
 
