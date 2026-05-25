@@ -1,0 +1,41 @@
+import { View, Text, StyleSheet } from 'react-native';
+import type { Review } from '@core/types/project';
+
+type ReviewsListProps = {
+  reviews: Review[];
+};
+
+export function ReviewsList({ reviews }: ReviewsListProps) {
+  if (reviews.length === 0) {
+    return <Text style={styles.empty}>No reviews yet.</Text>;
+  }
+  return (
+    <View style={styles.container}>
+      {reviews.map((review) => (
+        <View key={review.id} style={styles.card}>
+          <View style={styles.header}>
+            <Text style={styles.author}>{review.authorName}</Text>
+            <Text style={styles.stars}>
+              {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+            </Text>
+          </View>
+          <Text style={styles.body}>{review.body}</Text>
+          <Text style={styles.date}>
+            {new Date(review.createdAt.seconds * 1000).toLocaleDateString()}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { gap: 12 },
+  empty: { fontSize: 14, color: '#999', textAlign: 'center', paddingVertical: 16 },
+  card: { backgroundColor: '#f9f9f9', borderRadius: 12, padding: 16, gap: 6 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  author: { fontSize: 14, fontWeight: '600', color: '#000' },
+  stars: { fontSize: 14, color: '#F4C430' },
+  body: { fontSize: 14, color: '#444', lineHeight: 20 },
+  date: { fontSize: 12, color: '#999' },
+});
