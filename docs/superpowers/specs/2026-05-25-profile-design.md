@@ -100,7 +100,7 @@ On mount, if `uiStore.isNewProfessional === true`, open directly in edit mode an
 
 **`useProfile`**
 - Subscribes to `users/{uid}/profile` sub-document
-- `save(profile)` — calls `updateDocument` on the sub-doc
+- `save({ name, photoURL, ...profileFields })` — two writes on save: `updateDocument('users', uid, { displayName: name, photoURL })` for base user doc, then `updateDocument('users/{uid}/profile', ...)` for profile fields. Also updates `authStore` with the new base user data.
 - Exposes `profile`, `isLoading`, `error`
 
 **`usePortfolio`**
