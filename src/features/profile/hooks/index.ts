@@ -1,1 +1,3 @@
-﻿// hooks will be exported from here
+export { useClientProfile } from './useClientProfile';
+export { useProfile } from './useProfile';
+export { usePortfolio } from './usePortfolio';
