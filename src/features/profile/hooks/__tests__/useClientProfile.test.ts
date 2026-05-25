@@ -74,4 +74,19 @@ describe('useClientProfile', () => {
     expect(result.current.error).toBe('Network error');
     expect(result.current.isLoading).toBe(false);
   });
+
+  it('preserves existing photoURL when photoUri is null', async () => {
+    const userWithPhoto = { ...mockUser, photoURL: 'https://existing.com/photo.jpg' };
+    useAuthStore.setState({ user: userWithPhoto, role: 'client', isLoading: false });
+    mockUpdateDocument.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useClientProfile());
+    await act(async () => {
+      await result.current.save('New Name', null);
+    });
+    expect(mockUploadFile).not.toHaveBeenCalled();
+    expect(mockUpdateDocument).toHaveBeenCalledWith('users/u1', {
+      displayName: 'New Name',
+      photoURL: 'https://existing.com/photo.jpg',
+    });
+  });
 });

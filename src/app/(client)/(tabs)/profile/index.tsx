@@ -21,8 +21,8 @@ export default function ClientProfileScreen() {
             <TouchableOpacity onPress={handleCancel} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, styles.save]}>Save</Text>
+            <TouchableOpacity onPress={handleSave} style={styles.headerBtn} disabled={isLoading}>
+              <Text style={[styles.headerBtnText, styles.save, isLoading && { opacity: 0.4 }]}>Save</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -31,11 +31,11 @@ export default function ClientProfileScreen() {
           </TouchableOpacity>
         ),
     });
-  }, [isEditing, name, photoUri]);
+  }, [isEditing, name, photoUri, isLoading]);
 
   async function handlePhotoPress() {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'] as const,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
