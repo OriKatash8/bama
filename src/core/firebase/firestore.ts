@@ -8,6 +8,7 @@ import {
   query,
   getDocs,
   onSnapshot,
+  where,
   type QueryConstraint,
   type DocumentData,
 } from 'firebase/firestore';
@@ -49,4 +50,33 @@ export function subscribeToDocument<T>(
   return onSnapshot(doc(db, path), (snap) => {
     callback(snap.exists() ? (snap.data() as T) : null);
   });
+}
+
+export function subscribeToCollection<T>(
+  collectionPath: string,
+  callback: (data: T[]) => void,
+  ...constraints: QueryConstraint[]
+): () => void {
+  const q =
+    constraints.length > 0
+      ? query(collection(db, collectionPath), ...constraints)
+      : query(collection(db, collectionPath));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T));
+  });
+}
+
+export async function mergeDocument<T extends DocumentData>(
+  path: string,
+  data: Partial<T>
+): Promise<void> {
+  await setDoc(doc(db, path), data as DocumentData, { merge: true });
+}
+
+export async function queryByField<T>(
+  collectionPath: string,
+  field: string,
+  value: unknown
+): Promise<T[]> {
+  return queryDocuments<T>(collectionPath, where(field, '==', value));
 }
