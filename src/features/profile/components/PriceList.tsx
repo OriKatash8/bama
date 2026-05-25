@@ -28,7 +28,7 @@ export function PriceList({ items, isEditing, onChange }: PriceListProps) {
   return (
     <View style={styles.container}>
       {items.map((item, index) => (
-        <View key={index} style={styles.row}>
+        <View key={`${item.service}-${index}`} style={styles.row}>
           <Text style={styles.service}>{item.service}</Text>
           <View style={styles.right}>
             <Text style={styles.price}>${item.price.toFixed(2)}</Text>

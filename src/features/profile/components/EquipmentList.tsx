@@ -24,7 +24,7 @@ export function EquipmentList({ items, isEditing, onChange }: EquipmentListProps
   return (
     <View style={styles.container}>
       {items.map((item, index) => (
-        <View key={index} style={styles.row}>
+        <View key={`${item}-${index}`} style={styles.row}>
           <Text style={styles.item}>{item}</Text>
           {isEditing && (
             <TouchableOpacity onPress={() => remove(index)} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>

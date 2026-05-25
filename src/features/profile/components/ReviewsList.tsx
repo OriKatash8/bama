@@ -16,7 +16,10 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
           <View style={styles.header}>
             <Text style={styles.author}>{review.authorName}</Text>
             <Text style={styles.stars}>
-              {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+              {(() => {
+                const clamped = Math.max(0, Math.min(5, Math.round(review.rating)));
+                return '★'.repeat(clamped) + '☆'.repeat(5 - clamped);
+              })()}
             </Text>
           </View>
           <Text style={styles.body}>{review.body}</Text>
