@@ -33,7 +33,7 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John Doe', 'john@example.com', 'password123', 'client');
+      await result.current.register('John Doe', 'john@example.com', 'password123');
     });
     expect(mockSignUp).toHaveBeenCalledWith('john@example.com', 'password123');
     expect(mockSetDocument).toHaveBeenCalledWith(
@@ -42,7 +42,7 @@ describe('useRegister', () => {
         id: 'u1',
         email: 'john@example.com',
         displayName: 'John Doe',
-        role: 'client',
+        role: null,
         photoURL: null,
       })
     );
@@ -53,38 +53,27 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John Doe', 'john@example.com', 'password123', 'client');
+      await result.current.register('John Doe', 'john@example.com', 'password123');
     });
     expect(useAuthStore.getState().user?.id).toBe('u1');
-    expect(useAuthStore.getState().role).toBe('client');
+    expect(useAuthStore.getState().role).toBe(null);
   });
 
-  it('redirects client to browse', async () => {
+  it('navigates to role-select after registration', async () => {
     mockSignUp.mockResolvedValue({ uid: 'u1' } as any);
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('Jane', 'jane@example.com', 'password123', 'client');
+      await result.current.register('Jane', 'jane@example.com', 'password123');
     });
-    expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/browse/');
-  });
-
-  it('sets isNewProfessional and redirects professional to profile', async () => {
-    mockSignUp.mockResolvedValue({ uid: 'u1' } as any);
-    mockSetDocument.mockResolvedValue(undefined);
-    const { result } = renderHook(() => useRegister());
-    await act(async () => {
-      await result.current.register('Pro User', 'pro@example.com', 'password123', 'professional');
-    });
-    expect(useUiStore.getState().isNewProfessional).toBe(true);
-    expect(mockReplace).toHaveBeenCalledWith('/(professional)/(tabs)/profile/');
+    expect(mockReplace).toHaveBeenCalledWith('/(auth)/role-select');
   });
 
   it('sets error on email-already-in-use', async () => {
     mockSignUp.mockRejectedValue({ code: 'auth/email-already-in-use' });
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John', 'john@example.com', 'password123', 'client');
+      await result.current.register('John', 'john@example.com', 'password123');
     });
     expect(result.current.error).toBe('An account with this email already exists.');
   });
@@ -93,7 +82,7 @@ describe('useRegister', () => {
     mockSignUp.mockRejectedValue({ code: 'auth/email-already-in-use' });
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John', 'john@example.com', 'password123', 'client');
+      await result.current.register('John', 'john@example.com', 'password123');
     });
     expect(result.current.isLoading).toBe(false);
   });
