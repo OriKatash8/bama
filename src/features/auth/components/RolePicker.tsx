@@ -4,7 +4,7 @@ import type { UserRole } from '@core/types/user';
 
 const CARDS: { role: UserRole; title: string; subtitle: string }[] = [
   {
-    role: 'customer',
+    role: 'client',
     title: "I'm a Customer",
     subtitle: 'Discover and hire professionals for your projects.',
   },
