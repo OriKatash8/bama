@@ -3,16 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
-import { RoleSelector } from './RoleSelector';
 import { useRegister } from '@features/auth/hooks/useRegister';
 import { isValidEmail, isNonEmpty } from '@utils/validators';
-import type { UserRole } from '@core/types/user';
 
 export function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('client');
   const [fieldErrors, setFieldErrors] = useState<{
     fullName?: string;
     email?: string;
@@ -32,7 +29,7 @@ export function RegisterForm() {
 
   async function handleSubmit() {
     if (!validate()) return;
-    await register(fullName, email, password, role);
+    await register(fullName, email, password);
   }
 
   return (
@@ -60,10 +57,6 @@ export function RegisterForm() {
         secureTextEntry
         error={fieldErrors.password}
       />
-      <View style={styles.roleRow}>
-        <Text style={styles.roleLabel}>I am a</Text>
-        <RoleSelector value={role} onChange={setRole} />
-      </View>
       <Button label="Create Account" onPress={handleSubmit} disabled={isLoading} />
       <View style={styles.footer}>
         <Text style={styles.footerText}>Already have an account? </Text>
@@ -78,8 +71,6 @@ export function RegisterForm() {
 const styles = StyleSheet.create({
   container: { flex: 1, gap: 16 },
   title: { fontSize: 28, fontWeight: '700', color: '#000', marginBottom: 8 },
-  roleRow: { gap: 8 },
-  roleLabel: { fontSize: 14, fontWeight: '500', color: '#333' },
   link: { fontSize: 14, color: '#000', fontWeight: '500', textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   footerText: { fontSize: 14, color: '#666' },
