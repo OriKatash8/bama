@@ -14,6 +14,7 @@ export default function Index() {
   }
 
   if (!user) return <Redirect href="/(auth)/" />;
+  if (role === null) return <Redirect href="/(auth)/role-select" />;
   if (role === 'client') return <Redirect href="/(client)/(tabs)/browse/" />;
   return <Redirect href="/(professional)/(tabs)/dashboard/" />;
 }
