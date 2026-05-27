@@ -4,12 +4,11 @@ import { signUp } from '@core/firebase/auth';
 import { setDocument } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
-import type { UserRole } from '@core/types/user';
 
 type RegisterState = {
   isLoading: boolean;
   error: string | null;
-  register: (fullName: string, email: string, password: string, role: UserRole) => Promise<void>;
+  register: (fullName: string, email: string, password: string) => Promise<void>;
 };
 
 export function useRegister(): RegisterState {
@@ -17,9 +16,9 @@ export function useRegister(): RegisterState {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { setUser, setRole } = useAuthStore();
-  const { showToast, setNewProfessional } = useUiStore();
+  const { showToast } = useUiStore();
 
-  async function register(fullName: string, email: string, password: string, role: UserRole) {
+  async function register(fullName: string, email: string, password: string) {
     setError(null);
     setIsLoading(true);
     try {
@@ -29,18 +28,13 @@ export function useRegister(): RegisterState {
         email,
         displayName: fullName,
         photoURL: null,
-        role,
+        role: null,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       };
       await setDocument(`users/${firebaseUser.uid}`, userData);
       setUser(userData);
-      setRole(role);
-      if (role === 'professional') {
-        setNewProfessional(true);
-        router.replace('/(professional)/(tabs)/profile/');
-      } else {
-        router.replace('/(client)/(tabs)/browse/');
-      }
+      setRole(null);
+      router.replace('/(auth)/role-select');
     } catch (e: any) {
       const msg = toRegisterError(e.code);
       setError(msg);
