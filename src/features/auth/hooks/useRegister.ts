@@ -15,7 +15,7 @@ export function useRegister(): RegisterState {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { setUser, setRole } = useAuthStore();
+  const { setUser } = useAuthStore();
   const { showToast } = useUiStore();
 
   async function register(fullName: string, email: string, password: string) {
@@ -28,13 +28,11 @@ export function useRegister(): RegisterState {
         email,
         displayName: fullName,
         photoURL: null,
-        role: null,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       };
       await setDocument(`users/${firebaseUser.uid}`, userData);
       setUser(userData);
-      setRole(null);
-      router.replace('/(auth)/role-select');
+      router.replace('/(auth)/mode-select');
     } catch (e: any) {
       const msg = toRegisterError(e.code);
       setError(msg);
