@@ -17,11 +17,12 @@ export default function ProfessionalTabsLayout() {
           name="switch"
           options={{
             title: 'Switch',
-            tabBarButton: ({ style, children }) => (
+            tabBarButton: ({ style, children, onPress: _onPress, ...rest }) => (
               <TouchableOpacity
                 style={style}
                 onPress={() => setSheetVisible(true)}
                 accessibilityLabel="Switch account"
+                {...rest}
               >
                 {children}
               </TouchableOpacity>
