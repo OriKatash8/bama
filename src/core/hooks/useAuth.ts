@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
+import { deleteField } from 'firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { onAuthChange } from '@core/firebase/auth';
-import { getDocument } from '@core/firebase/firestore';
+import { getDocument, updateDocument } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 
+type LegacyUserDoc = User & { role?: string };
+
 export function useAuth() {
-  const { user, role, isLoading, setUser, setRole, setLoading, clear } = useAuthStore();
+  const { user, activeMode, isLoading, setUser, setLoading, clear } = useAuthStore();
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
@@ -14,15 +17,18 @@ export function useAuth() {
         return;
       }
       setLoading(true);
-      const userData = await getDocument<User>(`users/${firebaseUser.uid}`);
+      const userData = await getDocument<LegacyUserDoc>(`users/${firebaseUser.uid}`);
       if (userData) {
-        setUser(userData);
-        setRole(userData.role);
+        if ('role' in userData) {
+          void updateDocument(`users/${firebaseUser.uid}`, { role: deleteField() } as any);
+        }
+        const { role: _role, ...cleanUser } = userData as any;
+        setUser(cleanUser as User);
       }
       setLoading(false);
     });
     return unsubscribe;
   }, []);
 
-  return { user, role, isLoading };
+  return { user, activeMode, isLoading };
 }
