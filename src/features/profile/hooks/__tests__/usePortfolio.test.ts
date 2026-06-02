@@ -30,13 +30,12 @@ const mockUser = {
   email: 'pro@example.com',
   displayName: 'Pro User',
   photoURL: null,
-  role: 'professional' as const,
   createdAt: { seconds: 0, nanoseconds: 0 },
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
-  useAuthStore.setState({ user: mockUser, role: 'professional', isLoading: false });
+  useAuthStore.setState({ user: mockUser, activeMode: 'professional', isLoading: false });
   mockSubscribeToCollection.mockImplementation((_path, callback) => {
     callback([]);
     return () => {};

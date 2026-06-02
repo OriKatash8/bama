@@ -18,7 +18,7 @@ import type { PriceEntry } from '@core/types/project';
 export default function ProfessionalProfileScreen() {
   const { user, profile, reviews, isLoading, isSaving, save } = useProfile();
   const { assets, upload, remove } = usePortfolio();
-  const { isNewProfessional, setNewProfessional, showToast } = useUiStore();
+  const { showToast } = useUiStore();
   const navigation = useNavigation();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -28,14 +28,6 @@ export default function ProfessionalProfileScreen() {
   const [bio, setBio] = useState('');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
-
-  useEffect(() => {
-    if (isNewProfessional) {
-      setIsEditing(true);
-      setNewProfessional(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (user) setName(user.displayName);
