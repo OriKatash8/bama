@@ -87,7 +87,7 @@ describe('useClientProfile', () => {
     });
   });
 
-  it('writes null companyName and bio when not provided', async () => {
+  it('only writes userId to sub-doc when companyName and bio are not provided', async () => {
     mockUpdateDocument.mockResolvedValue(undefined);
     mockMergeDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useClientProfile());
@@ -96,8 +96,6 @@ describe('useClientProfile', () => {
     });
     expect(mockMergeDocument).toHaveBeenCalledWith('users/u1/clientProfile/data', {
       userId: 'u1',
-      companyName: null,
-      bio: null,
     });
   });
 

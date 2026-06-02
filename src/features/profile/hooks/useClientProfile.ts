@@ -35,11 +35,10 @@ export function useClientProfile() {
         photoURL = await uploadFile(`avatars/${user.id}`, blob);
       }
       await updateDocument(`users/${user.id}`, { displayName: name, photoURL });
-      await mergeDocument(`users/${user.id}/clientProfile/data`, {
-        userId: user.id,
-        companyName,
-        bio,
-      });
+      const profileFields: Record<string, unknown> = { userId: user.id };
+      if (companyName !== null) profileFields.companyName = companyName;
+      if (bio !== null) profileFields.bio = bio;
+      await mergeDocument(`users/${user.id}/clientProfile/data`, profileFields as any);
       setUser({ ...user, displayName: name, photoURL });
     } catch (e: any) {
       setError(e.message ?? 'Failed to save profile');
