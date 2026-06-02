@@ -2,14 +2,13 @@ import type { ID, Timestamp } from './common';
 import type { MediaRole } from './media';
 import type { PriceEntry } from './project';
 
-export type UserRole = 'client' | 'professional';
+export type ActiveMode = 'client' | 'professional';
 
 export type User = {
   id: ID;
   email: string;
   displayName: string;
   photoURL: string | null;
-  role: UserRole | null;
   createdAt: Timestamp;
 };
 
