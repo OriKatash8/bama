@@ -1,8 +1,8 @@
 import type { MediaRole } from '@core/types/media';
 import type { BookingStatus } from '@core/types/project';
-import type { UserRole } from '@core/types/user';
+import type { ActiveMode } from '@core/types/user';
 
-export const USER_ROLES: Record<UserRole, string> = {
+export const USER_ROLES: Record<ActiveMode, string> = {
   client: 'Client',
   professional: 'Professional',
 };

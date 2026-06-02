@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import type { User } from '@core/types/user';
-import type { ActiveMode } from '@core/types/user';
+import type { User, ActiveMode } from '@core/types/user';
 
 type AuthState = {
   user: User | null;
