@@ -1,4 +1,4 @@
 ﻿export { LoginForm } from './LoginForm';
 export { RegisterForm } from './RegisterForm';
 export { ForgotPasswordForm } from './ForgotPasswordForm';
-export { RolePicker } from './RolePicker';
+export { ModePicker } from './ModePicker';
