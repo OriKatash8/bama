@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -24,19 +22,15 @@ export default function HomeScreen() {
 
   return (
     <Screen scrollable={false}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
           <View style={styles.hero}>
             <Text style={styles.heroTitle}>Build Your Crew</Text>
-            <Text style={styles.heroSubtitle}>
-              Describe your project for AI crew suggestions
-            </Text>
 
             {apiKeyPresent && (
               <>
+                <Text style={styles.heroSubtitle}>
+                  Describe your project for AI crew suggestions
+                </Text>
                 <TextInput
                   style={styles.input}
                   placeholder="E.g. I'm shooting a wedding in Dubai for 200 guests…"
@@ -96,19 +90,19 @@ export default function HomeScreen() {
             )}
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 16, gap: 20, paddingBottom: 40 },
+  content: { paddingTop: 16, paddingBottom: 40, gap: 20 },
   hero: {
     backgroundColor: '#111',
     borderRadius: 16,
     padding: 20,
     gap: 12,
+    marginHorizontal: 16,
   },
   heroTitle: { fontSize: 26, fontWeight: '800', color: '#fff' },
   heroSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
@@ -140,7 +134,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
   },
   buildBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  projectsSection: { gap: 8 },
+  projectsSection: { gap: 8, marginHorizontal: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: '#111' },
   loader: { marginTop: 40 },
   empty: { alignItems: 'center', paddingVertical: 32, gap: 8 },
