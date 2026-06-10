@@ -40,9 +40,14 @@ export function useAiCrewSuggestion(): UseAiCrewSuggestionReturn {
       });
       if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
-      setSuggestion(data.content[0].text);
-    } catch (e: any) {
-      setError(e.message ?? 'Failed to get suggestions');
+      const text = data?.content?.[0]?.text;
+      if (typeof text === 'string') {
+        setSuggestion(text);
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to get suggestions');
     } finally {
       setIsLoading(false);
     }
