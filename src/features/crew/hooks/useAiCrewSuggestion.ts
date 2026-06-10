@@ -19,6 +19,7 @@ export function useAiCrewSuggestion(): UseAiCrewSuggestionReturn {
     const apiKey = process.env.EXPO_PUBLIC_CLAUDE_API_KEY;
     if (!apiKey) return;
 
+    const controller = new AbortController();
     setSuggestion(null);
     setError(null);
     setIsLoading(true);
@@ -32,11 +33,12 @@ export function useAiCrewSuggestion(): UseAiCrewSuggestionReturn {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-haiku-4-5',
           max_tokens: 300,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: description }],
         }),
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
@@ -47,6 +49,7 @@ export function useAiCrewSuggestion(): UseAiCrewSuggestionReturn {
         throw new Error('Unexpected response format');
       }
     } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'Failed to get suggestions');
     } finally {
       setIsLoading(false);
