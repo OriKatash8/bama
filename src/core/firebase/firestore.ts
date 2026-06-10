@@ -8,6 +8,7 @@ import {
   query,
   getDocs,
   onSnapshot,
+  addDoc,
   where,
   type QueryConstraint,
   type DocumentData,
@@ -80,3 +81,13 @@ export async function queryByField<T>(
 ): Promise<T[]> {
   return queryDocuments<T>(collectionPath, where(field, '==', value));
 }
+
+export async function addDocument<T extends DocumentData>(
+  collectionPath: string,
+  data: T
+): Promise<string> {
+  const ref = await addDoc(collection(db, collectionPath), data);
+  return ref.id;
+}
+
+export { where };
