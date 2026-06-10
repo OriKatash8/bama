@@ -53,3 +53,21 @@ export type Review = {
   body: string;
   createdAt: Timestamp;
 };
+
+export type CrewRequestSlot = {
+  category: string;
+  subcategory: string;
+  quantity: number;
+};
+
+export type ProjectRequest = {
+  id: ID;
+  clientId: ID;
+  crewSlots: CrewRequestSlot[];
+  description: string;
+  date: string;
+  location: string;
+  budget: number;
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
+  createdAt: Timestamp;
+};
