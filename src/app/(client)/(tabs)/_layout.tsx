@@ -10,14 +10,13 @@ export default function ClientTabsLayout() {
     <>
       <Tabs screenOptions={{ headerShown: false }}>
         <Tabs.Screen name="browse" options={{ title: 'Browse' }} />
-        <Tabs.Screen name="crew" options={{ title: 'Crew' }} />
-        <Tabs.Screen name="bookings" options={{ title: 'Bookings' }} />
+        <Tabs.Screen name="home" options={{ title: 'Home' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
         <Tabs.Screen
           name="switch"
           options={{
             title: 'Switch',
-            tabBarButton: ({ style, children, onPress: _onPress, ...rest }) => (
+            tabBarButton: ({ style, children, onPress: _onPress, href: _href, ...rest }) => (
               <TouchableOpacity
                 style={style}
                 onPress={() => setSheetVisible(true)}
