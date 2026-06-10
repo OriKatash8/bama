@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { ProjectRequestCard } from '@features/crew/components';
@@ -19,7 +19,9 @@ export default function HomeScreen() {
           <Text style={styles.buildBtnText}>Build Crew</Text>
         </TouchableOpacity>
       </View>
-      {requests.length === 0 && !isLoading ? (
+      {isLoading ? (
+        <ActivityIndicator style={styles.loader} />
+      ) : requests.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>No projects yet.</Text>
           <Text style={styles.emptyHint}>
@@ -59,6 +61,7 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyText: { fontSize: 18, fontWeight: '600', color: '#333' },
   emptyHint: { fontSize: 14, color: '#999', textAlign: 'center', paddingHorizontal: 32 },
+  loader: { flex: 1 },
   list: { flex: 1 },
   listContent: { paddingVertical: 8 },
 });

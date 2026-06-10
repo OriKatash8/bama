@@ -8,7 +8,12 @@ import { useState } from 'react';
 
 export default function DetailsScreen() {
   const { slots: slotsParam } = useLocalSearchParams<{ slots: string }>();
-  const slots: CrewRequestSlot[] = slotsParam ? JSON.parse(slotsParam) : [];
+  let slots: CrewRequestSlot[] = [];
+  try {
+    if (slotsParam) slots = JSON.parse(slotsParam);
+  } catch {
+    // malformed param — fall back to empty basket
+  }
   const { submit } = useProjectRequests();
   const { showToast } = useUiStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
