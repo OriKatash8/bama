@@ -12,11 +12,36 @@ import { useState } from 'react';
 import { Screen } from '@components/layout/Screen';
 import { ProjectRequestCard } from '@features/crew/components';
 import { useProjectRequests, useAiCrewSuggestion } from '@features/crew/hooks';
+import { PriceOfferCard } from '@features/offers/components/PriceOfferCard';
+import { usePriceOffers } from '@features/offers/hooks/usePriceOffers';
+import { useAcceptOffer } from '@features/offers/hooks/useAcceptOffer';
+import { useUiStore } from '@core/stores/uiStore';
+import type { PriceOffer } from '@core/types/project';
 
 export default function HomeScreen() {
   const { requests, isLoading } = useProjectRequests();
   const { suggest, suggestion, isLoading: aiLoading, error: aiError } = useAiCrewSuggestion();
   const [description, setDescription] = useState('');
+  const { offers, isLoading: offersLoading } = usePriceOffers();
+  const { accept, reject, isAccepting } = useAcceptOffer();
+  const { showToast } = useUiStore();
+
+  async function handleAccept(offer: PriceOffer) {
+    try {
+      await accept(offer);
+      showToast('Offer accepted!', 'success');
+    } catch {
+      showToast('Failed to accept offer.', 'error');
+    }
+  }
+
+  async function handleReject(offerId: string) {
+    try {
+      await reject(offerId);
+    } catch {
+      showToast('Failed to reject offer.', 'error');
+    }
+  }
 
   const apiKeyPresent = !!process.env.EXPO_PUBLIC_CLAUDE_API_KEY;
 
@@ -71,6 +96,25 @@ export default function HomeScreen() {
               <Text style={styles.buildBtnText}>Start Building →</Text>
             </TouchableOpacity>
           </View>
+
+          {offers.length > 0 && (
+            <View style={styles.offersSection}>
+              <Text style={styles.sectionTitle}>Price Offers</Text>
+              {offersLoading ? (
+                <ActivityIndicator style={styles.loader} />
+              ) : (
+                offers.map((offer) => (
+                  <PriceOfferCard
+                    key={offer.id}
+                    offer={offer}
+                    onAccept={() => handleAccept(offer)}
+                    onReject={() => handleReject(offer.id)}
+                    isAccepting={isAccepting === offer.id}
+                  />
+                ))
+              )}
+            </View>
+          )}
 
           <View style={styles.projectsSection}>
             <Text style={styles.sectionTitle}>My Projects</Text>
@@ -134,6 +178,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
   },
   buildBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  offersSection: { gap: 8 },
   projectsSection: { gap: 8, marginHorizontal: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: '#111' },
   loader: { marginTop: 40 },
