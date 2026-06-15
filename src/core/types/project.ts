@@ -60,6 +60,12 @@ export type CrewRequestSlot = {
   quantity: number;
 };
 
+export type FilledSlot = {
+  category: string;
+  subcategory: string;
+  professionalId: string;
+};
+
 export type ProjectApplication = {
   id: ID;
   projectId: ID;
@@ -76,7 +82,26 @@ export type ProjectRequest = {
   description: string;
   date: string;
   location: string;
-  budget: number;
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: Timestamp;
+  filledSlots: FilledSlot[];
+};
+
+export type PriceOffer = {
+  id: string;
+  projectId: string;
+  professionalId: string;
+  category: string;
+  subcategory: string;
+  price: number;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: Timestamp;
+};
+
+export type AcceptedMember = {
+  professionalId: string;
+  category: string;
+  subcategory: string;
+  price: number;
+  displayName: string;
 };

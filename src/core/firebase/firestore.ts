@@ -10,6 +10,8 @@ import {
   onSnapshot,
   addDoc,
   where,
+  writeBatch,
+  arrayUnion,
   type QueryConstraint,
   type DocumentData,
 } from 'firebase/firestore';
@@ -90,4 +92,14 @@ export async function addDocument<T extends DocumentData>(
   return ref.id;
 }
 
-export { where };
+export async function runBatchUpdates(
+  updates: Array<{ path: string; data: DocumentData }>
+): Promise<void> {
+  const batch = writeBatch(db);
+  for (const { path, data } of updates) {
+    batch.update(doc(db, path), data);
+  }
+  await batch.commit();
+}
+
+export { where, arrayUnion };
