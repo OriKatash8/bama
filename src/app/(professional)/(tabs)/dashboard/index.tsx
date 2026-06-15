@@ -4,13 +4,11 @@ import { Screen } from '@components/layout/Screen';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
-import { useProjectApplication } from '@features/noticeboard/hooks/useProjectApplication';
 import { useUiStore } from '@core/stores/uiStore';
 import type { ProjectRequest } from '@core/types/project';
 
 export default function DashboardScreen() {
   const { requests, isLoading } = useNoticeboard();
-  const { apply, applying } = useProjectApplication();
   const { showToast } = useUiStore();
 
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
@@ -23,14 +21,9 @@ export default function DashboardScreen() {
     if (selected?.id === id) setSelected(null);
   }
 
-  async function handleApply(request: ProjectRequest) {
-    try {
-      await apply(request.id);
-      showToast('Application sent!', 'success');
-      dismiss(request.id);
-    } catch {
-      showToast('Failed to send application.', 'error');
-    }
+  function handleApply(request: ProjectRequest) {
+    showToast('Offer submitted!', 'success');
+    dismiss(request.id);
   }
 
   return (
@@ -58,9 +51,9 @@ export default function DashboardScreen() {
             <NoticeBoardCard
               request={item}
               onPress={() => setSelected(item)}
-              onApply={() => handleApply(item)}
+              onApply={() => setSelected(item)}
               onDismiss={() => dismiss(item.id)}
-              isApplying={applying === item.id}
+              isApplying={false}
             />
           )}
           contentContainerStyle={styles.list}
@@ -73,7 +66,7 @@ export default function DashboardScreen() {
         onClose={() => setSelected(null)}
         onApply={() => selected && handleApply(selected)}
         onDismiss={() => selected && dismiss(selected.id)}
-        isApplying={applying === selected?.id}
+        isApplying={false}
       />
     </Screen>
   );
