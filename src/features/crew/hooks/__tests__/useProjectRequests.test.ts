@@ -39,13 +39,13 @@ describe('useProjectRequests', () => {
 
   it('returns requests sorted by createdAt descending', () => {
     const old = {
-      id: 'r1', clientId: 'u1', crewSlots: [], description: '', date: '',
-      location: '', budget: 0, status: 'open' as const,
+      id: 'r1', clientId: 'u1', title: 'Old', crewSlots: [], description: '', date: '',
+      location: '', status: 'open' as const, filledSlots: [],
       createdAt: { seconds: 100, nanoseconds: 0 },
     };
     const newer = {
-      id: 'r2', clientId: 'u1', crewSlots: [], description: '', date: '',
-      location: '', budget: 0, status: 'open' as const,
+      id: 'r2', clientId: 'u1', title: 'New', crewSlots: [], description: '', date: '',
+      location: '', status: 'open' as const, filledSlots: [],
       createdAt: { seconds: 200, nanoseconds: 0 },
     };
     mockSubscribeToCollection.mockImplementation((_path, callback) => {
@@ -57,11 +57,11 @@ describe('useProjectRequests', () => {
     expect(result.current.requests[1].id).toBe('r1');
   });
 
-  it('submit calls addDocument with the correct shape', async () => {
+  it('submit calls addDocument with the correct shape (no budget, has filledSlots)', async () => {
     mockAddDocument.mockResolvedValue('new-id');
     const { result } = renderHook(() => useProjectRequests());
     const slots = [{ category: 'Editor', subcategory: 'Video Editor', quantity: 1 }];
-    const details = { description: 'Test project', date: '2026-07-15', location: 'London', budget: 5000 };
+    const details = { title: 'My Film', description: 'Test project', date: '2026-07-15', location: 'London' };
     await act(async () => {
       await result.current.submit(slots, details);
     });
@@ -70,13 +70,15 @@ describe('useProjectRequests', () => {
       expect.objectContaining({
         clientId: 'u1',
         crewSlots: slots,
+        title: 'My Film',
         description: 'Test project',
         date: '2026-07-15',
         location: 'London',
-        budget: 5000,
         status: 'open',
+        filledSlots: [],
       })
     );
+    expect(mockAddDocument).toHaveBeenCalledWith('projects', expect.not.objectContaining({ budget: expect.anything() }));
   });
 
   it('sets error and rethrows on submit failure', async () => {
@@ -84,7 +86,7 @@ describe('useProjectRequests', () => {
     const { result } = renderHook(() => useProjectRequests());
     await act(async () => {
       try {
-        await result.current.submit([], { description: '', date: '', location: '', budget: 0 });
+        await result.current.submit([], { title: '', description: '', date: '', location: '' });
       } catch {}
     });
     expect(result.current.error).toBe('Network error');

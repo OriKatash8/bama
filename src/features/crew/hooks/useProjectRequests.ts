@@ -8,7 +8,6 @@ type SubmitDetails = {
   description: string;
   date: string;
   location: string;
-  budget: number;
 };
 
 export function useProjectRequests() {
@@ -37,6 +36,7 @@ export function useProjectRequests() {
       await addDocument('projects', {
         clientId: user.id,
         crewSlots: slots,
+        filledSlots: [],
         ...details,
         status: 'open' as const,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
