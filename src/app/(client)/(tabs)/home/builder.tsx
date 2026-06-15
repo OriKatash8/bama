@@ -1,11 +1,18 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { CategoryAccordion } from '@features/crew/components';
 import { useCrewBuilder } from '@features/crew/hooks';
 import { useProjectRequests } from '@features/crew/hooks';
 import { useUiStore } from '@core/stores/uiStore';
+
+const gradientStyle = {
+  background: 'linear-gradient(to right, #004aad, #cb6ce6)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+} as any;
 
 export default function BuilderScreen() {
   const { slots, totalCount, addSlot, removeSlot } = useCrewBuilder();
@@ -47,10 +54,10 @@ export default function BuilderScreen() {
   }
 
   return (
-    <Screen scrollable={false}>
+    <Screen scrollable={false} backgroundColor="#0f0f1f">
       <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Project Details</Text>
+        <View style={[styles.card, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
+          <Text style={[styles.sectionTitle, Platform.OS === 'web' && gradientStyle]}>Project Details</Text>
 
           <Text style={styles.label}>Title</Text>
           <TextInput
@@ -58,6 +65,7 @@ export default function BuilderScreen() {
             value={title}
             onChangeText={setTitle}
             placeholder="e.g. Music video for new single"
+            placeholderTextColor="#666"
           />
           {errors.title ? <Text style={styles.error}>{errors.title}</Text> : null}
 
@@ -67,6 +75,7 @@ export default function BuilderScreen() {
             value={description}
             onChangeText={setDescription}
             placeholder="Describe your project"
+            placeholderTextColor="#666"
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -79,6 +88,7 @@ export default function BuilderScreen() {
             value={date}
             onChangeText={setDate}
             placeholder="2026-07-15"
+            placeholderTextColor="#666"
           />
           {errors.date ? <Text style={styles.error}>{errors.date}</Text> : null}
 
@@ -88,6 +98,7 @@ export default function BuilderScreen() {
             value={location}
             onChangeText={setLocation}
             placeholder="City, Country"
+            placeholderTextColor="#666"
           />
           {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
 
@@ -97,22 +108,31 @@ export default function BuilderScreen() {
             value={budget}
             onChangeText={setBudget}
             placeholder="5000"
+            placeholderTextColor="#666"
             keyboardType="numeric"
           />
           {errors.budget ? <Text style={styles.error}>{errors.budget}</Text> : null}
         </View>
 
-        <Text style={styles.sectionTitle2}>Select Roles</Text>
-        <CategoryAccordion
-          slots={slots}
-          onSelectSubcategory={addSlot}
-          onRemoveSubcategory={removeSlot}
-        />
-        {errors.slots ? <Text style={[styles.error, styles.slotsError]}>{errors.slots}</Text> : null}
+        <View style={styles.rolesWrap}>
+          <Text style={[styles.sectionTitle, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
+          <View style={[styles.rolesCard, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
+            <CategoryAccordion
+              slots={slots}
+              onSelectSubcategory={addSlot}
+              onRemoveSubcategory={removeSlot}
+            />
+          </View>
+          {errors.slots ? <Text style={styles.error}>{errors.slots}</Text> : null}
+        </View>
 
         <View style={styles.submitWrap}>
           <TouchableOpacity
-            style={[styles.submitBtn, isSubmitting && styles.disabled]}
+            style={[
+              styles.submitBtn,
+              isSubmitting && styles.disabled,
+              Platform.OS === 'web' && !isSubmitting && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as any),
+            ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
             activeOpacity={0.8}
@@ -129,31 +149,46 @@ export default function BuilderScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  section: { padding: 16, paddingTop: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111', marginBottom: 8 },
-  sectionTitle2: { fontSize: 18, fontWeight: '700', color: '#111', paddingHorizontal: 16, paddingTop: 24, paddingBottom: 8 },
-  slotsError: { paddingHorizontal: 16 },
-  submitWrap: { padding: 16, paddingBottom: 32 },
-  label: { fontSize: 14, fontWeight: '600', color: '#333', marginTop: 16, marginBottom: 6 },
+  card: {
+    margin: 16,
+    marginTop: 24,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#ffffff18',
+  },
+  rolesWrap: { marginHorizontal: 16, marginTop: 24 },
+  rolesCard: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ffffff18',
+    marginTop: 8,
+  },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
+  label: { fontSize: 14, fontWeight: '600', color: '#ccc', marginTop: 16, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#ffffff44',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 15,
-    backgroundColor: '#fff',
+    backgroundColor: '#0f0f1f',
+    color: '#fff',
   },
   multiline: { height: 100 },
-  error: { fontSize: 12, color: '#e53e3e', marginTop: 4 },
+  error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
+  submitWrap: { padding: 16, paddingBottom: 32 },
   submitBtn: {
-    backgroundColor: '#111',
+    backgroundColor: '#004aad',
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 28,
-    marginBottom: 24,
+    marginTop: 8,
   },
-  disabled: { backgroundColor: '#ccc' },
+  disabled: { backgroundColor: '#555' },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

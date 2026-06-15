@@ -54,9 +54,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#f7f7f7',
+    borderBottomColor: '#ffffff18',
+    backgroundColor: '#12122a',
   },
-  title: { fontSize: 16, fontWeight: '600', color: '#111' },
+  title: { fontSize: 16, fontWeight: '600', color: '#e0e0e0' },
   chevron: { fontSize: 11, color: '#888' },
 });
