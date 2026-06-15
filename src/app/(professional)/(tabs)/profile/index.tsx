@@ -11,6 +11,7 @@ import { StarRating } from '@features/profile/components/StarRating';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
+import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
 import type { MediaRole } from '@core/types/media';
 import type { PriceEntry } from '@core/types/project';
@@ -19,6 +20,7 @@ export default function ProfessionalProfileScreen() {
   const { user, profile, reviews, isLoading, isSaving, save } = useProfile();
   const { assets, upload, remove } = usePortfolio();
   const { showToast } = useUiStore();
+  const { isLoading: isSigningOut, logout } = useLogout();
   const navigation = useNavigation();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -123,6 +125,16 @@ export default function ProfessionalProfileScreen() {
         onRemove={remove}
         onError={(msg) => showToast(msg, 'error')}
       />
+      <View style={styles.settings}>
+        <Text style={styles.settingsTitle}>Settings</Text>
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={logout}
+          disabled={isSigningOut}
+        >
+          <Text style={[styles.signOutText, isSigningOut && { opacity: 0.4 }]}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
     </Screen>
   );
 }
@@ -133,4 +145,8 @@ const styles = StyleSheet.create({
   headerBtn: { paddingHorizontal: 8 },
   headerBtnText: { fontSize: 16, color: '#000' },
   save: { fontWeight: '700' },
+  settings: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 16, gap: 12 },
+  settingsTitle: { fontSize: 13, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5 },
+  signOutBtn: { paddingVertical: 12 },
+  signOutText: { fontSize: 16, color: '#e53e3e', fontWeight: '500' },
 });

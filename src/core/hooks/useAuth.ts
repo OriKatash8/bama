@@ -17,15 +17,22 @@ export function useAuth() {
         return;
       }
       setLoading(true);
-      const userData = await getDocument<LegacyUserDoc>(`users/${firebaseUser.uid}`);
-      if (userData) {
-        if ('role' in userData) {
-          void updateDocument(`users/${firebaseUser.uid}`, { role: deleteField() } as any);
+      try {
+        const userData = await getDocument<LegacyUserDoc>(`users/${firebaseUser.uid}`);
+        if (userData) {
+          if ('role' in userData) {
+            void updateDocument(`users/${firebaseUser.uid}`, { role: deleteField() } as any);
+          }
+          const { role: _role, ...cleanUser } = userData as any;
+          setUser(cleanUser as User);
+          setLoading(false);
+        } else {
+          setLoading(false);
         }
-        const { role: _role, ...cleanUser } = userData as any;
-        setUser(cleanUser as User);
+      } catch (e) {
+        console.error('[useAuth] Failed to load user document:', e);
+        setLoading(false);
       }
-      setLoading(false);
     });
     return unsubscribe;
   }, []);

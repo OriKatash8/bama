@@ -12,12 +12,12 @@ export default function ProfessionalTabsLayout() {
         <Tabs.Screen name="dashboard" options={{ title: 'Dashboard' }} />
         <Tabs.Screen name="portfolio" options={{ title: 'Portfolio' }} />
         <Tabs.Screen name="bookings" options={{ title: 'Bookings' }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+        <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: true }} />
         <Tabs.Screen
           name="switch"
           options={{
             title: 'Switch',
-            tabBarButton: ({ style, children, onPress: _onPress, ...rest }) => (
+            tabBarButton: ({ style, children, onPress: _onPress, href: _href, ...rest }) => (
               <TouchableOpacity
                 style={style}
                 onPress={() => setSheetVisible(true)}

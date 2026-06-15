@@ -5,11 +5,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { useClientProfile } from '@features/profile/hooks/useClientProfile';
+import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
 
 export default function ClientProfileScreen() {
   const { user, isSaving, save } = useClientProfile();
   const { showToast } = useUiStore();
+  const { isLoading: isSigningOut, logout } = useLogout();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.displayName ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -72,6 +74,16 @@ export default function ClientProfileScreen() {
           onNameChange={setName}
         />
       </View>
+      <View style={styles.settings}>
+        <Text style={styles.settingsTitle}>Settings</Text>
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={logout}
+          disabled={isSigningOut}
+        >
+          <Text style={[styles.signOutText, isSigningOut && { opacity: 0.4 }]}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
     </Screen>
   );
 }
@@ -82,4 +94,8 @@ const styles = StyleSheet.create({
   headerBtn: { paddingHorizontal: 8 },
   headerBtnText: { fontSize: 16, color: '#000' },
   save: { fontWeight: '700' },
+  settings: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 16, gap: 12 },
+  settingsTitle: { fontSize: 13, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5 },
+  signOutBtn: { paddingVertical: 12 },
+  signOutText: { fontSize: 16, color: '#e53e3e', fontWeight: '500' },
 });

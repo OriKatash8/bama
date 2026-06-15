@@ -4,11 +4,12 @@ type ScreenProps = {
   children: React.ReactNode;
   scrollable?: boolean;
   style?: StyleProp<ViewStyle>;
+  backgroundColor?: string;
 };
 
-export function Screen({ children, scrollable = true, style }: ScreenProps) {
+export function Screen({ children, scrollable = true, style, backgroundColor }: ScreenProps) {
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, backgroundColor ? { backgroundColor } : undefined]}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

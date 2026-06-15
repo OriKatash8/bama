@@ -3,7 +3,7 @@ import { RegisterForm } from '@features/auth/components/RegisterForm';
 
 export default function RegisterScreen() {
   return (
-    <Screen>
+    <Screen backgroundColor="#0f0f1f">
       <RegisterForm />
     </Screen>
   );

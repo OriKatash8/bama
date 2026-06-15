@@ -3,12 +3,13 @@ import { View, Text, TextInput, StyleSheet, type TextInputProps } from 'react-na
 type InputProps = TextInputProps & {
   label?: string;
   error?: string;
+  labelStyle?: object;
 };
 
-export function Input({ label, error, style, ...props }: InputProps) {
+export function Input({ label, error, style, labelStyle, ...props }: InputProps) {
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
       <TextInput
         style={[styles.input, error && styles.inputError, style]}
         placeholderTextColor="#999"

@@ -13,7 +13,7 @@ export default function Index() {
     );
   }
 
-  if (!user) return <Redirect href="/(auth)/" />;
+  if (!user) return <Redirect href="/(auth)" />;
   if (activeMode === null) return <Redirect href="/(auth)/mode-select" />;
   if (activeMode === 'client') return <Redirect href="/(client)/(tabs)/browse/" />;
   return <Redirect href="/(professional)/(tabs)/dashboard/" />;
