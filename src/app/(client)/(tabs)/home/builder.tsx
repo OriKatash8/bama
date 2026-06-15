@@ -23,7 +23,6 @@ export default function BuilderScreen() {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
-  const [budget, setBudget] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,8 +33,6 @@ export default function BuilderScreen() {
     if (!description.trim()) next.description = 'Required';
     if (!date.trim()) next.date = 'Required';
     if (!location.trim()) next.location = 'Required';
-    const b = Number(budget);
-    if (!budget || isNaN(b) || b <= 0) next.budget = 'Enter a valid budget greater than 0';
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -44,7 +41,7 @@ export default function BuilderScreen() {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      await submit(slots, { title, description, date, location, budget: Number(budget) });
+      await submit(slots, { title, description, date, location });
       router.dismiss();
     } catch (e: any) {
       showToast(e.message ?? 'Failed to submit request', 'error');
@@ -101,23 +98,12 @@ export default function BuilderScreen() {
             placeholderTextColor="#666"
           />
           {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
-
-          <Text style={styles.label}>Budget ($)</Text>
-          <TextInput
-            style={styles.input}
-            value={budget}
-            onChangeText={setBudget}
-            placeholder="5000"
-            placeholderTextColor="#666"
-            keyboardType="numeric"
-          />
-          {errors.budget ? <Text style={styles.error}>{errors.budget}</Text> : null}
         </View>
 
         <View style={styles.aiWrap}>
           <TouchableOpacity
             style={[styles.aiBtn, Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as any), aiLoading && styles.disabled]}
-            onPress={() => recommend({ title, description, date, location, budget })}
+            onPress={() => recommend({ title, description, date, location })}
             disabled={aiLoading}
             activeOpacity={0.8}
           >
