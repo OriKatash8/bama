@@ -12,6 +12,7 @@ export default function BuilderScreen() {
   const { submit } = useProjectRequests();
   const { showToast } = useUiStore();
 
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
@@ -22,6 +23,7 @@ export default function BuilderScreen() {
   function validate(): boolean {
     const next: Record<string, string> = {};
     if (totalCount === 0) next.slots = 'Select at least one role.';
+    if (!title.trim()) next.title = 'Required';
     if (!description.trim()) next.description = 'Required';
     if (!date.trim()) next.date = 'Required';
     if (!location.trim()) next.location = 'Required';
@@ -35,7 +37,7 @@ export default function BuilderScreen() {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      await submit(slots, { description, date, location, budget: Number(budget) });
+      await submit(slots, { title, description, date, location, budget: Number(budget) });
       router.dismiss();
     } catch (e: any) {
       showToast(e.message ?? 'Failed to submit request', 'error');
@@ -49,6 +51,15 @@ export default function BuilderScreen() {
       <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Project Details</Text>
+
+          <Text style={styles.label}>Title</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="e.g. Music video for new single"
+          />
+          {errors.title ? <Text style={styles.error}>{errors.title}</Text> : null}
 
           <Text style={styles.label}>Description</Text>
           <TextInput

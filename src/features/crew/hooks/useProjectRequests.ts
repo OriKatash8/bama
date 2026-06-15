@@ -4,6 +4,7 @@ import { addDocument, subscribeToCollection, where } from '@core/firebase/firest
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 
 type SubmitDetails = {
+  title: string;
   description: string;
   date: string;
   location: string;

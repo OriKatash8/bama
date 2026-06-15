@@ -63,6 +63,7 @@ export type CrewRequestSlot = {
 export type ProjectRequest = {
   id: ID;
   clientId: ID;
+  title: string;
   crewSlots: CrewRequestSlot[];
   description: string;
   date: string;
