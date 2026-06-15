@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { signIn } from '@core/firebase/auth';
 import { useUiStore } from '@core/stores/uiStore';
 
@@ -12,12 +13,14 @@ export function useLogin(): LoginState {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const showToast = useUiStore((s) => s.showToast);
+  const router = useRouter();
 
   async function login(email: string, password: string) {
     setError(null);
     setIsLoading(true);
     try {
       await signIn(email, password);
+      router.replace('/(auth)/mode-select');
     } catch (e: any) {
       const msg = toLoginError(e.code);
       setError(msg);
