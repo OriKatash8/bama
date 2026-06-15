@@ -6,9 +6,10 @@ import type { CrewRequestSlot } from '@core/types/project';
 type Props = {
   slots: CrewRequestSlot[];
   onSelectSubcategory: (category: string, subcategory: string) => void;
+  onRemoveSubcategory: (category: string, subcategory: string) => void;
 };
 
-export function CategoryAccordion({ slots, onSelectSubcategory }: Props) {
+export function CategoryAccordion({ slots, onSelectSubcategory, onRemoveSubcategory }: Props) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   function handleToggle(category: string) {
@@ -26,6 +27,7 @@ export function CategoryAccordion({ slots, onSelectSubcategory }: Props) {
           onToggle={() => handleToggle(category)}
           slots={slots}
           onSelectSubcategory={(sub) => onSelectSubcategory(category, sub)}
+          onRemoveSubcategory={(sub) => onRemoveSubcategory(category, sub)}
         />
       ))}
     </>

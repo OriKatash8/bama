@@ -9,6 +9,7 @@ type Props = {
   onToggle: () => void;
   slots: CrewRequestSlot[];
   onSelectSubcategory: (subcategory: string) => void;
+  onRemoveSubcategory: (subcategory: string) => void;
 };
 
 export function CategoryItem({
@@ -18,6 +19,7 @@ export function CategoryItem({
   onToggle,
   slots,
   onSelectSubcategory,
+  onRemoveSubcategory,
 }: Props) {
   return (
     <View>
@@ -36,6 +38,7 @@ export function CategoryItem({
               subcategory={sub}
               quantity={slot?.quantity ?? 0}
               onPress={() => onSelectSubcategory(sub)}
+              onRemove={() => onRemoveSubcategory(sub)}
             />
           );
         })}
