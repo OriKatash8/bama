@@ -1,0 +1,93 @@
+import { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { getDocument } from '@core/firebase/firestore';
+import type { PriceOffer } from '@core/types/project';
+
+type Props = {
+  offer: PriceOffer;
+  onAccept: () => void;
+  onReject: () => void;
+  isAccepting: boolean;
+};
+
+export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props) {
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    getDocument<{ displayName: string }>(`users/${offer.professionalId}`).then((u) => {
+      setDisplayName(u?.displayName ?? 'Unknown');
+    });
+  }, [offer.professionalId]);
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.top}>
+        <View style={styles.info}>
+          <Text style={styles.name}>{displayName ?? '…'}</Text>
+          <Text style={styles.role}>
+            {offer.subcategory}
+            <Text style={styles.cat}> · {offer.category}</Text>
+          </Text>
+          <Text style={styles.price}>${offer.price.toLocaleString()}</Text>
+        </View>
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.acceptBtn, isAccepting && styles.disabled]}
+            onPress={onAccept}
+            disabled={isAccepting}
+            activeOpacity={0.8}
+          >
+            {isAccepting ? (
+              <ActivityIndicator size="small" color="#2e7d32" />
+            ) : (
+              <Text style={styles.acceptIcon}>✓</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.rejectBtn]}
+            onPress={onReject}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.rejectIcon}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  info: { flex: 1 },
+  name: { fontSize: 15, fontWeight: '700', color: '#111', marginBottom: 2 },
+  role: { fontSize: 13, color: '#444', marginBottom: 4 },
+  cat: { color: '#888', fontWeight: '400' },
+  price: { fontSize: 16, fontWeight: '800', color: '#004aad' },
+  actions: { flexDirection: 'row', gap: 8 },
+  actionBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  acceptBtn: { backgroundColor: '#e8f5e9', borderWidth: 1.5, borderColor: '#4caf50' },
+  rejectBtn: { backgroundColor: '#fdecea', borderWidth: 1.5, borderColor: '#e53e3e' },
+  disabled: { opacity: 0.5 },
+  acceptIcon: { fontSize: 16, color: '#2e7d32', fontWeight: '700' },
+  rejectIcon: { fontSize: 14, color: '#e53e3e', fontWeight: '700' },
+});
