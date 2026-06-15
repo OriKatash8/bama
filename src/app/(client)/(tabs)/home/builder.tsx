@@ -3,8 +3,7 @@ import { ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platfo
 import { router } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { CategoryAccordion } from '@features/crew/components';
-import { useCrewBuilder } from '@features/crew/hooks';
-import { useProjectRequests } from '@features/crew/hooks';
+import { useCrewBuilder, useProjectRequests, useAiCrewRecommendation } from '@features/crew/hooks';
 import { useUiStore } from '@core/stores/uiStore';
 
 const gradientStyle = {
@@ -18,6 +17,7 @@ export default function BuilderScreen() {
   const { slots, totalCount, addSlot, removeSlot } = useCrewBuilder();
   const { submit } = useProjectRequests();
   const { showToast } = useUiStore();
+  const { recommend, result: aiResult, isLoading: aiLoading, error: aiError, clear: clearAi } = useAiCrewRecommendation();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -114,6 +114,52 @@ export default function BuilderScreen() {
           {errors.budget ? <Text style={styles.error}>{errors.budget}</Text> : null}
         </View>
 
+        <View style={styles.aiWrap}>
+          <TouchableOpacity
+            style={[styles.aiBtn, Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as any), aiLoading && styles.disabled]}
+            onPress={() => recommend({ title, description, date, location, budget })}
+            disabled={aiLoading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.aiBtnText}>{aiLoading ? 'Thinking…' : '✦ AI Suggest Roles'}</Text>
+          </TouchableOpacity>
+
+          {aiError ? <Text style={styles.error}>{aiError}</Text> : null}
+
+          {aiResult ? (
+            <View style={styles.aiCard}>
+              <Text style={styles.aiExplanation}>{aiResult.explanation}</Text>
+              <View style={styles.aiSlots}>
+                {aiResult.slots.map((s, i) => (
+                  <View key={i} style={styles.aiSlotRow}>
+                    <Text style={styles.aiSlotText}>
+                      {s.quantity}× {s.subcategory}
+                      <Text style={styles.aiSlotCat}> ({s.category})</Text>
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.aiActions}>
+                <TouchableOpacity
+                  style={[styles.applyBtn, Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as any)]}
+                  onPress={() => {
+                    aiResult.slots.forEach((s) => {
+                      for (let i = 0; i < s.quantity; i++) addSlot(s.category, s.subcategory);
+                    });
+                    clearAi();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.applyBtnText}>Apply Suggestions</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={clearAi} style={styles.dismissBtn}>
+                  <Text style={styles.dismissText}>Dismiss</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+        </View>
+
         <View style={styles.rolesWrap}>
           <Text style={[styles.sectionTitle, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
           <View style={[styles.rolesCard, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
@@ -181,6 +227,38 @@ const styles = StyleSheet.create({
   },
   multiline: { height: 100 },
   error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
+  aiWrap: { marginHorizontal: 16, marginTop: 20 },
+  aiBtn: {
+    backgroundColor: '#004aad',
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  aiBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  aiCard: {
+    marginTop: 12,
+    backgroundColor: '#12122a',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ffffff22',
+  },
+  aiExplanation: { color: '#ccc', fontSize: 14, lineHeight: 20, marginBottom: 12 },
+  aiSlots: { gap: 6, marginBottom: 16 },
+  aiSlotRow: { flexDirection: 'row', alignItems: 'center' },
+  aiSlotText: { color: '#e0e0e0', fontSize: 14, fontWeight: '600' },
+  aiSlotCat: { color: '#888', fontWeight: '400' },
+  aiActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  applyBtn: {
+    flex: 1,
+    backgroundColor: '#004aad',
+    borderRadius: 8,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  applyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  dismissBtn: { paddingVertical: 11, paddingHorizontal: 8 },
+  dismissText: { color: '#888', fontSize: 14 },
   submitWrap: { padding: 16, paddingBottom: 32 },
   submitBtn: {
     backgroundColor: '#004aad',

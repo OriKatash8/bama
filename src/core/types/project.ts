@@ -60,6 +60,14 @@ export type CrewRequestSlot = {
   quantity: number;
 };
 
+export type ProjectApplication = {
+  id: ID;
+  projectId: ID;
+  professionalId: ID;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: Timestamp;
+};
+
 export type ProjectRequest = {
   id: ID;
   clientId: ID;
