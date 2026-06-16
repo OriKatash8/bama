@@ -99,7 +99,7 @@ export default function ProfessionalProfileScreen() {
   if (isLoading) return null;
 
   return (
-    <Screen style={styles.content}>
+    <Screen style={styles.content} backgroundColor="#0f0f1f">
       <ProfileHeader
         photoURL={photoUri ?? user?.photoURL ?? null}
         name={name}
@@ -143,10 +143,10 @@ const styles = StyleSheet.create({
   content: { gap: 24 },
   headerBtns: { flexDirection: 'row', gap: 12 },
   headerBtn: { paddingHorizontal: 8 },
-  headerBtnText: { fontSize: 16, color: '#000' },
-  save: { fontWeight: '700' },
-  settings: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 16, gap: 12 },
-  settingsTitle: { fontSize: 13, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5 },
+  headerBtnText: { fontSize: 16, color: '#fff' },
+  save: { fontWeight: '700', color: '#cb6ce6' },
+  settings: { borderTopWidth: 1, borderTopColor: '#ffffff18', paddingTop: 16, gap: 12 },
+  settingsTitle: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
   signOutBtn: { paddingVertical: 12 },
-  signOutText: { fontSize: 16, color: '#e53e3e', fontWeight: '500' },
+  signOutText: { fontSize: 16, color: '#e53935', fontWeight: '500' },
 });

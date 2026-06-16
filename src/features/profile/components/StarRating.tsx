@@ -26,5 +26,5 @@ const styles = StyleSheet.create({
   container: { alignItems: 'center', gap: 4 },
   stars: { flexDirection: 'row', gap: 2 },
   star: { fontSize: 24, color: '#F4C430' },
-  label: { fontSize: 13, color: '#666' },
+  label: { fontSize: 13, color: 'rgba(255,255,255,0.5)' },
 });

@@ -56,7 +56,7 @@ export function ProjectRequestCard({ request }: Props) {
       {teamOpen && (
         <View style={styles.teamSection}>
           {teamLoading ? (
-            <ActivityIndicator size="small" color="#004aad" />
+            <ActivityIndicator size="small" color="#cb6ce6" />
           ) : (
             <>
               {request.crewSlots.map((slot, i) => {
@@ -90,31 +90,32 @@ export function ProjectRequestCard({ request }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 14,
     padding: 16,
-    marginHorizontal: 16,
     marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#ffffff18',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  title: { fontSize: 15, fontWeight: '700', color: '#111', flex: 1, marginRight: 8 },
+  title: { fontSize: 15, fontWeight: '700', color: '#fff', flex: 1, marginRight: 8 },
   badge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
-  date: { fontSize: 13, color: '#555', marginBottom: 2 },
-  location: { fontSize: 13, color: '#666', marginBottom: 4 },
-  crew: { fontSize: 13, color: '#444', marginBottom: 4 },
+  date: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 2 },
+  location: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 4 },
+  crew: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 },
   teamToggle: { marginTop: 8, alignSelf: 'flex-start' },
-  teamToggleText: { fontSize: 13, color: '#004aad', fontWeight: '600' },
+  teamToggleText: { fontSize: 13, color: '#cb6ce6', fontWeight: '600' },
   teamSection: { marginTop: 10, gap: 8 },
   teamRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  teamDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#004aad' },
+  teamDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#cb6ce6' },
   teamInfo: { flex: 1 },
-  teamRole: { fontSize: 13, fontWeight: '600', color: '#111' },
-  teamName: { fontSize: 12, color: '#555', marginTop: 1 },
-  teamOpen: { fontSize: 12, color: '#bbb', marginTop: 1 },
+  teamRole: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  teamName: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  teamOpen: { fontSize: 12, color: 'rgba(255,255,255,0.25)', marginTop: 1 },
 });

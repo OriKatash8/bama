@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -45,11 +46,47 @@ export default function HomeScreen() {
 
   const apiKeyPresent = !!process.env.EXPO_PUBLIC_CLAUDE_API_KEY;
 
+  const gradientText = Platform.OS === 'web' ? ({
+    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  } as any) : {};
+
+  const gradientBtn = Platform.OS === 'web' ? ({
+    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
+  } as any) : {};
+
+  const cardGlow = Platform.OS === 'web' ? ({
+    boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33',
+  } as any) : {};
+
   return (
-    <Screen scrollable={false}>
+    <Screen scrollable={false} backgroundColor="#0f0f1f">
       <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
-          <View style={styles.hero}>
-            <Text style={styles.heroTitle}>Build Your Crew</Text>
+          <View style={styles.bamaWrap}>
+            {Platform.OS === 'web' && (
+              <View style={styles.bamaGlow as any}>
+                <Text style={[styles.bamaText, { color: '#9b6ff5' }, { filter: 'blur(8px)', opacity: 0.55 } as any]}>BAMA</Text>
+              </View>
+            )}
+            <Text
+              style={[
+                styles.bamaText,
+                Platform.OS === 'web' && ({
+                  background: 'linear-gradient(to right, #004aad, #cb6ce6)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                } as any),
+              ]}
+            >
+              BAMA
+            </Text>
+          </View>
+
+          <View style={[styles.hero, cardGlow]}>
+            <Text style={[styles.heroTitle, gradientText]}>Build Your Crew</Text>
 
             {apiKeyPresent && (
               <>
@@ -67,15 +104,15 @@ export default function HomeScreen() {
                 />
                 {description.trim().length > 0 && (
                   <TouchableOpacity
-                    style={[styles.suggestBtn, aiLoading && styles.btnDisabled]}
+                    style={[styles.suggestBtn, gradientBtn, aiLoading && styles.btnDisabled]}
                     onPress={() => suggest(description.trim())}
                     disabled={aiLoading}
                     activeOpacity={0.8}
                   >
                     {aiLoading ? (
-                      <ActivityIndicator color="#111" size="small" />
+                      <ActivityIndicator color="#fff" size="small" />
                     ) : (
-                      <Text style={styles.suggestBtnText}>Get Suggestions</Text>
+                      <Text style={styles.suggestBtnText}>✦ Get Suggestions</Text>
                     )}
                   </TouchableOpacity>
                 )}
@@ -89,7 +126,7 @@ export default function HomeScreen() {
             )}
 
             <TouchableOpacity
-              style={styles.buildBtn}
+              style={[styles.buildBtn, gradientBtn]}
               onPress={() => router.push('/(client)/(tabs)/home/builder')}
               activeOpacity={0.8}
             >
@@ -99,9 +136,9 @@ export default function HomeScreen() {
 
           {offers.length > 0 && (
             <View style={styles.offersSection}>
-              <Text style={styles.sectionTitle}>Price Offers</Text>
+              <Text style={[styles.sectionTitle, gradientText]}>Price Offers</Text>
               {offersLoading ? (
-                <ActivityIndicator style={styles.loader} />
+                <ActivityIndicator style={styles.loader} color="#cb6ce6" />
               ) : (
                 offers.map((offer) => (
                   <PriceOfferCard
@@ -117,9 +154,9 @@ export default function HomeScreen() {
           )}
 
           <View style={styles.projectsSection}>
-            <Text style={styles.sectionTitle}>My Projects</Text>
+            <Text style={[styles.sectionTitle, gradientText]}>My Projects</Text>
             {isLoading ? (
-              <ActivityIndicator style={styles.loader} />
+              <ActivityIndicator style={styles.loader} color="#cb6ce6" />
             ) : requests.length === 0 ? (
               <View style={styles.empty}>
                 <Text style={styles.emptyText}>No projects yet.</Text>
@@ -141,18 +178,25 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingTop: 16, paddingBottom: 40, gap: 20 },
+  bamaWrap: { alignItems: 'center', width: '100%' },
+  bamaGlow: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
+  bamaText: { fontSize: 80, fontWeight: '900', color: '#004aad', textAlign: 'center', fontFamily: 'PeaceSans' },
   hero: {
-    backgroundColor: '#111',
-    borderRadius: 16,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 20,
     padding: 20,
     gap: 12,
     marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#ffffff18',
   },
   heroTitle: { fontSize: 26, fontWeight: '800', color: '#fff' },
   heroSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ffffff22',
     padding: 12,
     color: '#fff',
     fontSize: 14,
@@ -160,33 +204,31 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   suggestBtn: {
-    backgroundColor: '#fff',
+    backgroundColor: '#004aad',
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  btnDisabled: { opacity: 0.6 },
-  suggestBtnText: { color: '#111', fontWeight: '700', fontSize: 14 },
+  btnDisabled: { opacity: 0.5 },
+  suggestBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   aiError: { color: '#ff6b6b', fontSize: 13 },
   suggestion: { color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 20 },
   buildBtn: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#004aad',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
   buildBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  offersSection: { gap: 8 },
+  offersSection: { gap: 8, marginHorizontal: 16 },
   projectsSection: { gap: 8, marginHorizontal: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#111' },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 2 },
   loader: { marginTop: 40 },
   empty: { alignItems: 'center', paddingVertical: 32, gap: 8 },
-  emptyText: { fontSize: 18, fontWeight: '600', color: '#333' },
+  emptyText: { fontSize: 18, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
   emptyHint: {
     fontSize: 14,
-    color: '#999',
+    color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
     paddingHorizontal: 32,
   },

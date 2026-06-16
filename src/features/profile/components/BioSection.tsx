@@ -23,16 +23,17 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
 }
 
 const styles = StyleSheet.create({
-  text: { fontSize: 15, color: '#444', lineHeight: 22 },
+  text: { fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 22 },
   input: {
     fontSize: 15,
-    color: '#444',
+    color: '#fff',
     lineHeight: 22,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#ffffff33',
     borderRadius: 8,
     padding: 12,
     minHeight: 100,
     textAlignVertical: 'top',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
 });

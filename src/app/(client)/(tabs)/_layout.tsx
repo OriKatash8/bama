@@ -9,7 +9,7 @@ export default function ClientTabsLayout() {
   return (
     <>
       <Tabs screenOptions={{ headerShown: false }}>
-        <Tabs.Screen name="browse" options={{ title: 'Browse' }} />
+        <Tabs.Screen name="browse" options={{ title: 'Search' }} />
         <Tabs.Screen name="home" options={{ title: 'Home' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
         <Tabs.Screen

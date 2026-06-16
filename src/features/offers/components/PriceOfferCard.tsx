@@ -38,7 +38,7 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
             activeOpacity={0.8}
           >
             {isAccepting ? (
-              <ActivityIndicator size="small" color="#2e7d32" />
+              <ActivityIndicator size="small" color="#4caf50" />
             ) : (
               <Text style={styles.acceptIcon}>✓</Text>
             )}
@@ -58,25 +58,24 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a2e',
     borderRadius: 14,
     padding: 14,
-    marginHorizontal: 16,
     marginVertical: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: '#ffffff18',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '700', color: '#111', marginBottom: 2 },
-  role: { fontSize: 13, color: '#444', marginBottom: 4 },
-  cat: { color: '#888', fontWeight: '400' },
-  price: { fontSize: 16, fontWeight: '800', color: '#004aad' },
+  name: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 },
+  role: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 },
+  cat: { color: 'rgba(255,255,255,0.4)', fontWeight: '400' },
+  price: { fontSize: 16, fontWeight: '800', color: '#cb6ce6' },
   actions: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     width: 38,
@@ -85,9 +84,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  acceptBtn: { backgroundColor: '#e8f5e9', borderWidth: 1.5, borderColor: '#4caf50' },
-  rejectBtn: { backgroundColor: '#fdecea', borderWidth: 1.5, borderColor: '#e53e3e' },
+  acceptBtn: { backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1.5, borderColor: '#4caf50' },
+  rejectBtn: { backgroundColor: 'rgba(229,57,53,0.15)', borderWidth: 1.5, borderColor: '#e53935' },
   disabled: { opacity: 0.5 },
-  acceptIcon: { fontSize: 16, color: '#2e7d32', fontWeight: '700' },
-  rejectIcon: { fontSize: 14, color: '#e53e3e', fontWeight: '700' },
+  acceptIcon: { fontSize: 16, color: '#4caf50', fontWeight: '700' },
+  rejectIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
 });
