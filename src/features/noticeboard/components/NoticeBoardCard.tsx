@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { ProjectRequest } from '@core/types/project';
+import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
 
 type Props = {
   request: ProjectRequest;
@@ -10,7 +11,7 @@ type Props = {
 };
 
 export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplying }: Props) {
-  const roleCount = request.crewSlots.reduce((sum, s) => sum + s.quantity, 0);
+  const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
@@ -18,7 +19,7 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplyi
         <View style={styles.info}>
           <Text style={styles.title} numberOfLines={1}>{request.title}</Text>
           <Text style={styles.location}>📍 {request.location}</Text>
-          <Text style={styles.meta}>{request.date}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}  ·  ${request.budget.toLocaleString()}</Text>
+          <Text style={styles.meta}>{request.date}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}</Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
@@ -44,24 +45,24 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplyi
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a2e',
     borderRadius: 14,
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#ffffff18',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    elevation: 4,
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
-  title: { fontSize: 16, fontWeight: '700', color: '#111', marginBottom: 4 },
-  location: { fontSize: 13, color: '#555', marginBottom: 3 },
-  meta: { fontSize: 12, color: '#888' },
+  title: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 4 },
+  location: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 3 },
+  meta: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
   actions: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     width: 38,
@@ -70,9 +71,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  applyBtn: { backgroundColor: '#e8f5e9', borderWidth: 1.5, borderColor: '#4caf50' },
-  dismissBtn: { backgroundColor: '#fdecea', borderWidth: 1.5, borderColor: '#e53e3e' },
+  applyBtn: { backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1.5, borderColor: '#4caf50' },
+  dismissBtn: { backgroundColor: 'rgba(229,57,53,0.15)', borderWidth: 1.5, borderColor: '#e53935' },
   disabled: { opacity: 0.5 },
-  applyIcon: { fontSize: 16, color: '#2e7d32', fontWeight: '700' },
-  dismissIcon: { fontSize: 14, color: '#e53e3e', fontWeight: '700' },
+  applyIcon: { fontSize: 16, color: '#4caf50', fontWeight: '700' },
+  dismissIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
 });
