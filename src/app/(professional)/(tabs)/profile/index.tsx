@@ -42,9 +42,9 @@ export default function ProfessionalProfileScreen() {
     if (profile && !initialised.current) {
       initialised.current = true;
       setSkills(profile.skills ?? []);
-      setBio(profile.bio);
-      setEquipment(profile.equipment);
-      setPriceList(profile.priceList);
+      setBio(profile.bio ?? '');
+      setEquipment(profile.equipment ?? []);
+      setPriceList(profile.priceList ?? []);
     }
   }, [profile]);
 
@@ -73,9 +73,9 @@ export default function ProfessionalProfileScreen() {
     if (user) setName(user.displayName);
     if (profile) {
       setSkills(profile.skills ?? []);
-      setBio(profile.bio);
-      setEquipment(profile.equipment);
-      setPriceList(profile.priceList);
+      setBio(profile.bio ?? '');
+      setEquipment(profile.equipment ?? []);
+      setPriceList(profile.priceList ?? []);
     }
     setPhotoUri(null);
     setIsEditing(false);
@@ -90,7 +90,7 @@ export default function ProfessionalProfileScreen() {
 
   if (isLoading) {
     return (
-      <Screen backgroundColor="#0f0f1f">
+      <Screen backgroundColor="#0f0f1f" scrollable={false}>
         <View style={styles.loadingCenter}>
           <ActivityIndicator size="large" color="#cb6ce6" />
         </View>
