@@ -12,7 +12,7 @@ import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
-import type { MediaRole } from '@core/types/media';
+import type { ProfessionalSkill } from '@core/types/user';
 import type { PriceEntry } from '@core/types/project';
 
 export default function ProfessionalProfileScreen() {
@@ -24,7 +24,7 @@ export default function ProfessionalProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [roles, setRoles] = useState<MediaRole[]>([]);
+  const [skills, setSkills] = useState<ProfessionalSkill[]>([]);
   const [bio, setBio] = useState('');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
@@ -35,7 +35,7 @@ export default function ProfessionalProfileScreen() {
 
   useEffect(() => {
     if (profile) {
-      setRoles(profile.roles);
+      setSkills(profile.skills ?? []);
       setBio(profile.bio);
       setEquipment(profile.equipment);
       setPriceList(profile.priceList);
@@ -54,7 +54,7 @@ export default function ProfessionalProfileScreen() {
 
   async function handleSave() {
     try {
-      await save({ name, photoUri, roles, bio, equipment, priceList });
+      await save({ name, photoUri, skills, bio, equipment, priceList });
       setIsEditing(false);
       setPhotoUri(null);
       showToast('Profile saved!', 'success');
@@ -66,7 +66,7 @@ export default function ProfessionalProfileScreen() {
   function handleCancel() {
     if (user) setName(user.displayName);
     if (profile) {
-      setRoles(profile.roles);
+      setSkills(profile.skills ?? []);
       setBio(profile.bio);
       setEquipment(profile.equipment);
       setPriceList(profile.priceList);
@@ -129,7 +129,7 @@ export default function ProfessionalProfileScreen() {
         onNameChange={setName}
       />
 
-      <RoleChips selected={roles} isEditing={isEditing} onChange={setRoles} />
+      <RoleChips selected={skills} isEditing={isEditing} onChange={setSkills} />
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
       <StarRating rating={profile?.rating ?? 0} reviewCount={profile?.reviewCount ?? 0} />
 

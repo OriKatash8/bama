@@ -65,7 +65,7 @@ describe('useProfile', () => {
       await result.current.save({
         name: 'New Name',
         photoUri: null,
-        roles: ['photographer'],
+        skills: [{ category: 'Editor', subcategory: 'Video Editor' }],
         bio: 'My bio',
         equipment: ['Canon R5'],
         priceList: [{ service: 'Half day', price: 500 }],
@@ -76,7 +76,7 @@ describe('useProfile', () => {
       photoURL: null,
     });
     expect(mockMergeDocument).toHaveBeenCalledWith('users/u1/profile/data', {
-      roles: ['photographer'],
+      skills: [{ category: 'Editor', subcategory: 'Video Editor' }],
       bio: 'My bio',
       equipment: ['Canon R5'],
       priceList: [{ service: 'Half day', price: 500 }],
@@ -91,7 +91,7 @@ describe('useProfile', () => {
       await result.current.save({
         name: 'New Name',
         photoUri: null,
-        roles: [],
+        skills: [],
         bio: '',
         equipment: [],
         priceList: [],
@@ -108,7 +108,7 @@ describe('useProfile', () => {
         await result.current.save({
           name: 'New Name',
           photoUri: null,
-          roles: [],
+          skills: [],
           bio: '',
           equipment: [],
           priceList: [],

@@ -19,9 +19,15 @@ export type ClientProfile = {
   projectCount: number;
 };
 
+export type ProfessionalSkill = {
+  category: string;
+  subcategory: string;
+};
+
 export type ProfessionalProfile = {
   userId: ID;
   roles: MediaRole[];
+  skills?: ProfessionalSkill[];
   bio: string;
   availability: 'available' | 'busy' | 'unavailable';
   rating: number;

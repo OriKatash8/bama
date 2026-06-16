@@ -7,14 +7,13 @@ import {
   queryByField,
 } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
-import type { ProfessionalProfile } from '@core/types/user';
-import type { MediaRole } from '@core/types/media';
+import type { ProfessionalProfile, ProfessionalSkill } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
 
 type SaveFields = {
   name: string;
   photoUri: string | null;
-  roles: MediaRole[];
+  skills: ProfessionalSkill[];
   bio: string;
   equipment: string[];
   priceList: PriceEntry[];
@@ -46,7 +45,7 @@ export function useProfile() {
     return unsub;
   }, [user?.id]);
 
-  async function save({ name, photoUri, roles, bio, equipment, priceList }: SaveFields) {
+  async function save({ name, photoUri, skills, bio, equipment, priceList }: SaveFields) {
     if (!user) return;
     setError(null);
     setIsSaving(true);
@@ -58,7 +57,7 @@ export function useProfile() {
       }
       await updateDocument(`users/${user.id}`, { displayName: name, photoURL });
       await mergeDocument(`users/${user.id}/profile/data`, {
-        roles,
+        skills,
         bio,
         equipment,
         priceList,
