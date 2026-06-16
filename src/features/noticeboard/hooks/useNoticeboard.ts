@@ -5,7 +5,7 @@ import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 export function getVacantSlots(request: ProjectRequest): CrewRequestSlot[] {
   return request.crewSlots
     .map(slot => {
-      const filled = request.filledSlots.filter(
+      const filled = (request.filledSlots ?? []).filter(
         f => f.category === slot.category && f.subcategory === slot.subcategory
       ).length;
       return { ...slot, quantity: slot.quantity - filled };
