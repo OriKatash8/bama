@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import { usePriceOffer } from '@features/noticeboard/hooks/usePriceOffer';
+import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
 
 type BidEntry = CrewRequestSlot & { selected: boolean; price: string };
 
@@ -32,7 +33,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss }: Pro
 
   function openBid() {
     setBids(
-      request!.crewSlots.map((s) => ({ ...s, selected: false, price: '' }))
+      getVacantSlots(request!).map((s) => ({ ...s, selected: false, price: '' }))
     );
     setView('bid');
   }
@@ -177,43 +178,47 @@ const webSheet = {
 };
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' },
   sheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: '#0f0f1f',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#ffffff18',
     padding: 20,
     paddingBottom: 36,
     maxHeight: '85%',
   },
-  handle: { width: 40, height: 4, backgroundColor: '#e0e0e0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  title: { fontSize: 22, fontWeight: '800', color: '#111', marginBottom: 16 },
+  handle: { width: 40, height: 4, backgroundColor: '#ffffff33', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 16 },
   metaRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  metaItem: { flex: 1, backgroundColor: '#f5f5f5', borderRadius: 10, padding: 10 },
-  metaLabel: { fontSize: 11, color: '#888', fontWeight: '600', marginBottom: 2, textTransform: 'uppercase' },
-  metaValue: { fontSize: 14, color: '#111', fontWeight: '600' },
-  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#888', textTransform: 'uppercase', marginBottom: 8 },
-  description: { fontSize: 15, color: '#333', lineHeight: 22, marginBottom: 20 },
-  slotRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  slotQty: { fontSize: 18, fontWeight: '800', color: '#004aad', width: 32 },
-  slotSub: { fontSize: 15, fontWeight: '600', color: '#111' },
-  slotCat: { fontSize: 12, color: '#888', marginTop: 1 },
+  metaItem: { flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#ffffff18' },
+  metaLabel: { fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '600', marginBottom: 2, textTransform: 'uppercase' },
+  metaValue: { fontSize: 14, color: '#fff', fontWeight: '600' },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 8 },
+  description: { fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 22, marginBottom: 20 },
+  slotRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#ffffff12' },
+  slotQty: { fontSize: 18, fontWeight: '800', color: '#cb6ce6', width: 32 },
+  slotSub: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  slotCat: { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 1 },
   actions: { marginTop: 24, gap: 10 },
   applyBtn: { backgroundColor: '#004aad', borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
-  disabled: { backgroundColor: '#aaa' },
+  disabled: { opacity: 0.4 },
   applyText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  dismissBtn: { borderWidth: 1.5, borderColor: '#e53e3e', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  dismissText: { color: '#e53e3e', fontSize: 15, fontWeight: '600' },
+  dismissBtn: { borderWidth: 1.5, borderColor: '#e53935', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  dismissText: { color: '#e53935', fontSize: 15, fontWeight: '600' },
   backBtn: { marginBottom: 12 },
-  backText: { fontSize: 14, color: '#004aad', fontWeight: '600' },
-  bidHint: { fontSize: 14, color: '#666', marginBottom: 16, lineHeight: 20 },
-  bidRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  backText: { fontSize: 14, color: '#cb6ce6', fontWeight: '600' },
+  bidHint: { fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 20 },
+  bidRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#ffffff12' },
   bidInfo: { flex: 1 },
-  bidSub: { fontSize: 15, fontWeight: '600', color: '#111' },
-  bidCat: { fontSize: 12, color: '#888', marginTop: 2 },
-  priceInput: { width: 72, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, textAlign: 'center' },
+  bidSub: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  bidCat: { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
+  priceInput: { width: 72, borderWidth: 1, borderColor: '#ffffff33', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, textAlign: 'center', color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)' },
 });
