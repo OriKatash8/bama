@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
 type AvatarProps = {
@@ -6,7 +7,7 @@ type AvatarProps = {
   size?: number;
 };
 
-export function Avatar({ uri, name = '', size = 40 }: AvatarProps) {
+export const Avatar = memo(function Avatar({ uri, name = '', size = 40 }: AvatarProps) {
   const initials = name
     .split(' ')
     .map((n) => n[0])
@@ -14,16 +15,21 @@ export function Avatar({ uri, name = '', size = 40 }: AvatarProps) {
     .join('')
     .toUpperCase();
 
+  // Stable object reference — only recreated when uri string actually changes.
+  // Prevents React Native's Image from re-fetching when a parent re-renders
+  // without changing the URI value.
+  const source = useMemo(() => (uri ? { uri } : null), [uri]);
+
   return (
     <View style={[styles.container, { width: size, height: size, borderRadius: size / 2 }]}>
-      {uri ? (
-        <Image source={{ uri }} style={[styles.image, { borderRadius: size / 2 }]} />
+      {source ? (
+        <Image source={source} style={[styles.image, { borderRadius: size / 2 }]} />
       ) : (
         <Text style={[styles.initials, { fontSize: size * 0.36 }]}>{initials}</Text>
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: { backgroundColor: '#e0e0e0', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

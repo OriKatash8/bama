@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@components/layout/Screen';
@@ -29,12 +29,18 @@ export default function ProfessionalProfileScreen() {
   const [equipment, setEquipment] = useState<string[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
 
+  // Only seed local state from Firestore on initial load, not on every save.
+  // After save, the subscription fires again but we don't want to overwrite
+  // what the user just confirmed saving.
+  const initialised = useRef(false);
+
   useEffect(() => {
     if (user) setName(user.displayName);
   }, [user?.displayName]);
 
   useEffect(() => {
-    if (profile) {
+    if (profile && !initialised.current) {
+      initialised.current = true;
       setSkills(profile.skills ?? []);
       setBio(profile.bio);
       setEquipment(profile.equipment);
