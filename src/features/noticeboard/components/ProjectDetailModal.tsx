@@ -96,7 +96,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss }: Pro
             <Text style={styles.description}>{request.description}</Text>
 
             <Text style={styles.sectionLabel}>Roles Needed</Text>
-            {request.crewSlots.map((s, i) => (
+            {getVacantSlots(request).map((s, i) => (
               <View key={i} style={styles.slotRow}>
                 <Text style={styles.slotQty}>{s.quantity}×</Text>
                 <View>
