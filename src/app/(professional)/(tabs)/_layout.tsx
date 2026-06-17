@@ -11,8 +11,9 @@ export default function ProfessionalTabsLayout() {
       <Tabs screenOptions={{ headerShown: false }}>
         <Tabs.Screen name="dashboard" options={{ title: 'Dashboard' }} />
         <Tabs.Screen name="portfolio" options={{ title: 'Portfolio' }} />
+        <Tabs.Screen name="marketplace" options={{ title: 'Marketplace' }} />
         <Tabs.Screen name="bookings" options={{ title: 'Bookings' }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: true }} />
+        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
         <Tabs.Screen
           name="switch"
           options={{
