@@ -36,6 +36,8 @@ export function useCreateListing() {
         imageUrl,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });
+    } catch (e) {
+      throw e;  // let callers (PostListingSheet) show error toasts
     } finally {
       setIsSubmitting(false);
     }

@@ -102,4 +102,15 @@ describe('useCreateListing', () => {
     });
     expect(mockAddDocument).not.toHaveBeenCalled();
   });
+
+  it('propagates errors from Firestore write to the caller', async () => {
+    mockAddDocument.mockRejectedValue(new Error('write failed'));
+    const { result } = renderHook(() => useCreateListing());
+    await expect(
+      act(async () => {
+        await result.current.create({ type: 'secondhand', productName: 'Lens', location: 'TLV', price: 100, imageUri: null });
+      })
+    ).rejects.toThrow('write failed');
+    expect(result.current.isSubmitting).toBe(false);
+  });
 });
