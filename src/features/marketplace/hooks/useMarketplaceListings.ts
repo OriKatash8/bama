@@ -7,6 +7,7 @@ export function useMarketplaceListings(type: MarketplaceListingType) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
     return subscribeToCollection<MarketplaceListing>(
       'marketplace_listings',
       (data) => {

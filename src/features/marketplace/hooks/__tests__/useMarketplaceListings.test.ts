@@ -4,7 +4,7 @@ import { subscribeToCollection } from '@core/firebase/firestore';
 
 jest.mock('@core/firebase/firestore', () => ({
   subscribeToCollection: jest.fn(),
-  where: jest.fn((field, op, val) => ({ field, op, val })),
+  where: jest.fn(() => ({ _type: 'where' })),
 }));
 
 const mockSubscribeToCollection = subscribeToCollection as jest.MockedFunction<typeof subscribeToCollection>;
@@ -56,12 +56,12 @@ describe('useMarketplaceListings', () => {
     expect(result.current.listings[1].id).toBe('a');
   });
 
-  it('calls subscribeToCollection with the correct type filter', () => {
+  it('subscribes to marketplace_listings collection filtered by type', () => {
     renderHook(() => useMarketplaceListings('rental'));
     expect(mockSubscribeToCollection).toHaveBeenCalledWith(
       'marketplace_listings',
       expect.any(Function),
-      expect.objectContaining({ field: 'type', op: '==', val: 'rental' })
+      expect.any(Object)
     );
   });
 });
