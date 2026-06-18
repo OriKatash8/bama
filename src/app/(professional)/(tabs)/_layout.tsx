@@ -12,10 +12,10 @@ export default function ProfessionalTabsLayout() {
     <>
       <Tabs screenOptions={{ headerShown: false, tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.border }, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.textMuted }}>
         <Tabs.Screen name="dashboard" options={{ title: 'Dashboard' }} />
-        <Tabs.Screen name="portfolio" options={{ title: 'Portfolio' }} />
         <Tabs.Screen name="marketplace" options={{ title: 'Marketplace' }} />
-        <Tabs.Screen name="bookings" options={{ title: 'Bookings' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+        <Tabs.Screen name="portfolio" options={{ href: null }} />
+        <Tabs.Screen name="bookings" options={{ href: null }} />
         <Tabs.Screen
           name="switch"
           options={{

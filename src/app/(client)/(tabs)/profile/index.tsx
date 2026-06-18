@@ -5,6 +5,9 @@ import {
 } from 'react-native';
 import { useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import {
+  Settings, User, Bell, Moon, Sun, Globe, HelpCircle, LogOut,
+} from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { useClientProfile } from '@features/profile/hooks/useClientProfile';
@@ -86,7 +89,7 @@ export default function ClientProfileScreen() {
           onPress={() => setMenuOpen(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.gearIcon}>⚙️</Text>
+          <Settings size={20} color={colors.text} strokeWidth={1.5} />
         </TouchableOpacity>
 
         {/* Profile */}
@@ -114,15 +117,27 @@ export default function ClientProfileScreen() {
           <Pressable onPress={() => {}} style={cardStyle}>
             <Text style={[styles.menuTitle, { color: colors.textMuted }]}>Settings</Text>
 
-            <MenuItem icon="👤" label="User Information" onPress={() => setMenuOpen(false)} colors={colors} />
+            <MenuItem
+              icon={<User size={18} color={colors.text} strokeWidth={1.5} />}
+              label="User Information"
+              onPress={() => setMenuOpen(false)}
+              colors={colors}
+            />
             <Divider colors={colors} />
 
-            <MenuItem icon="🔔" label="Notifications" onPress={() => setMenuOpen(false)} colors={colors} />
+            <MenuItem
+              icon={<Bell size={18} color={colors.text} strokeWidth={1.5} />}
+              label="Notifications"
+              onPress={() => setMenuOpen(false)}
+              colors={colors}
+            />
             <Divider colors={colors} />
 
             {/* Dark / Light mode */}
             <View style={styles.menuRow}>
-              <Text style={styles.menuIcon}>{isDark ? '🌙' : '☀️'}</Text>
+              {isDark
+                ? <Moon size={18} color={colors.text} strokeWidth={1.5} />
+                : <Sun size={18} color={colors.text} strokeWidth={1.5} />}
               <Text style={[styles.menuLabel, { color: colors.text }]}>
                 {isDark ? 'Dark Mode' : 'Light Mode'}
               </Text>
@@ -137,7 +152,7 @@ export default function ClientProfileScreen() {
 
             {/* Language */}
             <View style={styles.menuRow}>
-              <Text style={styles.menuIcon}>🌐</Text>
+              <Globe size={18} color={colors.text} strokeWidth={1.5} />
               <Text style={[styles.menuLabel, { color: colors.text }]}>English / עברית</Text>
               <View style={[styles.langToggle, { borderColor: colors.border }]}>
                 <View style={[styles.langActive, { backgroundColor: '#004aad' }]}>
@@ -150,11 +165,16 @@ export default function ClientProfileScreen() {
             </View>
             <Divider colors={colors} />
 
-            <MenuItem icon="❓" label="Help & Support" onPress={() => setMenuOpen(false)} colors={colors} />
+            <MenuItem
+              icon={<HelpCircle size={18} color={colors.text} strokeWidth={1.5} />}
+              label="Help & Support"
+              onPress={() => setMenuOpen(false)}
+              colors={colors}
+            />
             <Divider colors={colors} />
 
             <MenuItem
-              icon="🚪"
+              icon={<LogOut size={18} color="#e53935" strokeWidth={1.5} />}
               label="Sign Out"
               onPress={() => { setMenuOpen(false); logout(); }}
               colors={colors}
@@ -171,7 +191,7 @@ export default function ClientProfileScreen() {
 function MenuItem({
   icon, label, onPress, colors, danger = false, disabled = false,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   onPress: () => void;
   colors: any;
@@ -179,9 +199,9 @@ function MenuItem({
   disabled?: boolean;
 }) {
   return (
-    <TouchableOpacity style={styles.menuRow} onPress={onPress} disabled={disabled} activeOpacity={0.7}>
-      <Text style={styles.menuIcon}>{icon}</Text>
-      <Text style={[styles.menuLabel, { color: danger ? '#e53935' : colors.text }, disabled && { opacity: 0.4 }]}>
+    <TouchableOpacity style={[styles.menuRow, disabled && { opacity: 0.4 }]} onPress={onPress} disabled={disabled} activeOpacity={0.7}>
+      <View style={styles.iconWrap}>{icon}</View>
+      <Text style={[styles.menuLabel, { color: danger ? '#e53935' : colors.text }]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -210,7 +230,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
   },
-  gearIcon: { fontSize: 20 },
   center: { alignItems: 'center', paddingTop: 40, paddingBottom: 24 },
   headerBtns: { flexDirection: 'row', gap: 12 },
   headerBtn: { paddingHorizontal: 8 },
@@ -249,7 +268,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
   },
-  menuIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  iconWrap: { width: 24, alignItems: 'center' },
   menuLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
   divider: { height: 1, marginHorizontal: -4 },
 

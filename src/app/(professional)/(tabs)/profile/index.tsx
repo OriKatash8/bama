@@ -100,7 +100,7 @@ export default function ProfessionalProfileScreen() {
   return (
     <Screen style={styles.content} scrollable>
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }, gradientText]}>My Profile</Text>
+        <Text style={[styles.headerTitle, Platform.OS === 'web' ? gradientText : { color: '#cb6ce6' }]}>My Profile</Text>
         {isEditing ? (
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={handleCancel} style={[styles.cancelBtn, { borderColor: colors.border }]} activeOpacity={0.8}>
