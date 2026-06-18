@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useAuth } from '@core/hooks/useAuth';
 import { ToastContainer } from '@components/ui/Toast';
-import { ThemeToggleButton } from '@components/ui/ThemeToggleButton';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 
 SplashScreen.preventAutoHideAsync();
@@ -28,7 +27,6 @@ function AppShell() {
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <Slot />
       <ToastContainer />
-      <ThemeToggleButton />
     </View>
   );
 }
