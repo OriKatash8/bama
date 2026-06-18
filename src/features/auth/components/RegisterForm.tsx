@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useRegister } from '@features/auth/hooks/useRegister';
+import { useTheme } from '@core/hooks/useTheme';
 import { isValidEmail, isNonEmpty } from '@utils/validators';
 
 const gradientStyle = {
@@ -24,6 +25,7 @@ export function RegisterForm() {
   }>({});
   const { isLoading, register } = useRegister();
   const router = useRouter();
+  const colors = useTheme();
   const appNameSize = 130;
 
   function validate(): boolean {
@@ -42,50 +44,40 @@ export function RegisterForm() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.titleWrap, { marginBottom: 64 }]}>
-        {Platform.OS === 'web' && (
-          <View style={styles.glowLayer as any}>
-            <Text style={[styles.appName, { fontSize: appNameSize, color: '#9b6ff5' }, ({ filter: 'blur(8px)', opacity: 0.55 } as any)]}>BAMA</Text>
-          </View>
-        )}
-        <Text style={[styles.appName, { fontSize: appNameSize }, Platform.OS === 'web' && gradientStyle]}>BAMA</Text>
+      <View style={[styles.titleWrap, { marginBottom: -60 }]}>
+        <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       </View>
-      <View style={[styles.card, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
         <View style={styles.titleWrap}>
-          {Platform.OS === 'web' && (
-            <View style={styles.glowLayer as any}>
-              <Text style={[styles.title, { color: '#9b6ff5' } as any, ({ filter: 'blur(7px)', opacity: 0.55 } as any)]}>Register</Text>
-            </View>
-          )}
-          <Text style={[styles.title, Platform.OS === 'web' && gradientStyle]}>Register</Text>
+          <Text style={styles.title}>REGISTER</Text>
         </View>
         <Input
-          label="Full Name"
+          placeholder="Full Name"
+          placeholderTextColor={colors.placeholder}
           value={fullName}
           onChangeText={setFullName}
           autoCapitalize="words"
           error={fieldErrors.fullName}
-          labelStyle={styles.inputLabel}
-          style={styles.inputField}
+          style={{ borderColor: '#cb6ce6', color: colors.text }}
         />
         <Input
-          label="Email"
+          placeholder="Email"
+          placeholderTextColor={colors.placeholder}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
           error={fieldErrors.email}
-          labelStyle={styles.inputLabel}
-          style={styles.inputField}
+          style={{ borderColor: '#cb6ce6', color: colors.text }}
         />
         <Input
-          label="Password"
+          placeholder="Password"
+          placeholderTextColor={colors.placeholder}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           error={fieldErrors.password}
-          labelStyle={styles.inputLabel}
-          style={styles.inputField}
+          style={{ borderColor: '#cb6ce6', color: colors.text }}
         />
         <Button
           label="Create Account"
@@ -96,9 +88,9 @@ export function RegisterForm() {
           } as any) : { backgroundColor: '#004aad' }}
         />
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+          <Text style={[styles.footerText, { color: colors.text }]}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/')}>
-            <Text style={styles.link}>Sign In</Text>
+            <Text style={[styles.link, { color: colors.text }]}>Sign In</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -107,27 +99,23 @@ export function RegisterForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, justifyContent: 'center' },
+  container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40 },
   titleWrap: { alignItems: 'center', width: '100%' },
   glowLayer: { position: 'absolute', top: 0, left: 0, right: 0 },
   card: {
-    backgroundColor: '#1a1a2e',
     borderRadius: 20,
     padding: 24,
     gap: 16,
     borderWidth: 1,
-    borderColor: '#ffffff18',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
     elevation: 10,
   },
-  appName: { fontSize: 192, fontWeight: '900', color: '#004aad', textAlign: 'center' },
-  title: { fontSize: 72, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },
-  link: { fontSize: 14, color: '#fff', fontWeight: '500', textDecorationLine: 'underline' },
+  appLogo: { width: 1040, height: 520 },
+  title: { fontSize: 28, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },
+  link: { fontSize: 14, fontWeight: '500', textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
-  footerText: { fontSize: 14, color: '#fff' },
-  inputLabel: { color: '#fff' },
-  inputField: { borderColor: '#ffffff44', color: '#fff' },
+  footerText: { fontSize: 14 },
 });

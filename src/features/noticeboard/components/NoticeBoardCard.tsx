@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { ProjectRequest } from '@core/types/project';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
+import { useTheme } from '@core/hooks/useTheme';
 
 type Props = {
   request: ProjectRequest;
@@ -12,14 +13,15 @@ type Props = {
 
 export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplying }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
+  const colors = useTheme();
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>{request.title}</Text>
-          <Text style={styles.location}>📍 {request.location}</Text>
-          <Text style={styles.meta}>{request.date}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}</Text>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.location, { color: colors.textMuted }]}>📍 {request.location}</Text>
+          <Text style={[styles.meta, { color: colors.textMuted }]}>{request.date}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}</Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
@@ -45,13 +47,11 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplyi
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1a1a2e',
     borderRadius: 14,
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 6,
     borderWidth: 1,
-    borderColor: '#ffffff18',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -60,9 +60,9 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
-  title: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 4 },
-  location: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 3 },
-  meta: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
+  title: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  location: { fontSize: 13, marginBottom: 3 },
+  meta: { fontSize: 12 },
   actions: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     width: 38,

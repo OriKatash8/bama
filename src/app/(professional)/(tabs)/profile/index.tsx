@@ -12,6 +12,7 @@ import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
+import { useTheme } from '@core/hooks/useTheme';
 import type { ProfessionalSkill } from '@core/types/user';
 import type { PriceEntry } from '@core/types/project';
 
@@ -20,6 +21,7 @@ export default function ProfessionalProfileScreen() {
   const { assets, upload, remove } = usePortfolio();
   const { showToast } = useUiStore();
   const { isLoading: isSigningOut, logout } = useLogout();
+  const colors = useTheme();
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -29,9 +31,6 @@ export default function ProfessionalProfileScreen() {
   const [equipment, setEquipment] = useState<string[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
 
-  // Only seed local state from Firestore on initial load, not on every save.
-  // After save, the subscription fires again but we don't want to overwrite
-  // what the user just confirmed saving.
   const initialised = useRef(false);
 
   useEffect(() => {
@@ -90,7 +89,7 @@ export default function ProfessionalProfileScreen() {
 
   if (isLoading) {
     return (
-      <Screen backgroundColor="#0f0f1f" scrollable={false}>
+      <Screen scrollable={false}>
         <View style={styles.loadingCenter}>
           <ActivityIndicator size="large" color="#cb6ce6" />
         </View>
@@ -99,14 +98,13 @@ export default function ProfessionalProfileScreen() {
   }
 
   return (
-    <Screen style={styles.content} backgroundColor="#0f0f1f" scrollable>
-      {/* In-screen header */}
+    <Screen style={styles.content} scrollable>
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, gradientText]}>My Profile</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }, gradientText]}>My Profile</Text>
         {isEditing ? (
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn} activeOpacity={0.8}>
-              <Text style={styles.cancelText}>Cancel</Text>
+            <TouchableOpacity onPress={handleCancel} style={[styles.cancelBtn, { borderColor: colors.border }]} activeOpacity={0.8}>
+              <Text style={[styles.cancelText, { color: colors.textSec }]}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}
@@ -156,8 +154,8 @@ export default function ProfessionalProfileScreen() {
         onError={(msg) => showToast(msg, 'error')}
       />
 
-      <View style={styles.settings}>
-        <Text style={styles.settingsTitle}>Settings</Text>
+      <View style={[styles.settings, { borderTopColor: colors.border }]}>
+        <Text style={[styles.settingsTitle, { color: colors.textSec }]}>Settings</Text>
         <TouchableOpacity
           style={[styles.signOutBtn, isSigningOut && styles.disabled]}
           onPress={logout}
@@ -183,7 +181,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 8,
   },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 24, fontWeight: '800' },
   headerActions: { flexDirection: 'row', gap: 10 },
 
   editBtn: {
@@ -198,12 +196,11 @@ const styles = StyleSheet.create({
 
   cancelBtn: {
     borderWidth: 1,
-    borderColor: '#ffffff33',
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
   },
-  cancelText: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+  cancelText: { fontSize: 14, fontWeight: '600' },
 
   saveBtn: {
     backgroundColor: '#004aad',
@@ -219,14 +216,12 @@ const styles = StyleSheet.create({
 
   settings: {
     borderTopWidth: 1,
-    borderTopColor: '#ffffff18',
     paddingTop: 24,
     gap: 20,
   },
   settingsTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.6)',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },

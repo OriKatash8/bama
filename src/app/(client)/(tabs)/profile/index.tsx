@@ -7,6 +7,7 @@ import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { useClientProfile } from '@features/profile/hooks/useClientProfile';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
+import { useTheme } from '@core/hooks/useTheme';
 
 export default function ClientProfileScreen() {
   const { user, isSaving, save } = useClientProfile();
@@ -16,6 +17,7 @@ export default function ClientProfileScreen() {
   const [name, setName] = useState(user?.displayName ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const navigation = useNavigation();
+  const colors = useTheme();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -23,7 +25,7 @@ export default function ClientProfileScreen() {
         isEditing ? (
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={handleCancel} style={styles.headerBtn}>
-              <Text style={styles.headerBtnText}>Cancel</Text>
+              <Text style={[styles.headerBtnText, { color: colors.text }]}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSave} style={styles.headerBtn} disabled={isSaving}>
               <Text style={[styles.headerBtnText, styles.save, isSaving && { opacity: 0.4 }]}>Save</Text>
@@ -31,11 +33,11 @@ export default function ClientProfileScreen() {
           </View>
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={styles.headerBtnText}>Edit</Text>
+            <Text style={[styles.headerBtnText, { color: colors.text }]}>Edit</Text>
           </TouchableOpacity>
         ),
     });
-  }, [isEditing, name, photoUri, isSaving]);
+  }, [isEditing, name, photoUri, isSaving, colors.text]);
 
   async function handlePhotoPress() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -64,7 +66,7 @@ export default function ClientProfileScreen() {
   }
 
   return (
-    <Screen backgroundColor="#0f0f1f">
+    <Screen>
       <View style={styles.center}>
         <ProfileHeader
           photoURL={photoUri ?? user?.photoURL ?? null}
@@ -76,8 +78,8 @@ export default function ClientProfileScreen() {
           email={user?.email}
         />
       </View>
-      <View style={styles.settings}>
-        <Text style={styles.settingsTitle}>Settings</Text>
+      <View style={[styles.settings, { borderTopColor: colors.border }]}>
+        <Text style={[styles.settingsTitle, { color: colors.textMuted }]}>Settings</Text>
         <TouchableOpacity
           style={styles.signOutBtn}
           onPress={logout}
@@ -94,10 +96,10 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', paddingTop: 40 },
   headerBtns: { flexDirection: 'row', gap: 12 },
   headerBtn: { paddingHorizontal: 8 },
-  headerBtnText: { fontSize: 16, color: '#fff' },
+  headerBtnText: { fontSize: 16 },
   save: { fontWeight: '700', color: '#cb6ce6' },
-  settings: { borderTopWidth: 1, borderTopColor: '#ffffff18', paddingTop: 16, gap: 12 },
-  settingsTitle: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  settings: { borderTopWidth: 1, paddingTop: 16, gap: 12 },
+  settingsTitle: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   signOutBtn: { paddingVertical: 12 },
   signOutText: { fontSize: 16, color: '#e53935', fontWeight: '500' },
 });

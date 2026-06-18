@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { getDocument } from '@core/firebase/firestore';
 import type { PriceOffer } from '@core/types/project';
+import { useTheme } from '@core/hooks/useTheme';
 
 type Props = {
   offer: PriceOffer;
@@ -12,6 +13,7 @@ type Props = {
 
 export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props) {
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const colors = useTheme();
 
   useEffect(() => {
     getDocument<{ displayName: string }>(`users/${offer.professionalId}`).then((u) => {
@@ -20,13 +22,13 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
   }, [offer.professionalId]);
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={styles.name}>{displayName ?? '…'}</Text>
-          <Text style={styles.role}>
+          <Text style={[styles.name, { color: colors.text }]}>{displayName ?? '…'}</Text>
+          <Text style={[styles.role, { color: colors.textSec }]}>
             {offer.subcategory}
-            <Text style={styles.cat}> · {offer.category}</Text>
+            <Text style={{ color: colors.textMuted }}> · {offer.category}</Text>
           </Text>
           <Text style={styles.price}>${offer.price.toLocaleString()}</Text>
         </View>
@@ -58,12 +60,10 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1a1a2e',
     borderRadius: 14,
     padding: 14,
     marginVertical: 5,
     borderWidth: 1,
-    borderColor: '#ffffff18',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -72,9 +72,8 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 },
-  role: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 },
-  cat: { color: 'rgba(255,255,255,0.4)', fontWeight: '400' },
+  name: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  role: { fontSize: 13, marginBottom: 4 },
   price: { fontSize: 16, fontWeight: '800', color: '#cb6ce6' },
   actions: { flexDirection: 'row', gap: 8 },
   actionBtn: {

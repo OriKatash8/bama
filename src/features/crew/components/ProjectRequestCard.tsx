@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
+import { useTheme } from '@core/hooks/useTheme';
 
 type Props = { request: ProjectRequest };
 
@@ -15,6 +16,7 @@ const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
 export function ProjectRequestCard({ request }: Props) {
   const [teamOpen, setTeamOpen] = useState(false);
   const { team, isLoading: teamLoading, load } = useProjectTeam(request.id);
+  const colors = useTheme();
 
   const firstTwo = request.crewSlots.slice(0, 2);
   const overflow = request.crewSlots.length - 2;
@@ -34,16 +36,16 @@ export function ProjectRequestCard({ request }: Props) {
   const filledCount = request.filledSlots?.length ?? 0;
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.row}>
-        <Text style={styles.title} numberOfLines={1}>{request.title}</Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{request.title}</Text>
         <View style={[styles.badge, { backgroundColor: STATUS_COLORS[request.status] }]}>
           <Text style={styles.badgeText}>{request.status.replace('_', ' ')}</Text>
         </View>
       </View>
-      <Text style={styles.date}>{request.date}</Text>
-      <Text style={styles.location}>{request.location}</Text>
-      {crewSummary ? <Text style={styles.crew}>{crewSummary}</Text> : null}
+      <Text style={[styles.date, { color: colors.textSec }]}>{request.date}</Text>
+      <Text style={[styles.location, { color: colors.textSec }]}>{request.location}</Text>
+      {crewSummary ? <Text style={[styles.crew, { color: colors.textSec }]}>{crewSummary}</Text> : null}
 
       {filledCount > 0 && (
         <TouchableOpacity onPress={toggleTeam} style={styles.teamToggle} activeOpacity={0.7}>
@@ -70,11 +72,11 @@ export function ProjectRequestCard({ request }: Props) {
                   <View key={i} style={styles.teamRow}>
                     <View style={styles.teamDot} />
                     <View style={styles.teamInfo}>
-                      <Text style={styles.teamRole}>{slot.subcategory}</Text>
+                      <Text style={[styles.teamRole, { color: colors.text }]}>{slot.subcategory}</Text>
                       {member ? (
-                        <Text style={styles.teamName}>{member.displayName} · ${member.price.toLocaleString()}</Text>
+                        <Text style={[styles.teamName, { color: colors.textSec }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
                       ) : (
-                        <Text style={styles.teamOpen}>— Open</Text>
+                        <Text style={[styles.teamOpen, { color: colors.textMuted }]}>— Open</Text>
                       )}
                     </View>
                   </View>
@@ -90,12 +92,10 @@ export function ProjectRequestCard({ request }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1a1a2e',
     borderRadius: 14,
     padding: 16,
     marginVertical: 6,
     borderWidth: 1,
-    borderColor: '#ffffff18',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -103,19 +103,19 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  title: { fontSize: 15, fontWeight: '700', color: '#fff', flex: 1, marginRight: 8 },
+  title: { fontSize: 15, fontWeight: '700', flex: 1, marginRight: 8 },
   badge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
-  date: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 2 },
-  location: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 4 },
-  crew: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 },
+  date: { fontSize: 13, marginBottom: 2 },
+  location: { fontSize: 13, marginBottom: 4 },
+  crew: { fontSize: 13, marginBottom: 4 },
   teamToggle: { marginTop: 8, alignSelf: 'flex-start' },
   teamToggleText: { fontSize: 13, color: '#cb6ce6', fontWeight: '600' },
   teamSection: { marginTop: 10, gap: 8 },
   teamRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   teamDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#cb6ce6' },
   teamInfo: { flex: 1 },
-  teamRole: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  teamName: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
-  teamOpen: { fontSize: 12, color: 'rgba(255,255,255,0.25)', marginTop: 1 },
+  teamRole: { fontSize: 13, fontWeight: '600' },
+  teamName: { fontSize: 12, marginTop: 1 },
+  teamOpen: { fontSize: 12, marginTop: 1 },
 });

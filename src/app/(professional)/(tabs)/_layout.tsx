@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Tabs } from 'expo-router';
 import { ModeSwitcherSheet } from '@features/auth/components/ModeSwitcherSheet';
+import { useTheme } from '@core/hooks/useTheme';
 
 export default function ProfessionalTabsLayout() {
   const [sheetVisible, setSheetVisible] = useState(false);
+  const colors = useTheme();
 
   return (
     <>
-      <Tabs screenOptions={{ headerShown: false }}>
+      <Tabs screenOptions={{ headerShown: false, tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.border }, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.textMuted }}>
         <Tabs.Screen name="dashboard" options={{ title: 'Dashboard' }} />
         <Tabs.Screen name="portfolio" options={{ title: 'Portfolio' }} />
         <Tabs.Screen name="marketplace" options={{ title: 'Marketplace' }} />
