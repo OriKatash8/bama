@@ -1,34 +1,36 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { ProjectRequest } from '@core/types/project';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
+import { useTheme } from '@core/hooks/useTheme';
 
 type Props = {
   request: ProjectRequest;
   onPress: () => void;
   onApply: () => void;
   onDismiss: () => void;
+  onMakeOffer: () => void;
   isApplying: boolean;
 };
 
-export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplying }: Props) {
+export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOffer, isApplying }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
+  const colors = useTheme();
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>{request.title}</Text>
-          <Text style={styles.location}>📍 {request.location}</Text>
-          <Text style={styles.meta}>{request.date}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}</Text>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.location, { color: colors.textMuted }]}>📍 {request.location}</Text>
+          <Text style={[styles.meta, { color: colors.textMuted }]}>{request.date}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}</Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.actionBtn, styles.applyBtn, isApplying && styles.disabled]}
-            onPress={(e) => { e.stopPropagation?.(); onApply(); }}
-            disabled={isApplying}
+            style={[styles.actionBtn, styles.offerBtn]}
+            onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
-            <Text style={styles.applyIcon}>✓</Text>
+            <Text style={styles.offerIcon}>$</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.dismissBtn]}
@@ -45,13 +47,11 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplyi
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1a1a2e',
     borderRadius: 14,
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 6,
     borderWidth: 1,
-    borderColor: '#ffffff18',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -60,9 +60,9 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
-  title: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 4 },
-  location: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 3 },
-  meta: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
+  title: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  location: { fontSize: 13, marginBottom: 3 },
+  meta: { fontSize: 12 },
   actions: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     width: 38,
@@ -71,9 +71,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  applyBtn: { backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1.5, borderColor: '#4caf50' },
+  offerBtn: { backgroundColor: 'rgba(0,74,173,0.15)', borderWidth: 1.5, borderColor: '#004aad' },
   dismissBtn: { backgroundColor: 'rgba(229,57,53,0.15)', borderWidth: 1.5, borderColor: '#e53935' },
   disabled: { opacity: 0.5 },
-  applyIcon: { fontSize: 16, color: '#4caf50', fontWeight: '700' },
+  offerIcon: { fontSize: 16, color: '#004aad', fontWeight: '800' },
   dismissIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
 });

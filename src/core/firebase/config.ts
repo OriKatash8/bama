@@ -20,5 +20,5 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const rtdb = getDatabase(app);
+export const rtdb = firebaseConfig.databaseURL ? getDatabase(app) : null;
 export const functions = getFunctions(app);

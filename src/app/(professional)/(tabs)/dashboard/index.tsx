@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
 import { useUiStore } from '@core/stores/uiStore';
+import { useTheme } from '@core/hooks/useTheme';
 import type { ProjectRequest } from '@core/types/project';
 
 export default function DashboardScreen() {
   const { requests, isLoading } = useNoticeboard();
   const { showToast } = useUiStore();
+  const colors = useTheme();
 
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<ProjectRequest | null>(null);
+  const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');
 
   const visible = requests.filter((r) => !dismissed.has(r.id));
 
@@ -34,31 +37,14 @@ export default function DashboardScreen() {
   } as any) : {};
 
   return (
-    <Screen scrollable={false} backgroundColor="#0f0f1f">
+    <Screen scrollable={false}>
       <View style={styles.bamaWrap}>
-        {Platform.OS === 'web' && (
-          <View style={styles.bamaGlow as any}>
-            <Text style={[styles.bamaText, { color: '#9b6ff5' }, { filter: 'blur(8px)', opacity: 0.55 } as any]}>BAMA</Text>
-          </View>
-        )}
-        <Text
-          style={[
-            styles.bamaText,
-            Platform.OS === 'web' && ({
-              background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            } as any),
-          ]}
-        >
-          BAMA
-        </Text>
+        <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
       </View>
 
       <View style={styles.header}>
-        <Text style={[styles.heading, gradientText]}>Notice Board</Text>
-        {!isLoading && <Text style={styles.count}>{visible.length} open project{visible.length === 1 ? '' : 's'}</Text>}
+        <Text style={[styles.heading, { color: colors.text }, gradientText]}>Notice Board</Text>
+        {!isLoading && <Text style={[styles.count, { color: colors.textMuted }]}>{visible.length} open project{visible.length === 1 ? '' : 's'}</Text>}
       </View>
 
       {isLoading ? (
@@ -68,8 +54,8 @@ export default function DashboardScreen() {
       ) : visible.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>📋</Text>
-          <Text style={styles.emptyText}>No open projects right now</Text>
-          <Text style={styles.emptySubtext}>Check back later for new opportunities</Text>
+          <Text style={[styles.emptyText, { color: colors.textSec }]}>No open projects right now</Text>
+          <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>Check back later for new opportunities</Text>
         </View>
       ) : (
         <FlatList
@@ -78,8 +64,9 @@ export default function DashboardScreen() {
           renderItem={({ item }) => (
             <NoticeBoardCard
               request={item}
-              onPress={() => setSelected(item)}
-              onApply={() => setSelected(item)}
+              onPress={() => { setSelectedView('details'); setSelected(item); }}
+              onApply={() => { setSelectedView('details'); setSelected(item); }}
+              onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
               onDismiss={() => dismiss(item.id)}
               isApplying={false}
             />
@@ -95,6 +82,7 @@ export default function DashboardScreen() {
         onApply={() => selected && handleApply(selected)}
         onDismiss={() => selected && dismiss(selected.id)}
         isApplying={false}
+        initialView={selectedView}
       />
     </Screen>
   );
@@ -102,8 +90,7 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   bamaWrap: { alignItems: 'center', width: '100%', paddingTop: 16 },
-  bamaGlow: { position: 'absolute', top: 16, left: 0, right: 0, alignItems: 'center' },
-  bamaText: { fontSize: 80, fontWeight: '900', color: '#004aad', textAlign: 'center', fontFamily: 'PeaceSans' },
+  bamaLogo: { width: 1040, height: 520 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -112,11 +99,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
   },
-  heading: { fontSize: 24, fontWeight: '800', color: '#fff' },
-  count: { fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: '500' },
+  heading: { fontSize: 24, fontWeight: '800' },
+  count: { fontSize: 13, fontWeight: '500' },
   list: { paddingVertical: 8, paddingBottom: 24 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
-  emptyText: { fontSize: 17, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
-  emptySubtext: { fontSize: 14, color: 'rgba(255,255,255,0.4)' },
+  emptyText: { fontSize: 17, fontWeight: '600' },
+  emptySubtext: { fontSize: 14 },
 });

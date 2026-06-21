@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     borderColor: '#ffffff18',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  author: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  author: { fontSize: 14, fontWeight: '600', color: '#cb6ce6' },
   stars: { fontSize: 14, color: '#F4C430' },
   body: { fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 20 },
   date: { fontSize: 12, color: 'rgba(255,255,255,0.35)' },

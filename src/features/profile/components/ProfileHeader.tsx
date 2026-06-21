@@ -52,8 +52,8 @@ export function ProfileHeader({
 
 const styles = StyleSheet.create({
   container: { alignItems: 'center', gap: 12 },
-  name: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  email: { fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: -4 },
+  name: { fontSize: 22, fontWeight: '700', color: '#cb6ce6' },
+  email: { fontSize: 14, color: '#cb6ce6aa', marginTop: -4 },
   nameInput: {
     fontSize: 22,
     fontWeight: '700',

@@ -1,18 +1,25 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import type { ActiveMode } from '@core/types/user';
 
-const CARDS: { mode: ActiveMode; title: string; subtitle: string }[] = [
-  {
-    mode: 'professional',
-    title: "I'm a Professional",
-    subtitle: 'Showcase your work and get hired.',
-  },
-  {
-    mode: 'client',
-    title: "I'm a Customer",
-    subtitle: 'Discover and hire professionals for your projects.',
-  },
+function PersonIcon() {
+  return (
+    <View style={personStyles.wrap}>
+      <View style={personStyles.head} />
+      <View style={personStyles.body} />
+    </View>
+  );
+}
+
+const personStyles = StyleSheet.create({
+  wrap:  { width: 22, height: 22, alignItems: 'center', justifyContent: 'flex-end', gap: 2 },
+  head:  { width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
+  body:  { width: 16, height: 10, borderRadius: 4, backgroundColor: '#fff' },
+});
+
+const CARDS: { mode: ActiveMode; title: string; color: string }[] = [
+  { mode: 'client',       title: "I'm a Customer",     color: '#004aad' },
+  { mode: 'professional', title: "I'm a Professional", color: '#cb6ce6' },
 ];
 
 export function ModePicker() {
@@ -20,35 +27,60 @@ export function ModePicker() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>How do you want to work today?</Text>
-      <Text style={styles.subheading}>You can switch anytime from the app.</Text>
+      <Image
+        source={require('../../../../assets/images/bama-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
 
-      {CARDS.map(({ mode, title, subtitle }) => (
-        <TouchableOpacity
-          key={mode}
-          style={styles.card}
-          onPress={() => switchMode(mode)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardSubtitle}>{subtitle}</Text>
-        </TouchableOpacity>
-      ))}
+      <View style={styles.buttons}>
+        {CARDS.map(({ mode, title, color }) => (
+          <TouchableOpacity
+            key={mode}
+            style={[styles.btn, { backgroundColor: color }]}
+            onPress={() => switchMode(mode)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.btnText}>{title}</Text>
+            {mode === 'client' ? <PersonIcon /> : <Text style={styles.btnIcon}>✦</Text>}
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, paddingTop: 32 },
-  heading: { fontSize: 28, fontWeight: '700', marginBottom: 8 },
-  subheading: { fontSize: 14, color: '#666' },
-  card: {
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1.5,
-    borderColor: '#000',
-    backgroundColor: '#fff',
+  container: {
+    alignItems: 'center',
+    gap: 32,
+    paddingHorizontal: 32,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
-  cardTitle: { fontSize: 22, fontWeight: '700', color: '#000', marginBottom: 4 },
-  cardSubtitle: { fontSize: 14, color: '#666' },
+  logo: {
+    width: '100%',
+    height: 540,
+  },
+  buttons: {
+    width: '100%',
+    gap: 16,
+  },
+  btn: {
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  btnText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  btnIcon: {
+    color: '#ffffff',
+    fontSize: 22,
+  },
 });

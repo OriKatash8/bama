@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Screen } from '@components/layout/Screen';
+import { useTheme } from '@core/hooks/useTheme';
 import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceToggle';
 import { SecondHandList } from '@features/marketplace/components/SecondHandList';
 import { RentalGrid } from '@features/marketplace/components/RentalGrid';
@@ -13,14 +14,15 @@ export default function MarketplaceScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
   const [postSheetVisible, setPostSheetVisible] = useState(false);
+  const colors = useTheme();
 
   return (
-    <Screen scrollable={false} backgroundColor="#0f0f1f">
+    <Screen scrollable={false}>
       <View style={styles.header}>
         <TextInput
-          style={styles.searchBar}
+          style={[styles.searchBar, { backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.borderMuted }]}
           placeholder="Search equipment..."
-          placeholderTextColor="rgba(255,255,255,0.3)"
+          placeholderTextColor={colors.placeholder}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -64,14 +66,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   searchBar: {
-    backgroundColor: '#2a2a3e',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#fff',
     borderWidth: 1,
-    borderColor: '#ffffff12',
   },
   content: { flex: 1 },
   fab: {

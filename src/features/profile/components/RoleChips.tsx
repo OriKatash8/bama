@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   // View mode
   viewRoot: { gap: 16 },
   categoryGroup: { gap: 8 },
-  categoryLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5 },
+  categoryLabel: { fontSize: 13, fontWeight: '700', color: '#cb6ce6', letterSpacing: 0.5 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     paddingHorizontal: 10,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.45)',
+    color: '#cb6ce6',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 4,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   accordionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   accordionEmoji: { fontSize: 18 },
-  accordionTitle: { fontSize: 15, fontWeight: '600', color: '#e0e0e0' },
+  accordionTitle: { fontSize: 15, fontWeight: '600', color: '#cb6ce6' },
   accordionRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   badge: {
     backgroundColor: '#004aad',
