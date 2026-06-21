@@ -15,19 +15,25 @@ type Props = {
   onApply: () => void;
   onDismiss: () => void;
   isApplying: boolean;
+  initialView?: 'details' | 'bid';
 };
 
-export function ProjectDetailModal({ request, onClose, onApply, onDismiss }: Props) {
+export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details' }: Props) {
   const { submit, isSubmitting } = usePriceOffer();
   const [view, setView] = useState<'details' | 'bid'>('details');
   const [bids, setBids] = useState<BidEntry[]>([]);
 
   useEffect(() => {
     if (request) {
-      setView('details');
-      setBids([]);
+      if (initialView === 'bid') {
+        setBids(getVacantSlots(request).map((s) => ({ ...s, selected: false, price: '' })));
+        setView('bid');
+      } else {
+        setView('details');
+        setBids([]);
+      }
     }
-  }, [request?.id]);
+  }, [request?.id, initialView]);
 
   if (!request) return null;
 

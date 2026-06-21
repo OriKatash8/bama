@@ -8,10 +8,11 @@ type Props = {
   onPress: () => void;
   onApply: () => void;
   onDismiss: () => void;
+  onMakeOffer: () => void;
   isApplying: boolean;
 };
 
-export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplying }: Props) {
+export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOffer, isApplying }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
   const colors = useTheme();
 
@@ -25,12 +26,11 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, isApplyi
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.actionBtn, styles.applyBtn, isApplying && styles.disabled]}
-            onPress={(e) => { e.stopPropagation?.(); onApply(); }}
-            disabled={isApplying}
+            style={[styles.actionBtn, styles.offerBtn]}
+            onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
-            <Text style={styles.applyIcon}>✓</Text>
+            <Text style={styles.offerIcon}>$</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.dismissBtn]}
@@ -71,9 +71,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  applyBtn: { backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1.5, borderColor: '#4caf50' },
+  offerBtn: { backgroundColor: 'rgba(0,74,173,0.15)', borderWidth: 1.5, borderColor: '#004aad' },
   dismissBtn: { backgroundColor: 'rgba(229,57,53,0.15)', borderWidth: 1.5, borderColor: '#e53935' },
   disabled: { opacity: 0.5 },
-  applyIcon: { fontSize: 16, color: '#4caf50', fontWeight: '700' },
+  offerIcon: { fontSize: 16, color: '#004aad', fontWeight: '800' },
   dismissIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
 });

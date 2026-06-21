@@ -15,6 +15,7 @@ export default function DashboardScreen() {
 
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<ProjectRequest | null>(null);
+  const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');
 
   const visible = requests.filter((r) => !dismissed.has(r.id));
 
@@ -63,8 +64,9 @@ export default function DashboardScreen() {
           renderItem={({ item }) => (
             <NoticeBoardCard
               request={item}
-              onPress={() => setSelected(item)}
-              onApply={() => setSelected(item)}
+              onPress={() => { setSelectedView('details'); setSelected(item); }}
+              onApply={() => { setSelectedView('details'); setSelected(item); }}
+              onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
               onDismiss={() => dismiss(item.id)}
               isApplying={false}
             />
@@ -80,6 +82,7 @@ export default function DashboardScreen() {
         onApply={() => selected && handleApply(selected)}
         onDismiss={() => selected && dismiss(selected.id)}
         isApplying={false}
+        initialView={selectedView}
       />
     </Screen>
   );
