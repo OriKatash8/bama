@@ -42,7 +42,7 @@ export default function BuilderScreen() {
   const { showToast } = useUiStore();
   const colors = useTheme();
   const { width } = useWindowDimensions();
-  const tileSize = (width - 32 - 16 - 24) / 3; // card margins (16×2) + padding (16×2) + 2 gaps of 6
+  const tileSize = Math.floor((width - 64 - 32 - 12) / 3); // margins(32) + padding(32) + 2×gap(12)
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
