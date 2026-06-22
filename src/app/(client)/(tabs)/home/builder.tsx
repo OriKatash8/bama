@@ -42,7 +42,7 @@ export default function BuilderScreen() {
   const { showToast } = useUiStore();
   const colors = useTheme();
   const { width } = useWindowDimensions();
-  const tileSize = (width - 32 - 16 - 32) / 3; // card margins (16×2) + padding (16×2) + 2 gaps of 8
+  const tileSize = (width - 32 - 16 - 24) / 3; // card margins (16×2) + padding (16×2) + 2 gaps of 6
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -186,7 +186,7 @@ export default function BuilderScreen() {
                   activeOpacity={0.8}
                 >
                   {cat.image ? (
-                    <Image source={cat.image} style={[styles.tileImage, { height: tileSize * 0.42 }]} resizeMode="cover" />
+                    <Image source={cat.image} style={[styles.tileImage, { height: tileSize * 0.32 }]} resizeMode="cover" />
                   ) : null}
                   <Text style={[styles.tileLabel, { color: colors.text }]}>{cat.label}</Text>
                   {catTotal > 0 && (
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   multiline: { height: 100 },
   error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tile: {
     borderRadius: 14,
     overflow: 'hidden',
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tileImage: { width: '100%' },
-  tileLabel: { fontSize: 10, fontWeight: '700', paddingHorizontal: 6, paddingVertical: 4 },
+  tileLabel: { fontSize: 9, fontWeight: '700', paddingHorizontal: 5, paddingVertical: 3 },
   tileBadge: {
     position: 'absolute',
     top: 6,
