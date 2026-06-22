@@ -1,28 +1,28 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Platform, FlatList,
+  StyleSheet, Platform, Image,
 } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 
-const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
-  'Video Photographer': { label: 'Videographer', emoji: '🎥' },
-  'Still Photographer': { label: 'Photographer', emoji: '📸' },
-  'Editor': { label: 'Editor', emoji: '✂️' },
-  'Graphic Designer': { label: 'Graphic Designer', emoji: '🎨' },
-  'AI Specialist': { label: 'AI', emoji: '🤖' },
-  'Social Media': { label: 'Social', emoji: '📱' },
-  'Studio & Audio': { label: 'Studios', emoji: '🎵' },
-  'Lighting Tech': { label: 'Lighting', emoji: '💡' },
-  'Sound Recordist': { label: 'Sound', emoji: '🎤' },
+const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require> }> = {
+  'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
+  'Still Photographer': { label: 'Photographer', image: require('../../../../../assets/images/categories/photographer.png') },
+  'Editor':             { label: 'Editor',        image: require('../../../../../assets/images/categories/editor.png') },
+  'Graphic Designer':   { label: 'Graphic Designer', image: require('../../../../../assets/images/categories/graphic-designer.png') },
+  'AI Specialist':      { label: 'AI',            image: require('../../../../../assets/images/categories/ai.png') },
+  'Social Media':       { label: 'Social',        image: require('../../../../../assets/images/categories/social.png') },
+  'Studio & Audio':     { label: 'Studios',       image: require('../../../../../assets/images/categories/studios.png') },
+  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting.png') },
+  'Sound Recordist':    { label: 'Sound',         image: require('../../../../../assets/images/categories/sound.png') },
 };
 
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   key,
   label: CATEGORY_META[key]?.label ?? key,
-  emoji: CATEGORY_META[key]?.emoji ?? '•',
+  image: CATEGORY_META[key]?.image,
   subcategories: subs,
 }));
 
@@ -120,9 +120,10 @@ export default function SearchScreen() {
                   onPress={() => selectCategory(cat)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.tileEmoji}>{cat.emoji}</Text>
+                  {cat.image ? (
+                    <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
+                  ) : null}
                   <Text style={[styles.tileLabel, { color: colors.text }]}>{cat.label}</Text>
-                  <Text style={[styles.tileCount, { color: colors.textMuted }]}>{cat.subcategories.length} roles</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -213,14 +214,20 @@ const styles = StyleSheet.create({
   tile: {
     width: '47%',
     borderRadius: 16,
-    padding: 18,
+    overflow: 'hidden',
     borderWidth: 1,
-    gap: 6,
-    alignItems: 'flex-start',
+    aspectRatio: 1,
   },
-  tileEmoji: { fontSize: 28 },
-  tileLabel: { fontSize: 15, fontWeight: '700' },
-  tileCount: { fontSize: 12 },
+  tileImage: {
+    width: '100%',
+    height: '75%',
+  },
+  tileLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
 
   subContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 0 },
   subHint: {
