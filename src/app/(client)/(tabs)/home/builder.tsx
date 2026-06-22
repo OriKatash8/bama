@@ -181,14 +181,16 @@ export default function BuilderScreen() {
               return (
                 <TouchableOpacity
                   key={cat.key}
-                  style={[styles.tile, { backgroundColor: colors.cardAlt, borderColor: colors.border, width: tileSize }]}
+                  style={[styles.tile, { borderColor: catTotal > 0 ? colors.accent : colors.border, width: tileSize, height: tileSize }]}
                   onPress={() => openCategory(cat)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                 >
                   {cat.image ? (
-                    <Image source={cat.image} style={[styles.tileImage, { height: tileSize * 0.32 }]} resizeMode="cover" />
+                    <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
                   ) : null}
-                  <Text style={[styles.tileLabel, { color: colors.text }]}>{cat.label}</Text>
+                  <View style={styles.tileOverlay}>
+                    <Text style={styles.tileLabel} numberOfLines={1}>{cat.label}</Text>
+                  </View>
                   {catTotal > 0 && (
                     <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
                       <Text style={styles.tileBadgeText}>{catTotal}</Text>
@@ -325,25 +327,34 @@ const styles = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tile: {
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 1.5,
     position: 'relative',
   },
-  tileImage: { width: '100%' },
-  tileLabel: { fontSize: 9, fontWeight: '700', paddingHorizontal: 5, paddingVertical: 3 },
+  tileImage: { width: '100%', height: '100%', position: 'absolute' },
+  tileOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingVertical: 4,
+    paddingHorizontal: 5,
+  },
+  tileLabel: { fontSize: 9, fontWeight: '700', color: '#fff', textAlign: 'center' },
   tileBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
+    top: 5,
+    right: 5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
-  tileBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
 
   submitWrap: { padding: 16, paddingBottom: 32 },
   submitBtn: {
