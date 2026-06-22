@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Platform, Image,
+  StyleSheet, Platform, Image, useWindowDimensions,
 } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -35,6 +35,8 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
   const colors = useTheme();
+  const { width } = useWindowDimensions();
+  const tileSize = (width - 32 - 16) / 3; // 16px side padding × 2, 2 gaps of 8px
 
   const gradientText = Platform.OS === 'web' ? ({
     background: 'linear-gradient(to right, #004aad, #cb6ce6)',
@@ -116,12 +118,12 @@ export default function SearchScreen() {
               {filteredCategories.map((cat) => (
                 <TouchableOpacity
                   key={cat.key}
-                  style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border, width: tileSize }]}
                   onPress={() => selectCategory(cat)}
                   activeOpacity={0.8}
                 >
                   {cat.image ? (
-                    <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
+                    <Image source={cat.image} style={[styles.tileImage, { height: tileSize * 0.65 }]} resizeMode="cover" />
                   ) : null}
                   <Text style={[styles.tileLabel, { color: colors.text }]}>{cat.label}</Text>
                 </TouchableOpacity>
@@ -209,24 +211,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
 
-  gridContent: { paddingHorizontal: 16, paddingBottom: 40 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  gridContent: { paddingHorizontal: 16, paddingBottom: 16 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
-    width: '47%',
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    aspectRatio: 1,
   },
   tileImage: {
     width: '100%',
-    height: '75%',
   },
   tileLabel: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '700',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
 
   subContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 0 },
