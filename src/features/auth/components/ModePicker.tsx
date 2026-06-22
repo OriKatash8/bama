@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: 48,
+    marginHorizontal: 72,
   },
   btnText: {
     color: '#ffffff',
