@@ -1,11 +1,33 @@
-import { useState } from 'react';
-import { ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { useState, useRef } from 'react';
+import {
+  ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
+  Image, useWindowDimensions, Modal, Animated, TouchableWithoutFeedback,
+} from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
-import { CategoryAccordion } from '@features/crew/components';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+import { CREW_CATEGORIES } from '@features/crew/data/categories';
+
+const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require> }> = {
+  'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
+  'Still Photographer': { label: 'Photographer', image: require('../../../../../assets/images/categories/photographer.png') },
+  'Editor':             { label: 'Editor',        image: require('../../../../../assets/images/categories/editor.png') },
+  'Graphic Designer':   { label: 'Graphic Designer', image: require('../../../../../assets/images/categories/graphic-designer.png') },
+  'AI Specialist':      { label: 'AI',            image: require('../../../../../assets/images/categories/ai.png') },
+  'Social Media':       { label: 'Social',        image: require('../../../../../assets/images/categories/social.png') },
+  'Studio & Audio':     { label: 'Studios',       image: require('../../../../../assets/images/categories/studios.png') },
+  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting.png') },
+  'Sound Recordist':    { label: 'Sound',         image: require('../../../../../assets/images/categories/sound.png') },
+};
+
+const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
+  key,
+  label: CATEGORY_META[key]?.label ?? key,
+  image: CATEGORY_META[key]?.image,
+  subcategories: subs,
+}));
 
 const gradientStyle = {
   background: 'linear-gradient(to right, #004aad, #cb6ce6)',
@@ -19,6 +41,8 @@ export default function BuilderScreen() {
   const { submit } = useProjectRequests();
   const { showToast } = useUiStore();
   const colors = useTheme();
+  const { width } = useWindowDimensions();
+  const tileSize = (width - 32 - 16 - 32) / 3; // account for card padding (16 each side) + 2 gaps of 8
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -26,6 +50,36 @@ export default function BuilderScreen() {
   const [location, setLocation] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number] | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(0.3)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  function openCategory(cat: typeof CATEGORIES[number]) {
+    setSelectedCategory(cat);
+    setModalVisible(true);
+    scaleAnim.setValue(0.3);
+    opacityAnim.setValue(0);
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 180 }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+    ]).start();
+  }
+
+  function closeModal() {
+    Animated.parallel([
+      Animated.timing(scaleAnim, { toValue: 0.3, duration: 150, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+    ]).start(() => {
+      setModalVisible(false);
+      setSelectedCategory(null);
+    });
+  }
+
+  function getQty(sub: string) {
+    return slots.find(s => s.category === selectedCategory?.key && s.subcategory === sub)?.quantity ?? 0;
+  }
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -57,6 +111,8 @@ export default function BuilderScreen() {
         <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           Build Your Crew
         </Text>
+
+        {/* Project details card */}
         <View style={[
           styles.card,
           { backgroundColor: colors.card, borderColor: colors.border },
@@ -108,20 +164,40 @@ export default function BuilderScreen() {
           {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
         </View>
 
-        <View style={styles.rolesWrap}>
+        {/* Select roles — image grid */}
+        <View style={[
+          styles.rolesCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
+        ]}>
           <Text style={[styles.sectionTitle, { color: colors.text }, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
-          <View style={[
-            styles.rolesCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-            Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
-          ]}>
-            <CategoryAccordion
-              slots={slots}
-              onSelectSubcategory={addSlot}
-              onRemoveSubcategory={removeSlot}
-            />
-          </View>
           {errors.slots ? <Text style={styles.error}>{errors.slots}</Text> : null}
+
+          <View style={styles.grid}>
+            {CATEGORIES.map((cat) => {
+              const catTotal = slots
+                .filter(s => s.category === cat.key)
+                .reduce((sum, s) => sum + s.quantity, 0);
+              return (
+                <TouchableOpacity
+                  key={cat.key}
+                  style={[styles.tile, { backgroundColor: colors.cardAlt, borderColor: colors.border, width: tileSize }]}
+                  onPress={() => openCategory(cat)}
+                  activeOpacity={0.8}
+                >
+                  {cat.image ? (
+                    <Image source={cat.image} style={[styles.tileImage, { height: tileSize * 0.65 }]} resizeMode="cover" />
+                  ) : null}
+                  <Text style={[styles.tileLabel, { color: colors.text }]}>{cat.label}</Text>
+                  {catTotal > 0 && (
+                    <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
+                      <Text style={styles.tileBadgeText}>{catTotal}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.submitWrap}>
@@ -141,6 +217,79 @@ export default function BuilderScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Subcategory modal */}
+      <Modal visible={modalVisible} transparent animationType="none" onRequestClose={closeModal}>
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.backdrop}>
+            <TouchableWithoutFeedback>
+              <Animated.View
+                style={[
+                  styles.panel,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.accent,
+                    transform: [{ scale: scaleAnim }],
+                    opacity: opacityAnim,
+                  },
+                  Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as any),
+                ]}
+              >
+                <View style={styles.panelHeader}>
+                  <Text style={[styles.panelTitle, { color: colors.text }]}>
+                    {selectedCategory?.label}
+                  </Text>
+                  <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
+                    <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={[styles.panelDivider, { backgroundColor: colors.accent }]} />
+
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.panelScroll}>
+                  <Text style={[styles.subHint, { color: colors.textMuted }]}>Tap + to add roles</Text>
+                  {selectedCategory?.subcategories.map((sub) => {
+                    const qty = getQty(sub);
+                    return (
+                      <View
+                        key={sub}
+                        style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}
+                      >
+                        <Text style={[styles.subLabel, { color: colors.text }]}>{sub}</Text>
+                        <View style={styles.qtyControls}>
+                          {qty > 0 && (
+                            <TouchableOpacity
+                              style={[styles.qtyBtn, { borderColor: colors.inputBorder }]}
+                              onPress={() => removeSlot(selectedCategory.key, sub)}
+                              hitSlop={8}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
+                            </TouchableOpacity>
+                          )}
+                          {qty > 0 && (
+                            <View style={[styles.qtyBadge, { backgroundColor: colors.accent }]}>
+                              <Text style={styles.qtyBadgeText}>{qty}</Text>
+                            </View>
+                          )}
+                          <TouchableOpacity
+                            style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]}
+                            onPress={() => addSlot(selectedCategory.key, sub)}
+                            hitSlop={8}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.qtyBtnText, { color: colors.accent }]}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </Screen>
   );
 }
@@ -155,14 +304,14 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
   },
-  rolesWrap: { marginHorizontal: 16, marginTop: 24 },
   rolesCard: {
+    margin: 16,
+    marginTop: 24,
     borderRadius: 20,
-    overflow: 'hidden',
+    padding: 16,
     borderWidth: 1,
-    marginTop: 8,
   },
-  sectionTitle: { fontSize: 20, fontWeight: '800', marginBottom: 4 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', marginBottom: 12 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 6 },
   input: {
     borderWidth: 1,
@@ -173,6 +322,29 @@ const styles = StyleSheet.create({
   },
   multiline: { height: 100 },
   error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tile: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    position: 'relative',
+  },
+  tileImage: { width: '100%' },
+  tileLabel: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 6 },
+  tileBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tileBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+
   submitWrap: { padding: 16, paddingBottom: 32 },
   submitBtn: {
     backgroundColor: '#004aad',
@@ -183,4 +355,67 @@ const styles = StyleSheet.create({
   },
   disabled: { backgroundColor: '#555' },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  panel: {
+    width: '100%',
+    maxHeight: '80%',
+    borderRadius: 24,
+    borderWidth: 2,
+    overflow: 'hidden',
+  },
+  panelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  panelTitle: { fontSize: 20, fontWeight: '800' },
+  closeBtn: { fontSize: 18, fontWeight: '600' },
+  panelDivider: { height: 2, marginHorizontal: 20, borderRadius: 1, marginBottom: 4 },
+  panelScroll: { maxHeight: 400 },
+  subHint: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+  },
+  subLabel: { fontSize: 15, fontWeight: '500', flex: 1 },
+  qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  qtyBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700' },
+  qtyBadge: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
 });
