@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Platform, Image, useWindowDimensions,
+  Modal, Animated, TouchableWithoutFeedback,
 } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -28,15 +29,19 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
 
 type ViewState =
   | { kind: 'grid' }
-  | { kind: 'subcategories'; category: (typeof CATEGORIES)[number] }
   | { kind: 'results'; category: string; subcategory: string };
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
+  const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number] | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const colors = useTheme();
   const { width } = useWindowDimensions();
-  const tileSize = (width - 32 - 16) / 3; // 16px side padding × 2, 2 gaps of 8px
+  const tileSize = (width - 32 - 16) / 3;
+
+  const scaleAnim = useRef(new Animated.Value(0.3)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const gradientText = Platform.OS === 'web' ? ({
     background: 'linear-gradient(to right, #004aad, #cb6ce6)',
@@ -45,21 +50,34 @@ export default function SearchScreen() {
     backgroundClip: 'text',
   } as any) : {};
 
-  function selectCategory(cat: (typeof CATEGORIES)[number]) {
-    setView({ kind: 'subcategories', category: cat });
+  function openCategory(cat: typeof CATEGORIES[number]) {
+    setSelectedCategory(cat);
+    setModalVisible(true);
+    scaleAnim.setValue(0.3);
+    opacityAnim.setValue(0);
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 180 }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+    ]).start();
+  }
+
+  function closeModal() {
+    Animated.parallel([
+      Animated.timing(scaleAnim, { toValue: 0.3, duration: 150, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+    ]).start(() => {
+      setModalVisible(false);
+      setSelectedCategory(null);
+    });
   }
 
   function selectSubcategory(subcategory: string) {
-    if (view.kind !== 'subcategories') return;
-    setView({ kind: 'results', category: view.category.label, subcategory });
-  }
-
-  function goBack() {
-    if (view.kind === 'results') {
-      setView({ kind: 'subcategories', category: CATEGORIES.find(c => c.label === (view as any).category)! });
-    } else {
-      setView({ kind: 'grid' });
-    }
+    if (!selectedCategory) return;
+    const category = selectedCategory.label;
+    closeModal();
+    setTimeout(() => {
+      setView({ kind: 'results', category, subcategory });
+    }, 160);
   }
 
   const filteredCategories = query.trim()
@@ -74,14 +92,12 @@ export default function SearchScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           {view.kind !== 'grid' && (
-            <TouchableOpacity onPress={goBack} style={styles.backBtn} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => setView({ kind: 'grid' })} style={styles.backBtn} activeOpacity={0.7}>
               <Text style={[styles.backText, { color: colors.accent }]}>← Back</Text>
             </TouchableOpacity>
           )}
           <Text style={[styles.heading, { color: colors.text }, gradientText]}>
-            {view.kind === 'grid' ? 'Search Professionals' :
-             view.kind === 'subcategories' ? view.category.label :
-             (view as any).subcategory}
+            {view.kind === 'grid' ? 'Search Professionals' : (view as any).subcategory}
           </Text>
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
         </View>
@@ -119,7 +135,7 @@ export default function SearchScreen() {
                 <TouchableOpacity
                   key={cat.key}
                   style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border, width: tileSize }]}
-                  onPress={() => selectCategory(cat)}
+                  onPress={() => openCategory(cat)}
                   activeOpacity={0.8}
                 >
                   {cat.image ? (
@@ -129,27 +145,6 @@ export default function SearchScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </ScrollView>
-        )}
-
-        {view.kind === 'subcategories' && (
-          <ScrollView
-            style={styles.flex}
-            contentContainerStyle={styles.subContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={[styles.subHint, { color: colors.textMuted }]}>Select a specialization</Text>
-            {view.category.subcategories.map((sub) => (
-              <TouchableOpacity
-                key={sub}
-                style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}
-                onPress={() => selectSubcategory(sub)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.subLabel, { color: colors.text }]}>{sub}</Text>
-                <Text style={[styles.subArrow, { color: colors.textMuted }]}>›</Text>
-              </TouchableOpacity>
-            ))}
           </ScrollView>
         )}
 
@@ -168,6 +163,53 @@ export default function SearchScreen() {
           </View>
         )}
       </View>
+
+      <Modal visible={modalVisible} transparent animationType="none" onRequestClose={closeModal}>
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.backdrop}>
+            <TouchableWithoutFeedback>
+              <Animated.View
+                style={[
+                  styles.panel,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.accent,
+                    transform: [{ scale: scaleAnim }],
+                    opacity: opacityAnim,
+                  },
+                  Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as any),
+                ]}
+              >
+                <View style={styles.panelHeader}>
+                  <Text style={[styles.panelTitle, { color: colors.text }]}>
+                    {selectedCategory?.label}
+                  </Text>
+                  <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
+                    <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={[styles.panelDivider, { backgroundColor: colors.accent }]} />
+
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.panelScroll}>
+                  <Text style={[styles.subHint, { color: colors.textMuted }]}>Select a specialization</Text>
+                  {selectedCategory?.subcategories.map((sub) => (
+                    <TouchableOpacity
+                      key={sub}
+                      style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}
+                      onPress={() => selectSubcategory(sub)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.subLabel, { color: colors.text }]}>{sub}</Text>
+                      <Text style={[styles.subArrow, { color: colors.accent }]}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </Screen>
   );
 }
@@ -218,34 +260,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
   },
-  tileImage: {
-    width: '100%',
-  },
+  tileImage: { width: '100%' },
   tileLabel: {
     fontSize: 11,
     fontWeight: '700',
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
-
-  subContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 0 },
-  subHint: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 12,
-  },
-  subRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-  },
-  subLabel: { fontSize: 16, fontWeight: '500' },
-  subArrow: { fontSize: 20 },
 
   resultsHint: {
     fontSize: 13,
@@ -264,9 +285,50 @@ const styles = StyleSheet.create({
   },
   emptyIcon: { fontSize: 52, marginBottom: 4 },
   emptyText: { fontSize: 18, fontWeight: '700' },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+  emptySubtext: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
   },
+  panel: {
+    width: '100%',
+    maxHeight: '80%',
+    borderRadius: 24,
+    borderWidth: 2,
+    overflow: 'hidden',
+  },
+  panelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  panelTitle: { fontSize: 20, fontWeight: '800' },
+  closeBtn: { fontSize: 18, fontWeight: '600' },
+  panelDivider: { height: 2, marginHorizontal: 20, borderRadius: 1, marginBottom: 4 },
+  panelScroll: { maxHeight: 400 },
+  subHint: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+  },
+  subLabel: { fontSize: 16, fontWeight: '500' },
+  subArrow: { fontSize: 20 },
 });
