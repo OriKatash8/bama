@@ -67,12 +67,13 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   btn: {
-    borderRadius: 14,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
+    borderRadius: 16,
+    paddingVertical: 26,
+    paddingHorizontal: 28,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginHorizontal: 24,
   },
   btnText: {
     color: '#ffffff',
