@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { ProjectRequestCard } from '@features/crew/components';
@@ -9,9 +10,13 @@ import { useAcceptOffer } from '@features/offers/hooks/useAcceptOffer';
 import { useUiStore } from '@core/stores/uiStore';
 import type { PriceOffer } from '@core/types/project';
 
+const TABS = ['Chats', 'Notifications'] as const;
+type Tab = typeof TABS[number];
+
 export default function ChatsScreen() {
   const colors = useTheme();
   const { showToast } = useUiStore();
+  const [active, setActive] = useState<Tab>('Chats');
   const { requests, isLoading: requestsLoading } = useProjectRequests();
   const { offers, isLoading: offersLoading } = usePriceOffers();
   const { accept, reject, isAccepting } = useAcceptOffer();
@@ -41,58 +46,78 @@ export default function ChatsScreen() {
         resizeMode="contain"
       />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {offers.length > 0 && (
+      <View style={styles.tabBar}>
+        {TABS.map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tab, active === tab && { borderBottomColor: colors.accent, borderBottomWidth: 2 }]}
+            onPress={() => setActive(tab)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, { color: active === tab ? colors.accent : colors.textMuted }]}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+      {active === 'Chats' && (
+        <View style={styles.emptyWrap}>
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>No chats yet</Text>
+        </View>
+      )}
+
+      {active === 'Notifications' && (
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {offers.length > 0 && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Price Offers</Text>
+              {offersLoading ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : (
+                offers.map((offer) => (
+                  <PriceOfferCard
+                    key={offer.id}
+                    offer={offer}
+                    onAccept={() => handleAccept(offer)}
+                    onReject={() => handleReject(offer.id)}
+                    isAccepting={isAccepting === offer.id}
+                  />
+                ))
+              )}
+            </View>
+          )}
+
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Price Offers</Text>
-            {offersLoading ? (
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>My Projects</Text>
+            {requestsLoading ? (
               <ActivityIndicator color={colors.accent} />
+            ) : requests.length === 0 ? (
+              <View style={styles.emptyWrap}>
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>No projects yet</Text>
+              </View>
             ) : (
-              offers.map((offer) => (
-                <PriceOfferCard
-                  key={offer.id}
-                  offer={offer}
-                  onAccept={() => handleAccept(offer)}
-                  onReject={() => handleReject(offer.id)}
-                  isAccepting={isAccepting === offer.id}
-                />
+              requests.map((item) => (
+                <ProjectRequestCard key={item.id} request={item} />
               ))
             )}
           </View>
-        )}
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>My Projects</Text>
-          {requestsLoading ? (
-            <ActivityIndicator color={colors.accent} />
-          ) : requests.length === 0 ? (
-            <View style={styles.empty}>
-              <Text style={[styles.emptyText, { color: colors.textSec }]}>No projects yet.</Text>
-            </View>
-          ) : (
-            requests.map((item) => (
-              <ProjectRequestCard key={item.id} request={item} />
-            ))
-          )}
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <Text style={[styles.chatsHeading, { color: colors.text }]}>Chats</Text>
-        <View style={styles.empty}>
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>No chats yet</Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   logo: { width: '100%', height: 240, marginTop: 12 },
+  tabBar: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 16 },
+  tab: { flex: 1, alignItems: 'center', paddingBottom: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabText: { fontSize: 15, fontWeight: '600' },
+  divider: { height: 1 },
   content: { padding: 16, gap: 20, paddingBottom: 40 },
   section: { gap: 10 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },
-  divider: { height: 1, marginVertical: 4 },
-  chatsHeading: { fontSize: 20, fontWeight: '800' },
-  empty: { alignItems: 'center', paddingVertical: 20 },
+  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: 15 },
 });
