@@ -1,5 +1,6 @@
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import type { CrewRequestSlot } from '@core/types/project';
+import { useTheme } from '@core/hooks/useTheme';
 import { SubCategoryRow } from './SubCategoryRow';
 
 type Props = {
@@ -21,11 +22,16 @@ export function CategoryItem({
   onSelectSubcategory,
   onRemoveSubcategory,
 }: Props) {
+  const colors = useTheme();
   return (
     <View>
-      <TouchableOpacity style={styles.header} onPress={onToggle} activeOpacity={0.8}>
-        <Text style={styles.title}>{category}</Text>
-        <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
+      <TouchableOpacity
+        style={[styles.header, { backgroundColor: colors.cardAlt, borderBottomColor: colors.border }]}
+        onPress={onToggle}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.title, { color: colors.text }]}>{category}</Text>
+        <Text style={[styles.chevron, { color: colors.textMuted }]}>{expanded ? '▲' : '▼'}</Text>
       </TouchableOpacity>
       {expanded &&
         subcategories.map((sub) => {
@@ -54,9 +60,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff18',
-    backgroundColor: '#12122a',
   },
-  title: { fontSize: 16, fontWeight: '600', color: '#e0e0e0' },
-  chevron: { fontSize: 11, color: '#888' },
+  title: { fontSize: 16, fontWeight: '600' },
+  chevron: { fontSize: 11 },
 });

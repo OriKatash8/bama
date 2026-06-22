@@ -1,4 +1,5 @@
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { useTheme } from '@core/hooks/useTheme';
 
 type Props = {
   subcategory: string;
@@ -8,15 +9,24 @@ type Props = {
 };
 
 export function SubCategoryRow({ subcategory, quantity, onPress, onRemove }: Props) {
+  const colors = useTheme();
   return (
-    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.label}>{subcategory}</Text>
+    <TouchableOpacity
+      style={[styles.row, { backgroundColor: colors.card, borderBottomColor: colors.borderMuted }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.label, { color: colors.textSec }]}>{subcategory}</Text>
       {quantity > 0 && (
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.removeBtn} onPress={onRemove} hitSlop={8}>
-            <Text style={styles.removeBtnText}>−</Text>
+          <TouchableOpacity
+            style={[styles.removeBtn, { borderColor: colors.inputBorder }]}
+            onPress={onRemove}
+            hitSlop={8}
+          >
+            <Text style={[styles.removeBtnText, { color: colors.textMuted }]}>−</Text>
           </TouchableOpacity>
-          <View style={styles.badge}>
+          <View style={[styles.badge, { backgroundColor: colors.primary }]}>
             <Text style={styles.badgeText}>{quantity}</Text>
           </View>
         </View>
@@ -33,23 +43,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 13,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff12',
-    backgroundColor: '#1a1a2e',
   },
-  label: { fontSize: 15, color: '#ccc' },
+  label: { fontSize: 15 },
   controls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   removeBtn: {
     width: 26,
     height: 26,
     borderRadius: 13,
     borderWidth: 1.5,
-    borderColor: '#ffffff44',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeBtnText: { fontSize: 16, color: '#aaa', lineHeight: 18 },
+  removeBtnText: { fontSize: 16, lineHeight: 18 },
   badge: {
-    backgroundColor: '#111',
     borderRadius: 12,
     minWidth: 26,
     height: 26,
