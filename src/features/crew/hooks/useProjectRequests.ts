@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
-import { addDocument, subscribeToCollection, where } from '@core/firebase/firestore';
+import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument } from '@core/firebase/firestore';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 
 type SubmitDetails = {
@@ -48,5 +48,31 @@ export function useProjectRequests() {
     }
   }
 
-  return { requests, isLoading, error, submit };
+  async function updateProject(
+    id: string,
+    slots: CrewRequestSlot[],
+    details: SubmitDetails
+  ): Promise<void> {
+    setError(null);
+    try {
+      await updateDocument(`projects/${id}`, { crewSlots: slots, ...details });
+    } catch (e: any) {
+      const message = e.message ?? 'Failed to update project';
+      setError(message);
+      throw e;
+    }
+  }
+
+  async function deleteProject(id: string): Promise<void> {
+    setError(null);
+    try {
+      await deleteDocument(`projects/${id}`);
+    } catch (e: any) {
+      const message = e.message ?? 'Failed to delete project';
+      setError(message);
+      throw e;
+    }
+  }
+
+  return { requests, isLoading, error, submit, updateProject, deleteProject };
 }

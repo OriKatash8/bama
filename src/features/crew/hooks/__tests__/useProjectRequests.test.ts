@@ -1,16 +1,20 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useProjectRequests } from '../useProjectRequests';
-import { addDocument, subscribeToCollection, where } from '@core/firebase/firestore';
+import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 
 jest.mock('@core/firebase/firestore', () => ({
   addDocument: jest.fn(),
   subscribeToCollection: jest.fn(),
   where: jest.fn(() => ({ type: 'where-constraint' })),
+  updateDocument: jest.fn(),
+  deleteDocument: jest.fn(),
 }));
 
 const mockAddDocument = addDocument as jest.MockedFunction<typeof addDocument>;
 const mockSubscribeToCollection = subscribeToCollection as jest.MockedFunction<typeof subscribeToCollection>;
+const mockUpdateDocument = updateDocument as jest.MockedFunction<typeof updateDocument>;
+const mockDeleteDocument = deleteDocument as jest.MockedFunction<typeof deleteDocument>;
 
 const mockUser = {
   id: 'u1',
@@ -24,6 +28,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   useAuthStore.setState({ user: mockUser, activeMode: 'client', isLoading: false });
   mockSubscribeToCollection.mockReturnValue(() => {});
+  mockUpdateDocument.mockResolvedValue(undefined);
+  mockDeleteDocument.mockResolvedValue(undefined);
 });
 
 describe('useProjectRequests', () => {
@@ -90,5 +96,48 @@ describe('useProjectRequests', () => {
       } catch {}
     });
     expect(result.current.error).toBe('Network error');
+  });
+
+  it('updateProject calls updateDocument with correct path and payload', async () => {
+    const { result } = renderHook(() => useProjectRequests());
+    const slots = [{ category: 'Editor', subcategory: 'Video Editor', quantity: 2 }];
+    const details = { title: 'Updated', description: 'New desc', date: '2026-08-01', location: 'Paris' };
+    await act(async () => {
+      await result.current.updateProject('proj-1', slots, details);
+    });
+    expect(mockUpdateDocument).toHaveBeenCalledWith(
+      'projects/proj-1',
+      expect.objectContaining({ crewSlots: slots, title: 'Updated', description: 'New desc', date: '2026-08-01', location: 'Paris' })
+    );
+  });
+
+  it('updateProject sets error and rethrows on failure', async () => {
+    mockUpdateDocument.mockRejectedValue(new Error('Update failed'));
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      try {
+        await result.current.updateProject('x', [], { title: '', description: '', date: '', location: '' });
+      } catch {}
+    });
+    expect(result.current.error).toBe('Update failed');
+  });
+
+  it('deleteProject calls deleteDocument with correct path', async () => {
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      await result.current.deleteProject('proj-1');
+    });
+    expect(mockDeleteDocument).toHaveBeenCalledWith('projects/proj-1');
+  });
+
+  it('deleteProject sets error and rethrows on failure', async () => {
+    mockDeleteDocument.mockRejectedValue(new Error('Delete failed'));
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      try {
+        await result.current.deleteProject('x');
+      } catch {}
+    });
+    expect(result.current.error).toBe('Delete failed');
   });
 });
