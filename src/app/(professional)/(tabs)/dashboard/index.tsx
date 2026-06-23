@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
+import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import type { ProjectRequest } from '@core/types/project';
 
 export default function DashboardScreen() {
-  const { requests, isLoading } = useNoticeboard();
+  const { profile, isLoading: profileLoading } = useProfile();
+
+  const categories = useMemo(
+    () => [...new Set((profile?.skills ?? []).map(s => s.category))],
+    [profile?.skills]
+  );
+
+  const { requests, isLoading: boardLoading } = useNoticeboard(categories);
+  const isLoading = profileLoading || boardLoading;
+
   const { showToast } = useUiStore();
   const colors = useTheme();
 
