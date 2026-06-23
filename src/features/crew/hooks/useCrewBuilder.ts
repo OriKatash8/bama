@@ -45,5 +45,9 @@ export function useCrewBuilder() {
     setSlots([]);
   }
 
-  return { slots, totalCount, addSlot, removeSlot, reset };
+  function loadSlots(newSlots: CrewRequestSlot[]) {
+    setSlots(newSlots);
+  }
+
+  return { slots, totalCount, addSlot, removeSlot, reset, loadSlots };
 }

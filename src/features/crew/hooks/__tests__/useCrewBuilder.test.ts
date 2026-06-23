@@ -67,4 +67,20 @@ describe('useCrewBuilder', () => {
     expect(result.current.slots).toEqual([]);
     expect(result.current.totalCount).toBe(0);
   });
+
+  it('loadSlots replaces all current slots with the provided array', () => {
+    const { result } = renderHook(() => useCrewBuilder());
+    act(() => {
+      result.current.addSlot('Editor', 'Video Editor');
+    });
+    act(() => {
+      result.current.loadSlots([
+        { category: 'Still Photographer', subcategory: 'Fashion', quantity: 2 },
+      ]);
+    });
+    expect(result.current.slots).toEqual([
+      { category: 'Still Photographer', subcategory: 'Fashion', quantity: 2 },
+    ]);
+    expect(result.current.totalCount).toBe(2);
+  });
 });
