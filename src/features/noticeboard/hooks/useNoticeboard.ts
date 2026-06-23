@@ -13,7 +13,17 @@ export function getVacantSlots(request: ProjectRequest): CrewRequestSlot[] {
     .filter(slot => slot.quantity > 0);
 }
 
-export function useNoticeboard() {
+export function filterByProfessionalCategories(
+  requests: ProjectRequest[],
+  categories: string[]
+): ProjectRequest[] {
+  if (categories.length === 0) return [];
+  return requests.filter(r =>
+    getVacantSlots(r).some(slot => categories.includes(slot.category))
+  );
+}
+
+export function useNoticeboard(professionalCategories: string[]) {
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -22,12 +32,13 @@ export function useNoticeboard() {
       'projects',
       (data) => {
         const sorted = [...data].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-        setRequests(sorted.filter(r => getVacantSlots(r).length > 0));
+        const vacant = sorted.filter(r => getVacantSlots(r).length > 0);
+        setRequests(filterByProfessionalCategories(vacant, professionalCategories));
         setIsLoading(false);
       },
       where('status', '==', 'open')
     );
-  }, []);
+  }, [professionalCategories]);
 
   return { requests, isLoading };
 }

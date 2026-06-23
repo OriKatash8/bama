@@ -3,7 +3,7 @@ jest.mock('@core/firebase/firestore', () => ({
   where: jest.fn(),
 }));
 
-import { getVacantSlots } from '../useNoticeboard';
+import { getVacantSlots, filterByProfessionalCategories } from '../useNoticeboard';
 import type { ProjectRequest } from '@core/types/project';
 
 function makeRequest(
@@ -81,5 +81,47 @@ describe('getVacantSlots', () => {
       ]
     );
     expect(getVacantSlots(req)).toEqual([]);
+  });
+});
+
+describe('filterByProfessionalCategories', () => {
+  function makeProject(categories: string[]): ProjectRequest {
+    return makeRequest(
+      categories.map(cat => ({ category: cat, subcategory: 'Any', quantity: 1 })),
+      []
+    );
+  }
+
+  it('returns empty array when categories is empty', () => {
+    const projects = [makeProject(['Video Editor'])];
+    expect(filterByProfessionalCategories(projects, [])).toEqual([]);
+  });
+
+  it('shows project when professional matches the only required category', () => {
+    const projects = [makeProject(['Video Editor'])];
+    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual(projects);
+  });
+
+  it('hides project when professional does not match any required category', () => {
+    const projects = [makeProject(['Photographer'])];
+    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual([]);
+  });
+
+  it('shows project when professional matches any one of multiple required categories', () => {
+    const projects = [makeProject(['Photographer', 'Video Editor'])];
+    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual(projects);
+  });
+
+  it('hides project when professional matches none of multiple required categories', () => {
+    const projects = [makeProject(['Photographer', 'Director'])];
+    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual([]);
+  });
+
+  it('hides project whose only matching category slot is already fully booked', () => {
+    const proj = makeRequest(
+      [{ category: 'Video Editor', subcategory: 'Music', quantity: 1 }],
+      [{ category: 'Video Editor', subcategory: 'Music', professionalId: 'pro1' }]
+    );
+    expect(filterByProfessionalCategories([proj], ['Video Editor'])).toEqual([]);
   });
 });
