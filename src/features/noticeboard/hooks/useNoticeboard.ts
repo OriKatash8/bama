@@ -26,6 +26,7 @@ export function filterByProfessionalCategories(
 export function useNoticeboard(professionalCategories: string[]) {
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const categoriesKey = professionalCategories.join(',');
 
   useEffect(() => {
     return subscribeToCollection<ProjectRequest>(
@@ -38,7 +39,7 @@ export function useNoticeboard(professionalCategories: string[]) {
       },
       where('status', '==', 'open')
     );
-  }, [professionalCategories]);
+  }, [categoriesKey]);
 
   return { requests, isLoading };
 }
