@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Search Tab Preview</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+body { background: #0f0f1f; color: #fff; width: 390px; min-height: 844px; overflow-x: hidden; }
+
+.container { padding: 16px 0 40px; }
+
+.header { padding: 0 16px; margin-bottom: 14px; }
+.heading {
+  font-size: 22px; font-weight: 800;
+  background: linear-gradient(to right, #004aad, #cb6ce6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.search-row {
+  display: flex; align-items: center; gap: 8px;
+  background: #1a1a2e; border-radius: 14px;
+  margin: 0 16px 20px; padding: 13px 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.search-icon { font-size: 16px; }
+.search-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: rgba(255,255,255,0.35); font-size: 15px;
+}
+
+.section-label {
+  font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.4);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin: 0 16px 12px;
+}
+
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; padding: 0 16px;
+}
+.tile {
+  background: #1a1a2e; border-radius: 16px; padding: 18px;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer; transition: border-color 0.15s;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.tile:hover { border-color: rgba(203,108,230,0.4); }
+.tile:active { opacity: 0.8; }
+.tile-emoji { font-size: 28px; }
+.tile-label { font-size: 15px; font-weight: 700; color: #fff; }
+.tile-count { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+/* Tab bar */
+.tab-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; width: 390px;
+  background: #0f0f1f; border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex; padding: 8px 0 24px;
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; font-size: 11px; color: rgba(255,255,255,0.4); cursor: pointer;
+}
+.tab.active { color: #cb6ce6; }
+.tab-icon { font-size: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="heading">Search Professionals</div>
+  </div>
+
+  <div class="search-row">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" placeholder="Search by role, skill, or name…" readonly>
+  </div>
+
+  <div class="section-label">Browse by Category</div>
+
+  <div class="grid">
+    <div class="tile">
+      <div class="tile-emoji">🎥</div>
+      <div class="tile-label">Videographer</div>
+      <div class="tile-count">11 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">📸</div>
+      <div class="tile-label">Photographer</div>
+      <div class="tile-count">13 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">✂️</div>
+      <div class="tile-label">Editor</div>
+      <div class="tile-count">11 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">🎨</div>
+      <div class="tile-label">Graphic Designer</div>
+      <div class="tile-count">10 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">🤖</div>
+      <div class="tile-label">AI</div>
+      <div class="tile-count">2 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">📱</div>
+      <div class="tile-label">Social</div>
+      <div class="tile-count">10 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">🎵</div>
+      <div class="tile-label">Studios</div>
+      <div class="tile-count">16 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">💡</div>
+      <div class="tile-label">Lighting</div>
+      <div class="tile-count">5 roles</div>
+    </div>
+    <div class="tile">
+      <div class="tile-emoji">🎤</div>
+      <div class="tile-label">Sound</div>
+      <div class="tile-count">5 roles</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active">
+    <span class="tab-icon">🔍</span>
+    <span>Search</span>
+  </div>
+  <div class="tab">
+    <span class="tab-icon">🏠</span>
+    <span>Home</span>
+  </div>
+  <div class="tab">
+    <span class="tab-icon">👤</span>
+    <span>Profile</span>
+  </div>
+  <div class="tab">
+    <span class="tab-icon">↔️</span>
+    <span>Switch</span>
+  </div>
+</div>
+</body>
+</html>

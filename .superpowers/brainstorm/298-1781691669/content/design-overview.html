@@ -1,0 +1,138 @@
+<h2>Marketplace — Full Design</h2>
+<p class="subtitle">Here's the complete screen layout. Review each section and tell me if anything needs changing.</p>
+
+<div class="section">
+  <div class="label">Screen 1 — Marketplace Tab (2nd Hand active)</div>
+  <div class="split">
+    <div class="mockup">
+      <div class="mockup-header">2nd Hand List</div>
+      <div class="mockup-body" style="font-size:11px;color:#ccc;padding:10px;display:flex;flex-direction:column;gap:8px">
+        <!-- Search bar -->
+        <div style="background:#2a2a3e;border-radius:10px;padding:8px 12px;color:#666;display:flex;align-items:center;gap:6px">
+          <span>🔍</span><span>Search equipment...</span>
+        </div>
+        <!-- Toggle pills -->
+        <div style="display:flex;gap:8px;justify-content:center">
+          <div style="background:#cb6ce6;color:#fff;border-radius:20px;padding:5px 18px;font-weight:700">2nd Hand</div>
+          <div style="background:#2a2a3e;color:#aaa;border-radius:20px;padding:5px 18px">Equipment Rental</div>
+        </div>
+        <!-- Listing cards -->
+        <div style="background:#1a1a2e;border-radius:10px;padding:8px;display:flex;gap:8px;align-items:center">
+          <div style="width:44px;height:44px;background:#2a2a3e;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">📷</div>
+          <div style="flex:1">
+            <div style="font-weight:700;color:#fff">Sony FX6 Camera</div>
+            <div style="color:#888;font-size:10px">📍 Tel Aviv</div>
+          </div>
+          <div style="color:#cb6ce6;font-weight:700">₪4,500</div>
+        </div>
+        <div style="background:#1a1a2e;border-radius:10px;padding:8px;display:flex;gap:8px;align-items:center">
+          <div style="width:44px;height:44px;background:#2a2a3e;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">🎥</div>
+          <div style="flex:1">
+            <div style="font-weight:700;color:#fff">DJI Ronin Gimbal</div>
+            <div style="color:#888;font-size:10px">📍 Haifa</div>
+          </div>
+          <div style="color:#cb6ce6;font-weight:700">₪1,200</div>
+        </div>
+        <div style="background:#1a1a2e;border-radius:10px;padding:8px;display:flex;gap:8px;align-items:center">
+          <div style="width:44px;height:44px;background:#2a2a3e;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">💡</div>
+          <div style="flex:1">
+            <div style="font-weight:700;color:#fff">Aputure 300d Light</div>
+            <div style="color:#888;font-size:10px">📍 Jerusalem</div>
+          </div>
+          <div style="color:#cb6ce6;font-weight:700">₪800</div>
+        </div>
+        <!-- FAB -->
+        <div style="align-self:flex-end;background:#cb6ce6;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;margin-top:4px">+</div>
+      </div>
+    </div>
+
+    <div class="mockup">
+      <div class="mockup-header">Equipment Rental Grid</div>
+      <div class="mockup-body" style="font-size:11px;color:#ccc;padding:10px;display:flex;flex-direction:column;gap:8px">
+        <!-- Search bar -->
+        <div style="background:#2a2a3e;border-radius:10px;padding:8px 12px;color:#666;display:flex;align-items:center;gap:6px">
+          <span>🔍</span><span>Search equipment...</span>
+        </div>
+        <!-- Toggle pills -->
+        <div style="display:flex;gap:8px;justify-content:center">
+          <div style="background:#2a2a3e;color:#aaa;border-radius:20px;padding:5px 18px">2nd Hand</div>
+          <div style="background:#cb6ce6;color:#fff;border-radius:20px;padding:5px 18px;font-weight:700">Equipment Rental</div>
+        </div>
+        <!-- 2-column grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:#1a1a2e;border-radius:10px;overflow:hidden">
+            <div style="height:60px;background:#2a2a3e;display:flex;align-items:center;justify-content:center;font-size:22px">🎬</div>
+            <div style="padding:6px">
+              <div style="font-weight:700;color:#fff;font-size:11px">Arri Alexa Mini</div>
+              <div style="color:#cb6ce6;font-size:11px">₪600/day</div>
+              <div style="color:#888;font-size:10px">📍 Tel Aviv</div>
+            </div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:10px;overflow:hidden">
+            <div style="height:60px;background:#2a2a3e;display:flex;align-items:center;justify-content:center;font-size:22px">🔦</div>
+            <div style="padding:6px">
+              <div style="font-weight:700;color:#fff;font-size:11px">Profoto B10</div>
+              <div style="color:#cb6ce6;font-size:11px">₪200/day</div>
+              <div style="color:#888;font-size:10px">📍 Ramat Gan</div>
+            </div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:10px;overflow:hidden">
+            <div style="height:60px;background:#2a2a3e;display:flex;align-items:center;justify-content:center;font-size:22px">🎙️</div>
+            <div style="padding:6px">
+              <div style="font-weight:700;color:#fff;font-size:11px">Sennheiser MKH</div>
+              <div style="color:#cb6ce6;font-size:11px">₪80/day</div>
+              <div style="color:#888;font-size:10px">📍 Herzliya</div>
+            </div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:10px;overflow:hidden">
+            <div style="height:60px;background:#2a2a3e;display:flex;align-items:center;justify-content:center;font-size:22px">🎚️</div>
+            <div style="padding:6px">
+              <div style="font-weight:700;color:#fff;font-size:11px">Sound Devices 633</div>
+              <div style="color:#cb6ce6;font-size:11px">₪150/day</div>
+              <div style="color:#888;font-size:10px">📍 Beer Sheva</div>
+            </div>
+          </div>
+        </div>
+        <!-- FAB -->
+        <div style="align-self:flex-end;background:#cb6ce6;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700">+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Screen 2 — Post New Listing (modal/sheet)</div>
+  <div class="mockup">
+    <div class="mockup-header">Post a Listing</div>
+    <div class="mockup-body" style="font-size:11px;color:#ccc;padding:12px;display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto">
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;background:#cb6ce620;border-radius:20px;padding:6px 12px;text-align:center;color:#cb6ce6;font-weight:700;border:1px solid #cb6ce6">2nd Hand</div>
+        <div style="flex:1;background:#2a2a3e;border-radius:20px;padding:6px 12px;text-align:center;color:#aaa">Rental</div>
+      </div>
+      <div style="background:#2a2a3e;border-radius:10px;height:80px;display:flex;align-items:center;justify-content:center;gap:6px;color:#888;border:1px dashed #444">
+        <span>📷</span> Upload Photo
+      </div>
+      <input class="mock-input" placeholder="Product name" style="background:#2a2a3e;border:none;padding:8px 12px;border-radius:8px;color:#fff;font-size:11px;width:100%;box-sizing:border-box">
+      <input class="mock-input" placeholder="Location (city)" style="background:#2a2a3e;border:none;padding:8px 12px;border-radius:8px;color:#fff;font-size:11px;width:100%;box-sizing:border-box">
+      <input class="mock-input" placeholder="Price (₪)" style="background:#2a2a3e;border:none;padding:8px 12px;border-radius:8px;color:#fff;font-size:11px;width:100%;box-sizing:border-box">
+      <button class="mock-button" style="background:#cb6ce6;color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:12px;cursor:pointer">Post Listing</button>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Screen 3 — Listing Detail Modal (tap a card)</div>
+  <div class="mockup">
+    <div class="mockup-header">Detail Bottom Sheet</div>
+    <div class="mockup-body" style="font-size:11px;color:#ccc;padding:12px;display:flex;flex-direction:column;gap:8px;max-width:320px;margin:0 auto">
+      <div style="height:100px;background:#2a2a3e;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:32px">📷</div>
+      <div style="font-size:16px;font-weight:700;color:#fff">Sony FX6 Camera</div>
+      <div style="display:flex;gap:16px">
+        <span style="color:#cb6ce6;font-weight:700;font-size:14px">₪4,500</span>
+        <span style="color:#888">📍 Tel Aviv</span>
+      </div>
+      <div style="color:#aaa;font-size:10px">Posted by <span style="color:#cb6ce6">David K.</span></div>
+      <button class="mock-button" style="background:#cb6ce6;color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:12px;margin-top:4px">Contact Seller</button>
+    </div>
+  </div>
+</div>

@@ -69,7 +69,7 @@ export default function BuilderScreen() {
         loadSlots(project.crewSlots);
       })
       .finally(() => setIsLoadingProject(false));
-  }, [projectId]);
+  }, [projectId, loadSlots]);
 
   const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number] | null>(null);
   const [modalVisible, setModalVisible] = useState(false);

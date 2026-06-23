@@ -1,0 +1,42 @@
+<h2>Three Approaches to Dual-Mode Architecture</h2>
+<p class="subtitle">How the routing and mode-switching are structured under the hood</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Navigate-on-Switch (Recommended)</h3>
+      <p>Keep the two existing route groups <code>(client)/</code> and <code>(professional)/</code>. Add a mode-picker screen shown at app launch. When the user switches mid-session, a <code>router.replace()</code> jumps to the other group's default screen. Mode lives in the Zustand auth store.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Least code change — route groups stay as-is</li><li>Clean separation between modes</li><li>Familiar pattern in existing codebase</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Switching resets tab state (you land on the default tab)</li><li>Two tab bars to maintain</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Single Dynamic Layout</h3>
+      <p>Collapse both route groups into one <code>(app)/</code> group. The tab bar reads <code>activeMode</code> from Zustand and renders different tabs. Switching mode updates the store; the tab bar re-renders instantly with no navigation.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Smoothest UX — instant mode switch, no navigation flash</li><li>Single tab layout to maintain</li><li>Shared screens (bookings) appear in both modes naturally</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Most refactoring — routes, layouts, and screens all change</li><li>Conditional tab logic adds complexity</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Mode Gate Route Group</h3>
+      <p>Add a new <code>(mode-gate)/</code> route group between auth and the main app. Once a mode is picked, it's stored in AsyncStorage so it's remembered for the session. Keep the two route groups but guard them with the stored mode.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Cleanest conceptual separation — you "enter" a mode</li><li>Mode persists through backgrounding the app</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More route groups to manage</li><li>Mid-session switching still requires a hard navigate</li><li>AsyncStorage adds unnecessary complexity for a session choice</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:20px;font-size:13px;color:#888">My recommendation is <strong>A</strong> — it matches the existing patterns in your codebase, requires the least structural change, and the hard-navigate on mode switch is actually fine UX for a marketplace app where switching contexts means a completely different set of tasks.</p>

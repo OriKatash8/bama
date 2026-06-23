@@ -1,0 +1,75 @@
+<h2>3 Approaches for the Marketplace Screen</h2>
+<p class="subtitle">How should the 2nd Hand / Equipment Rental toggle be structured?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Pill Toggle at Top <span style="color:#cb6ce6;font-size:11px;margin-left:8px">★ Recommended</span></h3>
+      <p>Two pill buttons sit at the top of the screen. Tap switches between 2nd Hand list and Equipment Rental grid. A "+" button in the top-right opens the post form. Matches your description exactly.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Marketplace Tab</div>
+        <div class="mockup-body" style="font-size:11px;color:#ccc;padding:10px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:8px;justify-content:center">
+            <div style="background:#cb6ce6;color:#fff;border-radius:20px;padding:5px 18px;font-weight:700">2nd Hand</div>
+            <div style="background:#2a2a3e;color:#aaa;border-radius:20px;padding:5px 18px">Equipment Rental</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="background:#1a1a2e;border-radius:8px;padding:8px;display:flex;justify-content:space-between">
+              <span>Sony FX6 Camera</span><span style="color:#cb6ce6">₪4,500</span>
+            </div>
+            <div style="background:#1a1a2e;border-radius:8px;padding:8px;display:flex;justify-content:space-between">
+              <span>DJI Ronin Gimbal</span><span style="color:#cb6ce6">₪1,200</span>
+            </div>
+            <div style="background:#1a1a2e;border-radius:8px;padding:8px;display:flex;justify-content:space-between">
+              <span>Aputure 300d Light</span><span style="color:#cb6ce6">₪800</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Landing Page with Two Cards</h3>
+      <p>Marketplace tab shows a landing with two large tappable cards — "2nd Hand" and "Equipment Rental". Each navigates to its own screen. Cleaner separation but one extra tap.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Marketplace Tab</div>
+        <div class="mockup-body" style="font-size:11px;color:#ccc;padding:10px;display:flex;flex-direction:column;gap:8px">
+          <div style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center">
+            <div style="font-size:20px">🏷️</div>
+            <div style="font-weight:700;color:#fff;margin-top:4px">2nd Hand</div>
+            <div style="opacity:0.5;font-size:10px">Buy used equipment</div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center">
+            <div style="font-size:20px">🎬</div>
+            <div style="font-weight:700;color:#fff;margin-top:4px">Equipment Rental</div>
+            <div style="opacity:0.5;font-size:10px">Rent professional gear</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Single Feed with Filter Chips</h3>
+      <p>All listings in one scrollable feed. Filter chips at top let users show All / 2nd Hand / Rental. Good for discovery but mixes the two experiences.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Marketplace Tab</div>
+        <div class="mockup-body" style="font-size:11px;color:#ccc;padding:10px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:6px">
+            <div style="background:#cb6ce6;color:#fff;border-radius:12px;padding:3px 10px">All</div>
+            <div style="background:#2a2a3e;color:#aaa;border-radius:12px;padding:3px 10px">2nd Hand</div>
+            <div style="background:#2a2a3e;color:#aaa;border-radius:12px;padding:3px 10px">Rental</div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:8px;padding:8px">Sony FX6 · <span style="color:#cb6ce6">₪4,500</span> · <span style="background:#2a2a3e;border-radius:4px;padding:1px 5px">Sale</span></div>
+          <div style="background:#1a1a2e;border-radius:8px;padding:8px">Ronin Gimbal · <span style="color:#cb6ce6">₪150/day</span> · <span style="background:#2a2a3e;border-radius:4px;padding:1px 5px">Rental</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

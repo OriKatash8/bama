@@ -1,0 +1,72 @@
+<h2>How should a professional switch to client mode?</h2>
+<p class="subtitle">A professional with dual-role access needs a way to switch between their two "hats". Which approach feels right?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px">
+      <div class="mock-nav" style="margin-bottom:8px;font-size:12px">BAMA &nbsp;|&nbsp; <strong>👤 Pro Mode</strong></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Dashboard</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Portfolio</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Bookings</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Profile</div>
+      </div>
+      <div style="background:#f1f5f9;border-radius:8px;padding:10px;font-size:11px">
+        <div style="font-weight:600;margin-bottom:6px">Profile Settings</div>
+        <div style="background:#e2e8f0;border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
+          <span>🔄</span>
+          <span>Switch to <strong>Client Mode</strong></span>
+          <span style="margin-left:auto;background:#6366f1;color:white;border-radius:4px;padding:2px 8px;font-size:10px">Switch</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Switch from Profile</h3>
+      <p>A button inside the profile/settings screen lets the pro switch to client mode. The whole app reloads with the client tabs. To switch back, same flow.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px">
+      <div class="mock-nav" style="margin-bottom:8px;font-size:12px">BAMA</div>
+      <div style="display:flex;justify-content:center;gap:0;margin-bottom:10px">
+        <div style="background:#6366f1;color:white;padding:6px 16px;border-radius:6px 0 0 6px;font-size:11px;font-weight:600">Professional</div>
+        <div style="background:#e2e8f0;color:#64748b;padding:6px 16px;border-radius:0 6px 6px 0;font-size:11px">Client</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Dashboard</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Portfolio</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Bookings</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Profile</div>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;text-align:center">Tap "Client" to instantly switch tab set</div>
+    </div>
+    <div class="card-body">
+      <h3>B — Persistent mode toggle (top bar)</h3>
+      <p>A pill toggle at the top of the app always shows the current mode. Tapping it flips between Professional and Client tab sets instantly — no navigation required.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px">
+      <div class="mock-nav" style="margin-bottom:8px;font-size:12px">BAMA</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Dashboard</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Portfolio</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Bookings</div>
+        <div class="mock-button" style="font-size:11px;background:#6366f1;color:white;border:none;padding:6px 10px;border-radius:6px">Profile ▾</div>
+      </div>
+      <div style="background:#f1f5f9;border-radius:8px;padding:10px;font-size:11px">
+        <div style="font-weight:600;margin-bottom:6px">Profile Tab</div>
+        <div style="background:#e2e8f0;border-radius:6px;padding:8px;margin-bottom:6px">Edit Professional Profile</div>
+        <div style="background:#dbeafe;border-radius:6px;padding:8px;color:#1d4ed8">🧑‍💼 Also looking to hire? Browse as Client →</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Entry point in Profile tab</h3>
+      <p>A contextual prompt lives in the Profile tab. Tapping it brings up a confirmation ("Switch to client mode?") and then navigates to the client stack, with a back/switch button to return.</p>
+    </div>
+  </div>
+
+</div>

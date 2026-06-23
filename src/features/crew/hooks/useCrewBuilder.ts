@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { CrewRequestSlot } from '@core/types/project';
 
 export function useCrewBuilder() {
@@ -45,9 +45,9 @@ export function useCrewBuilder() {
     setSlots([]);
   }
 
-  function loadSlots(newSlots: CrewRequestSlot[]) {
+  const loadSlots = useCallback((newSlots: CrewRequestSlot[]) => {
     setSlots(newSlots);
-  }
+  }, []);
 
   return { slots, totalCount, addSlot, removeSlot, reset, loadSlots };
 }
