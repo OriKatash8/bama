@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { router } from 'expo-router';
 import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
 import { useTheme } from '@core/hooks/useTheme';
+import { deleteDocument } from '@core/firebase/firestore';
+import { useUiStore } from '@core/stores/uiStore';
 
 type Props = { request: ProjectRequest };
 
@@ -17,6 +20,33 @@ export function ProjectRequestCard({ request }: Props) {
   const [teamOpen, setTeamOpen] = useState(false);
   const { team, isLoading: teamLoading, load } = useProjectTeam(request.id);
   const colors = useTheme();
+  const { showToast } = useUiStore();
+
+  function handleEdit() {
+    router.push(`/(client)/(tabs)/home/builder?projectId=${request.id}` as any);
+  }
+
+  function handleDelete() {
+    Alert.alert(
+      'Delete project?',
+      'This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDocument(`projects/${request.id}`);
+              showToast('Project deleted', 'success');
+            } catch {
+              showToast('Failed to delete project', 'error');
+            }
+          },
+        },
+      ]
+    );
+  }
 
   const firstTwo = request.crewSlots.slice(0, 2);
   const overflow = request.crewSlots.length - 2;
@@ -86,6 +116,17 @@ export function ProjectRequestCard({ request }: Props) {
           )}
         </View>
       )}
+
+      {request.status === 'open' && (
+        <View style={[styles.actionRow, { borderTopColor: colors.border }]}>
+          <TouchableOpacity onPress={handleEdit} activeOpacity={0.7}>
+            <Text style={[styles.actionText, { color: colors.accent }]}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDelete} activeOpacity={0.7}>
+            <Text style={[styles.actionText, { color: '#e53e3e' }]}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -118,4 +159,13 @@ const styles = StyleSheet.create({
   teamRole: { fontSize: 13, fontWeight: '600' },
   teamName: { fontSize: 12, marginTop: 1 },
   teamOpen: { fontSize: 12, marginTop: 1 },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 16,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+  },
+  actionText: { fontSize: 13, fontWeight: '700' },
 });
