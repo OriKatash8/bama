@@ -38,16 +38,14 @@ export function ProjectRequestCard({ request }: Props) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteDocument(`projects/${request.id}`);
-              showToast('Project deleted', 'success');
-            } catch {
-              showToast('Failed to delete project', 'error');
-            }
+          onPress: () => {
+            deleteDocument(`projects/${request.id}`)
+              .then(() => showToast('Project deleted', 'success'))
+              .catch((e: any) => showToast(e?.message ?? 'Failed to delete project', 'error'));
           },
         },
-      ]
+      ],
+      { cancelable: true }
     );
   }
 
