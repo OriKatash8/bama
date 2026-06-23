@@ -1,13 +1,16 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
-  Image, useWindowDimensions, Modal, Animated, TouchableWithoutFeedback,
+  Image, useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
 } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { getDocument } from '@core/firebase/firestore';
+import type { ProjectRequest } from '@core/types/project';
 
 const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require> }> = {
   'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
@@ -36,10 +39,13 @@ const gradientStyle = {
 } as any;
 
 export default function HomeScreen() {
-  const { slots, totalCount, addSlot, removeSlot, reset: resetSlots } = useCrewBuilder();
-  const { submit } = useProjectRequests();
+  const { slots, totalCount, addSlot, removeSlot, reset: resetSlots, loadSlots } = useCrewBuilder();
+  const { submit, updateProject } = useProjectRequests();
   const { showToast } = useUiStore();
   const colors = useTheme();
+  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
+  const isEditMode = !!projectId;
+  const [isLoadingProject, setIsLoadingProject] = useState(false);
   const { width } = useWindowDimensions();
   const tileSize = Math.floor((width - 64 - 32 - 12) / 3);
 
@@ -49,6 +55,21 @@ export default function HomeScreen() {
   const [location, setLocation] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!projectId) return;
+    setIsLoadingProject(true);
+    getDocument<ProjectRequest>(`projects/${projectId}`)
+      .then((project) => {
+        if (!project) return;
+        setTitle(project.title);
+        setDescription(project.description);
+        setDate(project.date);
+        setLocation(project.location);
+        loadSlots(project.crewSlots);
+      })
+      .finally(() => setIsLoadingProject(false));
+  }, [projectId, loadSlots]);
 
   const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number] | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -95,19 +116,39 @@ export default function HomeScreen() {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      await submit(slots, { title, description, date, location });
-      resetSlots();
-      setTitle('');
-      setDescription('');
-      setDate('');
-      setLocation('');
-      setErrors({});
-      showToast('Request submitted!', 'success');
+      if (isEditMode && projectId) {
+        await updateProject(projectId as string, slots, { title, description, date, location });
+        showToast('Project updated!', 'success');
+        resetSlots();
+        setTitle('');
+        setDescription('');
+        setDate('');
+        setLocation('');
+        setErrors({});
+        router.navigate('/(client)/(tabs)/chats' as any);
+      } else {
+        await submit(slots, { title, description, date, location });
+        resetSlots();
+        setTitle('');
+        setDescription('');
+        setDate('');
+        setLocation('');
+        setErrors({});
+        showToast('Request submitted!', 'success');
+      }
     } catch (e: any) {
-      showToast(e.message ?? 'Failed to submit request', 'error');
+      showToast(e.message ?? (isEditMode ? 'Failed to update project' : 'Failed to submit request'), 'error');
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isLoadingProject) {
+    return (
+      <Screen scrollable={false} backgroundColor={colors.bg}>
+        <ActivityIndicator color={colors.accent} style={{ flex: 1, marginTop: 80 }} />
+      </Screen>
+    );
   }
 
   return (
@@ -217,7 +258,11 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <Text style={styles.submitText}>
-              {isSubmitting ? 'Submitting…' : `Submit Request${totalCount > 0 ? ` (${totalCount} role${totalCount === 1 ? '' : 's'})` : ''}`}
+              {isSubmitting
+                ? (isEditMode ? 'Saving…' : 'Submitting…')
+                : isEditMode
+                  ? 'Save Changes'
+                  : `Submit Request${totalCount > 0 ? ` (${totalCount} role${totalCount === 1 ? '' : 's'})` : ''}`}
             </Text>
           </TouchableOpacity>
         </View>

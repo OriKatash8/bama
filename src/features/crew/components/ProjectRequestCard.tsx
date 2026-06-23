@@ -23,7 +23,10 @@ export function ProjectRequestCard({ request }: Props) {
   const { showToast } = useUiStore();
 
   function handleEdit() {
-    router.push(`/(client)/(tabs)/home/builder?projectId=${request.id}` as any);
+    router.navigate({
+      pathname: '/(client)/(tabs)/home' as any,
+      params: { projectId: request.id },
+    });
   }
 
   function handleDelete() {
