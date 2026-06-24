@@ -134,14 +134,16 @@ export default function SearchScreen() {
               {filteredCategories.map((cat) => (
                 <TouchableOpacity
                   key={cat.key}
-                  style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border, width: tileSize }]}
+                  style={[styles.tile, { width: tileSize, height: tileSize }]}
                   onPress={() => openCategory(cat)}
                   activeOpacity={0.8}
                 >
                   {cat.image ? (
-                    <Image source={cat.image} style={[styles.tileImage, { height: tileSize * 0.65 }]} resizeMode="cover" />
+                    <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
                   ) : null}
-                  <Text style={[styles.tileLabel, { color: colors.text }]}>{cat.label}</Text>
+                  <View style={styles.tileOverlay}>
+                    <Text style={styles.tileLabel} numberOfLines={1}>{cat.label}</Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -258,14 +260,25 @@ const styles = StyleSheet.create({
   tile: {
     borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 1,
+    position: 'relative',
   },
-  tileImage: { width: '100%' },
+  tileImage: { width: '100%', height: '100%', position: 'absolute' },
+  tileOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: 4,
+    paddingHorizontal: 5,
+  },
   tileLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    color: '#fff',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 
   resultsHint: {

@@ -1,4 +1,5 @@
 export { SubCategoryRow } from './SubCategoryRow';
+export { MiniCalendar } from './MiniCalendar';
 export { CategoryItem } from './CategoryItem';
 export { CategoryAccordion } from './CategoryAccordion';
 export { CrewBasket } from './CrewBasket';

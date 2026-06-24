@@ -89,8 +89,12 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
 
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>Date</Text>
-                <Text style={styles.metaValue}>{request.date}</Text>
+                <Text style={styles.metaLabel}>Execution</Text>
+                <Text style={styles.metaValue}>{request.exec ?? (request as any).date ?? '—'}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Deadline</Text>
+                <Text style={styles.metaValue}>{request.deadline ?? '—'}</Text>
               </View>
               <View style={styles.metaItem}>
                 <Text style={styles.metaLabel}>Location</Text>

@@ -74,7 +74,10 @@ export function ProjectRequestCard({ request }: Props) {
           <Text style={styles.badgeText}>{request.status.replace('_', ' ')}</Text>
         </View>
       </View>
-      <Text style={[styles.date, { color: colors.textSec }]}>{request.date}</Text>
+      <Text style={[styles.date, { color: colors.textSec }]}>
+        {request.exec ?? (request as any).date ?? ''}
+        {request.deadline ? `  ·  Deadline: ${request.deadline}` : ''}
+      </Text>
       <Text style={[styles.location, { color: colors.textSec }]}>{request.location}</Text>
       {crewSummary ? <Text style={[styles.crew, { color: colors.textSec }]}>{crewSummary}</Text> : null}
 

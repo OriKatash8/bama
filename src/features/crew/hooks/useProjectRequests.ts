@@ -6,7 +6,8 @@ import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 type SubmitDetails = {
   title: string;
   description: string;
-  date: string;
+  exec?: string;
+  deadline: string;
   location: string;
 };
 
