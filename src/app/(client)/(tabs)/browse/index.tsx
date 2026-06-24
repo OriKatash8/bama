@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
+  View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
   StyleSheet, Platform, Image, useWindowDimensions,
-  Modal, Animated, TouchableWithoutFeedback,
+  Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
 } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { useSearchProfessionals } from '@features/crew/hooks';
+import { ProfessionalCard } from '@features/crew/components';
 
 const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require> }> = {
   'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
@@ -30,6 +32,35 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
 type ViewState =
   | { kind: 'grid' }
   | { kind: 'results'; category: string; subcategory: string };
+
+function ResultsView({ category, subcategory }: { category: string; subcategory: string }) {
+  const { results, isLoading } = useSearchProfessionals(category, subcategory);
+  const colors = useTheme();
+
+  if (isLoading) {
+    return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
+  }
+  if (results.length === 0) {
+    return (
+      <View style={styles.emptyResults}>
+        <Text style={styles.emptyIcon}>👤</Text>
+        <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals yet</Text>
+        <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
+          Professionals in this category will appear here once they set up their profile.
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <FlatList
+      data={results}
+      keyExtractor={(item) => item.user.id}
+      contentContainerStyle={styles.resultsList}
+      showsVerticalScrollIndicator={false}
+      renderItem={({ item }) => <ProfessionalCard item={item} />}
+    />
+  );
+}
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -73,7 +104,7 @@ export default function SearchScreen() {
 
   function selectSubcategory(subcategory: string) {
     if (!selectedCategory) return;
-    const category = selectedCategory.label;
+    const category = selectedCategory.key;
     closeModal();
     setTimeout(() => {
       setView({ kind: 'results', category, subcategory });
@@ -86,6 +117,26 @@ export default function SearchScreen() {
         c.subcategories.some(s => s.toLowerCase().includes(query.toLowerCase()))
       )
     : CATEGORIES;
+
+  // Derive a category+subcategory from free-text query for direct professional search
+  function getSearchTarget(): { category: string; subcategory: string } | null {
+    if (!query.trim()) return null;
+    const q = query.toLowerCase();
+    for (const [cat, subs] of Object.entries(CREW_CATEGORIES)) {
+      for (const sub of subs) {
+        if (sub.toLowerCase().includes(q) || q.includes(sub.toLowerCase())) {
+          return { category: cat, subcategory: sub };
+        }
+      }
+      // Also match on category name
+      if (cat.toLowerCase().includes(q)) {
+        return { category: cat, subcategory: CREW_CATEGORIES[cat as keyof typeof CREW_CATEGORIES][0] };
+      }
+    }
+    return null;
+  }
+
+  const searchTarget = getSearchTarget();
 
   return (
     <Screen scrollable={false}>
@@ -150,18 +201,26 @@ export default function SearchScreen() {
           </ScrollView>
         )}
 
+        {view.kind === 'grid' && query.trim() !== '' && searchTarget && (
+          <View style={[styles.searchHintRow, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
+            <Text style={[styles.searchHintText, { color: colors.accent }]}>
+              Showing professionals for "{searchTarget.subcategory}"
+            </Text>
+          </View>
+        )}
+
+        {view.kind === 'grid' && query.trim() !== '' && searchTarget && (
+          <View style={styles.flex}>
+            <ResultsView category={searchTarget.category} subcategory={searchTarget.subcategory} />
+          </View>
+        )}
+
         {view.kind === 'results' && (
           <View style={styles.flex}>
             <Text style={[styles.resultsHint, { color: colors.textMuted }]}>
               {(view as any).category} · {(view as any).subcategory}
             </Text>
-            <View style={styles.emptyResults}>
-              <Text style={styles.emptyIcon}>👤</Text>
-              <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals yet</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
-                Professionals in this category will appear here once they set up their profile.
-              </Text>
-            </View>
+            <ResultsView category={(view as any).category} subcategory={(view as any).subcategory} />
           </View>
         )}
       </View>
@@ -280,6 +339,17 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
+
+  searchHintRow: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  searchHintText: { fontSize: 13, fontWeight: '600' },
+  resultsList: { paddingHorizontal: 16, paddingBottom: 24 },
 
   resultsHint: {
     fontSize: 13,
