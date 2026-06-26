@@ -20,9 +20,9 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOf
     <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{request.title}</Text>
-          <Text style={[styles.location, { color: colors.textMuted }]}>📍 {request.location}</Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>
+          <Text style={[styles.title, { color: '#004aad' }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.location, { color: '#004aad' }]}>📍 {request.location}</Text>
+          <Text style={[styles.meta, { color: '#004aad' }]}>
             {request.exec ?? (request as any).date ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
           </Text>
         </View>
@@ -46,7 +46,7 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOf
 
       {!!request.description && (
         <View style={styles.descBox}>
-          <Text style={[styles.descText, { color: colors.textMuted }]} numberOfLines={3}>
+          <Text style={[styles.descText, { color: '#004aad' }]} numberOfLines={3}>
             {request.description}
           </Text>
         </View>
