@@ -105,20 +105,18 @@ export function ContentTabs({
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderColor: open ? '#cb6ce6' : '#ffffff18' }]}>
       <View
         style={styles.row}
         onLayout={(e) => setPanelWidth(e.nativeEvent.layout.width)}
       >
         {SECTIONS.map((section) => {
           const isActive = open === section.key;
+          const tabScale = isActive ? 1.1 : open !== null ? 0.85 : 1;
           return (
             <TouchableOpacity
               key={section.key}
-              style={[
-                styles.tab,
-                { borderColor: isActive ? '#cb6ce6' : '#ffffff18' },
-              ]}
+              style={[styles.tab, { transform: [{ scale: tabScale }] }]}
               onPress={() => toggle(section.key)}
               activeOpacity={0.8}
             >
@@ -138,7 +136,6 @@ export function ContentTabs({
         <Animated.View
           style={[
             styles.panel,
-            { borderColor: '#cb6ce6' },
             { transform: [{ scaleX: scaleAnim }, { translateX: translateAnim }] },
           ]}
         >
@@ -156,11 +153,14 @@ export function ContentTabs({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 0 },
+  container: {
+    borderWidth: 1.5,
+    borderRadius: 14,
+    backgroundColor: '#12122a',
+  },
 
   row: {
     flexDirection: 'row',
-    gap: 8,
   },
 
   tab: {
@@ -170,11 +170,6 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 12,
     paddingHorizontal: 6,
-    borderWidth: 1.5,
-    borderRadius: 14,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    backgroundColor: '#12122a',
   },
 
   tabEmoji: { fontSize: 18 },
@@ -182,10 +177,8 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 9, fontWeight: '700' },
 
   panel: {
-    borderWidth: 1.5,
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#ffffff18',
     backgroundColor: '#12122a',
     padding: 16,
   },
