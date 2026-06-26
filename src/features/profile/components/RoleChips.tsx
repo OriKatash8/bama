@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Pressable } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import type { ProfessionalSkill } from '@core/types/user';
 
@@ -34,17 +34,48 @@ function toggle(selected: ProfessionalSkill[], category: string, subcategory: st
 
 export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [showChips, setShowChips] = useState(false);
+  const chipAnim = useRef(new Animated.Value(0)).current;
+
+  function toggleChips() {
+    if (isOpen) {
+      setIsOpen(false);
+      Animated.timing(chipAnim, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setShowChips(false);
+      });
+    } else {
+      setIsOpen(true);
+      setShowChips(true);
+      chipAnim.setValue(0);
+      Animated.timing(chipAnim, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.back(1.3)),
+        useNativeDriver: true,
+      }).start();
+    }
+  }
 
   if (!isEditing) {
-    const byCategory = Object.keys(CREW_CATEGORIES).flatMap((cat) => {
-      const subs = selected.filter((s) => s.category === cat).map((s) => s.subcategory);
-      return subs.length ? [{ category: cat, subcategories: subs }] : [];
-    });
+    const allChips = Object.keys(CREW_CATEGORIES).flatMap((cat) =>
+      selected
+        .filter((s) => s.category === cat)
+        .map((s) => ({ key: `${cat}-${s.subcategory}`, emoji: CATEGORY_EMOJI[cat] ?? '•', label: s.subcategory }))
+    );
 
     return (
-      <>
-        <TouchableOpacity style={styles.skillsBtn} onPress={() => setModalOpen(true)} activeOpacity={0.8}>
+      <View style={styles.viewRoot}>
+        <TouchableOpacity
+          style={[styles.skillsBtn, isOpen && styles.skillsBtnOpen]}
+          onPress={toggleChips}
+          activeOpacity={0.8}
+        >
           <Text style={styles.skillsBtnText}>🎯  Skills</Text>
           {selected.length > 0 && (
             <View style={styles.skillsCount}>
@@ -53,40 +84,23 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
           )}
         </TouchableOpacity>
 
-        <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
-          <Pressable style={styles.backdrop} onPress={() => setModalOpen(false)}>
-            <Pressable onPress={() => {}} style={styles.modalCard}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Skills</Text>
-                <TouchableOpacity onPress={() => setModalOpen(false)} hitSlop={12} activeOpacity={0.7}>
-                  <Text style={styles.modalClose}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modalDivider} />
-              <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
-                {byCategory.length === 0 ? (
-                  <Text style={styles.empty}>No skills added yet</Text>
-                ) : (
-                  byCategory.map(({ category, subcategories }) => (
-                    <View key={category} style={styles.categoryGroup}>
-                      <Text style={styles.categoryLabel}>
-                        {CATEGORY_EMOJI[category] ?? '•'}  {category}
-                      </Text>
-                      <View style={styles.chipRow}>
-                        {subcategories.map((sub) => (
-                          <View key={sub} style={styles.chip}>
-                            <Text style={styles.chipText}>{sub}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  ))
-                )}
-              </ScrollView>
-            </Pressable>
-          </Pressable>
-        </Modal>
-      </>
+        {showChips && (
+          <Animated.View style={[
+            styles.chipsWrap,
+            { opacity: chipAnim, transform: [{ scale: chipAnim }] },
+          ]}>
+            {allChips.length === 0 ? (
+              <Text style={styles.empty}>No skills added yet</Text>
+            ) : (
+              allChips.map(({ key, emoji, label }) => (
+                <View key={key} style={styles.chip}>
+                  <Text style={styles.chipText}>{emoji} {label}</Text>
+                </View>
+              ))
+            )}
+          </Animated.View>
+        )}
+      </View>
     );
   }
 
@@ -147,9 +161,10 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
 }
 
 const styles = StyleSheet.create({
-  empty: { color: 'rgba(255,255,255,0.35)', fontSize: 14, fontStyle: 'italic' },
+  empty: { color: 'rgba(255,255,255,0.35)', fontSize: 13, fontStyle: 'italic' },
 
-  // Skills button
+  // View mode
+  viewRoot: { alignItems: 'center', gap: 10 },
   skillsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,6 +177,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
   },
+  skillsBtnOpen: {
+    backgroundColor: 'rgba(203,108,230,0.28)',
+  },
   skillsBtnText: { fontSize: 16, fontWeight: '700', color: '#cb6ce6' },
   skillsCount: {
     backgroundColor: '#004aad',
@@ -172,50 +190,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   skillsCountText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-
-  // Modal
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalCard: {
-    width: '100%',
-    maxHeight: '75%',
-    backgroundColor: '#12122a',
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: '#cb6ce6',
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#cb6ce6' },
-  modalClose: { fontSize: 18, color: '#888' },
-  modalDivider: { height: 1.5, backgroundColor: '#cb6ce622', marginHorizontal: 20, marginBottom: 8 },
-  modalScroll: { padding: 20 },
-
-  // View mode (inside modal)
-  categoryGroup: { gap: 8, marginBottom: 16 },
-  categoryLabel: { fontSize: 13, fontWeight: '700', color: '#cb6ce6', letterSpacing: 0.5 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     backgroundColor: '#1a1a2e',
     borderWidth: 1,
-    borderColor: '#ffffff22',
+    borderColor: '#cb6ce644',
   },
-  chipText: { fontSize: 12, color: 'rgba(255,255,255,0.75)' },
+  chipText: { fontSize: 12, color: 'rgba(255,255,255,0.8)' },
 
   // Edit mode
   editRoot: { gap: 8 },
