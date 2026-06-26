@@ -135,17 +135,35 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <Screen style={styles.content} scrollable>
-      <ProfileHeader
-        photoURL={photoUri ?? user?.photoURL ?? null}
-        name={name}
-        isEditing={isEditing}
-        onPhotoPress={handlePhotoPress}
-        onNameChange={setName}
-        rating={profile?.rating ?? 0}
-        reviewCount={profile?.reviewCount ?? 0}
-      />
-
-      <RoleChips selected={skills} isEditing={isEditing} onChange={setSkills} />
+      {isEditing ? (
+        <>
+          <ProfileHeader
+            photoURL={photoUri ?? user?.photoURL ?? null}
+            name={name}
+            isEditing={isEditing}
+            onPhotoPress={handlePhotoPress}
+            onNameChange={setName}
+            rating={profile?.rating ?? 0}
+            reviewCount={profile?.reviewCount ?? 0}
+          />
+          <RoleChips selected={skills} isEditing={isEditing} onChange={setSkills} />
+        </>
+      ) : (
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <ProfileHeader
+              photoURL={photoUri ?? user?.photoURL ?? null}
+              name={name}
+              isEditing={false}
+              rating={profile?.rating ?? 0}
+              reviewCount={profile?.reviewCount ?? 0}
+            />
+          </View>
+          <View style={styles.headerRight}>
+            <RoleChips selected={skills} isEditing={false} />
+          </View>
+        </View>
+      )}
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
 
       <ContentTabs
@@ -261,6 +279,10 @@ function Divider({ colors }: { colors: any }) {
 const styles = StyleSheet.create({
   content: { gap: 24 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  headerLeft: { flex: 1, alignItems: 'center' },
+  headerRight: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   gearBtn: { marginLeft: 8, padding: 4 },
   headerBtns: { flexDirection: 'row', gap: 12 },
