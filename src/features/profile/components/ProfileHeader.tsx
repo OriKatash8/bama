@@ -9,6 +9,8 @@ type ProfileHeaderProps = {
   onNameChange?: (v: string) => void;
   size?: number;
   email?: string;
+  rating?: number;
+  reviewCount?: number;
 };
 
 export function ProfileHeader({
@@ -19,6 +21,8 @@ export function ProfileHeader({
   onNameChange,
   size = 96,
   email,
+  rating,
+  reviewCount,
 }: ProfileHeaderProps) {
   const overlayRadius = size / 2;
   return (
@@ -45,15 +49,26 @@ export function ProfileHeader({
       ) : (
         <Text style={styles.name}>{name}</Text>
       )}
+      {!isEditing && rating !== undefined && reviewCount !== undefined && (
+        <View style={styles.starsRow}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Text key={i} style={styles.star}>{(rating ?? 0) >= i - 0.5 ? '★' : '☆'}</Text>
+          ))}
+          <Text style={styles.reviewLabel}>({reviewCount})</Text>
+        </View>
+      )}
       {email && <Text style={styles.email}>{email}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', gap: 12 },
+  container: { alignItems: 'center', gap: 8 },
   name: { fontSize: 22, fontWeight: '700', color: '#cb6ce6' },
-  email: { fontSize: 14, color: '#cb6ce6aa', marginTop: -4 },
+  starsRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  star: { fontSize: 20, color: '#F4C430' },
+  reviewLabel: { fontSize: 12, color: '#cb6ce6aa', marginLeft: 4 },
+  email: { fontSize: 14, color: '#cb6ce6aa', marginTop: -2 },
   nameInput: {
     fontSize: 22,
     fontWeight: '700',

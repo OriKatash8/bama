@@ -1,4 +1,4 @@
-import { Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 
 type BioSectionProps = {
   bio: string;
@@ -8,7 +8,12 @@ type BioSectionProps = {
 
 export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
   if (!isEditing) {
-    return <Text style={styles.text}>{bio || 'No bio yet.'}</Text>;
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>About</Text>
+        <Text style={styles.text}>{bio || 'No bio yet.'}</Text>
+      </View>
+    );
   }
   return (
     <TextInput
@@ -23,7 +28,22 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
 }
 
 const styles = StyleSheet.create({
-  text: { fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 22 },
+  card: {
+    borderWidth: 1.5,
+    borderColor: '#ffffff18',
+    borderRadius: 16,
+    backgroundColor: '#1a1a2e',
+    padding: 16,
+    gap: 8,
+  },
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#cb6ce6',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  text: { fontSize: 15, color: 'rgba(255,255,255,0.80)', lineHeight: 22 },
   input: {
     fontSize: 15,
     color: '#fff',

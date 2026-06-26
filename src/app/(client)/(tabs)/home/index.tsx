@@ -6,10 +6,12 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
+import { MiniCalendar } from '@features/crew/components';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
+import { Calendar } from 'lucide-react-native';
 import type { ProjectRequest } from '@core/types/project';
 
 const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require> }> = {
@@ -51,10 +53,12 @@ export default function HomeScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState('');
+  const [exec, setExec] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [location, setLocation] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -64,7 +68,8 @@ export default function HomeScreen() {
         if (!project) return;
         setTitle(project.title);
         setDescription(project.description);
-        setDate(project.date);
+        setExec(project.exec ?? '');
+        setDeadline(project.deadline ?? '');
         setLocation(project.location);
         loadSlots(project.crewSlots);
       })
@@ -106,7 +111,7 @@ export default function HomeScreen() {
     if (totalCount === 0) next.slots = 'Select at least one role.';
     if (!title.trim()) next.title = 'Required';
     if (!description.trim()) next.description = 'Required';
-    if (!date.trim()) next.date = 'Required';
+    if (!deadline) next.deadline = 'Required';
     if (!location.trim()) next.location = 'Required';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -117,21 +122,19 @@ export default function HomeScreen() {
     setIsSubmitting(true);
     try {
       if (isEditMode && projectId) {
-        await updateProject(projectId as string, slots, { title, description, date, location });
+        await updateProject(projectId as string, slots, { title, description, exec, deadline, location });
         showToast('Project updated!', 'success');
         resetSlots();
         setTitle('');
-        setDescription('');
-        setDate('');
+        setExec(''); setDeadline('');
         setLocation('');
         setErrors({});
         router.navigate('/(client)/(tabs)/chats' as any);
       } else {
-        await submit(slots, { title, description, date, location });
+        await submit(slots, { title, description, exec, deadline, location });
         resetSlots();
         setTitle('');
-        setDescription('');
-        setDate('');
+        setExec(''); setDeadline('');
         setLocation('');
         setErrors({});
         showToast('Request submitted!', 'success');
@@ -158,12 +161,13 @@ export default function HomeScreen() {
           Build Your Crew
         </Text>
 
+        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Project Details</Text>
+
         <View style={[
           styles.card,
           { backgroundColor: colors.card, borderColor: colors.border },
           Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
         ]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }, Platform.OS === 'web' && gradientStyle]}>Project Details</Text>
 
           <Text style={[styles.label, { color: colors.textSec }]}>Title</Text>
           <TextInput
@@ -188,15 +192,27 @@ export default function HomeScreen() {
           />
           {errors.description ? <Text style={styles.error}>{errors.description}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Date (YYYY-MM-DD)</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
-            value={date}
-            onChangeText={setDate}
-            placeholder="2026-07-15"
-            placeholderTextColor={colors.placeholder}
-          />
-          {errors.date ? <Text style={styles.error}>{errors.date}</Text> : null}
+          <Text style={[styles.label, { color: colors.textSec }]}>Execution <Text style={{ fontWeight: '400', color: colors.textMuted }}>(optional)</Text></Text>
+          <TouchableOpacity
+            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.exec ? '#fc8181' : colors.inputBorder }]}
+            onPress={() => setCalOpen('exec')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.dateBtnText, { color: exec ? colors.text : colors.placeholder }]}>{exec || 'Select date'}</Text>
+            <Calendar size={18} color="#000" strokeWidth={1.8} />
+          </TouchableOpacity>
+          {errors.exec ? <Text style={styles.error}>{errors.exec}</Text> : null}
+
+          <Text style={[styles.label, { color: colors.textSec }]}>Deadline</Text>
+          <TouchableOpacity
+            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.deadline ? '#fc8181' : colors.inputBorder }]}
+            onPress={() => setCalOpen('deadline')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.dateBtnText, { color: deadline ? colors.text : colors.placeholder }]}>{deadline || 'Select deadline'}</Text>
+            <Calendar size={18} color="#000" strokeWidth={1.8} />
+          </TouchableOpacity>
+          {errors.deadline ? <Text style={styles.error}>{errors.deadline}</Text> : null}
 
           <Text style={[styles.label, { color: colors.textSec }]}>Location</Text>
           <TextInput
@@ -209,12 +225,9 @@ export default function HomeScreen() {
           {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
         </View>
 
-        <View style={[
-          styles.rolesCard,
-          { backgroundColor: colors.card, borderColor: colors.border },
-          Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
-        ]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
+
+        <View style={styles.rolesCard}>
           {errors.slots ? <Text style={styles.error}>{errors.slots}</Text> : null}
 
           <View style={styles.grid}>
@@ -225,7 +238,7 @@ export default function HomeScreen() {
               return (
                 <TouchableOpacity
                   key={cat.key}
-                  style={[styles.tile, { borderColor: catTotal > 0 ? colors.accent : colors.border, width: tileSize, height: tileSize }]}
+                  style={[styles.tile, { width: tileSize, height: tileSize }]}
                   onPress={() => openCategory(cat)}
                   activeOpacity={0.85}
                 >
@@ -334,6 +347,18 @@ export default function HomeScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {calOpen !== null && (
+        <MiniCalendar
+          value={calOpen === 'exec' ? exec : deadline}
+          onSelect={(d) => {
+            if (calOpen === 'exec') setExec(d);
+            else setDeadline(d);
+            setCalOpen(null);
+          }}
+          onClose={() => setCalOpen(null)}
+        />
+      )}
     </Screen>
   );
 }
@@ -342,17 +367,17 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   pageTitle: { fontSize: 36, fontWeight: '800', marginTop: 24, marginHorizontal: 16, textAlign: 'center' },
   card: { margin: 16, marginTop: 24, borderRadius: 20, padding: 20, borderWidth: 1 },
-  rolesCard: { margin: 16, marginTop: 24, borderRadius: 20, padding: 16, borderWidth: 1 },
+  rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '800', marginBottom: 12 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 6 },
   input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 11, fontSize: 15 },
   multiline: { height: 100 },
   error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tile: { borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, position: 'relative' },
+  tile: { borderRadius: 12, overflow: 'hidden', position: 'relative' },
   tileImage: { width: '100%', height: '100%', position: 'absolute' },
-  tileOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)', paddingVertical: 4, paddingHorizontal: 5 },
-  tileLabel: { fontSize: 9, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  tileOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 4, paddingHorizontal: 5 },
+  tileLabel: { fontSize: 12, fontWeight: '700', color: '#fff', textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
   tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   submitWrap: { padding: 16, paddingBottom: 32 },
@@ -374,4 +399,17 @@ const styles = StyleSheet.create({
   qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700' },
   qtyBadge: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+
+  dateBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  dateBtnFull: { flex: 0, marginTop: 6 },
+  dateBtnText: { fontSize: 15, flex: 1 },
 });

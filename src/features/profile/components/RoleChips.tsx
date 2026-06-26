@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Pressable } from 'react-native';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import type { ProfessionalSkill } from '@core/types/user';
 
@@ -34,6 +34,7 @@ function toggle(selected: ProfessionalSkill[], category: string, subcategory: st
 
 export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   if (!isEditing) {
     const byCategory = Object.keys(CREW_CATEGORIES).flatMap((cat) => {
@@ -41,29 +42,51 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
       return subs.length ? [{ category: cat, subcategories: subs }] : [];
     });
 
-    if (byCategory.length === 0) {
-      return (
-        <Text style={styles.empty}>No skills added yet</Text>
-      );
-    }
-
     return (
-      <View style={styles.viewRoot}>
-        {byCategory.map(({ category, subcategories }) => (
-          <View key={category} style={styles.categoryGroup}>
-            <Text style={styles.categoryLabel}>
-              {CATEGORY_EMOJI[category] ?? '•'}  {category}
-            </Text>
-            <View style={styles.chipRow}>
-              {subcategories.map((sub) => (
-                <View key={sub} style={styles.chip}>
-                  <Text style={styles.chipText}>{sub}</Text>
-                </View>
-              ))}
+      <>
+        <TouchableOpacity style={styles.skillsBtn} onPress={() => setModalOpen(true)} activeOpacity={0.8}>
+          <Text style={styles.skillsBtnText}>🎯  Skills</Text>
+          {selected.length > 0 && (
+            <View style={styles.skillsCount}>
+              <Text style={styles.skillsCountText}>{selected.length}</Text>
             </View>
-          </View>
-        ))}
-      </View>
+          )}
+        </TouchableOpacity>
+
+        <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
+          <Pressable style={styles.backdrop} onPress={() => setModalOpen(false)}>
+            <Pressable onPress={() => {}} style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Skills</Text>
+                <TouchableOpacity onPress={() => setModalOpen(false)} hitSlop={12} activeOpacity={0.7}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.modalDivider} />
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+                {byCategory.length === 0 ? (
+                  <Text style={styles.empty}>No skills added yet</Text>
+                ) : (
+                  byCategory.map(({ category, subcategories }) => (
+                    <View key={category} style={styles.categoryGroup}>
+                      <Text style={styles.categoryLabel}>
+                        {CATEGORY_EMOJI[category] ?? '•'}  {category}
+                      </Text>
+                      <View style={styles.chipRow}>
+                        {subcategories.map((sub) => (
+                          <View key={sub} style={styles.chip}>
+                            <Text style={styles.chipText}>{sub}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      </>
     );
   }
 
@@ -126,9 +149,62 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
 const styles = StyleSheet.create({
   empty: { color: 'rgba(255,255,255,0.35)', fontSize: 14, fontStyle: 'italic' },
 
-  // View mode
-  viewRoot: { gap: 16 },
-  categoryGroup: { gap: 8 },
+  // Skills button
+  skillsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(203,108,230,0.15)',
+    borderWidth: 1.5,
+    borderColor: '#cb6ce6',
+    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+  },
+  skillsBtnText: { fontSize: 16, fontWeight: '700', color: '#cb6ce6' },
+  skillsCount: {
+    backgroundColor: '#004aad',
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    minWidth: 22,
+    alignItems: 'center',
+  },
+  skillsCountText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+
+  // Modal
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxHeight: '75%',
+    backgroundColor: '#12122a',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#cb6ce6',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#cb6ce6' },
+  modalClose: { fontSize: 18, color: '#888' },
+  modalDivider: { height: 1.5, backgroundColor: '#cb6ce622', marginHorizontal: 20, marginBottom: 8 },
+  modalScroll: { padding: 20 },
+
+  // View mode (inside modal)
+  categoryGroup: { gap: 8, marginBottom: 16 },
   categoryLabel: { fontSize: 13, fontWeight: '700', color: '#cb6ce6', letterSpacing: 0.5 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {

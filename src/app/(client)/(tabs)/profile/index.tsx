@@ -30,6 +30,7 @@ export default function ClientProfileScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      title: 'Profile',
       headerRight: () =>
         isEditing ? (
           <View style={styles.headerBtns}>
@@ -89,7 +90,7 @@ export default function ClientProfileScreen() {
           onPress={() => setMenuOpen(true)}
           activeOpacity={0.8}
         >
-          <Settings size={20} color={colors.text} strokeWidth={1.5} />
+          <Settings size={26} color={colors.text} strokeWidth={1.5} />
         </TouchableOpacity>
 
         {/* Profile */}
@@ -218,9 +219,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     left: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

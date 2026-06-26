@@ -22,7 +22,9 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOf
         <View style={styles.info}>
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{request.title}</Text>
           <Text style={[styles.location, { color: colors.textMuted }]}>📍 {request.location}</Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>{request.date}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}</Text>
+          <Text style={[styles.meta, { color: colors.textMuted }]}>
+            {request.exec ?? (request as any).date ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
+          </Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity

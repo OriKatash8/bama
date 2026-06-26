@@ -80,7 +80,8 @@ export type ProjectRequest = {
   title: string;
   crewSlots: CrewRequestSlot[];
   description: string;
-  date: string;
+  exec?: string;
+  deadline: string;
   location: string;
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: Timestamp;

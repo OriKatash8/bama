@@ -10,7 +10,8 @@ type RecommendationResult = {
 type Details = {
   title: string;
   description: string;
-  date: string;
+  exec: string;
+  deadline: string;
   location: string;
   budget: string;
 };
@@ -55,7 +56,8 @@ export function useAiCrewRecommendation(): UseAiCrewRecommendationReturn {
     const userMessage = [
       details.title && `Title: ${details.title}`,
       details.description && `Description: ${details.description}`,
-      details.date && `Date: ${details.date}`,
+      details.exec && `Execution: ${details.exec}`,
+      details.deadline && `Deadline: ${details.deadline}`,
       details.location && `Location: ${details.location}`,
       details.budget && `Budget: $${details.budget}`,
     ]

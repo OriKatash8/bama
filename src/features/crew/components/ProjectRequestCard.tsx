@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
@@ -18,6 +18,8 @@ const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
 
 export function ProjectRequestCard({ request }: Props) {
   const [teamOpen, setTeamOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { team, isLoading: teamLoading, load } = useProjectTeam(request.id);
   const colors = useTheme();
   const { showToast } = useUiStore();
@@ -29,24 +31,17 @@ export function ProjectRequestCard({ request }: Props) {
     });
   }
 
-  function handleDelete() {
-    Alert.alert(
-      'Delete project?',
-      'This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            deleteDocument(`projects/${request.id}`)
-              .then(() => showToast('Project deleted', 'success'))
-              .catch((e: any) => showToast(e?.message ?? 'Failed to delete project', 'error'));
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  async function handleDelete() {
+    setIsDeleting(true);
+    try {
+      await deleteDocument(`projects/${request.id}`);
+      showToast('Project deleted', 'success');
+    } catch (e: any) {
+      showToast(e?.message ?? 'Failed to delete project', 'error');
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete(false);
+    }
   }
 
   const firstTwo = request.crewSlots.slice(0, 2);
@@ -74,7 +69,10 @@ export function ProjectRequestCard({ request }: Props) {
           <Text style={styles.badgeText}>{request.status.replace('_', ' ')}</Text>
         </View>
       </View>
-      <Text style={[styles.date, { color: colors.textSec }]}>{request.date}</Text>
+      <Text style={[styles.date, { color: colors.textSec }]}>
+        {request.exec ?? (request as any).date ?? ''}
+        {request.deadline ? `  ·  Deadline: ${request.deadline}` : ''}
+      </Text>
       <Text style={[styles.location, { color: colors.textSec }]}>{request.location}</Text>
       {crewSummary ? <Text style={[styles.crew, { color: colors.textSec }]}>{crewSummary}</Text> : null}
 
@@ -118,14 +116,31 @@ export function ProjectRequestCard({ request }: Props) {
         </View>
       )}
 
-      {request.status === 'open' && (
+      {request.status === 'open' && !confirmDelete && (
         <View style={[styles.actionRow, { borderTopColor: colors.border }]}>
           <TouchableOpacity onPress={handleEdit} activeOpacity={0.7}>
             <Text style={[styles.actionText, { color: colors.accent }]}>Edit</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => setConfirmDelete(true)} activeOpacity={0.7}>
             <Text style={[styles.actionText, { color: '#e53e3e' }]}>Delete</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      {request.status === 'open' && confirmDelete && (
+        <View style={[styles.confirmRow, { borderTopColor: colors.border, backgroundColor: '#fef2f2' }]}>
+          <Text style={styles.confirmText}>Delete this project?</Text>
+          <View style={styles.confirmBtns}>
+            <TouchableOpacity onPress={() => setConfirmDelete(false)} activeOpacity={0.7} disabled={isDeleting}>
+              <Text style={[styles.actionText, { color: colors.textMuted }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDelete} activeOpacity={0.7} disabled={isDeleting}>
+              {isDeleting
+                ? <ActivityIndicator size="small" color="#e53e3e" />
+                : <Text style={[styles.actionText, { color: '#e53e3e' }]}>Yes, Delete</Text>
+              }
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -169,4 +184,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   actionText: { fontSize: 13, fontWeight: '700' },
+  confirmRow: {
+    marginTop: 12,
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderRadius: 8,
+    gap: 8,
+  },
+  confirmText: { fontSize: 13, fontWeight: '600', color: '#e53e3e' },
+  confirmBtns: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16 },
 });
