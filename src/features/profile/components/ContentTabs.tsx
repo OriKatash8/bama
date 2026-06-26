@@ -37,16 +37,17 @@ export function ContentTabs({
   const [panelWidth, setPanelWidth] = useState(0);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const translateAnim = useRef(new Animated.Value(0)).current;
+  const currentAnim = useRef<Animated.CompositeAnimation | null>(null);
 
   function originOffset(key: SectionKey) {
     const section = SECTIONS.find((s) => s.key === key)!;
-    return (0.5 - section.originFraction) * panelWidth;
+    return (section.originFraction - 0.5) * panelWidth;
   }
 
   function runOpen(key: SectionKey) {
     scaleAnim.setValue(0);
     translateAnim.setValue(originOffset(key));
-    Animated.parallel([
+    currentAnim.current = Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: 220,
@@ -59,11 +60,12 @@ export function ContentTabs({
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+    currentAnim.current.start();
   }
 
   function runClose(key: SectionKey, onDone: () => void) {
-    Animated.parallel([
+    currentAnim.current = Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 0,
         duration: 120,
@@ -76,14 +78,14 @@ export function ContentTabs({
         easing: Easing.in(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start(({ finished }) => {
+    ]);
+    currentAnim.current.start(({ finished }) => {
       if (finished) onDone();
     });
   }
 
   function toggle(key: SectionKey) {
-    scaleAnim.stopAnimation();
-    translateAnim.stopAnimation();
+    currentAnim.current?.stop();
 
     if (open === key) {
       setOpen(null);
