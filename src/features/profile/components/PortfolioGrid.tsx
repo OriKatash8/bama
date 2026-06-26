@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import { View, Image, TouchableOpacity, Text, StyleSheet, Modal, Dimensions } from 'react-native';
+import { View, Image, TouchableOpacity, Text, StyleSheet, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import type { MediaAsset } from '@core/types/media';
-
-// Screen padding from Screen component is 16 on each side; gap between tiles is 8
-const TILE_SIZE = (Dimensions.get('window').width - 32 - 8) / 2;
 
 type PortfolioGridProps = {
   assets: MediaAsset[];
@@ -16,6 +13,11 @@ type PortfolioGridProps = {
 
 export function PortfolioGrid({ assets, isEditing, onAdd, onRemove, onError }: PortfolioGridProps) {
   const [fullscreenUri, setFullscreenUri] = useState<string | null>(null);
+  const [tileSize, setTileSize] = useState(0);
+
+  function handleGridLayout(width: number) {
+    setTileSize((width - 8) / 2);
+  }
 
   async function handleAdd() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -33,16 +35,16 @@ export function PortfolioGrid({ assets, isEditing, onAdd, onRemove, onError }: P
 
   return (
     <View>
-      <View style={styles.grid}>
+      <View style={styles.grid} onLayout={(e) => handleGridLayout(e.nativeEvent.layout.width)}>
         {isEditing && (
-          <TouchableOpacity style={[styles.tile, styles.addTile]} onPress={handleAdd} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.tile, styles.addTile, { width: tileSize, height: tileSize }]} onPress={handleAdd} activeOpacity={0.8}>
             <Text style={styles.addIcon}>+</Text>
           </TouchableOpacity>
         )}
         {assets.map((asset) => (
           <TouchableOpacity
             key={asset.id}
-            style={styles.tile}
+            style={[styles.tile, { width: tileSize, height: tileSize }]}
             onPress={() => !isEditing && setFullscreenUri(asset.url)}
             activeOpacity={isEditing ? 1 : 0.9}
           >
@@ -86,8 +88,6 @@ export function PortfolioGrid({ assets, isEditing, onAdd, onRemove, onError }: P
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
-    width: TILE_SIZE,
-    height: TILE_SIZE,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#1a1a2e',

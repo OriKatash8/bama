@@ -5,32 +5,43 @@ import {
 import { EquipmentList } from './EquipmentList';
 import { PriceList } from './PriceList';
 import { ReviewsList } from './ReviewsList';
+import { PortfolioGrid } from './PortfolioGrid';
 import type { PriceEntry, Review } from '@core/types/project';
+import type { MediaAsset } from '@core/types/media';
 
-type SectionKey = 'equipment' | 'priceList' | 'reviews';
+type SectionKey = 'equipment' | 'priceList' | 'reviews' | 'portfolio';
 
 const SECTIONS: { key: SectionKey; label: string; emoji: string; originFraction: number }[] = [
-  { key: 'equipment', label: 'Equipment', emoji: '🎛️', originFraction: 1 / 6 },
-  { key: 'priceList', label: 'Price List', emoji: '💰', originFraction: 1 / 2 },
-  { key: 'reviews',   label: 'Reviews',    emoji: '⭐', originFraction: 5 / 6 },
+  { key: 'equipment', label: 'Equipment', emoji: '🎛️', originFraction: 1 / 8 },
+  { key: 'priceList', label: 'Price List', emoji: '💰', originFraction: 3 / 8 },
+  { key: 'reviews',   label: 'Reviews',    emoji: '⭐', originFraction: 5 / 8 },
+  { key: 'portfolio', label: 'Portfolio',  emoji: '🖼️', originFraction: 7 / 8 },
 ];
 
 type ContentTabsProps = {
   equipment: string[];
   priceList: PriceEntry[];
   reviews: Review[];
+  assets: MediaAsset[];
   isEditing: boolean;
   onEquipmentChange?: (items: string[]) => void;
   onPriceListChange?: (items: PriceEntry[]) => void;
+  onPortfolioAdd?: (uri: string) => Promise<void>;
+  onPortfolioRemove?: (assetId: string) => Promise<void>;
+  onPortfolioError?: (message: string) => void;
 };
 
 export function ContentTabs({
   equipment,
   priceList,
   reviews,
+  assets,
   isEditing,
   onEquipmentChange,
   onPriceListChange,
+  onPortfolioAdd,
+  onPortfolioRemove,
+  onPortfolioError,
 }: ContentTabsProps) {
   const [open, setOpen] = useState<SectionKey | null>(null);
   const [displayOpen, setDisplayOpen] = useState<SectionKey | null>(null);
@@ -136,6 +147,7 @@ export function ContentTabs({
         <Animated.View
           style={[
             styles.panel,
+            displayOpen === 'portfolio' && styles.panelNoHPad,
             { transform: [{ scaleX: scaleAnim }, { translateX: translateAnim }] },
           ]}
         >
@@ -146,6 +158,15 @@ export function ContentTabs({
             <PriceList items={priceList} isEditing={isEditing} onChange={onPriceListChange} />
           )}
           {displayOpen === 'reviews' && <ReviewsList reviews={reviews} />}
+          {displayOpen === 'portfolio' && (
+            <PortfolioGrid
+              assets={assets}
+              isEditing={isEditing}
+              onAdd={onPortfolioAdd}
+              onRemove={onPortfolioRemove}
+              onError={onPortfolioError}
+            />
+          )}
         </Animated.View>
       )}
     </View>
@@ -181,5 +202,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#ffffff18',
     backgroundColor: '#12122a',
     padding: 16,
+  },
+
+  panelNoHPad: {
+    paddingHorizontal: 0,
   },
 });

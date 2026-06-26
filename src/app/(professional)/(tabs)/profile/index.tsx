@@ -13,7 +13,6 @@ import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { RoleChips } from '@features/profile/components/RoleChips';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
-import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useLogout } from '@features/auth/hooks/useLogout';
@@ -153,17 +152,13 @@ export default function ProfessionalProfileScreen() {
         equipment={equipment}
         priceList={priceList}
         reviews={reviews}
+        assets={assets}
         isEditing={isEditing}
         onEquipmentChange={setEquipment}
         onPriceListChange={setPriceList}
-      />
-
-      <PortfolioGrid
-        assets={assets}
-        isEditing={isEditing}
-        onAdd={upload}
-        onRemove={remove}
-        onError={(msg) => showToast(msg, 'error')}
+        onPortfolioAdd={upload}
+        onPortfolioRemove={remove}
+        onPortfolioError={(msg) => showToast(msg, 'error')}
       />
 
       {/* Settings modal */}
