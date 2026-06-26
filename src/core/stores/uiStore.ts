@@ -24,7 +24,7 @@ export const useUiStore = create<UiState>((set) => ({
   isLoading: false,
   toasts: [],
   isNewProfessional: false,
-  isDark: true,
+  isDark: false,
   setLoading: (isLoading) => set({ isLoading }),
   showToast: (message, type = 'info') =>
     set((state) => ({
