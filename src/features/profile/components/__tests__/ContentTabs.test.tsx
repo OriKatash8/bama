@@ -12,7 +12,7 @@ const baseProps = {
 };
 
 describe('ContentTabs', () => {
-  beforeEach(() => jest.useFakeTimers());
+  beforeEach(() => { jest.useFakeTimers(); jest.clearAllMocks(); });
   afterEach(() => jest.useRealTimers());
 
   it('renders all three tab buttons', () => {
