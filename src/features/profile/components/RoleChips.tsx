@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
   },
   skillsBtnOpen: {
     backgroundColor: 'rgba(203,108,230,0.28)',
+    transform: [{ scale: 0.85 }],
   },
   skillsBtnText: { fontSize: 16, fontWeight: '700', color: '#cb6ce6' },
   skillsCount: {

@@ -145,6 +145,7 @@ export default function ProfessionalProfileScreen() {
             onNameChange={setName}
             rating={profile?.rating ?? 0}
             reviewCount={profile?.reviewCount ?? 0}
+            size={192}
           />
           <RoleChips selected={skills} isEditing={isEditing} onChange={setSkills} />
         </>
@@ -157,6 +158,7 @@ export default function ProfessionalProfileScreen() {
               isEditing={false}
               rating={profile?.rating ?? 0}
               reviewCount={profile?.reviewCount ?? 0}
+              size={192}
             />
           </View>
           <View style={styles.headerRight}>

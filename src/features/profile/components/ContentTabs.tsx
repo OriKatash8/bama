@@ -123,7 +123,7 @@ export function ContentTabs({
       >
         {SECTIONS.map((section) => {
           const isActive = open === section.key;
-          const tabScale = isActive ? 1.1 : open !== null ? 0.85 : 1;
+          const tabScale = isActive ? 1.25 : open !== null ? 0.82 : 1;
           return (
             <TouchableOpacity
               key={section.key}
