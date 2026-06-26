@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import {
+  View, Text, TouchableOpacity, StyleSheet, Animated, Easing,
+} from 'react-native';
 import { EquipmentList } from './EquipmentList';
 import { PriceList } from './PriceList';
 import { ReviewsList } from './ReviewsList';
@@ -7,10 +9,10 @@ import type { PriceEntry, Review } from '@core/types/project';
 
 type SectionKey = 'equipment' | 'priceList' | 'reviews';
 
-const SECTIONS: { key: SectionKey; label: string; emoji: string; color: string }[] = [
-  { key: 'equipment', label: 'Equipment', emoji: '🎛️', color: '#004aad' },
-  { key: 'priceList', label: 'Price List', emoji: '💰', color: '#cb6ce6' },
-  { key: 'reviews',   label: 'Reviews',    emoji: '⭐', color: '#c49a00' },
+const SECTIONS: { key: SectionKey; label: string; emoji: string; originFraction: number }[] = [
+  { key: 'equipment', label: 'Equipment', emoji: '🎛️', originFraction: 1 / 6 },
+  { key: 'priceList', label: 'Price List', emoji: '💰', originFraction: 1 / 2 },
+  { key: 'reviews',   label: 'Reviews',    emoji: '⭐', originFraction: 5 / 6 },
 ];
 
 type ContentTabsProps = {
@@ -31,17 +33,81 @@ export function ContentTabs({
   onPriceListChange,
 }: ContentTabsProps) {
   const [open, setOpen] = useState<SectionKey | null>(null);
+  const [displayOpen, setDisplayOpen] = useState<SectionKey | null>(null);
+  const [panelWidth, setPanelWidth] = useState(0);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const translateAnim = useRef(new Animated.Value(0)).current;
 
-  function toggle(key: SectionKey) {
-    setOpen((prev) => (prev === key ? null : key));
+  function originOffset(key: SectionKey) {
+    const section = SECTIONS.find((s) => s.key === key)!;
+    return (0.5 - section.originFraction) * panelWidth;
   }
 
-  const activeSection = SECTIONS.find((s) => s.key === open);
+  function runOpen(key: SectionKey) {
+    scaleAnim.setValue(0);
+    translateAnim.setValue(originOffset(key));
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateAnim, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }
+
+  function runClose(key: SectionKey, onDone: () => void) {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0,
+        duration: 120,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateAnim, {
+        toValue: originOffset(key),
+        duration: 120,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) onDone();
+    });
+  }
+
+  function toggle(key: SectionKey) {
+    scaleAnim.stopAnimation();
+    translateAnim.stopAnimation();
+
+    if (open === key) {
+      setOpen(null);
+      runClose(key, () => setDisplayOpen(null));
+    } else if (displayOpen === null) {
+      setOpen(key);
+      setDisplayOpen(key);
+      runOpen(key);
+    } else {
+      const prev = displayOpen;
+      setOpen(key);
+      runClose(prev, () => {
+        setDisplayOpen(key);
+        runOpen(key);
+      });
+    }
+  }
 
   return (
     <View style={styles.container}>
-      {/* Single row of titles */}
-      <View style={styles.row}>
+      <View
+        style={styles.row}
+        onLayout={(e) => setPanelWidth(e.nativeEvent.layout.width)}
+      >
         {SECTIONS.map((section) => {
           const isActive = open === section.key;
           return (
@@ -66,17 +132,22 @@ export function ContentTabs({
         })}
       </View>
 
-      {/* Content panel below the row */}
-      {open && activeSection && (
-        <View style={[styles.panel, { borderColor: '#cb6ce6' }]}>
-          {open === 'equipment' && (
+      {displayOpen && (
+        <Animated.View
+          style={[
+            styles.panel,
+            { borderColor: '#cb6ce6' },
+            { transform: [{ scaleX: scaleAnim }, { translateX: translateAnim }] },
+          ]}
+        >
+          {displayOpen === 'equipment' && (
             <EquipmentList items={equipment} isEditing={isEditing} onChange={onEquipmentChange} />
           )}
-          {open === 'priceList' && (
+          {displayOpen === 'priceList' && (
             <PriceList items={priceList} isEditing={isEditing} onChange={onPriceListChange} />
           )}
-          {open === 'reviews' && <ReviewsList reviews={reviews} />}
-        </View>
+          {displayOpen === 'reviews' && <ReviewsList reviews={reviews} />}
+        </Animated.View>
       )}
     </View>
   );
