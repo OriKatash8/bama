@@ -43,6 +43,14 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOf
           </TouchableOpacity>
         </View>
       </View>
+
+      {!!request.description && (
+        <View style={[styles.descBox, { borderColor: colors.border }]}>
+          <Text style={[styles.descText, { color: colors.textMuted }]} numberOfLines={3}>
+            {request.description}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -75,6 +83,13 @@ const styles = StyleSheet.create({
   },
   offerBtn: { backgroundColor: 'rgba(0,74,173,0.15)', borderWidth: 1.5, borderColor: '#004aad' },
   dismissBtn: { backgroundColor: 'rgba(229,57,53,0.15)', borderWidth: 1.5, borderColor: '#e53935' },
+  descBox: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+  },
+  descText: { fontSize: 13, lineHeight: 18 },
   disabled: { opacity: 0.5 },
   offerIcon: { fontSize: 16, color: '#004aad', fontWeight: '800' },
   dismissIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
