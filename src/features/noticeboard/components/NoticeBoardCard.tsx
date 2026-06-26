@@ -14,6 +14,7 @@ type Props = {
 
 export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOffer, isApplying }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
+  const allRoles = [...new Set(request.crewSlots.map((s) => s.subcategory))];
   const colors = useTheme();
 
   return (
@@ -24,6 +25,9 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOf
           <Text style={[styles.location, { color: '#004aad' }]}>📍 {request.location}</Text>
           <Text style={[styles.meta, { color: '#004aad' }]}>
             {request.exec ?? (request as any).date ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
+          </Text>
+          <Text style={[styles.roles, { color: '#004aad' }]} numberOfLines={2}>
+            {allRoles.join(' | ')}
           </Text>
         </View>
         <View style={styles.actions}>
@@ -73,6 +77,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
   location: { fontSize: 13, marginBottom: 3 },
   meta: { fontSize: 12 },
+  roles: { fontSize: 12, marginTop: 3, fontWeight: '600' },
   actions: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     width: 38,
