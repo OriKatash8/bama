@@ -100,7 +100,7 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   bamaWrap: { alignItems: 'center', width: '100%', paddingTop: 4 },
-  bamaLogo: { width: 160, height: 56 },
+  bamaLogo: { width: 800, height: 280 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
