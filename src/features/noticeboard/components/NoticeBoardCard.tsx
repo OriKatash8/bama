@@ -45,7 +45,7 @@ export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOf
       </View>
 
       {!!request.description && (
-        <View style={[styles.descBox, { borderColor: colors.border }]}>
+        <View style={styles.descBox}>
           <Text style={[styles.descText, { color: colors.textMuted }]} numberOfLines={3}>
             {request.description}
           </Text>
@@ -85,9 +85,11 @@ const styles = StyleSheet.create({
   dismissBtn: { backgroundColor: 'rgba(229,57,53,0.15)', borderWidth: 1.5, borderColor: '#e53935' },
   descBox: {
     marginTop: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    borderColor: '#004aad',
     borderRadius: 10,
     padding: 10,
+    backgroundColor: 'rgba(0,74,173,0.08)',
   },
   descText: { fontSize: 13, lineHeight: 18 },
   disabled: { opacity: 0.5 },
