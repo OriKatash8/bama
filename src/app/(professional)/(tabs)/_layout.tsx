@@ -15,7 +15,7 @@ export default function ProfessionalTabsLayout() {
         <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color }) => <LayoutDashboard size={28} color={color} strokeWidth={1.5} /> }} />
         <Tabs.Screen name="marketplace" options={{ title: 'Marketplace', tabBarIcon: ({ color }) => <ShoppingBag size={28} color={color} strokeWidth={1.5} /> }} />
         <Tabs.Screen name="chats" options={{ title: 'Chats', tabBarIcon: ({ color }) => <MessageCircle size={28} color={color} strokeWidth={1.5} /> }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: true, headerTitleAlign: 'center', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.text, headerTitleStyle: { fontWeight: '800', fontSize: 20 }, tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={1.5} /> }} />
+        <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: true, headerTitleAlign: 'center', headerStyle: { backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: '#cb6ce6' }, headerShadowVisible: false, headerTintColor: colors.text, headerTitleStyle: { fontWeight: '800', fontSize: 20 }, tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={1.5} /> }} />
         <Tabs.Screen name="portfolio" options={{ href: null }} />
         <Tabs.Screen name="bookings" options={{ href: null }} />
         <Tabs.Screen

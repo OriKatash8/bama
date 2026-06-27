@@ -150,20 +150,16 @@ export default function ProfessionalProfileScreen() {
           <RoleChips selected={skills} isEditing={isEditing} onChange={setSkills} />
         </>
       ) : (
-        <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <ProfileHeader
-              photoURL={photoUri ?? user?.photoURL ?? null}
-              name={name}
-              isEditing={false}
-              rating={profile?.rating ?? 0}
-              reviewCount={profile?.reviewCount ?? 0}
-              size={192}
-            />
-          </View>
-          <View style={styles.headerRight}>
-            <RoleChips selected={skills} isEditing={false} />
-          </View>
+        <View style={styles.headerCol}>
+          <ProfileHeader
+            photoURL={photoUri ?? user?.photoURL ?? null}
+            name={name}
+            isEditing={false}
+            rating={profile?.rating ?? 0}
+            reviewCount={profile?.reviewCount ?? 0}
+            size={192}
+          />
+          <RoleChips selected={skills} isEditing={false} />
         </View>
       )}
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
@@ -282,9 +278,7 @@ const styles = StyleSheet.create({
   content: { gap: 24 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  headerRow: { flexDirection: 'row', alignItems: 'center' },
-  headerLeft: { flex: 1, alignItems: 'center' },
-  headerRight: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  headerCol: { alignItems: 'center', gap: 16 },
 
   gearBtn: { marginLeft: 8, padding: 4 },
   headerBtns: { flexDirection: 'row', gap: 12 },

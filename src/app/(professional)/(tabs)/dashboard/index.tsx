@@ -9,15 +9,23 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import type { ProjectRequest } from '@core/types/project';
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 18) return 'Good afternoon';
+  if (hour >= 18 && hour < 22) return 'Good evening';
+  return 'Good night';
+}
+
 export default function DashboardScreen() {
-  const { profile, isLoading: profileLoading } = useProfile();
+  const { user, profile, isLoading: profileLoading } = useProfile();
 
   const categories = useMemo(
     () => [...new Set((profile?.skills ?? []).map(s => s.category))],
     [profile?.skills]
   );
 
-  const { requests, isLoading: boardLoading } = useNoticeboard(categories);
+  const { requests, posters, isLoading: boardLoading } = useNoticeboard(categories);
   const isLoading = profileLoading || boardLoading;
 
   const { showToast } = useUiStore();
@@ -46,10 +54,26 @@ export default function DashboardScreen() {
     backgroundClip: 'text',
   } as any) : {};
 
+  const greeting = getGreeting();
+
   return (
     <Screen scrollable={false}>
-      <View style={styles.bamaWrap}>
-        <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
+      <View style={styles.topBar}>
+        <View style={styles.logoWrap}>
+          <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
+        </View>
+        <View style={styles.rightCol}>
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarInitial}>{user?.displayName?.charAt(0).toUpperCase() ?? '?'}</Text>
+            </View>
+          )}
+          <Text style={[styles.greetText, { color: colors.text }, gradientText]} numberOfLines={2}>
+            {greeting}, {user?.displayName} :)
+          </Text>
+        </View>
       </View>
 
       <View style={styles.header}>
@@ -74,6 +98,7 @@ export default function DashboardScreen() {
           renderItem={({ item }) => (
             <NoticeBoardCard
               request={item}
+              poster={posters[item.clientId]}
               onPress={() => { setSelectedView('details'); setSelected(item); }}
               onApply={() => { setSelectedView('details'); setSelected(item); }}
               onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
@@ -99,8 +124,26 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  bamaWrap: { alignItems: 'center', width: '100%', paddingTop: 4 },
-  bamaLogo: { width: 800, height: 280 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingLeft: 0,
+    paddingRight: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  rightCol: {
+    alignItems: 'flex-end',
+    gap: 8,
+    flexShrink: 0,
+  },
+  logoWrap: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', marginLeft: -130 },
+  bamaLogo: { width: 640, height: 224 },
+  greetText: { fontSize: 26, fontWeight: '600', textAlign: 'right' },
+  avatar: { width: 152, height: 152, borderRadius: 76 },
+  avatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { color: '#fff', fontSize: 64, fontWeight: '700' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

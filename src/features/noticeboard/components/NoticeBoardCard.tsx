@@ -1,10 +1,13 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import type { ProjectRequest } from '@core/types/project';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
+import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
 import { useTheme } from '@core/hooks/useTheme';
+import { useUiStore } from '@core/stores/uiStore';
 
 type Props = {
   request: ProjectRequest;
+  poster?: PosterInfo;
   onPress: () => void;
   onApply: () => void;
   onDismiss: () => void;
@@ -12,13 +15,27 @@ type Props = {
   isApplying: boolean;
 };
 
-export function NoticeBoardCard({ request, onPress, onApply, onDismiss, onMakeOffer, isApplying }: Props) {
+export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
   const allRoles = [...new Set(request.crewSlots.map((s) => s.subcategory))];
   const colors = useTheme();
+  const isDark = useUiStore((s) => s.isDark);
+  const cardBg = isDark ? '#ffffff' : colors.card;
 
   return (
-    <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]} onPress={onPress} activeOpacity={0.85}>
+      {poster && (
+        <View style={styles.posterRow}>
+          {poster.photoURL ? (
+            <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} />
+          ) : (
+            <View style={[styles.posterAvatar, styles.posterAvatarFallback]}>
+              <Text style={styles.posterInitial}>{poster.displayName.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
+          <Text style={[styles.posterName, { color: colors.textMuted }]}>{poster.displayName}</Text>
+        </View>
+      )}
       <View style={styles.top}>
         <View style={styles.info}>
           <Text style={[styles.title, { color: '#004aad' }]} numberOfLines={1}>{request.title}</Text>
@@ -72,6 +89,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  posterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  posterAvatar: { width: 28, height: 28, borderRadius: 14 },
+  posterAvatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
+  posterInitial: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  posterName: { fontSize: 12, fontWeight: '500' },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
   title: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
