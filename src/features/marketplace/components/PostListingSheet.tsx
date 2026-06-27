@@ -1,30 +1,56 @@
 import { useState } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, TextInput,
-  StyleSheet, Platform, ScrollView, ActivityIndicator, Image,
+  Modal, View, Text, TouchableOpacity, TextInput, Pressable,
+  StyleSheet, Platform, ScrollView, ActivityIndicator, Image, Dimensions,
 } from 'react-native';
+
+const SHEET_HEIGHT = Dimensions.get('window').height * 0.88;
 import * as ImagePicker from 'expo-image-picker';
 import { useCreateListing } from '../hooks/useCreateListing';
 import { useUiStore } from '@core/stores/uiStore';
-import type { MarketplaceListingType } from '../types';
+import type { MarketplaceListingType, ProductCondition } from '../types';
+
+const CATEGORIES = [
+  { id: 'camera', emoji: '📷', label: 'Camera' },
+  { id: 'lens', emoji: '🔭', label: 'Lens' },
+  { id: 'audio', emoji: '🎤', label: 'Audio' },
+  { id: 'lighting', emoji: '💡', label: 'Lighting' },
+  { id: 'drone', emoji: '🚁', label: 'Drone' },
+  { id: 'studio', emoji: '🎬', label: 'Studio' },
+  { id: 'accessories', emoji: '🎒', label: 'Accessories' },
+  { id: 'other', emoji: '📦', label: 'Other' },
+];
+
+const CONDITIONS: { value: ProductCondition; label: string; color: string }[] = [
+  { value: 'new', label: 'New', color: '#43a047' },
+  { value: 'like_new', label: 'Like New', color: '#00897b' },
+  { value: 'good', label: 'Good', color: '#fb8c00' },
+  { value: 'fair', label: 'Fair', color: '#e53935' },
+];
 
 type Props = {
   visible: boolean;
   initialType: MarketplaceListingType;
+  lockedType?: boolean;
   onClose: () => void;
 };
 
-export function PostListingSheet({ visible, initialType, onClose }: Props) {
+export function PostListingSheet({ visible, initialType, lockedType = false, onClose }: Props) {
   const { create, isSubmitting } = useCreateListing();
   const { showToast } = useUiStore();
+
   const [type, setType] = useState<MarketplaceListingType>(initialType);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [productName, setProductName] = useState('');
+  const [brand, setBrand] = useState('');
+  const [category, setCategory] = useState('');
+  const [condition, setCondition] = useState<ProductCondition | null>(null);
   const [location, setLocation] = useState('');
   const [price, setPrice] = useState('');
 
   const canSubmit =
     productName.trim().length > 0 &&
+    category.length > 0 &&
     location.trim().length > 0 &&
     Number(price) > 0 &&
     !isSubmitting;
@@ -38,6 +64,16 @@ export function PostListingSheet({ visible, initialType, onClose }: Props) {
     if (!result.canceled) setImageUri(result.assets[0].uri);
   }
 
+  function reset() {
+    setImageUri(null);
+    setProductName('');
+    setBrand('');
+    setCategory('');
+    setCondition(null);
+    setLocation('');
+    setPrice('');
+  }
+
   async function handleSubmit() {
     try {
       await create({
@@ -46,12 +82,12 @@ export function PostListingSheet({ visible, initialType, onClose }: Props) {
         location: location.trim(),
         price: Number(price),
         imageUri,
+        condition,
+        category,
+        brand,
       });
       showToast('Listing posted!', 'success');
-      setProductName('');
-      setLocation('');
-      setPrice('');
-      setImageUri(null);
+      reset();
       onClose();
     } catch {
       showToast('Failed to post listing', 'error');
@@ -60,33 +96,34 @@ export function PostListingSheet({ visible, initialType, onClose }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-      <View style={[styles.sheet, Platform.OS === 'web' && (webSheet as any)]}>
-        <View style={styles.handle} />
-        <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.overlay}>
+        <TouchableOpacity style={styles.backdropArea} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.sheet, Platform.OS === 'web' && (webSheet as any)]}>
+          <View style={styles.handle} />
+          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Post a Listing</Text>
 
-          <View style={styles.toggle}>
-            <TouchableOpacity
-              style={[styles.pill, type === 'secondhand' && styles.pillActive]}
-              onPress={() => setType('secondhand')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive]}>
-                2nd Hand
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.pill, type === 'rental' && styles.pillActive]}
-              onPress={() => setType('rental')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive]}>
-                Rental
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* Type toggle — hidden when type is locked to the active tab */}
+          {!lockedType && (
+            <View style={styles.toggle}>
+              <TouchableOpacity
+                style={[styles.pill, type === 'secondhand' && styles.pillActive]}
+                onPress={() => setType('secondhand')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive]}>2nd Hand</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.pill, type === 'rental' && styles.pillActive]}
+                onPress={() => setType('rental')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive]}>Rental</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
+          {/* Image */}
           <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
             {imageUri ? (
               <Image source={{ uri: imageUri }} style={styles.previewImage} />
@@ -98,6 +135,7 @@ export function PostListingSheet({ visible, initialType, onClose }: Props) {
             )}
           </TouchableOpacity>
 
+          {/* Product name */}
           <TextInput
             style={styles.input}
             placeholder="Product name"
@@ -105,6 +143,59 @@ export function PostListingSheet({ visible, initialType, onClose }: Props) {
             value={productName}
             onChangeText={setProductName}
           />
+
+          {/* Brand */}
+          <TextInput
+            style={styles.input}
+            placeholder="Brand (e.g. Sony, Canon, DJI)"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            value={brand}
+            onChangeText={setBrand}
+          />
+
+          {/* Category */}
+          <Text style={styles.sectionLabel}>Category</Text>
+          <View style={styles.grid}>
+            {CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat.id}
+                style={[styles.catChip, category === cat.id && styles.catChipActive]}
+                onPress={() => setCategory(cat.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.catEmoji}>{cat.emoji}</Text>
+                <Text style={[styles.catLabel, category === cat.id && styles.catLabelActive]}>
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Condition (secondhand only) */}
+          {type === 'secondhand' && (
+            <>
+              <Text style={styles.sectionLabel}>Condition</Text>
+              <View style={styles.conditionRow}>
+                {CONDITIONS.map((c) => (
+                  <TouchableOpacity
+                    key={c.value}
+                    style={[
+                      styles.conditionChip,
+                      condition === c.value && { backgroundColor: c.color, borderColor: c.color },
+                    ]}
+                    onPress={() => setCondition(condition === c.value ? null : c.value)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.conditionLabel, condition === c.value && { color: '#fff' }]}>
+                      {c.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Location */}
           <TextInput
             style={styles.input}
             placeholder="Location (city)"
@@ -112,6 +203,8 @@ export function PostListingSheet({ visible, initialType, onClose }: Props) {
             value={location}
             onChangeText={setLocation}
           />
+
+          {/* Price */}
           <TextInput
             style={styles.input}
             placeholder={type === 'rental' ? 'Price per day (₪)' : 'Price (₪)'}
@@ -133,7 +226,8 @@ export function PostListingSheet({ visible, initialType, onClose }: Props) {
               <Text style={styles.submitText}>Post Listing</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   );
@@ -150,12 +244,14 @@ const webSheet = {
 };
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' },
+  overlay: {
+    flex: 1,
+    flexDirection: 'column',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  backdropArea: { flex: 1 },
   sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    height: SHEET_HEIGHT,
     backgroundColor: '#0f0f1f',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -163,10 +259,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderColor: '#ffffff18',
-    padding: 20,
-    paddingBottom: 36,
-    maxHeight: '85%',
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 48 },
   handle: {
     width: 40, height: 4,
     backgroundColor: '#ffffff33',
@@ -211,6 +308,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ffffff12',
   },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#cb6ce6',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  catChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#2a2a3e',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#ffffff12',
+  },
+  catChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  catEmoji: { fontSize: 16 },
+  catLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
+  catLabelActive: { color: '#fff' },
+  conditionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  conditionChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#ffffff22',
+    backgroundColor: '#2a2a3e',
+  },
+  conditionLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
   submitBtn: {
     backgroundColor: '#cb6ce6',
     borderRadius: 12,

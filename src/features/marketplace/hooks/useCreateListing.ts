@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { addDocument } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
 import { useAuthStore } from '@core/stores/authStore';
-import type { MarketplaceListingType } from '../types';
+import type { MarketplaceListingType, ProductCondition } from '../types';
 
 type CreateListingInput = {
   type: MarketplaceListingType;
@@ -10,6 +10,9 @@ type CreateListingInput = {
   location: string;
   price: number;
   imageUri: string | null;
+  condition: ProductCondition | null;
+  category: string;
+  brand: string;
 };
 
 export function useCreateListing() {
@@ -34,6 +37,9 @@ export function useCreateListing() {
         location: input.location,
         price: input.price,
         imageUrl,
+        condition: input.condition ?? null,
+        category: input.category || null,
+        brand: input.brand.trim() || null,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });
     } catch (e) {

@@ -2,6 +2,8 @@ import type { Timestamp } from '@core/types/common';
 
 export type MarketplaceListingType = 'secondhand' | 'rental';
 
+export type ProductCondition = 'new' | 'like_new' | 'good' | 'fair';
+
 export type MarketplaceListing = {
   id: string;
   type: MarketplaceListingType;
@@ -12,4 +14,7 @@ export type MarketplaceListing = {
   price: number; // sale price for secondhand; daily rate for rental
   imageUrl: string | null;
   createdAt: Timestamp;
+  condition?: ProductCondition;
+  brand?: string;
+  category?: string;
 };

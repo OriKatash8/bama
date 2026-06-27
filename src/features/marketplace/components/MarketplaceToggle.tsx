@@ -17,14 +17,14 @@ export function MarketplaceToggle({ active, onChange }: Props) {
         onPress={() => onChange('secondhand')}
         activeOpacity={0.8}
       >
-        <Text style={[styles.label, { color: colors.textMuted }, active === 'secondhand' && styles.labelActive]}>2nd Hand</Text>
+        <Text style={[styles.label, { color: colors.textMuted }, active === 'secondhand' && styles.labelActive]}>BAMA Market</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.pill, { backgroundColor: colors.cardAlt }, active === 'rental' && styles.pillActive]}
         onPress={() => onChange('rental')}
         activeOpacity={0.8}
       >
-        <Text style={[styles.label, { color: colors.textMuted }, active === 'rental' && styles.labelActive]}>Equipment Rental</Text>
+        <Text style={[styles.label, { color: colors.textMuted }, active === 'rental' && styles.labelActive]}>BAMA Rental</Text>
       </TouchableOpacity>
     </View>
   );
