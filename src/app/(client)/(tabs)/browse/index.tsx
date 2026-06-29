@@ -1,8 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
-  StyleSheet, Platform, Image, useWindowDimensions,
-  Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
+  StyleSheet, Platform, LayoutAnimation, UIManager, ActivityIndicator,
 } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -10,22 +9,9 @@ import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { ProfessionalCard } from '@features/crew/components';
 
-const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require>; contain?: boolean }> = {
-  'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
-  'Still Photographer': { label: 'Photographer', image: require('../../../../../assets/images/categories/photographer.png') },
-  'Editor':             { label: 'Editor',        image: require('../../../../../assets/images/categories/editor.png') },
-  'Graphic Designer':   { label: 'Graphic Designer', image: require('../../../../../assets/images/categories/graphic-designer.png') },
-  'AI Specialist':      { label: 'AI',            image: require('../../../../../assets/images/categories/ai.png') },
-  'Social Media':       { label: 'Social',        image: require('../../../../../assets/images/categories/social.png') },
-  'Studio & Audio':     { label: 'Studios',       image: require('../../../../../assets/images/categories/studios.png') },
-  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting-tech.png'), contain: true },
-  'Sound Recordist':    { label: 'Sound',         image: require('../../../../../assets/images/categories/sound.png') },
-};
-
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   key,
-  label: CATEGORY_META[key]?.label ?? key,
-  image: CATEGORY_META[key]?.image,
+  label: key,
   subcategories: subs,
 }));
 
@@ -65,14 +51,18 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
-  const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number] | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const colors = useTheme();
-  const { width } = useWindowDimensions();
-  const tileSize = (width - 32 - 16) / 3;
 
-  const scaleAnim = useRef(new Animated.Value(0.3)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+  function toggleCategory(key: string) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedCategory(prev => (prev === key ? null : key));
+  }
 
   const gradientText = Platform.OS === 'web' ? ({
     background: 'linear-gradient(to right, #004aad, #cb6ce6)',
@@ -80,36 +70,6 @@ export default function SearchScreen() {
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
   } as any) : {};
-
-  function openCategory(cat: typeof CATEGORIES[number]) {
-    setSelectedCategory(cat);
-    setModalVisible(true);
-    scaleAnim.setValue(0.3);
-    opacityAnim.setValue(0);
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 180 }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
-    ]).start();
-  }
-
-  function closeModal() {
-    Animated.parallel([
-      Animated.timing(scaleAnim, { toValue: 0.3, duration: 150, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-    ]).start(() => {
-      setModalVisible(false);
-      setSelectedCategory(null);
-    });
-  }
-
-  function selectSubcategory(subcategory: string) {
-    if (!selectedCategory) return;
-    const category = selectedCategory.key;
-    closeModal();
-    setTimeout(() => {
-      setView({ kind: 'results', category, subcategory });
-    }, 160);
-  }
 
   const filteredCategories = query.trim()
     ? CATEGORIES.filter(c =>
@@ -172,35 +132,6 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {view.kind === 'grid' && (
-          <ScrollView
-            style={styles.flex}
-            contentContainerStyle={styles.gridContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {query.trim() === '' && (
-              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Browse by Category</Text>
-            )}
-            <View style={styles.grid}>
-              {filteredCategories.map((cat) => (
-                <TouchableOpacity
-                  key={cat.key}
-                  style={[styles.tile, { width: tileSize, height: tileSize }, cat.contain && { backgroundColor: '#111' }]}
-                  onPress={() => openCategory(cat)}
-                  activeOpacity={0.8}
-                >
-                  {cat.image ? (
-                    <Image source={cat.image} style={styles.tileImage} resizeMode={cat.contain ? 'contain' : 'cover'} />
-                  ) : null}
-                  <View style={styles.tileOverlay}>
-                    <Text style={styles.tileLabel} numberOfLines={1}>{cat.label}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        )}
-
         {view.kind === 'grid' && query.trim() !== '' && searchTarget && (
           <View style={[styles.searchHintRow, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
             <Text style={[styles.searchHintText, { color: colors.accent }]}>
@@ -224,53 +155,6 @@ export default function SearchScreen() {
           </View>
         )}
       </View>
-
-      <Modal visible={modalVisible} transparent animationType="none" onRequestClose={closeModal}>
-        <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.backdrop}>
-            <TouchableWithoutFeedback>
-              <Animated.View
-                style={[
-                  styles.panel,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.accent,
-                    transform: [{ scale: scaleAnim }],
-                    opacity: opacityAnim,
-                  },
-                  Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as any),
-                ]}
-              >
-                <View style={styles.panelHeader}>
-                  <Text style={[styles.panelTitle, { color: colors.text }]}>
-                    {selectedCategory?.label}
-                  </Text>
-                  <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
-                    <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={[styles.panelDivider, { backgroundColor: colors.accent }]} />
-
-                <ScrollView showsVerticalScrollIndicator={false} style={styles.panelScroll}>
-                  <Text style={[styles.subHint, { color: colors.textMuted }]}>Select a specialization</Text>
-                  {selectedCategory?.subcategories.map((sub) => (
-                    <TouchableOpacity
-                      key={sub}
-                      style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}
-                      onPress={() => selectSubcategory(sub)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.subLabel, { color: colors.text }]}>{sub}</Text>
-                      <Text style={[styles.subArrow, { color: colors.accent }]}>›</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
     </Screen>
   );
 }
