@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
-  StyleSheet, Platform, LayoutAnimation, UIManager, ActivityIndicator,
+  StyleSheet, Platform, Animated, Easing, ActivityIndicator,
 } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -15,9 +15,7 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   subcategories: subs,
 }));
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const SUB_ITEM_HEIGHT = 46;
 
 type ViewState =
   | { kind: 'grid' }
@@ -59,9 +57,30 @@ export default function SearchScreen() {
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
+  const animValues = useRef<Record<string, Animated.Value>>(
+    Object.fromEntries(CATEGORIES.map(c => [c.key, new Animated.Value(0)]))
+  ).current;
+
   function toggleCategory(key: string) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedCategory(prev => (prev === key ? null : key));
+    const isExpanding = expandedCategory !== key;
+
+    if (expandedCategory && expandedCategory !== key) {
+      Animated.timing(animValues[expandedCategory], {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    }
+
+    Animated.timing(animValues[key], {
+      toValue: isExpanding ? 1 : 0,
+      duration: isExpanding ? 280 : 200,
+      easing: isExpanding ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+
+    setExpandedCategory(isExpanding ? key : null);
   }
 
   const gradientText = Platform.OS === 'web' ? ({
@@ -78,7 +97,6 @@ export default function SearchScreen() {
       )
     : CATEGORIES;
 
-  // Derive a category+subcategory from free-text query for direct professional search
   function getSearchTarget(): { category: string; subcategory: string } | null {
     if (!query.trim()) return null;
     const q = query.toLowerCase();
@@ -88,7 +106,6 @@ export default function SearchScreen() {
           return { category: cat, subcategory: sub };
         }
       }
-      // Also match on category name
       if (cat.toLowerCase().includes(q)) {
         return { category: cat, subcategory: CREW_CATEGORIES[cat as keyof typeof CREW_CATEGORIES][0] };
       }
@@ -153,21 +170,35 @@ export default function SearchScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {filteredCategories.map((cat) => (
-              <View key={cat.key}>
-                <TouchableOpacity
-                  style={styles.categoryRow}
-                  onPress={() => toggleCategory(cat.key)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.categoryLabel}>{cat.label}</Text>
-                  <Text style={styles.categoryChevron}>
-                    {expandedCategory === cat.key ? '⌄' : '›'}
-                  </Text>
-                </TouchableOpacity>
+            {filteredCategories.map((cat) => {
+              const animVal = animValues[cat.key];
+              const maxHeight = animVal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, cat.subcategories.length * SUB_ITEM_HEIGHT],
+              });
+              const chevronRotate = animVal.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0deg', '90deg'],
+              });
+              const subOpacity = animVal.interpolate({
+                inputRange: [0, 0.4, 1],
+                outputRange: [0, 0, 1],
+              });
 
-                {expandedCategory === cat.key && (
-                  <View style={styles.subList}>
+              return (
+                <View key={cat.key}>
+                  <TouchableOpacity
+                    style={styles.categoryRow}
+                    onPress={() => toggleCategory(cat.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryLabel}>{cat.label}</Text>
+                    <Animated.Text style={[styles.categoryChevron, { transform: [{ rotate: chevronRotate }] }]}>
+                      ›
+                    </Animated.Text>
+                  </TouchableOpacity>
+
+                  <Animated.View style={[styles.subList, { maxHeight, opacity: subOpacity, overflow: 'hidden' }]}>
                     {cat.subcategories.map((sub) => (
                       <TouchableOpacity
                         key={sub}
@@ -178,10 +209,10 @@ export default function SearchScreen() {
                         <Text style={styles.subItemText}>{sub}</Text>
                       </TouchableOpacity>
                     ))}
-                  </View>
-                )}
-              </View>
-            ))}
+                  </Animated.View>
+                </View>
+              );
+            })}
             {filteredCategories.length === 0 && (
               <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, fontFamily: 'Montserrat' }}>
                 No categories match "{query}"
@@ -251,7 +282,7 @@ const styles = StyleSheet.create({
     color: '#004aad',
   },
   categoryChevron: {
-    fontSize: 20,
+    fontSize: 22,
     color: '#004aad',
     fontWeight: '600',
   },
@@ -263,7 +294,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subItem: {
-    paddingVertical: 12,
+    height: SUB_ITEM_HEIGHT,
+    justifyContent: 'center',
     paddingLeft: 16,
     paddingRight: 4,
     borderBottomWidth: 1,
