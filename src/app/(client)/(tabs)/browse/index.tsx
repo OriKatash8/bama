@@ -10,7 +10,7 @@ import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { ProfessionalCard } from '@features/crew/components';
 
-const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require> }> = {
+const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require>; contain?: boolean }> = {
   'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
   'Still Photographer': { label: 'Photographer', image: require('../../../../../assets/images/categories/photographer.png') },
   'Editor':             { label: 'Editor',        image: require('../../../../../assets/images/categories/editor.png') },
@@ -18,7 +18,7 @@ const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof re
   'AI Specialist':      { label: 'AI',            image: require('../../../../../assets/images/categories/ai.png') },
   'Social Media':       { label: 'Social',        image: require('../../../../../assets/images/categories/social.png') },
   'Studio & Audio':     { label: 'Studios',       image: require('../../../../../assets/images/categories/studios.png') },
-  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting.png') },
+  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting-tech.png'), contain: true },
   'Sound Recordist':    { label: 'Sound',         image: require('../../../../../assets/images/categories/sound.png') },
 };
 
@@ -185,12 +185,12 @@ export default function SearchScreen() {
               {filteredCategories.map((cat) => (
                 <TouchableOpacity
                   key={cat.key}
-                  style={[styles.tile, { width: tileSize, height: tileSize }]}
+                  style={[styles.tile, { width: tileSize, height: tileSize }, cat.contain && { backgroundColor: '#111' }]}
                   onPress={() => openCategory(cat)}
                   activeOpacity={0.8}
                 >
                   {cat.image ? (
-                    <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
+                    <Image source={cat.image} style={styles.tileImage} resizeMode={cat.contain ? 'contain' : 'cover'} />
                   ) : null}
                   <View style={styles.tileOverlay}>
                     <Text style={styles.tileLabel} numberOfLines={1}>{cat.label}</Text>
@@ -331,11 +331,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   tileLabel: {
-    fontSize: 12,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#fff',
+    color: '#004aad',
     textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowColor: 'rgba(255,255,255,0.6)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },

@@ -14,7 +14,7 @@ import { getDocument } from '@core/firebase/firestore';
 import { Calendar } from 'lucide-react-native';
 import type { ProjectRequest } from '@core/types/project';
 
-const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require> }> = {
+const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require>; contain?: boolean }> = {
   'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
   'Still Photographer': { label: 'Photographer', image: require('../../../../../assets/images/categories/photographer.png') },
   'Editor':             { label: 'Editor',        image: require('../../../../../assets/images/categories/editor.png') },
@@ -22,7 +22,7 @@ const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof re
   'AI Specialist':      { label: 'AI',            image: require('../../../../../assets/images/categories/ai.png') },
   'Social Media':       { label: 'Social',        image: require('../../../../../assets/images/categories/social.png') },
   'Studio & Audio':     { label: 'Studios',       image: require('../../../../../assets/images/categories/studios.png') },
-  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting.png') },
+  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting-tech.png'), contain: true },
   'Sound Recordist':    { label: 'Sound',         image: require('../../../../../assets/images/categories/sound.png') },
 };
 
@@ -237,12 +237,12 @@ export default function BuilderScreen() {
               return (
                 <TouchableOpacity
                   key={cat.key}
-                  style={[styles.tile, { width: tileSize, height: tileSize }]}
+                  style={[styles.tile, { width: tileSize, height: tileSize }, cat.contain && { backgroundColor: '#111' }]}
                   onPress={() => openCategory(cat)}
                   activeOpacity={0.85}
                 >
                   {cat.image ? (
-                    <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
+                    <Image source={cat.image} style={styles.tileImage} resizeMode={cat.contain ? 'contain' : 'cover'} />
                   ) : null}
                   <View style={styles.tileOverlay}>
                     <Text style={styles.tileLabel} numberOfLines={1}>{cat.label}</Text>
@@ -365,7 +365,7 @@ export default function BuilderScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  pageTitle: { fontSize: 36, fontWeight: '800', marginTop: 24, marginHorizontal: 16, textAlign: 'center' },
+  pageTitle: { fontSize: 52, fontWeight: '900', marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
   card: {
     margin: 16,
     marginTop: 24,

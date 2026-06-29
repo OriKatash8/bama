@@ -126,37 +126,39 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
             </View>
           </ScrollView>
         ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
-              <Text style={styles.backText}>← Back to Details</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>Submit Your Offer</Text>
-            <Text style={styles.bidHint}>Select the roles you want to fill and enter your price for each.</Text>
+          <View style={{ flex: 1 }}>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
+              <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
+                <Text style={styles.backText}>← Back to Details</Text>
+              </TouchableOpacity>
+              <Text style={styles.title}>Submit Your Offer</Text>
+              <Text style={styles.bidHint}>Select the roles you want to fill and enter your price for each.</Text>
 
-            {bids.map((b, i) => (
-              <View key={i} style={styles.bidRow}>
-                <Switch
-                  value={b.selected}
-                  onValueChange={() => toggleSelected(i)}
-                  trackColor={{ true: '#004aad' }}
-                />
-                <View style={styles.bidInfo}>
-                  <Text style={styles.bidSub}>{b.subcategory}</Text>
-                  <Text style={styles.bidCat}>{b.category} · {b.quantity} needed</Text>
-                </View>
-                {b.selected && (
-                  <TextInput
-                    style={styles.priceInput}
-                    value={b.price}
-                    onChangeText={(v) => setPrice(i, v)}
-                    placeholder="$"
-                    placeholderTextColor="#aaa"
-                    keyboardType="numeric"
-                    maxLength={8}
+              {bids.map((b, i) => (
+                <View key={i} style={styles.bidRow}>
+                  <Switch
+                    value={b.selected}
+                    onValueChange={() => toggleSelected(i)}
+                    trackColor={{ true: '#004aad' }}
                   />
-                )}
-              </View>
-            ))}
+                  <View style={styles.bidInfo}>
+                    <Text style={styles.bidSub}>{b.subcategory}</Text>
+                    <Text style={styles.bidCat}>{b.category} · {b.quantity} needed</Text>
+                  </View>
+                  {b.selected && (
+                    <TextInput
+                      style={styles.priceInput}
+                      value={b.price}
+                      onChangeText={(v) => setPrice(i, v)}
+                      placeholder="$"
+                      placeholderTextColor="#aaa"
+                      keyboardType="numeric"
+                      maxLength={8}
+                    />
+                  )}
+                </View>
+              ))}
+            </ScrollView>
 
             <View style={styles.actions}>
               <TouchableOpacity
@@ -170,7 +172,8 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 </Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          </View>
+
         )}
       </View>
     </Modal>
@@ -192,6 +195,7 @@ const styles = StyleSheet.create({
   sheet: {
     position: 'absolute',
     bottom: 0,
+    top: '15%',
     left: 0,
     right: 0,
     backgroundColor: '#0f0f1f',
@@ -203,7 +207,6 @@ const styles = StyleSheet.create({
     borderColor: '#ffffff18',
     padding: 20,
     paddingBottom: 36,
-    maxHeight: '85%',
   },
   handle: { width: 40, height: 4, backgroundColor: '#ffffff33', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 16 },

@@ -1,10 +1,13 @@
 import { Slot, SplashScreen } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text, TextInput } from 'react-native';
 import { useAuth } from '@core/hooks/useAuth';
 import { ToastContainer } from '@components/ui/Toast';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
+
+(Text as any).defaultProps = { ...(Text as any).defaultProps, style: [{ fontFamily: 'Montserrat' }, (Text as any).defaultProps?.style] };
+(TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, style: [{ fontFamily: 'Montserrat' }, (TextInput as any).defaultProps?.style] };
 
 SplashScreen.preventAutoHideAsync();
 
@@ -13,6 +16,7 @@ function AppShell() {
 
   const [fontsLoaded] = useFonts({
     PeaceSans: require('../../assets/fonts/peace-sans.ttf'),
+    Montserrat: require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
   });
 
   useEffect(() => {

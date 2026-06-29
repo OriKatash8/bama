@@ -104,7 +104,7 @@ export default function MarketplaceScreen() {
       </View>
 
       {/* Categories */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
+      <View style={styles.categoriesRow}>
         {CATEGORIES.map((cat) => {
           const active = selectedCategory === cat.id;
           return (
@@ -126,10 +126,10 @@ export default function MarketplaceScreen() {
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
+      <View style={styles.filtersRow}>
         {/* Price */}
         <TouchableOpacity
           style={[styles.filterPill, { borderColor: colors.border }, priceSort && styles.filterPillActive]}
@@ -183,7 +183,7 @@ export default function MarketplaceScreen() {
             <Text style={styles.filterPillText}>✕ Clear</Text>
           </TouchableOpacity>
         )}
-      </ScrollView>
+      </View>
 
       {/* Filter panel */}
       {activeFilter === 'price' && (
@@ -327,25 +327,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
-  categoriesRow: { paddingHorizontal: 12, paddingBottom: 10, gap: 8 },
+  categoriesRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    paddingBottom: 10,
+  },
   catItem: {
+    flex: 1,
     alignItems: 'center',
-    paddingHorizontal: 10,
     paddingVertical: 6,
     gap: 4,
-    minWidth: 58,
   },
   catItemActive: {},
-  catIconActive: { transform: [{ scale: 1.25 }] },
-  catEmoji: { fontSize: 32 },
-  catIcon: { width: 52, height: 52 },
-  catLabel: { fontSize: 11, fontWeight: '600' },
+  catIconActive: { transform: [{ scale: 1.2 }] },
+  catEmoji: { fontSize: 36 },
+  catIcon: { width: 62, height: 62 },
+  catLabel: { fontSize: 13, fontWeight: '600' },
 
-  filtersRow: { paddingHorizontal: 12, paddingBottom: 8, gap: 8 },
+  filtersRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 6,
+  },
   filterPill: {
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderWidth: 1,
   },
   filterPillActive: { backgroundColor: '#004aad', borderColor: '#004aad' },

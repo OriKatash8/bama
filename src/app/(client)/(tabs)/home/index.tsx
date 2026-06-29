@@ -165,67 +165,67 @@ export default function HomeScreen() {
 
         <View style={[
           styles.card,
-          { backgroundColor: colors.card, borderColor: colors.border },
+          { backgroundColor: colors.bg, borderColor: colors.border },
           Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
         ]}>
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Title</Text>
+          <Text style={[styles.label, { color: '#004aad' }]}>Title</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
+            style={[styles.input, { backgroundColor: colors.inputBg, borderColor: '#004aad', color: '#004aad' }]}
             value={title}
             onChangeText={setTitle}
             placeholder="e.g. Music video for new single"
-            placeholderTextColor={colors.placeholder}
+            placeholderTextColor="#004aad99"
           />
           {errors.title ? <Text style={styles.error}>{errors.title}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Description</Text>
+          <Text style={[styles.label, { color: '#004aad' }]}>Description</Text>
           <TextInput
-            style={[styles.input, styles.multiline, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
+            style={[styles.input, styles.multiline, { backgroundColor: colors.inputBg, borderColor: '#004aad', color: '#004aad' }]}
             value={description}
             onChangeText={setDescription}
             placeholder="Describe your project"
-            placeholderTextColor={colors.placeholder}
+            placeholderTextColor="#004aad99"
             multiline
             numberOfLines={4}
             textAlignVertical="top"
           />
           {errors.description ? <Text style={styles.error}>{errors.description}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Execution <Text style={{ fontWeight: '400', color: colors.textMuted }}>(optional)</Text></Text>
+          <Text style={[styles.label, { color: '#004aad' }]}>Execution <Text style={{ fontWeight: '400', color: '#004aad99' }}>(optional)</Text></Text>
           <TouchableOpacity
-            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.exec ? '#fc8181' : colors.inputBorder }]}
+            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.exec ? '#fc8181' : '#004aad' }]}
             onPress={() => setCalOpen('exec')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.dateBtnText, { color: exec ? colors.text : colors.placeholder }]}>{exec || 'Select date'}</Text>
-            <Calendar size={18} color="#000" strokeWidth={1.8} />
+            <Text style={[styles.dateBtnText, { color: exec ? '#004aad' : '#004aad99' }]}>{exec || 'Select date'}</Text>
+            <Calendar size={18} color="#004aad" strokeWidth={1.8} />
           </TouchableOpacity>
           {errors.exec ? <Text style={styles.error}>{errors.exec}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Deadline</Text>
+          <Text style={[styles.label, { color: '#004aad' }]}>Deadline</Text>
           <TouchableOpacity
-            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.deadline ? '#fc8181' : colors.inputBorder }]}
+            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.deadline ? '#fc8181' : '#004aad' }]}
             onPress={() => setCalOpen('deadline')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.dateBtnText, { color: deadline ? colors.text : colors.placeholder }]}>{deadline || 'Select deadline'}</Text>
-            <Calendar size={18} color="#000" strokeWidth={1.8} />
+            <Text style={[styles.dateBtnText, { color: deadline ? '#004aad' : '#004aad99' }]}>{deadline || 'Select deadline'}</Text>
+            <Calendar size={18} color="#004aad" strokeWidth={1.8} />
           </TouchableOpacity>
           {errors.deadline ? <Text style={styles.error}>{errors.deadline}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Location</Text>
+          <Text style={[styles.label, { color: '#004aad' }]}>Location</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
+            style={[styles.input, { backgroundColor: colors.inputBg, borderColor: '#004aad', color: '#004aad' }]}
             value={location}
             onChangeText={setLocation}
             placeholder="City, Country"
-            placeholderTextColor={colors.placeholder}
+            placeholderTextColor="#004aad99"
           />
           {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
+        <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: 'center', marginTop: 20, fontSize: 28 }, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
 
         <View style={styles.rolesCard}>
           {errors.slots ? <Text style={styles.error}>{errors.slots}</Text> : null}
@@ -365,40 +365,40 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  pageTitle: { fontSize: 36, fontWeight: '800', marginTop: 24, marginHorizontal: 16, textAlign: 'center' },
+  pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
   card: { margin: 16, marginTop: 24, borderRadius: 20, padding: 20, borderWidth: 1 },
   rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 6 },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 11, fontSize: 15 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: 'Montserrat', marginBottom: 12 },
+  label: { fontSize: 14, fontWeight: '600', fontFamily: 'Montserrat', marginTop: 16, marginBottom: 6 },
+  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 11, fontSize: 15, fontFamily: 'Montserrat' },
   multiline: { height: 100 },
-  error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
+  error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: 'Montserrat' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tile: { borderRadius: 12, overflow: 'hidden', position: 'relative' },
   tileImage: { width: '100%', height: '100%', position: 'absolute' },
   tileOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 4, paddingHorizontal: 5 },
-  tileLabel: { fontSize: 12, fontWeight: '700', color: '#fff', textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  tileLabel: { fontSize: 17, fontWeight: '700', fontFamily: 'Montserrat', color: '#004aad', textAlign: 'center', textShadowColor: 'rgba(255,255,255,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
-  tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: 'Montserrat' },
   submitWrap: { padding: 16, paddingBottom: 32 },
   submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginTop: 8 },
   disabled: { backgroundColor: '#555' },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Montserrat' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   panel: { width: '100%', maxHeight: '80%', borderRadius: 24, borderWidth: 2, overflow: 'hidden' },
   panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  panelTitle: { fontSize: 20, fontWeight: '800' },
-  closeBtn: { fontSize: 18, fontWeight: '600' },
+  panelTitle: { fontSize: 20, fontWeight: '800', fontFamily: 'Montserrat' },
+  closeBtn: { fontSize: 18, fontWeight: '600', fontFamily: 'Montserrat' },
   panelDivider: { height: 2, marginHorizontal: 20, borderRadius: 1, marginBottom: 4 },
   panelScroll: { maxHeight: 400 },
-  subHint: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, paddingHorizontal: 20, paddingVertical: 12 },
+  subHint: { fontSize: 12, fontWeight: '600', fontFamily: 'Montserrat', textTransform: 'uppercase', letterSpacing: 0.8, paddingHorizontal: 20, paddingVertical: 12 },
   subRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20, borderBottomWidth: 1 },
-  subLabel: { fontSize: 15, fontWeight: '500', flex: 1 },
+  subLabel: { fontSize: 15, fontWeight: '500', fontFamily: 'Montserrat', flex: 1 },
   qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   qtyBtn: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700' },
+  qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700', fontFamily: 'Montserrat' },
   qtyBadge: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: 'Montserrat' },
 
   dateBtn: {
     flex: 1,
@@ -411,5 +411,5 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   dateBtnFull: { flex: 0, marginTop: 6 },
-  dateBtnText: { fontSize: 15, flex: 1 },
+  dateBtnText: { fontSize: 15, flex: 1, fontFamily: 'Montserrat' },
 });

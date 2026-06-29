@@ -2,7 +2,7 @@ import Svg, { Rect, Circle, Path } from 'react-native-svg';
 
 const BG = '#e8f0fe';
 const ICON = '#004aad';
-const SIZE = 52;
+const SIZE = 62;
 const R = 14;
 
 export function AllIcon() {
