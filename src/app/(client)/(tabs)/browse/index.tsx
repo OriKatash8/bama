@@ -146,7 +146,7 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {view.kind === 'grid' && (
+        {view.kind === 'grid' && !searchTarget && (
           <ScrollView
             style={styles.flex}
             contentContainerStyle={styles.listContent}
