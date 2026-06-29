@@ -15,6 +15,10 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   subcategories: subs,
 }));
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 type ViewState =
   | { kind: 'grid' }
   | { kind: 'results'; category: string; subcategory: string };
@@ -52,10 +56,6 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
   const colors = useTheme();
-
-  if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
@@ -182,6 +182,11 @@ export default function SearchScreen() {
                 )}
               </View>
             ))}
+            {filteredCategories.length === 0 && (
+              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, fontFamily: 'Montserrat' }}>
+                No categories match "{query}"
+              </Text>
+            )}
           </ScrollView>
         )}
 
