@@ -146,6 +146,45 @@ export default function SearchScreen() {
           </View>
         )}
 
+        {view.kind === 'grid' && (
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {filteredCategories.map((cat) => (
+              <View key={cat.key}>
+                <TouchableOpacity
+                  style={styles.categoryRow}
+                  onPress={() => toggleCategory(cat.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.categoryLabel}>{cat.label}</Text>
+                  <Text style={styles.categoryChevron}>
+                    {expandedCategory === cat.key ? '⌄' : '›'}
+                  </Text>
+                </TouchableOpacity>
+
+                {expandedCategory === cat.key && (
+                  <View style={styles.subList}>
+                    {cat.subcategories.map((sub) => (
+                      <TouchableOpacity
+                        key={sub}
+                        style={styles.subItem}
+                        onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.subItemText}>{sub}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
         {view.kind === 'results' && (
           <View style={styles.flex}>
             <Text style={[styles.resultsHint, { color: colors.textMuted }]}>
@@ -189,39 +228,47 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
+  listContent: { paddingHorizontal: 16, paddingBottom: 24 },
 
-  gridContent: { paddingHorizontal: 16, paddingBottom: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tile: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    position: 'relative',
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#004aad33',
   },
-  tileImage: { width: '100%', height: '100%', position: 'absolute' },
-  tileOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingVertical: 4,
-    paddingHorizontal: 5,
-  },
-  tileLabel: {
+  categoryLabel: {
     fontSize: 17,
     fontWeight: '700',
+    fontFamily: 'Montserrat',
     color: '#004aad',
-    textAlign: 'center',
-    textShadowColor: 'rgba(255,255,255,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+  },
+  categoryChevron: {
+    fontSize: 20,
+    color: '#004aad',
+    fontWeight: '600',
+  },
+
+  subList: {
+    marginLeft: 16,
+    borderLeftWidth: 2,
+    borderLeftColor: '#004aad',
+    marginBottom: 4,
+  },
+  subItem: {
+    paddingVertical: 12,
+    paddingLeft: 16,
+    paddingRight: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#004aad22',
+  },
+  subItemText: {
+    fontSize: 15,
+    fontWeight: '500',
+    fontFamily: 'Montserrat',
+    color: '#004aad',
   },
 
   searchHintRow: {
@@ -253,49 +300,4 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 52, marginBottom: 4 },
   emptyText: { fontSize: 18, fontWeight: '700' },
   emptySubtext: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  panel: {
-    width: '100%',
-    maxHeight: '80%',
-    borderRadius: 24,
-    borderWidth: 2,
-    overflow: 'hidden',
-  },
-  panelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
-  panelTitle: { fontSize: 20, fontWeight: '800' },
-  closeBtn: { fontSize: 18, fontWeight: '600' },
-  panelDivider: { height: 2, marginHorizontal: 20, borderRadius: 1, marginBottom: 4 },
-  panelScroll: { maxHeight: 400 },
-  subHint: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  subRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-  },
-  subLabel: { fontSize: 16, fontWeight: '500' },
-  subArrow: { fontSize: 20 },
 });
