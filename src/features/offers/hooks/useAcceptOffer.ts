@@ -9,30 +9,53 @@ export function useAcceptOffer() {
   async function accept(offer: PriceOffer): Promise<void> {
     setIsAccepting(offer.id);
     try {
-      const competing = await queryDocuments<PriceOffer>(
-        'priceOffers',
-        where('projectId', '==', offer.projectId),
-        where('category', '==', offer.category),
-        where('subcategory', '==', offer.subcategory),
-        where('status', '==', 'pending')
-      );
-
-      const others = competing.filter((o) => o.id !== offer.id);
-      if (others.length > 0) {
-        await runBatchUpdates(
-          others.map((o) => ({ path: `priceOffers/${o.id}`, data: { status: 'rejected' } }))
+      // Step 1: batch-reject competing offers
+      let competing: PriceOffer[] = [];
+      try {
+        competing = await queryDocuments<PriceOffer>(
+          'priceOffers',
+          where('projectId', '==', offer.projectId),
+          where('category', '==', offer.category),
+          where('subcategory', '==', offer.subcategory),
+          where('status', '==', 'pending')
         );
+        const others = competing.filter((o) => o.id !== offer.id);
+        if (others.length > 0) {
+          await runBatchUpdates(
+            others.map((o) => ({ path: `priceOffers/${o.id}`, data: { status: 'rejected' } }))
+          );
+        }
+        console.log('[useAcceptOffer] step 1 ok — rejected', competing.length - 1, 'competing offers');
+      } catch (e: any) {
+        console.error('[useAcceptOffer] step 1 FAILED (batch-reject competing offers) — code:', e?.code, 'message:', e?.message, e);
+        throw e;
       }
 
-      await updateDocument(`priceOffers/${offer.id}`, { status: 'accepted' });
-      await updateDocument(`projects/${offer.projectId}`, {
-        filledSlots: arrayUnion({
-          category: offer.category,
-          subcategory: offer.subcategory,
-          professionalId: offer.professionalId,
-        }) as any,
-      });
+      // Step 2: mark this offer accepted
+      try {
+        await updateDocument(`priceOffers/${offer.id}`, { status: 'accepted' });
+        console.log('[useAcceptOffer] step 2 ok — offer', offer.id, 'marked accepted');
+      } catch (e: any) {
+        console.error('[useAcceptOffer] step 2 FAILED (accept offer status) — code:', e?.code, 'message:', e?.message, e);
+        throw e;
+      }
 
+      // Step 3: add professional to project filledSlots
+      try {
+        await updateDocument(`projects/${offer.projectId}`, {
+          filledSlots: arrayUnion({
+            category: offer.category,
+            subcategory: offer.subcategory,
+            professionalId: offer.professionalId,
+          }) as any,
+        });
+        console.log('[useAcceptOffer] step 3 ok — filledSlots updated on project', offer.projectId);
+      } catch (e: any) {
+        console.error('[useAcceptOffer] step 3 FAILED (filledSlots arrayUnion) — code:', e?.code, 'message:', e?.message, e);
+        throw e;
+      }
+
+      // Step 4: create or join project group chat
       try {
         const project = await getDocument<{ clientId: string; title: string; chatId?: string }>(
           `projects/${offer.projectId}`
@@ -46,12 +69,16 @@ export function useAcceptOffer() {
               project.title,
             );
             await updateDocument(`projects/${offer.projectId}`, { chatId: newChatId });
+            console.log('[useAcceptOffer] step 4 ok — created group chat', newChatId);
           } else {
             await addMemberToGroup(project.chatId, offer.professionalId);
+            console.log('[useAcceptOffer] step 4 ok — added to existing group chat', project.chatId);
           }
+        } else {
+          console.error('[useAcceptOffer] step 4 — project', offer.projectId, 'not found, skipping chat setup');
         }
-      } catch (e) {
-        console.error('[useAcceptOffer] failed to set up project group chat:', e);
+      } catch (e: any) {
+        console.error('[useAcceptOffer] step 4 FAILED (group chat setup) — code:', e?.code, 'message:', e?.message, e);
       }
     } finally {
       setIsAccepting(null);
