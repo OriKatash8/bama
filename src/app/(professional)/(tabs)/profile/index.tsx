@@ -41,6 +41,8 @@ export default function ProfessionalProfileScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const initialised = useRef(false);
+  const handleSaveRef = useRef<() => void>(() => {});
+  const handleCancelRef = useRef<() => void>(() => {});
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -57,10 +59,10 @@ export default function ProfessionalProfileScreen() {
       headerRight: () =>
         isEditing ? (
           <View style={styles.headerBtns}>
-            <TouchableOpacity onPress={handleCancel} style={styles.headerBtn}>
+            <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
               <Text style={[styles.headerBtnText, { color: colors.text }]}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn} disabled={isSaving}>
+            <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
               {isSaving
                 ? <ActivityIndicator size="small" color="#cb6ce6" />
                 : <Text style={[styles.headerBtnText, styles.save]}>Save</Text>}
@@ -97,6 +99,9 @@ export default function ProfessionalProfileScreen() {
     });
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   }
+
+  handleSaveRef.current = handleSave;
+  handleCancelRef.current = handleCancel;
 
   async function handleSave() {
     try {

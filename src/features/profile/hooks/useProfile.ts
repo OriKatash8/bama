@@ -55,7 +55,9 @@ export function useProfile() {
         const blob = await fetch(photoUri).then((r) => r.blob());
         photoURL = await uploadFile(`avatars/${user.id}`, blob);
       }
+      console.log('[useProfile] writing users/${user.id}:', { displayName: name, photoURL });
       await updateDocument(`users/${user.id}`, { displayName: name, photoURL });
+      console.log('[useProfile] writing users/${user.id}/profile/data:', { skills, bio, equipment, priceList });
       await mergeDocument(`users/${user.id}/profile/data`, {
         skills,
         bio,
@@ -64,6 +66,8 @@ export function useProfile() {
       });
       setUser({ ...user, displayName: name, photoURL });
     } catch (e: any) {
+      console.error('[useProfile] save failed — code:', e?.code, 'message:', e?.message);
+      console.error('[useProfile] full error:', e);
       setError(e.message ?? 'Failed to save profile');
       throw e;
     } finally {

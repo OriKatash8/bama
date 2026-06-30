@@ -16,8 +16,10 @@ export function useAuth() {
         clear();
         return;
       }
+      console.log('[useAuth] firebaseUser received at', Date.now(), 'uid:', firebaseUser.uid);
       setLoading(true);
       try {
+        console.log('[useAuth] calling getDocument at', Date.now());
         const userData = await getDocument<LegacyUserDoc>(`users/${firebaseUser.uid}`);
         if (userData) {
           if ('role' in userData) {
@@ -29,8 +31,11 @@ export function useAuth() {
         } else {
           setLoading(false);
         }
-      } catch (e) {
-        console.error('[useAuth] Failed to load user document:', e);
+      } catch (e: any) {
+        console.error('[useAuth] getDocument failed at', Date.now());
+        console.error('[useAuth] error.code:', e?.code);
+        console.error('[useAuth] error.message:', e?.message);
+        console.error('[useAuth] full error:', e);
         setLoading(false);
       }
     });

@@ -3,11 +3,14 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
   StyleSheet, Platform, Animated, Easing, ActivityIndicator,
 } from 'react-native';
+import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
+import { auth } from '@core/firebase/config';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { ProfessionalCard } from '@features/crew/components';
+import { getOrCreateDM } from '@features/chat/services/chatService';
 
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   key,
@@ -24,6 +27,15 @@ type ViewState =
 function ResultsView({ category, subcategory }: { category: string; subcategory: string }) {
   const { results, isLoading } = useSearchProfessionals(category, subcategory);
   const colors = useTheme();
+  const router = useRouter();
+  const segments = useSegments();
+
+  async function handleMessage(professionalId: string) {
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) return;
+    const chatId = await getOrCreateDM(currentUserId, professionalId);
+    router.push(`/${segments[0]}/(tabs)/chats/${chatId}`);
+  }
 
   if (isLoading) {
     return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
@@ -45,7 +57,12 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
       keyExtractor={(item) => item.user.id}
       contentContainerStyle={styles.resultsList}
       showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => <ProfessionalCard item={item} />}
+      renderItem={({ item }) => (
+        <ProfessionalCard
+          item={item}
+          onMessage={() => handleMessage(item.user.id)}
+        />
+      )}
     />
   );
 }

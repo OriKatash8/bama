@@ -9,12 +9,17 @@ export function usePriceOffers() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setOffers([]);
+      return;
+    }
     setIsLoading(true);
+    let cancelled = false;
     let unsubscribe: (() => void) | undefined;
 
     queryDocuments<ProjectRequest>('projects', where('clientId', '==', user.id))
       .then((projects) => {
+        if (cancelled) return;
         if (projects.length === 0) {
           setIsLoading(false);
           return;
@@ -30,9 +35,13 @@ export function usePriceOffers() {
           where('status', '==', 'pending')
         );
       })
-      .catch(() => setIsLoading(false));
+      .catch(() => { if (!cancelled) setIsLoading(false); });
 
-    return () => { unsubscribe?.(); };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+      setOffers([]);
+    };
   }, [user?.id]);
 
   return { offers, isLoading };

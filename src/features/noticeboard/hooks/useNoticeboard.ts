@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { subscribeToCollection, getDocument, where } from '@core/firebase/firestore';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import type { User } from '@core/types/user';
@@ -26,13 +26,16 @@ export function filterByProfessionalCategories(
   );
 }
 
-export function useNoticeboard(professionalCategories: string[]) {
+export function useNoticeboard(professionalCategories: string[] | null) {
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
   const [posters, setPosters] = useState<Record<string, PosterInfo>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const categoriesKey = professionalCategories.join(',');
+  const posterCacheRef = useRef<Map<string, PosterInfo>>(new Map());
+  const categoriesKey = professionalCategories === null ? null : professionalCategories.join(',');
 
   useEffect(() => {
+    if (professionalCategories === null) return;
+
     return subscribeToCollection<ProjectRequest>(
       'projects',
       async (data) => {
@@ -42,14 +45,25 @@ export function useNoticeboard(professionalCategories: string[]) {
         setRequests(filtered);
 
         const uniqueClientIds = [...new Set(filtered.map(r => r.clientId))];
-        const entries = await Promise.all(
-          uniqueClientIds.map(async (id) => {
-            const user = await getDocument<User>(`users/${id}`);
-            return [id, user ? { displayName: user.displayName, photoURL: user.photoURL } : null] as const;
-          })
-        );
+        const missing = uniqueClientIds.filter(id => !posterCacheRef.current.has(id));
+        if (missing.length > 0) {
+          const fetched = await Promise.all(
+            missing.map(async (id) => {
+              const user = await getDocument<User>(`users/${id}`);
+              return [id, user ? { displayName: user.displayName, photoURL: user.photoURL } : null] as const;
+            })
+          );
+          for (const [id, info] of fetched) {
+            if (info !== null) posterCacheRef.current.set(id, info);
+          }
+        }
+
         setPosters(
-          Object.fromEntries(entries.filter((e): e is [string, PosterInfo] => e[1] !== null))
+          Object.fromEntries(
+            uniqueClientIds
+              .filter(id => posterCacheRef.current.has(id))
+              .map(id => [id, posterCacheRef.current.get(id)!])
+          )
         );
 
         setIsLoading(false);

@@ -1,4 +1,5 @@
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useTheme } from '@core/hooks/useTheme';
 import type { ProfessionalResult } from '../hooks/useSearchProfessionals';
 
@@ -8,11 +9,22 @@ const AVAILABILITY_COLOR: Record<string, string> = {
   unavailable: '#ef4444',
 };
 
-type Props = { item: ProfessionalResult };
+type Props = { item: ProfessionalResult; onMessage?: () => Promise<void> };
 
-export function ProfessionalCard({ item }: Props) {
+export function ProfessionalCard({ item, onMessage }: Props) {
   const colors = useTheme();
   const { user, profile } = item;
+  const [isMessaging, setIsMessaging] = useState(false);
+
+  async function handleMessagePress() {
+    if (!onMessage) return;
+    setIsMessaging(true);
+    try {
+      await onMessage();
+    } finally {
+      setIsMessaging(false);
+    }
+  }
   const availColor = AVAILABILITY_COLOR[profile.availability] ?? colors.textMuted;
 
   return (
@@ -67,6 +79,20 @@ export function ProfessionalCard({ item }: Props) {
           )}
         </View>
       )}
+
+      {onMessage && (
+        <TouchableOpacity
+          style={[styles.messageBtn, { backgroundColor: colors.accent }]}
+          onPress={handleMessagePress}
+          disabled={isMessaging}
+          activeOpacity={0.8}
+        >
+          {isMessaging
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.messageBtnText}>Message</Text>
+          }
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -107,4 +133,13 @@ const styles = StyleSheet.create({
   },
   skillText: { fontSize: 11, fontWeight: '600' },
   moreSkills: { fontSize: 12, alignSelf: 'center' },
+  messageBtn: {
+    marginTop: 12,
+    borderRadius: 10,
+    paddingVertical: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 38,
+  },
+  messageBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

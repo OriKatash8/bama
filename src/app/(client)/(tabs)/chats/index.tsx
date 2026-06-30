@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { ProjectRequestCard } from '@features/crew/components';
@@ -63,9 +64,7 @@ export default function ChatsScreen() {
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       {active === 'Chats' && (
-        <View style={styles.emptyWrap}>
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>No chats yet</Text>
-        </View>
+        <ChatsList />
       )}
 
       {active === 'Notifications' && (

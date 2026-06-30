@@ -21,12 +21,11 @@ export default function DashboardScreen() {
   const { user, profile, isLoading: profileLoading } = useProfile();
 
   const categories = useMemo(
-    () => [...new Set((profile?.skills ?? []).map(s => s.category))],
-    [profile?.skills]
+    () => profileLoading ? null : [...new Set((profile?.skills ?? []).map(s => s.category))],
+    [profile?.skills, profileLoading]
   );
 
-  const { requests, posters, isLoading: boardLoading } = useNoticeboard(categories);
-  const isLoading = profileLoading || boardLoading;
+  const { requests, posters, isLoading } = useNoticeboard(categories);
 
   const { showToast } = useUiStore();
   const colors = useTheme();
