@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -9,10 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { getDoc, doc } from 'firebase/firestore';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
-import { auth } from '@core/firebase/config';
+import { auth, db } from '@core/firebase/config';
 import { listenToMessages, sendMessage } from '../services/chatService';
-import type { Message } from '../types';
+import type { Chat, Message } from '../types';
 
 interface Props {
   chatId: string;
@@ -20,13 +22,52 @@ interface Props {
 
 export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
+  const router = useRouter();
   const currentUserId = auth.currentUser?.uid ?? '';
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const fetchedIdsRef = useRef<Set<string>>(new Set());
+  const [chatName, setChatName] = useState<string>('');
+  const [chatType, setChatType] = useState<Chat['type'] | null>(null);
+  const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    async function fetchChat() {
+      const snap = await getDoc(doc(db, 'chats', chatId));
+      if (snap.exists()) {
+        const data = snap.data() as Omit<Chat, 'id'>;
+        setChatType(data.type);
+        setChatProjectId(data.projectId);
+        setChatName(data.type === 'dm' ? 'Direct message' : (data.name ?? 'Group Chat'));
+      }
+    }
+    fetchChat();
+  }, [chatId]);
 
   useEffect(() => {
     return listenToMessages(chatId, setMessages);
   }, [chatId]);
+
+  useEffect(() => {
+    const senderIds = [...new Set(messages.map((m) => m.senderId))];
+    const missing = senderIds.filter(
+      (id) => id !== currentUserId && !fetchedIdsRef.current.has(id)
+    );
+    if (missing.length === 0) return;
+    missing.forEach((id) => fetchedIdsRef.current.add(id));
+    Promise.all(
+      missing.map(async (id) => {
+        const snap = await getDoc(doc(db, 'users', id));
+        const name = snap.exists()
+          ? (snap.data() as { displayName: string }).displayName
+          : id;
+        return [id, name] as const;
+      })
+    ).then((entries) => {
+      setUserNames((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    });
+  }, [messages]);
 
   async function handleSend() {
     const text = inputText.trim();
@@ -40,6 +81,25 @@ export function ChatRoomScreen({ chatId }: Props) {
       style={[styles.container, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
+          <Text style={styles.headerBackText}>‹</Text>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          {chatType === 'group' && chatProjectId ? (
+            <TouchableOpacity
+              onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
+          )}
+        </View>
+        <View style={styles.headerRight} />
+      </View>
+
       <FlatList
         data={[...messages].reverse()}
         keyExtractor={(item) => item.id}
@@ -55,6 +115,11 @@ export function ChatRoomScreen({ chatId }: Props) {
                   isOwn ? { backgroundColor: colors.accent } : { backgroundColor: colors.card },
                 ]}
               >
+                {!isOwn && (
+                  <Text style={styles.senderName}>
+                    {userNames[item.senderId] ?? 'Loading...'}
+                  </Text>
+                )}
                 <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text }]}>
                   {item.text}
                 </Text>
@@ -93,6 +158,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 3,
+    paddingHorizontal: 8,
+  },
+  headerBack: {
+    width: 40,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBackText: {
+    fontSize: 36,
+    color: '#004aad',
+    lineHeight: 44,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111',
+    textAlign: 'center',
+  },
+  headerRight: {
+    width: 40,
+  },
   list: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -112,6 +213,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 18,
+  },
+  senderName: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 2,
   },
   messageText: {
     fontSize: 15,

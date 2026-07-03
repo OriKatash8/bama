@@ -109,12 +109,19 @@ export function listenToUserChats(
 
   const q = query(
     chatsRef,
-    where('members', 'array-contains', userId),
-    orderBy('lastMessage.timestamp', 'desc')
+    where('members', 'array-contains', userId)
   );
 
+  console.log('[listenToUserChats] subscribing for userId:', userId);
   return onSnapshot(q, (snapshot) => {
-    callback(snapshot.docs.map(docToChat));
+    console.log('[listenToUserChats] snapshot received — size:', snapshot.size, 'empty:', snapshot.empty);
+    const chats = snapshot.docs.map(docToChat);
+    chats.sort((a, b) => {
+      const aTime = a.lastMessage?.timestamp?.seconds ?? a.createdAt?.seconds ?? 0;
+      const bTime = b.lastMessage?.timestamp?.seconds ?? b.createdAt?.seconds ?? 0;
+      return bTime - aTime;
+    });
+    callback(chats);
   }, (error) => {
     console.log('[listenToUserChats ERROR]', error);
     console.error('[listenToUserChats] snapshot error:');

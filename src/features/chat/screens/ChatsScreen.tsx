@@ -23,7 +23,10 @@ export function ChatsScreen() {
     console.log('[ChatsScreen] user.id (from authStore):', user.id);
     console.log('[ChatsScreen] auth.currentUser?.uid:', auth.currentUser?.uid);
     setChats([]);
-    const unsubscribe = listenToUserChats(user.id, setChats);
+    const unsubscribe = listenToUserChats(user.id, (chats) => {
+      console.log('[ChatsScreen] listenToUserChats update — chats:', JSON.stringify(chats, null, 2));
+      setChats(chats);
+    });
     return unsubscribe;
   }, [user?.id]);
 
@@ -48,11 +51,9 @@ export function ChatsScreen() {
               <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
                 {item.type === 'group' ? item.name : 'Direct message'}
               </Text>
-              {item.lastMessage ? (
-                <Text style={[styles.preview, { color: colors.textMuted }]} numberOfLines={1}>
-                  {item.lastMessage.text}
-                </Text>
-              ) : null}
+              <Text style={[styles.preview, { color: colors.textMuted }]} numberOfLines={1}>
+                {item.lastMessage?.text ?? 'No messages yet'}
+              </Text>
             </View>
           </TouchableOpacity>
         )}
