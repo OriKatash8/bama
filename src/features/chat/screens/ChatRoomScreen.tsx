@@ -32,6 +32,13 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
 
+  const gradientText = Platform.OS === 'web' ? ({
+    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  } as object) : {};
+
   useEffect(() => {
     async function fetchChat() {
       const snap = await getDoc(doc(db, 'chats', chatId));
@@ -81,9 +88,9 @@ export function ChatRoomScreen({ chatId }: Props) {
       style={[styles.container, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
-          <Text style={styles.headerBackText}>‹</Text>
+          <Text style={[styles.headerBackText, { color: colors.accent }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           {chatType === 'group' && chatProjectId ? (
@@ -91,10 +98,14 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
               activeOpacity={0.8}
             >
-              <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
+              <Text style={[styles.headerName, { color: colors.text }, gradientText]} numberOfLines={1}>
+                {chatName}
+              </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
+            <Text style={[styles.headerName, { color: colors.text }, gradientText]} numberOfLines={1}>
+              {chatName}
+            </Text>
           )}
         </View>
         <View style={styles.headerRight} />
@@ -161,38 +172,32 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 3,
+    height: 110,
+    borderBottomWidth: 1,
     paddingHorizontal: 8,
   },
   headerBack: {
-    width: 40,
-    height: 56,
+    width: 48,
+    height: 110,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerBackText: {
-    fontSize: 36,
-    color: '#004aad',
-    lineHeight: 44,
+    fontSize: 48,
+    lineHeight: 58,
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
+    paddingHorizontal: 4,
   },
   headerName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111',
+    fontSize: 42,
+    fontWeight: '800',
     textAlign: 'center',
   },
   headerRight: {
-    width: 40,
+    width: 48,
   },
   list: {
     paddingHorizontal: 16,

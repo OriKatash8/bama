@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlatList, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
-import { auth } from '@core/firebase/config';
+import { auth, db } from '@core/firebase/config';
 import { listenToUserChats } from '../services/chatService';
 import type { Chat } from '../types';
 
@@ -14,6 +15,8 @@ export function ChatsScreen() {
   const colors = useTheme();
   const user = useAuthStore((s) => s.user);
   const [chats, setChats] = useState<Chat[]>([]);
+  const [dmNames, setDmNames] = useState<Record<string, string>>({});
+  const fetchedUserIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) {
@@ -29,6 +32,37 @@ export function ChatsScreen() {
     });
     return unsubscribe;
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    const currentUserId = user.id;
+
+    const dmChats = chats.filter((c) => c.type === 'dm');
+    const toFetch = dmChats.filter((c) => {
+      const otherId = c.members.find((id) => id !== currentUserId);
+      return otherId !== undefined && !fetchedUserIdsRef.current.has(otherId);
+    });
+
+    if (toFetch.length === 0) return;
+
+    toFetch.forEach((c) => {
+      const otherId = c.members.find((id) => id !== currentUserId)!;
+      fetchedUserIdsRef.current.add(otherId);
+    });
+
+    Promise.all(
+      toFetch.map(async (c) => {
+        const otherId = c.members.find((id) => id !== currentUserId)!;
+        const snap = await getDoc(doc(db, 'users', otherId));
+        const displayName = snap.exists()
+          ? (snap.data() as { displayName: string }).displayName
+          : 'Unknown';
+        return [c.id, displayName] as const;
+      })
+    ).then((entries) => {
+      setDmNames((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    });
+  }, [chats, user]);
 
   return (
     <View style={styles.container}>
@@ -49,7 +83,7 @@ export function ChatsScreen() {
           >
             <View style={styles.rowContent}>
               <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-                {item.type === 'group' ? item.name : 'Direct message'}
+                {item.type === 'group' ? item.name : (dmNames[item.id] ?? 'Loading...')}
               </Text>
               <Text style={[styles.preview, { color: colors.textMuted }]} numberOfLines={1}>
                 {item.lastMessage?.text ?? 'No messages yet'}
