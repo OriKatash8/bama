@@ -163,11 +163,7 @@ export default function HomeScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Project Details</Text>
 
-        <View style={[
-          styles.card,
-          { backgroundColor: colors.bg, borderColor: colors.border },
-          Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
-        ]}>
+        <View style={styles.card}>
 
           <Text style={[styles.label, { color: '#004aad' }]}>Title</Text>
           <TextInput
@@ -366,7 +362,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
-  card: { margin: 16, marginTop: 24, borderRadius: 20, padding: 20, borderWidth: 1 },
+  card: { margin: 16, marginTop: 24, padding: 20 },
   rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: 'Montserrat', marginBottom: 12 },
   label: { fontSize: 14, fontWeight: '600', fontFamily: 'Montserrat', marginTop: 16, marginBottom: 6 },

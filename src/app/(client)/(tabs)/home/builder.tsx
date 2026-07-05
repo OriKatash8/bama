@@ -174,8 +174,6 @@ export default function BuilderScreen() {
           Build Your Crew
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Project Details</Text>
-
         <View style={styles.fieldsWrap}>
           <Text style={[styles.label, { color: colors.textSec }]}>Title</Text>
           <TextInput

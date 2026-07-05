@@ -119,3 +119,18 @@ export type Mission = {
   createdBy: string;
   createdAt: Timestamp;
 };
+
+export type PaymentRequestStatus = 'pending' | 'accepted' | 'rejected';
+
+export type PaymentRequest = {
+  id: string;
+  projectId: string;
+  fromUserId: string;
+  toUserId: string;
+  professionalId: string;
+  currentAmount: number;
+  proposedAmount: number;
+  note?: string;
+  status: PaymentRequestStatus;
+  createdAt: Timestamp;
+};

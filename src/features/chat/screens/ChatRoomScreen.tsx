@@ -42,11 +42,25 @@ export function ChatRoomScreen({ chatId }: Props) {
   useEffect(() => {
     async function fetchChat() {
       const snap = await getDoc(doc(db, 'chats', chatId));
-      if (snap.exists()) {
-        const data = snap.data() as Omit<Chat, 'id'>;
-        setChatType(data.type);
-        setChatProjectId(data.projectId);
-        setChatName(data.type === 'dm' ? 'Direct message' : (data.name ?? 'Group Chat'));
+      if (!snap.exists()) return;
+
+      const data = snap.data() as Omit<Chat, 'id'>;
+      setChatType(data.type);
+      setChatProjectId(data.projectId);
+
+      if (data.type === 'dm') {
+        const otherId = data.members.find((id) => id !== currentUserId);
+        if (otherId) {
+          const userSnap = await getDoc(doc(db, 'users', otherId));
+          const displayName = userSnap.exists()
+            ? (userSnap.data() as { displayName: string }).displayName
+            : 'Unknown';
+          setChatName(displayName);
+        } else {
+          setChatName('Direct message');
+        }
+      } else {
+        setChatName(data.name ?? 'Group Chat');
       }
     }
     fetchChat();

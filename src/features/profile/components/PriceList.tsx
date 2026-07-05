@@ -47,7 +47,7 @@ export function PriceList({ items, isEditing, onChange }: PriceListProps) {
             value={service}
             onChangeText={setService}
             placeholder="Service"
-            placeholderTextColor="#aaa"
+            placeholderTextColor="rgba(0,74,173,0.4)"
           />
           <TextInput
             style={[styles.input, styles.priceInput]}
@@ -55,7 +55,7 @@ export function PriceList({ items, isEditing, onChange }: PriceListProps) {
             onChangeText={setPrice}
             placeholder="Price"
             keyboardType="decimal-pad"
-            placeholderTextColor="#aaa"
+            placeholderTextColor="rgba(0,74,173,0.4)"
           />
           <TouchableOpacity style={styles.addBtn} onPress={add}>
             <Text style={styles.addBtnText}>Add</Text>
@@ -74,22 +74,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff12',
+    borderBottomColor: 'rgba(0,74,173,0.15)',
   },
-  service: { fontSize: 14, color: 'rgba(255,255,255,0.8)', flex: 1 },
+  service: { fontSize: 14, color: '#004aad', flex: 1 },
   right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  price: { fontSize: 14, fontWeight: '700', color: '#cb6ce6' },
+  price: { fontSize: 14, fontWeight: '700', color: '#004aad' },
   remove: { fontSize: 20, color: '#e53935', paddingHorizontal: 4 },
   inputRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   input: {
     borderWidth: 1,
-    borderColor: '#ffffff33',
+    borderColor: 'rgba(0,74,173,0.3)',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#fff',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    color: '#004aad',
+    backgroundColor: 'rgba(0,74,173,0.06)',
   },
   serviceInput: { flex: 1 },
   priceInput: { width: 80 },

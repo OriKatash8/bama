@@ -25,8 +25,28 @@ export function usePortfolio() {
     if (!user) return;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const storagePath = `portfolio/${user.id}/${id}`;
-    const blob = await fetch(uri).then((r) => r.blob());
-    const url = await uploadFile(storagePath, blob);
+    const firestorePath = `users/${user.id}/portfolio/${id}`;
+    console.log('[usePortfolio] uploading → Storage path:', storagePath);
+
+    let blob: Blob;
+    try {
+      blob = await fetch(uri).then((r) => r.blob());
+    } catch (fetchErr: any) {
+      console.error('[usePortfolio] fetch blob failed — code:', fetchErr?.code, 'message:', fetchErr?.message);
+      console.error('[usePortfolio] fetch full error:', fetchErr);
+      throw fetchErr;
+    }
+
+    let url: string;
+    try {
+      url = await uploadFile(storagePath, blob);
+      console.log('[usePortfolio] Storage upload succeeded, downloadURL:', url);
+    } catch (uploadErr: any) {
+      console.error('[usePortfolio] Storage upload failed — path:', storagePath, 'code:', uploadErr?.code, 'message:', uploadErr?.message);
+      console.error('[usePortfolio] upload full error:', uploadErr);
+      throw uploadErr;
+    }
+
     const assetData = {
       url,
       thumbnailUrl: null as string | null,
@@ -34,8 +54,11 @@ export function usePortfolio() {
       uploadedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
     };
     try {
-      await setDocument(`users/${user.id}/portfolio/${id}`, assetData);
-    } catch (e) {
+      console.log('[usePortfolio] writing → Firestore path:', firestorePath);
+      await setDocument(firestorePath, assetData);
+    } catch (e: any) {
+      console.error('[usePortfolio] Firestore write failed — path:', firestorePath, 'code:', e?.code, 'message:', e?.message);
+      console.error('[usePortfolio] Firestore full error:', e);
       await deleteFile(storagePath).catch(() => {});
       throw e;
     }

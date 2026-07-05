@@ -40,7 +40,7 @@ export function EquipmentList({ items, isEditing, onChange }: EquipmentListProps
             value={input}
             onChangeText={setInput}
             placeholder="Add equipment..."
-            placeholderTextColor="#aaa"
+            placeholderTextColor="rgba(0,74,173,0.4)"
             onSubmitEditing={add}
             returnKeyType="done"
           />
@@ -61,21 +61,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff12',
+    borderBottomColor: 'rgba(0,74,173,0.15)',
   },
-  item: { fontSize: 14, color: 'rgba(255,255,255,0.8)', flex: 1 },
+  item: { fontSize: 14, color: '#004aad', flex: 1 },
   remove: { fontSize: 20, color: '#e53935', paddingHorizontal: 4 },
   inputRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ffffff33',
+    borderColor: 'rgba(0,74,173,0.3)',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#fff',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    color: '#004aad',
+    backgroundColor: 'rgba(0,74,173,0.06)',
   },
   addBtn: { backgroundColor: '#004aad', borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
   addBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },

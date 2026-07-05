@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -13,47 +14,44 @@ export default function ProfessionalChatsScreen() {
 
   return (
     <Screen scrollable={false}>
-      <Image
-        source={require('../../../../../assets/images/bama-logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      {/* Gradient header — title + tabs inside */}
+      <View style={styles.headerWrap}>
+        <LinearGradient
+          colors={['#cb6ce6', '#004aad']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradient}
+        >
+          <Text style={styles.headerTitle}>Chats</Text>
 
-      <View style={styles.tabBar}>
-        {TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, active === tab && { borderBottomColor: colors.accent, borderBottomWidth: 2 }]}
-            onPress={() => setActive(tab)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabText, { color: active === tab ? colors.accent : colors.textMuted }]}>
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
+          <View style={styles.tabBar}>
+            {TABS.map((tab) => {
+              const isActive = active === tab;
+              return (
+                <TouchableOpacity
+                  key={tab}
+                  style={styles.tab}
+                  onPress={() => setActive(tab)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
+                    <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                      {tab}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </LinearGradient>
+        <View style={[styles.concaveCap, { backgroundColor: colors.bg }]} />
       </View>
-      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
+      {/* Content */}
       {active === 'Chats' && <ChatsList />}
-
-      {active === 'Courses' && (
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderIcon}>🎓</Text>
-          <Text style={[styles.placeholderTitle, { color: colors.text }]}>Courses</Text>
-          <Text style={[styles.placeholderSub, { color: colors.textMuted }]}>
-            Professional courses and training will appear here.
-          </Text>
-        </View>
-      )}
-
-      {active === 'Communities' && (
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderIcon}>🤝</Text>
-          <Text style={[styles.placeholderTitle, { color: colors.text }]}>Communities</Text>
-          <Text style={[styles.placeholderSub, { color: colors.textMuted }]}>
-            Professional communities and groups will appear here.
-          </Text>
+      {active !== 'Chats' && (
+        <View style={styles.comingSoon}>
+          <Text style={[styles.comingSoonText, { color: colors.textMuted }]}>Coming soon</Text>
         </View>
       )}
     </Screen>
@@ -61,13 +59,61 @@ export default function ProfessionalChatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  logo: { width: '100%', height: 240, marginTop: 12 },
-  tabBar: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 16 },
-  tab: { flex: 1, alignItems: 'center', paddingBottom: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabText: { fontSize: 15, fontWeight: '600' },
-  divider: { height: 1 },
-  placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 40 },
-  placeholderIcon: { fontSize: 48, marginBottom: 4 },
-  placeholderTitle: { fontSize: 20, fontWeight: '700' },
-  placeholderSub: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  headerWrap: {
+    alignSelf: 'stretch',
+    marginHorizontal: -16,
+    marginTop: -16,
+  },
+  gradient: {
+    height: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 40,
+    gap: 16,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  concaveCap: {
+    height: 40,
+    marginTop: -40,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  tabPill: {
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  tabPillActive: {
+    backgroundColor: '#fff',
+  },
+  tabText: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.65)',
+  },
+  tabTextActive: {
+    color: '#004aad',
+    fontWeight: '700',
+  },
+  comingSoon: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  comingSoonText: {
+    fontSize: 15,
+  },
 });

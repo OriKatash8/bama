@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Modal, Switch, Pressable,
 } from 'react-native';
 import { useNavigation } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import {
   Settings, User, Bell, Moon, Sun, Globe, HelpCircle, LogOut,
@@ -13,6 +14,7 @@ import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { RoleChips } from '@features/profile/components/RoleChips';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
+import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useLogout } from '@features/auth/hooks/useLogout';
@@ -47,34 +49,44 @@ export default function ProfessionalProfileScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Profile',
+      headerTintColor: '#fff',
+      headerTitleStyle: { color: '#fff', fontWeight: '700' as const },
+      headerBackground: () => (
+        <LinearGradient
+          colors={['#cb6ce6', '#004aad']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ),
       headerLeft: () => (
         <TouchableOpacity
           style={styles.gearBtn}
           onPress={() => setMenuOpen(true)}
           activeOpacity={0.8}
         >
-          <Settings size={26} color={colors.text} strokeWidth={1.5} />
+          <Settings size={26} color="#fff" strokeWidth={1.5} />
         </TouchableOpacity>
       ),
       headerRight: () =>
         isEditing ? (
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: colors.text }]}>Cancel</Text>
+              <Text style={[styles.headerBtnText, { color: '#fff' }]}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
               {isSaving
-                ? <ActivityIndicator size="small" color="#cb6ce6" />
+                ? <ActivityIndicator size="small" color="#fff" />
                 : <Text style={[styles.headerBtnText, styles.save]}>Save</Text>}
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={[styles.headerBtnText, { color: colors.text }]}>Edit</Text>
+            <Text style={[styles.headerBtnText, { color: '#fff' }]}>Edit</Text>
           </TouchableOpacity>
         ),
     });
-  }, [isEditing, isSaving, colors.text]);
+  }, [isEditing, isSaving]);
 
   useEffect(() => {
     if (user) setName(user.displayName);
@@ -140,47 +152,49 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <Screen style={styles.content} scrollable>
-      {isEditing ? (
-        <>
-          <ProfileHeader
-            photoURL={photoUri ?? user?.photoURL ?? null}
-            name={name}
-            isEditing={isEditing}
-            onPhotoPress={handlePhotoPress}
-            onNameChange={setName}
-            rating={profile?.rating ?? 0}
-            reviewCount={profile?.reviewCount ?? 0}
-            size={192}
-          />
-          <RoleChips selected={skills} isEditing={isEditing} onChange={setSkills} />
-        </>
-      ) : (
-        <View style={styles.headerCol}>
-          <ProfileHeader
-            photoURL={photoUri ?? user?.photoURL ?? null}
-            name={name}
-            isEditing={false}
-            rating={profile?.rating ?? 0}
-            reviewCount={profile?.reviewCount ?? 0}
-            size={192}
-          />
-          <RoleChips selected={skills} isEditing={false} />
+      <ProfileHeader
+        photoURL={photoUri ?? user?.photoURL ?? null}
+        name={name}
+        isEditing={isEditing}
+        onPhotoPress={handlePhotoPress}
+        onNameChange={setName}
+        rating={profile?.rating ?? 0}
+        reviewCount={profile?.reviewCount ?? 0}
+        size={90}
+      />
+      <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
+      <RoleChips selected={skills} isEditing={isEditing} onChange={isEditing ? setSkills : undefined} />
+
+      {!isEditing && (
+        <View style={styles.starsRow}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Text key={i} style={styles.star}>
+              {(profile?.rating ?? 0) >= i - 0.5 ? '★' : '☆'}
+            </Text>
+          ))}
+          <Text style={styles.reviewLabel}>({profile?.reviewCount ?? 0})</Text>
         </View>
       )}
-      <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
 
       <ContentTabs
         equipment={equipment}
         priceList={priceList}
         reviews={reviews}
-        assets={assets}
         isEditing={isEditing}
         onEquipmentChange={setEquipment}
         onPriceListChange={setPriceList}
-        onPortfolioAdd={upload}
-        onPortfolioRemove={remove}
-        onPortfolioError={(msg) => showToast(msg, 'error')}
       />
+
+      <View style={styles.portfolioSection}>
+        <Text style={[styles.portfolioTitle, { color: colors.text }]}>Portfolio</Text>
+        <PortfolioGrid
+          assets={assets}
+          isEditing={isEditing}
+          onAdd={upload}
+          onRemove={remove}
+          onError={(msg) => showToast(msg, 'error')}
+        />
+      </View>
 
       {/* Settings modal */}
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
@@ -283,13 +297,18 @@ const styles = StyleSheet.create({
   content: { gap: 24 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  headerCol: { alignItems: 'center', gap: 16 },
-
   gearBtn: { marginLeft: 8, padding: 4 },
   headerBtns: { flexDirection: 'row', gap: 12 },
   headerBtn: { paddingHorizontal: 8 },
   headerBtnText: { fontSize: 16 },
-  save: { fontWeight: '700', color: '#cb6ce6' },
+  save: { fontWeight: '700', color: '#fff' },
+
+  starsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  star: { fontSize: 36, color: '#cb6ce6' },
+  reviewLabel: { fontSize: 13, color: '#cb6ce6', marginLeft: 4, fontWeight: '600' },
+
+  portfolioSection: { gap: 12 },
+  portfolioTitle: { fontSize: 18, fontWeight: '700', textAlign: 'right' },
 
   disabled: { opacity: 0.5 },
 

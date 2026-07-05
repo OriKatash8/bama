@@ -34,18 +34,18 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
 
 const styles = StyleSheet.create({
   container: { gap: 12 },
-  empty: { fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingVertical: 16 },
+  empty: { fontSize: 14, color: 'rgba(0,74,173,0.4)', textAlign: 'center', paddingVertical: 16 },
   card: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: 'rgba(0,74,173,0.06)',
     borderRadius: 12,
     padding: 16,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#ffffff18',
+    borderColor: 'rgba(0,74,173,0.15)',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  author: { fontSize: 14, fontWeight: '600', color: '#cb6ce6' },
+  author: { fontSize: 14, fontWeight: '600', color: '#004aad' },
   stars: { fontSize: 14, color: '#F4C430' },
-  body: { fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 20 },
-  date: { fontSize: 12, color: 'rgba(255,255,255,0.35)' },
+  body: { fontSize: 14, color: '#004aad', lineHeight: 20 },
+  date: { fontSize: 12, color: 'rgba(0,74,173,0.5)' },
 });

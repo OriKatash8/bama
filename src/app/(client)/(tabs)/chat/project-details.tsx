@@ -15,11 +15,14 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { auth } from '@core/firebase/config';
 import { useTheme, type AppColors } from '@core/hooks/useTheme';
-import type { FilledSlot, Mission, MissionStatus, PriceOffer, ProjectRequest } from '@core/types/project';
+import type { FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
 import {
   calculateProjectFee,
   markProjectComplete,
+  listenToPaymentRequests,
+  createPaymentRequest,
+  respondToPaymentRequest,
   type ProjectFee,
 } from '@features/chat/services/paymentService';
 import {
@@ -86,6 +89,14 @@ export default function ProjectDetailsScreen() {
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [isAddingMission, setIsAddingMission] = useState(false);
 
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
+  const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<PriceOffer | null>(null);
+  const [proposedAmount, setProposedAmount] = useState('');
+  const [requestNote, setRequestNote] = useState('');
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!projectId) return;
 
@@ -139,6 +150,12 @@ export default function ProjectDetailsScreen() {
     return listenToMissions(projectId, setMissions);
   }, [projectId]);
 
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!projectId || !userId) return;
+    return listenToPaymentRequests(projectId, userId, setPaymentRequests);
+  }, [projectId]);
+
   async function handleMarkComplete() {
     if (!projectId) return;
     setIsCalculatingFee(true);
@@ -165,6 +182,54 @@ export default function ProjectDetailsScreen() {
       Alert.alert('Error', 'Could not complete the project. Please try again.');
     } finally {
       setIsConfirming(false);
+    }
+  }
+
+  async function handleSendPaymentRequest() {
+    if (!projectId || !selectedOffer) return;
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) return;
+    const parsed = parseFloat(proposedAmount);
+    if (isNaN(parsed) || parsed <= 0) return;
+
+    setIsSendingRequest(true);
+    try {
+      const isClient = project?.clientId === currentUserId;
+      const toUserId = isClient ? selectedOffer.professionalId : (project?.clientId ?? '');
+      await createPaymentRequest(projectId, {
+        fromUserId: currentUserId,
+        toUserId,
+        professionalId: selectedOffer.professionalId,
+        currentAmount: selectedOffer.price,
+        proposedAmount: parsed,
+        note: requestNote.trim() || undefined,
+      });
+      setShowPaymentRequestModal(false);
+      setSelectedOffer(null);
+      setProposedAmount('');
+      setRequestNote('');
+    } catch {
+      Alert.alert('Error', 'Could not send payment request. Please try again.');
+    } finally {
+      setIsSendingRequest(false);
+    }
+  }
+
+  async function handleRespondToRequest(request: PaymentRequest, accept: boolean) {
+    if (!projectId) return;
+    setRespondingId(request.id);
+    try {
+      await respondToPaymentRequest(
+        projectId,
+        request.id,
+        accept,
+        request.professionalId,
+        request.proposedAmount,
+      );
+    } catch {
+      Alert.alert('Error', `Could not ${accept ? 'accept' : 'reject'} request. Please try again.`);
+    } finally {
+      setRespondingId(null);
     }
   }
 
@@ -227,7 +292,8 @@ export default function ProjectDetailsScreen() {
   const statusColor = STATUS_COLORS[project.status];
   const total = acceptedOffers.reduce((sum, o) => sum + o.price, 0);
   const filledSlots: FilledSlot[] = project.filledSlots ?? [];
-  const isClient = auth.currentUser?.uid === project.clientId;
+  const currentUserId = auth.currentUser?.uid ?? '';
+  const isClient = currentUserId === project.clientId;
   const isCompleted = project.status === 'completed';
 
   const allMemberNames: Record<string, string> = {
@@ -246,6 +312,9 @@ export default function ProjectDetailsScreen() {
       }))
       .filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i),
   ];
+
+  const incomingRequests = paymentRequests.filter((r) => r.toUserId === currentUserId);
+  const outgoingRequests = paymentRequests.filter((r) => r.fromUserId === currentUserId);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -296,14 +365,28 @@ export default function ProjectDetailsScreen() {
           />
         )}
 
-        {filledSlots.map((slot, i) => {
-          const member = memberUsers[slot.professionalId];
+        {Object.values(
+          filledSlots.reduce<Record<string, { professionalId: string; roles: string[] }>>(
+            (acc, slot) => {
+              const role = `${slot.subcategory} · ${slot.category}`;
+              const entry = acc[slot.professionalId];
+              if (entry) {
+                entry.roles.push(role);
+              } else {
+                acc[slot.professionalId] = { professionalId: slot.professionalId, roles: [role] };
+              }
+              return acc;
+            },
+            {},
+          ),
+        ).map(({ professionalId, roles }) => {
+          const member = memberUsers[professionalId];
           return (
             <MemberRow
-              key={i}
-              displayName={member?.displayName ?? slot.professionalId}
+              key={professionalId}
+              displayName={member?.displayName ?? professionalId}
               photoURL={member?.photoURL ?? null}
-              role={`${slot.subcategory} · ${slot.category}`}
+              role={roles.join(' | ')}
               colors={colors}
             />
           );
@@ -361,9 +444,82 @@ export default function ProjectDetailsScreen() {
           })
         )}
 
-        {/* SECTION 4 — Payment Summary */}
+        {/* SECTION 4 — Payment */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Payment</Text>
 
+        {/* Pending payment requests */}
+        {paymentRequests.length > 0 && (
+          <>
+            {incomingRequests.map((req) => {
+              const fromName = allMemberNames[req.fromUserId] ?? req.fromUserId;
+              const isResponding = respondingId === req.id;
+              return (
+                <View
+                  key={req.id}
+                  style={[styles.pendingRequestCard, { backgroundColor: colors.card, borderColor: '#f59e0b' }]}
+                >
+                  <Text style={[styles.pendingRequestText, { color: colors.text }]}>
+                    <Text style={styles.pendingRequestBold}>{fromName}</Text>
+                    {` requests to change payment from $${req.currentAmount.toLocaleString()} to $${req.proposedAmount.toLocaleString()}`}
+                  </Text>
+                  {req.note ? (
+                    <Text style={[styles.pendingRequestNote, { color: colors.textMuted }]}>
+                      "{req.note}"
+                    </Text>
+                  ) : null}
+                  <View style={styles.pendingRequestActions}>
+                    <TouchableOpacity
+                      style={[
+                        styles.pendingActionBtn,
+                        styles.pendingActionAccept,
+                        isResponding && styles.completeBtnDisabled,
+                      ]}
+                      onPress={() => handleRespondToRequest(req, true)}
+                      disabled={isResponding}
+                      activeOpacity={0.8}
+                    >
+                      {isResponding ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                      ) : (
+                        <Text style={styles.pendingActionBtnText}>Accept</Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.pendingActionBtn,
+                        styles.pendingActionReject,
+                        isResponding && styles.completeBtnDisabled,
+                      ]}
+                      onPress={() => handleRespondToRequest(req, false)}
+                      disabled={isResponding}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.pendingActionBtnText}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+
+            {outgoingRequests.map((req) => (
+              <View
+                key={req.id}
+                style={[styles.pendingRequestCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={styles.pendingOutgoingRow}>
+                  <Text style={[styles.pendingRequestText, { color: colors.text }]}>
+                    {`Awaiting response: $${req.currentAmount.toLocaleString()} → $${req.proposedAmount.toLocaleString()}`}
+                  </Text>
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeText}>Pending</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* Payment list */}
         {acceptedOffers.length === 0 ? (
           <Text style={[styles.emptyNote, { color: colors.textMuted }]}>No accepted offers yet</Text>
         ) : (
@@ -380,9 +536,23 @@ export default function ProjectDetailsScreen() {
                         {offer.subcategory} · {offer.category}
                       </Text>
                     </View>
-                    <Text style={[styles.paymentAmount, { color: colors.text }]}>
-                      ${offer.price.toLocaleString()}
-                    </Text>
+                    <View style={styles.paymentRight}>
+                      <Text style={[styles.paymentAmount, { color: colors.text }]}>
+                        ${offer.price.toLocaleString()}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.requestUpdateBtn}
+                        onPress={() => {
+                          setSelectedOffer(offer);
+                          setProposedAmount('');
+                          setRequestNote('');
+                          setShowPaymentRequestModal(true);
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.requestUpdateText}>Update</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   {i < acceptedOffers.length - 1 && <RowDivider colors={colors} />}
                 </View>
@@ -397,16 +567,6 @@ export default function ProjectDetailsScreen() {
             </View>
           </View>
         )}
-
-        <TouchableOpacity
-          style={[styles.comingSoonBtn, { borderColor: colors.border }]}
-          onPress={() => Alert.alert('Coming soon', 'Payment update requests are not available yet.')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.comingSoonText, { color: colors.textMuted }]}>
-            Request Payment Update
-          </Text>
-        </TouchableOpacity>
 
         <View style={styles.bottomPad} />
       </ScrollView>
@@ -551,7 +711,6 @@ export default function ProjectDetailsScreen() {
 
             {feeData && (
               <>
-                {/* Section 1 — Crew payments */}
                 <Text style={[styles.modalSectionLabel, { color: colors.textMuted }]}>
                   Pay directly to your crew
                 </Text>
@@ -574,7 +733,6 @@ export default function ProjectDetailsScreen() {
 
                 <View style={[styles.feeDivider, { backgroundColor: colors.border }]} />
 
-                {/* Section 2 — Platform fee */}
                 <Text style={[styles.modalSectionLabel, { color: colors.textMuted }]}>
                   Platform fee
                 </Text>
@@ -621,6 +779,84 @@ export default function ProjectDetailsScreen() {
                 By confirming, you agree to pay the platform fee of ${feeData.platformFee.toLocaleString()}
               </Text>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Payment Request Modal */}
+      <Modal
+        visible={showPaymentRequestModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPaymentRequestModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Request Payment Update</Text>
+
+            {selectedOffer && (
+              <>
+                <View style={styles.requestModalInfoRow}>
+                  <Text style={[styles.requestModalLabel, { color: colors.textMuted }]}>Professional</Text>
+                  <Text style={[styles.requestModalValue, { color: colors.text }]}>
+                    {memberUsers[selectedOffer.professionalId]?.displayName ?? selectedOffer.professionalId}
+                  </Text>
+                </View>
+                <View style={styles.requestModalInfoRow}>
+                  <Text style={[styles.requestModalLabel, { color: colors.textMuted }]}>Current amount</Text>
+                  <Text style={[styles.requestModalValue, { color: colors.text }]}>
+                    ${selectedOffer.price.toLocaleString()}
+                  </Text>
+                </View>
+              </>
+            )}
+
+            <Text style={[styles.missionInputLabel, { color: colors.textMuted }]}>Proposed amount</Text>
+            <TextInput
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
+              value={proposedAmount}
+              onChangeText={setProposedAmount}
+              placeholder="Enter new amount"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={[styles.missionInputLabel, { color: colors.textMuted }]}>Note (optional)</Text>
+            <TextInput
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
+              value={requestNote}
+              onChangeText={setRequestNote}
+              placeholder="Reason for update..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={2}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]}
+                onPress={() => setShowPaymentRequestModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalBtn,
+                  styles.modalBtnConfirm,
+                  (isSendingRequest || !proposedAmount.trim() || parseFloat(proposedAmount) <= 0) && styles.completeBtnDisabled,
+                ]}
+                onPress={handleSendPaymentRequest}
+                disabled={isSendingRequest || !proposedAmount.trim() || parseFloat(proposedAmount) <= 0}
+                activeOpacity={0.8}
+              >
+                {isSendingRequest ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.modalBtnConfirmText}>Send Request</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -781,20 +1017,55 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   paymentLeft: { flex: 1, gap: 2 },
+  paymentRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   paymentName: { fontSize: 14, fontWeight: '600' },
   paymentRole: { fontSize: 12 },
   paymentAmount: { fontSize: 15, fontWeight: '600' },
   paymentTotalLabel: { fontSize: 15, fontWeight: '700' },
   paymentTotalAmount: { fontSize: 17, fontWeight: '800' },
 
-  comingSoonBtn: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 13,
-    alignItems: 'center',
-    borderStyle: 'dashed',
+  requestUpdateBtn: {
+    backgroundColor: 'rgba(0,74,173,0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  comingSoonText: { fontSize: 14, fontWeight: '500' },
+  requestUpdateText: { fontSize: 12, fontWeight: '600', color: '#004aad' },
+
+  pendingRequestCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  pendingRequestText: { fontSize: 14, lineHeight: 20 },
+  pendingRequestBold: { fontWeight: '700' },
+  pendingRequestNote: { fontSize: 13, fontStyle: 'italic' },
+  pendingRequestActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  pendingActionBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 38,
+  },
+  pendingActionAccept: { backgroundColor: '#22c55e' },
+  pendingActionReject: { backgroundColor: '#ef4444' },
+  pendingActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  pendingOutgoingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  pendingBadge: {
+    backgroundColor: 'rgba(107,114,128,0.15)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  pendingBadgeText: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
 
   bottomPad: { height: 32 },
 
@@ -925,6 +1196,15 @@ const styles = StyleSheet.create({
   },
   feePlatformNote: { fontSize: 12, marginTop: -6, marginBottom: 4 },
   feeAgreementNote: { fontSize: 12, textAlign: 'center', marginTop: 4 },
+
+  requestModalInfoRow: { gap: 2 },
+  requestModalLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  requestModalValue: { fontSize: 16, fontWeight: '600' },
 
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   modalBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },

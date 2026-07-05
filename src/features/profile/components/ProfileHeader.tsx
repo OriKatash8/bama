@@ -1,5 +1,6 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { Avatar } from '@components/ui/Avatar';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@core/hooks/useTheme';
 
 type ProfileHeaderProps = {
   photoURL: string | null;
@@ -19,75 +20,130 @@ export function ProfileHeader({
   isEditing,
   onPhotoPress,
   onNameChange,
-  size = 96,
+  size = 90,
   email,
   rating,
   reviewCount,
 }: ProfileHeaderProps) {
-  const overlayRadius = size / 2;
+  const colors = useTheme();
+
+  const initials = name
+    .split(' ')
+    .map((n) => n[0] ?? '')
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        onPress={isEditing ? onPhotoPress : undefined}
-        disabled={!isEditing}
-        activeOpacity={0.8}
+    <View style={styles.bannerWrap}>
+      <LinearGradient
+        colors={['#cb6ce6', '#004aad']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.banner}
       >
-        <Avatar uri={photoURL} name={name} size={size} />
-        {isEditing && (
-          <View style={[styles.overlay, { borderBottomLeftRadius: overlayRadius, borderBottomRightRadius: overlayRadius }]}>
-            <Text style={styles.overlayText}>Edit</Text>
-          </View>
+        <TouchableOpacity
+          onPress={isEditing ? onPhotoPress : undefined}
+          disabled={!isEditing}
+          activeOpacity={0.8}
+          style={[styles.avatarWrap, { width: size, height: size, borderRadius: size / 2 }]}
+        >
+          {photoURL ? (
+            <Image
+              source={{ uri: photoURL }}
+              style={[styles.avatarImage, { borderRadius: size / 2 }]}
+            />
+          ) : (
+            <View style={[styles.avatarFallback, { borderRadius: size / 2 }]}>
+              <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials}</Text>
+            </View>
+          )}
+          {isEditing && (
+            <View style={[styles.editOverlay, { borderBottomLeftRadius: size / 2, borderBottomRightRadius: size / 2 }]}>
+              <Text style={styles.editOverlayText}>Edit</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {isEditing ? (
+          <TextInput
+            style={styles.nameInput}
+            value={name}
+            onChangeText={onNameChange}
+            autoCapitalize="words"
+          />
+        ) : (
+          <Text style={styles.name}>{name}</Text>
         )}
-      </TouchableOpacity>
-      {isEditing ? (
-        <TextInput
-          style={styles.nameInput}
-          value={name}
-          onChangeText={onNameChange}
-          autoCapitalize="words"
-        />
-      ) : (
-        <Text style={styles.name}>{name}</Text>
-      )}
-      {!isEditing && rating !== undefined && reviewCount !== undefined && (
-        <View style={styles.starsRow}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Text key={i} style={styles.star}>{(rating ?? 0) >= i - 0.5 ? '★' : '☆'}</Text>
-          ))}
-          <Text style={styles.reviewLabel}>({reviewCount})</Text>
-        </View>
-      )}
-      {email && <Text style={styles.email}>{email}</Text>}
+
+        {email && <Text style={styles.email}>{email}</Text>}
+      </LinearGradient>
+
+      {/* Concave bottom curve illusion: rounded-top bg-colored cap overlaps the gradient */}
+      <View style={[styles.concaveCap, { backgroundColor: colors.bg }]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', gap: 8 },
-  name: { fontSize: 22, fontWeight: '700', color: '#cb6ce6' },
-  starsRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  star: { fontSize: 20, color: '#F4C430' },
-  reviewLabel: { fontSize: 12, color: '#cb6ce6aa', marginLeft: 4 },
-  email: { fontSize: 14, color: '#cb6ce6aa', marginTop: -2 },
-  nameInput: {
-    fontSize: 22,
+  bannerWrap: {
+    alignSelf: 'stretch',
+    marginHorizontal: -16,
+    marginTop: -16,
+  },
+  banner: {
+    height: 270,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingBottom: 48,
+  },
+  concaveCap: {
+    height: 40,
+    marginTop: -40,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+  },
+  avatarWrap: {
+    borderWidth: 3,
+    borderColor: '#fff',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarFallback: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  avatarInitials: {
     fontWeight: '700',
     color: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ffffff44',
-    textAlign: 'center',
-    paddingVertical: 4,
-    minWidth: 160,
   },
-  overlay: {
+  editOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderBottomLeftRadius: 48,
-    borderBottomRightRadius: 48,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     paddingVertical: 4,
   },
-  overlayText: { color: '#fff', fontSize: 11, textAlign: 'center', fontWeight: '600' },
+  editOverlayText: { color: '#fff', fontSize: 11, textAlign: 'center', fontWeight: '600' },
+  name: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  nameInput: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    paddingVertical: 4,
+    minWidth: 160,
+  },
+  email: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
 });
