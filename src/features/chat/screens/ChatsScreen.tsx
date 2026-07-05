@@ -7,6 +7,16 @@ import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
 import { listenToUserChats } from '../services/chatService';
 import type { Chat } from '../types';
+import type { ProjectRequest } from '@core/types/project';
+
+type ProjectStatus = ProjectRequest['status'];
+
+const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
+  open:        { label: 'Open',        color: '#6b7280' },
+  in_progress: { label: 'In Progress', color: '#f59e0b' },
+  completed:   { label: 'Completed',   color: '#22c55e' },
+  cancelled:   { label: 'Cancelled',   color: '#ef4444' },
+};
 
 export function ChatsScreen() {
   const router = useRouter();
@@ -16,7 +26,9 @@ export function ChatsScreen() {
   const user = useAuthStore((s) => s.user);
   const [chats, setChats] = useState<Chat[]>([]);
   const [dmNames, setDmNames] = useState<Record<string, string>>({});
+  const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
+  const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) {
@@ -64,6 +76,35 @@ export function ChatsScreen() {
     });
   }, [chats, user]);
 
+  useEffect(() => {
+    const toFetch = chats.filter(
+      (c) =>
+        c.type === 'group' &&
+        c.projectId != null &&
+        !fetchedChatProjectIdsRef.current.has(c.id),
+    );
+
+    if (toFetch.length === 0) return;
+
+    toFetch.forEach((c) => fetchedChatProjectIdsRef.current.add(c.id));
+
+    Promise.all(
+      toFetch.map(async (c) => {
+        const snap = await getDoc(doc(db, 'projects', c.projectId!));
+        if (!snap.exists()) return null;
+        const status = (snap.data() as Pick<ProjectRequest, 'status'>).status;
+        return [c.id, status] as const;
+      }),
+    ).then((entries) => {
+      const valid = entries.filter(
+        (e): e is [string, ProjectStatus] => e !== null,
+      );
+      if (valid.length > 0) {
+        setProjectStatuses((prev) => ({ ...prev, ...Object.fromEntries(valid) }));
+      }
+    });
+  }, [chats]);
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -82,9 +123,18 @@ export function ChatsScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.rowContent}>
-              <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-                {item.type === 'group' ? item.name : (dmNames[item.id] ?? 'Loading...')}
-              </Text>
+              <View style={styles.nameRow}>
+                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                  {item.type === 'group' ? item.name : (dmNames[item.id] ?? 'Loading...')}
+                </Text>
+                {item.type === 'group' && projectStatuses[item.id] != null && (
+                  <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[projectStatuses[item.id]].color }]}>
+                    <Text style={styles.statusBadgeText}>
+                      {STATUS_CONFIG[projectStatuses[item.id]].label}
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text style={[styles.preview, { color: colors.textMuted }]} numberOfLines={1}>
                 {item.lastMessage?.text ?? 'No messages yet'}
               </Text>
@@ -108,9 +158,26 @@ const styles = StyleSheet.create({
   rowContent: {
     gap: 4,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+  },
   name: {
     fontSize: 16,
     fontWeight: '600',
+    flexShrink: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
   },
   preview: {
     fontSize: 14,

@@ -9,6 +9,7 @@ import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAuth } from '@core/hooks/useAuth';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
 import { Calendar } from 'lucide-react-native';
@@ -40,11 +41,21 @@ const gradientStyle = {
   backgroundClip: 'text',
 } as any;
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 18) return 'Good afternoon';
+  if (hour >= 18 && hour < 22) return 'Good evening';
+  return 'Hey';
+}
+
 export default function BuilderScreen() {
   const { slots, totalCount, addSlot, removeSlot, loadSlots } = useCrewBuilder();
   const { submit, updateProject } = useProjectRequests();
   const { showToast } = useUiStore();
   const colors = useTheme();
+  const { user } = useAuth();
+  const greeting = getGreeting();
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);
@@ -149,20 +160,23 @@ export default function BuilderScreen() {
 
   return (
     <Screen scrollable={false} backgroundColor={colors.bg}>
-      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView style={[styles.scroll, { backgroundColor: colors.bg }]} keyboardShouldPersistTaps="handled">
+        <View style={styles.topBar}>
+          <View style={styles.logoWrap}>
+            <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
+          </View>
+          <Text style={[styles.greetText, { color: colors.text }, Platform.OS === 'web' && gradientStyle]} numberOfLines={2}>
+            {greeting}, {user?.displayName} :)
+          </Text>
+        </View>
+
         <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           Build Your Crew
         </Text>
 
         <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Project Details</Text>
 
-        {/* Project details card */}
-        <View style={[
-          styles.card,
-          { backgroundColor: colors.card, borderColor: colors.border },
-          Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
-        ]}>
-
+        <View style={styles.fieldsWrap}>
           <Text style={[styles.label, { color: colors.textSec }]}>Title</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
@@ -365,13 +379,22 @@ export default function BuilderScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    overflow: 'hidden',
+  },
+  logoWrap: { alignItems: 'flex-start', justifyContent: 'center', marginLeft: -130 },
+  bamaLogo: { width: 640, height: 100 },
+  greetText: { fontSize: 18, fontWeight: '600', textAlign: 'right', flexShrink: 1, maxWidth: 180 },
   pageTitle: { fontSize: 52, fontWeight: '900', marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
-  card: {
-    margin: 16,
-    marginTop: 24,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
+  fieldsWrap: {
+    marginHorizontal: 16,
+    marginTop: 8,
   },
   rolesCard: {
     marginHorizontal: 16,

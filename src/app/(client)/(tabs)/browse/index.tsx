@@ -1,16 +1,25 @@
 import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
-  StyleSheet, Platform, Animated, Easing, ActivityIndicator,
+  StyleSheet, Platform, Animated, Easing, ActivityIndicator, Image,
 } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { auth } from '@core/firebase/config';
+import { useAuth } from '@core/hooks/useAuth';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 18) return 'Good afternoon';
+  if (hour >= 18 && hour < 22) return 'Good evening';
+  return 'Hey';
+}
 
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   key,
@@ -71,6 +80,8 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
   const colors = useTheme();
+  const { user } = useAuth();
+  const greeting = getGreeting();
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
@@ -253,6 +264,21 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 16 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingRight: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  logoWrap: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', marginLeft: -130 },
+  bamaLogo: { width: 640, height: 224 },
+  rightCol: { alignItems: 'flex-end', gap: 8, flexShrink: 0 },
+  greetText: { fontSize: 26, fontWeight: '600', textAlign: 'right' },
+  avatar: { width: 152, height: 152, borderRadius: 76 },
+  avatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { color: '#fff', fontSize: 64, fontWeight: '700' },
   flex: { flex: 1 },
 
   header: {

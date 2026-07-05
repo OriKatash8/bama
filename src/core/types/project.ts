@@ -106,3 +106,16 @@ export type AcceptedMember = {
   price: number;
   displayName: string;
 };
+
+export type MissionStatus = 'todo' | 'in_progress' | 'done';
+
+export type Mission = {
+  id: string;
+  projectId: string;
+  title: string;
+  assignedTo: string[];
+  status: MissionStatus;
+  dueDate?: string;
+  createdBy: string;
+  createdAt: Timestamp;
+};

@@ -1,19 +1,18 @@
-import { useState, useLayoutEffect } from 'react';
+import { useState } from 'react';
 import {
-  View, TouchableOpacity, Text, StyleSheet,
-  Platform, Modal, Switch, Pressable,
+  View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Image,
 } from 'react-native';
-import { useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  Settings, User, Bell, Moon, Sun, Globe, HelpCircle, LogOut,
+  User, Camera, Sun, Moon, ChevronRight, Lock, Bell, LogOut,
 } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
-import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { useClientProfile } from '@features/profile/hooks/useClientProfile';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+
+type Lang = 'he' | 'en';
 
 export default function ClientProfileScreen() {
   const { user, isSaving, save } = useClientProfile();
@@ -21,33 +20,8 @@ export default function ClientProfileScreen() {
   const { isLoading: isSigningOut, logout } = useLogout();
   const isDark = useUiStore((s) => s.isDark);
   const toggleTheme = useUiStore((s) => s.toggleTheme);
-  const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.displayName ?? '');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const navigation = useNavigation();
   const colors = useTheme();
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: 'Profile',
-      headerRight: () =>
-        isEditing ? (
-          <View style={styles.headerBtns}>
-            <TouchableOpacity onPress={handleCancel} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: colors.text }]}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn} disabled={isSaving}>
-              <Text style={[styles.headerBtnText, styles.save, isSaving && { opacity: 0.4 }]}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={[styles.headerBtnText, { color: colors.text }]}>Edit</Text>
-          </TouchableOpacity>
-        ),
-    });
-  }, [isEditing, name, photoUri, isSaving, colors.text]);
+  const [lang, setLang] = useState<Lang>('en');
 
   async function handlePhotoPress() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -56,232 +30,213 @@ export default function ClientProfileScreen() {
       aspect: [1, 1],
       quality: 0.8,
     });
-    if (!result.canceled) setPhotoUri(result.assets[0].uri);
-  }
-
-  async function handleSave() {
-    try {
-      await save(name, photoUri);
-      setIsEditing(false);
-      setPhotoUri(null);
-    } catch (e: any) {
-      showToast(e.message ?? 'Failed to save profile', 'error');
+    if (!result.canceled) {
+      try {
+        await save(user?.displayName ?? '', result.assets[0].uri);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Failed to update photo';
+        showToast(msg, 'error');
+      }
     }
   }
 
-  function handleCancel() {
-    setName(user?.displayName ?? '');
-    setPhotoUri(null);
-    setIsEditing(false);
-  }
-
-  const cardStyle = [
-    styles.menuCard,
-    { backgroundColor: colors.card, borderColor: colors.border },
-    Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any),
-  ];
-
   return (
-    <Screen>
-      <View style={styles.container}>
-        {/* Settings gear button — top-left */}
+    <Screen scrollable backgroundColor={colors.bg}>
+      <View style={styles.content}>
+
+        {/* ── 1. AVATAR ── */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarWrap}>
+            {user?.photoURL ? (
+              <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.accent }]}>
+                <User size={36} color="#fff" strokeWidth={1.5} />
+              </View>
+            )}
+            <TouchableOpacity
+              style={[styles.editOverlay, { backgroundColor: colors.primary }]}
+              onPress={handlePhotoPress}
+              disabled={isSaving}
+              activeOpacity={0.8}
+            >
+              <Camera size={12} color="#fff" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.displayName, { color: colors.text }]}>
+            {user?.displayName ?? ''}
+          </Text>
+          <Text style={[styles.email, { color: colors.textMuted }]}>
+            {user?.email ?? ''}
+          </Text>
+        </View>
+
+        {/* ── 2. LANGUAGE ── */}
+        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>LANGUAGE</Text>
+        <View style={[styles.langRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.langBtn, lang === 'he' && { backgroundColor: colors.primary }]}
+            onPress={() => setLang('he')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.langBtnText, { color: lang === 'he' ? '#fff' : colors.textMuted }]}>
+              עברית
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.langBtn, lang === 'en' && { backgroundColor: colors.primary }]}
+            onPress={() => setLang('en')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.langBtnText, { color: lang === 'en' ? '#fff' : colors.textMuted }]}>
+              English
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── 3. APPEARANCE ── */}
+        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>APPEARANCE</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.cardRow}>
+            {isDark
+              ? <Moon size={20} color={colors.textMuted} strokeWidth={1.5} />
+              : <Sun size={20} color={colors.textMuted} strokeWidth={1.5} />}
+            <Text style={[styles.rowLabel, { color: colors.text }]}>
+              {isDark ? 'Dark mode' : 'Light mode'}
+            </Text>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+
+        {/* ── 4. ACCOUNT ── */}
+        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.cardRow}
+            onPress={() => Alert.alert('Coming soon', 'Personal details editing is not available yet.')}
+            activeOpacity={0.7}
+          >
+            <User size={20} color={colors.textMuted} strokeWidth={1.5} />
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Personal details</Text>
+            <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
+          </TouchableOpacity>
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.cardRow}
+            onPress={() => Alert.alert('Coming soon', 'Privacy & Security settings are not available yet.')}
+            activeOpacity={0.7}
+          >
+            <Lock size={20} color={colors.textMuted} strokeWidth={1.5} />
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Privacy & Security</Text>
+            <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
+          </TouchableOpacity>
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.cardRow}
+            onPress={() => Alert.alert('Coming soon', 'Notification settings are not available yet.')}
+            activeOpacity={0.7}
+          >
+            <Bell size={20} color={colors.textMuted} strokeWidth={1.5} />
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Notifications</Text>
+            <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ── 5. LOGOUT ── */}
         <TouchableOpacity
-          style={[styles.gearBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => setMenuOpen(true)}
+          style={[styles.logoutBtn, { borderColor: colors.primary }, isSigningOut && styles.disabled]}
+          onPress={logout}
+          disabled={isSigningOut}
           activeOpacity={0.8}
         >
-          <Settings size={26} color={colors.text} strokeWidth={1.5} />
+          <LogOut size={18} color={colors.primary} strokeWidth={1.5} />
+          <Text style={[styles.logoutText, { color: colors.primary }]}>Log out</Text>
         </TouchableOpacity>
 
-        {/* Profile */}
-        <View style={styles.center}>
-          <ProfileHeader
-            photoURL={photoUri ?? user?.photoURL ?? null}
-            name={name}
-            isEditing={isEditing}
-            onPhotoPress={handlePhotoPress}
-            onNameChange={setName}
-            size={288}
-            email={user?.email}
-          />
-        </View>
+        <View style={styles.bottomPad} />
       </View>
-
-      {/* Settings modal */}
-      <Modal
-        visible={menuOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuOpen(false)}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <Pressable onPress={() => {}} style={cardStyle}>
-            <Text style={[styles.menuTitle, { color: colors.textMuted }]}>Settings</Text>
-
-            <MenuItem
-              icon={<User size={18} color={colors.text} strokeWidth={1.5} />}
-              label="User Information"
-              onPress={() => setMenuOpen(false)}
-              colors={colors}
-            />
-            <Divider colors={colors} />
-
-            <MenuItem
-              icon={<Bell size={18} color={colors.text} strokeWidth={1.5} />}
-              label="Notifications"
-              onPress={() => setMenuOpen(false)}
-              colors={colors}
-            />
-            <Divider colors={colors} />
-
-            {/* Dark / Light mode */}
-            <View style={styles.menuRow}>
-              {isDark
-                ? <Moon size={18} color={colors.text} strokeWidth={1.5} />
-                : <Sun size={18} color={colors.text} strokeWidth={1.5} />}
-              <Text style={[styles.menuLabel, { color: colors.text }]}>
-                {isDark ? 'Dark Mode' : 'Light Mode'}
-              </Text>
-              <Switch
-                value={isDark}
-                onValueChange={toggleTheme}
-                trackColor={{ false: '#ccc', true: '#cb6ce6' }}
-                thumbColor={isDark ? '#004aad' : '#fff'}
-              />
-            </View>
-            <Divider colors={colors} />
-
-            {/* Language */}
-            <View style={styles.menuRow}>
-              <Globe size={18} color={colors.text} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text }]}>English / עברית</Text>
-              <View style={[styles.langToggle, { borderColor: colors.border }]}>
-                <View style={[styles.langActive, { backgroundColor: '#004aad' }]}>
-                  <Text style={styles.langActiveText}>EN</Text>
-                </View>
-                <View style={styles.langInactive}>
-                  <Text style={[styles.langInactiveText, { color: colors.textMuted }]}>עב</Text>
-                </View>
-              </View>
-            </View>
-            <Divider colors={colors} />
-
-            <MenuItem
-              icon={<HelpCircle size={18} color={colors.text} strokeWidth={1.5} />}
-              label="Help & Support"
-              onPress={() => setMenuOpen(false)}
-              colors={colors}
-            />
-            <Divider colors={colors} />
-
-            <MenuItem
-              icon={<LogOut size={18} color="#e53935" strokeWidth={1.5} />}
-              label="Sign Out"
-              onPress={() => { setMenuOpen(false); logout(); }}
-              colors={colors}
-              danger
-              disabled={isSigningOut}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
     </Screen>
   );
 }
 
-function MenuItem({
-  icon, label, onPress, colors, danger = false, disabled = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-  colors: any;
-  danger?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <TouchableOpacity style={[styles.menuRow, disabled && { opacity: 0.4 }]} onPress={onPress} disabled={disabled} activeOpacity={0.7}>
-      <View style={styles.iconWrap}>{icon}</View>
-      <Text style={[styles.menuLabel, { color: danger ? '#e53935' : colors.text }]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-function Divider({ colors }: { colors: any }) {
-  return <View style={[styles.divider, { backgroundColor: colors.border }]} />;
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  gearBtn: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  center: { alignItems: 'center', paddingTop: 40, paddingBottom: 24 },
-  headerBtns: { flexDirection: 'row', gap: 12 },
-  headerBtn: { paddingHorizontal: 8 },
-  headerBtnText: { fontSize: 16 },
-  save: { fontWeight: '700', color: '#cb6ce6' },
+  content: { paddingHorizontal: 20, paddingTop: 32 },
 
-  // Modal
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
+  // Avatar
+  avatarSection: { alignItems: 'center', marginBottom: 8 },
+  avatarWrap: { position: 'relative', marginBottom: 12 },
+  avatar: { width: 80, height: 80, borderRadius: 40 },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
+  editOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  menuCard: {
-    width: 300,
-    borderRadius: 20,
-    padding: 20,
-    gap: 4,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  menuTitle: {
-    fontSize: 13,
+  displayName: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
+  email: { fontSize: 14 },
+
+  // Section labels
+  sectionLabel: {
+    fontSize: 11,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
+    marginTop: 24,
     marginBottom: 8,
   },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-  },
-  iconWrap: { width: 24, alignItems: 'center' },
-  menuLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
-  divider: { height: 1, marginHorizontal: -4 },
 
   // Language toggle
-  langToggle: {
+  langRow: {
     flexDirection: 'row',
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 8,
     overflow: 'hidden',
+    padding: 4,
+    gap: 4,
   },
-  langActive: { paddingHorizontal: 10, paddingVertical: 4 },
-  langActiveText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  langInactive: { paddingHorizontal: 10, paddingVertical: 4 },
-  langInactiveText: { fontWeight: '500', fontSize: 12 },
+  langBtn: {
+    flex: 1,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+  },
+  langBtnText: { fontSize: 15, fontWeight: '600' },
+
+  // Cards
+  card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  cardRow: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
+  rowDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+
+  // Logout
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    height: 52,
+    marginTop: 24,
+  },
+  logoutText: { fontSize: 16, fontWeight: '600' },
+  disabled: { opacity: 0.5 },
+
+  bottomPad: { height: 40 },
 });
