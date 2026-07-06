@@ -53,6 +53,9 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
             </TouchableOpacity>
           );
         })}
+        <TouchableOpacity style={styles.cancel} onPress={onClose} activeOpacity={0.7}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
       </View>
     </Modal>
   );
@@ -100,4 +103,10 @@ const styles = StyleSheet.create({
   cardSubtitleActive: { color: '#6c47ff' },
   check: { color: '#6c47ff', fontSize: 16, fontWeight: '700' },
   arrow: { color: '#555', fontSize: 16 },
+  cancel: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  cancelText: { color: '#888', fontSize: 15, fontWeight: '500' },
 });
