@@ -7,19 +7,12 @@ import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { auth } from '@core/firebase/config';
-import { useAuth } from '@core/hooks/useAuth';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
+import { useUnifiedSearch } from '@features/crew/hooks/useUnifiedSearch';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour >= 4 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 18) return 'Good afternoon';
-  if (hour >= 18 && hour < 22) return 'Good evening';
-  return 'Hey';
-}
 
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   key,
@@ -67,10 +60,15 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
       contentContainerStyle={styles.resultsList}
       showsVerticalScrollIndicator={false}
       renderItem={({ item }) => (
-        <ProfessionalCard
-          item={item}
-          onMessage={() => handleMessage(item.user.id)}
-        />
+        <TouchableOpacity
+          onPress={() => router.push(`/browse/profile/${item.user.id}` as any)}
+          activeOpacity={0.95}
+        >
+          <ProfessionalCard
+            item={item}
+            onMessage={() => handleMessage(item.user.id)}
+          />
+        </TouchableOpacity>
       )}
     />
   );
@@ -80,8 +78,15 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
   const colors = useTheme();
-  const { user } = useAuth();
-  const greeting = getGreeting();
+  const router = useRouter();
+  const segments = useSegments();
+
+  async function handleMessage(professionalId: string) {
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) return;
+    const chatId = await getOrCreateDM(currentUserId, professionalId);
+    router.push(`/${segments[0]}/(tabs)/chats/${chatId}`);
+  }
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
@@ -118,30 +123,15 @@ export default function SearchScreen() {
     backgroundClip: 'text',
   } as any) : {};
 
+  const isSearching = query.trim().length > 0;
+  const { results: unifiedResults, isLoading: unifiedLoading } = useUnifiedSearch(query);
+
   const filteredCategories = query.trim()
     ? CATEGORIES.filter(c =>
         c.label.toLowerCase().includes(query.toLowerCase()) ||
         c.subcategories.some(s => s.toLowerCase().includes(query.toLowerCase()))
       )
     : CATEGORIES;
-
-  function getSearchTarget(): { category: string; subcategory: string } | null {
-    if (!query.trim()) return null;
-    const q = query.toLowerCase();
-    for (const [cat, subs] of Object.entries(CREW_CATEGORIES)) {
-      for (const sub of subs) {
-        if (sub.toLowerCase().includes(q) || q.includes(sub.toLowerCase())) {
-          return { category: cat, subcategory: sub };
-        }
-      }
-      if (cat.toLowerCase().includes(q)) {
-        return { category: cat, subcategory: CREW_CATEGORIES[cat as keyof typeof CREW_CATEGORIES][0] };
-      }
-    }
-    return null;
-  }
-
-  const searchTarget = getSearchTarget();
 
   return (
     <Screen scrollable={false}>
@@ -177,21 +167,41 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {view.kind === 'grid' && query.trim() !== '' && searchTarget && (
-          <View style={[styles.searchHintRow, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
-            <Text style={[styles.searchHintText, { color: colors.accent }]}>
-              Showing professionals for "{searchTarget.subcategory}"
-            </Text>
-          </View>
-        )}
-
-        {view.kind === 'grid' && query.trim() !== '' && searchTarget && (
+        {view.kind === 'grid' && isSearching && (
           <View style={styles.flex}>
-            <ResultsView category={searchTarget.category} subcategory={searchTarget.subcategory} />
+            {unifiedLoading ? (
+              <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+            ) : unifiedResults.length > 0 ? (
+              <FlatList
+                data={unifiedResults}
+                keyExtractor={(item) => item.user.id}
+                contentContainerStyle={styles.resultsList}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => router.push(`/browse/profile/${item.user.id}` as any)}
+                    activeOpacity={0.95}
+                  >
+                    <ProfessionalCard
+                      item={item}
+                      onMessage={() => handleMessage(item.user.id)}
+                    />
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <View style={styles.emptyResults}>
+                <Text style={styles.emptyIcon}>👤</Text>
+                <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals found</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
+                  No results for "{query.trim()}"
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
-        {view.kind === 'grid' && !searchTarget && (
+        {view.kind === 'grid' && !isSearching && (
           <ScrollView
             style={styles.flex}
             contentContainerStyle={styles.listContent}

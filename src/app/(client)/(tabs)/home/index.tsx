@@ -155,7 +155,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <Screen scrollable={false} backgroundColor={colors.bg}>
+    <Screen scrollable={false}>
       <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           Build Your Crew

@@ -19,11 +19,7 @@ export default function ClientTabsLayout() {
           name="profile"
           options={{
             title: 'Profile',
-            headerShown: true,
-            headerTitleAlign: 'center',
-            headerStyle: { backgroundColor: colors.bg },
-            headerTintColor: colors.text,
-            headerTitleStyle: { fontWeight: '800', fontSize: 20 },
+            headerShown: false,
             tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={2.5} />,
             tabBarButton: ({ style, children, onPress, href: _href, onLongPress: _onLongPress, ...rest }) => (
               <TouchableOpacity

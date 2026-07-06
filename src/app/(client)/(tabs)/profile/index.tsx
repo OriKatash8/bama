@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Image,
+  View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Image, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -22,6 +22,13 @@ export default function ClientProfileScreen() {
   const toggleTheme = useUiStore((s) => s.toggleTheme);
   const colors = useTheme();
   const [lang, setLang] = useState<Lang>('en');
+
+  const gradientStyle = Platform.OS === 'web' ? ({
+    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  } as any) : {};
 
   async function handlePhotoPress() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -45,6 +52,7 @@ export default function ClientProfileScreen() {
       <View style={styles.content}>
 
         {/* ── 1. AVATAR ── */}
+        <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>My Profile</Text>
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrap}>
             {user?.photoURL ? (
@@ -166,6 +174,7 @@ export default function ClientProfileScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingTop: 32 },
+  pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase', marginBottom: 16 },
 
   // Avatar
   avatarSection: { alignItems: 'center', marginBottom: 8 },

@@ -18,7 +18,7 @@ const CATEGORIES: { id: string; emoji?: string; icon?: any; SvgIcon?: () => JSX.
   { id: 'camera', icon: require('../../../../../assets/images/categories/camera.png'), label: 'Camera' },
   { id: 'lens', SvgIcon: LensIcon, label: 'Lens' },
   { id: 'audio', icon: require('../../../../../assets/images/categories/audio.png'), label: 'Audio' },
-  { id: 'lighting', icon: require('../../../../../assets/images/categories/lighting.png'), label: 'Light' },
+  { id: 'lighting', icon: require('../../../../../assets/images/categories/teuraicon.png'), label: 'Light' },
   { id: 'drone', icon: require('../../../../../assets/images/categories/drone.png'), label: 'Drone' },
   { id: 'studio', icon: require('../../../../../assets/images/categories/studio.png'), label: 'Studio' },
   { id: 'accessories', SvgIcon: MoreIcon, label: 'More' },
