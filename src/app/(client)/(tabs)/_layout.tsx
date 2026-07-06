@@ -16,6 +16,8 @@ export default function ClientTabsLayout() {
         <Tabs.Screen name="browse" options={{ title: 'Search', tabBarIcon: ({ color }) => <Search size={28} color={color} strokeWidth={2.5} /> }} />
         <Tabs.Screen name="chats" options={{ title: 'Chats', tabBarIcon: ({ color }) => <MessageCircle size={28} color={color} strokeWidth={2.5} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: true, headerTitleAlign: 'center', headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.text, headerTitleStyle: { fontWeight: '800', fontSize: 20 }, tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={2.5} /> }} />
+        <Tabs.Screen name="chat/project-details" options={{ href: null }} />
+        <Tabs.Screen name="chats/[chatId]" options={{ href: null }} />
         <Tabs.Screen
           name="switch"
           options={{
