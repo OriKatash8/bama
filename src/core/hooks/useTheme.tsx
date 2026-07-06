@@ -3,6 +3,7 @@ import { useUiStore } from '@core/stores/uiStore';
 
 export type AppColors = {
   bg: string;
+  bgGradient: readonly [string, string];
   card: string;
   cardAlt: string;
   text: string;
@@ -20,6 +21,7 @@ export type AppColors = {
 
 export const DARK: AppColors = {
   bg: '#0f0f1f',
+  bgGradient: ['#0f0f1f', '#0f0f1f'],
   card: '#1a1a2e',
   cardAlt: '#2a2a3e',
   text: '#ffffff',
@@ -36,7 +38,8 @@ export const DARK: AppColors = {
 };
 
 export const LIGHT: AppColors = {
-  bg: '#eff5ff',
+  bg: '#efd4f6',
+  bgGradient: ['#efd4f6', '#b7cae6'],
   card: '#dce8ff',
   cardAlt: '#d0dfff',
   text: '#0f0f1f',
@@ -47,7 +50,7 @@ export const LIGHT: AppColors = {
   inputBg: 'rgba(0,74,173,0.06)',
   inputBorder: '#004aad22',
   placeholder: 'rgba(15,15,31,0.35)',
-  tabBar: '#eff5ff',
+  tabBar: '#ffffff',
   primary: '#004aad',
   accent: '#cb6ce6',
 };

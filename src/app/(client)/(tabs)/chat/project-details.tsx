@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { auth } from '@core/firebase/config';
@@ -235,19 +236,19 @@ export default function ProjectDetailsScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.bg }]}>
+      <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
         <ActivityIndicator size="large" color="#004aad" />
-      </View>
+      </LinearGradient>
     );
   }
 
   if (!project) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.bg }]}>
+      <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
         <Text style={[styles.errorText, { color: colors.text }]}>Project not found</Text>
-      </View>
+      </LinearGradient>
     );
   }
 
@@ -317,7 +318,7 @@ export default function ProjectDetailsScreen() {
   const outgoingRequests = paymentRequests.filter((r) => r.fromUserId === currentUserId);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+    <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header */}
@@ -860,7 +861,7 @@ export default function ProjectDetailsScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 

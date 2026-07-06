@@ -148,7 +148,7 @@ export default function HomeScreen() {
 
   if (isLoadingProject) {
     return (
-      <Screen scrollable={false} backgroundColor={colors.bg}>
+      <Screen scrollable={false}>
         <ActivityIndicator color={colors.accent} style={{ flex: 1, marginTop: 80 }} />
       </Screen>
     );

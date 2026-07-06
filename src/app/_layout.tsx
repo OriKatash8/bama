@@ -1,7 +1,8 @@
 import { Slot, SplashScreen } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
-import { View, StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@core/hooks/useAuth';
 import { ToastContainer } from '@components/ui/Toast';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
@@ -28,10 +29,10 @@ function AppShell() {
   if (!fontsLoaded) return null;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+    <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.root}>
       <Slot />
       <ToastContainer />
-    </View>
+    </LinearGradient>
   );
 }
 

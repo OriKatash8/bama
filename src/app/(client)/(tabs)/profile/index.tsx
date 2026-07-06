@@ -41,7 +41,7 @@ export default function ClientProfileScreen() {
   }
 
   return (
-    <Screen scrollable backgroundColor={colors.bg}>
+    <Screen scrollable>
       <View style={styles.content}>
 
         {/* ── 1. AVATAR ── */}
