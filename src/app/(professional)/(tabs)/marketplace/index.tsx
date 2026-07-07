@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, Image, TouchableOpacity, FlatList,
-  ScrollView, StyleSheet, ActivityIndicator, Modal, Pressable, Platform,
+  StyleSheet, ActivityIndicator, Platform, Animated,
 } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { Screen } from '@components/layout/Screen';
 import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceToggle';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
@@ -13,16 +14,90 @@ import { useTheme } from '@core/hooks/useTheme';
 import { AllIcon, LensIcon, MoreIcon } from '@features/marketplace/components/CategoryIcons';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
 
-const CATEGORIES: { id: string; emoji?: string; icon?: any; SvgIcon?: () => JSX.Element; label: string }[] = [
+type Category = {
+  id: string;
+  icon?: ImageSourcePropType;
+  selectedIcon?: ImageSourcePropType;
+  SvgIcon?: () => React.ReactElement;
+  label: string;
+};
+
+const CATEGORIES: Category[] = [
   { id: 'all', SvgIcon: AllIcon, label: 'All' },
-  { id: 'camera', icon: require('../../../../../assets/images/categories/camera.png'), label: 'Camera' },
+  {
+    id: 'camera',
+    icon: require('../../../../../assets/images/categories/camera.png'),
+    selectedIcon: require('../../../../../assets/images/categories/camera-selected.png'),
+    label: 'Camera',
+  },
   { id: 'lens', SvgIcon: LensIcon, label: 'Lens' },
-  { id: 'audio', icon: require('../../../../../assets/images/categories/audio.png'), label: 'Audio' },
-  { id: 'lighting', icon: require('../../../../../assets/images/categories/teuraicon.png'), label: 'Light' },
-  { id: 'drone', icon: require('../../../../../assets/images/categories/drone.png'), label: 'Drone' },
-  { id: 'studio', icon: require('../../../../../assets/images/categories/studio.png'), label: 'Studio' },
+  {
+    id: 'audio',
+    icon: require('../../../../../assets/images/categories/audio.png'),
+    selectedIcon: require('../../../../../assets/images/categories/sound-selected.png'),
+    label: 'Audio',
+  },
+  {
+    id: 'lighting',
+    icon: require('../../../../../assets/images/categories/teuraicon.png'),
+    selectedIcon: require('../../../../../assets/images/categories/lighting-selected.png'),
+    label: 'Light',
+  },
+  {
+    id: 'drone',
+    icon: require('../../../../../assets/images/categories/drone.png'),
+    selectedIcon: require('../../../../../assets/images/categories/drone-selected.png'),
+    label: 'Drone',
+  },
+  {
+    id: 'studio',
+    icon: require('../../../../../assets/images/categories/studio.png'),
+    selectedIcon: require('../../../../../assets/images/categories/studios.png'),
+    label: 'Studio',
+  },
   { id: 'accessories', SvgIcon: MoreIcon, label: 'More' },
 ];
+
+type CategoryTileProps = {
+  cat: Category;
+  isActive: boolean;
+  onPress: () => void;
+  inactiveLabelColor: string;
+};
+
+function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTileProps) {
+  const anim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: isActive ? 1 : 0,
+      useNativeDriver: true,
+      damping: 15,
+      stiffness: 200,
+      mass: 1,
+    }).start();
+  }, [isActive, anim]);
+
+  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.333] });
+  const iconSource = isActive && cat.selectedIcon ? cat.selectedIcon : cat.icon;
+
+  return (
+    <TouchableOpacity style={styles.catItem} onPress={onPress} activeOpacity={0.75}>
+      <View style={[styles.catIconShadow, isActive && styles.catIconShadowActive]}>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          {iconSource ? (
+            <Image source={iconSource} style={styles.catIcon} resizeMode="contain" />
+          ) : cat.SvgIcon ? (
+            <cat.SvgIcon />
+          ) : null}
+        </Animated.View>
+      </View>
+      <Text style={[styles.catLabel, { color: isActive ? '#cb6ce6' : inactiveLabelColor }]}>
+        {cat.label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 const CONDITIONS: { value: ProductCondition; label: string }[] = [
   { value: 'new', label: 'New' },
@@ -105,27 +180,15 @@ export default function MarketplaceScreen() {
 
       {/* Categories */}
       <View style={styles.categoriesRow}>
-        {CATEGORIES.map((cat) => {
-          const active = selectedCategory === cat.id;
-          return (
-            <TouchableOpacity
-              key={cat.id}
-              style={[styles.catItem, active && styles.catItemActive]}
-              onPress={() => setSelectedCategory(cat.id)}
-              activeOpacity={0.75}
-            >
-              <View style={active && styles.catIconActive}>
-                {cat.icon
-                  ? <Image source={cat.icon} style={styles.catIcon} resizeMode="contain" />
-                  : cat.SvgIcon
-                    ? <cat.SvgIcon />
-                    : <Text style={styles.catEmoji}>{cat.emoji}</Text>
-                }
-              </View>
-              <Text style={[styles.catLabel, { color: active ? '#cb6ce6' : colors.textMuted }]}>{cat.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        {CATEGORIES.map((cat) => (
+          <CategoryTile
+            key={cat.id}
+            cat={cat}
+            isActive={selectedCategory === cat.id}
+            onPress={() => setSelectedCategory(cat.id)}
+            inactiveLabelColor={colors.textMuted}
+          />
+        ))}
       </View>
 
       {/* Filters */}
@@ -338,10 +401,20 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     gap: 4,
   },
-  catItemActive: {},
-  catIconActive: { transform: [{ scale: 1.2 }] },
-  catEmoji: { fontSize: 36 },
-  catIcon: { width: 62, height: 62 },
+  catIconShadow: {
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  catIconShadowActive: {
+    shadowColor: '#004aad',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 8,
+  },
+  catIcon: { width: 60, height: 60 },
   catLabel: { fontSize: 13, fontWeight: '600' },
 
   filtersRow: {
