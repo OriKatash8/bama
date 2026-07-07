@@ -27,20 +27,20 @@ const CATEGORIES: Category[] = [
   {
     id: 'camera',
     icon: require('../../../../../assets/images/categories/camera.png'),
-    selectedIcon: require('../../../../../assets/images/categories/camera-selected.png'),
+    selectedIcon: require('../../../../../assets/images/categories/photographer.png'),
     label: 'Camera',
   },
   { id: 'lens', SvgIcon: LensIcon, label: 'Lens' },
   {
     id: 'audio',
     icon: require('../../../../../assets/images/categories/audio.png'),
-    selectedIcon: require('../../../../../assets/images/categories/sound-selected.png'),
+    selectedIcon: require('../../../../../assets/images/categories/sound.png'),
     label: 'Audio',
   },
   {
     id: 'lighting',
     icon: require('../../../../../assets/images/categories/teuraicon.png'),
-    selectedIcon: require('../../../../../assets/images/categories/lighting-selected.png'),
+    selectedIcon: require('../../../../../assets/images/categories/lighting.png'),
     label: 'Light',
   },
   {
@@ -78,20 +78,18 @@ function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTi
     }).start();
   }, [isActive, anim]);
 
-  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.333] });
+  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] });
   const iconSource = isActive && cat.selectedIcon ? cat.selectedIcon : cat.icon;
 
   return (
     <TouchableOpacity style={styles.catItem} onPress={onPress} activeOpacity={0.75}>
-      <View style={[styles.catIconShadow, isActive && styles.catIconShadowActive]}>
-        <Animated.View style={{ transform: [{ scale }] }}>
-          {iconSource ? (
-            <Image source={iconSource} style={styles.catIcon} resizeMode="contain" />
-          ) : cat.SvgIcon ? (
-            <cat.SvgIcon />
-          ) : null}
-        </Animated.View>
-      </View>
+      <Animated.View style={[isActive && styles.tileActiveShadow, { transform: [{ scale }] }]}>
+        {iconSource ? (
+          <Image source={iconSource} style={styles.tileIcon} resizeMode="contain" />
+        ) : cat.SvgIcon ? (
+          <cat.SvgIcon />
+        ) : null}
+      </Animated.View>
       <Text style={[styles.catLabel, { color: isActive ? '#cb6ce6' : inactiveLabelColor }]}>
         {cat.label}
       </Text>
@@ -401,20 +399,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     gap: 4,
   },
-  catIconShadow: {
-    width: 60,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  catIconShadowActive: {
-    shadowColor: '#004aad',
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+  tileIcon: { width: 60, height: 60 },
+  tileActiveShadow: {
+    shadowColor: '#7b4fd4',
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
-  catIcon: { width: 60, height: 60 },
   catLabel: { fontSize: 13, fontWeight: '600' },
 
   filtersRow: {
