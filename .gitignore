@@ -46,3 +46,6 @@ example
 # Firebase Cloud Functions
 functions/lib
 functions/node_modules
+
+# Firebase Storage CORS config
+cors.json

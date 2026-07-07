@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Tabs } from 'expo-router';
-import { LayoutDashboard, ShoppingBag, Search, User, ArrowLeftRight, MessageCircle } from 'lucide-react-native';
+import { LayoutDashboard, ShoppingBag, User, MessageCircle } from 'lucide-react-native';
 import { ModeSwitcherSheet } from '@features/auth/components/ModeSwitcherSheet';
 import { useTheme } from '@core/hooks/useTheme';
 
@@ -12,23 +12,27 @@ export default function ProfessionalTabsLayout() {
   return (
     <>
       <Tabs screenOptions={{ headerShown: false, tabBarShowLabel: false, tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.border, height: 72 }, tabBarIconStyle: { marginTop: 8 }, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.textMuted }}>
-        <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color }) => <LayoutDashboard size={28} color={color} strokeWidth={1.5} /> }} />
+        <Tabs.Screen name="dashboard" options={{ title: 'Notice Board', tabBarIcon: ({ color }) => <LayoutDashboard size={28} color={color} strokeWidth={1.5} /> }} />
         <Tabs.Screen name="marketplace" options={{ title: 'Marketplace', tabBarIcon: ({ color }) => <ShoppingBag size={28} color={color} strokeWidth={1.5} /> }} />
-        <Tabs.Screen name="browse" options={{ title: 'Browse', tabBarIcon: ({ color }) => <Search size={28} color={color} strokeWidth={1.5} /> }} />
         <Tabs.Screen name="chats" options={{ title: 'Chats', tabBarIcon: ({ color }) => <MessageCircle size={28} color={color} strokeWidth={1.5} /> }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: true, headerTitleAlign: 'center', headerStyle: { backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: '#cb6ce6' }, headerShadowVisible: false, headerTintColor: colors.text, headerTitleStyle: { fontWeight: '800', fontSize: 20 }, tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={1.5} /> }} />
-        <Tabs.Screen name="portfolio" options={{ href: null }} />
-        <Tabs.Screen name="bookings" options={{ href: null }} />
+        <Tabs.Screen name="browse" options={{ href: null }} />
         <Tabs.Screen
-          name="switch"
+          name="profile"
           options={{
-            title: 'Switch',
-            tabBarIcon: ({ color }) => <ArrowLeftRight size={28} color={color} strokeWidth={1.5} />,
-            tabBarButton: ({ style, children, onPress: _onPress, href: _href, ...rest }) => (
+            title: 'Profile',
+            headerShown: true,
+            headerTitleAlign: 'center',
+            headerStyle: { backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: '#cb6ce6' },
+            headerShadowVisible: false,
+            headerTintColor: colors.text,
+            headerTitleStyle: { fontWeight: '800', fontSize: 20 },
+            tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={1.5} />,
+            tabBarButton: ({ style, children, onPress, href: _href, onLongPress: _onLongPress, ...rest }) => (
               <TouchableOpacity
                 style={style}
-                onPress={() => setSheetVisible(true)}
-                accessibilityLabel="Switch account"
+                onPress={onPress ?? undefined}
+                onLongPress={() => setSheetVisible(true)}
+                delayLongPress={500}
                 {...rest}
               >
                 {children}
@@ -36,6 +40,10 @@ export default function ProfessionalTabsLayout() {
             ),
           }}
         />
+        <Tabs.Screen name="portfolio" options={{ href: null }} />
+        <Tabs.Screen name="bookings" options={{ href: null }} />
+        <Tabs.Screen name="chats/[chatId]" options={{ href: null }} />
+        <Tabs.Screen name="switch" options={{ href: null }} />
       </Tabs>
       <ModeSwitcherSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} />
     </>

@@ -20,7 +20,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const allRoles = [...new Set(request.crewSlots.map((s) => s.subcategory))];
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
-  const cardBg = isDark ? '#ffffff' : colors.card;
+  const cardBg = isDark ? '#ffffff' : '#ffffff';
 
   return (
     <TouchableOpacity style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]} onPress={onPress} activeOpacity={0.85}>

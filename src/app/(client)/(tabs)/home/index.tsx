@@ -148,14 +148,14 @@ export default function HomeScreen() {
 
   if (isLoadingProject) {
     return (
-      <Screen scrollable={false} backgroundColor={colors.bg}>
+      <Screen scrollable={false}>
         <ActivityIndicator color={colors.accent} style={{ flex: 1, marginTop: 80 }} />
       </Screen>
     );
   }
 
   return (
-    <Screen scrollable={false} backgroundColor={colors.bg}>
+    <Screen scrollable={false}>
       <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           Build Your Crew

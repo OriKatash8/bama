@@ -12,7 +12,7 @@ import type { ProjectRequest } from '@core/types/project';
 type ProjectStatus = ProjectRequest['status'];
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
-  open:        { label: 'Open',        color: '#6b7280' },
+  open:        { label: 'Open',        color: '#004aad' },
   in_progress: { label: 'In Progress', color: '#f59e0b' },
   completed:   { label: 'Completed',   color: '#22c55e' },
   cancelled:   { label: 'Cancelled',   color: '#ef4444' },
@@ -124,7 +124,7 @@ export function ChatsScreen() {
           >
             <View style={styles.rowContent}>
               <View style={styles.nameRow}>
-                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                <Text style={[styles.name, { color: '#004aad' }]} numberOfLines={1}>
                   {item.type === 'group' ? item.name : (dmNames[item.id] ?? 'Loading...')}
                 </Text>
                 {item.type === 'group' && projectStatuses[item.id] != null && (

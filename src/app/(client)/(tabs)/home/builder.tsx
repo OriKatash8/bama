@@ -152,7 +152,7 @@ export default function BuilderScreen() {
 
   if (isLoadingProject) {
     return (
-      <Screen scrollable={false} backgroundColor={colors.bg}>
+      <Screen scrollable={false}>
         <ActivityIndicator color={colors.accent} style={{ flex: 1, marginTop: 80 }} />
       </Screen>
     );
@@ -160,7 +160,7 @@ export default function BuilderScreen() {
 
   return (
     <Screen scrollable={false} backgroundColor={colors.bg}>
-      <ScrollView style={[styles.scroll, { backgroundColor: colors.bg }]} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.topBar}>
           <View style={styles.logoWrap}>
             <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />

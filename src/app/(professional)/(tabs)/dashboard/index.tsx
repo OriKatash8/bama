@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { useState, useMemo, useEffect } from 'react';
+import { View, Text, FlatList, ScrollView, StyleSheet, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
+import { useRouter, useSegments } from 'expo-router';
+import { MapPin, Calendar } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
@@ -7,7 +9,17 @@ import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAuthStore } from '@core/stores/authStore';
+import { queryDocuments, getDocument } from '@core/firebase/firestore';
+import { where } from '@core/firebase/firestore';
 import type { ProjectRequest } from '@core/types/project';
+import type { Chat } from '@features/chat/types';
+
+type ActiveProject = {
+  chat: Chat;
+  project: ProjectRequest;
+  clientName: string;
+};
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -17,8 +29,21 @@ function getGreeting(): string {
   return 'Good night';
 }
 
+function formatDeadline(deadline: string): string {
+  const d = new Date(deadline);
+  if (isNaN(d.getTime())) return deadline;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export default function DashboardScreen() {
   const { user, profile, isLoading: profileLoading } = useProfile();
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const router = useRouter();
+  const segments = useSegments();
+  const modeSegment = segments[0];
 
   const categories = useMemo(
     () => profileLoading ? null : [...new Set((profile?.skills ?? []).map(s => s.category))],
@@ -33,6 +58,63 @@ export default function DashboardScreen() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<ProjectRequest | null>(null);
   const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');
+
+  const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      console.log('[ActiveProjects] No currentUserId, skipping fetch');
+      return;
+    }
+
+    async function fetchActiveProjects() {
+      try {
+        console.log('[ActiveProjects] Fetching for uid:', currentUserId);
+
+        const chats = await queryDocuments<Chat>(
+          'chats',
+          where('type', '==', 'group'),
+          where('members', 'array-contains', currentUserId)
+        );
+
+        console.log('[ActiveProjects] Group chats found:', chats.length);
+
+        chats.forEach((c) => {
+          console.log(`[ActiveProjects] Chat ${c.id} — projectId: ${c.projectId ?? 'none'}`);
+        });
+
+        const withProject = chats.filter((c) => Boolean(c.projectId));
+        console.log('[ActiveProjects] Chats with a projectId:', withProject.length);
+
+        const results = await Promise.all(
+          withProject.map(async (chat) => {
+            const project = await getDocument<ProjectRequest>(`projects/${chat.projectId}`);
+            if (!project) {
+              console.log(`[ActiveProjects] Project not found for chat ${chat.id}, projectId: ${chat.projectId}`);
+              return null;
+            }
+            if (project.status === 'completed' || project.status === 'cancelled') {
+              console.log(`[ActiveProjects] Filtered out project ${project.id} — status: ${project.status}`);
+              return null;
+            }
+
+            const clientDoc = await getDocument<{ displayName: string }>(`users/${project.clientId}`);
+            const clientName = clientDoc?.displayName ?? 'Unknown';
+
+            return { chat, project, clientName } satisfies ActiveProject;
+          })
+        );
+
+        const active = results.filter((r): r is ActiveProject => r !== null);
+        console.log('[ActiveProjects] Active projects after filtering:', active.length);
+        setActiveProjects(active);
+      } catch (err) {
+        console.error('[ActiveProjects] Error fetching active projects:', err);
+      }
+    }
+
+    fetchActiveProjects();
+  }, [currentUserId]);
 
   const visible = requests.filter((r) => !dismissed.has(r.id));
 
@@ -58,26 +140,53 @@ export default function DashboardScreen() {
   return (
     <Screen scrollable={false}>
       <View style={styles.topBar}>
-        <View style={styles.logoWrap}>
-          <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
-        </View>
-        <View style={styles.rightCol}>
-          {user?.photoURL ? (
-            <Image source={{ uri: user.photoURL }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarInitial}>{user?.displayName?.charAt(0).toUpperCase() ?? '?'}</Text>
-            </View>
-          )}
-          <Text style={[styles.greetText, { color: colors.text }, gradientText]} numberOfLines={2}>
-            {greeting}, {user?.displayName} :)
-          </Text>
-        </View>
+        <Text style={[styles.greetText, { color: colors.text }, gradientText]} numberOfLines={2}>
+          {greeting}, {user?.displayName} :)
+        </Text>
       </View>
+
+      {activeProjects.length > 0 && (
+        <View style={styles.projectsSection}>
+          <Text style={[styles.heading, { color: colors.text, marginBottom: 16 }, gradientText]}>Projects in Progress</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.projectsScroll}
+          >
+            {activeProjects.map(({ chat, project, clientName }) => (
+              <TouchableOpacity
+                key={chat.id}
+                style={[styles.projectCard, { borderColor: colors.border }]}
+                onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}`)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.projectCardTitle, { color: colors.text }]} numberOfLines={1}>
+                  {project.title}
+                </Text>
+                <Text style={[styles.projectCardMeta, { color: colors.textMuted }]}>
+                  Client: {clientName}
+                </Text>
+                <View style={styles.projectCardRow}>
+                  <Calendar size={12} color={colors.textMuted} strokeWidth={1.5} />
+                  <Text style={[styles.projectCardMeta, { color: colors.textMuted }]}>
+                    {formatDeadline(project.deadline)}
+                  </Text>
+                </View>
+                <View style={styles.projectCardRow}>
+                  <MapPin size={12} color={colors.textMuted} strokeWidth={1.5} />
+                  <Text style={[styles.projectCardMeta, { color: colors.textMuted }]} numberOfLines={1}>
+                    {project.location}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <View style={styles.header}>
         <Text style={[styles.heading, { color: colors.text }, gradientText]}>Notice Board</Text>
-        {!isLoading && <Text style={[styles.count, { color: colors.textMuted }]}>{visible.length} open project{visible.length === 1 ? '' : 's'}</Text>}
+        {!isLoading && <Text style={[styles.count, { color: colors.textMuted, textAlign: 'center' }]}>{visible.length} open project{visible.length === 1 ? '' : 's'}</Text>}
       </View>
 
       {isLoading ? (
@@ -124,34 +233,31 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingLeft: 0,
-    paddingRight: 16,
+    paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 4,
+    paddingBottom: 48,
   },
-  rightCol: {
-    alignItems: 'flex-end',
-    gap: 8,
-    flexShrink: 0,
+  greetText: { fontSize: 26, fontWeight: '600', textAlign: 'left' },
+  projectsSection: { marginBottom: 8, alignItems: 'center' },
+  projectsScroll: { paddingHorizontal: 16, gap: 12, paddingBottom: 16 },
+  projectCard: {
+    width: 200,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    gap: 4,
+    backgroundColor: '#ffffff',
   },
-  logoWrap: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', marginLeft: -130 },
-  bamaLogo: { width: 640, height: 224 },
-  greetText: { fontSize: 26, fontWeight: '600', textAlign: 'right' },
-  avatar: { width: 152, height: 152, borderRadius: 76 },
-  avatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontSize: 64, fontWeight: '700' },
+  projectCardTitle: { fontSize: 14, fontWeight: '700' },
+  projectCardMeta: { fontSize: 12 },
+  projectCardRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 0,
     paddingBottom: 8,
   },
-  heading: { fontSize: 32, fontWeight: '800' },
+  heading: { fontSize: 32, fontWeight: '600', textAlign: 'center' },
   count: { fontSize: 13, fontWeight: '500' },
   list: { paddingVertical: 8, paddingBottom: 24 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },

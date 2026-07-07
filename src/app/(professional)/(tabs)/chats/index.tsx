@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -14,15 +13,10 @@ export default function ProfessionalChatsScreen() {
 
   return (
     <Screen scrollable={false}>
-      {/* Gradient header — title + tabs inside */}
+      {/* Header — title + tabs */}
       <View style={styles.headerWrap}>
-        <LinearGradient
-          colors={['#cb6ce6', '#004aad']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.gradient}
-        >
-          <Text style={styles.headerTitle}>Chats</Text>
+        <View style={styles.gradient}>
+          <Text style={[styles.headerTitle, { color: '#004aad' }]}>Chats</Text>
 
           <View style={styles.tabBar}>
             {TABS.map((tab) => {
@@ -35,7 +29,7 @@ export default function ProfessionalChatsScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
-                    <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                    <Text style={[styles.tabText, { color: colors.textSec }, isActive && styles.tabTextActive]}>
                       {tab}
                     </Text>
                   </View>
@@ -43,8 +37,7 @@ export default function ProfessionalChatsScreen() {
               );
             })}
           </View>
-        </LinearGradient>
-        <View style={[styles.concaveCap, { backgroundColor: colors.bg }]} />
+        </View>
       </View>
 
       {/* Content */}
@@ -65,22 +58,14 @@ const styles = StyleSheet.create({
     marginTop: -16,
   },
   gradient: {
-    height: 180,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 40,
+    paddingVertical: 20,
     gap: 16,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
-  },
-  concaveCap: {
-    height: 40,
-    marginTop: -40,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
   },
   tabBar: {
     flexDirection: 'row',
@@ -98,11 +83,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   tabPillActive: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(0,74,173,0.12)',
   },
   tabText: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.65)',
   },
   tabTextActive: {
     color: '#004aad',

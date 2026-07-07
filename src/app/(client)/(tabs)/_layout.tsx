@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Search, Home, User, ArrowLeftRight, MessageCircle } from 'lucide-react-native';
+import { Search, Home, User, MessageCircle } from 'lucide-react-native';
 import { ModeSwitcherSheet } from '@features/auth/components/ModeSwitcherSheet';
 import { useTheme } from '@core/hooks/useTheme';
 
@@ -15,17 +15,18 @@ export default function ClientTabsLayout() {
         <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: ({ color }) => <Home size={28} color={color} strokeWidth={2.5} /> }} />
         <Tabs.Screen name="browse" options={{ title: 'Search', tabBarIcon: ({ color }) => <Search size={28} color={color} strokeWidth={2.5} /> }} />
         <Tabs.Screen name="chats" options={{ title: 'Chats', tabBarIcon: ({ color }) => <MessageCircle size={28} color={color} strokeWidth={2.5} /> }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: true, headerTitleAlign: 'center', headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.text, headerTitleStyle: { fontWeight: '800', fontSize: 20 }, tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={2.5} /> }} />
         <Tabs.Screen
-          name="switch"
+          name="profile"
           options={{
-            title: 'Switch',
-            tabBarIcon: ({ color }) => <ArrowLeftRight size={28} color={color} strokeWidth={2.5} />,
-            tabBarButton: ({ style, children, onPress: _onPress, href: _href, ...rest }) => (
+            title: 'Profile',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <User size={28} color={color} strokeWidth={2.5} />,
+            tabBarButton: ({ style, children, onPress, href: _href, onLongPress: _onLongPress, ...rest }) => (
               <TouchableOpacity
                 style={style}
-                onPress={() => setSheetVisible(true)}
-                accessibilityLabel="Switch account"
+                onPress={onPress ?? undefined}
+                onLongPress={() => setSheetVisible(true)}
+                delayLongPress={500}
                 {...rest}
               >
                 {children}
@@ -33,6 +34,9 @@ export default function ClientTabsLayout() {
             ),
           }}
         />
+        <Tabs.Screen name="chat/project-details" options={{ href: null }} />
+        <Tabs.Screen name="chats/[chatId]" options={{ href: null }} />
+        <Tabs.Screen name="switch" options={{ href: null }} />
       </Tabs>
       <ModeSwitcherSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} />
     </>
