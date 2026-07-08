@@ -83,7 +83,7 @@ export function ForgotPasswordForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40 },
+  container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40, marginTop: -100 },
   titleWrap: { alignItems: 'center', width: '100%' },
   card: {
     borderRadius: 20,

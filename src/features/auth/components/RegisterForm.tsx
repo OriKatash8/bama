@@ -99,7 +99,7 @@ export function RegisterForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40 },
+  container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40, marginTop: -100 },
   titleWrap: { alignItems: 'center', width: '100%' },
   glowLayer: { position: 'absolute', top: 0, left: 0, right: 0 },
   card: {
