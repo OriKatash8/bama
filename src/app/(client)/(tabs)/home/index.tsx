@@ -33,6 +33,8 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   subcategories: subs,
 }));
 
+const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as any;
+
 const gradientStyle = {
   background: 'linear-gradient(to right, #004aad, #cb6ce6)',
   WebkitBackgroundClip: 'text',
@@ -161,67 +163,73 @@ export default function HomeScreen() {
           Build Your Crew
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Project Details</Text>
+        <Text style={[styles.sectionTitle, { color: '#ffffff', textAlign: 'center', marginTop: 20, textTransform: 'uppercase', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 }, Platform.OS === 'web' && { textShadow: '0 2px 8px rgba(0,0,0,0.4)' } as any]}>Project Details</Text>
 
         <View style={styles.card}>
 
-          <Text style={[styles.label, { color: '#004aad' }]}>Title</Text>
+          <Text style={[styles.label, { color: '#7b2fa8' }]}>Title</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBg, borderColor: '#004aad', color: '#004aad' }]}
+            style={[styles.input, { backgroundColor: '#ffffff', color: colors.text }, Platform.OS === 'web' && webInputShadow]}
             value={title}
             onChangeText={setTitle}
             placeholder="e.g. Music video for new single"
-            placeholderTextColor="#004aad99"
+            placeholderTextColor="#7b2fa899"
           />
           {errors.title ? <Text style={styles.error}>{errors.title}</Text> : null}
 
-          <Text style={[styles.label, { color: '#004aad' }]}>Description</Text>
+          <Text style={[styles.label, { color: '#7b2fa8' }]}>Description</Text>
           <TextInput
-            style={[styles.input, styles.multiline, { backgroundColor: colors.inputBg, borderColor: '#004aad', color: '#004aad' }]}
+            style={[styles.input, styles.multiline, { backgroundColor: '#ffffff', color: colors.text }, Platform.OS === 'web' && webInputShadow]}
             value={description}
             onChangeText={setDescription}
             placeholder="Describe your project"
-            placeholderTextColor="#004aad99"
+            placeholderTextColor="#7b2fa899"
             multiline
             numberOfLines={4}
             textAlignVertical="top"
           />
           {errors.description ? <Text style={styles.error}>{errors.description}</Text> : null}
 
-          <Text style={[styles.label, { color: '#004aad' }]}>Execution <Text style={{ fontWeight: '400', color: '#004aad99' }}>(optional)</Text></Text>
-          <TouchableOpacity
-            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.exec ? '#fc8181' : '#004aad' }]}
-            onPress={() => setCalOpen('exec')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dateBtnText, { color: exec ? '#004aad' : '#004aad99' }]}>{exec || 'Select date'}</Text>
-            <Calendar size={18} color="#004aad" strokeWidth={1.8} />
-          </TouchableOpacity>
-          {errors.exec ? <Text style={styles.error}>{errors.exec}</Text> : null}
+          <View style={styles.dateRow}>
+            <View style={styles.dateCol}>
+              <Text style={[styles.label, { color: '#7b2fa8', marginTop: 0 }]}>Execution <Text style={{ fontWeight: '400', color: '#7b2fa899' }}>(opt.)</Text></Text>
+              <TouchableOpacity
+                style={[styles.dateBtn, { backgroundColor: '#ffffff' }, errors.exec && { borderWidth: 1, borderColor: '#fc8181' }, Platform.OS === 'web' && webInputShadow]}
+                onPress={() => setCalOpen('exec')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.dateBtnText, { color: exec ? colors.text : '#7b2fa899' }]} numberOfLines={1}>{exec || 'Select'}</Text>
+                <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
+              </TouchableOpacity>
+              {errors.exec ? <Text style={styles.error}>{errors.exec}</Text> : null}
+            </View>
 
-          <Text style={[styles.label, { color: '#004aad' }]}>Deadline</Text>
-          <TouchableOpacity
-            style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.deadline ? '#fc8181' : '#004aad' }]}
-            onPress={() => setCalOpen('deadline')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dateBtnText, { color: deadline ? '#004aad' : '#004aad99' }]}>{deadline || 'Select deadline'}</Text>
-            <Calendar size={18} color="#004aad" strokeWidth={1.8} />
-          </TouchableOpacity>
-          {errors.deadline ? <Text style={styles.error}>{errors.deadline}</Text> : null}
+            <View style={styles.dateCol}>
+              <Text style={[styles.label, { color: '#7b2fa8', marginTop: 0 }]}>Deadline</Text>
+              <TouchableOpacity
+                style={[styles.dateBtn, { backgroundColor: '#ffffff' }, errors.deadline && { borderWidth: 1, borderColor: '#fc8181' }, Platform.OS === 'web' && webInputShadow]}
+                onPress={() => setCalOpen('deadline')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.dateBtnText, { color: deadline ? colors.text : '#7b2fa899' }]} numberOfLines={1}>{deadline || 'Select'}</Text>
+                <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
+              </TouchableOpacity>
+              {errors.deadline ? <Text style={styles.error}>{errors.deadline}</Text> : null}
+            </View>
+          </View>
 
-          <Text style={[styles.label, { color: '#004aad' }]}>Location</Text>
+          <Text style={[styles.label, { color: '#7b2fa8' }]}>Location</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBg, borderColor: '#004aad', color: '#004aad' }]}
+            style={[styles.input, { backgroundColor: '#ffffff', color: colors.text }, Platform.OS === 'web' && webInputShadow]}
             value={location}
             onChangeText={setLocation}
             placeholder="City, Country"
-            placeholderTextColor="#004aad99"
+            placeholderTextColor="#7b2fa899"
           />
           {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: 'center', marginTop: 20, fontSize: 28 }, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
+        <Text style={[styles.sectionTitle, { color: '#ffffff', textAlign: 'center', marginTop: 20, textTransform: 'uppercase', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 }, Platform.OS === 'web' && { textShadow: '0 2px 8px rgba(0,0,0,0.4)' } as any]}>Select Roles</Text>
 
         <View style={styles.rolesCard}>
           {errors.slots ? <Text style={styles.error}>{errors.slots}</Text> : null}
@@ -260,7 +268,7 @@ export default function HomeScreen() {
             style={[
               styles.submitBtn,
               isSubmitting && styles.disabled,
-              Platform.OS === 'web' && !isSubmitting && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as any),
+              Platform.OS === 'web' && ({ background: isSubmitting ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as any),
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
@@ -366,8 +374,8 @@ const styles = StyleSheet.create({
   card: { margin: 16, marginTop: 24, padding: 20 },
   rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: 'Montserrat', marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: '600', fontFamily: 'Montserrat', marginTop: 16, marginBottom: 6 },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 11, fontSize: 15, fontFamily: 'Montserrat' },
+  label: { fontSize: 18, fontWeight: '600', fontFamily: 'Montserrat', marginTop: 16, marginBottom: 6 },
+  input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: 'Montserrat' },
   multiline: { height: 100 },
   error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: 'Montserrat' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
@@ -397,16 +405,17 @@ const styles = StyleSheet.create({
   qtyBadge: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: 'Montserrat' },
 
+  dateRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  dateCol: { flex: 1 },
   dateBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 6,
   },
-  dateBtnFull: { flex: 0, marginTop: 6 },
-  dateBtnText: { fontSize: 15, flex: 1, fontFamily: 'Montserrat' },
+  dateBtnText: { fontSize: 13, flex: 1, fontFamily: 'Montserrat' },
 });

@@ -9,12 +9,25 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
 import { auth, db } from '@core/firebase/config';
 import { listenToMessages, sendMessage } from '../services/chatService';
 import type { Chat, Message } from '../types';
+
+const USER_COLORS = [
+  '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab', '#1e88e5',
+  '#039be5', '#00acc1', '#00897b', '#43a047', '#c0ca33', '#fb8c00',
+  '#f4511e', '#6d4c41', '#546e7a', '#00838f', '#2e7d32', '#c62828',
+];
+
+function colorForUser(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  return USER_COLORS[hash % USER_COLORS.length];
+}
 
 interface Props {
   chatId: string;
@@ -98,11 +111,13 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   return (
+    <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.bg }]}
+      style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
     >
-      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: 'transparent', borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={[styles.headerBackText, { color: colors.accent }]}>‹</Text>
         </TouchableOpacity>
@@ -137,11 +152,11 @@ export function ChatRoomScreen({ chatId }: Props) {
               <View
                 style={[
                   styles.bubble,
-                  isOwn ? { backgroundColor: colors.accent } : { backgroundColor: colors.card },
+                  isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' },
                 ]}
               >
                 {!isOwn && (
-                  <Text style={styles.senderName}>
+                  <Text style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
                     {userNames[item.senderId] ?? 'Loading...'}
                   </Text>
                 )}
@@ -153,7 +168,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           );
         }}
       />
-      <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
+      <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent' }]}>
         <TextInput
           style={[
             styles.input,
@@ -176,13 +191,13 @@ export function ChatRoomScreen({ chatId }: Props) {
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  flex: { flex: 1, backgroundColor: 'transparent' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -246,7 +261,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 90,
     gap: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
   },

@@ -81,7 +81,7 @@ export default function ClientProfileScreen() {
 
         {/* ── 2. LANGUAGE ── */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>LANGUAGE</Text>
-        <View style={[styles.langRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.langRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
           <TouchableOpacity
             style={[styles.langBtn, lang === 'he' && { backgroundColor: colors.primary }]}
             onPress={() => setLang('he')}
@@ -104,7 +104,7 @@ export default function ClientProfileScreen() {
 
         {/* ── 3. APPEARANCE ── */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>APPEARANCE</Text>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
           <View style={styles.cardRow}>
             {isDark
               ? <Moon size={20} color={colors.textMuted} strokeWidth={1.5} />
@@ -123,7 +123,7 @@ export default function ClientProfileScreen() {
 
         {/* ── 4. ACCOUNT ── */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
           <TouchableOpacity
             style={styles.cardRow}
             onPress={() => Alert.alert('Coming soon', 'Personal details editing is not available yet.')}

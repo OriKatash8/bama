@@ -1,12 +1,13 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import type { ActiveMode } from '@core/types/user';
 
-function PersonIcon() {
+function PersonIcon({ color = '#fff' }: { color?: string }) {
   return (
     <View style={personStyles.wrap}>
-      <View style={personStyles.head} />
-      <View style={personStyles.body} />
+      <View style={[personStyles.head, { backgroundColor: color }]} />
+      <View style={[personStyles.body, { backgroundColor: color }]} />
     </View>
   );
 }
@@ -24,6 +25,7 @@ const CARDS: { mode: ActiveMode; title: string; color: string }[] = [
 
 export function ModePicker() {
   const { switchMode } = useSwitchMode();
+  const [pressed, setPressed] = useState<ActiveMode | null>(null);
 
   return (
     <View style={styles.container}>
@@ -34,17 +36,29 @@ export function ModePicker() {
       />
 
       <View style={styles.buttons}>
-        {CARDS.map(({ mode, title, color }) => (
-          <TouchableOpacity
-            key={mode}
-            style={[styles.btn, { backgroundColor: color }]}
-            onPress={() => switchMode(mode)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.btnText}>{title}</Text>
-            {mode === 'client' ? <PersonIcon /> : <Text style={styles.btnIcon}>✦</Text>}
-          </TouchableOpacity>
-        ))}
+        {CARDS.map(({ mode, title, color }) => {
+          const isPressed = pressed === mode;
+          return (
+            <TouchableOpacity
+              key={mode}
+              style={[
+                styles.btn,
+                Platform.OS === 'web'
+                  ? ({ background: isPressed ? 'linear-gradient(to right, #004aad, #cb6ce6)' : '#ffffff' } as any)
+                  : { backgroundColor: isPressed ? color : '#ffffff' },
+              ]}
+              onPress={() => switchMode(mode)}
+              onPressIn={() => setPressed(mode)}
+              onPressOut={() => setPressed(null)}
+              activeOpacity={1}
+            >
+              <Text style={[styles.btnText, { color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>{title}</Text>
+              {mode === 'client'
+                ? <PersonIcon color={isPressed ? '#ffffff' : '#004aad'} />
+                : <Text style={[styles.btnIcon, { color: isPressed ? '#ffffff' : '#cb6ce6' }]}>✦</Text>}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );

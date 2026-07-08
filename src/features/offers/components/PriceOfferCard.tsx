@@ -22,10 +22,10 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
   }, [offer.professionalId]);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.name, { color: colors.text }]}>{displayName ?? '…'}</Text>
+          <Text style={[styles.name, { color: '#004aad' }]}>{displayName ?? '…'}</Text>
           <Text style={[styles.role, { color: colors.textSec }]}>
             {offer.subcategory}
             <Text style={{ color: colors.textMuted }}> · {offer.category}</Text>

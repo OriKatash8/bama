@@ -275,7 +275,7 @@ export default function BuilderScreen() {
             style={[
               styles.submitBtn,
               isSubmitting && styles.disabled,
-              Platform.OS === 'web' && !isSubmitting && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as any),
+              Platform.OS === 'web' && ({ background: isSubmitting ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as any),
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting}

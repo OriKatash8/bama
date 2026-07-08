@@ -45,7 +45,7 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
     const allChips = Object.keys(CREW_CATEGORIES).flatMap((cat) =>
       selected
         .filter((s) => s.category === cat)
-        .map((s) => ({ key: `${cat}-${s.subcategory}`, emoji: CATEGORY_EMOJI[cat] ?? '•', label: s.subcategory }))
+        .map((s) => ({ key: `${cat}-${s.subcategory}`, label: s.subcategory }))
     );
 
     return (
@@ -55,9 +55,9 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
           <Text style={styles.empty}>No skills added yet.</Text>
         ) : (
           <View style={styles.chipsWrap}>
-            {allChips.map(({ key, emoji, label }) => (
+            {allChips.map(({ key, label }) => (
               <View key={key} style={styles.chip}>
-                <Text style={styles.chipText}>{emoji} {label}</Text>
+                <Text style={styles.chipText}>{label}</Text>
               </View>
             ))}
           </View>

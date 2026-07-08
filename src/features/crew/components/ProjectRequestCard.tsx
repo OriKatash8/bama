@@ -62,9 +62,9 @@ export function ProjectRequestCard({ request }: Props) {
   const filledCount = request.filledSlots?.length ?? 0;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
       <View style={styles.row}>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{request.title}</Text>
+        <Text style={[styles.title, { color: '#004aad' }]} numberOfLines={1}>{request.title}</Text>
         <View style={[styles.badge, { backgroundColor: STATUS_COLORS[request.status] }]}>
           <Text style={styles.badgeText}>{request.status.replace('_', ' ')}</Text>
         </View>
@@ -101,7 +101,7 @@ export function ProjectRequestCard({ request }: Props) {
                   <View key={i} style={styles.teamRow}>
                     <View style={styles.teamDot} />
                     <View style={styles.teamInfo}>
-                      <Text style={[styles.teamRole, { color: colors.text }]}>{slot.subcategory}</Text>
+                      <Text style={[styles.teamRole, { color: '#004aad' }]}>{slot.subcategory}</Text>
                       {member ? (
                         <Text style={[styles.teamName, { color: colors.textSec }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
                       ) : (

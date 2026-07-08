@@ -34,7 +34,7 @@ export function LoginForm() {
       <View style={[styles.titleWrap, { marginBottom: -60 }]}>
         <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       </View>
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
+      <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
         <View style={styles.titleWrap}>
           <Text style={styles.title}>SIGN IN</Text>
         </View>

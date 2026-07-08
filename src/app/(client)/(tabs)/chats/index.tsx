@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -13,6 +13,13 @@ import type { PriceOffer } from '@core/types/project';
 
 const TABS = ['Chats', 'Notifications'] as const;
 type Tab = typeof TABS[number];
+
+const gradientStyle = Platform.OS === 'web' ? ({
+  background: 'linear-gradient(to right, #004aad, #cb6ce6)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+} as any) : {};
 
 export default function ChatsScreen() {
   const colors = useTheme();
@@ -44,7 +51,7 @@ export default function ChatsScreen() {
       {/* Header — title + tabs */}
       <View style={styles.headerWrap}>
         <View style={styles.gradient}>
-          <Text style={[styles.headerTitle, { color: '#004aad' }]}>Chats</Text>
+          <Text style={[styles.headerTitle, Platform.OS !== 'web' && { color: colors.accent }, gradientStyle]}>Chats</Text>
 
           <View style={styles.tabBar}>
             {TABS.map((tab) => {
@@ -75,7 +82,7 @@ export default function ChatsScreen() {
         <ScrollView contentContainerStyle={styles.notifContent} showsVerticalScrollIndicator={false}>
           {offers.length > 0 && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Price Offers</Text>
+              <Text style={[styles.sectionTitle, { color: '#004aad' }]}>Price Offers</Text>
               {offersLoading ? (
                 <ActivityIndicator color={colors.accent} />
               ) : (
@@ -93,7 +100,7 @@ export default function ChatsScreen() {
           )}
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>My Projects</Text>
+            <Text style={[styles.sectionTitle, { color: '#004aad' }]}>My Projects</Text>
             {requestsLoading ? (
               <ActivityIndicator color={colors.accent} />
             ) : requests.length === 0 ? (
@@ -125,8 +132,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 36,
+    fontWeight: '800',
+    fontFamily: 'Montserrat',
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
   tabBar: {
     flexDirection: 'row',

@@ -4,6 +4,7 @@ import {
   StyleSheet, Platform, Animated, Easing, ActivityIndicator, Image,
 } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
+import { ChevronRight, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { auth } from '@core/firebase/config';
@@ -13,10 +14,22 @@ import { useUnifiedSearch } from '@features/crew/hooks/useUnifiedSearch';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
 
+const CATEGORY_IMAGE: Record<string, number> = {
+  'Video Photographer': require('../../../../../assets/images/categories/videographer-blue.png'),
+  'Still Photographer': require('../../../../../assets/images/categories/photographer.png'),
+  'Editor':             require('../../../../../assets/images/categories/editor.png'),
+  'Graphic Designer':   require('../../../../../assets/images/categories/graphic-designer.png'),
+  'AI Specialist':      require('../../../../../assets/images/categories/ai.png'),
+  'Social Media':       require('../../../../../assets/images/categories/social.png'),
+  'Studio & Audio':     require('../../../../../assets/images/categories/studios.png'),
+  'Lighting Tech':      require('../../../../../assets/images/categories/lighting.png'),
+  'Sound Recordist':    require('../../../../../assets/images/categories/sound.png'),
+};
 
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   key,
   label: key,
+  image: CATEGORY_IMAGE[key],
   subcategories: subs,
 }));
 
@@ -149,8 +162,8 @@ export default function SearchScreen() {
         </View>
 
         {view.kind === 'grid' && (
-          <View style={[styles.searchRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={styles.searchIcon}>🔍</Text>
+          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
               placeholder="Search by role, skill, or name…"
@@ -224,19 +237,22 @@ export default function SearchScreen() {
               });
 
               return (
-                <View key={cat.key}>
+                <View key={cat.key} style={styles.categoryCard}>
                   <TouchableOpacity
-                    style={styles.categoryRow}
+                    style={styles.categoryCardRow}
                     onPress={() => toggleCategory(cat.key)}
                     activeOpacity={0.7}
                   >
+                    {cat.image && (
+                      <Image source={cat.image} style={styles.categoryIcon} />
+                    )}
                     <Text style={styles.categoryLabel}>{cat.label}</Text>
-                    <Animated.Text style={[styles.categoryChevron, { transform: [{ rotate: chevronRotate }] }]}>
-                      ›
-                    </Animated.Text>
+                    <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
+                      <ChevronRight size={18} color="#004aad" />
+                    </Animated.View>
                   </TouchableOpacity>
 
-                  <Animated.View style={[styles.subList, { maxHeight, opacity: subOpacity, overflow: 'hidden' }]}>
+                  <Animated.View style={{ maxHeight, opacity: subOpacity, overflow: 'hidden' }}>
                     {cat.subcategories.map((sub) => (
                       <TouchableOpacity
                         key={sub}
@@ -296,63 +312,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 24,
   },
-  heading: { fontSize: 22, fontWeight: '800', textAlign: 'center', flex: 1 },
+  heading: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase', flex: 1 },
   backBtn: { width: 60 },
   backText: { fontSize: 15, fontWeight: '600' },
 
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 24,
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 48,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    height: 44,
     borderWidth: 1,
     gap: 8,
   },
-  searchIcon: { fontSize: 16 },
-  searchInput: { flex: 1, fontSize: 15 },
+searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
-  listContent: { paddingHorizontal: 16, paddingBottom: 100 },
+  listContent: { paddingBottom: 100, alignItems: 'center' },
 
-  categoryRow: {
+  categoryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    width: '100%',
+    maxWidth: 600,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  categoryCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#004aad33',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  categoryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    marginRight: 12,
   },
   categoryLabel: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '700',
     fontFamily: 'Montserrat',
     color: '#004aad',
   },
-  categoryChevron: {
-    fontSize: 22,
-    color: '#004aad',
-    fontWeight: '600',
-  },
 
-  subList: {
-    marginLeft: 16,
-    borderLeftWidth: 2,
-    borderLeftColor: '#004aad',
-    marginBottom: 4,
-  },
   subItem: {
     height: SUB_ITEM_HEIGHT,
     justifyContent: 'center',
-    paddingLeft: 16,
-    paddingRight: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#004aad22',
+    paddingLeft: 52,
+    paddingRight: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#004aad11',
   },
   subItemText: {
     fontSize: 15,

@@ -83,7 +83,7 @@ function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTi
     }).start();
   }, [isActive, anim]);
 
-  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] });
+  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 2] });
   const iconSource = isActive && cat.selectedIcon ? cat.selectedIcon : cat.icon;
 
   return (

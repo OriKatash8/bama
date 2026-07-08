@@ -65,24 +65,18 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         </View>
       </View>
 
-      {!!request.description && (
-        <View style={styles.descBox}>
-          <Text style={[styles.descText, { color: '#004aad' }]} numberOfLines={3}>
-            {request.description}
-          </Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 12,
+    padding: 14,
     marginHorizontal: 16,
     marginVertical: 6,
     borderWidth: 1,
+    backgroundColor: '#ffffff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,

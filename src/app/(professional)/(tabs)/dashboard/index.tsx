@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 8,
   },
-  heading: { fontSize: 32, fontWeight: '600', textAlign: 'center' },
+  heading: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase' },
   count: { fontSize: 13, fontWeight: '500' },
   list: { paddingVertical: 8, paddingBottom: 100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
