@@ -10,9 +10,10 @@ type CreateListingInput = {
   location: string;
   price: number;
   imageUri: string | null;
-  condition: ProductCondition | null;
-  category: string;
-  brand: string;
+  condition?: ProductCondition | null;
+  category?: string;
+  subcategory?: string;
+  brand?: string;
 };
 
 export function useCreateListing() {
@@ -39,7 +40,8 @@ export function useCreateListing() {
         imageUrl,
         condition: input.condition ?? null,
         category: input.category || null,
-        brand: input.brand.trim() || null,
+        subcategory: input.subcategory || null,
+        brand: input.brand?.trim() || null,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });
     } catch (e) {

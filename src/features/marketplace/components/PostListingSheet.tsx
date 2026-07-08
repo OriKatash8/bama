@@ -28,6 +28,94 @@ const CONDITIONS: { value: ProductCondition; label: string; color: string }[] = 
   { value: 'fair', label: 'Fair', color: '#e53935' },
 ];
 
+const SUBCATEGORIES: Record<string, readonly string[]> = {
+  camera: ['Video Camera', 'Photo Camera', 'Cinema Camera', 'Action Camera', 'Mirrorless Camera', 'DSLR Camera'],
+  lens: ['Photo Lens', 'Video/Cinema Lens', 'Anamorphic Lens', 'Macro Lens', 'Wide Angle Lens', 'Telephoto Lens', 'Zoom Lens'],
+  audio: ['Microphone', 'Recorder', 'Mixer', 'Headphones', 'Speaker', 'Wireless System', 'Boom Pole'],
+  lighting: ['LED Panel', 'Strobe/Flash', 'Continuous Light', 'Ring Light', 'Fresnel Light', 'Softbox', 'Reflector'],
+  drone: ['Photo Drone', 'Video Drone', 'FPV Drone', 'Drone Accessory'],
+  studio: ['Studio Light', 'Backdrop', 'Grip Equipment', 'Monitor', 'Stabilizer', 'Tripod', 'Slider'],
+};
+
+const DEFAULT_BRANDS: readonly string[] = ['Other'];
+
+const CAMERA_VIDEO_CINEMA_BRANDS: readonly string[] = ['Sony', 'Canon', 'Blackmagic', 'RED', 'ARRI', 'Panasonic', 'Nikon', 'Fujifilm', 'JVC', 'Other'];
+const CAMERA_PHOTO_BRANDS: readonly string[] = ['Sony', 'Canon', 'Nikon', 'Fujifilm', 'Leica', 'Hasselblad', 'Olympus', 'Pentax', 'Other'];
+const CAMERA_ACTION_BRANDS: readonly string[] = ['GoPro', 'DJI', 'Insta360', 'Sony', 'Other'];
+
+const LENS_PHOTO_BRANDS: readonly string[] = ['Canon', 'Nikon', 'Sony', 'Sigma', 'Tamron', 'Zeiss', 'Samyang', 'Tokina', 'Fujifilm', 'Other'];
+const LENS_CINEMA_BRANDS: readonly string[] = ['Zeiss', 'Cooke', 'Leica', 'Sigma', 'Tokina', 'ARRI', 'Canon', 'Rokinon', 'Other'];
+
+const AUDIO_MIC_BRANDS: readonly string[] = ['Sennheiser', 'Rode', 'Shure', 'Audio-Technica', 'Sony', 'Neumann', 'DPA', 'Schoeps', 'Other'];
+const AUDIO_RECORDER_BRANDS: readonly string[] = ['Sound Devices', 'Zoom', 'Tascam', 'Roland', 'Nagra', 'Other'];
+const AUDIO_MIXER_BRANDS: readonly string[] = ['Sound Devices', 'Zoom', 'Behringer', 'Yamaha', 'Allen & Heath', 'Other'];
+const AUDIO_HEADPHONES_BRANDS: readonly string[] = ['Sony', 'Sennheiser', 'Audio-Technica', 'Beyerdynamic', 'AKG', 'Other'];
+const AUDIO_WIRELESS_BRANDS: readonly string[] = ['Sennheiser', 'Rode', 'Sony', 'Shure', 'Lectrosonics', 'Zaxcom', 'Other'];
+
+const LIGHT_LED_PANEL_BRANDS: readonly string[] = ['Aputure', 'Nanlite', 'Godox', 'Litepanels', 'Arri', 'Kino Flo', 'Other'];
+const LIGHT_STROBE_BRANDS: readonly string[] = ['Profoto', 'Godox', 'Broncolor', 'Elinchrom', 'Hensel', 'Other'];
+const LIGHT_CONTINUOUS_BRANDS: readonly string[] = ['Arri', 'Kino Flo', 'Aputure', 'Mole-Richardson', 'Other'];
+const LIGHT_RING_BRANDS: readonly string[] = ['Godox', 'Neewer', 'Elgato', 'Aputure', 'Other'];
+
+const DRONE_PHOTO_VIDEO_BRANDS: readonly string[] = ['DJI', 'Autel', 'Parrot', 'Skydio', 'Other'];
+const DRONE_FPV_BRANDS: readonly string[] = ['DJI', 'IFlight', 'Geprc', 'BetaFPV', 'Other'];
+
+const STUDIO_STABILIZER_BRANDS: readonly string[] = ['DJI', 'Zhiyun', 'Moza', 'Ikan', 'Other'];
+const STUDIO_TRIPOD_BRANDS: readonly string[] = ['Manfrotto', 'Gitzo', 'Benro', 'Sachtler', 'Miller', 'Other'];
+const STUDIO_MONITOR_BRANDS: readonly string[] = ['SmallHD', 'Atomos', 'Blackmagic', 'Feelworld', 'Other'];
+const STUDIO_GRIP_BRANDS: readonly string[] = ['Matthews', 'Kupo', 'Kessler', 'Rhino', 'Other'];
+
+const BRANDS_BY_CATEGORY: Record<string, Record<string, readonly string[]>> = {
+  camera: {
+    'Video Camera': CAMERA_VIDEO_CINEMA_BRANDS,
+    'Cinema Camera': CAMERA_VIDEO_CINEMA_BRANDS,
+    'Photo Camera': CAMERA_PHOTO_BRANDS,
+    'Mirrorless Camera': CAMERA_PHOTO_BRANDS,
+    'DSLR Camera': CAMERA_PHOTO_BRANDS,
+    'Action Camera': CAMERA_ACTION_BRANDS,
+  },
+  lens: {
+    'Photo Lens': LENS_PHOTO_BRANDS,
+    'Macro Lens': LENS_PHOTO_BRANDS,
+    'Wide Angle Lens': LENS_PHOTO_BRANDS,
+    'Telephoto Lens': LENS_PHOTO_BRANDS,
+    'Zoom Lens': LENS_PHOTO_BRANDS,
+    'Video/Cinema Lens': LENS_CINEMA_BRANDS,
+    'Anamorphic Lens': LENS_CINEMA_BRANDS,
+  },
+  audio: {
+    Microphone: AUDIO_MIC_BRANDS,
+    Recorder: AUDIO_RECORDER_BRANDS,
+    Mixer: AUDIO_MIXER_BRANDS,
+    Headphones: AUDIO_HEADPHONES_BRANDS,
+    'Wireless System': AUDIO_WIRELESS_BRANDS,
+  },
+  lighting: {
+    'LED Panel': LIGHT_LED_PANEL_BRANDS,
+    'Strobe/Flash': LIGHT_STROBE_BRANDS,
+    'Continuous Light': LIGHT_CONTINUOUS_BRANDS,
+    'Fresnel Light': LIGHT_CONTINUOUS_BRANDS,
+    'Ring Light': LIGHT_RING_BRANDS,
+  },
+  drone: {
+    'Photo Drone': DRONE_PHOTO_VIDEO_BRANDS,
+    'Video Drone': DRONE_PHOTO_VIDEO_BRANDS,
+    'FPV Drone': DRONE_FPV_BRANDS,
+  },
+  studio: {
+    Stabilizer: STUDIO_STABILIZER_BRANDS,
+    Tripod: STUDIO_TRIPOD_BRANDS,
+    Monitor: STUDIO_MONITOR_BRANDS,
+    Backdrop: STUDIO_GRIP_BRANDS,
+    'Grip Equipment': STUDIO_GRIP_BRANDS,
+    Slider: STUDIO_GRIP_BRANDS,
+  },
+};
+
+function getBrandOptions(category: string, subcategory: string): readonly string[] {
+  return BRANDS_BY_CATEGORY[category]?.[subcategory] ?? DEFAULT_BRANDS;
+}
+
 type Props = {
   visible: boolean;
   initialType: MarketplaceListingType;
@@ -42,11 +130,15 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   const [type, setType] = useState<MarketplaceListingType>(initialType);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [productName, setProductName] = useState('');
-  const [brand, setBrand] = useState('');
   const [category, setCategory] = useState('');
+  const [subcategory, setSubcategory] = useState('');
+  const [brand, setBrand] = useState('');
   const [condition, setCondition] = useState<ProductCondition | null>(null);
   const [location, setLocation] = useState('');
   const [price, setPrice] = useState('');
+
+  const subcategoryOptions = category ? SUBCATEGORIES[category] : undefined;
+  const hasSubcategoryStep = subcategoryOptions !== undefined;
 
   const canSubmit =
     productName.trim().length > 0 &&
@@ -67,11 +159,23 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   function reset() {
     setImageUri(null);
     setProductName('');
-    setBrand('');
     setCategory('');
+    setSubcategory('');
+    setBrand('');
     setCondition(null);
     setLocation('');
     setPrice('');
+  }
+
+  function handleCategorySelect(id: string) {
+    setCategory(id);
+    setSubcategory('');
+    setBrand('');
+  }
+
+  function handleSubcategorySelect(sub: string) {
+    setSubcategory(sub);
+    setBrand('');
   }
 
   async function handleSubmit() {
@@ -84,6 +188,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
         imageUri,
         condition,
         category,
+        subcategory,
         brand,
       });
       showToast('Listing posted!', 'success');
@@ -144,15 +249,6 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             onChangeText={setProductName}
           />
 
-          {/* Brand */}
-          <TextInput
-            style={styles.input}
-            placeholder="Brand (e.g. Sony, Canon, DJI)"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={brand}
-            onChangeText={setBrand}
-          />
-
           {/* Category */}
           <Text style={styles.sectionLabel}>Category</Text>
           <View style={styles.grid}>
@@ -160,7 +256,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
               <TouchableOpacity
                 key={cat.id}
                 style={[styles.catChip, category === cat.id && styles.catChipActive]}
-                onPress={() => setCategory(cat.id)}
+                onPress={() => handleCategorySelect(cat.id)}
                 activeOpacity={0.8}
               >
                 <Text style={styles.catEmoji}>{cat.emoji}</Text>
@@ -170,6 +266,60 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Subcategory (dependent on category) */}
+          {hasSubcategoryStep && subcategoryOptions && (
+            <>
+              <Text style={styles.sectionLabel}>Subcategory</Text>
+              <View style={styles.chipRow}>
+                {subcategoryOptions.map((sub) => (
+                  <TouchableOpacity
+                    key={sub}
+                    style={[styles.chip, subcategory === sub && styles.chipActive]}
+                    onPress={() => handleSubcategorySelect(sub)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.chipLabel, subcategory === sub && styles.chipLabelActive]}>
+                      {sub}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Brand (dependent on category + subcategory, or free text for categories without a subcategory list) */}
+          {hasSubcategoryStep ? (
+            subcategory.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>Brand</Text>
+                <View style={styles.chipRow}>
+                  {getBrandOptions(category, subcategory).map((b) => (
+                    <TouchableOpacity
+                      key={b}
+                      style={[styles.chip, brand === b && styles.chipActive]}
+                      onPress={() => setBrand(b)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.chipLabel, brand === b && styles.chipLabelActive]}>
+                        {b}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )
+          ) : (
+            category.length > 0 && (
+              <TextInput
+                style={styles.input}
+                placeholder="Brand (e.g. Sony, Canon, DJI)"
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                value={brand}
+                onChangeText={setBrand}
+              />
+            )
+          )}
 
           {/* Condition (secondhand only) */}
           {type === 'secondhand' && (
@@ -234,13 +384,16 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 }
 
 const webSheet = {
+  position: 'absolute',
+  left: 0,
+  right: 0,
   maxWidth: 540,
   alignSelf: 'center',
   width: '100%',
   borderRadius: 20,
   bottom: 'auto',
   top: '50%',
-  transform: [{ translateY: -50 }],
+  transform: [{ translateY: '-50%' }],
 };
 
 const styles = StyleSheet.create({
@@ -263,7 +416,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 48 },
+  scrollContent: { paddingBottom: 120 },
   handle: {
     width: 40, height: 4,
     backgroundColor: '#ffffff33',
@@ -338,6 +491,18 @@ const styles = StyleSheet.create({
   catEmoji: { fontSize: 16 },
   catLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
   catLabelActive: { color: '#fff' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ffffff12',
+    backgroundColor: '#2a2a3e',
+  },
+  chipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  chipLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
+  chipLabelActive: { color: '#fff' },
   conditionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   conditionChip: {
     paddingHorizontal: 14,

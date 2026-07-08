@@ -17,4 +17,5 @@ export type MarketplaceListing = {
   condition?: ProductCondition;
   brand?: string;
   category?: string;
+  subcategory?: string;
 };

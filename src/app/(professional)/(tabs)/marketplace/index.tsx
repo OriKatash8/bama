@@ -11,7 +11,7 @@ import { ListingDetailModal } from '@features/marketplace/components/ListingDeta
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { useTheme } from '@core/hooks/useTheme';
-import { AllIcon, LensIcon, MoreIcon } from '@features/marketplace/components/CategoryIcons';
+import { AllIcon, MoreIcon } from '@features/marketplace/components/CategoryIcons';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
 
 type Category = {
@@ -30,11 +30,16 @@ const CATEGORIES: Category[] = [
     selectedIcon: require('../../../../../assets/images/categories/photographer.png'),
     label: 'Camera',
   },
-  { id: 'lens', SvgIcon: LensIcon, label: 'Lens' },
+  {
+    id: 'lens',
+    icon: require('../../../../../assets/images/categories/101.png'),
+    selectedIcon: require('../../../../../assets/images/categories/10.png'),
+    label: 'Lens',
+  },
   {
     id: 'audio',
     icon: require('../../../../../assets/images/categories/audio.png'),
-    selectedIcon: require('../../../../../assets/images/categories/sound.png'),
+    selectedIcon: require('../../../../../assets/images/categories/12.png'),
     label: 'Audio',
   },
   {
@@ -46,13 +51,13 @@ const CATEGORIES: Category[] = [
   {
     id: 'drone',
     icon: require('../../../../../assets/images/categories/drone.png'),
-    selectedIcon: require('../../../../../assets/images/categories/drone-selected.png'),
+    selectedIcon: require('../../../../../assets/images/categories/11.png'),
     label: 'Drone',
   },
   {
     id: 'studio',
     icon: require('../../../../../assets/images/categories/studio.png'),
-    selectedIcon: require('../../../../../assets/images/categories/studios.png'),
+    selectedIcon: require('../../../../../assets/images/categories/14.png'),
     label: 'Studio',
   },
   { id: 'accessories', SvgIcon: MoreIcon, label: 'More' },
@@ -83,7 +88,7 @@ function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTi
 
   return (
     <TouchableOpacity style={styles.catItem} onPress={onPress} activeOpacity={0.75}>
-      <Animated.View style={[isActive && styles.tileActiveShadow, { transform: [{ scale }] }]}>
+      <Animated.View style={{ transform: [{ scale }] }}>
         {iconSource ? (
           <Image source={iconSource} style={styles.tileIcon} resizeMode="contain" />
         ) : cat.SvgIcon ? (
@@ -350,7 +355,7 @@ const styles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 110,
     right: 24,
     width: 56,
     height: 56,
@@ -400,13 +405,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tileIcon: { width: 60, height: 60 },
-  tileActiveShadow: {
-    shadowColor: '#7b4fd4',
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
   catLabel: { fontSize: 13, fontWeight: '600' },
 
   filtersRow: {
@@ -446,7 +444,7 @@ const styles = StyleSheet.create({
   },
 
   row: { paddingHorizontal: 12, gap: 10 },
-  list: { paddingBottom: 24, gap: 10 },
+  list: { paddingBottom: 100, gap: 10 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: 17, fontWeight: '600' },
