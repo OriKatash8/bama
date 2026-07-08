@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
-  listContent: { paddingHorizontal: 16, paddingBottom: 24 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 100 },
 
   categoryRow: {
     flexDirection: 'row',
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   searchHintText: { fontSize: 13, fontWeight: '600' },
-  resultsList: { paddingHorizontal: 16, paddingBottom: 24 },
+  resultsList: { paddingHorizontal: 16, paddingBottom: 100 },
 
   resultsHint: {
     fontSize: 13,

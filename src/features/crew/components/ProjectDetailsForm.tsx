@@ -93,7 +93,7 @@ export function ProjectDetailsForm({ onSubmit, isSubmitting }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
+  container: { padding: 16, paddingBottom: 100 },
   label: { fontSize: 14, fontWeight: '600', color: '#333', marginTop: 16, marginBottom: 6 },
   input: {
     borderWidth: 1,

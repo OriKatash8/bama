@@ -160,7 +160,7 @@ export default function BuilderScreen() {
 
   return (
     <Screen scrollable={false} backgroundColor={colors.bg}>
-      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.topBar}>
           <View style={styles.logoWrap}>
             <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
@@ -377,6 +377,7 @@ export default function BuilderScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 100 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111', textAlign: 'center' },
   headerRight: { width: 40 },
 
-  content: { padding: 16, gap: 12 },
+  content: { padding: 16, gap: 12, paddingBottom: 100 },
 
   projectTitle: { fontSize: 26, fontWeight: '800', lineHeight: 32 },
 

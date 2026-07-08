@@ -110,7 +110,7 @@ export function ChatsScreen() {
       <FlatList
         data={chats}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={chats.length === 0 && styles.empty}
+        contentContainerStyle={[styles.listContent, chats.length === 0 && styles.empty]}
         ListEmptyComponent={
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>
             No conversations yet
@@ -149,6 +149,9 @@ export function ChatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  listContent: {
+    paddingBottom: 100,
   },
   row: {
     paddingVertical: 14,

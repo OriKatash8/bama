@@ -156,7 +156,7 @@ export default function HomeScreen() {
 
   return (
     <Screen scrollable={false}>
-      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           Build Your Crew
         </Text>
@@ -361,6 +361,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 100 },
   pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
   card: { margin: 16, marginTop: 24, padding: 20 },
   rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },

@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   heading: { fontSize: 32, fontWeight: '600', textAlign: 'center' },
   count: { fontSize: 13, fontWeight: '500' },
-  list: { paddingVertical: 8, paddingBottom: 24 },
+  list: { paddingVertical: 8, paddingBottom: 100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: 17, fontWeight: '600' },

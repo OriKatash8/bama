@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     color: '#004aad',
     fontWeight: '700',
   },
-  notifContent: { padding: 16, gap: 20, paddingBottom: 40 },
+  notifContent: { padding: 16, gap: 20, paddingBottom: 100 },
   section: { gap: 10 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },

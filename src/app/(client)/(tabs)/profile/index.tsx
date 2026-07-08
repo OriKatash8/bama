@@ -48,7 +48,7 @@ export default function ClientProfileScreen() {
   }
 
   return (
-    <Screen scrollable>
+    <Screen scrollable style={styles.screenContent}>
       <View style={styles.content}>
 
         {/* ── 1. AVATAR ── */}
@@ -173,6 +173,7 @@ export default function ClientProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  screenContent: { paddingBottom: 100 },
   content: { paddingHorizontal: 20, paddingTop: 32 },
   pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase', marginBottom: 16 },
 

@@ -294,7 +294,7 @@ function Divider({ colors }: { colors: any }) {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 24 },
+  content: { gap: 24, paddingBottom: 100 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   gearBtn: { marginLeft: 8, padding: 4 },

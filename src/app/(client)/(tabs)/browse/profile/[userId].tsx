@@ -79,7 +79,7 @@ export default function PublicProfileScreen() {
   const skills = profile.skills ?? [];
 
   return (
-    <Screen scrollable>
+    <Screen scrollable style={styles.screenContent}>
       {/* ── Hero gradient ── */}
       <LinearGradient
         colors={['#cb6ce6', '#004aad']}
@@ -160,6 +160,7 @@ export default function PublicProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  screenContent: { paddingBottom: 100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   errorText: { fontSize: 16, fontWeight: '500' },
   backFallback: { paddingVertical: 8 },
