@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
+  View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Platform, Animated, Easing, ActivityIndicator, Image,
 } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
@@ -16,14 +16,14 @@ import { getOrCreateDM } from '@features/chat/services/chatService';
 
 const CATEGORY_IMAGE: Record<string, number> = {
   'Video Photographer': require('../../../../../assets/images/categories/videographer-blue.png'),
-  'Still Photographer': require('../../../../../assets/images/categories/photographer.png'),
-  'Editor':             require('../../../../../assets/images/categories/editor.png'),
-  'Graphic Designer':   require('../../../../../assets/images/categories/graphic-designer.png'),
-  'AI Specialist':      require('../../../../../assets/images/categories/ai.png'),
-  'Social Media':       require('../../../../../assets/images/categories/social.png'),
-  'Studio & Audio':     require('../../../../../assets/images/categories/studios.png'),
-  'Lighting Tech':      require('../../../../../assets/images/categories/lighting.png'),
-  'Sound Recordist':    require('../../../../../assets/images/categories/sound.png'),
+  'Still Photographer': require('../../../../../assets/images/categories/blue-cam.png'),
+  'Editor':             require('../../../../../assets/images/categories/blue-edit.png'),
+  'Graphic Designer':   require('../../../../../assets/images/categories/blue-grafic.png'),
+  'AI Specialist':      require('../../../../../assets/images/categories/blue-ai.png'),
+  'Social Media':       require('../../../../../assets/images/categories/blue-social.png'),
+  'Studio & Audio':     require('../../../../../assets/images/categories/blue-sound.png'),
+  'Lighting Tech':      require('../../../../../assets/images/categories/blue-lightning.png'),
+  'Sound Recordist':    require('../../../../../assets/images/categories/blue-mic.png'),
 };
 
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
@@ -67,13 +67,10 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
     );
   }
   return (
-    <FlatList
-      data={results}
-      keyExtractor={(item) => item.user.id}
-      contentContainerStyle={styles.resultsList}
-      showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => (
+    <View style={styles.resultsList}>
+      {results.map((item) => (
         <TouchableOpacity
+          key={item.user.id}
           onPress={() => router.push(`/browse/profile/${item.user.id}` as any)}
           activeOpacity={0.95}
         >
@@ -82,8 +79,8 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
             onMessage={() => handleMessage(item.user.id)}
           />
         </TouchableOpacity>
-      )}
-    />
+      ))}
+    </View>
   );
 }
 
@@ -148,7 +145,13 @@ export default function SearchScreen() {
 
   return (
     <Screen scrollable={false}>
-      <View style={styles.container}>
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
         <View style={styles.header}>
           {view.kind !== 'grid' && (
             <TouchableOpacity onPress={() => setView({ kind: 'grid' })} style={styles.backBtn} activeOpacity={0.7}>
@@ -161,6 +164,7 @@ export default function SearchScreen() {
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
         </View>
 
+        {/* Search bar */}
         {view.kind === 'grid' && (
           <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
             <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
@@ -180,47 +184,39 @@ export default function SearchScreen() {
           </View>
         )}
 
+        {/* Unified search results */}
         {view.kind === 'grid' && isSearching && (
-          <View style={styles.flex}>
-            {unifiedLoading ? (
-              <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
-            ) : unifiedResults.length > 0 ? (
-              <FlatList
-                data={unifiedResults}
-                keyExtractor={(item) => item.user.id}
-                contentContainerStyle={styles.resultsList}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => router.push(`/browse/profile/${item.user.id}` as any)}
-                    activeOpacity={0.95}
-                  >
-                    <ProfessionalCard
-                      item={item}
-                      onMessage={() => handleMessage(item.user.id)}
-                    />
-                  </TouchableOpacity>
-                )}
-              />
-            ) : (
-              <View style={styles.emptyResults}>
-                <Text style={styles.emptyIcon}>👤</Text>
-                <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals found</Text>
-                <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
-                  No results for "{query.trim()}"
-                </Text>
-              </View>
-            )}
-          </View>
+          unifiedLoading ? (
+            <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+          ) : unifiedResults.length > 0 ? (
+            <View style={styles.resultsList}>
+              {unifiedResults.map((item) => (
+                <TouchableOpacity
+                  key={item.user.id}
+                  onPress={() => router.push(`/browse/profile/${item.user.id}` as any)}
+                  activeOpacity={0.95}
+                >
+                  <ProfessionalCard
+                    item={item}
+                    onMessage={() => handleMessage(item.user.id)}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyResults}>
+              <Text style={styles.emptyIcon}>👤</Text>
+              <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals found</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
+                No results for "{query.trim()}"
+              </Text>
+            </View>
+          )
         )}
 
+        {/* Category list */}
         {view.kind === 'grid' && !isSearching && (
-          <ScrollView
-            style={styles.flex}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+          <View style={styles.listContent}>
             {filteredCategories.map((cat) => {
               const animVal = animValues[cat.key];
               const maxHeight = animVal.interpolate({
@@ -272,24 +268,25 @@ export default function SearchScreen() {
                 No categories match "{query}"
               </Text>
             )}
-          </ScrollView>
+          </View>
         )}
 
+        {/* Subcategory results */}
         {view.kind === 'results' && (
-          <View style={styles.flex}>
+          <>
             <Text style={[styles.resultsHint, { color: colors.textMuted }]}>
               {(view as any).category} · {(view as any).subcategory}
             </Text>
             <ResultsView category={(view as any).category} subcategory={(view as any).subcategory} />
-          </View>
+          </>
         )}
-      </View>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 16 },
+  scrollContent: { paddingTop: 16, paddingBottom: 100 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -332,7 +329,7 @@ const styles = StyleSheet.create({
 searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
-  listContent: { paddingBottom: 100, alignItems: 'center' },
+  listContent: { alignItems: 'center' },
 
   categoryCard: {
     backgroundColor: '#ffffff',

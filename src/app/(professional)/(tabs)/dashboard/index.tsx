@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, FlatList, ScrollView, StyleSheet, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { MapPin, Calendar } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -139,85 +139,87 @@ export default function DashboardScreen() {
 
   return (
     <Screen scrollable={false}>
-      <View style={styles.topBar}>
-        <Text style={[styles.greetText, { color: colors.text }, gradientText]} numberOfLines={2}>
-          {greeting}, {user?.displayName} :)
-        </Text>
-      </View>
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topBar}>
+          <Text style={[styles.greetText, { color: colors.text }, gradientText]} numberOfLines={2}>
+            {greeting}, {user?.displayName} :)
+          </Text>
+        </View>
 
-      {activeProjects.length > 0 && (
-        <View style={styles.projectsSection}>
-          <Text style={[styles.heading, { color: colors.text, marginBottom: 16 }, gradientText]}>Projects in Progress</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.projectsScroll}
-          >
-            {activeProjects.map(({ chat, project, clientName }) => (
-              <TouchableOpacity
-                key={chat.id}
-                style={[styles.projectCard, { borderColor: colors.border }]}
-                onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}`)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.projectCardTitle, { color: colors.text }]} numberOfLines={1}>
-                  {project.title}
-                </Text>
-                <Text style={[styles.projectCardMeta, { color: colors.textMuted }]}>
-                  Client: {clientName}
-                </Text>
-                <View style={styles.projectCardRow}>
-                  <Calendar size={12} color={colors.textMuted} strokeWidth={1.5} />
+        {activeProjects.length > 0 && (
+          <View style={styles.projectsSection}>
+            <Text style={[styles.heading, { color: colors.text, marginBottom: 16 }, gradientText]}>Projects in Progress</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.projectsScroll}
+            >
+              {activeProjects.map(({ chat, project, clientName }) => (
+                <TouchableOpacity
+                  key={chat.id}
+                  style={[styles.projectCard, { borderColor: colors.border }]}
+                  onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}`)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.projectCardTitle, { color: colors.text }]} numberOfLines={1}>
+                    {project.title}
+                  </Text>
                   <Text style={[styles.projectCardMeta, { color: colors.textMuted }]}>
-                    {formatDeadline(project.deadline)}
+                    Client: {clientName}
                   </Text>
-                </View>
-                <View style={styles.projectCardRow}>
-                  <MapPin size={12} color={colors.textMuted} strokeWidth={1.5} />
-                  <Text style={[styles.projectCardMeta, { color: colors.textMuted }]} numberOfLines={1}>
-                    {project.location}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                  <View style={styles.projectCardRow}>
+                    <Calendar size={12} color={colors.textMuted} strokeWidth={1.5} />
+                    <Text style={[styles.projectCardMeta, { color: colors.textMuted }]}>
+                      {formatDeadline(project.deadline)}
+                    </Text>
+                  </View>
+                  <View style={styles.projectCardRow}>
+                    <MapPin size={12} color={colors.textMuted} strokeWidth={1.5} />
+                    <Text style={[styles.projectCardMeta, { color: colors.textMuted }]} numberOfLines={1}>
+                      {project.location}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        <View style={styles.header}>
+          <Text style={[styles.heading, { color: colors.text }, gradientText]}>Notice Board</Text>
+          {!isLoading && <Text style={[styles.count, { color: colors.textMuted, textAlign: 'center' }]}>{visible.length} open project{visible.length === 1 ? '' : 's'}</Text>}
+        </View>
+
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
+        ) : visible.length === 0 ? (
+          <View style={styles.center}>
+            <Text style={styles.emptyIcon}>📋</Text>
+            <Text style={[styles.emptyText, { color: colors.textSec }]}>No open projects right now</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>Check back later for new opportunities</Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {visible.map((item) => (
+              <NoticeBoardCard
+                key={item.id}
+                request={item}
+                poster={posters[item.clientId]}
+                onPress={() => { setSelectedView('details'); setSelected(item); }}
+                onApply={() => { setSelectedView('details'); setSelected(item); }}
+                onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
+                onDismiss={() => dismiss(item.id)}
+                isApplying={false}
+              />
             ))}
-          </ScrollView>
-        </View>
-      )}
-
-      <View style={styles.header}>
-        <Text style={[styles.heading, { color: colors.text }, gradientText]}>Notice Board</Text>
-        {!isLoading && <Text style={[styles.count, { color: colors.textMuted, textAlign: 'center' }]}>{visible.length} open project{visible.length === 1 ? '' : 's'}</Text>}
-      </View>
-
-      {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#cb6ce6" />
-        </View>
-      ) : visible.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyIcon}>📋</Text>
-          <Text style={[styles.emptyText, { color: colors.textSec }]}>No open projects right now</Text>
-          <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>Check back later for new opportunities</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={visible}
-          keyExtractor={(r) => r.id}
-          renderItem={({ item }) => (
-            <NoticeBoardCard
-              request={item}
-              poster={posters[item.clientId]}
-              onPress={() => { setSelectedView('details'); setSelected(item); }}
-              onApply={() => { setSelectedView('details'); setSelected(item); }}
-              onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
-              onDismiss={() => dismiss(item.id)}
-              isApplying={false}
-            />
-          )}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+          </View>
+        )}
+      </ScrollView>
 
       <ProjectDetailModal
         request={selected}
@@ -259,8 +261,10 @@ const styles = StyleSheet.create({
   },
   heading: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase' },
   count: { fontSize: 13, fontWeight: '500' },
-  list: { paddingVertical: 8, paddingBottom: 100 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  flex: { flex: 1 },
+  scrollContent: { paddingBottom: 100 },
+  list: { paddingVertical: 8 },
+  center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: 17, fontWeight: '600' },
   emptySubtext: { fontSize: 14 },
