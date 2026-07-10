@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, TouchableOpacity, View, Text, Image, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, Text, Image, StyleSheet } from 'react-native';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
 import { Users } from 'lucide-react-native';
@@ -118,54 +118,54 @@ export function ChatsScreen() {
     );
   }
 
+  if (chats.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No conversations yet</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={chats}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, chats.length === 0 && styles.empty]}
-        ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>No conversations yet</Text>
-        }
-        renderItem={({ item }) => {
-          const chatName = item.type === 'group' ? (item.name ?? 'Group Chat') : (dmInfo[item.id]?.name ?? 'Loading...');
-          const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
-          const timestamp = formatTimestamp(item.lastMessage?.timestamp);
-          return (
-            <TouchableOpacity
-              style={[styles.card, { backgroundColor: '#ffffff' }]}
-              onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}`)}
-              activeOpacity={0.75}
-            >
-              {renderAvatar(item)}
-              <View style={styles.content}>
-                <View style={styles.topRow}>
-                  <Text style={[styles.name, { color: item.type === 'group' ? '#cb6ce6' : '#004aad' }]} numberOfLines={1}>{chatName}</Text>
-                  {status != null && (
-                    <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
-                      <Text style={styles.statusBadgeText}>{STATUS_CONFIG[status].label}</Text>
-                    </View>
-                  )}
-                  {timestamp ? (
-                    <Text style={[styles.timestamp, { color: colors.textMuted }]}>{timestamp}</Text>
-                  ) : null}
-                </View>
-                <Text style={[styles.preview, { color: colors.textMuted }]} numberOfLines={1}>
-                  {item.lastMessage?.text ?? 'No messages yet'}
-                </Text>
+    <View style={styles.listContent}>
+      {chats.map((item) => {
+        const chatName = item.type === 'group' ? (item.name ?? 'Group Chat') : (dmInfo[item.id]?.name ?? 'Loading...');
+        const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
+        const timestamp = formatTimestamp(item.lastMessage?.timestamp);
+        return (
+          <TouchableOpacity
+            key={item.id}
+            style={[styles.card, { backgroundColor: '#ffffff' }]}
+            onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}`)}
+            activeOpacity={0.75}
+          >
+            {renderAvatar(item)}
+            <View style={styles.content}>
+              <View style={styles.topRow}>
+                <Text style={[styles.name, { color: item.type === 'group' ? '#cb6ce6' : '#004aad' }]} numberOfLines={1}>{chatName}</Text>
+                {status != null && (
+                  <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
+                    <Text style={styles.statusBadgeText}>{STATUS_CONFIG[status].label}</Text>
+                  </View>
+                )}
+                {timestamp ? (
+                  <Text style={[styles.timestamp, { color: colors.textMuted }]}>{timestamp}</Text>
+                ) : null}
               </View>
-            </TouchableOpacity>
-          );
-        }}
-      />
+              <Text style={[styles.preview, { color: colors.textMuted }]} numberOfLines={1}>
+                {item.lastMessage?.text ?? 'No messages yet'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  listContent: { paddingTop: 8, paddingBottom: 100 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  listContent: { paddingTop: 8 },
+  empty: { paddingTop: 60, alignItems: 'center' },
   emptyText: { fontSize: 15 },
 
   card: {

@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  View, Text, TextInput, Image, TouchableOpacity, FlatList,
-  StyleSheet, ActivityIndicator, Platform, Animated,
+  View, Text, TextInput, Image, TouchableOpacity, ScrollView,
+  StyleSheet, ActivityIndicator, Platform, Animated, Modal,
 } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SlidersHorizontal, X } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceToggle';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
@@ -11,19 +13,16 @@ import { ListingDetailModal } from '@features/marketplace/components/ListingDeta
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { useTheme } from '@core/hooks/useTheme';
-import { AllIcon, MoreIcon } from '@features/marketplace/components/CategoryIcons';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
 
 type Category = {
   id: string;
-  icon?: ImageSourcePropType;
+  icon: ImageSourcePropType;
   selectedIcon?: ImageSourcePropType;
-  SvgIcon?: () => React.ReactElement;
   label: string;
 };
 
 const CATEGORIES: Category[] = [
-  { id: 'all', SvgIcon: AllIcon, label: 'All' },
   {
     id: 'camera',
     icon: require('../../../../../assets/images/categories/camera.png'),
@@ -60,8 +59,18 @@ const CATEGORIES: Category[] = [
     selectedIcon: require('../../../../../assets/images/categories/14.png'),
     label: 'Studio',
   },
-  { id: 'accessories', SvgIcon: MoreIcon, label: 'More' },
 ];
+
+const BRANDS_BY_CATEGORY: Record<string, string[]> = {
+  all:         ['Sony', 'Canon', 'Nikon', 'DJI', 'Godox', 'Sennheiser', 'Manfrotto', 'Other'],
+  camera:      ['Sony', 'Canon', 'Blackmagic', 'RED', 'ARRI', 'Panasonic', 'Nikon', 'Fujifilm', 'Leica', 'GoPro', 'Insta360', 'Other'],
+  lens:        ['Canon', 'Nikon', 'Sony', 'Sigma', 'Tamron', 'Zeiss', 'Cooke', 'Leica', 'Samyang', 'Tokina', 'Other'],
+  audio:       ['Sennheiser', 'Rode', 'Shure', 'Audio-Technica', 'Sony', 'Zoom', 'Tascam', 'Sound Devices', 'DPA', 'Neumann', 'Other'],
+  lighting:    ['Aputure', 'Nanlite', 'Godox', 'Profoto', 'Broncolor', 'Arri', 'Kino Flo', 'Litepanels', 'Elinchrom', 'Other'],
+  drone:       ['DJI', 'Autel', 'Parrot', 'Skydio', 'IFlight', 'Geprc', 'Other'],
+  studio:      ['Manfrotto', 'Gitzo', 'DJI', 'Zhiyun', 'SmallHD', 'Atomos', 'Matthews', 'Sachtler', 'Other'],
+  accessories: ['Sony', 'Canon', 'Nikon', 'DJI', 'Godox', 'Sennheiser', 'Manfrotto', 'Other'],
+};
 
 type CategoryTileProps = {
   cat: Category;
@@ -89,11 +98,7 @@ function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTi
   return (
     <TouchableOpacity style={styles.catItem} onPress={onPress} activeOpacity={0.75}>
       <Animated.View style={{ transform: [{ scale }] }}>
-        {iconSource ? (
-          <Image source={iconSource} style={styles.tileIcon} resizeMode="contain" />
-        ) : cat.SvgIcon ? (
-          <cat.SvgIcon />
-        ) : null}
+        <Image source={iconSource} style={styles.tileIcon} resizeMode="contain" />
       </Animated.View>
       <Text style={[styles.catLabel, { color: isActive ? '#cb6ce6' : inactiveLabelColor }]}>
         {cat.label}
@@ -103,26 +108,33 @@ function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTi
 }
 
 const CONDITIONS: { value: ProductCondition; label: string }[] = [
-  { value: 'new', label: 'New' },
+  { value: 'new',      label: 'New' },
   { value: 'like_new', label: 'Like New' },
-  { value: 'good', label: 'Good' },
-  { value: 'fair', label: 'Fair' },
+  { value: 'good',     label: 'Good' },
+  { value: 'fair',     label: 'Fair' },
 ];
 
-type ActiveFilter = 'price' | 'brand' | 'location' | 'condition' | null;
+type FilterTag = { key: string; label: string; onRemove: () => void };
 
 export default function MarketplaceScreen() {
-  const [activeTab, setActiveTab] = useState<MarketplaceListingType>('secondhand');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab]               = useState<MarketplaceListingType>('secondhand');
+  const [searchQuery, setSearchQuery]           = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
+  const [selectedListing, setSelectedListing]   = useState<MarketplaceListing | null>(null);
   const [postSheetVisible, setPostSheetVisible] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>(null);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  const [priceSort, setPriceSort] = useState<'asc' | 'desc' | null>(null);
-  const [filterBrand, setFilterBrand] = useState('');
-  const [filterLocation, setFilterLocation] = useState('');
+  // Applied filters
+  const [priceSort, setPriceSort]             = useState<'asc' | 'desc' | null>(null);
+  const [filterBrands, setFilterBrands]       = useState<string[]>([]);
+  const [filterLocation, setFilterLocation]   = useState('');
   const [filterCondition, setFilterCondition] = useState<ProductCondition | null>(null);
+
+  // Draft filters (inside modal, not yet applied)
+  const [draftPriceSort, setDraftPriceSort]     = useState<'asc' | 'desc' | null>(null);
+  const [draftBrands, setDraftBrands]           = useState<string[]>([]);
+  const [draftLocation, setDraftLocation]       = useState('');
+  const [draftCondition, setDraftCondition]     = useState<ProductCondition | null>(null);
 
   const colors = useTheme();
   const { listings, isLoading } = useMarketplaceListings(activeTab);
@@ -134,8 +146,10 @@ export default function MarketplaceScreen() {
     if (selectedCategory !== 'all') {
       result = result.filter((l) => l.category === selectedCategory);
     }
-    if (filterBrand) {
-      result = result.filter((l) => l.brand?.toLowerCase().includes(filterBrand.toLowerCase()));
+    if (filterBrands.length > 0) {
+      result = result.filter((l) =>
+        filterBrands.some((b) => l.brand?.toLowerCase() === b.toLowerCase())
+      );
     }
     if (filterLocation) {
       result = result.filter((l) => l.location.toLowerCase().includes(filterLocation.toLowerCase()));
@@ -146,198 +160,303 @@ export default function MarketplaceScreen() {
     if (priceSort === 'asc') result = [...result].sort((a, b) => a.price - b.price);
     if (priceSort === 'desc') result = [...result].sort((a, b) => b.price - a.price);
     return result;
-  }, [listings, searchQuery, selectedCategory, filterBrand, filterLocation, filterCondition, priceSort]);
+  }, [listings, searchQuery, selectedCategory, filterBrands, filterLocation, filterCondition, priceSort]);
 
-  const gradientText = Platform.OS === 'web' ? ({
-    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-  } as any) : {};
+  const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterLocation || !!filterCondition;
 
-  const filtersActive = priceSort !== null || filterBrand || filterLocation || filterCondition;
+  const activeFilterTags: FilterTag[] = [
+    ...(priceSort ? [{
+      key: 'price',
+      label: `Price: ${priceSort === 'asc' ? 'Low→High' : 'High→Low'}`,
+      onRemove: () => setPriceSort(null),
+    }] : []),
+    ...(filterBrands.length > 0 ? [{
+      key: 'brand',
+      label: `Brand: ${filterBrands.join(', ')}`,
+      onRemove: () => setFilterBrands([]),
+    }] : []),
+    ...(filterLocation ? [{
+      key: 'location',
+      label: `City: ${filterLocation}`,
+      onRemove: () => setFilterLocation(''),
+    }] : []),
+    ...(filterCondition ? [{
+      key: 'condition',
+      label: `Condition: ${filterCondition.replace('_', ' ')}`,
+      onRemove: () => setFilterCondition(null),
+    }] : []),
+  ];
+
+  // Brands available for the currently selected category
+  const availableBrands = BRANDS_BY_CATEGORY[selectedCategory] ?? BRANDS_BY_CATEGORY['all'];
+
+  function openFilterModal() {
+    setDraftPriceSort(priceSort);
+    setDraftBrands(filterBrands);
+    setDraftLocation(filterLocation);
+    setDraftCondition(filterCondition);
+    setFilterModalVisible(true);
+  }
+
+  function applyFilters() {
+    setPriceSort(draftPriceSort);
+    setFilterBrands(draftBrands);
+    setFilterLocation(draftLocation);
+    setFilterCondition(draftCondition);
+    setFilterModalVisible(false);
+  }
+
+  function clearFilters() {
+    setDraftPriceSort(null);
+    setDraftBrands([]);
+    setDraftLocation('');
+    setDraftCondition(null);
+    setPriceSort(null);
+    setFilterBrands([]);
+    setFilterLocation('');
+    setFilterCondition(null);
+    setFilterModalVisible(false);
+  }
+
+  function toggleDraftBrand(brand: string) {
+    setDraftBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+    );
+  }
+
+  // Build paired rows for 2-column grid
+  const gridRows = filtered.reduce<MarketplaceListing[][]>((acc, item, i) => {
+    if (i % 2 === 0) acc.push([item]);
+    else acc[acc.length - 1].push(item);
+    return acc;
+  }, []);
 
   return (
     <Screen scrollable={false} style={styles.screen}>
-      {/* Page title */}
-      <View style={styles.titleRow}>
-        <Text style={[styles.titleBama, gradientText]}>BAMA</Text>
-        <Text style={[styles.titleMarket, gradientText]}>{activeTab === 'rental' ? ' Rental' : ' Market'}</Text>
-      </View>
-
-      {/* Toggle */}
-      <View style={styles.toggleWrap}>
-        <MarketplaceToggle active={activeTab} onChange={(t) => { setActiveTab(t); setFilterCondition(null); }} />
-      </View>
-
-      {/* Search */}
-      <View style={styles.searchWrap}>
-        <TextInput
-          style={[styles.searchBar, { backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.borderMuted }]}
-          placeholder="Search equipment..."
-          placeholderTextColor={colors.placeholder}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
-      {/* Categories */}
-      <View style={styles.categoriesRow}>
-        {CATEGORIES.map((cat) => (
-          <CategoryTile
-            key={cat.id}
-            cat={cat}
-            isActive={selectedCategory === cat.id}
-            onPress={() => setSelectedCategory(cat.id)}
-            inactiveLabelColor={colors.textMuted}
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Page title */}
+        <View style={styles.titleRow}>
+          <Image
+            source={activeTab === 'rental'
+              ? require('../../../../../assets/images/bama-rental.png')
+              : require('../../../../../assets/images/bama-market.png')}
+            style={styles.titleImage}
+            resizeMode="contain"
           />
-        ))}
-      </View>
+        </View>
 
-      {/* Filters */}
-      <View style={styles.filtersRow}>
-        {/* Price */}
-        <TouchableOpacity
-          style={[styles.filterPill, { borderColor: colors.border }, priceSort && styles.filterPillActive]}
-          onPress={() => setActiveFilter(activeFilter === 'price' ? null : 'price')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.filterPillText, { color: priceSort ? '#fff' : colors.text }]}>
-            Price{priceSort === 'asc' ? ' ↑' : priceSort === 'desc' ? ' ↓' : ''}
-          </Text>
-        </TouchableOpacity>
+        {/* Toggle */}
+        <View style={styles.toggleWrap}>
+          <MarketplaceToggle active={activeTab} onChange={(t) => { setActiveTab(t); setFilterCondition(null); }} />
+        </View>
 
-        {/* Brand */}
-        <TouchableOpacity
-          style={[styles.filterPill, { borderColor: colors.border }, filterBrand && styles.filterPillActive]}
-          onPress={() => setActiveFilter(activeFilter === 'brand' ? null : 'brand')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.filterPillText, { color: filterBrand ? '#fff' : colors.text }]}>
-            {filterBrand ? `Brand: ${filterBrand}` : 'Brand'}
-          </Text>
-        </TouchableOpacity>
+        {/* Search */}
+        <View style={styles.searchWrap}>
+          <TextInput
+            style={[styles.searchBar, { color: colors.text, borderColor: colors.borderMuted }]}
+            placeholder="Search equipment..."
+            placeholderTextColor={colors.placeholder}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
 
-        {/* Location */}
-        <TouchableOpacity
-          style={[styles.filterPill, { borderColor: colors.border }, filterLocation && styles.filterPillActive]}
-          onPress={() => setActiveFilter(activeFilter === 'location' ? null : 'location')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.filterPillText, { color: filterLocation ? '#fff' : colors.text }]}>
-            {filterLocation ? `📍 ${filterLocation}` : '📍 Location'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Condition */}
-        <TouchableOpacity
-          style={[styles.filterPill, { borderColor: colors.border }, filterCondition && styles.filterPillActive]}
-          onPress={() => setActiveFilter(activeFilter === 'condition' ? null : 'condition')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.filterPillText, { color: filterCondition ? '#fff' : colors.text }]}>
-            {filterCondition ? filterCondition.replace('_', ' ') : 'Condition'}
-          </Text>
-        </TouchableOpacity>
-
-        {filtersActive && (
-          <TouchableOpacity
-            style={[styles.filterPill, styles.filterPillClear]}
-            onPress={() => { setPriceSort(null); setFilterBrand(''); setFilterLocation(''); setFilterCondition(null); }}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.filterPillText}>✕ Clear</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Filter panel */}
-      {activeFilter === 'price' && (
-        <View style={[styles.filterPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {(['asc', 'desc', null] as const).map((val) => (
-            <TouchableOpacity
-              key={String(val)}
-              style={[styles.filterOption, priceSort === val && styles.filterOptionActive]}
-              onPress={() => { setPriceSort(val); setActiveFilter(null); }}
-            >
-              <Text style={[styles.filterOptionText, { color: colors.text }]}>
-                {val === 'asc' ? 'Low to High ↑' : val === 'desc' ? 'High to Low ↓' : 'No sort'}
-              </Text>
-            </TouchableOpacity>
+        {/* Categories */}
+        <View style={styles.categoriesRow}>
+          {CATEGORIES.map((cat) => (
+            <CategoryTile
+              key={cat.id}
+              cat={cat}
+              isActive={selectedCategory === cat.id}
+              onPress={() => setSelectedCategory(cat.id)}
+              inactiveLabelColor={colors.textMuted}
+            />
           ))}
         </View>
-      )}
-      {activeFilter === 'brand' && (
-        <View style={[styles.filterPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.filterInput, { color: colors.text, borderColor: colors.border }]}
-            placeholder="Filter by brand..."
-            placeholderTextColor={colors.placeholder}
-            value={filterBrand}
-            onChangeText={setFilterBrand}
-            autoFocus
-            onSubmitEditing={() => setActiveFilter(null)}
-          />
-        </View>
-      )}
-      {activeFilter === 'location' && (
-        <View style={[styles.filterPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.filterInput, { color: colors.text, borderColor: colors.border }]}
-            placeholder="Filter by city..."
-            placeholderTextColor={colors.placeholder}
-            value={filterLocation}
-            onChangeText={setFilterLocation}
-            autoFocus
-            onSubmitEditing={() => setActiveFilter(null)}
-          />
-        </View>
-      )}
-      {activeFilter === 'condition' && (
-        <View style={[styles.filterPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {([null, ...CONDITIONS] as const).map((c) => {
-            const val = c === null ? null : c.value;
-            const label = c === null ? 'Any condition' : c.label;
-            return (
-              <TouchableOpacity
-                key={String(val)}
-                style={[styles.filterOption, filterCondition === val && styles.filterOptionActive]}
-                onPress={() => { setFilterCondition(val); setActiveFilter(null); }}
-              >
-                <Text style={[styles.filterOptionText, { color: colors.text }]}>{label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
 
-      {/* Product grid */}
-      {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#cb6ce6" />
-        </View>
-      ) : filtered.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyIcon}>{activeTab === 'rental' ? '🎬' : '🏷️'}</Text>
-          <Text style={[styles.emptyText, { color: colors.textSec }]}>No listings found</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          renderItem={({ item }) => (
-            <ListingCard listing={item} onPress={() => setSelectedListing(item)} />
+        {/* Filter button + active tags */}
+        <View style={styles.filterBarRow}>
+          <TouchableOpacity
+            style={[
+              styles.filterBtn,
+              { borderColor: filtersActive ? '#004aad' : colors.border },
+              filtersActive && styles.filterBtnActive,
+            ]}
+            onPress={openFilterModal}
+            activeOpacity={0.8}
+          >
+            <SlidersHorizontal size={15} color={filtersActive ? '#fff' : colors.text} strokeWidth={2} />
+            <Text style={[styles.filterBtnText, { color: filtersActive ? '#fff' : colors.text }]}>
+              Filter
+            </Text>
+          </TouchableOpacity>
+
+          {activeFilterTags.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.tagsScroll}
+              contentContainerStyle={styles.tagsContent}
+            >
+              {activeFilterTags.map((tag) => (
+                <View key={tag.key} style={styles.activeTag}>
+                  <Text style={styles.activeTagText}>{tag.label}</Text>
+                  <TouchableOpacity
+                    onPress={tag.onRemove}
+                    hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+                  >
+                    <Text style={styles.activeTagRemove}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
           )}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+        </View>
 
+        {/* Product grid */}
+        {isLoading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color="#cb6ce6" />
+          </View>
+        ) : filtered.length === 0 ? (
+          <View style={styles.center}>
+            <Text style={[styles.emptyText, { color: colors.textSec }]}>No listings found</Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {gridRows.map((pair, i) => (
+              <View key={i} style={styles.row}>
+                {pair.map((item) => (
+                  <ListingCard key={item.id} listing={item} onPress={() => setSelectedListing(item)} />
+                ))}
+                {pair.length === 1 && <View style={styles.halfItem} />}
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* FAB — fixed above tab bar, outside the ScrollView */}
       <TouchableOpacity style={styles.fab} onPress={() => setPostSheetVisible(true)} activeOpacity={0.8}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      {/* Filter modal */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <View style={styles.filterOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
+          <LinearGradient
+            colors={['#efd4f6', '#b7cae6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.filterCard}
+          >
+            {/* Header */}
+            <View style={styles.filterCardHeader}>
+              <Text style={styles.filterCardTitle}>Filters</Text>
+              <TouchableOpacity onPress={() => setFilterModalVisible(false)} style={styles.filterCloseBtn} activeOpacity={0.7}>
+                <X size={20} color="#004aad" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.filterScroll}>
+              {/* Price */}
+              <Text style={styles.filterSectionLabel}>Price</Text>
+              <View style={styles.filterChipRow}>
+                {(['asc', 'desc', null] as const).map((val) => (
+                  <TouchableOpacity
+                    key={String(val)}
+                    style={[styles.filterChip, draftPriceSort === val && styles.filterChipActive]}
+                    onPress={() => setDraftPriceSort(val)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.filterChipLabel, draftPriceSort === val && styles.filterChipLabelActive]}>
+                      {val === 'asc' ? 'Low to High' : val === 'desc' ? 'High to Low' : 'Any'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Brand — dynamic list based on selected category */}
+              <Text style={styles.filterSectionLabel}>
+                Brand{selectedCategory !== 'all' ? ` · ${CATEGORIES.find((c) => c.id === selectedCategory)?.label ?? ''}` : ''}
+              </Text>
+              <View style={styles.brandGrid}>
+                {availableBrands.map((brand) => {
+                  const selected = draftBrands.includes(brand);
+                  return (
+                    <TouchableOpacity
+                      key={brand}
+                      style={[
+                        styles.brandPill,
+                        { borderColor: selected ? '#004aad' : colors.border },
+                        selected && styles.brandPillActive,
+                      ]}
+                      onPress={() => toggleDraftBrand(brand)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.brandPillLabel, { color: selected ? '#fff' : colors.text }]}>
+                        {brand}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Location */}
+              <Text style={styles.filterSectionLabel}>Location</Text>
+              <TextInput
+                style={styles.filterModalInput}
+                placeholder="e.g. Tel Aviv"
+                placeholderTextColor="rgba(0,0,0,0.3)"
+                value={draftLocation}
+                onChangeText={setDraftLocation}
+              />
+
+              {/* Condition */}
+              <Text style={styles.filterSectionLabel}>Condition</Text>
+              <View style={styles.filterChipRow}>
+                {([null, ...CONDITIONS] as const).map((c) => {
+                  const val = c === null ? null : c.value;
+                  const label = c === null ? 'Any' : c.label;
+                  return (
+                    <TouchableOpacity
+                      key={String(val)}
+                      style={[styles.filterChip, draftCondition === val && styles.filterChipActive]}
+                      onPress={() => setDraftCondition(val)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.filterChipLabel, draftCondition === val && styles.filterChipLabelActive]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* Actions */}
+            <View style={styles.filterActions}>
+              <TouchableOpacity style={styles.filterClearBtn} onPress={clearFilters} activeOpacity={0.8}>
+                <Text style={styles.filterClearText}>Clear All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.filterApplyBtn} onPress={applyFilters} activeOpacity={0.8}>
+                <Text style={styles.filterApplyText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+      </Modal>
 
       <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} />
       <PostListingSheet
@@ -352,6 +471,8 @@ export default function MarketplaceScreen() {
 
 const styles = StyleSheet.create({
   screen: { gap: 0 },
+  flex: { flex: 1 },
+  scrollContent: { paddingBottom: 120 },
 
   fab: {
     position: 'absolute',
@@ -372,31 +493,34 @@ const styles = StyleSheet.create({
   fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
 
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 4,
+    marginBottom: -60,
   },
-  titleBama: { fontSize: 96, fontWeight: '900' },
-  titleMarket: { fontSize: 96, fontWeight: '400' },
+  titleImage: {
+    width: '100%',
+    height: 450,
+    alignSelf: 'center',
+  },
 
-  toggleWrap: { paddingHorizontal: 16, paddingVertical: 8 },
+  toggleWrap: { paddingHorizontal: 16, paddingVertical: 4, marginTop: 0 },
 
-  searchWrap: { paddingHorizontal: 16, paddingBottom: 8 },
+  searchWrap: { paddingHorizontal: 16, paddingBottom: 8, marginTop: 24 },
   searchBar: {
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
     borderWidth: 1,
+    backgroundColor: '#ffffff',
   },
 
   categoriesRow: {
     flexDirection: 'row',
     paddingHorizontal: 8,
     paddingBottom: 10,
+    marginTop: 16,
   },
   catItem: {
     flex: 1,
@@ -407,45 +531,144 @@ const styles = StyleSheet.create({
   tileIcon: { width: 60, height: 60 },
   catLabel: { fontSize: 13, fontWeight: '600' },
 
-  filtersRow: {
+  // Filter bar
+  filterBarRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingBottom: 8,
+  },
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
-  },
-  filterPill: {
-    borderRadius: 6,
-    paddingHorizontal: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 1,
+    backgroundColor: '#ffffff',
   },
-  filterPillActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  filterPillClear: { backgroundColor: '#e53935', borderColor: '#e53935' },
-  filterPillText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  filterBtnActive: { backgroundColor: '#004aad' },
+  filterBtnText: { fontSize: 14, fontWeight: '600' },
 
-  filterPanel: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 8,
-    gap: 2,
+  tagsScroll: { flex: 1, marginLeft: 8 },
+  tagsContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  activeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#004aad',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    gap: 4,
   },
-  filterOption: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 },
-  filterOptionActive: { backgroundColor: 'rgba(0,74,173,0.15)' },
-  filterOptionText: { fontSize: 14, fontWeight: '500' },
-  filterInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-  },
+  activeTagText: { fontSize: 12, color: '#fff', fontWeight: '600' },
+  activeTagRemove: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: '700' },
 
-  row: { paddingHorizontal: 12, gap: 10 },
-  list: { paddingBottom: 100, gap: 10 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  emptyIcon: { fontSize: 48, marginBottom: 8 },
+  row: { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
+  halfItem: { flex: 1 },
+  list: { gap: 10 },
+  center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 60 },
   emptyText: { fontSize: 17, fontWeight: '600' },
+
+  // Filter modal
+  filterOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  filterCard: {
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  filterCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  filterCardTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004aad',
+    textAlign: 'center',
+  },
+  filterCloseBtn: { position: 'absolute', right: 0, top: 0, padding: 4 },
+  filterScroll: { flexShrink: 1 },
+
+  filterSectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#cb6ce6',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  filterChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.15)',
+    backgroundColor: '#ffffff',
+  },
+  filterChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  filterChipLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.5)' },
+  filterChipLabelActive: { color: '#fff' },
+
+  // Brand pills
+  brandGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
+  brandPill: {
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
+    margin: 4,
+  },
+  brandPillActive: { backgroundColor: '#004aad' },
+  brandPillLabel: { fontSize: 13, fontWeight: '600' },
+
+  filterModalInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#1a1a2e',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.15)',
+  },
+
+  filterActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  filterClearBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#004aad',
+  },
+  filterClearText: { color: '#004aad', fontSize: 15, fontWeight: '700' },
+  filterApplyBtn: {
+    flex: 2,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    backgroundColor: '#004aad',
+  },
+  filterApplyText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

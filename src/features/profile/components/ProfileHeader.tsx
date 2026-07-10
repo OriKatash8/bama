@@ -80,8 +80,13 @@ export function ProfileHeader({
         {email && <Text style={styles.email}>{email}</Text>}
       </LinearGradient>
 
-      {/* Concave bottom curve illusion: rounded-top bg-colored cap overlaps the gradient */}
-      <View style={[styles.concaveCap, { backgroundColor: colors.bg }]} />
+      {/* Concave bottom curve illusion: rounded-top bg-gradient cap overlaps the gradient */}
+      <LinearGradient
+        colors={colors.bgGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.concaveCap}
+      />
     </View>
   );
 }

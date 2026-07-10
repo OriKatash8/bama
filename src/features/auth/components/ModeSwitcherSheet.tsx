@@ -1,6 +1,9 @@
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
+import { CheckCircle } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
+import { useTheme } from '@core/hooks/useTheme';
 import type { ActiveMode } from '@core/types/user';
 
 type Props = {
@@ -8,105 +11,149 @@ type Props = {
   onClose: () => void;
 };
 
-const MODES: { mode: ActiveMode; title: string; subtitle: string }[] = [
-  { mode: 'professional', title: 'Professional', subtitle: 'Manage your portfolio, receive bookings' },
-  { mode: 'client', title: 'Client', subtitle: 'Browse professionals, build your crew' },
+const MODES: { mode: ActiveMode; label: string }[] = [
+  { mode: 'professional', label: 'Professional' },
+  { mode: 'client',       label: 'Client' },
 ];
+
+// Card is ~180×90px; origin offset from center → bottom-right corner
+const ORIGIN_X = 90;
+const ORIGIN_Y = 45;
+
+// Web-only CSS gradient text
+const gradientTextStyle = Platform.OS === 'web' ? ({
+  background: 'linear-gradient(to right, #cb6ce6, #004aad)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+} as object) : {};
 
 export function ModeSwitcherSheet({ visible, onClose }: Props) {
   const activeMode = useAuthStore((s) => s.activeMode);
   const { switchMode } = useSwitchMode();
+  const colors = useTheme();
+
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale   = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(scale,   { toValue: 1, duration: 180, useNativeDriver: true }),
+      ]).start();
+    } else {
+      opacity.setValue(0);
+      scale.setValue(0.8);
+    }
+  }, [visible]);
 
   function handleSelect(mode: ActiveMode) {
-    if (mode !== activeMode) {
-      switchMode(mode);
-    }
+    if (mode !== activeMode) switchMode(mode);
     onClose();
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.handle} />
-        <Text style={styles.title}>Switch Account</Text>
-        {MODES.map(({ mode, title, subtitle }) => {
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      {/* Invisible full-screen backdrop — tap anywhere to close */}
+      <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+
+      {/* Compact floating card, anchored above the profile tab */}
+      <Animated.View
+        style={[
+          styles.card,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          {
+            opacity,
+            transform: [
+              { translateX: ORIGIN_X },
+              { translateY: ORIGIN_Y },
+              { scale },
+              { translateX: -ORIGIN_X },
+              { translateY: -ORIGIN_Y },
+            ],
+          },
+        ]}
+      >
+        {MODES.map(({ mode, label }, index) => {
           const isActive = mode === activeMode;
+          const isLast   = index === MODES.length - 1;
+
+          // Native fallback: purple for gradient effect
+          const nativeActiveColor = { color: '#cb6ce6' };
+          const nativeInactiveColor = { color: colors.text };
+
           return (
-            <TouchableOpacity
-              key={mode}
-              style={[styles.card, isActive && styles.cardActive]}
-              onPress={() => handleSelect(mode)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>{title}</Text>
-                <Text style={[styles.cardSubtitle, isActive && styles.cardSubtitleActive]}>
-                  {isActive ? 'Active now' : subtitle}
+            <View key={mode}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => handleSelect(mode)}
+                activeOpacity={0.7}
+                disabled={isActive}
+              >
+                <Text
+                  style={[
+                    styles.rowLabel,
+                    Platform.OS === 'web'
+                      ? gradientTextStyle
+                      : (isActive ? nativeActiveColor : nativeInactiveColor),
+                  ]}
+                >
+                  {label}
                 </Text>
-              </View>
-              {isActive ? (
-                <Text style={styles.check}>✓</Text>
-              ) : (
-                <Text style={styles.arrow}>→</Text>
-              )}
-            </TouchableOpacity>
+
+                {isActive && (
+                  <View style={styles.checkWrap}>
+                    <CheckCircle size={20} color="#004aad" strokeWidth={2.5} />
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {!isLast && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+            </View>
           );
         })}
-        <TouchableOpacity style={styles.cancel} onPress={onClose} activeOpacity={0.7}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet: {
-    backgroundColor: '#1a1a2e',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
-    gap: 12,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    backgroundColor: '#444',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    color: '#888',
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
   card: {
+    position: 'absolute',
+    bottom: 80,
+    right: 16,
+    width: 180,
+    borderRadius: 24,
+    borderBottomRightRadius: 4,
+    borderWidth: 1,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e1e30',
-    borderWidth: 1.5,
-    borderColor: '#333',
-    borderRadius: 14,
-    padding: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 10,
   },
-  cardActive: { borderColor: '#6c47ff' },
-  cardText: { flex: 1 },
-  cardTitle: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  cardSubtitle: { color: '#888', fontSize: 11, marginTop: 2 },
-  cardSubtitleActive: { color: '#6c47ff' },
-  check: { color: '#6c47ff', fontSize: 16, fontWeight: '700' },
-  arrow: { color: '#555', fontSize: 16 },
-  cancel: {
+  rowLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  divider: {
+    height: 1,
+    marginHorizontal: 16,
+  },
+  checkWrap: {
+    width: 20,
+    height: 20,
     alignItems: 'center',
-    paddingVertical: 14,
-    marginTop: 4,
+    justifyContent: 'center',
+    marginRight: 8,
   },
-  cancelText: { color: '#888', fontSize: 15, fontWeight: '500' },
 });

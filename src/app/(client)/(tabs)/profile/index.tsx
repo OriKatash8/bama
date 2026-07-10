@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Image, Platform,
+  View, Text, StyleSheet, TouchableOpacity, Alert, Image, Platform, Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  User, Camera, Sun, Moon, ChevronRight, Lock, Bell, LogOut,
+  User, Camera, ChevronRight, Lock, Bell, LogOut, Globe, Sun,
 } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { useClientProfile } from '@features/profile/hooks/useClientProfile';
@@ -13,6 +13,105 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 
 type Lang = 'he' | 'en';
+type AppColors = ReturnType<typeof useTheme>;
+
+// ── Accessibility bottom sheet ──────────────────────────────────────────────
+
+function AccessibilitySheet({
+  visible,
+  onClose,
+  lang,
+  setLang,
+  isDark,
+  toggleTheme,
+  colors,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  isDark: boolean;
+  toggleTheme: () => void;
+  colors: AppColors;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={sheet.wrapper}>
+        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+
+        <View style={[sheet.container, { backgroundColor: colors.bg }]}>
+          {/* drag handle */}
+          <View style={[sheet.handle, { backgroundColor: colors.border }]} />
+
+          {/* LANGUAGE */}
+          <Text style={[sheet.sectionLabel, { color: colors.textMuted }]}>LANGUAGE</Text>
+          <View style={[sheet.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <View style={sheet.row}>
+              <Globe size={20} color={colors.textMuted} strokeWidth={1.5} />
+              <Text style={[sheet.rowLabel, { color: colors.text }]}>Language</Text>
+              <View style={[sheet.langToggle, { borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={[sheet.langBtn, lang === 'he' && { backgroundColor: colors.primary }]}
+                  onPress={() => setLang('he')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[sheet.langBtnText, { color: lang === 'he' ? '#fff' : colors.textMuted }]}>
+                    עברית
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[sheet.langBtn, lang === 'en' && { backgroundColor: colors.primary }]}
+                  onPress={() => setLang('en')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[sheet.langBtnText, { color: lang === 'en' ? '#fff' : colors.textMuted }]}>
+                    English
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* APPEARANCE */}
+          <Text style={[sheet.sectionLabel, { color: colors.textMuted }]}>APPEARANCE</Text>
+          <View style={[sheet.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <View style={sheet.row}>
+              <Sun size={20} color={colors.textMuted} strokeWidth={1.5} />
+              <Text style={[sheet.rowLabel, { color: colors.text }]}>Theme</Text>
+              <View style={[sheet.langToggle, { borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={[sheet.langBtn, !isDark && { backgroundColor: colors.primary }]}
+                  onPress={() => { if (isDark) toggleTheme(); }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[sheet.langBtnText, { color: !isDark ? '#fff' : colors.textMuted }]}>Light</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[sheet.langBtn, isDark && { backgroundColor: colors.primary }]}
+                  onPress={() => { if (!isDark) toggleTheme(); }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[sheet.langBtnText, { color: isDark ? '#fff' : colors.textMuted }]}>Dark</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* CLOSE */}
+          <TouchableOpacity
+            style={[sheet.closeBtn, { borderColor: colors.primary }]}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Text style={[sheet.closeBtnText, { color: colors.primary }]}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ── Main screen ─────────────────────────────────────────────────────────────
 
 export default function ClientProfileScreen() {
   const { user, isSaving, save } = useClientProfile();
@@ -22,13 +121,14 @@ export default function ClientProfileScreen() {
   const toggleTheme = useUiStore((s) => s.toggleTheme);
   const colors = useTheme();
   const [lang, setLang] = useState<Lang>('en');
+  const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
   const gradientStyle = Platform.OS === 'web' ? ({
     background: 'linear-gradient(to right, #004aad, #cb6ce6)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
-  } as any) : {};
+  } as object) : {};
 
   async function handlePhotoPress() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -51,8 +151,10 @@ export default function ClientProfileScreen() {
     <Screen scrollable style={styles.screenContent}>
       <View style={styles.content}>
 
-        {/* ── 1. AVATAR ── */}
-        <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>My Profile</Text>
+        {/* ── AVATAR ── */}
+        <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
+          My Profile
+        </Text>
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrap}>
             {user?.photoURL ? (
@@ -79,49 +181,7 @@ export default function ClientProfileScreen() {
           </Text>
         </View>
 
-        {/* ── 2. LANGUAGE ── */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>LANGUAGE</Text>
-        <View style={[styles.langRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-          <TouchableOpacity
-            style={[styles.langBtn, lang === 'he' && { backgroundColor: colors.primary }]}
-            onPress={() => setLang('he')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.langBtnText, { color: lang === 'he' ? '#fff' : colors.textMuted }]}>
-              עברית
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.langBtn, lang === 'en' && { backgroundColor: colors.primary }]}
-            onPress={() => setLang('en')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.langBtnText, { color: lang === 'en' ? '#fff' : colors.textMuted }]}>
-              English
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── 3. APPEARANCE ── */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>APPEARANCE</Text>
-        <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-          <View style={styles.cardRow}>
-            {isDark
-              ? <Moon size={20} color={colors.textMuted} strokeWidth={1.5} />
-              : <Sun size={20} color={colors.textMuted} strokeWidth={1.5} />}
-            <Text style={[styles.rowLabel, { color: colors.text }]}>
-              {isDark ? 'Dark mode' : 'Light mode'}
-            </Text>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: colors.border, true: colors.accent }}
-              thumbColor="#fff"
-            />
-          </View>
-        </View>
-
-        {/* ── 4. ACCOUNT ── */}
+        {/* ── ACCOUNT ── */}
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
         <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
           <TouchableOpacity
@@ -153,9 +213,19 @@ export default function ClientProfileScreen() {
             <Text style={[styles.rowLabel, { color: colors.text }]}>Notifications</Text>
             <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
           </TouchableOpacity>
+          <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.cardRow}
+            onPress={() => setAccessibilityOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Globe size={20} color={colors.textMuted} strokeWidth={1.5} />
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Accessibility</Text>
+            <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
+          </TouchableOpacity>
         </View>
 
-        {/* ── 5. LOGOUT ── */}
+        {/* ── LOGOUT ── */}
         <TouchableOpacity
           style={[styles.logoutBtn, { borderColor: colors.primary }, isSigningOut && styles.disabled]}
           onPress={logout}
@@ -168,16 +238,27 @@ export default function ClientProfileScreen() {
 
         <View style={styles.bottomPad} />
       </View>
+
+      <AccessibilitySheet
+        visible={accessibilityOpen}
+        onClose={() => setAccessibilityOpen(false)}
+        lang={lang}
+        setLang={setLang}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+        colors={colors}
+      />
     </Screen>
   );
 }
+
+// ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   screenContent: { paddingBottom: 100 },
   content: { paddingHorizontal: 20, paddingTop: 32 },
   pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase', marginBottom: 16 },
 
-  // Avatar
   avatarSection: { alignItems: 'center', marginBottom: 8 },
   avatarWrap: { position: 'relative', marginBottom: 12 },
   avatar: { width: 80, height: 80, borderRadius: 40 },
@@ -195,7 +276,6 @@ const styles = StyleSheet.create({
   displayName: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
   email: { fontSize: 14 },
 
-  // Section labels
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
@@ -204,25 +284,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // Language toggle
-  langRow: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    padding: 4,
-    gap: 4,
-  },
-  langBtn: {
-    flex: 1,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9,
-  },
-  langBtnText: { fontSize: 15, fontWeight: '600' },
-
-  // Cards
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   cardRow: {
     height: 52,
@@ -234,7 +295,6 @@ const styles = StyleSheet.create({
   rowLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
   rowDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 
-  // Logout
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -247,6 +307,72 @@ const styles = StyleSheet.create({
   },
   logoutText: { fontSize: 16, fontWeight: '600' },
   disabled: { opacity: 0.5 },
-
   bottomPad: { height: 40 },
+});
+
+const sheet = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  container: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
+    gap: 0,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 4 },
+  row: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  rowLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
+  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
+
+  langToggle: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+    padding: 3,
+    gap: 3,
+  },
+  langBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langBtnText: { fontSize: 13, fontWeight: '600' },
+
+  closeBtn: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  closeBtnText: { fontSize: 16, fontWeight: '600' },
 });
