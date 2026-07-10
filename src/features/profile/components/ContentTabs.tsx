@@ -35,7 +35,7 @@ export function ContentTabs({
 }: ContentTabsProps) {
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
-  const cardBg = isDark ? '#ffffff' : colors.card;
+  const cardBg = isDark ? '#1a1a2e' : '#ffffff';
 
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');

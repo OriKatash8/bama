@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, Image, Platform, Modal,
 } from 'react-native';
@@ -12,7 +13,6 @@ import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 
-type Lang = 'he' | 'en';
 type AppColors = ReturnType<typeof useTheme>;
 
 // ── Accessibility bottom sheet ──────────────────────────────────────────────
@@ -120,7 +120,8 @@ export default function ClientProfileScreen() {
   const isDark = useUiStore((s) => s.isDark);
   const toggleTheme = useUiStore((s) => s.toggleTheme);
   const colors = useTheme();
-  const [lang, setLang] = useState<Lang>('en');
+  const lang = useSettingsStore((s) => s.language);
+  const switchLanguage = useSettingsStore((s) => s.setLanguage);
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
   const gradientStyle = Platform.OS === 'web' ? ({
@@ -243,7 +244,7 @@ export default function ClientProfileScreen() {
         visible={accessibilityOpen}
         onClose={() => setAccessibilityOpen(false)}
         lang={lang}
-        setLang={setLang}
+        setLang={switchLanguage}
         isDark={isDark}
         toggleTheme={toggleTheme}
         colors={colors}

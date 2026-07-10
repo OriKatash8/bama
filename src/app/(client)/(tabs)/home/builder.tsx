@@ -15,22 +15,23 @@ import { getDocument } from '@core/firebase/firestore';
 import { Calendar } from 'lucide-react-native';
 import type { ProjectRequest } from '@core/types/project';
 
-const CATEGORY_META: Record<string, { label: string; image: ReturnType<typeof require>; contain?: boolean }> = {
-  'Video Photographer': { label: 'Videographer', image: require('../../../../../assets/images/categories/videographer.png') },
-  'Still Photographer': { label: 'Photographer', image: require('../../../../../assets/images/categories/photographer.png') },
-  'Editor':             { label: 'Editor',        image: require('../../../../../assets/images/categories/editor.png') },
-  'Graphic Designer':   { label: 'Graphic Designer', image: require('../../../../../assets/images/categories/graphic-designer.png') },
-  'AI Specialist':      { label: 'AI',            image: require('../../../../../assets/images/categories/ai.png') },
-  'Social Media':       { label: 'Social',        image: require('../../../../../assets/images/categories/social.png') },
-  'Studio & Audio':     { label: 'Studios',       image: require('../../../../../assets/images/categories/studios.png') },
-  'Lighting Tech':      { label: 'Lighting',      image: require('../../../../../assets/images/categories/lighting-tech.png'), contain: true },
-  'Sound Recordist':    { label: 'Sound',         image: require('../../../../../assets/images/categories/sound.png') },
+const CATEGORY_META: Record<string, { labelKey: string; image: ReturnType<typeof require>; contain?: boolean }> = {
+  'Video Photographer': { labelKey: 'builder.category_videographer', image: require('../../../../../assets/images/categories/videographer.png') },
+  'Still Photographer': { labelKey: 'builder.category_photographer', image: require('../../../../../assets/images/categories/photographer.png') },
+  'Editor':             { labelKey: 'builder.category_editor',        image: require('../../../../../assets/images/categories/editor.png') },
+  'Graphic Designer':   { labelKey: 'builder.category_graphic_designer', image: require('../../../../../assets/images/categories/graphic-designer.png') },
+  'AI Specialist':      { labelKey: 'AI',                             image: require('../../../../../assets/images/categories/ai.png') },
+  'Social Media':       { labelKey: 'builder.category_social',        image: require('../../../../../assets/images/categories/social.png') },
+  'Studio & Audio':     { labelKey: 'builder.category_studios',       image: require('../../../../../assets/images/categories/studios.png') },
+  'Lighting Tech':      { labelKey: 'builder.category_lighting',      image: require('../../../../../assets/images/categories/lighting-tech.png'), contain: true },
+  'Sound Recordist':    { labelKey: 'builder.category_sound',         image: require('../../../../../assets/images/categories/sound.png') },
 };
 
 const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   key,
-  label: CATEGORY_META[key]?.label ?? key,
+  labelKey: CATEGORY_META[key]?.labelKey ?? key,
   image: CATEGORY_META[key]?.image,
+  contain: CATEGORY_META[key]?.contain,
   subcategories: subs,
 }));
 
@@ -39,15 +40,7 @@ const gradientStyle = {
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   backgroundClip: 'text',
-} as any;
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour >= 4 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 18) return 'Good afternoon';
-  if (hour >= 18 && hour < 22) return 'Good evening';
-  return 'Hey';
-}
+} as object;
 
 export default function BuilderScreen() {
   const { slots, totalCount, addSlot, removeSlot, loadSlots } = useCrewBuilder();
@@ -55,13 +48,11 @@ export default function BuilderScreen() {
   const { showToast } = useUiStore();
   const colors = useTheme();
   const { user } = useAuth();
-  const greeting = getGreeting();
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const { width } = useWindowDimensions();
-  const tileSize = Math.floor((width - 64 - 32 - 12) / 3); // margins(32) + padding(32) + 2×gap(12)
-
+  const tileSize = Math.floor((width - 64 - 32 - 12) / 3);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -93,6 +84,14 @@ export default function BuilderScreen() {
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
+  function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour >= 4 && hour < 12) return t('builder.greeting_morning');
+    if (hour >= 12 && hour < 18) return t('builder.greeting_afternoon');
+    if (hour >= 18 && hour < 22) return t('builder.greeting_evening');
+    return t('builder.greeting_hey');
+  }
+
   function openCategory(cat: typeof CATEGORIES[number]) {
     setSelectedCategory(cat);
     setModalVisible(true);
@@ -120,11 +119,11 @@ export default function BuilderScreen() {
 
   function validate(): boolean {
     const next: Record<string, string> = {};
-    if (totalCount === 0) next.slots = 'Select at least one role.';
-    if (!title.trim()) next.title = 'Required';
-    if (!description.trim()) next.description = 'Required';
-    if (!deadline) next.deadline = 'Required';
-    if (!location.trim()) next.location = 'Required';
+    if (totalCount === 0) next.slots = t('builder.error_role');
+    if (!title.trim()) next.title = t('builder.error_required');
+    if (!description.trim()) next.description = t('builder.error_required');
+    if (!deadline) next.deadline = t('builder.error_required');
+    if (!location.trim()) next.location = t('builder.error_required');
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -135,19 +134,32 @@ export default function BuilderScreen() {
     try {
       if (isEditMode && projectId) {
         await updateProject(projectId, slots, { title, description, exec, deadline, location });
-        showToast('Project updated!', 'success');
+        showToast(t('builder.project_updated'), 'success');
       } else {
         await submit(slots, { title, description, exec, deadline, location });
       }
       router.back();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : undefined;
       showToast(
-        e.message ?? (isEditMode ? 'Failed to update project' : 'Failed to submit request'),
-        'error'
+        message ?? (isEditMode ? t('builder.failed_update') : t('builder.failed_submit')),
+        'error',
       );
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function getSubmitLabel(): string {
+    if (isSubmitting) return isEditMode ? t('builder.saving') : t('builder.submitting');
+    if (isEditMode) return t('builder.save_changes');
+    if (totalCount > 0) return t('builder.submit_request_roles', { count: totalCount });
+    return t('builder.submit_request');
+  }
+
+  function getCategoryLabel(labelKey: string): string {
+    if (labelKey === 'AI') return 'AI';
+    return t(labelKey);
   }
 
   if (isLoadingProject) {
@@ -166,7 +178,7 @@ export default function BuilderScreen() {
             <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
           </View>
           <Text style={[styles.greetText, { color: colors.text }, Platform.OS === 'web' && gradientStyle]} numberOfLines={2}>
-            {greeting}, {user?.displayName} :)
+            {getGreeting()}, {user?.displayName} :)
           </Text>
         </View>
 
@@ -175,22 +187,22 @@ export default function BuilderScreen() {
         </Text>
 
         <View style={styles.fieldsWrap}>
-          <Text style={[styles.label, { color: colors.textSec }]}>Title</Text>
+          <Text style={[styles.label, { color: colors.textSec }]}>{t('builder.title')}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
             value={title}
             onChangeText={setTitle}
-            placeholder="e.g. Music video for new single"
+            placeholder={t('builder.placeholder_title')}
             placeholderTextColor={colors.placeholder}
           />
           {errors.title ? <Text style={styles.error}>{errors.title}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Description</Text>
+          <Text style={[styles.label, { color: colors.textSec }]}>{t('builder.description')}</Text>
           <TextInput
             style={[styles.input, styles.multiline, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
             value={description}
             onChangeText={setDescription}
-            placeholder="Describe your project"
+            placeholder={t('builder.placeholder_description')}
             placeholderTextColor={colors.placeholder}
             multiline
             numberOfLines={4}
@@ -198,44 +210,49 @@ export default function BuilderScreen() {
           />
           {errors.description ? <Text style={styles.error}>{errors.description}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Execution <Text style={{ fontWeight: '400', color: colors.textMuted }}>(optional)</Text></Text>
+          <Text style={[styles.label, { color: colors.textSec }]}>
+            {t('builder.execution')}{' '}
+            <Text style={{ fontWeight: '400', color: colors.textMuted }}>({t('builder.optional')})</Text>
+          </Text>
           <TouchableOpacity
             style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.exec ? '#fc8181' : colors.inputBorder }]}
             onPress={() => setCalOpen('exec')}
             activeOpacity={0.8}
           >
             <Text style={[styles.dateBtnText, { color: exec ? colors.text : colors.placeholder }]}>
-              {exec || 'Select date'}
+              {exec || t('builder.placeholder_date')}
             </Text>
             <Calendar size={18} color="#000" strokeWidth={1.8} />
           </TouchableOpacity>
           {errors.exec ? <Text style={styles.error}>{errors.exec}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Deadline</Text>
+          <Text style={[styles.label, { color: colors.textSec }]}>{t('builder.deadline')}</Text>
           <TouchableOpacity
             style={[styles.dateBtn, styles.dateBtnFull, { backgroundColor: colors.inputBg, borderColor: errors.deadline ? '#fc8181' : colors.inputBorder }]}
             onPress={() => setCalOpen('deadline')}
             activeOpacity={0.8}
           >
             <Text style={[styles.dateBtnText, { color: deadline ? colors.text : colors.placeholder }]}>
-              {deadline || 'Select deadline'}
+              {deadline || t('builder.placeholder_deadline')}
             </Text>
             <Calendar size={18} color="#000" strokeWidth={1.8} />
           </TouchableOpacity>
           {errors.deadline ? <Text style={styles.error}>{errors.deadline}</Text> : null}
 
-          <Text style={[styles.label, { color: colors.textSec }]}>Location</Text>
+          <Text style={[styles.label, { color: colors.textSec }]}>{t('builder.location')}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
             value={location}
             onChangeText={setLocation}
-            placeholder="City, Country"
+            placeholder={t('builder.placeholder_location')}
             placeholderTextColor={colors.placeholder}
           />
           {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>Select Roles</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center', marginTop: 20 }, Platform.OS === 'web' && gradientStyle]}>
+          {t('builder.select_roles')}
+        </Text>
 
         {/* Select roles — image grid */}
         <View style={styles.rolesCard}>
@@ -257,7 +274,7 @@ export default function BuilderScreen() {
                     <Image source={cat.image} style={styles.tileImage} resizeMode={cat.contain ? 'contain' : 'cover'} />
                   ) : null}
                   <View style={styles.tileOverlay}>
-                    <Text style={styles.tileLabel} numberOfLines={1}>{cat.label}</Text>
+                    <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
                   </View>
                   {catTotal > 0 && (
                     <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
@@ -275,19 +292,13 @@ export default function BuilderScreen() {
             style={[
               styles.submitBtn,
               isSubmitting && styles.disabled,
-              Platform.OS === 'web' && ({ background: isSubmitting ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as any),
+              Platform.OS === 'web' && ({ background: isSubmitting ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
             activeOpacity={0.8}
           >
-            <Text style={styles.submitText}>
-              {isSubmitting
-                ? (isEditMode ? 'Saving…' : 'Submitting…')
-                : isEditMode
-                  ? 'Save Changes'
-                  : `Submit Request${totalCount > 0 ? ` (${totalCount} role${totalCount === 1 ? '' : 's'})` : ''}`}
-            </Text>
+            <Text style={styles.submitText}>{getSubmitLabel()}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -319,12 +330,12 @@ export default function BuilderScreen() {
                     transform: [{ scale: scaleAnim }],
                     opacity: opacityAnim,
                   },
-                  Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as any),
+                  Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as object),
                 ]}
               >
                 <View style={styles.panelHeader}>
                   <Text style={[styles.panelTitle, { color: colors.text }]}>
-                    {selectedCategory?.label}
+                    {selectedCategory ? getCategoryLabel(selectedCategory.labelKey) : ''}
                   </Text>
                   <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
                     <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
@@ -341,7 +352,7 @@ export default function BuilderScreen() {
                   style={styles.panelScroll}
                   contentContainerStyle={styles.rolesGrid}
                   columnWrapperStyle={styles.rolesRow}
-                  ListHeaderComponent={<Text style={[styles.subHint, { color: colors.textMuted }]}>Tap + to add roles</Text>}
+                  ListHeaderComponent={<Text style={[styles.subHint, { color: colors.textMuted }]}>{t('builder.tap_to_add')}</Text>}
                   renderItem={({ item: sub }) => {
                     const qty = getQty(sub);
                     return (
@@ -538,4 +549,3 @@ const styles = StyleSheet.create({
   dateBtnFull: { flex: 0, marginTop: 6 },
   dateBtnText: { fontSize: 15, flex: 1 },
 });
-

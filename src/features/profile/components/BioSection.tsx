@@ -11,7 +11,7 @@ type BioSectionProps = {
 export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
-  const cardBg = isDark ? '#ffffff' : colors.card;
+  const cardBg = isDark ? '#1a1a2e' : '#ffffff';
 
   if (!isEditing) {
     return (

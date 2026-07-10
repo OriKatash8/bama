@@ -1,11 +1,15 @@
+import '../core/i18n';
+import i18n from '../core/i18n';
 import { Slot, SplashScreen } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@core/hooks/useAuth';
 import { ToastContainer } from '@components/ui/Toast';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
+import { LanguageSync } from '@components/layout/LanguageSync';
+import { I18nextProvider } from 'react-i18next';
 
 (Text as any).defaultProps = { ...(Text as any).defaultProps, style: [{ fontFamily: 'Heebo-Regular' }, (Text as any).defaultProps?.style] };
 (TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, style: [{ fontFamily: 'Heebo-Regular' }, (TextInput as any).defaultProps?.style] };
@@ -13,6 +17,16 @@ import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 SplashScreen.preventAutoHideAsync();
 
 function AppShell() {
+  const storedSettings = localStorage.getItem('bama-settings');
+  if (storedSettings) {
+    try {
+      const { state } = JSON.parse(storedSettings) as { state?: { language?: string } };
+      if (state?.language && state.language !== i18n.language) {
+        i18n.changeLanguage(state.language);
+      }
+    } catch {}
+  }
+
   useAuth();
 
   const [fontsLoaded] = useFonts({
@@ -29,19 +43,29 @@ function AppShell() {
     Montserrat:         require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
   });
 
+  const [langKey, setLangKey] = useState(i18n.language);
+  const colors = useTheme();
+
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
-  const colors = useTheme();
+  useEffect(() => {
+    const handler = (lang: string) => setLangKey(lang);
+    i18n.on('languageChanged', handler);
+    return () => { i18n.off('languageChanged', handler); };
+  }, []);
 
   if (!fontsLoaded) return null;
 
   return (
-    <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.root}>
-      <Slot />
-      <ToastContainer />
-    </LinearGradient>
+    <I18nextProvider i18n={i18n}>
+      <LinearGradient key={langKey} colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.root}>
+        <LanguageSync />
+        <Slot />
+        <ToastContainer />
+      </LinearGradient>
+    </I18nextProvider>
   );
 }
 

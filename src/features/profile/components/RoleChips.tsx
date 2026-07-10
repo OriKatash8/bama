@@ -37,7 +37,7 @@ function toggle(selected: ProfessionalSkill[], category: string, subcategory: st
 export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
-  const cardBg = isDark ? '#ffffff' : colors.card;
+  const cardBg = isDark ? '#1a1a2e' : '#ffffff';
 
   const [expanded, setExpanded] = useState<string | null>(null);
 

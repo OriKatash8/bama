@@ -13,6 +13,26 @@ import { useSearchProfessionals } from '@features/crew/hooks';
 import { useUnifiedSearch } from '@features/crew/hooks/useUnifiedSearch';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    let str = typeof result === 'string' ? result : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{{${k}}}`, v);
+      }
+    }
+    return str;
+  };
+}
 
 const CATEGORY_IMAGE: Record<string, number> = {
   'Video Photographer': require('../../../../../assets/images/categories/videographer-blue.png'),
@@ -44,12 +64,15 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
   const colors = useTheme();
   const router = useRouter();
   const segments = useSegments();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   async function handleMessage(professionalId: string) {
     const currentUserId = auth.currentUser?.uid;
     if (!currentUserId) return;
     const chatId = await getOrCreateDM(currentUserId, professionalId);
-    router.push(`/${segments[0]}/(tabs)/chats/${chatId}`);
+    router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as never);
   }
 
   if (isLoading) {
@@ -59,9 +82,11 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
     return (
       <View style={styles.emptyResults}>
         <Text style={styles.emptyIcon}>👤</Text>
-        <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals yet</Text>
-        <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
-          Professionals in this category will appear here once they set up their profile.
+        <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('search.no_professionals_yet')}
+        </Text>
+        <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('search.no_professionals_subtext')}
         </Text>
       </View>
     );
@@ -71,7 +96,7 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
       {results.map((item) => (
         <TouchableOpacity
           key={item.user.id}
-          onPress={() => router.push(`/browse/profile/${item.user.id}` as any)}
+          onPress={() => router.push(`/browse/profile/${item.user.id}` as never)}
           activeOpacity={0.95}
         >
           <ProfessionalCard
@@ -90,12 +115,15 @@ export default function SearchScreen() {
   const colors = useTheme();
   const router = useRouter();
   const segments = useSegments();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   async function handleMessage(professionalId: string) {
     const currentUserId = auth.currentUser?.uid;
     if (!currentUserId) return;
     const chatId = await getOrCreateDM(currentUserId, professionalId);
-    router.push(`/${segments[0]}/(tabs)/chats/${chatId}`);
+    router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as never);
   }
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -131,7 +159,7 @@ export default function SearchScreen() {
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
-  } as any) : {};
+  } as object) : {};
 
   const isSearching = query.trim().length > 0;
   const { results: unifiedResults, isLoading: unifiedLoading } = useUnifiedSearch(query);
@@ -155,11 +183,13 @@ export default function SearchScreen() {
         <View style={styles.header}>
           {view.kind !== 'grid' && (
             <TouchableOpacity onPress={() => setView({ kind: 'grid' })} style={styles.backBtn} activeOpacity={0.7}>
-              <Text style={[styles.backText, { color: colors.accent }]}>← Back</Text>
+              <Text style={[styles.backText, { color: colors.accent, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('search.back')}
+              </Text>
             </TouchableOpacity>
           )}
           <Text style={[styles.heading, { color: colors.text }, gradientText]}>
-            {view.kind === 'grid' ? 'Search Professionals' : (view as any).subcategory}
+            {view.kind === 'grid' ? t('search.heading') : view.subcategory}
           </Text>
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
         </View>
@@ -169,8 +199,8 @@ export default function SearchScreen() {
           <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
             <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
             <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Search by role, skill, or name…"
+              style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={t('search.placeholder')}
               placeholderTextColor={colors.placeholder}
               value={query}
               onChangeText={setQuery}
@@ -193,7 +223,7 @@ export default function SearchScreen() {
               {unifiedResults.map((item) => (
                 <TouchableOpacity
                   key={item.user.id}
-                  onPress={() => router.push(`/browse/profile/${item.user.id}` as any)}
+                  onPress={() => router.push(`/browse/profile/${item.user.id}` as never)}
                   activeOpacity={0.95}
                 >
                   <ProfessionalCard
@@ -206,9 +236,11 @@ export default function SearchScreen() {
           ) : (
             <View style={styles.emptyResults}>
               <Text style={styles.emptyIcon}>👤</Text>
-              <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals found</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
-                No results for "{query.trim()}"
+              <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('search.no_results_title')}
+              </Text>
+              <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('search.no_results_subtext', { query: query.trim() })}
               </Text>
             </View>
           )
@@ -242,7 +274,7 @@ export default function SearchScreen() {
                     {cat.image && (
                       <Image source={cat.image} style={styles.categoryIcon} />
                     )}
-                    <Text style={styles.categoryLabel}>{cat.label}</Text>
+                    <Text style={[styles.categoryLabel, { textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
                     <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
                       <ChevronRight size={18} color="#004aad" />
                     </Animated.View>
@@ -256,7 +288,7 @@ export default function SearchScreen() {
                         onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.subItemText}>{sub}</Text>
+                        <Text style={[styles.subItemText, { textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
                       </TouchableOpacity>
                     ))}
                   </Animated.View>
@@ -264,8 +296,8 @@ export default function SearchScreen() {
               );
             })}
             {filteredCategories.length === 0 && (
-              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, fontFamily: 'Montserrat' }}>
-                No categories match "{query}"
+              <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: 'Montserrat' }}>
+                {t('search.no_categories_match', { query })}
               </Text>
             )}
           </View>
@@ -274,10 +306,10 @@ export default function SearchScreen() {
         {/* Subcategory results */}
         {view.kind === 'results' && (
           <>
-            <Text style={[styles.resultsHint, { color: colors.textMuted }]}>
-              {(view as any).category} · {(view as any).subcategory}
+            <Text style={[styles.resultsHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {view.category} · {view.subcategory}
             </Text>
-            <ResultsView category={(view as any).category} subcategory={(view as any).subcategory} />
+            <ResultsView category={view.category} subcategory={view.subcategory} />
           </>
         )}
       </ScrollView>
@@ -326,7 +358,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
   },
-searchInput: { flex: 1, fontSize: 15 },
+  searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
   listContent: { alignItems: 'center' },
