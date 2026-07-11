@@ -177,7 +177,7 @@ export default function DashboardScreen() {
 
         {activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
-            <Text style={[styles.heading, { color: colors.text, marginBottom: 16, textAlign: rtl ? 'right' : 'left' }, gradientText]}>
+            <Text style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('noticeboard.projects_in_progress')}
             </Text>
             <ScrollView
@@ -286,6 +286,7 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: '#ffffff',
   },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#004aad', marginBottom: 16 },
   projectCardTitle: { fontSize: 14, fontWeight: '700' },
   projectCardMeta: { fontSize: 12 },
   projectCardRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

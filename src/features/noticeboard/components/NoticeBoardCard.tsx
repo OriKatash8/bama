@@ -53,7 +53,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
-            <Text style={styles.offerIcon}>$</Text>
+            <Text style={styles.offerIcon}>₪</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.dismissBtn]}

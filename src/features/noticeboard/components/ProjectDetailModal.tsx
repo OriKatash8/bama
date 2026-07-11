@@ -152,7 +152,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                         style={styles.priceInput}
                         value={b.price}
                         onChangeText={(v) => setPrice(i, v)}
-                        placeholder="$"
+                        placeholder="₪"
                         placeholderTextColor="#aaa"
                         keyboardType="numeric"
                         maxLength={8}
