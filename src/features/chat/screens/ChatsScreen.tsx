@@ -186,12 +186,17 @@ export function ChatsScreen() {
             {renderAvatar(item)}
             <View style={styles.content}>
               <View style={styles.headerRow}>
-                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-                  {chatName}
-                </Text>
-                {timestamp ? (
-                  <Text style={[styles.timestamp, { color: colors.textMuted }]}>{timestamp}</Text>
-                ) : null}
+                <View style={styles.nameRow}>
+                  <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                    {chatName}
+                  </Text>
+                  {status != null && (
+                    <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
+                      <Text style={styles.statusBadgeText}>{statusLabel(status)}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.timestamp, { color: colors.textMuted }]}>{timestamp}</Text>
               </View>
               <View style={styles.bottomRow}>
                 <Text
@@ -199,17 +204,15 @@ export function ChatsScreen() {
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {item.lastMessage?.text ?? t('chats.no_messages')}
+                  {item.lastMessage?.text ?? ''}
                 </Text>
                 {unread > 0 ? (
                   <View style={styles.unreadBadge}>
                     <Text style={styles.unreadBadgeText}>{unread > 99 ? '99+' : unread}</Text>
                   </View>
-                ) : status != null ? (
-                  <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
-                    <Text style={styles.statusBadgeText}>{statusLabel(status)}</Text>
-                  </View>
-                ) : null}
+                ) : (
+                  <View style={styles.badgePlaceholder} />
+                )}
               </View>
             </View>
           </TouchableOpacity>
@@ -248,13 +251,15 @@ const styles = StyleSheet.create({
   avatarInitial: { color: '#fff', fontSize: 20, fontWeight: '700' },
 
   content: { flex: 1, gap: 4 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 15, fontWeight: '700', flex: 1, marginRight: 8 },
-  timestamp: { fontSize: 11, flexShrink: 0 },
-  bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  preview: { fontSize: 13, flex: 1 },
-  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, marginLeft: 8, flexShrink: 0 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8, overflow: 'hidden' },
+  name: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, marginLeft: 6, flexShrink: 0 },
   statusBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  timestamp: { fontSize: 11, flexShrink: 0 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  preview: { fontSize: 13, flex: 1 },
   unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, marginLeft: 8, flexShrink: 0 },
   unreadBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  badgePlaceholder: { width: 20, height: 20, marginLeft: 8, flexShrink: 0 },
 });
