@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
   Image, useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
@@ -67,6 +67,15 @@ export default function HomeScreen() {
   };
   const getCategoryLabel = (labelKey: string) => labelKey === 'AI' ? 'AI' : t(labelKey);
   const rtl = language === 'he';
+
+  const fontFamily = language === 'he' ? 'Heebo-Regular' : 'Montserrat';
+  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
+  const fontFamilySemiBold = language === 'he' ? 'Heebo-SemiBold' : 'Montserrat-SemiBold';
+  const fontFamilyMedium = language === 'he' ? 'Heebo-Medium' : 'Montserrat-Medium';
+  const styles = useMemo(
+    () => createStyles(fontFamily, fontFamilyBold, fontFamilySemiBold, fontFamilyMedium),
+    [fontFamily, fontFamilyBold, fontFamilySemiBold, fontFamilyMedium],
+  );
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -385,55 +394,61 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
-  pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
-  card: { margin: 16, marginTop: 24, padding: 20 },
-  rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: 'Montserrat', marginBottom: 12 },
-  label: { fontSize: 18, fontWeight: '600', fontFamily: 'Montserrat', marginTop: 16, marginBottom: 6 },
-  input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: 'Montserrat' },
-  multiline: { height: 100 },
-  error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: 'Montserrat' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tile: { borderRadius: 12, overflow: 'hidden', position: 'relative' },
-  tileImage: { width: '100%', height: '100%', position: 'absolute' },
-  tileOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 4, paddingHorizontal: 5 },
-  tileLabel: { fontSize: 17, fontWeight: '700', fontFamily: 'Montserrat', color: '#004aad', textAlign: 'center', textShadowColor: 'rgba(255,255,255,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
-  tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: 'Montserrat' },
-  submitWrap: { padding: 16, paddingBottom: 32 },
-  submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginTop: 8 },
-  disabled: { backgroundColor: '#555' },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Montserrat' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  panel: { width: '100%', maxHeight: '80%', borderRadius: 24, borderWidth: 2, overflow: 'hidden' },
-  panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  panelTitle: { fontSize: 20, fontWeight: '800', fontFamily: 'Montserrat' },
-  closeBtn: { fontSize: 18, fontWeight: '600', fontFamily: 'Montserrat' },
-  panelDivider: { height: 2, marginHorizontal: 20, borderRadius: 1, marginBottom: 4 },
-  panelScroll: { maxHeight: 400 },
-  subHint: { fontSize: 12, fontWeight: '600', fontFamily: 'Montserrat', textTransform: 'uppercase', letterSpacing: 0.8, paddingHorizontal: 20, paddingVertical: 12 },
-  subRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20, borderBottomWidth: 1 },
-  subLabel: { fontSize: 15, fontWeight: '500', fontFamily: 'Montserrat', flex: 1 },
-  qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  qtyBtn: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700', fontFamily: 'Montserrat' },
-  qtyBadge: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: 'Montserrat' },
-
-  dateRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  dateCol: { flex: 1 },
-  dateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 0,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginTop: 6,
-  },
-  dateBtnText: { fontSize: 13, flex: 1, fontFamily: 'Montserrat' },
-});
+function createStyles(
+  ff: string,
+  ffBold: string,
+  ffSemiBold: string,
+  ffMedium: string,
+) {
+  return StyleSheet.create({
+    scroll: { flex: 1 },
+    scrollContent: { paddingBottom: 100 },
+    pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: ffBold, marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
+    card: { margin: 16, marginTop: 24, padding: 20 },
+    rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
+    sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
+    label: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
+    input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: ff },
+    multiline: { height: 100 },
+    error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: ff },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    tile: { borderRadius: 12, overflow: 'hidden', position: 'relative' },
+    tileImage: { width: '100%', height: '100%', position: 'absolute' },
+    tileOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 4, paddingHorizontal: 5 },
+    tileLabel: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textShadowColor: 'rgba(255,255,255,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+    tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+    tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: ffBold },
+    submitWrap: { padding: 16, paddingBottom: 32 },
+    submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginTop: 8 },
+    disabled: { backgroundColor: '#555' },
+    submitText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: ffBold },
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+    panel: { width: '100%', maxHeight: '80%', borderRadius: 24, borderWidth: 2, overflow: 'hidden' },
+    panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
+    panelTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold },
+    closeBtn: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold },
+    panelDivider: { height: 2, marginHorizontal: 20, borderRadius: 1, marginBottom: 4 },
+    panelScroll: { maxHeight: 400 },
+    subHint: { fontSize: 12, fontWeight: '600', fontFamily: ffSemiBold, textTransform: 'uppercase', letterSpacing: 0.8, paddingHorizontal: 20, paddingVertical: 12 },
+    subRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20, borderBottomWidth: 1 },
+    subLabel: { fontSize: 15, fontWeight: '500', fontFamily: ffMedium, flex: 1 },
+    qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    qtyBtn: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+    qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700', fontFamily: ffBold },
+    qtyBadge: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+    qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: ffBold },
+    dateRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+    dateCol: { flex: 1 },
+    dateBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderWidth: 0,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      marginTop: 6,
+    },
+    dateBtnText: { fontSize: 13, flex: 1, fontFamily: ff },
+  });
+}

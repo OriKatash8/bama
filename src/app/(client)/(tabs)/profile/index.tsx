@@ -158,6 +158,7 @@ export default function ClientProfileScreen() {
   const switchLanguage = useSettingsStore((s) => s.setLanguage);
   const t = makeT(lang === 'he' ? he : en);
   const rtl = lang === 'he';
+  const fontFamilyBold = lang === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
   const gradientStyle = Platform.OS === 'web' ? ({
@@ -189,7 +190,7 @@ export default function ClientProfileScreen() {
       <View style={styles.content}>
 
         {/* ── AVATAR ── */}
-        <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
+        <Text style={[styles.pageTitle, { fontFamily: fontFamilyBold }, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           {t('profile.my_profile')}
         </Text>
         <View style={styles.avatarSection}>

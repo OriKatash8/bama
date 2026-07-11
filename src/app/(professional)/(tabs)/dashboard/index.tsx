@@ -62,6 +62,7 @@ export default function DashboardScreen() {
   const modeSegment = segments[0];
 
   const language = useSettingsStore((s) => s.language);
+  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
@@ -216,7 +217,7 @@ export default function DashboardScreen() {
         )}
 
         <View style={styles.header}>
-          <Text style={[styles.heading, { color: colors.text }, gradientText]}>
+          <Text style={[styles.heading, { fontFamily: fontFamilyBold, color: colors.text }, gradientText]}>
             {t('noticeboard.notice_board')}
           </Text>
           {!isLoading && (

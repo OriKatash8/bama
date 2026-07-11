@@ -12,6 +12,7 @@ import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { useStartChat } from '@features/chat/hooks/useStartChat';
 import type { User, ProfessionalProfile } from '@core/types/user';
 import type { MediaAsset } from '@core/types/media';
@@ -21,6 +22,8 @@ export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
   const { startChat, isLoading: isStarting } = useStartChat();
 
   const [user, setUser] = useState<User | null>(null);
@@ -105,7 +108,7 @@ export default function PublicProfileScreen() {
               <UserIcon size={44} color="#fff" strokeWidth={1.5} />
             </View>
           )}
-          <Text style={styles.heroName}>{user.displayName}</Text>
+          <Text style={[styles.heroName, { fontFamily: fontFamilyBold }]}>{user.displayName}</Text>
           {profile.rating > 0 && (
             <View style={styles.heroRatingRow}>
               <Star size={13} color="#FFD700" fill="#FFD700" />
@@ -149,7 +152,7 @@ export default function PublicProfileScreen() {
         activeOpacity={0.8}
       >
         <MessageCircle size={20} color="#fff" strokeWidth={2} />
-        <Text style={styles.messageBtnText}>
+        <Text style={[styles.messageBtnText, { fontFamily: fontFamilyBold }]}>
           {isStarting ? 'Opening chat…' : 'Send Message'}
         </Text>
       </TouchableOpacity>

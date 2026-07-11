@@ -118,6 +118,9 @@ export default function SearchScreen() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const fontFamily = language === 'he' ? 'Heebo-Regular' : 'Montserrat';
+  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
+  const fontFamilyMedium = language === 'he' ? 'Heebo-Medium' : 'Montserrat-Medium';
 
   async function handleMessage(professionalId: string) {
     const currentUserId = auth.currentUser?.uid;
@@ -188,7 +191,7 @@ export default function SearchScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={[styles.heading, { color: colors.text }, gradientText]}>
+          <Text style={[styles.heading, { fontFamily: fontFamilyBold, color: colors.text }, gradientText]}>
             {view.kind === 'grid' ? t('search.heading') : view.subcategory}
           </Text>
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
@@ -274,7 +277,7 @@ export default function SearchScreen() {
                     {cat.image && (
                       <Image source={cat.image} style={styles.categoryIcon} />
                     )}
-                    <Text style={[styles.categoryLabel, { textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
+                    <Text style={[styles.categoryLabel, { fontFamily: fontFamilyBold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
                     <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
                       <ChevronRight size={18} color="#004aad" />
                     </Animated.View>
@@ -288,7 +291,7 @@ export default function SearchScreen() {
                         onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.subItemText, { textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
+                        <Text style={[styles.subItemText, { fontFamily: fontFamilyMedium, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
                       </TouchableOpacity>
                     ))}
                   </Animated.View>
@@ -296,7 +299,7 @@ export default function SearchScreen() {
               );
             })}
             {filteredCategories.length === 0 && (
-              <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: 'Montserrat' }}>
+              <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: fontFamily }}>
                 {t('search.no_categories_match', { query })}
               </Text>
             )}

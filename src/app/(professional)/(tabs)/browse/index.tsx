@@ -6,6 +6,7 @@ import {
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { auth } from '@core/firebase/config';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
@@ -74,6 +75,10 @@ export default function BrowseScreen() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const fontFamily = language === 'he' ? 'Heebo-Regular' : 'Montserrat';
+  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
+  const fontFamilyMedium = language === 'he' ? 'Heebo-Medium' : 'Montserrat-Medium';
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
@@ -212,7 +217,7 @@ export default function BrowseScreen() {
                     onPress={() => toggleCategory(cat.key)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.categoryLabel}>{cat.label}</Text>
+                    <Text style={[styles.categoryLabel, { fontFamily: fontFamilyBold }]}>{cat.label}</Text>
                     <Animated.Text style={[styles.categoryChevron, { transform: [{ rotate: chevronRotate }] }]}>
                       ›
                     </Animated.Text>
@@ -226,7 +231,7 @@ export default function BrowseScreen() {
                         onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.subItemText}>{sub}</Text>
+                        <Text style={[styles.subItemText, { fontFamily: fontFamilyMedium }]}>{sub}</Text>
                       </TouchableOpacity>
                     ))}
                   </Animated.View>
@@ -234,7 +239,7 @@ export default function BrowseScreen() {
               );
             })}
             {filteredCategories.length === 0 && (
-              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, fontFamily: 'Montserrat' }}>
+              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, fontFamily: fontFamily }}>
                 No categories match "{query}"
               </Text>
             )}

@@ -58,7 +58,7 @@ export default function ProfessionalTabsLayout() {
       >
         <Tabs.Screen name="dashboard" options={{ title: t('tabs.notice_board'), tabBarIcon: ({ color }) => <LayoutDashboard size={24} color={color} strokeWidth={1.5} /> }} />
         <Tabs.Screen name="marketplace" options={{ title: t('tabs.marketplace'), tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={1.5} /> }} />
-        <Tabs.Screen name="chats" options={{ title: t('tabs.chats'), tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined, tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} strokeWidth={1.5} /> }} />
+        <Tabs.Screen name="chats" options={{ title: t('tabs.chats'), tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined, tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 }, tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} strokeWidth={1.5} /> }} />
         <Tabs.Screen name="browse" options={{ href: null }} />
         <Tabs.Screen
           name="profile"

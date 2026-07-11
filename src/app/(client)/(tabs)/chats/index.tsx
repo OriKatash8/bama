@@ -47,6 +47,7 @@ export default function ChatsScreen() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
 
   const [active, setActive] = useState<TabKey>('chats');
   const { requests, isLoading: requestsLoading } = useProjectRequests();
@@ -86,7 +87,7 @@ export default function ChatsScreen() {
         {/* Header — title + tabs */}
         <View style={styles.headerWrap}>
           <View style={styles.gradient}>
-            <Text style={[styles.headerTitle, Platform.OS !== 'web' && { color: colors.accent }, gradientStyle]}>
+            <Text style={[styles.headerTitle, { fontFamily: fontFamilyBold }, Platform.OS !== 'web' && { color: colors.accent }, gradientStyle]}>
               {t('chats_page.title')}
             </Text>
 

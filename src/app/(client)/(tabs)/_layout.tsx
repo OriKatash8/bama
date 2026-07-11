@@ -56,7 +56,7 @@ export default function ClientTabsLayout() {
       >
         <Tabs.Screen name="home" options={{ title: t('tabs.home'), tabBarIcon: ({ color }) => <Home size={24} color={color} strokeWidth={2.5} /> }} />
         <Tabs.Screen name="browse" options={{ title: t('tabs.search'), tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2.5} /> }} />
-        <Tabs.Screen name="chats" options={{ title: t('tabs.chats'), tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined, tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} strokeWidth={2.5} /> }} />
+        <Tabs.Screen name="chats" options={{ title: t('tabs.chats'), tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined, tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 }, tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} strokeWidth={2.5} /> }} />
         <Tabs.Screen
           name="profile"
           options={{
