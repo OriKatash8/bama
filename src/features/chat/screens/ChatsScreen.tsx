@@ -7,16 +7,35 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
 import { listenToUserChats } from '../services/chatService';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { Chat } from '../types';
 import type { ProjectRequest } from '@core/types/project';
 
 type ProjectStatus = ProjectRequest['status'];
+type Translations = typeof en;
 
-const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
-  open:        { label: 'Open',        color: '#004aad' },
-  in_progress: { label: 'In Progress', color: '#f59e0b' },
-  completed:   { label: 'Completed',   color: '#22c55e' },
-  cancelled:   { label: 'Cancelled',   color: '#ef4444' },
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    let str = typeof result === 'string' ? result : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{{${k}}}`, v);
+      }
+    }
+    return str;
+  };
+}
+
+const STATUS_CONFIG: Record<ProjectStatus, { color: string }> = {
+  open:        { color: '#004aad' },
+  in_progress: { color: '#f59e0b' },
+  completed:   { color: '#22c55e' },
+  cancelled:   { color: '#ef4444' },
 };
 
 function formatTimestamp(ts: { toDate(): Date } | null | undefined): string {
@@ -30,6 +49,10 @@ function formatTimestamp(ts: { toDate(): Date } | null | undefined): string {
   if (isToday) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
+  const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysDiff < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  }
   return date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
 }
 
@@ -41,6 +64,9 @@ export function ChatsScreen() {
   const modeSegment = segments[0];
   const colors = useTheme();
   const user = useAuthStore((s) => s.user);
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
   const [chats, setChats] = useState<Chat[]>([]);
   const [dmInfo, setDmInfo] = useState<Record<string, DmInfo>>({});
   const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
@@ -67,12 +93,13 @@ export function ChatsScreen() {
       const otherId = c.members.find((id) => id !== currentUserId)!;
       fetchedUserIdsRef.current.add(otherId);
     });
+    const tEffect = makeT(useSettingsStore.getState().language === 'he' ? he : en);
     Promise.all(
       toFetch.map(async (c) => {
         const otherId = c.members.find((id) => id !== currentUserId)!;
         const snap = await getDoc(doc(db, 'users', otherId));
         const data = snap.exists() ? (snap.data() as { displayName: string; photoURL?: string }) : null;
-        return [c.id, { name: data?.displayName ?? 'Unknown', photoURL: data?.photoURL ?? null }] as const;
+        return [c.id, { name: data?.displayName ?? tEffect('chats.unknown'), photoURL: data?.photoURL ?? null }] as const;
       })
     ).then((entries) => {
       setDmInfo((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
@@ -98,6 +125,16 @@ export function ChatsScreen() {
     });
   }, [chats]);
 
+  const statusLabel = (status: ProjectStatus): string => {
+    const map: Record<ProjectStatus, string> = {
+      open:        t('chats.status_open'),
+      in_progress: t('chats.status_in_progress'),
+      completed:   t('chats.status_completed'),
+      cancelled:   t('chats.status_cancelled'),
+    };
+    return map[status];
+  };
+
   function renderAvatar(item: Chat) {
     if (item.type === 'group') {
       return (
@@ -121,7 +158,9 @@ export function ChatsScreen() {
   if (chats.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No conversations yet</Text>
+        <Text style={[styles.emptyText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('chats.no_conversations')}
+        </Text>
       </View>
     );
   }
@@ -129,9 +168,14 @@ export function ChatsScreen() {
   return (
     <View style={styles.listContent}>
       {chats.map((item) => {
-        const chatName = item.type === 'group' ? (item.name ?? 'Group Chat') : (dmInfo[item.id]?.name ?? 'Loading...');
+        const currentUserId = user?.id ?? '';
+        console.log('[ChatsScreen] chat id:', item.id, '| unreadCount:', item.unreadCount, '| my unread:', item.unreadCount?.[currentUserId]);
+        const chatName = item.type === 'group'
+          ? (item.name ?? t('chats.group_chat'))
+          : (dmInfo[item.id]?.name ?? t('chats.loading'));
         const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
         const timestamp = formatTimestamp(item.lastMessage?.timestamp);
+        const unread = item.unreadCount?.[currentUserId] ?? 0;
         return (
           <TouchableOpacity
             key={item.id}
@@ -141,20 +185,32 @@ export function ChatsScreen() {
           >
             {renderAvatar(item)}
             <View style={styles.content}>
-              <View style={styles.topRow}>
-                <Text style={[styles.name, { color: item.type === 'group' ? '#cb6ce6' : '#004aad' }]} numberOfLines={1}>{chatName}</Text>
-                {status != null && (
-                  <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
-                    <Text style={styles.statusBadgeText}>{STATUS_CONFIG[status].label}</Text>
-                  </View>
-                )}
+              <View style={styles.headerRow}>
+                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                  {chatName}
+                </Text>
                 {timestamp ? (
                   <Text style={[styles.timestamp, { color: colors.textMuted }]}>{timestamp}</Text>
                 ) : null}
               </View>
-              <Text style={[styles.preview, { color: colors.textMuted }]} numberOfLines={1}>
-                {item.lastMessage?.text ?? 'No messages yet'}
-              </Text>
+              <View style={styles.bottomRow}>
+                <Text
+                  style={[styles.preview, { color: colors.textMuted }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.lastMessage?.text ?? t('chats.no_messages')}
+                </Text>
+                {unread > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>{unread > 99 ? '99+' : unread}</Text>
+                  </View>
+                ) : status != null ? (
+                  <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
+                    <Text style={styles.statusBadgeText}>{statusLabel(status)}</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           </TouchableOpacity>
         );
@@ -191,11 +247,14 @@ const styles = StyleSheet.create({
   },
   avatarInitial: { color: '#fff', fontSize: 20, fontWeight: '700' },
 
-  content: { flex: 1, gap: 3 },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
-  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20 },
+  content: { flex: 1, gap: 4 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  name: { fontSize: 15, fontWeight: '700', flex: 1, marginRight: 8 },
+  timestamp: { fontSize: 11, flexShrink: 0 },
+  bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  preview: { fontSize: 13, flex: 1 },
+  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, marginLeft: 8, flexShrink: 0 },
   statusBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  timestamp: { fontSize: 11, marginLeft: 'auto' },
-  preview: { fontSize: 13 },
+  unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, marginLeft: 8, flexShrink: 0 },
+  unreadBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
 });

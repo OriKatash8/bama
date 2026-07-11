@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, updateDoc, doc } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
 import { auth, db } from '@core/firebase/config';
@@ -78,6 +78,13 @@ export function ChatRoomScreen({ chatId }: Props) {
     }
     fetchChat();
   }, [chatId]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    updateDoc(doc(db, 'chats', chatId), {
+      [`unreadCount.${currentUserId}`]: 0,
+    }).catch(() => {});
+  }, [chatId, currentUserId]);
 
   useEffect(() => {
     return listenToMessages(chatId, setMessages);

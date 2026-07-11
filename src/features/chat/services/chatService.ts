@@ -3,10 +3,12 @@ import {
   query,
   where,
   orderBy,
+  getDoc,
   getDocs,
   addDoc,
   updateDoc,
   arrayUnion,
+  increment,
   doc,
   onSnapshot,
   serverTimestamp,
@@ -42,6 +44,7 @@ function docToChat(doc: QueryDocumentSnapshot<DocumentData>): Chat {
     roles: data.roles,
     lastMessage: data.lastMessage ?? null,
     createdAt: data.createdAt,
+    unreadCount: data.unreadCount,
   };
 }
 
@@ -162,11 +165,17 @@ export async function sendMessage(
     readBy: [senderId],
   });
 
-  await updateDoc(chatRef, {
-    lastMessage: {
-      text,
-      senderId,
-      timestamp: serverTimestamp(),
-    },
-  });
+  const chatSnap = await getDoc(chatRef);
+  const members: string[] = chatSnap.exists() ? (chatSnap.data().members as string[]) : [];
+
+  const updatePayload: Record<string, unknown> = {
+    lastMessage: { text, senderId, timestamp: serverTimestamp() },
+  };
+  for (const memberId of members) {
+    if (memberId !== senderId) {
+      updatePayload[`unreadCount.${memberId}`] = increment(1);
+    }
+  }
+
+  await updateDoc(chatRef, updatePayload);
 }

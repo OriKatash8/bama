@@ -4,6 +4,8 @@ export type MarketplaceListingType = 'secondhand' | 'rental';
 
 export type ProductCondition = 'new' | 'like_new' | 'good' | 'fair';
 
+export type ListingStatus = 'available' | 'reserved' | 'sold';
+
 export type MarketplaceListing = {
   id: string;
   type: MarketplaceListingType;
@@ -18,4 +20,7 @@ export type MarketplaceListing = {
   brand?: string;
   category?: string;
   subcategory?: string;
+  status?: ListingStatus;
+  reservedBy?: string;
+  reservedAt?: Timestamp;
 };

@@ -6,15 +6,31 @@ import { Wrench, List, Star } from 'lucide-react-native';
 import { ReviewsList } from './ReviewsList';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { PriceEntry, Review } from '@core/types/project';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 type SectionKey = 'equipment' | 'priceList' | 'reviews';
 
-const SECTIONS: { key: SectionKey; label: string; Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }> }[] = [
-  { key: 'equipment', label: 'Equipment', Icon: Wrench },
-  { key: 'priceList', label: 'Price List', Icon: List },
-  { key: 'reviews',   label: 'Reviews',   Icon: Star },
-];
+const SECTION_ICONS: Record<SectionKey, React.ComponentType<{ size: number; color: string; strokeWidth: number }>> = {
+  equipment: Wrench,
+  priceList: List,
+  reviews:   Star,
+};
+
+const SECTION_KEYS: SectionKey[] = ['equipment', 'priceList', 'reviews'];
 
 type ContentTabsProps = {
   equipment: string[];
@@ -36,14 +52,25 @@ export function ContentTabs({
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
   const cardBg = isDark ? '#1a1a2e' : '#ffffff';
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');
   const [newService, setNewService] = useState('');
   const [newPrice, setNewPrice] = useState('');
 
-  const activeSection = SECTIONS.find((s) => s.key === active)!;
-  const ActiveIcon = activeSection.Icon;
+  const sectionLabel = (key: SectionKey): string => {
+    const map: Record<SectionKey, string> = {
+      equipment: t('profile_sections.equipment'),
+      priceList: t('profile_sections.price_list'),
+      reviews:   t('profile_sections.reviews'),
+    };
+    return map[key];
+  };
+
+  const ActiveIcon = SECTION_ICONS[active];
 
   function addEquipment() {
     const trimmed = newEquipment.trim();
@@ -66,7 +93,7 @@ export function ContentTabs({
 
       {/* ── Tab bar (no card background) ── */}
       <View style={styles.tabBar}>
-        {SECTIONS.map(({ key, label }) => {
+        {SECTION_KEYS.map((key) => {
           const isActive = key === active;
           return (
             <TouchableOpacity
@@ -75,8 +102,8 @@ export function ContentTabs({
               onPress={() => setActive(key)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.tabText, { color: isActive ? '#fff' : 'rgba(0,74,173,0.45)' }]}>
-                {label}
+              <Text style={[styles.tabText, { color: isActive ? '#fff' : 'rgba(0,74,173,0.45)', textAlign: rtl ? 'right' : 'left' }]}>
+                {sectionLabel(key)}
               </Text>
             </TouchableOpacity>
           );
@@ -88,7 +115,9 @@ export function ContentTabs({
 
         {/* Section header */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: '#004aad' }]}>{activeSection.label}</Text>
+          <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+            {sectionLabel(active)}
+          </Text>
           <ActiveIcon size={18} color="#004aad" strokeWidth={1.8} />
         </View>
 
@@ -96,7 +125,9 @@ export function ContentTabs({
         {active === 'equipment' && (
           <>
             {equipment.length === 0 && (
-              <Text style={styles.empty}>No equipment yet.</Text>
+              <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('profile_sections.no_equipment')}
+              </Text>
             )}
             <View style={styles.list}>
               {equipment.map((item, index) => (
@@ -118,7 +149,7 @@ export function ContentTabs({
                       <Text style={styles.removeBtn}>×</Text>
                     </TouchableOpacity>
                   )}
-                  <Text style={styles.itemText}>{item}</Text>
+                  <Text style={[styles.itemText, { textAlign: rtl ? 'right' : 'left' }]}>{item}</Text>
                 </View>
               ))}
             </View>
@@ -128,10 +159,10 @@ export function ContentTabs({
                   <Text style={styles.addBtnText}>+</Text>
                 </TouchableOpacity>
                 <TextInput
-                  style={[styles.addInput, { borderColor: colors.border }]}
+                  style={[styles.addInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
                   value={newEquipment}
                   onChangeText={setNewEquipment}
-                  placeholder="Add item..."
+                  placeholder={t('profile_sections.add_item')}
                   placeholderTextColor="rgba(0,74,173,0.4)"
                   onSubmitEditing={addEquipment}
                   returnKeyType="done"
@@ -145,7 +176,9 @@ export function ContentTabs({
         {active === 'priceList' && (
           <>
             {priceList.length === 0 && (
-              <Text style={styles.empty}>No price entries yet.</Text>
+              <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('profile_sections.no_price')}
+              </Text>
             )}
             <View style={styles.list}>
               {priceList.map((entry, index) => (
@@ -167,8 +200,8 @@ export function ContentTabs({
                       <Text style={styles.removeBtn}>×</Text>
                     </TouchableOpacity>
                   )}
-                  <Text style={styles.priceLabel}>${entry.price.toFixed(0)}</Text>
-                  <Text style={styles.itemText}>{entry.service}</Text>
+                  <Text style={[styles.priceLabel, { textAlign: rtl ? 'right' : 'left' }]}>${entry.price.toFixed(0)}</Text>
+                  <Text style={[styles.itemText, { textAlign: rtl ? 'right' : 'left' }]}>{entry.service}</Text>
                 </View>
               ))}
             </View>
@@ -178,18 +211,18 @@ export function ContentTabs({
                   <Text style={styles.addBtnText}>+</Text>
                 </TouchableOpacity>
                 <TextInput
-                  style={[styles.addInput, styles.priceInput, { borderColor: colors.border }]}
+                  style={[styles.addInput, styles.priceInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
                   value={newPrice}
                   onChangeText={setNewPrice}
-                  placeholder="Price"
+                  placeholder={t('profile_sections.price_placeholder')}
                   placeholderTextColor="rgba(0,74,173,0.4)"
                   keyboardType="decimal-pad"
                 />
                 <TextInput
-                  style={[styles.addInput, { borderColor: colors.border }]}
+                  style={[styles.addInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
                   value={newService}
                   onChangeText={setNewService}
-                  placeholder="Add service..."
+                  placeholder={t('profile_sections.add_service')}
                   placeholderTextColor="rgba(0,74,173,0.4)"
                   onSubmitEditing={addPriceEntry}
                   returnKeyType="done"
@@ -281,14 +314,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#004aad',
-    textAlign: 'right',
   },
   priceLabel: {
     fontSize: 13,
     fontWeight: '700',
     color: '#004aad',
     minWidth: 48,
-    textAlign: 'right',
   },
   removeBtn: {
     fontSize: 20,

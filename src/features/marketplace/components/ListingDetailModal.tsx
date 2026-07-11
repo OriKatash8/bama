@@ -1,9 +1,29 @@
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  Image, Platform, ScrollView,
+  Image, Platform, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
+import { useRouter, useSegments } from 'expo-router';
 import { useUiStore } from '@core/stores/uiStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+import { buyListing } from '../services/marketplaceService';
 import type { MarketplaceListing } from '../types';
+import { useState } from 'react';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string | number>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    if (typeof result !== 'string') return key;
+    if (!vars) return result;
+    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
+  };
+}
 
 type Props = {
   listing: MarketplaceListing | null;
@@ -12,17 +32,63 @@ type Props = {
 
 export function ListingDetailModal({ listing, onClose }: Props) {
   const { showToast } = useUiStore();
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
+  const router = useRouter();
+  const segments = useSegments();
+  const modeSegment = segments[0];
+
+  const [isBuying, setIsBuying] = useState(false);
 
   if (!listing) return null;
 
   const priceLabel = listing.type === 'rental'
-    ? `₪${listing.price.toLocaleString()}/day`
+    ? `₪${listing.price.toLocaleString()}${t('marketplace.per_day')}`
     : `₪${listing.price.toLocaleString()}`;
+
+  const fee = Math.round(listing.price * 0.03);
+  const isOwnListing = currentUserId === listing.posterId;
+  const isUnavailable = listing.status === 'reserved' || listing.status === 'sold';
+
+  function handleBuyPress() {
+    Alert.alert(
+      t('marketplace.confirm_purchase_title'),
+      t('marketplace.confirm_purchase_message', { fee }),
+      [
+        { text: t('marketplace.cancel'), style: 'cancel' },
+        {
+          text: t('marketplace.confirm'),
+          onPress: confirmBuy,
+        },
+      ]
+    );
+  }
+
+  async function confirmBuy() {
+    if (!currentUserId) return;
+    setIsBuying(true);
+    try {
+      const chatId = await buyListing(
+        listing.id,
+        currentUserId,
+        listing.posterId,
+        { productName: listing.productName, price: listing.price }
+      );
+      onClose();
+      router.push(`/${modeSegment}/(tabs)/chats/${chatId}` as never);
+    } catch {
+      Alert.alert(t('marketplace.buy_error'));
+    } finally {
+      setIsBuying(false);
+    }
+  }
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-      <View style={[styles.sheet, Platform.OS === 'web' && (webSheet as any)]}>
+      <View style={[styles.sheet, Platform.OS === 'web' && (webSheet as object)]}>
         <View style={styles.handle} />
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.imageWrap}>
@@ -32,21 +98,33 @@ export function ListingDetailModal({ listing, onClose }: Props) {
               <Text style={styles.imagePlaceholder}>📦</Text>
             )}
           </View>
-          <Text style={styles.name}>{listing.productName}</Text>
-          <View style={styles.metaRow}>
+          <Text style={[styles.name, { textAlign: rtl ? 'right' : 'left' }]}>{listing.productName}</Text>
+          <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Text style={styles.price}>{priceLabel}</Text>
             <Text style={styles.location}>📍 {listing.location}</Text>
           </View>
-          <Text style={styles.poster}>
-            Posted by <Text style={styles.posterName}>{listing.posterName}</Text>
+          <Text style={[styles.poster, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('marketplace.posted_by')} <Text style={styles.posterName}>{listing.posterName}</Text>
           </Text>
-          <TouchableOpacity
-            style={styles.contactBtn}
-            onPress={() => showToast('Feature coming soon', 'info')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.contactText}>Contact Seller</Text>
-          </TouchableOpacity>
+
+          {!isOwnListing && (
+            isUnavailable ? (
+              <View style={styles.reservedBtn}>
+                <Text style={styles.reservedText}>{t('marketplace.reserved')}</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.buyBtn, isBuying && styles.buyBtnDisabled]}
+                onPress={handleBuyPress}
+                disabled={isBuying}
+                activeOpacity={0.8}
+              >
+                {isBuying
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.buyText}>{t('marketplace.buy_button')}</Text>}
+              </TouchableOpacity>
+            )
+          )}
         </ScrollView>
       </View>
     </Modal>
@@ -100,16 +178,24 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: 160 },
   imagePlaceholder: { fontSize: 52 },
   name: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 10 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 8 },
+  metaRow: { alignItems: 'center', gap: 16, marginBottom: 8 },
   price: { fontSize: 18, fontWeight: '700', color: '#cb6ce6' },
   location: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
   poster: { fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 },
   posterName: { color: '#cb6ce6', fontWeight: '600' },
-  contactBtn: {
+  buyBtn: {
     backgroundColor: '#cb6ce6',
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
   },
-  contactText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  buyBtnDisabled: { opacity: 0.6 },
+  buyText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  reservedBtn: {
+    backgroundColor: '#555',
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  reservedText: { color: 'rgba(255,255,255,0.5)', fontSize: 16, fontWeight: '700' },
 });

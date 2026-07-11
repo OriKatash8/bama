@@ -11,7 +11,10 @@ export function useMarketplaceListings(type: MarketplaceListingType) {
     return subscribeToCollection<MarketplaceListing>(
       'marketplace_listings',
       (data) => {
-        const sorted = [...data].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+        const available = data.filter(
+          (l) => l.status !== 'reserved' && l.status !== 'sold'
+        );
+        const sorted = [...available].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
         setListings(sorted);
         setIsLoading(false);
       },

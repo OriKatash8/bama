@@ -8,24 +8,38 @@ import { X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useCreateListing } from '../hooks/useCreateListing';
 import { useUiStore } from '@core/stores/uiStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListingType, ProductCondition } from '../types';
 
-const CATEGORIES = [
-  { id: 'camera',      label: 'Camera' },
-  { id: 'lens',        label: 'Lens' },
-  { id: 'audio',       label: 'Audio' },
-  { id: 'lighting',    label: 'Lighting' },
-  { id: 'drone',       label: 'Drone' },
-  { id: 'studio',      label: 'Studio' },
-  { id: 'accessories', label: 'Accessories' },
-  { id: 'other',       label: 'Other' },
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
+
+const CATEGORIES: { id: string; labelKey: string }[] = [
+  { id: 'camera',      labelKey: 'category_camera' },
+  { id: 'lens',        labelKey: 'category_lens' },
+  { id: 'audio',       labelKey: 'category_audio' },
+  { id: 'lighting',    labelKey: 'category_light' },
+  { id: 'drone',       labelKey: 'category_drone' },
+  { id: 'studio',      labelKey: 'category_studio' },
+  { id: 'accessories', labelKey: 'category_accessories' },
+  { id: 'other',       labelKey: 'category_other' },
 ];
 
-const CONDITIONS: { value: ProductCondition; label: string; color: string }[] = [
-  { value: 'new',      label: 'New',      color: '#43a047' },
-  { value: 'like_new', label: 'Like New', color: '#00897b' },
-  { value: 'good',     label: 'Good',     color: '#fb8c00' },
-  { value: 'fair',     label: 'Fair',     color: '#e53935' },
+const CONDITIONS: { value: ProductCondition; color: string }[] = [
+  { value: 'new',      color: '#43a047' },
+  { value: 'like_new', color: '#00897b' },
+  { value: 'good',     color: '#fb8c00' },
+  { value: 'fair',     color: '#e53935' },
 ];
 
 const SUBCATEGORIES: Record<string, readonly string[]> = {
@@ -121,6 +135,9 @@ type Props = {
 export function PostListingSheet({ visible, initialType, lockedType = false, onClose }: Props) {
   const { create, isSubmitting } = useCreateListing();
   const { showToast } = useUiStore();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const [type, setType]               = useState<MarketplaceListingType>(initialType);
   const [imageUri, setImageUri]       = useState<string | null>(null);
@@ -178,21 +195,19 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
         subcategory,
         brand,
       });
-      showToast('Listing posted!', 'success');
+      showToast(t('marketplace.listing_posted'), 'success');
       reset();
       onClose();
     } catch {
-      showToast('Failed to post listing', 'error');
+      showToast(t('marketplace.failed_post'), 'error');
     }
   }
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        {/* Invisible backdrop — tap outside to close */}
         <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
 
-        {/* Centered gradient popup card */}
         <LinearGradient
           colors={['#efd4f6', '#b7cae6']}
           start={{ x: 0, y: 0 }}
@@ -201,7 +216,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Post a Listing</Text>
+            <Text style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('marketplace.post_listing')}
+            </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
               <X size={20} color="#004aad" />
             </TouchableOpacity>
@@ -222,14 +239,18 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                   onPress={() => setType('secondhand')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive]}>2nd Hand</Text>
+                  <Text style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive]}>
+                    {t('marketplace.second_hand')}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.pill, type === 'rental' && styles.pillActive]}
                   onPress={() => setType('rental')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive]}>Rental</Text>
+                  <Text style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive]}>
+                    {t('marketplace.rental')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -244,22 +265,24 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                     source={require('../../../../assets/images/categories/blue-cam.png')}
                     style={styles.cameraIcon}
                   />
-                  <Text style={styles.imagePickerLabel}>Upload Photo</Text>
+                  <Text style={styles.imagePickerLabel}>{t('marketplace.upload_photo')}</Text>
                 </View>
               )}
             </TouchableOpacity>
 
             {/* Product name */}
             <TextInput
-              style={styles.input}
-              placeholder="Product name"
+              style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={t('marketplace.product_name')}
               placeholderTextColor="rgba(0,0,0,0.3)"
               value={productName}
               onChangeText={setProductName}
             />
 
             {/* Category */}
-            <Text style={styles.sectionLabel}>Category</Text>
+            <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('marketplace.category')}
+            </Text>
             <View style={styles.grid}>
               {CATEGORIES.map((cat) => (
                 <TouchableOpacity
@@ -269,7 +292,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.catLabel, category === cat.id && styles.catLabelActive]}>
-                    {cat.label}
+                    {t(`marketplace.${cat.labelKey}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -278,7 +301,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             {/* Subcategory */}
             {hasSubcategoryStep && subcategoryOptions && (
               <>
-                <Text style={styles.sectionLabel}>Subcategory</Text>
+                <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('marketplace.subcategory')}
+                </Text>
                 <View style={styles.chipRow}>
                   {subcategoryOptions.map((sub) => (
                     <TouchableOpacity
@@ -300,7 +325,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             {hasSubcategoryStep ? (
               subcategory.length > 0 && (
                 <>
-                  <Text style={styles.sectionLabel}>Brand</Text>
+                  <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('marketplace.brand')}
+                  </Text>
                   <View style={styles.chipRow}>
                     {getBrandOptions(category, subcategory).map((b) => (
                       <TouchableOpacity
@@ -318,8 +345,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             ) : (
               category.length > 0 && (
                 <TextInput
-                  style={styles.input}
-                  placeholder="Brand (e.g. Sony, Canon, DJI)"
+                  style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
+                  placeholder={t('marketplace.brand_placeholder')}
                   placeholderTextColor="rgba(0,0,0,0.3)"
                   value={brand}
                   onChangeText={setBrand}
@@ -330,7 +357,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             {/* Condition (secondhand only) */}
             {type === 'secondhand' && (
               <>
-                <Text style={styles.sectionLabel}>Condition</Text>
+                <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('marketplace.condition')}
+                </Text>
                 <View style={styles.conditionRow}>
                   {CONDITIONS.map((c) => (
                     <TouchableOpacity
@@ -343,7 +372,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                       activeOpacity={0.8}
                     >
                       <Text style={[styles.conditionLabel, condition === c.value && { color: '#fff' }]}>
-                        {c.label}
+                        {t(`marketplace.condition_${c.value}`)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -353,8 +382,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
             {/* Location */}
             <TextInput
-              style={styles.input}
-              placeholder="Location (city)"
+              style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={t('marketplace.location_city')}
               placeholderTextColor="rgba(0,0,0,0.3)"
               value={location}
               onChangeText={setLocation}
@@ -362,8 +391,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
             {/* Price */}
             <TextInput
-              style={styles.input}
-              placeholder={type === 'rental' ? 'Price per day (₪)' : 'Price (₪)'}
+              style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={type === 'rental' ? t('marketplace.price_per_day') : t('marketplace.price_ils')}
               placeholderTextColor="rgba(0,0,0,0.3)"
               value={price}
               onChangeText={setPrice}
@@ -379,7 +408,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             >
               {isSubmitting
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.submitText}>Post Listing</Text>}
+                : <Text style={styles.submitText}>{t('marketplace.post_listing_btn')}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </LinearGradient>

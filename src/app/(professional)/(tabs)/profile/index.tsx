@@ -20,8 +20,29 @@ import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { ProfessionalSkill } from '@core/types/user';
 import type { PriceEntry } from '@core/types/project';
+
+type AppColors = ReturnType<typeof useTheme>;
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    let str = typeof result === 'string' ? result : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{{${k}}}`, v);
+      }
+    }
+    return str;
+  };
+}
 
 export default function ProfessionalProfileScreen() {
   const { user, profile, reviews, isLoading, isSaving, save } = useProfile();
@@ -32,6 +53,9 @@ export default function ProfessionalProfileScreen() {
   const toggleTheme = useUiStore((s) => s.toggleTheme);
   const colors = useTheme();
   const navigation = useNavigation();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -48,7 +72,7 @@ export default function ProfessionalProfileScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: 'Profile',
+      title: t('profile.title'),
       headerTintColor: '#fff',
       headerTitleStyle: { color: '#fff', fontWeight: '700' as const },
       headerBackground: () => (
@@ -72,21 +96,27 @@ export default function ProfessionalProfileScreen() {
         isEditing ? (
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: '#fff' }]}>Cancel</Text>
+              <Text style={[styles.headerBtnText, { color: '#fff', textAlign: rtl ? 'right' : 'left' }]}>
+                {t('profile.cancel')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
               {isSaving
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={[styles.headerBtnText, styles.save]}>Save</Text>}
+                : <Text style={[styles.headerBtnText, styles.save, { textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('profile.save')}
+                  </Text>}
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={[styles.headerBtnText, { color: '#fff' }]}>Edit</Text>
+            <Text style={[styles.headerBtnText, { color: '#fff', textAlign: rtl ? 'right' : 'left' }]}>
+              {t('profile.edit')}
+            </Text>
           </TouchableOpacity>
         ),
     });
-  }, [isEditing, isSaving]);
+  }, [isEditing, isSaving, language]);
 
   useEffect(() => {
     if (user) setName(user.displayName);
@@ -120,9 +150,10 @@ export default function ProfessionalProfileScreen() {
       await save({ name, photoUri, skills, bio, equipment, priceList });
       setIsEditing(false);
       setPhotoUri(null);
-      showToast('Profile saved!', 'success');
-    } catch (e: any) {
-      showToast(e.message ?? 'Failed to save profile', 'error');
+      showToast(t('profile.saved'), 'success');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('profile.failed_save');
+      showToast(msg, 'error');
     }
   }
 
@@ -186,7 +217,9 @@ export default function ProfessionalProfileScreen() {
       />
 
       <View style={styles.portfolioSection}>
-        <Text style={[styles.portfolioTitle, { color: colors.text }]}>Portfolio</Text>
+        <Text style={[styles.portfolioTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('profile.portfolio')}
+        </Text>
         <PortfolioGrid
           assets={assets}
           isEditing={isEditing}
@@ -200,21 +233,25 @@ export default function ProfessionalProfileScreen() {
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
           <Pressable onPress={() => {}} style={cardStyle}>
-            <Text style={[styles.menuTitle, { color: colors.textMuted }]}>Settings</Text>
+            <Text style={[styles.menuTitle, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('profile.settings')}
+            </Text>
 
             <MenuItem
               icon={<User size={18} color={colors.text} strokeWidth={1.5} />}
-              label="User Information"
+              label={t('profile.user_information')}
               onPress={() => setMenuOpen(false)}
               colors={colors}
+              rtl={rtl}
             />
             <Divider colors={colors} />
 
             <MenuItem
               icon={<Bell size={18} color={colors.text} strokeWidth={1.5} />}
-              label="Notifications"
+              label={t('profile.notifications')}
               onPress={() => setMenuOpen(false)}
               colors={colors}
+              rtl={rtl}
             />
             <Divider colors={colors} />
 
@@ -222,8 +259,8 @@ export default function ProfessionalProfileScreen() {
               {isDark
                 ? <Moon size={18} color={colors.text} strokeWidth={1.5} />
                 : <Sun size={18} color={colors.text} strokeWidth={1.5} />}
-              <Text style={[styles.menuLabel, { color: colors.text }]}>
-                {isDark ? 'Dark Mode' : 'Light Mode'}
+              <Text style={[styles.menuLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                {isDark ? t('profile.dark_mode') : t('profile.light_mode')}
               </Text>
               <Switch
                 value={isDark}
@@ -236,13 +273,15 @@ export default function ProfessionalProfileScreen() {
 
             <View style={styles.menuRow}>
               <Globe size={18} color={colors.text} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text }]}>English / עברית</Text>
+              <Text style={[styles.menuLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('profile.language')}
+              </Text>
               <View style={[styles.langToggle, { borderColor: colors.border }]}>
                 <View style={[styles.langActive, { backgroundColor: '#004aad' }]}>
-                  <Text style={styles.langActiveText}>EN</Text>
+                  <Text style={styles.langActiveText}>{t('profile.en')}</Text>
                 </View>
                 <View style={styles.langInactive}>
-                  <Text style={[styles.langInactiveText, { color: colors.textMuted }]}>עב</Text>
+                  <Text style={[styles.langInactiveText, { color: colors.textMuted }]}>{t('profile.he')}</Text>
                 </View>
               </View>
             </View>
@@ -250,19 +289,21 @@ export default function ProfessionalProfileScreen() {
 
             <MenuItem
               icon={<HelpCircle size={18} color={colors.text} strokeWidth={1.5} />}
-              label="Help & Support"
+              label={t('profile.help_support')}
               onPress={() => setMenuOpen(false)}
               colors={colors}
+              rtl={rtl}
             />
             <Divider colors={colors} />
 
             <MenuItem
               icon={<LogOut size={18} color="#e53935" strokeWidth={1.5} />}
-              label="Sign Out"
+              label={t('profile.sign_out')}
               onPress={() => { setMenuOpen(false); logout(); }}
               colors={colors}
               danger
               disabled={isSigningOut}
+              rtl={rtl}
             />
           </Pressable>
         </Pressable>
@@ -272,24 +313,27 @@ export default function ProfessionalProfileScreen() {
 }
 
 function MenuItem({
-  icon, label, onPress, colors, danger = false, disabled = false,
+  icon, label, onPress, colors, danger = false, disabled = false, rtl = false,
 }: {
   icon: React.ReactNode;
   label: string;
   onPress: () => void;
-  colors: any;
+  colors: AppColors;
   danger?: boolean;
   disabled?: boolean;
+  rtl?: boolean;
 }) {
   return (
     <TouchableOpacity style={[styles.menuRow, disabled && { opacity: 0.4 }]} onPress={onPress} disabled={disabled} activeOpacity={0.7}>
       <View style={styles.iconWrap}>{icon}</View>
-      <Text style={[styles.menuLabel, { color: danger ? '#e53935' : colors.text }]}>{label}</Text>
+      <Text style={[styles.menuLabel, { color: danger ? '#e53935' : colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
 
-function Divider({ colors }: { colors: any }) {
+function Divider({ colors }: { colors: AppColors }) {
   return <View style={[styles.divider, { backgroundColor: colors.border }]} />;
 }
 
@@ -308,9 +352,7 @@ const styles = StyleSheet.create({
   reviewLabel: { fontSize: 13, color: '#cb6ce6', marginLeft: 4, fontWeight: '600' },
 
   portfolioSection: { gap: 12 },
-  portfolioTitle: { fontSize: 18, fontWeight: '700', textAlign: 'right' },
-
-  disabled: { opacity: 0.5 },
+  portfolioTitle: { fontSize: 18, fontWeight: '700' },
 
   backdrop: {
     flex: 1,

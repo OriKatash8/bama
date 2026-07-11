@@ -12,8 +12,26 @@ import { useClientProfile } from '@features/profile/hooks/useClientProfile';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 
 type AppColors = ReturnType<typeof useTheme>;
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    let str = typeof result === 'string' ? result : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{{${k}}}`, v);
+      }
+    }
+    return str;
+  };
+}
 
 // ── Accessibility bottom sheet ──────────────────────────────────────────────
 
@@ -34,6 +52,10 @@ function AccessibilitySheet({
   toggleTheme: () => void;
   colors: AppColors;
 }) {
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={sheet.wrapper}>
@@ -44,11 +66,15 @@ function AccessibilitySheet({
           <View style={[sheet.handle, { backgroundColor: colors.border }]} />
 
           {/* LANGUAGE */}
-          <Text style={[sheet.sectionLabel, { color: colors.textMuted }]}>LANGUAGE</Text>
+          <Text style={[sheet.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('accessibility.language_header')}
+          </Text>
           <View style={[sheet.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
             <View style={sheet.row}>
               <Globe size={20} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[sheet.rowLabel, { color: colors.text }]}>Language</Text>
+              <Text style={[sheet.rowLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('accessibility.language')}
+              </Text>
               <View style={[sheet.langToggle, { borderColor: colors.border }]}>
                 <TouchableOpacity
                   style={[sheet.langBtn, lang === 'he' && { backgroundColor: colors.primary }]}
@@ -73,25 +99,33 @@ function AccessibilitySheet({
           </View>
 
           {/* APPEARANCE */}
-          <Text style={[sheet.sectionLabel, { color: colors.textMuted }]}>APPEARANCE</Text>
+          <Text style={[sheet.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('accessibility.appearance_header')}
+          </Text>
           <View style={[sheet.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
             <View style={sheet.row}>
               <Sun size={20} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[sheet.rowLabel, { color: colors.text }]}>Theme</Text>
+              <Text style={[sheet.rowLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('accessibility.theme')}
+              </Text>
               <View style={[sheet.langToggle, { borderColor: colors.border }]}>
                 <TouchableOpacity
                   style={[sheet.langBtn, !isDark && { backgroundColor: colors.primary }]}
                   onPress={() => { if (isDark) toggleTheme(); }}
                   activeOpacity={0.8}
                 >
-                  <Text style={[sheet.langBtnText, { color: !isDark ? '#fff' : colors.textMuted }]}>Light</Text>
+                  <Text style={[sheet.langBtnText, { color: !isDark ? '#fff' : colors.textMuted }]}>
+                    {t('accessibility.light')}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[sheet.langBtn, isDark && { backgroundColor: colors.primary }]}
                   onPress={() => { if (!isDark) toggleTheme(); }}
                   activeOpacity={0.8}
                 >
-                  <Text style={[sheet.langBtnText, { color: isDark ? '#fff' : colors.textMuted }]}>Dark</Text>
+                  <Text style={[sheet.langBtnText, { color: isDark ? '#fff' : colors.textMuted }]}>
+                    {t('accessibility.dark')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -103,7 +137,7 @@ function AccessibilitySheet({
             onPress={onClose}
             activeOpacity={0.8}
           >
-            <Text style={[sheet.closeBtnText, { color: colors.primary }]}>Close</Text>
+            <Text style={[sheet.closeBtnText, { color: colors.primary }]}>{t('accessibility.close')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -122,6 +156,8 @@ export default function ClientProfileScreen() {
   const colors = useTheme();
   const lang = useSettingsStore((s) => s.language);
   const switchLanguage = useSettingsStore((s) => s.setLanguage);
+  const t = makeT(lang === 'he' ? he : en);
+  const rtl = lang === 'he';
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
   const gradientStyle = Platform.OS === 'web' ? ({
@@ -142,7 +178,7 @@ export default function ClientProfileScreen() {
       try {
         await save(user?.displayName ?? '', result.assets[0].uri);
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : 'Failed to update photo';
+        const msg = e instanceof Error ? e.message : t('profile.failed_photo');
         showToast(msg, 'error');
       }
     }
@@ -154,7 +190,7 @@ export default function ClientProfileScreen() {
 
         {/* ── AVATAR ── */}
         <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
-          My Profile
+          {t('profile.my_profile')}
         </Text>
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrap}>
@@ -174,44 +210,52 @@ export default function ClientProfileScreen() {
               <Camera size={12} color="#fff" strokeWidth={2} />
             </TouchableOpacity>
           </View>
-          <Text style={[styles.displayName, { color: colors.text }]}>
+          <Text style={[styles.displayName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
             {user?.displayName ?? ''}
           </Text>
-          <Text style={[styles.email, { color: colors.textMuted }]}>
+          <Text style={[styles.email, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
             {user?.email ?? ''}
           </Text>
         </View>
 
         {/* ── ACCOUNT ── */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('profile.account')}
+        </Text>
         <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
           <TouchableOpacity
             style={styles.cardRow}
-            onPress={() => Alert.alert('Coming soon', 'Personal details editing is not available yet.')}
+            onPress={() => Alert.alert(t('profile.coming_soon'), t('profile.personal_details_soon'))}
             activeOpacity={0.7}
           >
             <User size={20} color={colors.textMuted} strokeWidth={1.5} />
-            <Text style={[styles.rowLabel, { color: colors.text }]}>Personal details</Text>
+            <Text style={[styles.rowLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('profile.personal_details')}
+            </Text>
             <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
           </TouchableOpacity>
           <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
           <TouchableOpacity
             style={styles.cardRow}
-            onPress={() => Alert.alert('Coming soon', 'Privacy & Security settings are not available yet.')}
+            onPress={() => Alert.alert(t('profile.coming_soon'), t('profile.privacy_soon'))}
             activeOpacity={0.7}
           >
             <Lock size={20} color={colors.textMuted} strokeWidth={1.5} />
-            <Text style={[styles.rowLabel, { color: colors.text }]}>Privacy & Security</Text>
+            <Text style={[styles.rowLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('profile.privacy_security')}
+            </Text>
             <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
           </TouchableOpacity>
           <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
           <TouchableOpacity
             style={styles.cardRow}
-            onPress={() => Alert.alert('Coming soon', 'Notification settings are not available yet.')}
+            onPress={() => Alert.alert(t('profile.coming_soon'), t('profile.notifications_soon'))}
             activeOpacity={0.7}
           >
             <Bell size={20} color={colors.textMuted} strokeWidth={1.5} />
-            <Text style={[styles.rowLabel, { color: colors.text }]}>Notifications</Text>
+            <Text style={[styles.rowLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('profile.notifications')}
+            </Text>
             <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
           </TouchableOpacity>
           <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
@@ -221,7 +265,9 @@ export default function ClientProfileScreen() {
             activeOpacity={0.7}
           >
             <Globe size={20} color={colors.textMuted} strokeWidth={1.5} />
-            <Text style={[styles.rowLabel, { color: colors.text }]}>Accessibility</Text>
+            <Text style={[styles.rowLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('profile.accessibility')}
+            </Text>
             <ChevronRight size={18} color={colors.textMuted} strokeWidth={1.5} />
           </TouchableOpacity>
         </View>
@@ -234,7 +280,9 @@ export default function ClientProfileScreen() {
           activeOpacity={0.8}
         >
           <LogOut size={18} color={colors.primary} strokeWidth={1.5} />
-          <Text style={[styles.logoutText, { color: colors.primary }]}>Log out</Text>
+          <Text style={[styles.logoutText, { color: colors.primary, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('profile.log_out')}
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.bottomPad} />

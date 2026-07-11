@@ -42,6 +42,7 @@ export function useCreateListing() {
         category: input.category || null,
         subcategory: input.subcategory || null,
         brand: input.brand?.trim() || null,
+        status: 'available',
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });
     } catch (e) {

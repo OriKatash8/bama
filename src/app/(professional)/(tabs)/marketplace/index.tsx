@@ -13,51 +13,65 @@ import { ListingDetailModal } from '@features/marketplace/components/ListingDeta
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 type Category = {
   id: string;
+  labelKey: string;
   icon: ImageSourcePropType;
   selectedIcon?: ImageSourcePropType;
-  label: string;
 };
 
 const CATEGORIES: Category[] = [
   {
     id: 'camera',
+    labelKey: 'category_camera',
     icon: require('../../../../../assets/images/categories/camera.png'),
     selectedIcon: require('../../../../../assets/images/categories/photographer.png'),
-    label: 'Camera',
   },
   {
     id: 'lens',
+    labelKey: 'category_lens',
     icon: require('../../../../../assets/images/categories/101.png'),
     selectedIcon: require('../../../../../assets/images/categories/10.png'),
-    label: 'Lens',
   },
   {
     id: 'audio',
+    labelKey: 'category_audio',
     icon: require('../../../../../assets/images/categories/audio.png'),
     selectedIcon: require('../../../../../assets/images/categories/12.png'),
-    label: 'Audio',
   },
   {
     id: 'lighting',
+    labelKey: 'category_light',
     icon: require('../../../../../assets/images/categories/teuraicon.png'),
     selectedIcon: require('../../../../../assets/images/categories/lighting.png'),
-    label: 'Light',
   },
   {
     id: 'drone',
+    labelKey: 'category_drone',
     icon: require('../../../../../assets/images/categories/drone.png'),
     selectedIcon: require('../../../../../assets/images/categories/11.png'),
-    label: 'Drone',
   },
   {
     id: 'studio',
+    labelKey: 'category_studio',
     icon: require('../../../../../assets/images/categories/studio.png'),
     selectedIcon: require('../../../../../assets/images/categories/14.png'),
-    label: 'Studio',
   },
 ];
 
@@ -74,12 +88,13 @@ const BRANDS_BY_CATEGORY: Record<string, string[]> = {
 
 type CategoryTileProps = {
   cat: Category;
+  label: string;
   isActive: boolean;
   onPress: () => void;
   inactiveLabelColor: string;
 };
 
-function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTileProps) {
+function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: CategoryTileProps) {
   const anim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
   useEffect(() => {
@@ -101,17 +116,17 @@ function CategoryTile({ cat, isActive, onPress, inactiveLabelColor }: CategoryTi
         <Image source={iconSource} style={styles.tileIcon} resizeMode="contain" />
       </Animated.View>
       <Text style={[styles.catLabel, { color: isActive ? '#cb6ce6' : inactiveLabelColor }]}>
-        {cat.label}
+        {label}
       </Text>
     </TouchableOpacity>
   );
 }
 
-const CONDITIONS: { value: ProductCondition; label: string }[] = [
-  { value: 'new',      label: 'New' },
-  { value: 'like_new', label: 'Like New' },
-  { value: 'good',     label: 'Good' },
-  { value: 'fair',     label: 'Fair' },
+const CONDITIONS: { value: ProductCondition }[] = [
+  { value: 'new' },
+  { value: 'like_new' },
+  { value: 'good' },
+  { value: 'fair' },
 ];
 
 type FilterTag = { key: string; label: string; onRemove: () => void };
@@ -137,6 +152,9 @@ export default function MarketplaceScreen() {
   const [draftCondition, setDraftCondition]     = useState<ProductCondition | null>(null);
 
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
   const { listings, isLoading } = useMarketplaceListings(activeTab);
 
   const filtered = useMemo(() => {
@@ -167,28 +185,28 @@ export default function MarketplaceScreen() {
   const activeFilterTags: FilterTag[] = [
     ...(priceSort ? [{
       key: 'price',
-      label: `Price: ${priceSort === 'asc' ? 'Low→High' : 'High→Low'}`,
+      label: priceSort === 'asc' ? t('marketplace.filter_price_low') : t('marketplace.filter_price_high'),
       onRemove: () => setPriceSort(null),
     }] : []),
     ...(filterBrands.length > 0 ? [{
       key: 'brand',
-      label: `Brand: ${filterBrands.join(', ')}`,
+      label: `${t('marketplace.filter_brand')}: ${filterBrands.join(', ')}`,
       onRemove: () => setFilterBrands([]),
     }] : []),
     ...(filterLocation ? [{
       key: 'location',
-      label: `City: ${filterLocation}`,
+      label: `${t('marketplace.filter_city')}: ${filterLocation}`,
       onRemove: () => setFilterLocation(''),
     }] : []),
     ...(filterCondition ? [{
       key: 'condition',
-      label: `Condition: ${filterCondition.replace('_', ' ')}`,
+      label: `${t('marketplace.filter_condition')}: ${t(`marketplace.condition_${filterCondition}`)}`,
       onRemove: () => setFilterCondition(null),
     }] : []),
   ];
 
-  // Brands available for the currently selected category
   const availableBrands = BRANDS_BY_CATEGORY[selectedCategory] ?? BRANDS_BY_CATEGORY['all'];
+  const selectedCatLabelKey = CATEGORIES.find((c) => c.id === selectedCategory)?.labelKey;
 
   function openFilterModal() {
     setDraftPriceSort(priceSort);
@@ -224,7 +242,6 @@ export default function MarketplaceScreen() {
     );
   }
 
-  // Build paired rows for 2-column grid
   const gridRows = filtered.reduce<MarketplaceListing[][]>((acc, item, i) => {
     if (i % 2 === 0) acc.push([item]);
     else acc[acc.length - 1].push(item);
@@ -252,14 +269,14 @@ export default function MarketplaceScreen() {
 
         {/* Toggle */}
         <View style={styles.toggleWrap}>
-          <MarketplaceToggle active={activeTab} onChange={(t) => { setActiveTab(t); setFilterCondition(null); }} />
+          <MarketplaceToggle active={activeTab} onChange={(tab) => { setActiveTab(tab); setFilterCondition(null); }} />
         </View>
 
         {/* Search */}
         <View style={styles.searchWrap}>
           <TextInput
-            style={[styles.searchBar, { color: colors.text, borderColor: colors.borderMuted }]}
-            placeholder="Search equipment..."
+            style={[styles.searchBar, { color: colors.text, borderColor: colors.borderMuted, textAlign: rtl ? 'right' : 'left' }]}
+            placeholder={t('marketplace.search_placeholder')}
             placeholderTextColor={colors.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -272,6 +289,7 @@ export default function MarketplaceScreen() {
             <CategoryTile
               key={cat.id}
               cat={cat}
+              label={t(`marketplace.${cat.labelKey}`)}
               isActive={selectedCategory === cat.id}
               onPress={() => setSelectedCategory(cat.id)}
               inactiveLabelColor={colors.textMuted}
@@ -292,7 +310,7 @@ export default function MarketplaceScreen() {
           >
             <SlidersHorizontal size={15} color={filtersActive ? '#fff' : colors.text} strokeWidth={2} />
             <Text style={[styles.filterBtnText, { color: filtersActive ? '#fff' : colors.text }]}>
-              Filter
+              {t('marketplace.filter')}
             </Text>
           </TouchableOpacity>
 
@@ -325,7 +343,7 @@ export default function MarketplaceScreen() {
           </View>
         ) : filtered.length === 0 ? (
           <View style={styles.center}>
-            <Text style={[styles.emptyText, { color: colors.textSec }]}>No listings found</Text>
+            <Text style={[styles.emptyText, { color: colors.textSec }]}>{t('marketplace.no_listings')}</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -363,7 +381,9 @@ export default function MarketplaceScreen() {
           >
             {/* Header */}
             <View style={styles.filterCardHeader}>
-              <Text style={styles.filterCardTitle}>Filters</Text>
+              <Text style={[styles.filterCardTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('marketplace.filters_title')}
+              </Text>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)} style={styles.filterCloseBtn} activeOpacity={0.7}>
                 <X size={20} color="#004aad" />
               </TouchableOpacity>
@@ -371,7 +391,9 @@ export default function MarketplaceScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.filterScroll}>
               {/* Price */}
-              <Text style={styles.filterSectionLabel}>Price</Text>
+              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('marketplace.price')}
+              </Text>
               <View style={styles.filterChipRow}>
                 {(['asc', 'desc', null] as const).map((val) => (
                   <TouchableOpacity
@@ -381,15 +403,22 @@ export default function MarketplaceScreen() {
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.filterChipLabel, draftPriceSort === val && styles.filterChipLabelActive]}>
-                      {val === 'asc' ? 'Low to High' : val === 'desc' ? 'High to Low' : 'Any'}
+                      {val === 'asc'
+                        ? t('marketplace.price_low_high')
+                        : val === 'desc'
+                          ? t('marketplace.price_high_low')
+                          : t('marketplace.price_any')}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              {/* Brand — dynamic list based on selected category */}
-              <Text style={styles.filterSectionLabel}>
-                Brand{selectedCategory !== 'all' ? ` · ${CATEGORIES.find((c) => c.id === selectedCategory)?.label ?? ''}` : ''}
+              {/* Brand */}
+              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('marketplace.brand')}
+                {selectedCategory !== 'all' && selectedCatLabelKey
+                  ? ` · ${t(`marketplace.${selectedCatLabelKey}`)}`
+                  : ''}
               </Text>
               <View style={styles.brandGrid}>
                 {availableBrands.map((brand) => {
@@ -414,21 +443,27 @@ export default function MarketplaceScreen() {
               </View>
 
               {/* Location */}
-              <Text style={styles.filterSectionLabel}>Location</Text>
+              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('marketplace.location')}
+              </Text>
               <TextInput
-                style={styles.filterModalInput}
-                placeholder="e.g. Tel Aviv"
+                style={[styles.filterModalInput, { textAlign: rtl ? 'right' : 'left' }]}
+                placeholder={t('marketplace.location_placeholder')}
                 placeholderTextColor="rgba(0,0,0,0.3)"
                 value={draftLocation}
                 onChangeText={setDraftLocation}
               />
 
               {/* Condition */}
-              <Text style={styles.filterSectionLabel}>Condition</Text>
+              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('marketplace.condition')}
+              </Text>
               <View style={styles.filterChipRow}>
-                {([null, ...CONDITIONS] as const).map((c) => {
+                {([null, ...CONDITIONS]).map((c) => {
                   const val = c === null ? null : c.value;
-                  const label = c === null ? 'Any' : c.label;
+                  const label = c === null
+                    ? t('marketplace.any')
+                    : t(`marketplace.condition_${c.value}`);
                   return (
                     <TouchableOpacity
                       key={String(val)}
@@ -448,10 +483,10 @@ export default function MarketplaceScreen() {
             {/* Actions */}
             <View style={styles.filterActions}>
               <TouchableOpacity style={styles.filterClearBtn} onPress={clearFilters} activeOpacity={0.8}>
-                <Text style={styles.filterClearText}>Clear All</Text>
+                <Text style={styles.filterClearText}>{t('marketplace.clear_all')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterApplyBtn} onPress={applyFilters} activeOpacity={0.8}>
-                <Text style={styles.filterApplyText}>Apply Filters</Text>
+                <Text style={styles.filterApplyText}>{t('marketplace.apply_filters')}</Text>
               </TouchableOpacity>
             </View>
           </LinearGradient>
@@ -531,7 +566,6 @@ const styles = StyleSheet.create({
   tileIcon: { width: 60, height: 60 },
   catLabel: { fontSize: 13, fontWeight: '600' },
 
-  // Filter bar
   filterBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -571,7 +605,6 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 60 },
   emptyText: { fontSize: 17, fontWeight: '600' },
 
-  // Filter modal
   filterOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -625,7 +658,6 @@ const styles = StyleSheet.create({
   filterChipLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.5)' },
   filterChipLabelActive: { color: '#fff' },
 
-  // Brand pills
   brandGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
   brandPill: {
     borderRadius: 16,

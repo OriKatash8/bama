@@ -1,13 +1,20 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import type { MarketplaceListing } from '../types';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 
-const CONDITION_LABEL: Record<string, string> = {
-  new: 'New',
-  like_new: 'Like New',
-  good: 'Good',
-  fair: 'Fair',
-};
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 const CONDITION_COLOR: Record<string, string> = {
   new: '#43a047',
@@ -23,6 +30,9 @@ type Props = {
 
 export function ListingCard({ listing, onPress }: Props) {
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
   const isRental = listing.type === 'rental';
 
   return (
@@ -41,26 +51,36 @@ export function ListingCard({ listing, onPress }: Props) {
         )}
         {listing.condition && (
           <View style={[styles.conditionBadge, { backgroundColor: CONDITION_COLOR[listing.condition] ?? '#888' }]}>
-            <Text style={styles.conditionText}>{CONDITION_LABEL[listing.condition]}</Text>
+            <Text style={styles.conditionText}>
+              {t(`marketplace.condition_${listing.condition}`)}
+            </Text>
           </View>
         )}
         {isRental && (
           <View style={styles.rentalBadge}>
-            <Text style={styles.rentalBadgeText}>Rental</Text>
+            <Text style={styles.rentalBadgeText}>{t('marketplace.rental_badge')}</Text>
           </View>
         )}
       </View>
 
       <View style={styles.body}>
-        <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>{listing.productName}</Text>
-        {listing.brand && (
-          <Text style={[styles.brand, { color: colors.textMuted }]} numberOfLines={1}>{listing.brand}</Text>
-        )}
-        <Text style={styles.price}>
-          ₪{listing.price.toLocaleString()}{isRental ? '/day' : ''}
+        <Text style={[styles.name, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+          {listing.productName}
         </Text>
-        <Text style={[styles.location, { color: colors.textMuted }]} numberOfLines={1}>📍 {listing.location}</Text>
-        <Text style={[styles.seller, { color: colors.textMuted }]} numberOfLines={1}>by {listing.posterName}</Text>
+        {listing.brand && (
+          <Text style={[styles.brand, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+            {listing.brand}
+          </Text>
+        )}
+        <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>
+          ₪{listing.price.toLocaleString()}{isRental ? t('marketplace.per_day') : ''}
+        </Text>
+        <Text style={[styles.location, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+          📍 {listing.location}
+        </Text>
+        <Text style={[styles.seller, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+          {t('marketplace.by')} {listing.posterName}
+        </Text>
       </View>
     </TouchableOpacity>
   );

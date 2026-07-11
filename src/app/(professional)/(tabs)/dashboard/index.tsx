@@ -10,10 +10,26 @@ import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { where } from '@core/firebase/firestore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest } from '@core/types/project';
 import type { Chat } from '@features/chat/types';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string | number>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    if (typeof result !== 'string') return key;
+    if (!vars) return result;
+    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
+  };
+}
 
 type ActiveProject = {
   chat: Chat;
@@ -21,12 +37,12 @@ type ActiveProject = {
   clientName: string;
 };
 
-function getGreeting(): string {
+function getGreetingKey(): string {
   const hour = new Date().getHours();
-  if (hour >= 4 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 18) return 'Good afternoon';
-  if (hour >= 18 && hour < 22) return 'Good evening';
-  return 'Good night';
+  if (hour >= 4 && hour < 12) return 'noticeboard.greeting_morning';
+  if (hour >= 12 && hour < 18) return 'noticeboard.greeting_afternoon';
+  if (hour >= 18 && hour < 22) return 'noticeboard.greeting_evening';
+  return 'noticeboard.greeting_night';
 }
 
 function formatDeadline(deadline: string): string {
@@ -44,6 +60,10 @@ export default function DashboardScreen() {
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
+
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const categories = useMemo(
     () => profileLoading ? null : [...new Set((profile?.skills ?? []).map(s => s.category))],
@@ -124,7 +144,7 @@ export default function DashboardScreen() {
   }
 
   function handleApply(request: ProjectRequest) {
-    showToast('Offer submitted!', 'success');
+    showToast(t('noticeboard.offer_submitted'), 'success');
     dismiss(request.id);
   }
 
@@ -133,9 +153,12 @@ export default function DashboardScreen() {
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
-  } as any) : {};
+  } as object) : {};
 
-  const greeting = getGreeting();
+  const greeting = t(getGreetingKey());
+  const openProjectsLabel = visible.length === 1
+    ? t('noticeboard.open_projects_one', { count: visible.length })
+    : t('noticeboard.open_projects_other', { count: visible.length });
 
   return (
     <Screen scrollable={false}>
@@ -146,14 +169,16 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
-          <Text style={[styles.greetText, { color: colors.text }, gradientText]} numberOfLines={2}>
+          <Text style={[styles.greetText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }, gradientText]} numberOfLines={2}>
             {greeting}, {user?.displayName} :)
           </Text>
         </View>
 
         {activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
-            <Text style={[styles.heading, { color: colors.text, marginBottom: 16 }, gradientText]}>Projects in Progress</Text>
+            <Text style={[styles.heading, { color: colors.text, marginBottom: 16, textAlign: rtl ? 'right' : 'left' }, gradientText]}>
+              {t('noticeboard.projects_in_progress')}
+            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -166,21 +191,21 @@ export default function DashboardScreen() {
                   onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}`)}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.projectCardTitle, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.projectCardTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {project.title}
                   </Text>
-                  <Text style={[styles.projectCardMeta, { color: colors.textMuted }]}>
-                    Client: {clientName}
+                  <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('noticeboard.client_prefix')}{clientName}
                   </Text>
-                  <View style={styles.projectCardRow}>
+                  <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     <Calendar size={12} color={colors.textMuted} strokeWidth={1.5} />
-                    <Text style={[styles.projectCardMeta, { color: colors.textMuted }]}>
+                    <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                       {formatDeadline(project.deadline)}
                     </Text>
                   </View>
-                  <View style={styles.projectCardRow}>
+                  <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     <MapPin size={12} color={colors.textMuted} strokeWidth={1.5} />
-                    <Text style={[styles.projectCardMeta, { color: colors.textMuted }]} numberOfLines={1}>
+                    <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                       {project.location}
                     </Text>
                   </View>
@@ -191,8 +216,14 @@ export default function DashboardScreen() {
         )}
 
         <View style={styles.header}>
-          <Text style={[styles.heading, { color: colors.text }, gradientText]}>Notice Board</Text>
-          {!isLoading && <Text style={[styles.count, { color: colors.textMuted, textAlign: 'center' }]}>{visible.length} open project{visible.length === 1 ? '' : 's'}</Text>}
+          <Text style={[styles.heading, { color: colors.text }, gradientText]}>
+            {t('noticeboard.notice_board')}
+          </Text>
+          {!isLoading && (
+            <Text style={[styles.count, { color: colors.textMuted, textAlign: 'center' }]}>
+              {openProjectsLabel}
+            </Text>
+          )}
         </View>
 
         {isLoading ? (
@@ -200,8 +231,12 @@ export default function DashboardScreen() {
         ) : visible.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={[styles.emptyText, { color: colors.textSec }]}>No open projects right now</Text>
-            <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>Check back later for new opportunities</Text>
+            <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('noticeboard.no_projects')}
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('noticeboard.check_back')}
+            </Text>
           </View>
         ) : (
           <View style={styles.list}>

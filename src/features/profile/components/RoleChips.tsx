@@ -3,7 +3,21 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { ProfessionalSkill } from '@core/types/user';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 const CATEGORY_EMOJI: Record<string, string> = {
   'Video Photographer': '🎥',
@@ -38,6 +52,9 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
   const cardBg = isDark ? '#1a1a2e' : '#ffffff';
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -50,9 +67,13 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
 
     return (
       <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}>
-        <Text style={styles.cardLabel}>Skills</Text>
+        <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+          {t('profile_sections.skills')}
+        </Text>
         {allChips.length === 0 ? (
-          <Text style={styles.empty}>No skills added yet.</Text>
+          <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('profile_sections.no_skills')}
+          </Text>
         ) : (
           <View style={styles.chipsWrap}>
             {allChips.map(({ key, label }) => (
@@ -68,7 +89,9 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
 
   return (
     <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}>
-      <Text style={styles.cardLabel}>Skills</Text>
+      <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+        {t('profile_sections.skills')}
+      </Text>
 
       {Object.entries(CREW_CATEGORIES).map(([category, subcategories]) => {
         const open = expanded === category;
@@ -85,7 +108,7 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
             >
               <View style={styles.accordionLeft}>
                 <Text style={styles.accordionEmoji}>{CATEGORY_EMOJI[category] ?? '•'}</Text>
-                <Text style={styles.accordionTitle}>{category}</Text>
+                <Text style={[styles.accordionTitle, { textAlign: rtl ? 'right' : 'left' }]}>{category}</Text>
               </View>
               <View style={styles.accordionRight}>
                 {selectedCount > 0 && (

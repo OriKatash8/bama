@@ -4,17 +4,34 @@ import { CheckCircle } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { ActiveMode } from '@core/types/user';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    let str = typeof result === 'string' ? result : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{{${k}}}`, v);
+      }
+    }
+    return str;
+  };
+}
 
 type Props = {
   visible: boolean;
   onClose: () => void;
 };
 
-const MODES: { mode: ActiveMode; label: string }[] = [
-  { mode: 'professional', label: 'Professional' },
-  { mode: 'client',       label: 'Client' },
-];
+const MODES: ActiveMode[] = ['professional', 'client'];
 
 // Card is ~180×90px; origin offset from center → bottom-right corner
 const ORIGIN_X = 90;
@@ -32,6 +49,16 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
   const activeMode = useAuthStore((s) => s.activeMode);
   const { switchMode } = useSwitchMode();
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+
+  const modeLabel = (mode: ActiveMode): string => {
+    const map: Record<ActiveMode, string> = {
+      professional: t('mode_switcher.professional'),
+      client:       t('mode_switcher.client'),
+    };
+    return map[mode];
+  };
 
   const opacity = useRef(new Animated.Value(0)).current;
   const scale   = useRef(new Animated.Value(0.8)).current;
@@ -75,7 +102,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
           },
         ]}
       >
-        {MODES.map(({ mode, label }, index) => {
+        {MODES.map((mode, index) => {
           const isActive = mode === activeMode;
           const isLast   = index === MODES.length - 1;
 
@@ -99,7 +126,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
                       : (isActive ? nativeActiveColor : nativeInactiveColor),
                   ]}
                 >
-                  {label}
+                  {modeLabel(mode)}
                 </Text>
 
                 {isActive && (

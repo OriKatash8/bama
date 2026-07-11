@@ -16,6 +16,9 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { auth } from '@core/firebase/config';
 import { useTheme, type AppColors } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
 import {
@@ -34,10 +37,27 @@ import {
 import { MiniCalendar } from '@features/crew/components';
 import { Calendar } from 'lucide-react-native';
 
-const MISSION_STATUS_CONFIG: Record<MissionStatus, { label: string; color: string }> = {
-  todo:        { label: 'To Do',       color: '#6b7280' },
-  in_progress: { label: 'In Progress', color: '#f59e0b' },
-  done:        { label: 'Done',        color: '#22c55e' },
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    let str = typeof result === 'string' ? result : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{{${k}}}`, v);
+      }
+    }
+    return str;
+  };
+}
+
+const MISSION_STATUS_CONFIG: Record<MissionStatus, { color: string }> = {
+  todo:        { color: '#6b7280' },
+  in_progress: { color: '#f59e0b' },
+  done:        { color: '#22c55e' },
 };
 
 const MISSION_STATUS_CYCLE: Record<MissionStatus, MissionStatus> = {
@@ -46,9 +66,9 @@ const MISSION_STATUS_CYCLE: Record<MissionStatus, MissionStatus> = {
   done: 'todo',
 };
 
-function formatDueDate(iso: string): string {
+function formatDueDate(iso: string, prefix: string): string {
   const d = new Date(iso);
-  return `Due: ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  return `${prefix}${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 }
 
 type MemberInfo = Pick<User, 'displayName' | 'photoURL'>;
@@ -60,17 +80,13 @@ const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
   cancelled: '#ef4444',
 };
 
-const STATUS_LABELS: Record<ProjectRequest['status'], string> = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-};
-
 export default function ProjectDetailsScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const router = useRouter();
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const [project, setProject] = useState<ProjectRequest | null>(null);
   const [clientUser, setClientUser] = useState<MemberInfo | null>(null);
@@ -165,7 +181,7 @@ export default function ProjectDetailsScreen() {
       setFeeData(fee);
       setShowPaymentSummary(true);
     } catch {
-      Alert.alert('Error', 'Could not load payment details. Please try again.');
+      Alert.alert('Error', t('project_details.error_payment'));
     } finally {
       setIsCalculatingFee(false);
     }
@@ -178,9 +194,9 @@ export default function ProjectDetailsScreen() {
       await markProjectComplete(projectId);
       setProject((prev) => (prev ? { ...prev, status: 'completed' } : prev));
       setShowPaymentSummary(false);
-      Alert.alert('Project marked as complete!');
+      Alert.alert(t('project_details.success_complete'));
     } catch {
-      Alert.alert('Error', 'Could not complete the project. Please try again.');
+      Alert.alert('Error', t('project_details.error_complete'));
     } finally {
       setIsConfirming(false);
     }
@@ -210,7 +226,7 @@ export default function ProjectDetailsScreen() {
       setProposedAmount('');
       setRequestNote('');
     } catch {
-      Alert.alert('Error', 'Could not send payment request. Please try again.');
+      Alert.alert('Error', t('project_details.error_payment_request'));
     } finally {
       setIsSendingRequest(false);
     }
@@ -228,7 +244,9 @@ export default function ProjectDetailsScreen() {
         request.proposedAmount,
       );
     } catch {
-      Alert.alert('Error', `Could not ${accept ? 'accept' : 'reject'} request. Please try again.`);
+      Alert.alert('Error', t('project_details.error_accept_reject', {
+        action: accept ? t('project_details.accept').toLowerCase() : t('project_details.reject').toLowerCase(),
+      }));
     } finally {
       setRespondingId(null);
     }
@@ -247,7 +265,9 @@ export default function ProjectDetailsScreen() {
     return (
       <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={[styles.errorText, { color: colors.text }]}>Project not found</Text>
+        <Text style={[styles.errorText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('project_details.project_not_found')}
+        </Text>
       </LinearGradient>
     );
   }
@@ -274,7 +294,7 @@ export default function ProjectDetailsScreen() {
       setNewMissionDueDate('');
       setShowAddMission(false);
     } catch {
-      Alert.alert('Error', 'Could not add mission. Please try again.');
+      Alert.alert('Error', t('project_details.error_add_mission'));
     } finally {
       setIsAddingMission(false);
     }
@@ -286,9 +306,28 @@ export default function ProjectDetailsScreen() {
     try {
       await updateMissionStatus(projectId, mission.id, next);
     } catch {
-      Alert.alert('Error', 'Could not update mission status.');
+      Alert.alert('Error', t('project_details.error_update_mission'));
     }
   }
+
+  const missionLabel = (status: MissionStatus): string => {
+    const map: Record<MissionStatus, string> = {
+      todo:        t('project_details.mission_todo'),
+      in_progress: t('project_details.mission_in_progress'),
+      done:        t('project_details.mission_done'),
+    };
+    return map[status];
+  };
+
+  const projectStatusLabel = (status: ProjectRequest['status']): string => {
+    const map: Record<ProjectRequest['status'], string> = {
+      open:        t('chats.status_open'),
+      in_progress: t('chats.status_in_progress'),
+      completed:   t('chats.status_completed'),
+      cancelled:   t('chats.status_cancelled'),
+    };
+    return map[status];
+  };
 
   const statusColor = STATUS_COLORS[project.status];
   const total = acceptedOffers.reduce((sum, o) => sum + o.price, 0);
@@ -326,43 +365,54 @@ export default function ProjectDetailsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={styles.headerBackText}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>Project Details</Text>
+        <Text style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'center' }]} numberOfLines={1}>
+          {t('project_details.header')}
+        </Text>
         <View style={styles.headerRight} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* SECTION 1 — Project Info */}
-        <Text style={[styles.projectTitle, { color: colors.text }]}>{project.title}</Text>
+        <Text style={[styles.projectTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+          {project.title}
+        </Text>
 
         <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor }]}>
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.statusText, { color: statusColor }]}>{STATUS_LABELS[project.status]}</Text>
+          <Text style={[styles.statusText, { color: statusColor }]}>{projectStatusLabel(project.status)}</Text>
         </View>
 
         <View style={[styles.metaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MetaRow label="Execution" value={project.exec ?? 'TBD'} colors={colors} />
+          <MetaRow label={t('project_details.execution')} value={project.exec ?? t('project_details.tbd')} colors={colors} rtl={rtl} />
           <RowDivider colors={colors} />
-          <MetaRow label="Deadline" value={project.deadline} colors={colors} />
+          <MetaRow label={t('project_details.deadline')} value={project.deadline} colors={colors} rtl={rtl} />
           <RowDivider colors={colors} />
-          <MetaRow label="Location" value={project.location} colors={colors} />
+          <MetaRow label={t('project_details.location')} value={project.location} colors={colors} rtl={rtl} />
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Description</Text>
-          <Text style={[styles.descriptionText, { color: colors.text }]}>{project.description}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('project_details.description')}
+          </Text>
+          <Text style={[styles.descriptionText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+            {project.description}
+          </Text>
         </View>
 
         {/* SECTION 2 — Team Members */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Team Members</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('project_details.team_members')}
+        </Text>
 
         {clientUser && (
           <MemberRow
             displayName={clientUser.displayName}
             photoURL={clientUser.photoURL}
-            role="Project Client"
-            badge="Client"
+            role={t('project_details.project_client')}
+            badge={t('project_details.client')}
             colors={colors}
+            rtl={rtl}
           />
         )}
 
@@ -389,24 +439,31 @@ export default function ProjectDetailsScreen() {
               photoURL={member?.photoURL ?? null}
               role={roles.join(' | ')}
               colors={colors}
+              rtl={rtl}
             />
           );
         })}
 
         {filledSlots.length === 0 && !clientUser && (
-          <Text style={[styles.emptyNote, { color: colors.textMuted }]}>No team members yet</Text>
+          <Text style={[styles.emptyNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('project_details.no_team_members')}
+          </Text>
         )}
 
         {/* SECTION 3 — Missions */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Missions</Text>
+          <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('project_details.missions')}
+          </Text>
           <TouchableOpacity onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
-            <Text style={styles.addButtonText}>+ Add</Text>
+            <Text style={styles.addButtonText}>{t('project_details.add')}</Text>
           </TouchableOpacity>
         </View>
 
         {missions.length === 0 ? (
-          <Text style={[styles.emptyNote, { color: colors.textMuted }]}>No missions yet</Text>
+          <Text style={[styles.emptyNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('project_details.no_missions')}
+          </Text>
         ) : (
           missions.map((mission) => {
             const cfg = MISSION_STATUS_CONFIG[mission.status];
@@ -419,7 +476,7 @@ export default function ProjectDetailsScreen() {
                 style={[styles.missionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={styles.missionTop}>
-                  <Text style={[styles.missionTitle, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.missionTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                     {mission.title}
                   </Text>
                   <TouchableOpacity
@@ -427,16 +484,16 @@ export default function ProjectDetailsScreen() {
                     onPress={() => handleCycleMissionStatus(mission)}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.missionStatusText}>{cfg.label}</Text>
+                    <Text style={styles.missionStatusText}>{missionLabel(mission.status)}</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.missionMeta}>
-                  <Text style={[styles.missionMetaText, { color: colors.textMuted }]}>
+                  <Text style={[styles.missionMetaText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                     {assigneeNames}
                   </Text>
                   {mission.dueDate ? (
-                    <Text style={[styles.missionMetaText, { color: colors.textMuted }]}>
-                      {formatDueDate(mission.dueDate)}
+                    <Text style={[styles.missionMetaText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                      {formatDueDate(mission.dueDate, t('project_details.due'))}
                     </Text>
                   ) : null}
                 </View>
@@ -446,7 +503,9 @@ export default function ProjectDetailsScreen() {
         )}
 
         {/* SECTION 4 — Payment */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Payment</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('project_details.payment')}
+        </Text>
 
         {/* Pending payment requests */}
         {paymentRequests.length > 0 && (
@@ -459,12 +518,15 @@ export default function ProjectDetailsScreen() {
                   key={req.id}
                   style={[styles.pendingRequestCard, { backgroundColor: colors.card, borderColor: '#f59e0b' }]}
                 >
-                  <Text style={[styles.pendingRequestText, { color: colors.text }]}>
+                  <Text style={[styles.pendingRequestText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
                     <Text style={styles.pendingRequestBold}>{fromName}</Text>
-                    {` requests to change payment from $${req.currentAmount.toLocaleString()} to $${req.proposedAmount.toLocaleString()}`}
+                    {' ' + t('project_details.requests_to_change', {
+                      from: req.currentAmount.toLocaleString(),
+                      to: req.proposedAmount.toLocaleString(),
+                    })}
                   </Text>
                   {req.note ? (
-                    <Text style={[styles.pendingRequestNote, { color: colors.textMuted }]}>
+                    <Text style={[styles.pendingRequestNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                       "{req.note}"
                     </Text>
                   ) : null}
@@ -482,7 +544,7 @@ export default function ProjectDetailsScreen() {
                       {isResponding ? (
                         <ActivityIndicator color="#fff" size="small" />
                       ) : (
-                        <Text style={styles.pendingActionBtnText}>Accept</Text>
+                        <Text style={styles.pendingActionBtnText}>{t('project_details.accept')}</Text>
                       )}
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -495,7 +557,7 @@ export default function ProjectDetailsScreen() {
                       disabled={isResponding}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.pendingActionBtnText}>Reject</Text>
+                      <Text style={styles.pendingActionBtnText}>{t('project_details.reject')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -508,11 +570,14 @@ export default function ProjectDetailsScreen() {
                 style={[styles.pendingRequestCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={styles.pendingOutgoingRow}>
-                  <Text style={[styles.pendingRequestText, { color: colors.text }]}>
-                    {`Awaiting response: $${req.currentAmount.toLocaleString()} → $${req.proposedAmount.toLocaleString()}`}
+                  <Text style={[styles.pendingRequestText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('project_details.awaiting', {
+                      from: req.currentAmount.toLocaleString(),
+                      to: req.proposedAmount.toLocaleString(),
+                    })}
                   </Text>
                   <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>Pending</Text>
+                    <Text style={styles.pendingBadgeText}>{t('project_details.pending')}</Text>
                   </View>
                 </View>
               </View>
@@ -522,7 +587,9 @@ export default function ProjectDetailsScreen() {
 
         {/* Payment list */}
         {acceptedOffers.length === 0 ? (
-          <Text style={[styles.emptyNote, { color: colors.textMuted }]}>No accepted offers yet</Text>
+          <Text style={[styles.emptyNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('project_details.no_offers')}
+          </Text>
         ) : (
           <View style={[styles.metaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {acceptedOffers.map((offer, i) => {
@@ -532,8 +599,8 @@ export default function ProjectDetailsScreen() {
                 <View key={offer.id}>
                   <View style={styles.paymentRow}>
                     <View style={styles.paymentLeft}>
-                      <Text style={[styles.paymentName, { color: colors.text }]}>{name}</Text>
-                      <Text style={[styles.paymentRole, { color: colors.textMuted }]}>
+                      <Text style={[styles.paymentName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{name}</Text>
+                      <Text style={[styles.paymentRole, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                         {offer.subcategory} · {offer.category}
                       </Text>
                     </View>
@@ -551,7 +618,7 @@ export default function ProjectDetailsScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.requestUpdateText}>Update</Text>
+                        <Text style={styles.requestUpdateText}>{t('project_details.update')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -561,7 +628,9 @@ export default function ProjectDetailsScreen() {
             })}
             <RowDivider colors={colors} />
             <View style={styles.paymentRow}>
-              <Text style={[styles.paymentTotalLabel, { color: colors.text }]}>Total</Text>
+              <Text style={[styles.paymentTotalLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('project_details.total')}
+              </Text>
               <Text style={[styles.paymentTotalAmount, { color: colors.primary }]}>
                 ${total.toLocaleString()}
               </Text>
@@ -577,7 +646,7 @@ export default function ProjectDetailsScreen() {
         <View style={styles.completeBar}>
           {isCompleted ? (
             <View style={styles.completedBadge}>
-              <Text style={styles.completedBadgeText}>✓ Completed</Text>
+              <Text style={styles.completedBadgeText}>{t('project_details.completed')}</Text>
             </View>
           ) : (
             <TouchableOpacity
@@ -589,7 +658,7 @@ export default function ProjectDetailsScreen() {
               {isCalculatingFee ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.completeBtnText}>Mark as Complete</Text>
+                <Text style={styles.completeBtnText}>{t('project_details.mark_complete')}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -605,18 +674,24 @@ export default function ProjectDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Add Mission</Text>
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.add_mission_title')}
+            </Text>
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted }]}>Title</Text>
+            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.mission_title')}
+            </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
               value={newMissionTitle}
               onChangeText={setNewMissionTitle}
-              placeholder="e.g. Edit highlight reel"
+              placeholder={t('project_details.mission_placeholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted }]}>Assign to</Text>
+            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.assign_to')}
+            </Text>
             {assignableMembers.map((m) => {
               const selected = newMissionAssignedTo.includes(m.id);
               return (
@@ -630,7 +705,9 @@ export default function ProjectDetailsScreen() {
                   onPress={() => toggleAssignee(m.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.missionAssignName, { color: colors.text }]}>{m.displayName}</Text>
+                  <Text style={[styles.missionAssignName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                    {m.displayName}
+                  </Text>
                   <View style={[styles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
                     {selected && <Text style={styles.missionCheckboxTick}>✓</Text>}
                   </View>
@@ -638,12 +715,14 @@ export default function ProjectDetailsScreen() {
               );
             })}
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted }]}>Due date</Text>
+            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.due_date')}
+            </Text>
             {newMissionDueDate ? (
               <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
                 <Calendar size={15} color="#004aad" strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#004aad' }]}>
-                  {formatDueDate(newMissionDueDate)}
+                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+                  {formatDueDate(newMissionDueDate, t('project_details.due'))}
                 </Text>
                 <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={10} activeOpacity={0.7}>
                   <Text style={styles.missionDateClear}>✕</Text>
@@ -656,7 +735,9 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: colors.textMuted }]}>Add due date (optional)</Text>
+                <Text style={[styles.missionDatePlaceholder, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('project_details.add_due_date')}
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -666,7 +747,7 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowAddMission(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>Cancel</Text>
+                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -681,7 +762,7 @@ export default function ProjectDetailsScreen() {
                 {isAddingMission ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.modalBtnConfirmText}>Add</Text>
+                  <Text style={styles.modalBtnConfirmText}>{t('project_details.add')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -706,19 +787,19 @@ export default function ProjectDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Project Complete — Payment Summary
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.payment_summary_title')}
             </Text>
 
             {feeData && (
               <>
-                <Text style={[styles.modalSectionLabel, { color: colors.textMuted }]}>
-                  Pay directly to your crew
+                <Text style={[styles.modalSectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('project_details.pay_crew')}
                 </Text>
 
                 {feeData.slots.map((slot) => (
                   <View key={slot.professionalId} style={styles.feeRow}>
-                    <Text style={[styles.feeName, { color: colors.text }]}>{slot.displayName}</Text>
+                    <Text style={[styles.feeName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{slot.displayName}</Text>
                     <Text style={[styles.feeAmount, { color: colors.text }]}>
                       ${slot.amount.toLocaleString()}
                     </Text>
@@ -726,7 +807,9 @@ export default function ProjectDetailsScreen() {
                 ))}
 
                 <View style={styles.feeRow}>
-                  <Text style={[styles.feeLabel, { color: colors.textMuted }]}>Subtotal</Text>
+                  <Text style={[styles.feeLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('project_details.subtotal')}
+                  </Text>
                   <Text style={[styles.feeAmountBold, { color: colors.text }]}>
                     ${feeData.subtotal.toLocaleString()}
                   </Text>
@@ -734,20 +817,20 @@ export default function ProjectDetailsScreen() {
 
                 <View style={[styles.feeDivider, { backgroundColor: colors.border }]} />
 
-                <Text style={[styles.modalSectionLabel, { color: colors.textMuted }]}>
-                  Platform fee
+                <Text style={[styles.modalSectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('project_details.platform_fee')}
                 </Text>
 
                 <View style={styles.feeRow}>
-                  <Text style={[styles.feeName, { color: colors.text }]}>
-                    5% of project value
+                  <Text style={[styles.feeName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('project_details.fee_percent')}
                   </Text>
                   <Text style={[styles.feeAmountBold, { color: '#004aad' }]}>
                     ${feeData.platformFee.toLocaleString()}
                   </Text>
                 </View>
-                <Text style={[styles.feePlatformNote, { color: colors.textMuted }]}>
-                  Paid to BAMA for platform services
+                <Text style={[styles.feePlatformNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('project_details.paid_to_bama')}
                 </Text>
               </>
             )}
@@ -758,7 +841,7 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowPaymentSummary(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>Cancel</Text>
+                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -770,14 +853,14 @@ export default function ProjectDetailsScreen() {
                 {isConfirming ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.modalBtnConfirmText}>Confirm & Complete Project</Text>
+                  <Text style={styles.modalBtnConfirmText}>{t('project_details.confirm_complete')}</Text>
                 )}
               </TouchableOpacity>
             </View>
 
             {feeData && (
-              <Text style={[styles.feeAgreementNote, { color: colors.textMuted }]}>
-                By confirming, you agree to pay the platform fee of ${feeData.platformFee.toLocaleString()}
+              <Text style={[styles.feeAgreementNote, { color: colors.textMuted, textAlign: 'center' }]}>
+                {t('project_details.agreement', { amount: feeData.platformFee.toLocaleString() })}
               </Text>
             )}
           </View>
@@ -793,41 +876,51 @@ export default function ProjectDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Request Payment Update</Text>
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.request_payment_update')}
+            </Text>
 
             {selectedOffer && (
               <>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: colors.textMuted }]}>Professional</Text>
-                  <Text style={[styles.requestModalValue, { color: colors.text }]}>
+                  <Text style={[styles.requestModalLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('project_details.professional')}
+                  </Text>
+                  <Text style={[styles.requestModalValue, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
                     {memberUsers[selectedOffer.professionalId]?.displayName ?? selectedOffer.professionalId}
                   </Text>
                 </View>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: colors.textMuted }]}>Current amount</Text>
-                  <Text style={[styles.requestModalValue, { color: colors.text }]}>
+                  <Text style={[styles.requestModalLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('project_details.current_amount')}
+                  </Text>
+                  <Text style={[styles.requestModalValue, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
                     ${selectedOffer.price.toLocaleString()}
                   </Text>
                 </View>
               </>
             )}
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted }]}>Proposed amount</Text>
+            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.proposed_amount')}
+            </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
               value={proposedAmount}
               onChangeText={setProposedAmount}
-              placeholder="Enter new amount"
+              placeholder={t('project_details.enter_amount')}
               placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
             />
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted }]}>Note (optional)</Text>
+            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.note_optional')}
+            </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
               value={requestNote}
               onChangeText={setRequestNote}
-              placeholder="Reason for update..."
+              placeholder={t('project_details.reason_placeholder')}
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={2}
@@ -839,7 +932,7 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowPaymentRequestModal(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>Cancel</Text>
+                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -854,7 +947,7 @@ export default function ProjectDetailsScreen() {
                 {isSendingRequest ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.modalBtnConfirmText}>Send Request</Text>
+                  <Text style={styles.modalBtnConfirmText}>{t('project_details.send_request')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -865,11 +958,11 @@ export default function ProjectDetailsScreen() {
   );
 }
 
-function MetaRow({ label, value, colors }: { label: string; value: string; colors: AppColors }) {
+function MetaRow({ label, value, colors, rtl }: { label: string; value: string; colors: AppColors; rtl: boolean }) {
   return (
     <View style={styles.metaRow}>
-      <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{label}</Text>
-      <Text style={[styles.metaValue, { color: colors.text }]} numberOfLines={2}>{value}</Text>
+      <Text style={[styles.metaLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.metaValue, { color: colors.text, textAlign: rtl ? 'left' : 'right' }]} numberOfLines={2}>{value}</Text>
     </View>
   );
 }
@@ -884,12 +977,14 @@ function MemberRow({
   role,
   badge,
   colors,
+  rtl,
 }: {
   displayName: string;
   photoURL: string | null;
   role: string;
   badge?: string;
   colors: AppColors;
+  rtl: boolean;
 }) {
   return (
     <View style={[styles.memberRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -902,14 +997,14 @@ function MemberRow({
       )}
       <View style={styles.memberInfo}>
         <View style={styles.memberNameRow}>
-          <Text style={[styles.memberName, { color: colors.text }]}>{displayName}</Text>
+          <Text style={[styles.memberName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{displayName}</Text>
           {badge !== undefined && (
             <View style={styles.clientBadge}>
               <Text style={styles.clientBadgeText}>{badge}</Text>
             </View>
           )}
         </View>
-        <Text style={[styles.memberRole, { color: colors.textMuted }]}>{role}</Text>
+        <Text style={[styles.memberRole, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>{role}</Text>
       </View>
     </View>
   );
@@ -934,7 +1029,7 @@ const styles = StyleSheet.create({
   },
   headerBack: { width: 40, height: 56, alignItems: 'center', justifyContent: 'center' },
   headerBackText: { fontSize: 36, color: '#004aad', lineHeight: 44 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111' },
   headerRight: { width: 40 },
 
   content: { padding: 16, gap: 12, paddingBottom: 100 },
@@ -964,7 +1059,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   metaLabel: { fontSize: 13, fontWeight: '600' },
-  metaValue: { fontSize: 14, fontWeight: '500', flex: 1, textAlign: 'right' },
+  metaValue: { fontSize: 14, fontWeight: '500', flex: 1 },
 
   section: { gap: 6 },
   sectionLabel: {
@@ -1141,7 +1236,8 @@ const styles = StyleSheet.create({
 
   completeBar: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 90,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e2e8f0',
   },
@@ -1196,7 +1292,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   feePlatformNote: { fontSize: 12, marginTop: -6, marginBottom: 4 },
-  feeAgreementNote: { fontSize: 12, textAlign: 'center', marginTop: 4 },
+  feeAgreementNote: { fontSize: 12, marginTop: 4 },
 
   requestModalInfoRow: { gap: 2 },
   requestModalLabel: {

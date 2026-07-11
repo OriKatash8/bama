@@ -28,4 +28,5 @@ export interface Chat {
   roles?: Record<string, 'admin' | 'member'>;
   lastMessage?: LastMessage | null;
   createdAt?: Timestamp;
+  unreadCount?: Record<string, number>;
 }
