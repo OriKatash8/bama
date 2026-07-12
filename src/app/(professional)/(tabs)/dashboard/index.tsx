@@ -177,7 +177,7 @@ export default function DashboardScreen() {
 
         {activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
-            <Text style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.heading, { fontFamily: fontFamilyBold, color: colors.text, marginBottom: 16, textAlign: rtl ? 'right' : 'left' }, gradientText]}>
               {t('noticeboard.projects_in_progress')}
             </Text>
             <ScrollView
@@ -192,7 +192,7 @@ export default function DashboardScreen() {
                   onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}`)}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.projectCardTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                  <Text style={[styles.projectCardTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {project.title}
                   </Text>
                   <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
