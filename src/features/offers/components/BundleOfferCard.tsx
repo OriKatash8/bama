@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { getDocument } from '@core/firebase/firestore';
 import type { BundleOffer, PriceOffer } from '@core/types/project';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -32,6 +33,7 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
   const [loadingDetails, setLoadingDetails] = useState(false);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
+  const font = useAppFont();
 
   useEffect(() => {
     getDocument<{ displayName: string }>(`users/${bundle.professionalId}`).then((u) => {
@@ -53,10 +55,10 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
   return (
     <View style={styles.card}>
       <View style={styles.badge}>
-        <Text style={styles.badgeText}>{t('offers.bundle_badge')}</Text>
+        <Text style={[styles.badgeText, { fontFamily: font.bold }]}>{t('offers.bundle_badge')}</Text>
       </View>
 
-      <Text style={styles.name}>{displayName ?? '…'}</Text>
+      <Text style={[styles.name, { fontFamily: font.bold }]}>{displayName ?? '…'}</Text>
 
       {/* Tappable roles header */}
       <TouchableOpacity
@@ -64,7 +66,7 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
         onPress={() => setExpanded((v) => !v)}
         activeOpacity={0.7}
       >
-        <Text style={styles.rolesSummary}>
+        <Text style={[styles.rolesSummary, { fontFamily: font.semiBold }]}>
           {bundle.slots.map((s) => s.subcategory).join(' · ')}
         </Text>
         {expanded ? (
@@ -82,17 +84,17 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
           ) : (
             offerDetails.map((o, i) => (
               <View key={i} style={styles.breakdownRow}>
-                <Text style={styles.breakdownRole}>{o.subcategory}</Text>
-                <Text style={styles.breakdownPrice}>₪{o.price.toLocaleString()}</Text>
+                <Text style={[styles.breakdownRole, { fontFamily: font.medium }]}>{o.subcategory}</Text>
+                <Text style={[styles.breakdownPrice, { fontFamily: font.semiBold }]}>₪{o.price.toLocaleString()}</Text>
               </View>
             ))
           )}
           <View style={styles.breakdownDivider} />
           <View style={styles.breakdownRow}>
-            <Text style={[styles.breakdownRole, styles.breakdownTotal]}>
+            <Text style={[styles.breakdownRole, styles.breakdownTotal, { fontFamily: font.bold }]}>
               {t('offers.instead_of')}
             </Text>
-            <Text style={[styles.breakdownPrice, styles.breakdownTotalPrice]}>
+            <Text style={[styles.breakdownPrice, styles.breakdownTotalPrice, { fontFamily: font.bold }]}>
               ₪{bundle.individualTotal.toLocaleString()}
             </Text>
           </View>
@@ -100,9 +102,9 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
       )}
 
       <View style={styles.priceRow}>
-        <Text style={styles.strikethrough}>₪{bundle.individualTotal.toLocaleString()}</Text>
-        <Text style={styles.insteadOf}>{t('offers.instead_of')}</Text>
-        <Text style={styles.bundlePrice}>₪{bundle.bundlePrice.toLocaleString()}</Text>
+        <Text style={[styles.strikethrough, { fontFamily: font.semiBold }]}>₪{bundle.individualTotal.toLocaleString()}</Text>
+        <Text style={[styles.insteadOf, { fontFamily: font.regular }]}>{t('offers.instead_of')}</Text>
+        <Text style={[styles.bundlePrice, { fontFamily: font.bold }]}>₪{bundle.bundlePrice.toLocaleString()}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -115,7 +117,7 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
           {isAccepting ? (
             <ActivityIndicator size="small" color="#4caf50" />
           ) : (
-            <Text style={styles.acceptIcon}>✓</Text>
+            <Text style={[styles.acceptIcon, { fontFamily: font.bold }]}>✓</Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity
@@ -123,7 +125,7 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
           onPress={onReject}
           activeOpacity={0.8}
         >
-          <Text style={styles.rejectIcon}>✕</Text>
+          <Text style={[styles.rejectIcon, { fontFamily: font.bold }]}>✕</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -4,6 +4,7 @@ import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
 
 type Props = {
   request: ProjectRequest;
@@ -22,6 +23,8 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const allRoles = [...new Set(request.crewSlots.map((s) => s.subcategory))];
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
   const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
 
@@ -47,7 +50,14 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       <View style={styles.top}>
         <View style={styles.info}>
           <Text style={[styles.title, { color: textColor, fontWeight: isDirectInvite ? '800' : '700' }]} numberOfLines={1}>{request.title}</Text>
-          <Text style={[styles.location, { color: textColor }]}>📍 {request.location}</Text>
+          <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <Image
+              source={require('../../../../assets/images/location-icon.png')}
+              style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+              resizeMode="contain"
+            />
+            <Text style={[styles.location, { color: textColor }]} numberOfLines={1}>{request.location}</Text>
+          </View>
           <Text style={[styles.meta, { color: textColor }]}>
             {request.exec ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
           </Text>
@@ -108,7 +118,9 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
   title: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  location: { fontSize: 13, marginBottom: 3 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
+  locationIcon: { width: 14, height: 14 },
+  location: { fontSize: 13, flex: 1 },
   meta: { fontSize: 12 },
   roles: { fontSize: 12, marginTop: 3, fontWeight: '600' },
   actions: { flexDirection: 'row', gap: 8 },

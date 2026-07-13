@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput, Switch,
+  StyleSheet, TextInput, Switch, Image,
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
@@ -41,6 +41,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const [view, setView] = useState<'details' | 'bid' | 'bundle'>('details');
   const [bids, setBids] = useState<BidEntry[]>([]);
@@ -140,16 +141,23 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={handleClose} />
 
         <View style={styles.card}>
-          {/* Close button */}
-          <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.7}>
-            <X size={18} color={colors.textMuted} />
-          </TouchableOpacity>
+          {/* Header */}
+          <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <Text style={styles.headerTitle} numberOfLines={2}>
+              {view === 'details'
+                ? request.title
+                : view === 'bid'
+                  ? 'Submit Your Offer'
+                  : t('noticeboard.bundle_title')}
+            </Text>
+            <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.7}>
+              <X size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
 
           {/* ── Details view ── */}
           {view === 'details' && (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-              <Text style={styles.title}>{request.title}</Text>
-
               <View style={styles.metaRow}>
                 <View style={styles.metaItem}>
                   <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Execution</Text>
@@ -161,7 +169,14 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 </View>
                 <View style={styles.metaItem}>
                   <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Location</Text>
-                  <Text style={styles.metaValue}>{request.location}</Text>
+                  <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                    <Image
+                      source={require('../../../../assets/images/location-icon.png')}
+                      style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.metaValue} numberOfLines={1}>{request.location}</Text>
+                  </View>
                 </View>
               </View>
 
@@ -197,7 +212,6 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
                   <Text style={styles.backText}>← Back to Details</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>Submit Your Offer</Text>
                 <Text style={[styles.bidHint, { color: colors.textMuted }]}>Select the roles you want to fill and enter your price for each.</Text>
 
                 {bids.map((b, i) => (
@@ -244,7 +258,6 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
           {/* ── Bundle prompt view ── */}
           {view === 'bundle' && (
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
-              <Text style={styles.bundleTitle}>{t('noticeboard.bundle_title')}</Text>
               <Text style={[styles.bundleBody, { color: colors.textSec }]}>
                 {t('noticeboard.bundle_body', { count: validBids.length })}
               </Text>
@@ -329,20 +342,19 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 20,
   },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: '#004aad', paddingRight: 8 },
   closeBtn: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
   },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationIcon: { width: 14, height: 14 },
   scrollContent: { paddingBottom: 8 },
-  title: { fontSize: 22, fontWeight: '800', color: '#004aad', marginBottom: 16, paddingRight: 32 },
   metaRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   metaItem: { flex: 1, backgroundColor: 'rgba(0,74,173,0.06)', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: 'rgba(0,74,173,0.12)' },
   metaLabel: { fontSize: 11, fontWeight: '600', marginBottom: 2, textTransform: 'uppercase' },
@@ -368,7 +380,6 @@ const styles = StyleSheet.create({
   bidCat: { fontSize: 12, marginTop: 2 },
   priceInput: { width: 72, borderWidth: 1, borderColor: 'rgba(0,74,173,0.3)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, textAlign: 'center', color: '#004aad', backgroundColor: 'rgba(0,74,173,0.04)' },
   // Bundle view
-  bundleTitle: { fontSize: 22, fontWeight: '800', color: '#004aad', marginBottom: 10, paddingRight: 32 },
   bundleBody: { fontSize: 15, lineHeight: 22, marginBottom: 20 },
   bundleTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,74,173,0.06)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(0,74,173,0.12)' },
   bundleTotalLabel: { fontSize: 13, fontWeight: '600' },

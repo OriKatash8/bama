@@ -75,9 +75,16 @@ export function ListingCard({ listing, onPress }: Props) {
         <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>
           ₪{listing.price.toLocaleString()}{isRental ? t('marketplace.per_day') : ''}
         </Text>
-        <Text style={[styles.location, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-          📍 {listing.location}
-        </Text>
+        <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <Image
+            source={require('../../../../assets/images/location-icon.png')}
+            style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+            resizeMode="contain"
+          />
+          <Text style={[styles.location, { color: colors.textMuted }]} numberOfLines={1}>
+            {listing.location}
+          </Text>
+        </View>
         <Text style={[styles.seller, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
           {t('marketplace.by')} {listing.posterName}
         </Text>
@@ -125,6 +132,8 @@ const styles = StyleSheet.create({
   name: { fontSize: 13, fontWeight: '700', lineHeight: 18 },
   brand: { fontSize: 11 },
   price: { fontSize: 15, fontWeight: '800', color: '#004aad', marginTop: 2 },
-  location: { fontSize: 11 },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationIcon: { width: 14, height: 14 },
+  location: { fontSize: 11, flex: 1 },
   seller: { fontSize: 11 },
 });

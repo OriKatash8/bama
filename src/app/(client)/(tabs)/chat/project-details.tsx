@@ -17,6 +17,7 @@ import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { auth } from '@core/firebase/config';
 import { useTheme, type AppColors } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { BundleOffer, FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest } from '@core/types/project';
@@ -84,10 +85,11 @@ export default function ProjectDetailsScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const router = useRouter();
   const colors = useTheme();
+  const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-
+  const rowDirection: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   const [project, setProject] = useState<ProjectRequest | null>(null);
   const [clientUser, setClientUser] = useState<MemberInfo | null>(null);
   const [memberUsers, setMemberUsers] = useState<Record<string, MemberInfo>>({});
@@ -280,7 +282,7 @@ export default function ProjectDetailsScreen() {
     return (
       <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={[styles.errorText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.errorText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
           {t('project_details.project_not_found')}
         </Text>
       </LinearGradient>
@@ -405,29 +407,34 @@ export default function ProjectDetailsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={colors.bgGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.header, { flexDirection: rowDirection }]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
-          <Text style={styles.headerBackText}>‹</Text>
+          <Text style={[styles.headerBackText, { fontFamily: font.regular }]}>{rtl ? '›' : '‹'}</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'center' }]} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { textAlign: 'center', fontFamily: font.bold, color: '#004aad' }]} numberOfLines={1}>
           {t('project_details.header')}
         </Text>
         <View style={styles.headerRight} />
-      </View>
+      </LinearGradient>
 
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* SECTION 1 — Project Info */}
-        <Text style={[styles.projectTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.projectTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
           {project.title}
         </Text>
 
-        <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor }]}>
+        <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor, flexDirection: rowDirection, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.statusText, { color: statusColor }]}>{projectStatusLabel(project.status)}</Text>
+          <Text style={[styles.statusText, { color: statusColor, fontFamily: font.bold }]}>{projectStatusLabel(project.status)}</Text>
         </View>
 
-        <View style={[styles.metaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.metaCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
           <MetaRow label={t('project_details.execution')} value={project.exec ?? t('project_details.tbd')} colors={colors} rtl={rtl} />
           <RowDivider colors={colors} />
           <MetaRow label={t('project_details.deadline')} value={project.deadline} colors={colors} rtl={rtl} />
@@ -436,16 +443,16 @@ export default function ProjectDetailsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
             {t('project_details.description')}
           </Text>
-          <Text style={[styles.descriptionText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.descriptionText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
             {project.description}
           </Text>
         </View>
 
         {/* SECTION 2 — Team Members */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
           {t('project_details.team_members')}
         </Text>
 
@@ -489,23 +496,23 @@ export default function ProjectDetailsScreen() {
         })}
 
         {filledSlots.length === 0 && !clientUser && (
-          <Text style={[styles.emptyNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.emptyNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
             {t('project_details.no_team_members')}
           </Text>
         )}
 
         {/* SECTION 3 — Missions */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+          <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
             {t('project_details.missions')}
           </Text>
           <TouchableOpacity onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
-            <Text style={styles.addButtonText}>{t('project_details.add')}</Text>
+            <Text style={[styles.addButtonText, { fontFamily: font.semiBold }]}>{t('project_details.add')}</Text>
           </TouchableOpacity>
         </View>
 
         {missions.length === 0 ? (
-          <Text style={[styles.emptyNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.emptyNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
             {t('project_details.no_missions')}
           </Text>
         ) : (
@@ -517,10 +524,10 @@ export default function ProjectDetailsScreen() {
             return (
               <View
                 key={mission.id}
-                style={[styles.missionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.missionCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}
               >
-                <View style={styles.missionTop}>
-                  <Text style={[styles.missionTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                <View style={[styles.missionTop, { flexDirection: rowDirection }]}>
+                  <Text style={[styles.missionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]} numberOfLines={2}>
                     {mission.title}
                   </Text>
                   <TouchableOpacity
@@ -528,15 +535,15 @@ export default function ProjectDetailsScreen() {
                     onPress={() => handleCycleMissionStatus(mission)}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.missionStatusText}>{missionLabel(mission.status)}</Text>
+                    <Text style={[styles.missionStatusText, { fontFamily: font.bold }]}>{missionLabel(mission.status)}</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={styles.missionMeta}>
-                  <Text style={[styles.missionMetaText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                <View style={[styles.missionMeta, { flexDirection: rowDirection }]}>
+                  <Text style={[styles.missionMetaText, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                     {assigneeNames}
                   </Text>
                   {mission.dueDate ? (
-                    <Text style={[styles.missionMetaText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    <Text style={[styles.missionMetaText, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                       {formatDueDate(mission.dueDate, t('project_details.due'))}
                     </Text>
                   ) : null}
@@ -547,7 +554,7 @@ export default function ProjectDetailsScreen() {
         )}
 
         {/* SECTION 4 — Payment */}
-        <Text style={[styles.sectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
           {t('project_details.payment')}
         </Text>
 
@@ -560,21 +567,21 @@ export default function ProjectDetailsScreen() {
               return (
                 <View
                   key={req.id}
-                  style={[styles.pendingRequestCard, { backgroundColor: colors.card, borderColor: '#f59e0b' }]}
+                  style={[styles.pendingRequestCard, { backgroundColor: '#ffffff', borderColor: '#f59e0b' }]}
                 >
-                  <Text style={[styles.pendingRequestText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
-                    <Text style={styles.pendingRequestBold}>{fromName}</Text>
+                  <Text style={[styles.pendingRequestText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+                    <Text style={[styles.pendingRequestBold, { fontFamily: font.bold }]}>{fromName}</Text>
                     {' ' + t('project_details.requests_to_change', {
                       from: req.currentAmount.toLocaleString(),
                       to: req.proposedAmount.toLocaleString(),
                     })}
                   </Text>
                   {req.note ? (
-                    <Text style={[styles.pendingRequestNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    <Text style={[styles.pendingRequestNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                       "{req.note}"
                     </Text>
                   ) : null}
-                  <View style={styles.pendingRequestActions}>
+                  <View style={[styles.pendingRequestActions, { flexDirection: rowDirection }]}>
                     <TouchableOpacity
                       style={[
                         styles.pendingActionBtn,
@@ -588,7 +595,7 @@ export default function ProjectDetailsScreen() {
                       {isResponding ? (
                         <ActivityIndicator color="#fff" size="small" />
                       ) : (
-                        <Text style={styles.pendingActionBtnText}>{t('project_details.accept')}</Text>
+                        <Text style={[styles.pendingActionBtnText, { fontFamily: font.bold }]}>{t('project_details.accept')}</Text>
                       )}
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -601,7 +608,7 @@ export default function ProjectDetailsScreen() {
                       disabled={isResponding}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.pendingActionBtnText}>{t('project_details.reject')}</Text>
+                      <Text style={[styles.pendingActionBtnText, { fontFamily: font.bold }]}>{t('project_details.reject')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -611,17 +618,17 @@ export default function ProjectDetailsScreen() {
             {outgoingRequests.map((req) => (
               <View
                 key={req.id}
-                style={[styles.pendingRequestCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.pendingRequestCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}
               >
-                <View style={styles.pendingOutgoingRow}>
-                  <Text style={[styles.pendingRequestText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                <View style={[styles.pendingOutgoingRow, { flexDirection: rowDirection }]}>
+                  <Text style={[styles.pendingRequestText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                     {t('project_details.awaiting', {
                       from: req.currentAmount.toLocaleString(),
                       to: req.proposedAmount.toLocaleString(),
                     })}
                   </Text>
                   <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>{t('project_details.pending')}</Text>
+                    <Text style={[styles.pendingBadgeText, { fontFamily: font.semiBold, color: '#004aad99' }]}>{t('project_details.pending')}</Text>
                   </View>
                 </View>
               </View>
@@ -631,11 +638,11 @@ export default function ProjectDetailsScreen() {
 
         {/* Payment list */}
         {paymentEntries.length === 0 ? (
-          <Text style={[styles.emptyNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.emptyNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
             {t('project_details.no_offers')}
           </Text>
         ) : (
-          <View style={[styles.metaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.metaCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
             {paymentEntries.map((entry, i) => {
               const isLast = i === paymentEntries.length - 1;
               if (entry.kind === 'bundle') {
@@ -644,19 +651,19 @@ export default function ProjectDetailsScreen() {
                 const roles = entry.offers.map((o) => o.subcategory).join(' | ');
                 return (
                   <View key={entry.bundleId}>
-                    <View style={styles.paymentRow}>
+                    <View style={[styles.paymentRow, { flexDirection: rowDirection }]}>
                       <View style={styles.paymentLeft}>
-                        <View style={styles.paymentNameRow}>
-                          <Text style={[styles.paymentName, { color: colors.text }]}>{name}</Text>
+                        <View style={[styles.paymentNameRow, { flexDirection: rowDirection }]}>
+                          <Text style={[styles.paymentName, { color: '#004aad', fontFamily: font.semiBold }]}>{name}</Text>
                           <View style={styles.bundlePayBadge}>
-                            <Text style={styles.bundlePayBadgeText}>{t('offers.bundle_badge')}</Text>
+                            <Text style={[styles.bundlePayBadgeText, { fontFamily: font.bold }]}>{t('offers.bundle_badge')}</Text>
                           </View>
                         </View>
-                        <Text style={[styles.paymentRole, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                        <Text style={[styles.paymentRole, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                           {roles}
                         </Text>
                       </View>
-                      <Text style={[styles.paymentAmount, { color: colors.text }]}>
+                      <Text style={[styles.paymentAmount, { color: '#004aad', fontFamily: font.semiBold }]}>
                         ₪{entry.bundle.bundlePrice.toLocaleString()}
                       </Text>
                     </View>
@@ -669,15 +676,15 @@ export default function ProjectDetailsScreen() {
               const name = member?.displayName ?? offer.professionalId;
               return (
                 <View key={offer.id}>
-                  <View style={styles.paymentRow}>
+                  <View style={[styles.paymentRow, { flexDirection: rowDirection }]}>
                     <View style={styles.paymentLeft}>
-                      <Text style={[styles.paymentName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{name}</Text>
-                      <Text style={[styles.paymentRole, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                      <Text style={[styles.paymentName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{name}</Text>
+                      <Text style={[styles.paymentRole, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                         {offer.subcategory} · {offer.category}
                       </Text>
                     </View>
-                    <View style={styles.paymentRight}>
-                      <Text style={[styles.paymentAmount, { color: colors.text }]}>
+                    <View style={[styles.paymentRight, { flexDirection: rowDirection }]}>
+                      <Text style={[styles.paymentAmount, { color: '#004aad', fontFamily: font.semiBold }]}>
                         ₪{offer.price.toLocaleString()}
                       </Text>
                       <TouchableOpacity
@@ -690,7 +697,7 @@ export default function ProjectDetailsScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.requestUpdateText}>{t('project_details.update')}</Text>
+                        <Text style={[styles.requestUpdateText, { fontFamily: font.semiBold }]}>{t('project_details.update')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -699,11 +706,11 @@ export default function ProjectDetailsScreen() {
               );
             })}
             <RowDivider colors={colors} />
-            <View style={styles.paymentRow}>
-              <Text style={[styles.paymentTotalLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+            <View style={[styles.paymentRow, { flexDirection: rowDirection }]}>
+              <Text style={[styles.paymentTotalLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
                 {t('project_details.total')}
               </Text>
-              <Text style={[styles.paymentTotalAmount, { color: colors.primary }]}>
+              <Text style={[styles.paymentTotalAmount, { color: '#004aad', fontFamily: font.bold }]}>
                 ₪{total.toLocaleString()}
               </Text>
             </View>
@@ -718,7 +725,7 @@ export default function ProjectDetailsScreen() {
         <View style={styles.completeBar}>
           {isCompleted ? (
             <View style={styles.completedBadge}>
-              <Text style={styles.completedBadgeText}>{t('project_details.completed')}</Text>
+              <Text style={[styles.completedBadgeText, { fontFamily: font.bold }]}>{t('project_details.completed')}</Text>
             </View>
           ) : (
             <TouchableOpacity
@@ -730,7 +737,7 @@ export default function ProjectDetailsScreen() {
               {isCalculatingFee ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.completeBtnText}>{t('project_details.mark_complete')}</Text>
+                <Text style={[styles.completeBtnText, { fontFamily: font.bold }]}>{t('project_details.mark_complete')}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -746,22 +753,22 @@ export default function ProjectDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
               {t('project_details.add_mission_title')}
             </Text>
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.mission_title')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}
               value={newMissionTitle}
               onChangeText={setNewMissionTitle}
               placeholder={t('project_details.mission_placeholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.assign_to')}
             </Text>
             {assignableMembers.map((m) => {
@@ -777,27 +784,27 @@ export default function ProjectDetailsScreen() {
                   onPress={() => toggleAssignee(m.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.missionAssignName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>
                     {m.displayName}
                   </Text>
                   <View style={[styles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
-                    {selected && <Text style={styles.missionCheckboxTick}>✓</Text>}
+                    {selected && <Text style={[styles.missionCheckboxTick, { fontFamily: font.bold }]}>✓</Text>}
                   </View>
                 </TouchableOpacity>
               );
             })}
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.due_date')}
             </Text>
             {newMissionDueDate ? (
               <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
                 <Calendar size={15} color="#004aad" strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>
                   {formatDueDate(newMissionDueDate, t('project_details.due'))}
                 </Text>
                 <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={10} activeOpacity={0.7}>
-                  <Text style={styles.missionDateClear}>✕</Text>
+                  <Text style={[styles.missionDateClear, { fontFamily: font.bold }]}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -807,7 +814,7 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                   {t('project_details.add_due_date')}
                 </Text>
               </TouchableOpacity>
@@ -819,7 +826,7 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowAddMission(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>{t('project_details.cancel')}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: '#004aad', fontFamily: font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -834,7 +841,7 @@ export default function ProjectDetailsScreen() {
                 {isAddingMission ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.modalBtnConfirmText}>{t('project_details.add')}</Text>
+                  <Text style={[styles.modalBtnConfirmText, { fontFamily: font.bold }]}>{t('project_details.add')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -859,49 +866,49 @@ export default function ProjectDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
               {t('project_details.payment_summary_title')}
             </Text>
 
             {feeData && (
               <>
-                <Text style={[styles.modalSectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.modalSectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
                   {t('project_details.pay_crew')}
                 </Text>
 
                 {feeData.slots.map((slot) => (
                   <View key={slot.professionalId} style={styles.feeRow}>
-                    <Text style={[styles.feeName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{slot.displayName}</Text>
-                    <Text style={[styles.feeAmount, { color: colors.text }]}>
+                    <Text style={[styles.feeName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{slot.displayName}</Text>
+                    <Text style={[styles.feeAmount, { color: '#004aad', fontFamily: font.medium }]}>
                       ${slot.amount.toLocaleString()}
                     </Text>
                   </View>
                 ))}
 
                 <View style={styles.feeRow}>
-                  <Text style={[styles.feeLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.feeLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>
                     {t('project_details.subtotal')}
                   </Text>
-                  <Text style={[styles.feeAmountBold, { color: colors.text }]}>
+                  <Text style={[styles.feeAmountBold, { color: '#004aad', fontFamily: font.bold }]}>
                     ${feeData.subtotal.toLocaleString()}
                   </Text>
                 </View>
 
                 <View style={[styles.feeDivider, { backgroundColor: colors.border }]} />
 
-                <Text style={[styles.modalSectionLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.modalSectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
                   {t('project_details.platform_fee')}
                 </Text>
 
                 <View style={styles.feeRow}>
-                  <Text style={[styles.feeName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.feeName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
                     {t('project_details.fee_percent')}
                   </Text>
-                  <Text style={[styles.feeAmountBold, { color: '#004aad' }]}>
+                  <Text style={[styles.feeAmountBold, { color: '#004aad', fontFamily: font.bold }]}>
                     ${feeData.platformFee.toLocaleString()}
                   </Text>
                 </View>
-                <Text style={[styles.feePlatformNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.feePlatformNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                   {t('project_details.paid_to_bama')}
                 </Text>
               </>
@@ -913,7 +920,7 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowPaymentSummary(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>{t('project_details.cancel')}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: '#004aad', fontFamily: font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -925,13 +932,13 @@ export default function ProjectDetailsScreen() {
                 {isConfirming ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.modalBtnConfirmText}>{t('project_details.confirm_complete')}</Text>
+                  <Text style={[styles.modalBtnConfirmText, { fontFamily: font.bold }]}>{t('project_details.confirm_complete')}</Text>
                 )}
               </TouchableOpacity>
             </View>
 
             {feeData && (
-              <Text style={[styles.feeAgreementNote, { color: colors.textMuted, textAlign: 'center' }]}>
+              <Text style={[styles.feeAgreementNote, { color: '#004aad99', textAlign: 'center', fontFamily: font.regular }]}>
                 {t('project_details.agreement', { amount: feeData.platformFee.toLocaleString() })}
               </Text>
             )}
@@ -948,36 +955,36 @@ export default function ProjectDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
               {t('project_details.request_payment_update')}
             </Text>
 
             {selectedOffer && (
               <>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.requestModalLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
                     {t('project_details.professional')}
                   </Text>
-                  <Text style={[styles.requestModalValue, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.requestModalValue, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
                     {memberUsers[selectedOffer.professionalId]?.displayName ?? selectedOffer.professionalId}
                   </Text>
                 </View>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.requestModalLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
                     {t('project_details.current_amount')}
                   </Text>
-                  <Text style={[styles.requestModalValue, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.requestModalValue, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
                     ${selectedOffer.price.toLocaleString()}
                   </Text>
                 </View>
               </>
             )}
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.proposed_amount')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}
               value={proposedAmount}
               onChangeText={setProposedAmount}
               placeholder={t('project_details.enter_amount')}
@@ -985,11 +992,11 @@ export default function ProjectDetailsScreen() {
               keyboardType="decimal-pad"
             />
 
-            <Text style={[styles.missionInputLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.note_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}
               value={requestNote}
               onChangeText={setRequestNote}
               placeholder={t('project_details.reason_placeholder')}
@@ -1004,7 +1011,7 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowPaymentRequestModal(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: colors.text }]}>{t('project_details.cancel')}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: '#004aad', fontFamily: font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -1019,7 +1026,7 @@ export default function ProjectDetailsScreen() {
                 {isSendingRequest ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.modalBtnConfirmText}>{t('project_details.send_request')}</Text>
+                  <Text style={[styles.modalBtnConfirmText, { fontFamily: font.bold }]}>{t('project_details.send_request')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1031,10 +1038,12 @@ export default function ProjectDetailsScreen() {
 }
 
 function MetaRow({ label, value, colors, rtl }: { label: string; value: string; colors: AppColors; rtl: boolean }) {
+  const font = useAppFont();
+  const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   return (
-    <View style={styles.metaRow}>
-      <Text style={[styles.metaLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>{label}</Text>
-      <Text style={[styles.metaValue, { color: colors.text, textAlign: rtl ? 'left' : 'right' }]} numberOfLines={2}>{value}</Text>
+    <View style={[styles.metaRow, { flexDirection: rowDir }]}>
+      <Text style={[styles.metaLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{label}</Text>
+      <Text style={[styles.metaValue, { color: '#004aad', textAlign: rtl ? 'left' : 'right', fontFamily: font.medium }]} numberOfLines={2}>{value}</Text>
     </View>
   );
 }
@@ -1058,25 +1067,27 @@ function MemberRow({
   colors: AppColors;
   rtl: boolean;
 }) {
+  const font = useAppFont();
+  const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   return (
-    <View style={[styles.memberRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[styles.memberRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rowDir }]}>
       {photoURL ? (
         <Image source={{ uri: photoURL }} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
-          <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
+          <Text style={[styles.avatarInitial, { fontFamily: font.bold }]}>{displayName.charAt(0).toUpperCase()}</Text>
         </View>
       )}
       <View style={styles.memberInfo}>
-        <View style={styles.memberNameRow}>
-          <Text style={[styles.memberName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{displayName}</Text>
+        <View style={[styles.memberNameRow, { flexDirection: rowDir }]}>
+          <Text style={[styles.memberName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{displayName}</Text>
           {badge !== undefined && (
             <View style={styles.clientBadge}>
-              <Text style={styles.clientBadgeText}>{badge}</Text>
+              <Text style={[styles.clientBadgeText, { fontFamily: font.bold }]}>{badge}</Text>
             </View>
           )}
         </View>
-        <Text style={[styles.memberRole, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>{role}</Text>
+        <Text style={[styles.memberRole, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>{role}</Text>
       </View>
     </View>
   );
@@ -1092,12 +1103,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 56,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 3,
     paddingHorizontal: 8,
   },
   headerBack: { width: 40, height: 56, alignItems: 'center', justifyContent: 'center' },

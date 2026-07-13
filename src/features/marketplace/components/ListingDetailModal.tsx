@@ -1,11 +1,14 @@
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  Image, Platform, ScrollView, Alert, ActivityIndicator,
+  Image, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { X } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { buyListing } from '../services/marketplaceService';
@@ -36,6 +39,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const font = useAppFont();
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
@@ -58,10 +62,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
       t('marketplace.confirm_purchase_message', { fee }),
       [
         { text: t('marketplace.cancel'), style: 'cancel' },
-        {
-          text: t('marketplace.confirm'),
-          onPress: confirmBuy,
-        },
+        { text: t('marketplace.confirm'), onPress: confirmBuy },
       ]
     );
   }
@@ -85,117 +86,191 @@ export function ListingDetailModal({ listing, onClose }: Props) {
     }
   }
 
+  const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
+
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-      <View style={[styles.sheet, Platform.OS === 'web' && (webSheet as object)]}>
-        <View style={styles.handle} />
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.imageWrap}>
-            {listing.imageUrl ? (
-              <Image source={{ uri: listing.imageUrl }} style={styles.image} resizeMode="cover" />
-            ) : (
-              <Text style={styles.imagePlaceholder}>📦</Text>
-            )}
-          </View>
-          <Text style={[styles.name, { textAlign: rtl ? 'right' : 'left' }]}>{listing.productName}</Text>
-          <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={styles.price}>{priceLabel}</Text>
-            <Text style={styles.location}>📍 {listing.location}</Text>
-          </View>
-          <Text style={[styles.poster, { textAlign: rtl ? 'right' : 'left' }]}>
-            {t('marketplace.posted_by')} <Text style={styles.posterName}>{listing.posterName}</Text>
-          </Text>
+      <View style={styles.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
 
-          {!isOwnListing && (
-            isUnavailable ? (
-              <View style={styles.reservedBtn}>
-                <Text style={styles.reservedText}>{t('marketplace.reserved')}</Text>
+        <LinearGradient
+          colors={['#efd4f6', '#b7cae6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.card}
+        >
+          {/* Header */}
+          <View style={[styles.header, { flexDirection: rowDir }]}>
+            <Text
+              style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}
+              numberOfLines={2}
+            >
+              {listing.productName}
+            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+              <X size={20} color="#004aad" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Scrollable content */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Image */}
+            <View style={styles.imageWrap}>
+              {listing.imageUrl ? (
+                <Image source={{ uri: listing.imageUrl }} style={styles.image} resizeMode="cover" />
+              ) : (
+                <Text style={styles.imagePlaceholder}>📦</Text>
+              )}
+            </View>
+
+            {/* Price & location */}
+            <View style={[styles.infoBox, { flexDirection: rowDir }]}>
+              <Text style={[styles.price, { fontFamily: font.bold }]}>{priceLabel}</Text>
+              <View style={[styles.locationRow, { flexDirection: rowDir }]}>
+                <Image
+                  source={require('../../../../assets/images/location-icon.png')}
+                  style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.location, { fontFamily: font.regular }]} numberOfLines={1}>{listing.location}</Text>
               </View>
-            ) : (
-              <TouchableOpacity
-                style={[styles.buyBtn, isBuying && styles.buyBtnDisabled]}
-                onPress={handleBuyPress}
-                disabled={isBuying}
-                activeOpacity={0.8}
-              >
-                {isBuying
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.buyText}>{t('marketplace.buy_button')}</Text>}
-              </TouchableOpacity>
-            )
-          )}
-        </ScrollView>
+            </View>
+
+            {/* Seller */}
+            <View style={styles.sellerBox}>
+              <Text style={[styles.poster, { textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+                {t('marketplace.posted_by')}{' '}
+                <Text style={[styles.posterName, { fontFamily: font.semiBold }]}>{listing.posterName}</Text>
+              </Text>
+            </View>
+
+            {/* Buy / Reserved */}
+            {!isOwnListing && (
+              isUnavailable ? (
+                <View style={styles.reservedBtn}>
+                  <Text style={[styles.reservedText, { fontFamily: font.bold }]}>
+                    {t('marketplace.reserved')}
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.buyBtn, isBuying && styles.buyBtnDisabled]}
+                  onPress={handleBuyPress}
+                  disabled={isBuying}
+                  activeOpacity={0.8}
+                >
+                  {isBuying
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={[styles.buyText, { fontFamily: font.bold }]}>{t('marketplace.buy_button')}</Text>}
+                </TouchableOpacity>
+              )
+            )}
+          </ScrollView>
+        </LinearGradient>
       </View>
     </Modal>
   );
 }
 
-const webSheet = {
-  maxWidth: 540,
-  alignSelf: 'center',
-  width: '100%',
-  borderRadius: 20,
-  bottom: 'auto',
-  top: '50%',
-  transform: [{ translateY: -50 }],
-};
-
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#0f0f1f',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: '#ffffff18',
-    padding: 20,
-    paddingBottom: 36,
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  card: {
+    width: '90%',
     maxHeight: '85%',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
   },
-  handle: {
-    width: 40, height: 4,
-    backgroundColor: '#ffffff33',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004aad',
+    paddingRight: 8,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  scrollContent: { paddingBottom: 24 },
+
   imageWrap: {
-    height: 160,
-    backgroundColor: '#2a2a3e',
+    height: 180,
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.1)',
   },
-  image: { width: '100%', height: 160 },
+  image: { width: '100%', height: 180 },
   imagePlaceholder: { fontSize: 52 },
-  name: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 10 },
-  metaRow: { alignItems: 'center', gap: 16, marginBottom: 8 },
-  price: { fontSize: 18, fontWeight: '700', color: '#cb6ce6' },
-  location: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
-  poster: { fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 },
-  posterName: { color: '#cb6ce6', fontWeight: '600' },
+
+  infoBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.1)',
+  },
+  price: { fontSize: 18, fontWeight: '700', color: '#004aad' },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationIcon: { width: 14, height: 14 },
+  location: { fontSize: 14, color: '#004aad99', flex: 1 },
+
+  sellerBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.1)',
+  },
+  poster: { fontSize: 13, color: '#004aad99' },
+  posterName: { color: '#004aad', fontWeight: '600' },
+
   buyBtn: {
-    backgroundColor: '#cb6ce6',
+    backgroundColor: '#004aad',
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
+    marginTop: 8,
   },
   buyBtnDisabled: { opacity: 0.6 },
   buyText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
   reservedBtn: {
-    backgroundColor: '#555',
+    backgroundColor: 'rgba(0,0,0,0.08)',
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
+    marginTop: 8,
   },
-  reservedText: { color: 'rgba(255,255,255,0.5)', fontSize: 16, fontWeight: '700' },
+  reservedText: { color: '#004aad99', fontSize: 16, fontWeight: '700' },
 });

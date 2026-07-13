@@ -215,7 +215,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
           style={styles.card}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Text style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.post_listing')}
             </Text>
@@ -444,13 +444,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004aad',
-    textAlign: 'center',
+    paddingRight: 8,
   },
   closeBtn: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    padding: 4,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 24 },

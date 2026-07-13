@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, Image } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { MapPin, Calendar } from 'lucide-react-native';
+import { Calendar } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
@@ -206,7 +206,11 @@ export default function DashboardScreen() {
                     </Text>
                   </View>
                   <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <MapPin size={12} color={colors.textMuted} strokeWidth={1.5} />
+                    <Image
+                      source={require('../../../../../assets/images/location-icon.png')}
+                      style={styles.locationIcon}
+                      resizeMode="contain"
+                    />
                     <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                       {project.location}
                     </Text>
@@ -293,6 +297,7 @@ const styles = StyleSheet.create({
   projectCardTitle: { fontSize: 14, fontWeight: '700' },
   projectCardMeta: { fontSize: 12 },
   projectCardRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  locationIcon: { width: 14, height: 14 },
   header: {
     alignItems: 'center',
     paddingHorizontal: 16,

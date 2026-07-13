@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'rea
 import { getDocument } from '@core/firebase/firestore';
 import type { PriceOffer } from '@core/types/project';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAppFont } from '@core/hooks/useAppFont';
 
 type Props = {
   offer: PriceOffer;
@@ -14,6 +15,7 @@ type Props = {
 export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props) {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const colors = useTheme();
+  const font = useAppFont();
 
   useEffect(() => {
     getDocument<{ displayName: string }>(`users/${offer.professionalId}`).then((u) => {
@@ -25,12 +27,12 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
     <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.name, { color: '#004aad' }]}>{displayName ?? '…'}</Text>
-          <Text style={[styles.role, { color: colors.textSec }]}>
+          <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold }]}>{displayName ?? '…'}</Text>
+          <Text style={[styles.role, { color: colors.textSec, fontFamily: font.regular }]}>
             {offer.subcategory}
-            <Text style={{ color: colors.textMuted }}> · {offer.category}</Text>
+            <Text style={{ color: colors.textMuted, fontFamily: font.regular }}> · {offer.category}</Text>
           </Text>
-          <Text style={styles.price}>${offer.price.toLocaleString()}</Text>
+          <Text style={[styles.price, { fontFamily: font.bold }]}>${offer.price.toLocaleString()}</Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
@@ -42,7 +44,7 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
             {isAccepting ? (
               <ActivityIndicator size="small" color="#4caf50" />
             ) : (
-              <Text style={styles.acceptIcon}>✓</Text>
+              <Text style={[styles.acceptIcon, { fontFamily: font.bold }]}>✓</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -50,7 +52,7 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
             onPress={onReject}
             activeOpacity={0.8}
           >
-            <Text style={styles.rejectIcon}>✕</Text>
+            <Text style={[styles.rejectIcon, { fontFamily: font.bold }]}>✕</Text>
           </TouchableOpacity>
         </View>
       </View>

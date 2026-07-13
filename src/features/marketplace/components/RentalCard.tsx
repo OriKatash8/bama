@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import type { MarketplaceListing } from '../types';
+import { useSettingsStore } from '@core/stores/settingsStore';
 
 type Props = {
   listing: MarketplaceListing;
@@ -7,6 +8,8 @@ type Props = {
 };
 
 export function RentalCard({ listing, onPress }: Props) {
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.imageWrap}>
@@ -19,7 +22,14 @@ export function RentalCard({ listing, onPress }: Props) {
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={2}>{listing.productName}</Text>
         <Text style={styles.price}>₪{listing.price.toLocaleString()}/day</Text>
-        <Text style={styles.location}>📍 {listing.location}</Text>
+        <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <Image
+            source={require('../../../../assets/images/location-icon.png')}
+            style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+            resizeMode="contain"
+          />
+          <Text style={styles.location} numberOfLines={1}>{listing.location}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -46,5 +56,7 @@ const styles = StyleSheet.create({
   body: { padding: 8, gap: 2 },
   name: { fontSize: 13, fontWeight: '700', color: '#fff' },
   price: { fontSize: 13, fontWeight: '700', color: '#cb6ce6' },
-  location: { fontSize: 11, color: 'rgba(255,255,255,0.45)' },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationIcon: { width: 14, height: 14 },
+  location: { fontSize: 11, color: 'rgba(255,255,255,0.45)', flex: 1 },
 });

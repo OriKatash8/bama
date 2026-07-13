@@ -380,7 +380,7 @@ export default function MarketplaceScreen() {
             style={styles.filterCard}
           >
             {/* Header */}
-            <View style={styles.filterCardHeader}>
+            <View style={[styles.filterCardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.filterCardTitle, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.filters_title')}
               </Text>
@@ -624,16 +624,16 @@ const styles = StyleSheet.create({
   filterCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   filterCardTitle: {
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004aad',
-    textAlign: 'center',
+    paddingRight: 8,
   },
-  filterCloseBtn: { position: 'absolute', right: 0, top: 0, padding: 4 },
+  filterCloseBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   filterScroll: { flexShrink: 1 },
 
   filterSectionLabel: {
