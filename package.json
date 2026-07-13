@@ -24,6 +24,7 @@
     "firebase": "^12.15.0",
     "i18next": "^26.3.6",
     "lucide-react-native": "^1.21.0",
+    "moti": "^0.30.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-i18next": "^17.0.9",
@@ -35,6 +36,7 @@
     "react-native-svg": "^15.15.5",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.8.3",
+    "tslib": "^2.8.1",
     "xml2js": "^0.6.2",
     "zustand": "^5.0.13"
   },

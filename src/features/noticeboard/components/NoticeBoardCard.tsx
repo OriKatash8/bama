@@ -13,17 +13,25 @@ type Props = {
   onDismiss: () => void;
   onMakeOffer: () => void;
   isApplying: boolean;
+  isDirectInvite?: boolean;
+  directInviteLabel?: string;
 };
 
-export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying }: Props) {
+export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
   const allRoles = [...new Set(request.crewSlots.map((s) => s.subcategory))];
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
-  const cardBg = isDark ? '#ffffff' : '#ffffff';
+  const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
+  const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
 
   return (
-    <TouchableOpacity style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: cardBg, borderColor: isDirectInvite ? '#cb6ce6' : colors.border }]} onPress={onPress} activeOpacity={0.85}>
+      {isDirectInvite && directInviteLabel && (
+        <View style={styles.directBadge}>
+          <Text style={styles.directBadgeText}>{directInviteLabel}</Text>
+        </View>
+      )}
       {poster && (
         <View style={styles.posterRow}>
           {poster.photoURL ? (
@@ -38,12 +46,12 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       )}
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.title, { color: '#004aad' }]} numberOfLines={1}>{request.title}</Text>
-          <Text style={[styles.location, { color: '#004aad' }]}>📍 {request.location}</Text>
-          <Text style={[styles.meta, { color: '#004aad' }]}>
-            {request.exec ?? (request as any).date ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
+          <Text style={[styles.title, { color: textColor, fontWeight: isDirectInvite ? '800' : '700' }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.location, { color: textColor }]}>📍 {request.location}</Text>
+          <Text style={[styles.meta, { color: textColor }]}>
+            {request.exec ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
           </Text>
-          <Text style={[styles.roles, { color: '#004aad' }]} numberOfLines={2}>
+          <Text style={[styles.roles, { color: textColor, fontWeight: isDirectInvite ? '700' : '600' }]} numberOfLines={2}>
             {allRoles.join(' | ')}
           </Text>
         </View>
@@ -83,6 +91,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  directBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#cb6ce6',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginBottom: 8,
+  },
+  directBadgeText: { color: '#004aad', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   posterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   posterAvatar: { width: 28, height: 28, borderRadius: 14 },
   posterAvatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },

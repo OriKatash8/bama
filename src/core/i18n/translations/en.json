@@ -40,7 +40,14 @@
     "project_details": "Project Details",
     "request_submitted": "Request submitted!",
     "role": "role",
-    "roles": "roles"
+    "roles": "roles",
+    "tell_us": "Tell us about your project",
+    "tell_us_placeholder": "Describe what you're making, when, and what you need",
+    "generating_title": "Generating title...",
+    "confirm_title": "Project title",
+    "confirm_title_hint": "We generated this from your description — edit it if you'd like",
+    "title_failed": "We couldn't generate a title. Please enter one:",
+    "looks_good": "Looks good — Submit"
   },
   "search": {
     "no_professionals_yet": "No professionals yet",
@@ -50,7 +57,8 @@
     "placeholder": "Search by role, skill, or name…",
     "no_results_title": "No professionals found",
     "no_results_subtext": "No results for \"{{query}}\"",
-    "no_categories_match": "No categories match \"{{query}}\""
+    "no_categories_match": "No categories match \"{{query}}\"",
+    "tell_us_about_project": "Tell us about your project"
   },
   "chats": {
     "status_open": "Open",
@@ -219,7 +227,19 @@
     "open_projects_other": "{{count}} open projects",
     "no_projects": "No open projects right now",
     "check_back": "Check back later for new opportunities",
-    "offer_submitted": "Offer submitted!"
+    "offer_submitted": "Offer submitted!",
+    "direct_invite": "Sent directly to you",
+    "bundle_title": "Offer a bundle deal?",
+    "bundle_body": "You're offering {{count}} roles. Offer a better price if the client takes you for all of them.",
+    "bundle_price_label": "Your bundle price (₪)",
+    "bundle_price_required": "Enter a bundle price",
+    "bundle_price_error": "Bundle price must be less than the individual total",
+    "skip_bundle": "Skip",
+    "add_bundle": "Add bundle offer"
+  },
+  "offers": {
+    "bundle_badge": "Bundle deal",
+    "instead_of": "instead of"
   },
   "marketplace": {
     "category_camera": "Camera",

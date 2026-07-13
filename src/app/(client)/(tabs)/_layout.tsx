@@ -63,15 +63,14 @@ export default function ClientTabsLayout() {
             title: t('tabs.profile'),
             headerShown: false,
             tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2.5} />,
-            tabBarButton: ({ style, children, onPress, href: _href, onLongPress: _onLongPress, ...rest }) => (
+            tabBarButton: ({ style, children, onPress }) => (
               <TouchableOpacity
-                style={style}
+                style={style ?? undefined}
                 onPress={onPress ?? undefined}
                 onLongPress={() => setSheetVisible(true)}
                 delayLongPress={500}
-                {...rest}
               >
-                {children}
+                {children as React.ReactNode}
               </TouchableOpacity>
             ),
           }}

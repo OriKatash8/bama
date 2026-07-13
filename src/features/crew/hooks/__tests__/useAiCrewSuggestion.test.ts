@@ -1,44 +1,38 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useAiCrewSuggestion } from '../useAiCrewSuggestion';
 
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+jest.mock('@core/services/aiService', () => ({
+  callClaudeAI: jest.fn(),
+}));
+
+import { callClaudeAI } from '@core/services/aiService';
+const mockCallClaudeAI = callClaudeAI as jest.MockedFunction<typeof callClaudeAI>;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  process.env.EXPO_PUBLIC_CLAUDE_API_KEY = 'test-key';
-});
-
-afterEach(() => {
-  delete process.env.EXPO_PUBLIC_CLAUDE_API_KEY;
 });
 
 describe('useAiCrewSuggestion', () => {
-  it('calls Anthropic API and sets suggestion on success', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ content: [{ text: 'You need 1 DP and 2 camera operators.' }] }),
-    });
+  it('calls callClaudeAI and sets suggestion on success', async () => {
+    mockCallClaudeAI.mockResolvedValue('You need 1 DP and 2 camera operators.');
 
     const { result } = renderHook(() => useAiCrewSuggestion());
     await act(async () => {
       await result.current.suggest('Music video shoot');
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.anthropic.com/v1/messages',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({ 'x-api-key': 'test-key' }),
-      })
+    expect(mockCallClaudeAI).toHaveBeenCalledWith(
+      expect.any(String),
+      [{ role: 'user', content: 'Music video shoot' }],
+      300,
     );
     expect(result.current.suggestion).toBe('You need 1 DP and 2 camera operators.');
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
   });
 
-  it('sets error on non-ok API response', async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 401 });
+  it('sets error when callClaudeAI throws', async () => {
+    mockCallClaudeAI.mockRejectedValue(new Error('API error 401'));
 
     const { result } = renderHook(() => useAiCrewSuggestion());
     await act(async () => {
@@ -51,7 +45,7 @@ describe('useAiCrewSuggestion', () => {
   });
 
   it('sets error on network failure', async () => {
-    mockFetch.mockRejectedValue(new Error('Network failure'));
+    mockCallClaudeAI.mockRejectedValue(new Error('Network failure'));
 
     const { result } = renderHook(() => useAiCrewSuggestion());
     await act(async () => {
@@ -62,21 +56,19 @@ describe('useAiCrewSuggestion', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it('does nothing when API key is absent', async () => {
-    delete process.env.EXPO_PUBLIC_CLAUDE_API_KEY;
-
+  it('does nothing when description is empty', async () => {
     const { result } = renderHook(() => useAiCrewSuggestion());
     await act(async () => {
-      await result.current.suggest('Test project');
+      await result.current.suggest('   ');
     });
 
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockCallClaudeAI).not.toHaveBeenCalled();
     expect(result.current.suggestion).toBeNull();
     expect(result.current.error).toBeNull();
   });
 
   it('resets suggestion and error at start of a new call', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+    mockCallClaudeAI.mockRejectedValueOnce(new Error('API error 500'));
 
     const { result } = renderHook(() => useAiCrewSuggestion());
     await act(async () => {
@@ -84,10 +76,7 @@ describe('useAiCrewSuggestion', () => {
     });
     expect(result.current.error).toBe('API error 500');
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ content: [{ text: 'Fresh suggestion' }] }),
-    });
+    mockCallClaudeAI.mockResolvedValueOnce('Fresh suggestion');
     await act(async () => {
       await result.current.suggest('Second call');
     });

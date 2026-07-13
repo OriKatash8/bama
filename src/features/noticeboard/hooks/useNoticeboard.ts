@@ -26,7 +26,10 @@ export function filterByProfessionalCategories(
   );
 }
 
-export function useNoticeboard(professionalCategories: string[] | null) {
+export function useNoticeboard(
+  professionalCategories: string[] | null,
+  currentUserId: string | undefined,
+) {
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
   const [posters, setPosters] = useState<Record<string, PosterInfo>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -40,8 +43,18 @@ export function useNoticeboard(professionalCategories: string[] | null) {
       'projects',
       async (data) => {
         const sorted = [...data].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-        const vacant = sorted.filter(r => getVacantSlots(r).length > 0);
-        const filtered = filterByProfessionalCategories(vacant, professionalCategories);
+        const withVacancy = sorted.filter(r => getVacantSlots(r).length > 0);
+
+        // Direct projects addressed to this professional — bypass skill filter, show first
+        const directProjects = currentUserId
+          ? withVacancy.filter(r => r.targetProfessionalId != null && r.targetProfessionalId === currentUserId)
+          : [];
+
+        // Regular projects (no targetProfessionalId) — apply skill filter
+        const regularOpen = withVacancy.filter(r => r.targetProfessionalId == null);
+        const regularFiltered = filterByProfessionalCategories(regularOpen, professionalCategories);
+
+        const filtered = [...directProjects, ...regularFiltered];
         setRequests(filtered);
 
         const uniqueClientIds = [...new Set(filtered.map(r => r.clientId))];
@@ -70,7 +83,7 @@ export function useNoticeboard(professionalCategories: string[] | null) {
       },
       where('status', '==', 'open')
     );
-  }, [categoriesKey]);
+  }, [categoriesKey, currentUserId]);
 
   return { requests, posters, isLoading };
 }

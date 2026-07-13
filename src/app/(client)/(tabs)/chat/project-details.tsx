@@ -19,7 +19,7 @@ import { useTheme, type AppColors } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest } from '@core/types/project';
+import type { BundleOffer, FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
 import {
   calculateProjectFee,
@@ -92,6 +92,7 @@ export default function ProjectDetailsScreen() {
   const [clientUser, setClientUser] = useState<MemberInfo | null>(null);
   const [memberUsers, setMemberUsers] = useState<Record<string, MemberInfo>>({});
   const [acceptedOffers, setAcceptedOffers] = useState<PriceOffer[]>([]);
+  const [bundleMap, setBundleMap] = useState<Map<string, BundleOffer>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [showPaymentSummary, setShowPaymentSummary] = useState(false);
   const [feeData, setFeeData] = useState<ProjectFee | null>(null);
@@ -138,6 +139,20 @@ export default function ProjectDetailsScreen() {
 
       if (client) setClientUser(client);
       setAcceptedOffers(offers);
+
+      // Fetch bundle offer docs for any bundled price offers
+      const bundleIds = [...new Set(offers.filter((o) => o.bundleId).map((o) => o.bundleId!))];
+      if (bundleIds.length > 0) {
+        const bundleDocs = await Promise.all(
+          bundleIds.map((id) => getDocument<BundleOffer>(`bundleOffers/${id}`))
+        );
+        const map = new Map<string, BundleOffer>();
+        bundleIds.forEach((id, i) => {
+          const b = bundleDocs[i];
+          if (b) map.set(id, b);
+        });
+        setBundleMap(map);
+      }
 
       const uniqueProfessionalIds = [
         ...new Set((projectData.filledSlots ?? []).map((s) => s.professionalId)),
@@ -330,8 +345,37 @@ export default function ProjectDetailsScreen() {
   };
 
   const statusColor = STATUS_COLORS[project.status];
-  const total = acceptedOffers.reduce((sum, o) => sum + o.price, 0);
   const filledSlots: FilledSlot[] = project.filledSlots ?? [];
+
+  // Build grouped payment entries (bundles collapse to one row at bundlePrice)
+  type PaymentEntry =
+    | { kind: 'individual'; offer: PriceOffer }
+    | { kind: 'bundle'; bundleId: string; bundle: BundleOffer; offers: PriceOffer[] };
+
+  const paymentEntries: PaymentEntry[] = [];
+  const seenBundleIds = new Set<string>();
+  for (const offer of acceptedOffers) {
+    if (offer.bundleId) {
+      if (!seenBundleIds.has(offer.bundleId)) {
+        seenBundleIds.add(offer.bundleId);
+        const bundle = bundleMap.get(offer.bundleId);
+        if (bundle) {
+          paymentEntries.push({
+            kind: 'bundle',
+            bundleId: offer.bundleId,
+            bundle,
+            offers: acceptedOffers.filter((o) => o.bundleId === offer.bundleId),
+          });
+        }
+      }
+    } else {
+      paymentEntries.push({ kind: 'individual', offer });
+    }
+  }
+  const total = paymentEntries.reduce(
+    (sum, e) => sum + (e.kind === 'bundle' ? e.bundle.bundlePrice : e.offer.price),
+    0,
+  );
   const currentUserId = auth.currentUser?.uid ?? '';
   const isClient = currentUserId === project.clientId;
   const isCompleted = project.status === 'completed';
@@ -371,7 +415,7 @@ export default function ProjectDetailsScreen() {
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* SECTION 1 — Project Info */}
         <Text style={[styles.projectTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
@@ -586,13 +630,41 @@ export default function ProjectDetailsScreen() {
         )}
 
         {/* Payment list */}
-        {acceptedOffers.length === 0 ? (
+        {paymentEntries.length === 0 ? (
           <Text style={[styles.emptyNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
             {t('project_details.no_offers')}
           </Text>
         ) : (
           <View style={[styles.metaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {acceptedOffers.map((offer, i) => {
+            {paymentEntries.map((entry, i) => {
+              const isLast = i === paymentEntries.length - 1;
+              if (entry.kind === 'bundle') {
+                const member = memberUsers[entry.bundle.professionalId];
+                const name = member?.displayName ?? entry.bundle.professionalId;
+                const roles = entry.offers.map((o) => o.subcategory).join(' | ');
+                return (
+                  <View key={entry.bundleId}>
+                    <View style={styles.paymentRow}>
+                      <View style={styles.paymentLeft}>
+                        <View style={styles.paymentNameRow}>
+                          <Text style={[styles.paymentName, { color: colors.text }]}>{name}</Text>
+                          <View style={styles.bundlePayBadge}>
+                            <Text style={styles.bundlePayBadgeText}>{t('offers.bundle_badge')}</Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.paymentRole, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                          {roles}
+                        </Text>
+                      </View>
+                      <Text style={[styles.paymentAmount, { color: colors.text }]}>
+                        ₪{entry.bundle.bundlePrice.toLocaleString()}
+                      </Text>
+                    </View>
+                    {!isLast && <RowDivider colors={colors} />}
+                  </View>
+                );
+              }
+              const { offer } = entry;
               const member = memberUsers[offer.professionalId];
               const name = member?.displayName ?? offer.professionalId;
               return (
@@ -606,7 +678,7 @@ export default function ProjectDetailsScreen() {
                     </View>
                     <View style={styles.paymentRight}>
                       <Text style={[styles.paymentAmount, { color: colors.text }]}>
-                        ${offer.price.toLocaleString()}
+                        ₪{offer.price.toLocaleString()}
                       </Text>
                       <TouchableOpacity
                         style={styles.requestUpdateBtn}
@@ -622,7 +694,7 @@ export default function ProjectDetailsScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  {i < acceptedOffers.length - 1 && <RowDivider colors={colors} />}
+                  {!isLast && <RowDivider colors={colors} />}
                 </View>
               );
             })}
@@ -632,7 +704,7 @@ export default function ProjectDetailsScreen() {
                 {t('project_details.total')}
               </Text>
               <Text style={[styles.paymentTotalAmount, { color: colors.primary }]}>
-                ${total.toLocaleString()}
+                ₪{total.toLocaleString()}
               </Text>
             </View>
           </View>
@@ -1012,6 +1084,7 @@ function MemberRow({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  flex: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   errorText: { fontSize: 16 },
 
@@ -1114,9 +1187,12 @@ const styles = StyleSheet.create({
   },
   paymentLeft: { flex: 1, gap: 2 },
   paymentRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  paymentNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   paymentName: { fontSize: 14, fontWeight: '600' },
   paymentRole: { fontSize: 12 },
   paymentAmount: { fontSize: 15, fontWeight: '600' },
+  bundlePayBadge: { backgroundColor: '#cb6ce6', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  bundlePayBadgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   paymentTotalLabel: { fontSize: 15, fontWeight: '700' },
   paymentTotalAmount: { fontSize: 17, fontWeight: '800' },
 

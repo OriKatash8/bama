@@ -9,9 +9,13 @@ const AVAILABILITY_COLOR: Record<string, string> = {
   unavailable: '#ef4444',
 };
 
-type Props = { item: ProfessionalResult; onMessage?: () => Promise<void> };
+type Props = {
+  item: ProfessionalResult;
+  onMessage?: () => Promise<void>;
+  onDirectProject?: () => void;
+};
 
-export function ProfessionalCard({ item, onMessage }: Props) {
+export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
   const colors = useTheme();
   const { user, profile } = item;
   const [isMessaging, setIsMessaging] = useState(false);
@@ -80,7 +84,16 @@ export function ProfessionalCard({ item, onMessage }: Props) {
         </View>
       )}
 
-      {onMessage && (
+      {onDirectProject && (
+        <TouchableOpacity
+          style={[styles.messageBtn, { backgroundColor: '#004aad' }]}
+          onPress={onDirectProject}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.messageBtnText}>Tell us about your project</Text>
+        </TouchableOpacity>
+      )}
+      {onMessage && !onDirectProject && (
         <TouchableOpacity
           style={[styles.messageBtn, { backgroundColor: colors.accent }]}
           onPress={handleMessagePress}

@@ -12,7 +12,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../../core/firebase/config';
-import type { PriceOffer, PaymentRequest } from '../../../core/types/project';
+import type { PriceOffer, BundleOffer, PaymentRequest } from '../../../core/types/project';
 import type { User } from '../../../core/types/user';
 
 export type ProjectFeeSlot = {
@@ -37,14 +37,47 @@ export async function calculateProjectFee(projectId: string): Promise<ProjectFee
     ),
   );
 
+  const offers = offersSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as PriceOffer);
+
+  // Fetch bundle prices for any bundled offers (deduplicated)
+  const bundleIds = [...new Set(offers.filter((o) => o.bundleId).map((o) => o.bundleId!))];
+  const bundlePriceMap = new Map<string, { bundlePrice: number; professionalId: string }>();
+  await Promise.all(
+    bundleIds.map(async (bundleId) => {
+      const snap = await getDoc(doc(db, 'bundleOffers', bundleId));
+      if (snap.exists()) {
+        const b = snap.data() as BundleOffer;
+        bundlePriceMap.set(bundleId, { bundlePrice: b.bundlePrice, professionalId: b.professionalId });
+      }
+    }),
+  );
+
+  // Build fee slots: each bundle counts once; individual offers count normally
+  const seenBundleIds = new Set<string>();
+  const feeEntries: Array<{ professionalId: string; amount: number }> = [];
+
+  for (const offer of offers) {
+    if (offer.bundleId) {
+      if (!seenBundleIds.has(offer.bundleId)) {
+        seenBundleIds.add(offer.bundleId);
+        const entry = bundlePriceMap.get(offer.bundleId);
+        if (entry) {
+          feeEntries.push({ professionalId: entry.professionalId, amount: entry.bundlePrice });
+        }
+      }
+    } else {
+      feeEntries.push({ professionalId: offer.professionalId, amount: offer.price });
+    }
+  }
+
+  // Resolve display names
   const slots: ProjectFeeSlot[] = await Promise.all(
-    offersSnap.docs.map(async (offerDoc) => {
-      const offer = { id: offerDoc.id, ...offerDoc.data() } as PriceOffer;
-      const userSnap = await getDoc(doc(db, 'users', offer.professionalId));
+    feeEntries.map(async ({ professionalId, amount }) => {
+      const userSnap = await getDoc(doc(db, 'users', professionalId));
       const displayName = userSnap.exists()
         ? (userSnap.data() as User).displayName
-        : offer.professionalId;
-      return { professionalId: offer.professionalId, displayName, amount: offer.price };
+        : professionalId;
+      return { professionalId, displayName, amount };
     }),
   );
 

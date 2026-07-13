@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { MotiView } from 'moti';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
   Image, useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
@@ -13,6 +14,8 @@ import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
 import { Calendar } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
+import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest } from '@core/types/project';
@@ -57,7 +60,6 @@ export default function HomeScreen() {
   const tileSize = Math.floor((width - 64 - 32 - 12) / 3);
 
   const language = useSettingsStore((s) => s.language);
-  console.log('[home] language from store:', language);
   const translations = language === 'he' ? he : en;
   const t = (key: string): string => {
     const keys = key.split('.');
@@ -68,16 +70,14 @@ export default function HomeScreen() {
   const getCategoryLabel = (labelKey: string) => labelKey === 'AI' ? 'AI' : t(labelKey);
   const rtl = language === 'he';
 
-  const fontFamily = language === 'he' ? 'Heebo-Regular' : 'Montserrat';
-  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
-  const fontFamilySemiBold = language === 'he' ? 'Heebo-SemiBold' : 'Montserrat-SemiBold';
-  const fontFamilyMedium = language === 'he' ? 'Heebo-Medium' : 'Montserrat-Medium';
+  const font = useAppFont();
   const styles = useMemo(
-    () => createStyles(fontFamily, fontFamilyBold, fontFamilySemiBold, fontFamilyMedium),
-    [fontFamily, fontFamilyBold, fontFamilySemiBold, fontFamilyMedium],
+    () => createStyles(font.regular, font.bold, font.semiBold, font.medium),
+    [font.regular, font.bold, font.semiBold, font.medium],
   );
 
-  const [title, setTitle] = useState('');
+  const { generateTitle, isGenerating } = useGenerateTitle();
+
   const [description, setDescription] = useState('');
   const [exec, setExec] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -86,13 +86,17 @@ export default function HomeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
 
+  // Title confirmation modal state
+  const [titleModalVisible, setTitleModalVisible] = useState(false);
+  const [pendingTitle, setPendingTitle] = useState('');
+  const [titleFailed, setTitleFailed] = useState(false);
+
   useEffect(() => {
     if (!projectId) return;
     setIsLoadingProject(true);
     getDocument<ProjectRequest>(`projects/${projectId}`)
       .then((project) => {
         if (!project) return;
-        setTitle(project.title);
         setDescription(project.description);
         setExec(project.exec ?? '');
         setDeadline(project.deadline ?? '');
@@ -135,7 +139,6 @@ export default function HomeScreen() {
   function validate(): boolean {
     const next: Record<string, string> = {};
     if (totalCount === 0) next.slots = t('builder.error_role');
-    if (!title.trim()) next.title = t('builder.error_required');
     if (!description.trim()) next.description = t('builder.error_required');
     if (!deadline) next.deadline = t('builder.error_required');
     if (!location.trim()) next.location = t('builder.error_required');
@@ -145,21 +148,36 @@ export default function HomeScreen() {
 
   async function handleSubmit() {
     if (!validate()) return;
+
+    try {
+      const generated = await generateTitle(description);
+      setPendingTitle(generated);
+      setTitleFailed(false);
+    } catch {
+      setPendingTitle('');
+      setTitleFailed(true);
+    }
+    setTitleModalVisible(true);
+  }
+
+  async function doSubmit(title: string) {
     setIsSubmitting(true);
     try {
       if (isEditMode && projectId) {
         await updateProject(projectId as string, slots, { title, description, exec, deadline, location });
         showToast(t('builder.project_updated'), 'success');
+        setTitleModalVisible(false);
         resetSlots();
-        setTitle('');
+        setDescription('');
         setExec(''); setDeadline('');
         setLocation('');
         setErrors({});
         router.navigate('/(client)/(tabs)/chats' as never);
       } else {
         await submit(slots, { title, description, exec, deadline, location });
+        setTitleModalVisible(false);
         resetSlots();
-        setTitle('');
+        setDescription('');
         setExec(''); setDeadline('');
         setLocation('');
         setErrors({});
@@ -181,6 +199,8 @@ export default function HomeScreen() {
     );
   }
 
+  const isBusy = isGenerating || isSubmitting;
+
   return (
     <Screen scrollable={false}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -191,23 +211,12 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: '#ffffff', textAlign: 'center', marginTop: 20, textTransform: 'uppercase', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 }, Platform.OS === 'web' && { textShadow: '0 2px 8px rgba(0,0,0,0.4)' } as object]}>{t('builder.project_details')}</Text>
 
         <View style={styles.card}>
-
-          <Text style={[styles.label, { color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>{t('builder.title')}</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow]}
-            value={title}
-            onChangeText={setTitle}
-            placeholder={t('builder.placeholder_title')}
-            placeholderTextColor="#7b2fa899"
-          />
-          {errors.title ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.title}</Text> : null}
-
-          <Text style={[styles.label, { color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>{t('builder.description')}</Text>
+          <Text style={[styles.label, { color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>{t('builder.tell_us')}</Text>
           <TextInput
             style={[styles.input, styles.multiline, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow]}
             value={description}
             onChangeText={setDescription}
-            placeholder={t('builder.placeholder_description')}
+            placeholder={t('builder.tell_us_placeholder')}
             placeholderTextColor="#7b2fa899"
             multiline
             numberOfLines={4}
@@ -260,29 +269,35 @@ export default function HomeScreen() {
           {errors.slots ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.slots}</Text> : null}
 
           <View style={styles.grid}>
-            {CATEGORIES.map((cat) => {
+            {CATEGORIES.map((cat, index) => {
               const catTotal = slots
                 .filter(s => s.category === cat.key)
                 .reduce((sum, s) => sum + s.quantity, 0);
               return (
-                <TouchableOpacity
+                <MotiView
                   key={cat.key}
-                  style={[styles.tile, { width: tileSize, height: tileSize }]}
-                  onPress={() => openCategory(cat)}
-                  activeOpacity={0.85}
+                  from={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: 'timing', duration: 300, delay: index * 50 }}
                 >
-                  {cat.image ? (
-                    <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
-                  ) : null}
-                  <View style={styles.tileOverlay}>
-                    <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
-                  </View>
-                  {catTotal > 0 && (
-                    <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
-                      <Text style={styles.tileBadgeText}>{catTotal}</Text>
+                  <TouchableOpacity
+                    style={[styles.tile, { width: tileSize, height: tileSize }]}
+                    onPress={() => openCategory(cat)}
+                    activeOpacity={0.85}
+                  >
+                    {cat.image ? (
+                      <Image source={cat.image} style={styles.tileImage} resizeMode="cover" />
+                    ) : null}
+                    <View style={styles.tileOverlay}>
+                      <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
                     </View>
-                  )}
-                </TouchableOpacity>
+                    {catTotal > 0 && (
+                      <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
+                        <Text style={styles.tileBadgeText}>{catTotal}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </MotiView>
               );
             })}
           </View>
@@ -292,16 +307,16 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={[
               styles.submitBtn,
-              isSubmitting && styles.disabled,
-              Platform.OS === 'web' && ({ background: isSubmitting ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
+              isBusy && styles.disabled,
+              Platform.OS === 'web' && ({ background: isBusy ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
             ]}
             onPress={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isBusy}
             activeOpacity={0.8}
           >
             <Text style={styles.submitText}>
-              {isSubmitting
-                ? (isEditMode ? t('builder.saving') : t('builder.submitting'))
+              {isGenerating
+                ? t('builder.generating_title')
                 : isEditMode
                   ? t('builder.save_changes')
                   : `${t('builder.submit_request')}${totalCount > 0 ? ` (${totalCount} ${totalCount === 1 ? t('builder.role') : t('builder.roles')})` : ''}`}
@@ -310,6 +325,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
+      {/* Category picker modal */}
       <Modal visible={modalVisible} transparent animationType="none" onRequestClose={closeModal}>
         <TouchableWithoutFeedback onPress={closeModal}>
           <View style={styles.backdrop}>
@@ -379,6 +395,51 @@ export default function HomeScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* Title confirmation modal */}
+      <Modal visible={titleModalVisible} transparent animationType="fade" onRequestClose={() => setTitleModalVisible(false)}>
+        <View style={styles.backdrop}>
+          <View style={[styles.titleModal, { backgroundColor: colors.card, borderColor: colors.accent }, Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as object)]}>
+            <Text style={[styles.titleModalHeading, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('builder.confirm_title')}
+            </Text>
+            <Text style={[styles.titleModalHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+              {titleFailed ? t('builder.title_failed') : t('builder.confirm_title_hint')}
+            </Text>
+            <TextInput
+              style={[styles.titleInput, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow]}
+              value={pendingTitle}
+              onChangeText={setPendingTitle}
+              placeholder={t('builder.confirm_title')}
+              placeholderTextColor="#7b2fa899"
+              autoFocus
+            />
+            <TouchableOpacity
+              style={[
+                styles.submitBtn,
+                (!pendingTitle.trim() || isSubmitting) && styles.disabled,
+                Platform.OS === 'web' && ({ background: (!pendingTitle.trim() || isSubmitting) ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
+                { marginTop: 16 },
+              ]}
+              onPress={() => doSubmit(pendingTitle.trim())}
+              disabled={!pendingTitle.trim() || isSubmitting}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.submitText}>
+                {isSubmitting ? t('builder.submitting') : t('builder.looks_good')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => setTitleModalVisible(false)}
+              disabled={isSubmitting}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.cancelText, { color: colors.textMuted }]}>{t('project_details.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {calOpen !== null && (
         <MiniCalendar
           value={calOpen === 'exec' ? exec : deadline}
@@ -422,6 +483,8 @@ function createStyles(
     submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginTop: 8 },
     disabled: { backgroundColor: '#555' },
     submitText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: ffBold },
+    cancelBtn: { alignItems: 'center', paddingVertical: 12 },
+    cancelText: { fontSize: 15, fontFamily: ff },
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
     panel: { width: '100%', maxHeight: '80%', borderRadius: 24, borderWidth: 2, overflow: 'hidden' },
     panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
@@ -450,5 +513,9 @@ function createStyles(
       marginTop: 6,
     },
     dateBtnText: { fontSize: 13, flex: 1, fontFamily: ff },
+    titleModal: { width: '100%', borderRadius: 24, borderWidth: 2, padding: 24 },
+    titleModalHeading: { fontSize: 20, fontWeight: '700', fontFamily: ffBold, marginBottom: 8 },
+    titleModalHint: { fontSize: 14, fontFamily: ff, marginBottom: 12 },
+    titleInput: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: ff },
   });
 }

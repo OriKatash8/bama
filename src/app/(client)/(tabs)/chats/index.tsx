@@ -6,13 +6,17 @@ import { useTheme } from '@core/hooks/useTheme';
 import { ProjectRequestCard } from '@features/crew/components';
 import { useProjectRequests } from '@features/crew/hooks';
 import { PriceOfferCard } from '@features/offers/components/PriceOfferCard';
+import { BundleOfferCard } from '@features/offers/components/BundleOfferCard';
 import { usePriceOffers } from '@features/offers/hooks/usePriceOffers';
+import { useBundleOffers } from '@features/offers/hooks/useBundleOffers';
 import { useAcceptOffer } from '@features/offers/hooks/useAcceptOffer';
+import { useAcceptBundleOffer } from '@features/offers/hooks/useAcceptBundleOffer';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { PriceOffer } from '@core/types/project';
+import type { PriceOffer, BundleOffer } from '@core/types/project';
 
 type Translations = typeof en;
 
@@ -47,12 +51,14 @@ export default function ChatsScreen() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
+  const font = useAppFont();
 
   const [active, setActive] = useState<TabKey>('chats');
   const { requests, isLoading: requestsLoading } = useProjectRequests();
   const { offers, isLoading: offersLoading } = usePriceOffers();
+  const { bundles, isLoading: bundlesLoading } = useBundleOffers();
   const { accept, reject, isAccepting } = useAcceptOffer();
+  const { acceptBundle, rejectBundle, isAccepting: isBundleAccepting } = useAcceptBundleOffer();
 
   const TAB_LABELS: Record<TabKey, string> = {
     chats:         t('chats_page.tab_chats'),
@@ -76,6 +82,23 @@ export default function ChatsScreen() {
     }
   }
 
+  async function handleAcceptBundle(bundle: BundleOffer) {
+    try {
+      await acceptBundle(bundle);
+      showToast(t('chats_page.offer_accepted'), 'success');
+    } catch {
+      showToast(t('chats_page.failed_accept'), 'error');
+    }
+  }
+
+  async function handleRejectBundle(bundleId: string) {
+    try {
+      await rejectBundle(bundleId);
+    } catch {
+      showToast(t('chats_page.failed_reject'), 'error');
+    }
+  }
+
   return (
     <Screen scrollable={false}>
       <ScrollView
@@ -87,7 +110,7 @@ export default function ChatsScreen() {
         {/* Header — title + tabs */}
         <View style={styles.headerWrap}>
           <View style={styles.gradient}>
-            <Text style={[styles.headerTitle, { fontFamily: fontFamilyBold }, Platform.OS !== 'web' && { color: colors.accent }, gradientStyle]}>
+            <Text style={[styles.headerTitle, { fontFamily: font.bold }, Platform.OS !== 'web' && { color: colors.accent }, gradientStyle]}>
               {t('chats_page.title')}
             </Text>
 
@@ -119,6 +142,27 @@ export default function ChatsScreen() {
         {/* Notifications */}
         {active === 'notifications' && (
           <View style={styles.notifContent}>
+            {bundles.length > 0 && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('chats_page.price_offers')}
+                </Text>
+                {bundlesLoading ? (
+                  <ActivityIndicator color={colors.accent} />
+                ) : (
+                  bundles.map((bundle) => (
+                    <BundleOfferCard
+                      key={bundle.id}
+                      bundle={bundle}
+                      onAccept={() => handleAcceptBundle(bundle)}
+                      onReject={() => handleRejectBundle(bundle.id)}
+                      isAccepting={isBundleAccepting === bundle.id}
+                    />
+                  ))
+                )}
+              </View>
+            )}
+
             {offers.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
@@ -180,7 +224,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',
-    fontFamily: 'Montserrat',
+    fontFamily: 'Montserrat-Regular',
     textAlign: 'center',
     textTransform: 'uppercase',
   },

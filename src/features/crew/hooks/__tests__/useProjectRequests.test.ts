@@ -45,12 +45,12 @@ describe('useProjectRequests', () => {
 
   it('returns requests sorted by createdAt descending', () => {
     const old = {
-      id: 'r1', clientId: 'u1', title: 'Old', crewSlots: [], description: '', date: '',
+      id: 'r1', clientId: 'u1', title: 'Old', crewSlots: [], description: '', deadline: '',
       location: '', status: 'open' as const, filledSlots: [],
       createdAt: { seconds: 100, nanoseconds: 0 },
     };
     const newer = {
-      id: 'r2', clientId: 'u1', title: 'New', crewSlots: [], description: '', date: '',
+      id: 'r2', clientId: 'u1', title: 'New', crewSlots: [], description: '', deadline: '',
       location: '', status: 'open' as const, filledSlots: [],
       createdAt: { seconds: 200, nanoseconds: 0 },
     };
@@ -67,7 +67,7 @@ describe('useProjectRequests', () => {
     mockAddDocument.mockResolvedValue('new-id');
     const { result } = renderHook(() => useProjectRequests());
     const slots = [{ category: 'Editor', subcategory: 'Video Editor', quantity: 1 }];
-    const details = { title: 'My Film', description: 'Test project', date: '2026-07-15', location: 'London' };
+    const details = { title: 'My Film', description: 'Test project', deadline: '2026-07-15', location: 'London' };
     await act(async () => {
       await result.current.submit(slots, details);
     });
@@ -78,7 +78,7 @@ describe('useProjectRequests', () => {
         crewSlots: slots,
         title: 'My Film',
         description: 'Test project',
-        date: '2026-07-15',
+        deadline: '2026-07-15',
         location: 'London',
         status: 'open',
         filledSlots: [],
@@ -92,7 +92,7 @@ describe('useProjectRequests', () => {
     const { result } = renderHook(() => useProjectRequests());
     await act(async () => {
       try {
-        await result.current.submit([], { title: '', description: '', date: '', location: '' });
+        await result.current.submit([], { title: '', description: '', deadline: '', location: '' });
       } catch {}
     });
     expect(result.current.error).toBe('Network error');
@@ -101,13 +101,13 @@ describe('useProjectRequests', () => {
   it('updateProject calls updateDocument with correct path and payload', async () => {
     const { result } = renderHook(() => useProjectRequests());
     const slots = [{ category: 'Editor', subcategory: 'Video Editor', quantity: 2 }];
-    const details = { title: 'Updated', description: 'New desc', date: '2026-08-01', location: 'Paris' };
+    const details = { title: 'Updated', description: 'New desc', deadline: '2026-08-01', location: 'Paris' };
     await act(async () => {
       await result.current.updateProject('proj-1', slots, details);
     });
     expect(mockUpdateDocument).toHaveBeenCalledWith(
       'projects/proj-1',
-      expect.objectContaining({ crewSlots: slots, title: 'Updated', description: 'New desc', date: '2026-08-01', location: 'Paris' })
+      expect.objectContaining({ crewSlots: slots, title: 'Updated', description: 'New desc', deadline: '2026-08-01', location: 'Paris' })
     );
   });
 
@@ -116,7 +116,7 @@ describe('useProjectRequests', () => {
     const { result } = renderHook(() => useProjectRequests());
     await act(async () => {
       try {
-        await result.current.updateProject('x', [], { title: '', description: '', date: '', location: '' });
+        await result.current.updateProject('x', [], { title: '', description: '', deadline: '', location: '' });
       } catch {}
     });
     expect(result.current.error).toBe('Update failed');

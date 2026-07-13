@@ -15,7 +15,7 @@ function makeRequest(
     clientId: 'client1',
     title: 'Test',
     description: '',
-    date: '2026-07-01',
+    deadline: '2026-07-01',
     location: 'NYC',
     status: 'open',
     createdAt: { seconds: 0, nanoseconds: 0 },

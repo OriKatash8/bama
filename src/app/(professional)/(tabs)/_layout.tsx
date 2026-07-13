@@ -71,15 +71,14 @@ export default function ProfessionalTabsLayout() {
             headerTintColor: colors.text,
             headerTitleStyle: { fontWeight: '800', fontSize: 20 },
             tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={1.5} />,
-            tabBarButton: ({ style, children, onPress, href: _href, onLongPress: _onLongPress, ...rest }) => (
+            tabBarButton: ({ style, children, onPress }) => (
               <TouchableOpacity
-                style={style}
+                style={style ?? undefined}
                 onPress={onPress ?? undefined}
                 onLongPress={() => setSheetVisible(true)}
                 delayLongPress={500}
-                {...rest}
               >
-                {children}
+                {children as React.ReactNode}
               </TouchableOpacity>
             ),
           }}

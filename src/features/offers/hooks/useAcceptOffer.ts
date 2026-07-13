@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { queryDocuments, getDocument, runBatchUpdates, updateDocument, arrayUnion, where } from '@core/firebase/firestore';
-import type { PriceOffer } from '@core/types/project';
+import type { PriceOffer, BundleOffer } from '@core/types/project';
 import { createProjectGroup, addMemberToGroup } from '../../chat/services/chatService';
 
 export function useAcceptOffer() {
@@ -38,6 +38,25 @@ export function useAcceptOffer() {
       } catch (e: any) {
         console.error('[useAcceptOffer] step 2 FAILED (accept offer status) — code:', e?.code, 'message:', e?.message, e);
         throw e;
+      }
+
+      // Step 2.5: reject any pending bundle offers from this same professional (they can't have both)
+      try {
+        const pendingBundles = await queryDocuments<BundleOffer>(
+          'bundleOffers',
+          where('projectId', '==', offer.projectId),
+          where('professionalId', '==', offer.professionalId),
+          where('status', '==', 'pending'),
+        );
+        if (pendingBundles.length > 0) {
+          await runBatchUpdates(
+            pendingBundles.map((b) => ({ path: `bundleOffers/${b.id}`, data: { status: 'rejected' } }))
+          );
+          console.log('[useAcceptOffer] step 2.5 ok — rejected', pendingBundles.length, 'pending bundle(s) from this professional');
+        }
+      } catch (e: any) {
+        console.error('[useAcceptOffer] step 2.5 FAILED (reject stale bundles) — code:', e?.code, 'message:', e?.message, e);
+        // Non-fatal: don't throw — the individual offer is already accepted
       }
 
       // Step 3: add professional to project filledSlots

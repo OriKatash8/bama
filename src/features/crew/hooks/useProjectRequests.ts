@@ -9,6 +9,7 @@ type SubmitDetails = {
   exec?: string;
   deadline: string;
   location: string;
+  targetProfessionalId?: string | null;
 };
 
 export function useProjectRequests() {

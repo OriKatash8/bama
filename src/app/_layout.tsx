@@ -10,9 +10,7 @@ import { ToastContainer } from '@components/ui/Toast';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 import { LanguageSync } from '@components/layout/LanguageSync';
 import { I18nextProvider } from 'react-i18next';
-
-(Text as any).defaultProps = { ...(Text as any).defaultProps, style: [{ fontFamily: 'Heebo-Regular' }, (Text as any).defaultProps?.style] };
-(TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, style: [{ fontFamily: 'Heebo-Regular' }, (TextInput as any).defaultProps?.style] };
+import { useAppFont } from '@core/hooks/useAppFont';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,15 +38,32 @@ function AppShell() {
     'Heebo-ExtraBold':  require('../../assets/fonts/Heebo-ExtraBold.ttf'),
     'Heebo-Black':      require('../../assets/fonts/Heebo-Black.ttf'),
     PeaceSans:          require('../../assets/fonts/peace-sans.ttf'),
-    Montserrat:         require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    'Montserrat-Regular':  require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    'Montserrat-Medium':   require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    'Montserrat-SemiBold': require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    'Montserrat-Bold':     require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    'Montserrat-Light':    require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    Montserrat:            require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
   });
 
   const [langKey, setLangKey] = useState(i18n.language);
   const colors = useTheme();
+  const font = useAppFont();
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    (Text as unknown as Record<string, unknown>).defaultProps = {
+      ...((Text as unknown as Record<string, unknown>).defaultProps as object | undefined),
+      style: [{ fontFamily: font.regular }],
+    };
+    (TextInput as unknown as Record<string, unknown>).defaultProps = {
+      ...((TextInput as unknown as Record<string, unknown>).defaultProps as object | undefined),
+      style: [{ fontFamily: font.regular }],
+    };
+  }, [font.regular]);
 
   useEffect(() => {
     const handler = (lang: string) => setLangKey(lang);

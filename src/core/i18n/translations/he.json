@@ -40,7 +40,14 @@
     "project_details": "פרטי הפרויקט",
     "request_submitted": "הבקשה נשלחה!",
     "role": "תפקיד",
-    "roles": "תפקידים"
+    "roles": "תפקידים",
+    "tell_us": "ספר לנו על הפרויקט שלך",
+    "tell_us_placeholder": "תאר מה אתה מפיק, מתי, ואיזה אנשי צוות אתה צריך",
+    "generating_title": "יוצר כותרת...",
+    "confirm_title": "כותרת הפרויקט",
+    "confirm_title_hint": "יצרנו את זה מהתיאור שלך — אפשר לערוך",
+    "title_failed": "לא הצלחנו ליצור כותרת. אנא הזן אחת:",
+    "looks_good": "נראה טוב — שלח"
   },
   "search": {
     "no_professionals_yet": "אין אנשי מקצוע עדיין",
@@ -50,7 +57,8 @@
     "placeholder": "חיפוש לפי תפקיד, מיומנות או שם…",
     "no_results_title": "לא נמצאו אנשי מקצוע",
     "no_results_subtext": "אין תוצאות עבור \"{{query}}\"",
-    "no_categories_match": "אין קטגוריות התואמות \"{{query}}\""
+    "no_categories_match": "אין קטגוריות התואמות \"{{query}}\"",
+    "tell_us_about_project": "ספר לנו על הפרויקט שלך"
   },
   "chats": {
     "status_open": "פתוח",
@@ -219,7 +227,19 @@
     "open_projects_other": "{{count}} פרויקטים פתוחים",
     "no_projects": "אין פרויקטים פתוחים כרגע",
     "check_back": "חזור מאוחר יותר להזדמנויות חדשות",
-    "offer_submitted": "ההצעה נשלחה!"
+    "offer_submitted": "ההצעה נשלחה!",
+    "direct_invite": "נשלח אליך ישירות",
+    "bundle_title": "להציע עסקת חבילה?",
+    "bundle_body": "אתה מציע {{count}} תפקידים. הצע מחיר טוב יותר אם הלקוח ייקח אותך לכולם.",
+    "bundle_price_label": "מחיר החבילה שלך (₪)",
+    "bundle_price_required": "הזן מחיר חבילה",
+    "bundle_price_error": "מחיר החבילה חייב להיות נמוך מהסכום הכולל",
+    "skip_bundle": "דלג",
+    "add_bundle": "הוסף הצעת חבילה"
+  },
+  "offers": {
+    "bundle_badge": "עסקת חבילה",
+    "instead_of": "במקום"
   },
   "marketplace": {
     "category_camera": "מצלמה",

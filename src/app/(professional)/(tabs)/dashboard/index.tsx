@@ -11,6 +11,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { where } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
@@ -62,7 +63,7 @@ export default function DashboardScreen() {
   const modeSegment = segments[0];
 
   const language = useSettingsStore((s) => s.language);
-  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
+  const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
@@ -71,7 +72,7 @@ export default function DashboardScreen() {
     [profile?.skills, profileLoading]
   );
 
-  const { requests, posters, isLoading } = useNoticeboard(categories);
+  const { requests, posters, isLoading } = useNoticeboard(categories, currentUserId);
 
   const { showToast } = useUiStore();
   const colors = useTheme();
@@ -177,7 +178,7 @@ export default function DashboardScreen() {
 
         {activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
-            <Text style={[styles.heading, { fontFamily: fontFamilyBold, color: colors.text, marginBottom: 16, textAlign: rtl ? 'right' : 'left' }, gradientText]}>
+            <Text style={[styles.heading, { fontFamily: font.bold, color: colors.text, marginBottom: 16, textAlign: rtl ? 'right' : 'left' }, gradientText]}>
               {t('noticeboard.projects_in_progress')}
             </Text>
             <ScrollView
@@ -217,7 +218,7 @@ export default function DashboardScreen() {
         )}
 
         <View style={styles.header}>
-          <Text style={[styles.heading, { fontFamily: fontFamilyBold, color: colors.text }, gradientText]}>
+          <Text style={[styles.heading, { fontFamily: font.bold, color: colors.text }, gradientText]}>
             {t('noticeboard.notice_board')}
           </Text>
           {!isLoading && (
@@ -251,6 +252,8 @@ export default function DashboardScreen() {
                 onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
                 onDismiss={() => dismiss(item.id)}
                 isApplying={false}
+                isDirectInvite={item.targetProfessionalId === currentUserId}
+                directInviteLabel={t('noticeboard.direct_invite')}
               />
             ))}
           </View>
@@ -296,7 +299,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 8,
   },
-  heading: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase' },
+  heading: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat-Regular', textAlign: 'center', textTransform: 'uppercase' },
   count: { fontSize: 13, fontWeight: '500' },
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },

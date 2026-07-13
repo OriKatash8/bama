@@ -6,6 +6,11 @@ const config = getDefaultConfig(__dirname);
 
 config.resolver.unstable_enablePackageExports = true;
 
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
+  tslib: require.resolve('tslib'),
+};
+
 const lucideCjs = path.resolve(__dirname, 'node_modules/lucide-react-native/dist/cjs/lucide-react-native.js');
 
 const defaultResolver = config.resolver.resolveRequest;

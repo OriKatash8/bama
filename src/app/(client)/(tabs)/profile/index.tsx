@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, Image, Platform, Modal,
 } from 'react-native';
@@ -158,7 +159,7 @@ export default function ClientProfileScreen() {
   const switchLanguage = useSettingsStore((s) => s.setLanguage);
   const t = makeT(lang === 'he' ? he : en);
   const rtl = lang === 'he';
-  const fontFamilyBold = lang === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
+  const font = useAppFont();
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
   const gradientStyle = Platform.OS === 'web' ? ({
@@ -190,7 +191,7 @@ export default function ClientProfileScreen() {
       <View style={styles.content}>
 
         {/* ── AVATAR ── */}
-        <Text style={[styles.pageTitle, { fontFamily: fontFamilyBold }, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
+        <Text style={[styles.pageTitle, { fontFamily: font.bold }, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           {t('profile.my_profile')}
         </Text>
         <View style={styles.avatarSection}>
@@ -307,7 +308,7 @@ export default function ClientProfileScreen() {
 const styles = StyleSheet.create({
   screenContent: { paddingBottom: 100 },
   content: { paddingHorizontal: 20, paddingTop: 32 },
-  pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase', marginBottom: 16 },
+  pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat-Regular', textAlign: 'center', textTransform: 'uppercase', marginBottom: 16 },
 
   avatarSection: { alignItems: 'center', marginBottom: 8 },
   avatarWrap: { position: 'relative', marginBottom: 12 },

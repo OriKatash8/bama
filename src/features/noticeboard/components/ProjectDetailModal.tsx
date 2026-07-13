@@ -8,6 +8,22 @@ import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import { usePriceOffer } from '@features/noticeboard/hooks/usePriceOffer';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string, vars?: Record<string, string | number>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    if (typeof result !== 'string') return key;
+    if (!vars) return result;
+    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
+  };
+}
 
 type BidEntry = CrewRequestSlot & { selected: boolean; price: string };
 
@@ -21,10 +37,15 @@ type Props = {
 };
 
 export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details' }: Props) {
-  const { submit, isSubmitting } = usePriceOffer();
+  const { submit, submitWithBundle, isSubmitting } = usePriceOffer();
   const colors = useTheme();
-  const [view, setView] = useState<'details' | 'bid'>('details');
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+
+  const [view, setView] = useState<'details' | 'bid' | 'bundle'>('details');
   const [bids, setBids] = useState<BidEntry[]>([]);
+  const [bundlePrice, setBundlePrice] = useState('');
+  const [bundleError, setBundleError] = useState('');
 
   useEffect(() => {
     if (request) {
@@ -54,9 +75,20 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   }
 
   const validBids = bids.filter((b) => b.selected && Number(b.price) > 0);
+  const individualTotal = validBids.reduce((sum, b) => sum + Number(b.price), 0);
   const canSubmit = validBids.length > 0 && !isSubmitting;
 
-  async function handleSubmit() {
+  function handleBidSubmit() {
+    if (validBids.length >= 2) {
+      setBundlePrice('');
+      setBundleError('');
+      setView('bundle');
+    } else {
+      void doSubmitIndividual();
+    }
+  }
+
+  async function doSubmitIndividual() {
     try {
       await submit(
         request!.id,
@@ -65,7 +97,35 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
       setView('details');
       onApply();
     } catch {
-      // error handled by usePriceOffer
+      // error handled by hook
+    }
+  }
+
+  async function handleSkipBundle() {
+    await doSubmitIndividual();
+  }
+
+  async function handleAddBundle() {
+    const bp = Number(bundlePrice);
+    if (!bundlePrice || isNaN(bp) || bp <= 0) {
+      setBundleError(t('noticeboard.bundle_price_required'));
+      return;
+    }
+    if (bp >= individualTotal) {
+      setBundleError(t('noticeboard.bundle_price_error'));
+      return;
+    }
+    setBundleError('');
+    try {
+      await submitWithBundle(
+        request!.id,
+        validBids.map((b) => ({ category: b.category, subcategory: b.subcategory, price: Number(b.price) })),
+        bp,
+      );
+      setView('details');
+      onApply();
+    } catch {
+      // error handled by hook
     }
   }
 
@@ -77,7 +137,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   return (
     <Modal visible transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={handleClose} />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={handleClose} />
 
         <View style={styles.card}>
           {/* Close button */}
@@ -85,14 +145,15 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
             <X size={18} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {view === 'details' ? (
+          {/* ── Details view ── */}
+          {view === 'details' && (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               <Text style={styles.title}>{request.title}</Text>
 
               <View style={styles.metaRow}>
                 <View style={styles.metaItem}>
                   <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Execution</Text>
-                  <Text style={styles.metaValue}>{request.exec ?? (request as any).date ?? '—'}</Text>
+                  <Text style={styles.metaValue}>{request.exec ?? '—'}</Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Deadline</Text>
@@ -127,7 +188,10 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          ) : (
+          )}
+
+          {/* ── Bid entry view ── */}
+          {view === 'bid' && (
             <>
               <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
                 <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
@@ -165,7 +229,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={[styles.applyBtn, !canSubmit && styles.disabled]}
-                  onPress={handleSubmit}
+                  onPress={handleBidSubmit}
                   disabled={!canSubmit}
                   activeOpacity={0.8}
                 >
@@ -175,6 +239,69 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 </TouchableOpacity>
               </View>
             </>
+          )}
+
+          {/* ── Bundle prompt view ── */}
+          {view === 'bundle' && (
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
+              <Text style={styles.bundleTitle}>{t('noticeboard.bundle_title')}</Text>
+              <Text style={[styles.bundleBody, { color: colors.textSec }]}>
+                {t('noticeboard.bundle_body', { count: validBids.length })}
+              </Text>
+
+              <View style={styles.bundleTotalRow}>
+                <Text style={[styles.bundleTotalLabel, { color: colors.textMuted }]}>Individual total</Text>
+                <Text style={styles.bundleTotalValue}>₪{individualTotal.toLocaleString()}</Text>
+              </View>
+
+              <Text style={[styles.metaLabel, { color: colors.textMuted, marginTop: 16, marginBottom: 6 }]}>
+                {t('noticeboard.bundle_price_label')}
+              </Text>
+              <TextInput
+                style={[styles.priceInput, styles.bundlePriceInput, bundleError ? styles.inputError : undefined]}
+                value={bundlePrice}
+                onChangeText={(v) => { setBundlePrice(v); setBundleError(''); }}
+                placeholder="₪"
+                placeholderTextColor="#aaa"
+                keyboardType="numeric"
+                maxLength={10}
+                autoFocus
+              />
+              {bundleError ? (
+                <Text style={styles.bundleErrorText}>{bundleError}</Text>
+              ) : null}
+
+              <View style={styles.bundleRoles}>
+                {validBids.map((b, i) => (
+                  <Text key={i} style={[styles.bundleRoleItem, { color: colors.textSec }]}>
+                    · {b.subcategory} — ₪{Number(b.price).toLocaleString()}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[styles.applyBtn, isSubmitting && styles.disabled]}
+                  onPress={handleAddBundle}
+                  disabled={isSubmitting}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.applyText}>
+                    {isSubmitting ? 'Sending…' : t('noticeboard.add_bundle')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.skipBtn}
+                  onPress={handleSkipBundle}
+                  disabled={isSubmitting}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.skipText, { color: colors.textMuted }]}>
+                    {t('noticeboard.skip_bundle')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           )}
         </View>
       </View>
@@ -240,4 +367,17 @@ const styles = StyleSheet.create({
   bidSub: { fontSize: 15, fontWeight: '600', color: '#004aad' },
   bidCat: { fontSize: 12, marginTop: 2 },
   priceInput: { width: 72, borderWidth: 1, borderColor: 'rgba(0,74,173,0.3)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, textAlign: 'center', color: '#004aad', backgroundColor: 'rgba(0,74,173,0.04)' },
+  // Bundle view
+  bundleTitle: { fontSize: 22, fontWeight: '800', color: '#004aad', marginBottom: 10, paddingRight: 32 },
+  bundleBody: { fontSize: 15, lineHeight: 22, marginBottom: 20 },
+  bundleTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,74,173,0.06)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(0,74,173,0.12)' },
+  bundleTotalLabel: { fontSize: 13, fontWeight: '600' },
+  bundleTotalValue: { fontSize: 16, fontWeight: '800', color: '#004aad' },
+  bundlePriceInput: { width: '100%', textAlign: 'left' },
+  inputError: { borderColor: '#e53935' },
+  bundleErrorText: { color: '#e53935', fontSize: 12, marginTop: 4 },
+  bundleRoles: { marginTop: 16, gap: 4 },
+  bundleRoleItem: { fontSize: 14 },
+  skipBtn: { alignItems: 'center', paddingVertical: 12 },
+  skipText: { fontSize: 15 },
 });

@@ -86,6 +86,7 @@ export type ProjectRequest = {
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: Timestamp;
   filledSlots: FilledSlot[];
+  targetProfessionalId?: string | null;
 };
 
 export type PriceOffer = {
@@ -95,6 +96,19 @@ export type PriceOffer = {
   category: string;
   subcategory: string;
   price: number;
+  status: 'pending' | 'accepted' | 'rejected';
+  bundleId?: string;
+  createdAt: Timestamp;
+};
+
+export type BundleOffer = {
+  id: string;
+  projectId: string;
+  professionalId: string;
+  slots: Array<{ category: string; subcategory: string }>;
+  individualTotal: number;
+  bundlePrice: number;
+  offerIds: string[];
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: Timestamp;
 };

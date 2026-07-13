@@ -7,13 +7,14 @@ import { useRouter, useSegments } from 'expo-router';
 import { ChevronRight, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
-import { auth } from '@core/firebase/config';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { useUnifiedSearch } from '@features/crew/hooks/useUnifiedSearch';
 import { ProfessionalCard } from '@features/crew/components';
-import { getOrCreateDM } from '@features/chat/services/chatService';
+import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
+import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -59,21 +60,21 @@ type ViewState =
   | { kind: 'grid' }
   | { kind: 'results'; category: string; subcategory: string };
 
-function ResultsView({ category, subcategory }: { category: string; subcategory: string }) {
+function ResultsView({
+  category,
+  subcategory,
+  onDirectProject,
+}: {
+  category: string;
+  subcategory: string;
+  onDirectProject: (id: string, name: string) => void;
+}) {
   const { results, isLoading } = useSearchProfessionals(category, subcategory);
   const colors = useTheme();
   const router = useRouter();
-  const segments = useSegments();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-
-  async function handleMessage(professionalId: string) {
-    const currentUserId = auth.currentUser?.uid;
-    if (!currentUserId) return;
-    const chatId = await getOrCreateDM(currentUserId, professionalId);
-    router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as never);
-  }
 
   if (isLoading) {
     return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
@@ -101,7 +102,7 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
         >
           <ProfessionalCard
             item={item}
-            onMessage={() => handleMessage(item.user.id)}
+            onDirectProject={() => onDirectProject(item.user.id, item.user.displayName)}
           />
         </TouchableOpacity>
       ))}
@@ -114,19 +115,23 @@ export default function SearchScreen() {
   const [view, setView] = useState<ViewState>({ kind: 'grid' });
   const colors = useTheme();
   const router = useRouter();
-  const segments = useSegments();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const fontFamily = language === 'he' ? 'Heebo-Regular' : 'Montserrat';
-  const fontFamilyBold = language === 'he' ? 'Heebo-Bold' : 'Montserrat-Bold';
-  const fontFamilyMedium = language === 'he' ? 'Heebo-Medium' : 'Montserrat-Medium';
+  const font = useAppFont();
+  const { showToast } = useUiStore();
 
-  async function handleMessage(professionalId: string) {
-    const currentUserId = auth.currentUser?.uid;
-    if (!currentUserId) return;
-    const chatId = await getOrCreateDM(currentUserId, professionalId);
-    router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as never);
+  const [sheetProfessionalId, setSheetProfessionalId] = useState<string | null>(null);
+  const [sheetProfessionalName, setSheetProfessionalName] = useState('');
+
+  function openDirectSheet(id: string, name: string) {
+    setSheetProfessionalId(id);
+    setSheetProfessionalName(name);
+  }
+
+  function closeDirectSheet() {
+    setSheetProfessionalId(null);
+    setSheetProfessionalName('');
   }
 
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -191,7 +196,7 @@ export default function SearchScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={[styles.heading, { fontFamily: fontFamilyBold, color: colors.text }, gradientText]}>
+          <Text style={[styles.heading, { fontFamily: font.bold, color: colors.text }, gradientText]}>
             {view.kind === 'grid' ? t('search.heading') : view.subcategory}
           </Text>
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
@@ -231,7 +236,7 @@ export default function SearchScreen() {
                 >
                   <ProfessionalCard
                     item={item}
-                    onMessage={() => handleMessage(item.user.id)}
+                    onDirectProject={() => openDirectSheet(item.user.id, item.user.displayName)}
                   />
                 </TouchableOpacity>
               ))}
@@ -277,7 +282,7 @@ export default function SearchScreen() {
                     {cat.image && (
                       <Image source={cat.image} style={styles.categoryIcon} />
                     )}
-                    <Text style={[styles.categoryLabel, { fontFamily: fontFamilyBold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
+                    <Text style={[styles.categoryLabel, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
                     <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
                       <ChevronRight size={18} color="#004aad" />
                     </Animated.View>
@@ -291,7 +296,7 @@ export default function SearchScreen() {
                         onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.subItemText, { fontFamily: fontFamilyMedium, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
+                        <Text style={[styles.subItemText, { fontFamily: font.medium, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
                       </TouchableOpacity>
                     ))}
                   </Animated.View>
@@ -299,7 +304,7 @@ export default function SearchScreen() {
               );
             })}
             {filteredCategories.length === 0 && (
-              <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: fontFamily }}>
+              <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: font.regular }}>
                 {t('search.no_categories_match', { query })}
               </Text>
             )}
@@ -312,10 +317,25 @@ export default function SearchScreen() {
             <Text style={[styles.resultsHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
               {view.category} · {view.subcategory}
             </Text>
-            <ResultsView category={view.category} subcategory={view.subcategory} />
+            <ResultsView
+              category={view.category}
+              subcategory={view.subcategory}
+              onDirectProject={openDirectSheet}
+            />
           </>
         )}
       </ScrollView>
+
+      <DirectProjectSheet
+        visible={sheetProfessionalId !== null}
+        professionalId={sheetProfessionalId ?? ''}
+        professionalName={sheetProfessionalName}
+        onClose={closeDirectSheet}
+        onSubmitted={() => {
+          closeDirectSheet();
+          showToast(t('builder.request_submitted'), 'success');
+        }}
+      />
     </Screen>
   );
 }
@@ -395,7 +415,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '700',
-    fontFamily: 'Montserrat',
+    fontFamily: 'Montserrat-Regular',
     color: '#004aad',
   },
 
@@ -410,7 +430,7 @@ const styles = StyleSheet.create({
   subItemText: {
     fontSize: 15,
     fontWeight: '500',
-    fontFamily: 'Montserrat',
+    fontFamily: 'Montserrat-Regular',
     color: '#004aad',
   },
 
