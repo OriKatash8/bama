@@ -4,6 +4,7 @@ import { signUp } from '@core/firebase/auth';
 import { setDocument } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
+import i18n from '@core/i18n';
 
 type RegisterState = {
   isLoading: boolean;
@@ -48,12 +49,10 @@ export function useRegister(): RegisterState {
 function toRegisterError(code: string): string {
   switch (code) {
     case 'auth/email-already-in-use':
-      return 'An account with this email already exists.';
-    case 'auth/weak-password':
-      return 'Password must be at least 6 characters.';
+      return i18n.t('auth.err_email_exists');
     case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
+      return i18n.t('auth.err_email_invalid');
     default:
-      return 'Something went wrong. Please try again.';
+      return i18n.t('auth.err_generic');
   }
 }

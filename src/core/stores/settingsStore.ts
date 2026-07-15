@@ -13,7 +13,7 @@ type SettingsState = {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      language: 'en',
+      language: 'he',
       _hydrated: false,
       setLanguage: (language) => set({ language }),
       setHydrated: (value = true) => set({ _hydrated: value }),

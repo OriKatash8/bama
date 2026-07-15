@@ -8,12 +8,12 @@ const getInitialLanguage = (): string => {
     const stored = localStorage.getItem('bama-settings');
     if (stored) {
       const parsed = JSON.parse(stored);
-      return parsed?.state?.language ?? 'en';
+      return parsed?.state?.language ?? 'he';
     }
   } catch {
     // ignore
   }
-  return 'en';
+  return 'he';
 };
 
 i18n.use(initReactI18next).init({

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { signIn } from '@core/firebase/auth';
 import { useUiStore } from '@core/stores/uiStore';
+import i18n from '@core/i18n';
 
 type LoginState = {
   isLoading: boolean;
@@ -38,10 +39,10 @@ function toLoginError(code: string): string {
     case 'auth/invalid-credential':
     case 'auth/wrong-password':
     case 'auth/user-not-found':
-      return 'Invalid email or password.';
+      return i18n.t('auth.err_invalid_credentials');
     case 'auth/too-many-requests':
-      return 'Too many attempts. Try again later.';
+      return i18n.t('auth.err_too_many');
     default:
-      return 'Something went wrong. Please try again.';
+      return i18n.t('auth.err_generic');
   }
 }

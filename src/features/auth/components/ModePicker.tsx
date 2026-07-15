@@ -66,15 +66,19 @@ export function ModePicker() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     alignItems: 'center',
-    gap: 32,
+    justifyContent: 'center',
+    gap: 20,
     paddingHorizontal: 32,
-    paddingTop: 16,
     paddingBottom: 40,
   },
   logo: {
-    width: '100%',
-    height: 540,
+    width: '95%',
+    aspectRatio: 2.9,
+    height: undefined,
+    resizeMode: 'contain',
+    alignSelf: 'center',
   },
   buttons: {
     width: '100%',

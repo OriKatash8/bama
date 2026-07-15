@@ -9,23 +9,38 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { isValidEmail, isNonEmpty } from '@utils/validators';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+
   const { isLoading, login } = useLogin();
   const router = useRouter();
   const colors = useTheme();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const appNameSize = 130;
+  const textAlign = rtl ? 'right' : 'left' as const;
 
   function validate(): boolean {
     const errors: { email?: string; password?: string } = {};
-    if (!isValidEmail(email)) errors.email = 'Enter a valid email.';
-    if (!isNonEmpty(password)) errors.password = 'Password is required.';
+    if (!isValidEmail(email)) errors.email = t('auth.err_valid_email');
+    if (!isNonEmpty(password)) errors.password = t('auth.err_password_required');
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -40,44 +55,54 @@ export function LoginForm() {
       <View style={[styles.titleWrap, { marginBottom: -60 }]}>
         <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       </View>
-      <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
+      <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
         <View style={styles.titleWrap}>
-          <Text style={styles.title}>SIGN IN</Text>
+          <Text style={[styles.title, { fontFamily: font.bold }]}>{t('auth.sign_in')}</Text>
         </View>
         <Input
-          placeholder="Email"
+          placeholder={t('auth.email')}
           placeholderTextColor={colors.placeholder}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
           error={fieldErrors.email}
-          style={{ borderColor: '#cb6ce6', color: colors.text }}
+          textAlign={textAlign}
+          writingDirection={rtl ? 'rtl' : 'ltr'}
+          style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
         />
         <Input
-          placeholder="Password"
+          placeholder={t('auth.password')}
           placeholderTextColor={colors.placeholder}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           error={fieldErrors.password}
-          style={{ borderColor: '#cb6ce6', color: colors.text }}
+          textAlign={textAlign}
+          writingDirection={rtl ? 'rtl' : 'ltr'}
+          style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
         />
-        <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
-          <Text style={[styles.link, { color: colors.text }]}>Forgot password?</Text>
+        <TouchableOpacity style={{ alignSelf: rtl ? 'flex-start' : 'flex-end' }} onPress={() => router.push('/(auth)/forgot-password')}>
+          <Text style={[styles.link, { color: colors.text, fontFamily: font.regular, textAlign }]}>
+            {t('auth.forgot_password')}
+          </Text>
         </TouchableOpacity>
         <Button
-          label="Login"
+          label={t('auth.login')}
           onPress={handleSubmit}
           disabled={isLoading}
           style={Platform.OS === 'web' ? ({
             background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-          } as any) : { backgroundColor: '#004aad' }}
+          } as object) : { backgroundColor: '#004aad' }}
         />
         <View style={[styles.footer, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.footerText, { color: colors.text, fontFamily: font.regular }]}>Don't have an account? </Text>
+          <Text style={[styles.footerText, { color: colors.text, fontFamily: font.regular }]}>
+            {t('auth.no_account')}
+          </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text style={[styles.link, { color: colors.text, fontFamily: font.medium }]}>Register</Text>
+            <Text style={[styles.link, { color: colors.text, fontFamily: font.semiBold }]}>
+              {t('auth.register_link')}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -90,7 +115,6 @@ export function LoginForm() {
 const styles = StyleSheet.create({
   container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40, marginTop: -100 },
   titleWrap: { alignItems: 'center', width: '100%' },
-  glowLayer: { position: 'absolute', top: 0, left: 0, right: 0 },
   card: {
     borderRadius: 20,
     padding: 24,

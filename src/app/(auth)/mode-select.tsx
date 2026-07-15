@@ -3,7 +3,7 @@ import { ModePicker } from '@features/auth/components/ModePicker';
 
 export default function ModeSelectScreen() {
   return (
-    <Screen scrollable={true}>
+    <Screen scrollable={false}>
       <ModePicker />
     </Screen>
   );

@@ -6,6 +6,7 @@ import { auth, googleProvider } from '@core/firebase/config';
 import { getDocument, setDocument } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
+import i18n from '@core/i18n';
 import type { User } from '@core/types/user';
 
 type GoogleSignInState = {
@@ -23,7 +24,7 @@ export function useGoogleSignIn(): GoogleSignInState {
 
   async function signInWithGoogle() {
     if (Platform.OS !== 'web') {
-      Alert.alert('Coming Soon', 'Google Sign-In on mobile coming soon');
+      Alert.alert(i18n.t('auth.google_coming_soon_title'), i18n.t('auth.google_coming_soon_body'));
       return;
     }
 
@@ -57,11 +58,11 @@ export function useGoogleSignIn(): GoogleSignInState {
       ) {
         // user dismissed the popup — no error shown
       } else if (code === 'auth/account-exists-with-different-credential') {
-        const msg = 'An account with this email already exists. Please sign in with your original method.';
+        const msg = i18n.t('auth.err_google_email_exists');
         setError(msg);
         showToast(msg, 'error');
       } else {
-        const msg = 'Google sign-in failed. Please try again.';
+        const msg = i18n.t('auth.err_google_failed');
         setError(msg);
         showToast(msg, 'error');
       }
