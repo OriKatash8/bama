@@ -4,7 +4,10 @@ import { useRouter } from 'expo-router';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useLogin } from '@features/auth/hooks/useLogin';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAppFont } from '@core/hooks/useAppFont';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { isValidEmail, isNonEmpty } from '@utils/validators';
 
 export function LoginForm() {
@@ -14,6 +17,9 @@ export function LoginForm() {
   const { isLoading, login } = useLogin();
   const router = useRouter();
   const colors = useTheme();
+  const font = useAppFont();
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
   const appNameSize = 130;
 
   function validate(): boolean {
@@ -68,12 +74,14 @@ export function LoginForm() {
             background: 'linear-gradient(to right, #004aad, #cb6ce6)',
           } as any) : { backgroundColor: '#004aad' }}
         />
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.text }]}>Don't have an account? </Text>
+        <View style={[styles.footer, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.footerText, { color: colors.text, fontFamily: font.regular }]}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text style={[styles.link, { color: colors.text }]}>Register</Text>
+            <Text style={[styles.link, { color: colors.text, fontFamily: font.medium }]}>Register</Text>
           </TouchableOpacity>
         </View>
+
+        <GoogleSignInButton />
       </View>
     </View>
   );

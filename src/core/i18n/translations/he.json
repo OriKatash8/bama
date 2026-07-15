@@ -47,7 +47,13 @@
     "confirm_title": "כותרת הפרויקט",
     "confirm_title_hint": "יצרנו את זה מהתיאור שלך — אפשר לערוך",
     "title_failed": "לא הצלחנו ליצור כותרת. אנא הזן אחת:",
-    "looks_good": "נראה טוב — שלח"
+    "looks_good": "נראה טוב — שלח",
+    "next_step": "השלב הבא",
+    "review": "סקירה",
+    "summary_title": "סקירת הבקשה",
+    "title_ai_hint": "נוצר מהתיאור שלך — אפשר לערוך",
+    "confirm_submit": "אשר ופרסם",
+    "back_to_edit": "חזור"
   },
   "search": {
     "no_professionals_yet": "אין אנשי מקצוע עדיין",
@@ -301,5 +307,12 @@
     "cancel": "ביטול",
     "confirm": "אישור",
     "buy_error": "לא ניתן להשלים את הרכישה. נסה שוב."
+  },
+  "auth": {
+    "pw_length": "לפחות 8 תווים",
+    "pw_uppercase": "אות גדולה אחת",
+    "pw_number": "מספר אחד",
+    "or": "או",
+    "continue_google": "המשך עם Google"
   }
 }

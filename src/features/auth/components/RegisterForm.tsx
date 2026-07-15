@@ -1,44 +1,57 @@
 import { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { CheckCircle, Circle } from 'lucide-react-native';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useRegister } from '@features/auth/hooks/useRegister';
+import { validatePassword } from '@features/auth/utils/validatePassword';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import { isValidEmail, isNonEmpty } from '@utils/validators';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 
-const gradientStyle = {
-  background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-} as any;
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 export function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{
-    fullName?: string;
-    email?: string;
-    password?: string;
-  }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ fullName?: string; email?: string }>({});
+
   const { isLoading, register } = useRegister();
   const router = useRouter();
   const colors = useTheme();
-  const appNameSize = 130;
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
+  const font = useAppFont();
+
+  const pwValidation = validatePassword(password);
+  const pwValid = pwValidation.valid;
 
   function validate(): boolean {
-    const errors: { fullName?: string; email?: string; password?: string } = {};
+    const errors: { fullName?: string; email?: string } = {};
     if (!isNonEmpty(fullName)) errors.fullName = 'Full name is required.';
     if (!isValidEmail(email)) errors.email = 'Enter a valid email.';
-    if (password.length < 6) errors.password = 'Password must be at least 6 characters.';
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
 
   async function handleSubmit() {
-    if (!validate()) return;
+    if (!validate() || !pwValid) return;
     await register(fullName, email, password);
   }
 
@@ -47,9 +60,9 @@ export function RegisterForm() {
       <View style={[styles.titleWrap, { marginBottom: -60 }]}>
         <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       </View>
-      <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
+      <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
         <View style={styles.titleWrap}>
-          <Text style={styles.title}>REGISTER</Text>
+          <Text style={[styles.title, { fontFamily: font.bold }]}>REGISTER</Text>
         </View>
         <Input
           placeholder="Full Name"
@@ -76,23 +89,42 @@ export function RegisterForm() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          error={fieldErrors.password}
           style={{ borderColor: '#cb6ce6', color: colors.text }}
         />
+
+        {/* Live password checklist */}
+        <View style={styles.checklist}>
+          {pwValidation.rules.map((rule) => (
+            <View key={rule.key} style={[styles.checkRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              {rule.met
+                ? <CheckCircle size={14} color="#43a047" />
+                : <Circle size={14} color="rgba(0,0,0,0.3)" />}
+              <Text style={[
+                styles.checkLabel,
+                { fontFamily: font.regular, color: rule.met ? '#43a047' : 'rgba(0,0,0,0.45)', marginLeft: rtl ? 0 : 6, marginRight: rtl ? 6 : 0 },
+              ]}>
+                {t(rule.key)}
+              </Text>
+            </View>
+          ))}
+        </View>
+
         <Button
           label="Create Account"
           onPress={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || !pwValid}
           style={Platform.OS === 'web' ? ({
             background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-          } as any) : { backgroundColor: '#004aad' }}
+          } as object) : { backgroundColor: '#004aad' }}
         />
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.text }]}>Already have an account? </Text>
+        <View style={[styles.footer, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.footerText, { color: colors.text, fontFamily: font.regular }]}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/')}>
-            <Text style={[styles.link, { color: colors.text }]}>Sign In</Text>
+            <Text style={[styles.link, { color: colors.text, fontFamily: font.medium }]}>Sign In</Text>
           </TouchableOpacity>
         </View>
+
+        <GoogleSignInButton />
       </View>
     </View>
   );
@@ -101,7 +133,6 @@ export function RegisterForm() {
 const styles = StyleSheet.create({
   container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40, marginTop: -100 },
   titleWrap: { alignItems: 'center', width: '100%' },
-  glowLayer: { position: 'absolute', top: 0, left: 0, right: 0 },
   card: {
     borderRadius: 20,
     padding: 24,
@@ -115,6 +146,9 @@ const styles = StyleSheet.create({
   },
   appLogo: { width: 1040, height: 520 },
   title: { fontSize: 28, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },
+  checklist: { gap: 6, paddingHorizontal: 2 },
+  checkRow: { flexDirection: 'row', alignItems: 'center' },
+  checkLabel: { fontSize: 13 },
   link: { fontSize: 14, fontWeight: '500', textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   footerText: { fontSize: 14 },

@@ -47,7 +47,13 @@
     "confirm_title": "Project title",
     "confirm_title_hint": "We generated this from your description — edit it if you'd like",
     "title_failed": "We couldn't generate a title. Please enter one:",
-    "looks_good": "Looks good — Submit"
+    "looks_good": "Looks good — Submit",
+    "next_step": "Next step",
+    "review": "Review",
+    "summary_title": "Review your request",
+    "title_ai_hint": "Generated from your description — edit if you'd like",
+    "confirm_submit": "Confirm & Post",
+    "back_to_edit": "Back"
   },
   "search": {
     "no_professionals_yet": "No professionals yet",
@@ -301,5 +307,12 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "buy_error": "Could not complete purchase. Please try again."
+  },
+  "auth": {
+    "pw_length": "At least 8 characters",
+    "pw_uppercase": "One uppercase letter",
+    "pw_number": "One number",
+    "or": "or",
+    "continue_google": "Continue with Google"
   }
 }
