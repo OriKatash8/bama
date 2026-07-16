@@ -125,7 +125,7 @@ export default function ChatsScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
-                      <Text style={[styles.tabText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }, isActive && styles.tabTextActive]}>
+                      <Text style={[styles.tabText, { color: colors.textSec, fontFamily: isActive ? font.bold : font.regular, textAlign: rtl ? 'right' : 'left' }, isActive && styles.tabTextActive]}>
                         {TAB_LABELS[key]}
                       </Text>
                     </View>
@@ -144,7 +144,7 @@ export default function ChatsScreen() {
           <View style={styles.notifContent}>
             {bundles.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('chats_page.price_offers')}
                 </Text>
                 {bundlesLoading ? (
@@ -165,7 +165,7 @@ export default function ChatsScreen() {
 
             {offers.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('chats_page.price_offers')}
                 </Text>
                 {offersLoading ? (
@@ -185,14 +185,14 @@ export default function ChatsScreen() {
             )}
 
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('chats_page.my_projects')}
               </Text>
               {requestsLoading ? (
                 <ActivityIndicator color={colors.accent} />
               ) : requests.length === 0 ? (
                 <View style={styles.emptyWrap}>
-                  <Text style={[styles.emptyText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                     {t('chats_page.no_projects')}
                   </Text>
                 </View>
@@ -224,7 +224,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',
-    fontFamily: 'Montserrat-Regular',
     textAlign: 'center',
     textTransform: 'uppercase',
   },

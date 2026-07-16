@@ -23,4 +23,9 @@ export type MarketplaceListing = {
   status?: ListingStatus;
   reservedBy?: string;
   reservedAt?: Timestamp;
+  // purchase flow
+  buyerId?: string;
+  purchaseChatId?: string;
+  sellerConfirmed?: boolean;
+  platformFee?: number;
 };

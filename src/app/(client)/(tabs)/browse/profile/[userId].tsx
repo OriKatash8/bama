@@ -4,20 +4,34 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, MessageCircle, Star, User as UserIcon } from 'lucide-react-native';
+import { ChevronLeft, Star, User as UserIcon } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { BioSection } from '@features/profile/components/BioSection';
 import { RoleChips } from '@features/profile/components/RoleChips';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
+import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
 import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { useStartChat } from '@features/chat/hooks/useStartChat';
+import { useUiStore } from '@core/stores/uiStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { User, ProfessionalProfile } from '@core/types/user';
 import type { MediaAsset } from '@core/types/media';
 import type { Review } from '@core/types/project';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -25,8 +39,10 @@ export default function PublicProfileScreen() {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const font = useAppFont();
-  const { startChat, isLoading: isStarting } = useStartChat();
+  const { showToast } = useUiStore();
+  const t = makeT(language === 'he' ? he : en);
 
+  const [sheetVisible, setSheetVisible] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
   const [portfolio, setPortfolio] = useState<MediaAsset[]>([]);
@@ -145,20 +161,29 @@ export default function PublicProfileScreen() {
         </View>
       )}
 
-      {/* ── Send Message ── */}
+      {/* ── Tell us about your project ── */}
       <TouchableOpacity
-        style={[styles.messageBtn, isStarting && styles.disabled]}
-        onPress={() => void startChat(userId)}
-        disabled={isStarting}
+        style={styles.projectBtn}
+        onPress={() => setSheetVisible(true)}
         activeOpacity={0.8}
       >
-        <MessageCircle size={20} color="#fff" strokeWidth={2} />
-        <Text style={[styles.messageBtnText, { fontFamily: font.bold }]}>
-          {isStarting ? 'Opening chat…' : 'Send Message'}
+        <Text style={[styles.projectBtnText, { fontFamily: font.bold }]}>
+          {t('search.tell_us_about_project')}
         </Text>
       </TouchableOpacity>
 
       <View style={styles.bottomPad} />
+
+      <DirectProjectSheet
+        visible={sheetVisible}
+        professionalId={userId ?? ''}
+        professionalName={user?.displayName ?? ''}
+        onClose={() => setSheetVisible(false)}
+        onSubmitted={() => {
+          setSheetVisible(false);
+          showToast(t('builder.request_submitted'), 'success');
+        }}
+      />
     </Screen>
   );
 }
@@ -227,23 +252,20 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 
-  messageBtn: {
-    flexDirection: 'row',
+  projectBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
     backgroundColor: '#004aad',
-    borderRadius: 14,
+    borderRadius: 12,
     height: 54,
     marginTop: 24,
   },
-  messageBtnText: {
+  projectBtnText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Montserrat-Regular',
   },
-  disabled: { opacity: 0.55 },
 
   bottomPad: { height: 40 },
 });

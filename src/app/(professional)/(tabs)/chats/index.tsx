@@ -4,6 +4,7 @@ import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -29,6 +30,7 @@ const TAB_KEYS: TabKey[] = ['chats', 'courses', 'communities'];
 
 export default function ProfessionalChatsScreen() {
   const colors = useTheme();
+  const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -46,7 +48,7 @@ export default function ProfessionalChatsScreen() {
       {/* Header — title + tabs */}
       <View style={styles.headerWrap}>
         <View style={styles.gradient}>
-          <Text style={[styles.headerTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.headerTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
             {t('chats_page.title')}
           </Text>
 
@@ -61,7 +63,7 @@ export default function ProfessionalChatsScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
-                    <Text style={[styles.tabText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }, isActive && styles.tabTextActive]}>
+                    <Text style={[styles.tabText, { color: colors.textSec, fontFamily: isActive ? font.bold : font.regular, textAlign: rtl ? 'right' : 'left' }, isActive && styles.tabTextActive]}>
                       {TAB_LABELS[key]}
                     </Text>
                   </View>
@@ -76,7 +78,7 @@ export default function ProfessionalChatsScreen() {
       {active === 'chats' && <ChatsList />}
       {active !== 'chats' && (
         <View style={styles.comingSoon}>
-          <Text style={[styles.comingSoonText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.comingSoonText, { color: colors.textMuted, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
             {t('chats_page.coming_soon')}
           </Text>
         </View>

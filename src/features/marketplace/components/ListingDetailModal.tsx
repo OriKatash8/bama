@@ -1,6 +1,6 @@
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  Image, ScrollView, Alert, ActivityIndicator,
+  Image, ScrollView, Alert, useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
@@ -11,7 +11,8 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { buyListing } from '../services/marketplaceService';
+import { confirmPurchase } from '../services/marketplaceService';
+import { CheckoutModal } from './CheckoutModal';
 import type { MarketplaceListing } from '../types';
 import { useState } from 'react';
 
@@ -44,7 +45,9 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const segments = useSegments();
   const modeSegment = segments[0];
 
+  const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
+  const { height: screenHeight } = useWindowDimensions();
 
   if (!listing) return null;
 
@@ -56,27 +59,23 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const isOwnListing = currentUserId === listing.posterId;
   const isUnavailable = listing.status === 'reserved' || listing.status === 'sold';
 
-  function handleBuyPress() {
-    Alert.alert(
-      t('marketplace.confirm_purchase_title'),
-      t('marketplace.confirm_purchase_message', { fee }),
-      [
-        { text: t('marketplace.cancel'), style: 'cancel' },
-        { text: t('marketplace.confirm'), onPress: confirmBuy },
-      ]
-    );
-  }
-
-  async function confirmBuy() {
-    if (!currentUserId) return;
+  async function handleConfirmPurchase() {
+    if (!currentUserId || !listing) return;
+    const snap = listing;
     setIsBuying(true);
     try {
-      const chatId = await buyListing(
-        listing.id,
+      const autoMessage = t('marketplace.buy_message', {
+        title: snap.productName,
+        price: snap.price,
+      });
+      const chatId = await confirmPurchase(
+        snap.id,
         currentUserId,
-        listing.posterId,
-        { productName: listing.productName, price: listing.price }
+        snap.posterId,
+        { productName: snap.productName, price: snap.price },
+        autoMessage,
       );
+      setCheckoutVisible(false);
       onClose();
       router.push(`/${modeSegment}/(tabs)/chats/${chatId}` as never);
     } catch {
@@ -91,13 +90,13 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
 
         <LinearGradient
           colors={['#efd4f6', '#b7cae6']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.card}
+          style={[styles.card, { maxHeight: screenHeight * 0.85 }]}
         >
           {/* Header */}
           <View style={[styles.header, { flexDirection: rowDir }]}>
@@ -114,6 +113,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
 
           {/* Scrollable content */}
           <ScrollView
+            style={styles.scroll}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -147,31 +147,38 @@ export function ListingDetailModal({ listing, onClose }: Props) {
                 <Text style={[styles.posterName, { fontFamily: font.semiBold }]}>{listing.posterName}</Text>
               </Text>
             </View>
-
-            {/* Buy / Reserved */}
-            {!isOwnListing && (
-              isUnavailable ? (
-                <View style={styles.reservedBtn}>
-                  <Text style={[styles.reservedText, { fontFamily: font.bold }]}>
-                    {t('marketplace.reserved')}
-                  </Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.buyBtn, isBuying && styles.buyBtnDisabled]}
-                  onPress={handleBuyPress}
-                  disabled={isBuying}
-                  activeOpacity={0.8}
-                >
-                  {isBuying
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={[styles.buyText, { fontFamily: font.bold }]}>{t('marketplace.buy_button')}</Text>}
-                </TouchableOpacity>
-              )
-            )}
           </ScrollView>
+
+          {/* Buy / Reserved — pinned outside ScrollView */}
+          {!isOwnListing && (
+            isUnavailable ? (
+              <View style={styles.reservedBtn}>
+                <Text style={[styles.reservedText, { fontFamily: font.bold }]}>
+                  {t('marketplace.reserved')}
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.buyBtn}
+                onPress={() => setCheckoutVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.buyText, { fontFamily: font.bold }]}>{t('marketplace.buy_button')}</Text>
+              </TouchableOpacity>
+            )
+          )}
         </LinearGradient>
       </View>
+
+      <CheckoutModal
+        visible={checkoutVisible}
+        productName={listing.productName}
+        price={listing.price}
+        platformFee={fee}
+        isLoading={isBuying}
+        onConfirm={handleConfirmPurchase}
+        onCancel={() => setCheckoutVisible(false)}
+      />
     </Modal>
   );
 }
@@ -185,9 +192,9 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '90%',
-    maxHeight: '85%',
     borderRadius: 24,
     padding: 24,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 20,
@@ -213,7 +220,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  scrollContent: { paddingBottom: 24 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 8 },
 
   imageWrap: {
     height: 180,

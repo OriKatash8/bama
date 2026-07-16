@@ -7,10 +7,10 @@
     "page_title": "בנה את הצוות שלך",
     "title": "כותרת",
     "description": "תיאור",
-    "execution": "ביצוע",
+    "execution": "תאריך ביצוע",
     "optional": "אופציונלי",
-    "deadline": "דדליין",
-    "location": "מיקום",
+    "deadline": "תאריך סיום",
+    "location": "מיקום הפרויקט",
     "placeholder_title": "לדוגמה: קליפ לשיר חדש",
     "placeholder_description": "תאר את הפרויקט שלך",
     "placeholder_date": "בחר תאריך",
@@ -53,7 +53,10 @@
     "summary_title": "סקירת הבקשה",
     "title_ai_hint": "נוצר מהתיאור שלך — אפשר לערוך",
     "confirm_submit": "אשר ופרסם",
-    "back_to_edit": "חזור"
+    "back_to_edit": "חזור",
+    "help_execution": "תאריך בו יתבצע יום עבודה על הפרויקט. לדוגמה: יום צילום",
+    "help_deadline": "התאריך בו אתה רוצה שהפרויקט יהיה מוכן",
+    "help_location": "מיקום בו הפרויקט מתוכנן להתרחש"
   },
   "search": {
     "no_professionals_yet": "אין אנשי מקצוע עדיין",
@@ -280,7 +283,7 @@
     "filter_brand": "מותג",
     "filter_city": "עיר",
     "filter_condition": "מצב",
-"post_listing": "פרסם מוצר",
+    "post_listing": "פרסם מוצר",
     "second_hand": "יד שנייה",
     "rental": "השכרה",
     "upload_photo": "העלה תמונה",
@@ -306,7 +309,26 @@
     "confirm_purchase_message": "עמלת פלטפורמה של 3% בסך ₪{{fee}} תחויב. עיבוד התשלום בקרוב — תחובר עם המוכר לסגירת העסקה.",
     "cancel": "ביטול",
     "confirm": "אישור",
-    "buy_error": "לא ניתן להשלים את הרכישה. נסה שוב."
+    "buy_error": "לא ניתן להשלים את הרכישה. נסה שוב.",
+    "checkout_title": "תשלום",
+    "platform_fee": "עמלת BAMA (3%)",
+    "fee_note": "תחויב בעמלת BAMA רק לאחר שתאשר שקיבלת את המוצר.",
+    "confirm_purchase": "אישור רכישה",
+    "buy_message": "היי! רכשתי את \"{{title}}\" ב-₪{{price}} 🛒",
+    "mark_received": "קיבלתי — סיום",
+    "cancel_purchase": "ביטול רכישה",
+    "mark_handed": "מסרתי את המוצר",
+    "waiting_buyer": "ממתין לאישור הקונה...",
+    "confirm_received_title": "אישור קבלה",
+    "confirm_received_msg": "לאשר שקיבלת את המוצר? עמלת BAMA של 3% תחויב.",
+    "fee_charged": "עמלת BAMA חויבה (אינטגרציית תשלום תגיע בקרוב)",
+    "sale_complete": "הרכישה הושלמה ✓",
+    "confirm_cancel_title": "ביטול רכישה",
+    "confirm_cancel_msg": "לבטל את הרכישה? המוצר יחזור לשוק.",
+    "purchase_cancelled": "הרכישה בוטלה",
+    "sale_completed_label": "המכירה הושלמה",
+    "purchase_active_label": "רכישה פעילה",
+    "seller_price_note": "משולם ישירות למוכר (מחוץ לאפליקציה)"
   },
   "auth": {
     "pw_length": "לפחות 8 תווים",
@@ -338,5 +360,8 @@
     "google_coming_soon_body": "התחברות עם Google בנייד תהיה זמינה בקרוב",
     "err_google_email_exists": "כבר קיים חשבון עם אימייל זה. אנא התחבר בשיטה המקורית שלך.",
     "err_google_failed": "ההתחברות עם Google נכשלה. נסה שוב."
+  },
+  "common": {
+    "cancel": "ביטול"
   }
 }

@@ -8,6 +8,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
 import { listenToUserChats } from '../services/chatService';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Chat } from '../types';
@@ -63,6 +64,7 @@ export function ChatsScreen() {
   const segments = useSegments();
   const modeSegment = segments[0];
   const colors = useTheme();
+  const font = useAppFont();
   const user = useAuthStore((s) => s.user);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -150,7 +152,7 @@ export function ChatsScreen() {
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
       <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <Text style={styles.avatarInitial}>{initial}</Text>
+        <Text style={[styles.avatarInitial, { fontFamily: font.bold }]}>{initial}</Text>
       </View>
     );
   }
@@ -158,7 +160,7 @@ export function ChatsScreen() {
   if (chats.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={[styles.emptyText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
           {t('chats.no_conversations')}
         </Text>
       </View>
@@ -187,20 +189,20 @@ export function ChatsScreen() {
             <View style={styles.content}>
               <View style={styles.headerRow}>
                 <View style={styles.nameRow}>
-                  <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold }]} numberOfLines={1}>
                     {chatName}
                   </Text>
                   {status != null && (
                     <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
-                      <Text style={styles.statusBadgeText}>{statusLabel(status)}</Text>
+                      <Text style={[styles.statusBadgeText, { fontFamily: font.bold }]}>{statusLabel(status)}</Text>
                     </View>
                   )}
                 </View>
-                <Text style={[styles.timestamp, { color: colors.textMuted }]}>{timestamp}</Text>
+                <Text style={[styles.timestamp, { color: colors.textMuted, fontFamily: font.regular }]}>{timestamp}</Text>
               </View>
               <View style={styles.bottomRow}>
                 <Text
-                  style={[styles.preview, { color: colors.textMuted }]}
+                  style={[styles.preview, { color: colors.textMuted, fontFamily: font.regular }]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
@@ -208,7 +210,7 @@ export function ChatsScreen() {
                 </Text>
                 {unread > 0 ? (
                   <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadBadgeText}>{unread > 99 ? '99+' : unread}</Text>
+                    <Text style={[styles.unreadBadgeText, { fontFamily: font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
                   </View>
                 ) : (
                   <View style={styles.badgePlaceholder} />

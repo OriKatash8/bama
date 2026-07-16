@@ -58,13 +58,9 @@ export function RegisterForm() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.titleWrap, { marginBottom: -60 }]}>
-        <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
-      </View>
+      <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
-        <View style={styles.titleWrap}>
-          <Text style={[styles.title, { fontFamily: font.bold }]}>{t('auth.register_title')}</Text>
-        </View>
+        <Text style={[styles.title, { fontFamily: font.bold }]}>{t('auth.register_title')}</Text>
         <Input
           placeholder={t('auth.full_name')}
           placeholderTextColor={colors.placeholder}
@@ -148,8 +144,7 @@ export function RegisterForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40, marginTop: -100 },
-  titleWrap: { alignItems: 'center', width: '100%' },
+  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 40 },
   card: {
     borderRadius: 20,
     padding: 24,
@@ -161,7 +156,7 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 10,
   },
-  appLogo: { width: 1040, height: 520 },
+  appLogo: { width: '80%', height: 130, resizeMode: 'contain', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 28, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },
   checklist: { gap: 6, paddingHorizontal: 2 },
   checkRow: { flexDirection: 'row', alignItems: 'center' },

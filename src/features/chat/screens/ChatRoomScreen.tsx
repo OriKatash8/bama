@@ -13,8 +13,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getDoc, updateDoc, doc } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAppFont } from '@core/hooks/useAppFont';
 import { auth, db } from '@core/firebase/config';
 import { listenToMessages, sendMessage } from '../services/chatService';
+import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import type { Chat, Message } from '../types';
 
 const USER_COLORS = [
@@ -35,6 +37,7 @@ interface Props {
 
 export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
+  const font = useAppFont();
   const router = useRouter();
   const currentUserId = auth.currentUser?.uid ?? '';
   const [messages, setMessages] = useState<Message[]>([]);
@@ -126,7 +129,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     >
       <View style={[styles.header, { backgroundColor: 'transparent', borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
-          <Text style={[styles.headerBackText, { color: colors.accent }]}>‹</Text>
+          <Text style={[styles.headerBackText, { color: colors.accent, fontFamily: font.regular }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           {chatType === 'group' && chatProjectId ? (
@@ -134,18 +137,20 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.headerName, { color: colors.text }, gradientText]} numberOfLines={1}>
+              <Text style={[styles.headerName, { color: colors.text, fontFamily: font.bold }, gradientText]} numberOfLines={1}>
                 {chatName}
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={[styles.headerName, { color: colors.text }, gradientText]} numberOfLines={1}>
+            <Text style={[styles.headerName, { color: colors.text, fontFamily: font.bold }, gradientText]} numberOfLines={1}>
               {chatName}
             </Text>
           )}
         </View>
         <View style={styles.headerRight} />
       </View>
+
+      <PurchaseBanner chatId={chatId} />
 
       <FlatList
         data={[...messages].reverse()}
@@ -163,11 +168,11 @@ export function ChatRoomScreen({ chatId }: Props) {
                 ]}
               >
                 {!isOwn && (
-                  <Text style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
+                  <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
                     {userNames[item.senderId] ?? 'Loading...'}
                   </Text>
                 )}
-                <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text }]}>
+                <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, fontFamily: font.regular }]}>
                   {item.text}
                 </Text>
               </View>
@@ -179,7 +184,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         <TextInput
           style={[
             styles.input,
-            { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text },
+            { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontFamily: font.regular },
           ]}
           value={inputText}
           onChangeText={setInputText}
@@ -194,7 +199,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           disabled={!inputText.trim()}
           activeOpacity={0.7}
         >
-          <Text style={styles.sendLabel}>Send</Text>
+          <Text style={[styles.sendLabel, { fontFamily: font.semiBold }]}>Send</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

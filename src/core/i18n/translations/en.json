@@ -53,7 +53,10 @@
     "summary_title": "Review your request",
     "title_ai_hint": "Generated from your description — edit if you'd like",
     "confirm_submit": "Confirm & Post",
-    "back_to_edit": "Back"
+    "back_to_edit": "Back",
+    "help_execution": "The date when the project work takes place — e.g. a shoot day",
+    "help_deadline": "The date by which you want the project to be ready",
+    "help_location": "Where the project is planned to take place"
   },
   "search": {
     "no_professionals_yet": "No professionals yet",
@@ -280,7 +283,7 @@
     "filter_brand": "Brand",
     "filter_city": "City",
     "filter_condition": "Condition",
-"post_listing": "Post a Listing",
+    "post_listing": "Post a Listing",
     "second_hand": "2nd Hand",
     "rental": "Rental",
     "upload_photo": "Upload Photo",
@@ -306,7 +309,26 @@
     "confirm_purchase_message": "A 3% platform fee of ₪{{fee}} will be charged. Payment processing coming soon — you'll be connected to the seller to arrange the transaction.",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "buy_error": "Could not complete purchase. Please try again."
+    "buy_error": "Could not complete purchase. Please try again.",
+    "checkout_title": "Checkout",
+    "platform_fee": "BAMA Fee (3%)",
+    "fee_note": "You'll only be charged the BAMA fee after you confirm you received the product.",
+    "confirm_purchase": "Confirm Purchase",
+    "buy_message": "Hi! I purchased \"{{title}}\" for ₪{{price}} 🛒",
+    "mark_received": "I received it — Done",
+    "cancel_purchase": "Cancel Purchase",
+    "mark_handed": "I handed it over",
+    "waiting_buyer": "Waiting for buyer to confirm...",
+    "confirm_received_title": "Confirm Receipt",
+    "confirm_received_msg": "Confirm you received the product? The 3% BAMA fee will be charged.",
+    "fee_charged": "BAMA fee charged (payment integration coming soon)",
+    "sale_complete": "Purchase completed ✓",
+    "confirm_cancel_title": "Cancel Purchase",
+    "confirm_cancel_msg": "Cancel this purchase? The product will return to the marketplace.",
+    "purchase_cancelled": "Purchase cancelled",
+    "sale_completed_label": "Sale completed",
+    "purchase_active_label": "Active purchase",
+    "seller_price_note": "Paid directly to seller (outside the app)"
   },
   "auth": {
     "pw_length": "At least 8 characters",
@@ -338,5 +360,8 @@
     "google_coming_soon_body": "Google Sign-In on mobile coming soon",
     "err_google_email_exists": "An account with this email already exists. Please sign in with your original method.",
     "err_google_failed": "Google sign-in failed. Please try again."
+  },
+  "common": {
+    "cancel": "Cancel"
   }
 }

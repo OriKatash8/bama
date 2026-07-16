@@ -1,31 +1,103 @@
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  query,
+  where,
+  onSnapshot,
+  writeBatch,
+  deleteField,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { getOrCreateDM, sendMessage } from '@features/chat/services/chatService';
+import type { MarketplaceListing } from '../types';
 
-type BuyListingInput = {
-  productName: string;
-  price: number;
-};
-
-export async function buyListing(
+export async function confirmPurchase(
   listingId: string,
   buyerId: string,
   sellerId: string,
-  listing: BuyListingInput
+  listing: { productName: string; price: number },
+  autoMessage: string,
 ): Promise<string> {
-  await updateDoc(doc(db, 'marketplace_listings', listingId), {
-    status: 'reserved',
-    reservedBy: buyerId,
-    reservedAt: serverTimestamp(),
-  });
-
+  const platformFee = Math.round(listing.price * 0.03);
   const chatId = await getOrCreateDM(buyerId, sellerId);
 
-  await sendMessage(
-    chatId,
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'marketplace_listings', listingId), {
+    status: 'reserved',
     buyerId,
-    `היי! אני מעוניין לקנות את "${listing.productName}" במחיר ₪${listing.price} 🛒`
-  );
+    platformFee,
+    purchaseChatId: chatId,
+  });
+  await batch.commit();
+
+  await sendMessage(chatId, buyerId, autoMessage);
 
   return chatId;
+}
+
+export async function confirmReceived(
+  listingId: string,
+  chatId: string,
+  userId: string,
+  systemMessage: string,
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'marketplace_listings', listingId), {
+    status: 'sold',
+  });
+  await batch.commit();
+
+  // ── STRIPE CHARGE GOES HERE ──────────────────────────────────────────────
+  // Call your payment backend / Stripe PaymentIntent here.
+  // Input: listing.platformFee, listing.posterId (seller), listing.buyerId.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  await sendMessage(chatId, userId, systemMessage);
+}
+
+export async function cancelPurchase(
+  listingId: string,
+  chatId: string,
+  userId: string,
+  systemMessage: string,
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'marketplace_listings', listingId), {
+    status: 'available',
+    buyerId: deleteField(),
+    purchaseChatId: deleteField(),
+    sellerConfirmed: deleteField(),
+    platformFee: deleteField(),
+  });
+  await batch.commit();
+
+  await sendMessage(chatId, userId, systemMessage);
+}
+
+export async function markHandedOver(listingId: string): Promise<void> {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'marketplace_listings', listingId), {
+    sellerConfirmed: true,
+    sellerConfirmedAt: serverTimestamp(),
+  });
+  await batch.commit();
+}
+
+export function listenToListingByChatId(
+  chatId: string,
+  callback: (listing: MarketplaceListing | null) => void,
+): () => void {
+  const q = query(
+    collection(db, 'marketplace_listings'),
+    where('purchaseChatId', '==', chatId),
+  );
+  return onSnapshot(q, (snap) => {
+    if (snap.empty) {
+      callback(null);
+      return;
+    }
+    const d = snap.docs[0];
+    callback({ id: d.id, ...d.data() } as MarketplaceListing);
+  });
 }

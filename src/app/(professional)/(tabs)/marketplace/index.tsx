@@ -107,7 +107,7 @@ function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: Cat
     }).start();
   }, [isActive, anim]);
 
-  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 2] });
+  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.33] });
   const iconSource = isActive && cat.selectedIcon ? cat.selectedIcon : cat.icon;
 
   return (
@@ -284,7 +284,11 @@ export default function MarketplaceScreen() {
         </View>
 
         {/* Categories */}
-        <View style={styles.categoriesRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesRow}
+        >
           {CATEGORIES.map((cat) => (
             <CategoryTile
               key={cat.id}
@@ -295,7 +299,7 @@ export default function MarketplaceScreen() {
               inactiveLabelColor={colors.textMuted}
             />
           ))}
-        </View>
+        </ScrollView>
 
         {/* Filter button + active tags */}
         <View style={styles.filterBarRow}>
@@ -553,17 +557,18 @@ const styles = StyleSheet.create({
 
   categoriesRow: {
     flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingBottom: 10,
-    marginTop: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 8,
+    marginTop: 8,
   },
   catItem: {
-    flex: 1,
+    width: 112,
     alignItems: 'center',
-    paddingVertical: 6,
-    gap: 4,
+    paddingVertical: 10,
+    gap: 8,
   },
-  tileIcon: { width: 60, height: 60 },
+  tileIcon: { width: 96, height: 96 },
   catLabel: { fontSize: 13, fontWeight: '600' },
 
   filterBarRow: {
