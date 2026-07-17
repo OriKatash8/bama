@@ -83,7 +83,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       {/* Invisible full-screen backdrop — tap anywhere to close */}
-      <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
 
       {/* Compact floating card, anchored above the profile tab */}
       <Animated.View

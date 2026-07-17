@@ -60,7 +60,7 @@ function AccessibilitySheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={sheet.wrapper}>
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
 
         <View style={[sheet.container, { backgroundColor: colors.bg }]}>
           {/* drag handle */}

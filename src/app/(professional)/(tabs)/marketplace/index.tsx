@@ -376,7 +376,7 @@ export default function MarketplaceScreen() {
         onRequestClose={() => setFilterModalVisible(false)}
       >
         <View style={styles.filterOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
           <LinearGradient
             colors={['#efd4f6', '#b7cae6']}
             start={{ x: 0, y: 0 }}
