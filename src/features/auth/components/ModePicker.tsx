@@ -78,6 +78,7 @@ const styles = StyleSheet.create({
     height: 120,
     resizeMode: 'contain',
     alignSelf: 'center',
+    marginTop: -30,
   },
   buttons: {
     width: '100%',
