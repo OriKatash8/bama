@@ -20,7 +20,7 @@ import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
-import { useSettingsStore } from '@core/stores/settingsStore';
+import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProfessionalSkill } from '@core/types/user';
@@ -46,7 +46,7 @@ function makeT(translations: Translations) {
 
 export default function ProfessionalProfileScreen() {
   const { user, profile, reviews, isLoading, isSaving, save } = useProfile();
-  const { assets, upload, remove } = usePortfolio();
+  const { assets, upload, addVideoUrl, remove } = usePortfolio();
   const { showToast } = useUiStore();
   const { isLoading: isSigningOut, logout } = useLogout();
   const isDark = useUiStore((s) => s.isDark);
@@ -54,6 +54,7 @@ export default function ProfessionalProfileScreen() {
   const colors = useTheme();
   const navigation = useNavigation();
   const language = useSettingsStore((s) => s.language);
+  const setLanguage = useSettingsStore((s) => s.setLanguage);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
@@ -73,13 +74,14 @@ export default function ProfessionalProfileScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: t('profile.title'),
-      headerTintColor: '#fff',
-      headerTitleStyle: { color: '#fff', fontWeight: '700' as const },
+      headerTintColor: '#004aad',
+      headerTitleStyle: { color: '#004aad', fontWeight: '700' as const },
+      headerShadowVisible: false,
       headerBackground: () => (
         <LinearGradient
-          colors={['#cb6ce6', '#004aad']}
+          colors={['#efd4f6', '#b7cae6']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
         />
       ),
@@ -89,20 +91,20 @@ export default function ProfessionalProfileScreen() {
           onPress={() => setMenuOpen(true)}
           activeOpacity={0.8}
         >
-          <Settings size={26} color="#fff" strokeWidth={1.5} />
+          <Settings size={26} color="#004aad" strokeWidth={1.5} />
         </TouchableOpacity>
       ),
       headerRight: () =>
         isEditing ? (
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: '#fff', textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.headerBtnText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
                 {t('profile.cancel')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
               {isSaving
-                ? <ActivityIndicator size="small" color="#fff" />
+                ? <ActivityIndicator size="small" color="#004aad" />
                 : <Text style={[styles.headerBtnText, styles.save, { textAlign: rtl ? 'right' : 'left' }]}>
                     {t('profile.save')}
                   </Text>}
@@ -110,7 +112,7 @@ export default function ProfessionalProfileScreen() {
           </View>
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={[styles.headerBtnText, { color: '#fff', textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.headerBtnText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
               {t('profile.edit')}
             </Text>
           </TouchableOpacity>
@@ -209,11 +211,9 @@ export default function ProfessionalProfileScreen() {
 
       <ContentTabs
         equipment={equipment}
-        priceList={priceList}
         reviews={reviews}
         isEditing={isEditing}
         onEquipmentChange={setEquipment}
-        onPriceListChange={setPriceList}
       />
 
       <View style={styles.portfolioSection}>
@@ -224,6 +224,7 @@ export default function ProfessionalProfileScreen() {
           assets={assets}
           isEditing={isEditing}
           onAdd={upload}
+          onAddVideo={addVideoUrl}
           onRemove={remove}
           onError={(msg) => showToast(msg, 'error')}
         />
@@ -277,12 +278,21 @@ export default function ProfessionalProfileScreen() {
                 {t('profile.language')}
               </Text>
               <View style={[styles.langToggle, { borderColor: colors.border }]}>
-                <View style={[styles.langActive, { backgroundColor: '#004aad' }]}>
-                  <Text style={styles.langActiveText}>{t('profile.en')}</Text>
-                </View>
-                <View style={styles.langInactive}>
-                  <Text style={[styles.langInactiveText, { color: colors.textMuted }]}>{t('profile.he')}</Text>
-                </View>
+                {(['en', 'he'] as Lang[]).map((lang) => {
+                  const isActive = language === lang;
+                  return (
+                    <TouchableOpacity
+                      key={lang}
+                      style={[styles.langOption, isActive && { backgroundColor: '#004aad' }]}
+                      onPress={() => setLanguage(lang)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.langOptionText, { color: isActive ? '#fff' : colors.textMuted }]}>
+                        {lang === 'en' ? t('profile.en') : t('profile.he')}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
             <Divider colors={colors} />
@@ -345,7 +355,7 @@ const styles = StyleSheet.create({
   headerBtns: { flexDirection: 'row', gap: 12 },
   headerBtn: { paddingHorizontal: 8 },
   headerBtnText: { fontSize: 16 },
-  save: { fontWeight: '700', color: '#fff' },
+  save: { fontWeight: '700', color: '#004aad' },
 
   starsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   star: { fontSize: 36, color: '#cb6ce6' },
@@ -395,8 +405,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
-  langActive: { paddingHorizontal: 10, paddingVertical: 4 },
-  langActiveText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  langInactive: { paddingHorizontal: 10, paddingVertical: 4 },
-  langInactiveText: { fontWeight: '500', fontSize: 12 },
+  langOption: { paddingHorizontal: 10, paddingVertical: 4 },
+  langOptionText: { fontWeight: '700', fontSize: 12 },
 });

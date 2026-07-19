@@ -87,6 +87,7 @@ export type ProjectRequest = {
   createdAt: Timestamp;
   filledSlots: FilledSlot[];
   targetProfessionalId?: string | null;
+  chatId?: string;
 };
 
 export type PriceOffer = {
@@ -96,8 +97,15 @@ export type PriceOffer = {
   category: string;
   subcategory: string;
   price: number;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'removed';
   bundleId?: string;
+  createdAt: Timestamp;
+};
+
+export type RemovalRequest = {
+  professionalId: string;
+  requestedBy: string;
+  status: 'pending' | 'accepted';
   createdAt: Timestamp;
 };
 

@@ -71,6 +71,7 @@
   },
   "chats": {
     "status_open": "Open",
+    "sending_image": "Sending image...",
     "status_in_progress": "In Progress",
     "status_completed": "Completed",
     "status_cancelled": "Cancelled",
@@ -142,7 +143,18 @@
     "enter_amount": "Enter new amount",
     "note_optional": "Note (optional)",
     "reason_placeholder": "Reason for update...",
-    "send_request": "Send Request"
+    "send_request": "Send Request",
+    "remove_member": "Remove",
+    "confirm_remove": "Request to remove this professional? They must accept before they're removed.",
+    "pending_removal": "Pending removal",
+    "removal_pending": "The client requested to remove you from this project.",
+    "accept_removal": "Accept & leave",
+    "member_left": "{{name}} left the project",
+    "add_professional": "+ Add professional",
+    "post_roles": "Post to noticeboard",
+    "error_remove": "Could not request removal. Please try again.",
+    "error_accept_removal": "Could not accept removal. Please try again.",
+    "error_post_roles": "Could not post roles. Please try again."
   },
   "chats_page": {
     "title": "Chats",
@@ -208,13 +220,10 @@
     "skills": "Skills",
     "no_skills": "No skills added yet.",
     "equipment": "Equipment",
-    "price_list": "Price List",
     "reviews": "Reviews",
     "no_equipment": "No equipment yet.",
     "add_item": "Add item...",
-    "no_price": "No price entries yet.",
-    "price_placeholder": "Price",
-    "add_service": "Add service..."
+    "add_media": "Add Media"
   },
   "tabs": {
     "home": "Home",
@@ -248,7 +257,8 @@
   },
   "offers": {
     "bundle_badge": "Bundle deal",
-    "instead_of": "instead of"
+    "instead_of": "instead of",
+    "bundle_section": "Bundle Offers"
   },
   "marketplace": {
     "category_camera": "Camera",
@@ -363,5 +373,11 @@
   },
   "common": {
     "cancel": "Cancel"
+  },
+  "media": {
+    "processing_video": "Processing video...",
+    "add_video": "Add Video",
+    "send_video": "Sending video...",
+    "video_error": "Video processing failed"
   }
 }

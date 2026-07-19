@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
+import { confirmDialog } from '@utils/confirmDialog';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
@@ -60,61 +61,69 @@ export function PurchaseBanner({ chatId }: Props) {
   const isCompleted = snap.status === 'sold';
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
 
+  console.log('[PurchaseBanner] render', { isBuyer, isSeller, isCompleted, currentUserId, buyerId: snap.buyerId, posterId: snap.posterId });
+
   // ── Buyer: "I received it — Done" ────────────────────────────────────────
-  function handleMarkReceived() {
-    Alert.alert(
+  async function handleMarkReceived() {
+    console.log('[PurchaseBanner] markReceived tapped', {
+      currentUserId,
+      buyerId: snap.buyerId,
+      status: snap.status,
+      listingId: snap.id,
+      isBuyer,
+    });
+    const confirmed = await confirmDialog(
       t('marketplace.confirm_received_title'),
       t('marketplace.confirm_received_msg'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('marketplace.mark_received'),
-          onPress: async () => {
-            setBuyerLoading(true);
-            try {
-              await confirmReceived(
-                snap.id,
-                chatId,
-                currentUserId,
-                t('marketplace.sale_complete'),
-              );
-              // Payment placeholder — fee_charged message shown to buyer
-              Alert.alert(t('marketplace.fee_charged'));
-            } finally {
-              setBuyerLoading(false);
-            }
-          },
-        },
-      ],
     );
+    if (!confirmed) return;
+    console.log('[PurchaseBanner] markReceived confirmed — calling confirmReceived');
+    setBuyerLoading(true);
+    try {
+      await confirmReceived(
+        snap.id,
+        chatId,
+        currentUserId,
+        t('marketplace.sale_complete'),
+      );
+      console.log('[PurchaseBanner] confirmReceived success');
+      Alert.alert(t('marketplace.fee_charged'));
+    } catch (err) {
+      console.error('[PurchaseBanner] confirmReceived error:', err);
+    } finally {
+      setBuyerLoading(false);
+    }
   }
 
   // ── Buyer: "Cancel purchase" ──────────────────────────────────────────────
-  function handleCancelPurchase() {
-    Alert.alert(
+  async function handleCancelPurchase() {
+    console.log('[PurchaseBanner] cancelPurchase tapped', {
+      currentUserId,
+      buyerId: snap.buyerId,
+      status: snap.status,
+      listingId: snap.id,
+      isBuyer,
+    });
+    const confirmed = await confirmDialog(
       t('marketplace.confirm_cancel_title'),
       t('marketplace.confirm_cancel_msg'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('marketplace.cancel_purchase'),
-          style: 'destructive',
-          onPress: async () => {
-            setBuyerLoading(true);
-            try {
-              await cancelPurchase(
-                snap.id,
-                chatId,
-                currentUserId,
-                t('marketplace.purchase_cancelled'),
-              );
-            } finally {
-              setBuyerLoading(false);
-            }
-          },
-        },
-      ],
     );
+    if (!confirmed) return;
+    console.log('[PurchaseBanner] cancelPurchase confirmed — calling cancelPurchase service');
+    setBuyerLoading(true);
+    try {
+      await cancelPurchase(
+        snap.id,
+        chatId,
+        currentUserId,
+        t('marketplace.purchase_cancelled'),
+      );
+      console.log('[PurchaseBanner] cancelPurchase success');
+    } catch (err) {
+      console.error('[PurchaseBanner] cancelPurchase error:', err);
+    } finally {
+      setBuyerLoading(false);
+    }
   }
 
   // ── Seller: "I handed it over" ────────────────────────────────────────────

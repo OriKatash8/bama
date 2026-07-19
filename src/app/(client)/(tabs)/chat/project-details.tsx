@@ -11,16 +11,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { confirmDialog } from '@utils/confirmDialog';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { auth } from '@core/firebase/config';
-import { useTheme, type AppColors } from '@core/hooks/useTheme';
+import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { BundleOffer, FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest } from '@core/types/project';
+import type { BundleOffer, CrewRequestSlot, FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest, RemovalRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
 import {
   calculateProjectFee,
@@ -35,7 +38,8 @@ import {
   addMission,
   updateMissionStatus,
 } from '@features/chat/services/missionService';
-import { MiniCalendar } from '@features/crew/components';
+import { MiniCalendar, RolePickerModal } from '@features/crew/components';
+import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
 import { Calendar } from 'lucide-react-native';
 
 type Translations = typeof en;
@@ -117,6 +121,14 @@ export default function ProjectDetailsScreen() {
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
 
+  // Feature A: removal requests
+  const [removalRequests, setRemovalRequests] = useState<RemovalRequest[]>([]);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  // Feature B: add professional
+  const [showRolePicker, setShowRolePicker] = useState(false);
+  const [isPostingRoles, setIsPostingRoles] = useState(false);
+
   useEffect(() => {
     if (!projectId) return;
 
@@ -188,6 +200,11 @@ export default function ProjectDetailsScreen() {
     const userId = auth.currentUser?.uid;
     if (!projectId || !userId) return;
     return listenToPaymentRequests(projectId, userId, setPaymentRequests);
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    return listenToRemovalRequests(projectId, setRemovalRequests);
   }, [projectId]);
 
   async function handleMarkComplete() {
@@ -266,6 +283,65 @@ export default function ProjectDetailsScreen() {
       }));
     } finally {
       setRespondingId(null);
+    }
+  }
+
+  async function handleRequestRemoval(professionalId: string) {
+    console.log('[removal] handleRequestRemoval called', { professionalId, projectId });
+    if (!projectId) return;
+    const confirmed = await confirmDialog(
+      t('project_details.remove_member'),
+      t('project_details.confirm_remove'),
+    );
+    if (!confirmed) return;
+    setRemovingId(professionalId);
+    try {
+      await requestRemoval(projectId, professionalId, currentUserId);
+    } catch {
+      Alert.alert('Error', t('project_details.error_remove'));
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
+  async function handleAcceptRemoval() {
+    if (!projectId || !project) return;
+    const chatId = project.chatId;
+    if (!chatId) return;
+    try {
+      const name = memberUsers[currentUserId]?.displayName ?? currentUserId;
+      await acceptRemoval(
+        projectId,
+        chatId,
+        currentUserId,
+        project.filledSlots,
+        t('project_details.member_left').replace('{{name}}', name),
+      );
+      router.back();
+    } catch {
+      Alert.alert('Error', t('project_details.error_accept_removal'));
+    }
+  }
+
+  async function handlePostRoles(newSlots: CrewRequestSlot[]) {
+    if (!projectId || !project) return;
+    setIsPostingRoles(true);
+    try {
+      const updates: Record<string, unknown> = {
+        crewSlots: arrayUnion(...newSlots),
+      };
+      if (project.status !== 'open') updates.status = 'open';
+      await updateDoc(doc(db, 'projects', projectId), updates);
+      setProject((prev) =>
+        prev
+          ? { ...prev, crewSlots: [...prev.crewSlots, ...newSlots], status: 'open' }
+          : prev,
+      );
+      setShowRolePicker(false);
+    } catch {
+      Alert.alert('Error', t('project_details.error_post_roles'));
+    } finally {
+      setIsPostingRoles(false);
     }
   }
 
@@ -349,38 +425,40 @@ export default function ProjectDetailsScreen() {
   const statusColor = STATUS_COLORS[project.status];
   const filledSlots: FilledSlot[] = project.filledSlots ?? [];
 
-  // Build grouped payment entries (bundles collapse to one row at bundlePrice)
-  type PaymentEntry =
-    | { kind: 'individual'; offer: PriceOffer }
-    | { kind: 'bundle'; bundleId: string; bundle: BundleOffer; offers: PriceOffer[] };
-
-  const paymentEntries: PaymentEntry[] = [];
+  // Per-professional payment summary (bundles counted once at bundlePrice)
+  type MemberPaymentInfo = { price: number; hasBundle: boolean; individualOffer: PriceOffer | null };
+  const memberPaymentMap: Record<string, MemberPaymentInfo> = {};
   const seenBundleIds = new Set<string>();
   for (const offer of acceptedOffers) {
+    const profId = offer.professionalId;
+    if (!memberPaymentMap[profId]) {
+      memberPaymentMap[profId] = { price: 0, hasBundle: false, individualOffer: null };
+    }
+    const info = memberPaymentMap[profId];
     if (offer.bundleId) {
       if (!seenBundleIds.has(offer.bundleId)) {
         seenBundleIds.add(offer.bundleId);
         const bundle = bundleMap.get(offer.bundleId);
         if (bundle) {
-          paymentEntries.push({
-            kind: 'bundle',
-            bundleId: offer.bundleId,
-            bundle,
-            offers: acceptedOffers.filter((o) => o.bundleId === offer.bundleId),
-          });
+          info.price += bundle.bundlePrice;
+          info.hasBundle = true;
         }
       }
     } else {
-      paymentEntries.push({ kind: 'individual', offer });
+      info.price += offer.price;
+      if (!info.individualOffer) info.individualOffer = offer;
     }
   }
-  const total = paymentEntries.reduce(
-    (sum, e) => sum + (e.kind === 'bundle' ? e.bundle.bundlePrice : e.offer.price),
-    0,
-  );
   const currentUserId = auth.currentUser?.uid ?? '';
   const isClient = currentUserId === project.clientId;
   const isCompleted = project.status === 'completed';
+
+  const removalMap = Object.fromEntries(
+    removalRequests.map((r) => [r.professionalId, r.status]),
+  );
+  const myRemovalRequest = !isClient
+    ? removalRequests.find((r) => r.professionalId === currentUserId && r.status === 'pending')
+    : undefined;
 
   const allMemberNames: Record<string, string> = {
     ...Object.fromEntries(
@@ -406,55 +484,85 @@ export default function ProjectDetailsScreen() {
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header */}
-      <LinearGradient
-        colors={colors.bgGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={[styles.header, { flexDirection: rowDirection }]}
-      >
+      {/* Header — small label + large project title, centered; back button kept */}
+      <View style={[styles.header, { flexDirection: rowDirection }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={[styles.headerBackText, { fontFamily: font.regular }]}>{rtl ? '›' : '‹'}</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { textAlign: 'center', fontFamily: font.bold, color: '#004aad' }]} numberOfLines={1}>
-          {t('project_details.header')}
-        </Text>
+        <View style={styles.headerCenter} pointerEvents="none">
+          <Text style={[styles.headerLabel, { fontFamily: font.semiBold }]}>
+            {t('project_details.header')}
+          </Text>
+          <Text style={[styles.headerProjectTitle, { fontFamily: font.bold }]} numberOfLines={2}>
+            {project.title}
+          </Text>
+        </View>
         <View style={styles.headerRight} />
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* SECTION 1 — Project Info */}
-        <Text style={[styles.projectTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
-          {project.title}
-        </Text>
+        {/* Removal banner — shown to the professional who is pending removal */}
+        {myRemovalRequest && !isCompleted && (
+          <View style={[styles.removalBanner, { flexDirection: rowDirection }]}>
+            <Text style={[styles.removalBannerText, { fontFamily: font.regular, flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('project_details.removal_pending')}
+            </Text>
+            <TouchableOpacity
+              style={styles.removalAcceptBtn}
+              onPress={handleAcceptRemoval}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.removalAcceptText, { fontFamily: font.bold }]}>
+                {t('project_details.accept_removal')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor, flexDirection: rowDirection, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
+        {/* Status badge — centered */}
+        <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor, flexDirection: rowDirection, alignSelf: 'center' }]}>
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={[styles.statusText, { color: statusColor, fontFamily: font.bold }]}>{projectStatusLabel(project.status)}</Text>
         </View>
 
-        <View style={[styles.metaCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-          <MetaRow label={t('project_details.execution')} value={project.exec ?? t('project_details.tbd')} colors={colors} rtl={rtl} />
-          <RowDivider colors={colors} />
-          <MetaRow label={t('project_details.deadline')} value={project.deadline} colors={colors} rtl={rtl} />
-          <RowDivider colors={colors} />
-          <MetaRow label={t('project_details.location')} value={project.location} colors={colors} rtl={rtl} />
+        {/* Three meta cards side-by-side */}
+        <View style={[styles.metaCardsRow, { flexDirection: rowDirection }]}>
+          <View style={styles.metaCard}>
+            <Text style={[styles.metaCardLabel, { fontFamily: font.semiBold }]}>{t('project_details.execution')}</Text>
+            <Text style={[styles.metaCardValue, { fontFamily: font.bold }]} numberOfLines={2}>{project.exec ?? t('project_details.tbd')}</Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={[styles.metaCardLabel, { fontFamily: font.semiBold }]}>{t('project_details.deadline')}</Text>
+            <Text style={[styles.metaCardValue, { fontFamily: font.bold }]} numberOfLines={2}>{project.deadline}</Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={[styles.metaCardLabel, { fontFamily: font.semiBold }]}>{t('project_details.location')}</Text>
+            <Text style={[styles.metaCardValue, { fontFamily: font.bold }]} numberOfLines={2}>{project.location}</Text>
+          </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
-            {t('project_details.description')}
-          </Text>
+        {/* Description card */}
+        <View style={styles.descriptionCard}>
+          <Text style={[styles.metaCardLabel, { fontFamily: font.semiBold }]}>{t('project_details.description')}</Text>
           <Text style={[styles.descriptionText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
             {project.description}
           </Text>
         </View>
 
         {/* SECTION 2 — Team Members */}
-        <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
-          {t('project_details.team_members')}
-        </Text>
+        <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+          <Text style={[styles.sectionTitle, { fontFamily: font.bold }]}>
+            {t('project_details.team_members')}
+          </Text>
+          {isClient && !isCompleted && (
+            <TouchableOpacity onPress={() => setShowRolePicker(true)} activeOpacity={0.8}>
+              <Text style={[styles.addButtonText, { fontFamily: font.semiBold }]}>
+                {t('project_details.add_professional')}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {clientUser && (
           <MemberRow
@@ -462,7 +570,6 @@ export default function ProjectDetailsScreen() {
             photoURL={clientUser.photoURL}
             role={t('project_details.project_client')}
             badge={t('project_details.client')}
-            colors={colors}
             rtl={rtl}
           />
         )}
@@ -483,27 +590,40 @@ export default function ProjectDetailsScreen() {
           ),
         ).map(({ professionalId, roles }) => {
           const member = memberUsers[professionalId];
+          const isPendingRemoval = removalMap[professionalId] === 'pending';
+          const payment = memberPaymentMap[professionalId];
           return (
             <MemberRow
               key={professionalId}
               displayName={member?.displayName ?? professionalId}
               photoURL={member?.photoURL ?? null}
               role={roles.join(' | ')}
-              colors={colors}
               rtl={rtl}
+              isPendingRemoval={isClient && isPendingRemoval}
+              isRemoving={removingId === professionalId}
+              onRemove={isClient && !isCompleted ? () => handleRequestRemoval(professionalId) : undefined}
+              payment={isClient ? payment : undefined}
+              onUpdate={isClient && !isCompleted && payment?.individualOffer
+                ? (offer) => {
+                    setSelectedOffer(offer);
+                    setProposedAmount('');
+                    setRequestNote('');
+                    setShowPaymentRequestModal(true);
+                  }
+                : undefined}
             />
           );
         })}
 
         {filledSlots.length === 0 && !clientUser && (
-          <Text style={[styles.emptyNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+          <Text style={[styles.emptyNote, { fontFamily: font.regular }]}>
             {t('project_details.no_team_members')}
           </Text>
         )}
 
         {/* SECTION 3 — Missions */}
         <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
-          <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
+          <Text style={[styles.sectionTitle, { fontFamily: font.bold }]}>
             {t('project_details.missions')}
           </Text>
           <TouchableOpacity onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
@@ -512,53 +632,63 @@ export default function ProjectDetailsScreen() {
         </View>
 
         {missions.length === 0 ? (
-          <Text style={[styles.emptyNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+          <Text style={[styles.emptyNote, { fontFamily: font.regular }]}>
             {t('project_details.no_missions')}
           </Text>
         ) : (
           missions.map((mission) => {
             const cfg = MISSION_STATUS_CONFIG[mission.status];
-            const assigneeNames = mission.assignedTo
-              .map((id) => allMemberNames[id] ?? id)
-              .join(', ');
+            const firstAssigneeId = mission.assignedTo[0];
+            const firstAssigneeName = firstAssigneeId ? (allMemberNames[firstAssigneeId] ?? firstAssigneeId) : '';
+            const extraCount = mission.assignedTo.length - 1;
+            const firstMemberInfo = firstAssigneeId ? memberUsers[firstAssigneeId] : undefined;
             return (
-              <View
-                key={mission.id}
-                style={[styles.missionCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}
-              >
-                <View style={[styles.missionTop, { flexDirection: rowDirection }]}>
-                  <Text style={[styles.missionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]} numberOfLines={2}>
+              <View key={mission.id} style={[styles.missionRow, { flexDirection: rowDirection }]}>
+                <View style={styles.missionAvatarWrap}>
+                  {firstMemberInfo?.photoURL ? (
+                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
+                  ) : (
+                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
+                      <Text style={[styles.missionAvatarInitial, { fontFamily: font.bold }]}>
+                        {firstAssigneeName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  {extraCount > 0 && (
+                    <View style={styles.missionAvatarExtra}>
+                      <Text style={[styles.missionAvatarExtraText, { fontFamily: font.bold }]}>+{extraCount}</Text>
+                    </View>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.missionTitleCard}
+                  onPress={() => handleCycleMissionStatus(mission)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.missionTitle, { fontFamily: font.semiBold }]} numberOfLines={2}>
                     {mission.title}
                   </Text>
-                  <TouchableOpacity
-                    style={[styles.missionStatusPill, { backgroundColor: cfg.color }]}
-                    onPress={() => handleCycleMissionStatus(mission)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.missionStatusText, { fontFamily: font.bold }]}>{missionLabel(mission.status)}</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={[styles.missionMeta, { flexDirection: rowDirection }]}>
-                  <Text style={[styles.missionMetaText, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
-                    {assigneeNames}
-                  </Text>
-                  {mission.dueDate ? (
-                    <Text style={[styles.missionMetaText, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+                  {mission.dueDate && (
+                    <Text style={[styles.missionDue, { fontFamily: font.regular }]}>
                       {formatDueDate(mission.dueDate, t('project_details.due'))}
                     </Text>
-                  ) : null}
-                </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.missionStatusCard}
+                  onPress={() => handleCycleMissionStatus(mission)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.missionStatusText, { color: cfg.color, fontFamily: font.bold }]}>
+                    {missionLabel(mission.status)}
+                  </Text>
+                </TouchableOpacity>
               </View>
             );
           })
         )}
 
-        {/* SECTION 4 — Payment */}
-        <Text style={[styles.sectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
-          {t('project_details.payment')}
-        </Text>
-
-        {/* Pending payment requests */}
+        {/* Pending payment-update requests */}
         {paymentRequests.length > 0 && (
           <>
             {incomingRequests.map((req) => {
@@ -583,11 +713,7 @@ export default function ProjectDetailsScreen() {
                   ) : null}
                   <View style={[styles.pendingRequestActions, { flexDirection: rowDirection }]}>
                     <TouchableOpacity
-                      style={[
-                        styles.pendingActionBtn,
-                        styles.pendingActionAccept,
-                        isResponding && styles.completeBtnDisabled,
-                      ]}
+                      style={[styles.pendingActionBtn, styles.pendingActionAccept, isResponding && styles.completeBtnDisabled]}
                       onPress={() => handleRespondToRequest(req, true)}
                       disabled={isResponding}
                       activeOpacity={0.8}
@@ -599,11 +725,7 @@ export default function ProjectDetailsScreen() {
                       )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[
-                        styles.pendingActionBtn,
-                        styles.pendingActionReject,
-                        isResponding && styles.completeBtnDisabled,
-                      ]}
+                      style={[styles.pendingActionBtn, styles.pendingActionReject, isResponding && styles.completeBtnDisabled]}
                       onPress={() => handleRespondToRequest(req, false)}
                       disabled={isResponding}
                       activeOpacity={0.8}
@@ -634,87 +756,6 @@ export default function ProjectDetailsScreen() {
               </View>
             ))}
           </>
-        )}
-
-        {/* Payment list */}
-        {paymentEntries.length === 0 ? (
-          <Text style={[styles.emptyNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
-            {t('project_details.no_offers')}
-          </Text>
-        ) : (
-          <View style={[styles.metaCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-            {paymentEntries.map((entry, i) => {
-              const isLast = i === paymentEntries.length - 1;
-              if (entry.kind === 'bundle') {
-                const member = memberUsers[entry.bundle.professionalId];
-                const name = member?.displayName ?? entry.bundle.professionalId;
-                const roles = entry.offers.map((o) => o.subcategory).join(' | ');
-                return (
-                  <View key={entry.bundleId}>
-                    <View style={[styles.paymentRow, { flexDirection: rowDirection }]}>
-                      <View style={styles.paymentLeft}>
-                        <View style={[styles.paymentNameRow, { flexDirection: rowDirection }]}>
-                          <Text style={[styles.paymentName, { color: '#004aad', fontFamily: font.semiBold }]}>{name}</Text>
-                          <View style={styles.bundlePayBadge}>
-                            <Text style={[styles.bundlePayBadgeText, { fontFamily: font.bold }]}>{t('offers.bundle_badge')}</Text>
-                          </View>
-                        </View>
-                        <Text style={[styles.paymentRole, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
-                          {roles}
-                        </Text>
-                      </View>
-                      <Text style={[styles.paymentAmount, { color: '#004aad', fontFamily: font.semiBold }]}>
-                        ₪{entry.bundle.bundlePrice.toLocaleString()}
-                      </Text>
-                    </View>
-                    {!isLast && <RowDivider colors={colors} />}
-                  </View>
-                );
-              }
-              const { offer } = entry;
-              const member = memberUsers[offer.professionalId];
-              const name = member?.displayName ?? offer.professionalId;
-              return (
-                <View key={offer.id}>
-                  <View style={[styles.paymentRow, { flexDirection: rowDirection }]}>
-                    <View style={styles.paymentLeft}>
-                      <Text style={[styles.paymentName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{name}</Text>
-                      <Text style={[styles.paymentRole, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
-                        {offer.subcategory} · {offer.category}
-                      </Text>
-                    </View>
-                    <View style={[styles.paymentRight, { flexDirection: rowDirection }]}>
-                      <Text style={[styles.paymentAmount, { color: '#004aad', fontFamily: font.semiBold }]}>
-                        ₪{offer.price.toLocaleString()}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.requestUpdateBtn}
-                        onPress={() => {
-                          setSelectedOffer(offer);
-                          setProposedAmount('');
-                          setRequestNote('');
-                          setShowPaymentRequestModal(true);
-                        }}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.requestUpdateText, { fontFamily: font.semiBold }]}>{t('project_details.update')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  {!isLast && <RowDivider colors={colors} />}
-                </View>
-              );
-            })}
-            <RowDivider colors={colors} />
-            <View style={[styles.paymentRow, { flexDirection: rowDirection }]}>
-              <Text style={[styles.paymentTotalLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
-                {t('project_details.total')}
-              </Text>
-              <Text style={[styles.paymentTotalAmount, { color: '#004aad', fontFamily: font.bold }]}>
-                ₪{total.toLocaleString()}
-              </Text>
-            </View>
-          </View>
         )}
 
         <View style={styles.bottomPad} />
@@ -1033,44 +1074,48 @@ export default function ProjectDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      <RolePickerModal
+        visible={showRolePicker}
+        onDismiss={() => setShowRolePicker(false)}
+        onPost={handlePostRoles}
+        isPosting={isPostingRoles}
+      />
     </LinearGradient>
   );
 }
 
-function MetaRow({ label, value, colors, rtl }: { label: string; value: string; colors: AppColors; rtl: boolean }) {
-  const font = useAppFont();
-  const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
-  return (
-    <View style={[styles.metaRow, { flexDirection: rowDir }]}>
-      <Text style={[styles.metaLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{label}</Text>
-      <Text style={[styles.metaValue, { color: '#004aad', textAlign: rtl ? 'left' : 'right', fontFamily: font.medium }]} numberOfLines={2}>{value}</Text>
-    </View>
-  );
-}
-
-function RowDivider({ colors }: { colors: AppColors }) {
-  return <View style={[styles.divider, { backgroundColor: colors.border }]} />;
-}
 
 function MemberRow({
   displayName,
   photoURL,
   role,
   badge,
-  colors,
   rtl,
+  isPendingRemoval = false,
+  isRemoving = false,
+  onRemove,
+  payment,
+  onUpdate,
 }: {
   displayName: string;
   photoURL: string | null;
   role: string;
   badge?: string;
-  colors: AppColors;
   rtl: boolean;
+  isPendingRemoval?: boolean;
+  isRemoving?: boolean;
+  onRemove?: () => void;
+  payment?: { price: number; hasBundle: boolean; individualOffer: PriceOffer | null };
+  onUpdate?: (offer: PriceOffer) => void;
 }) {
   const font = useAppFont();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
+  const showBottomRow = payment !== undefined || isPendingRemoval || !!onRemove;
   return (
-    <View style={[styles.memberRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rowDir }]}>
+    <View style={[styles.memberCard, { flexDirection: rowDir }]}>
       {photoURL ? (
         <Image source={{ uri: photoURL }} style={styles.avatar} />
       ) : (
@@ -1079,6 +1124,7 @@ function MemberRow({
         </View>
       )}
       <View style={styles.memberInfo}>
+        {/* Line 1: name + client badge */}
         <View style={[styles.memberNameRow, { flexDirection: rowDir }]}>
           <Text style={[styles.memberName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{displayName}</Text>
           {badge !== undefined && (
@@ -1087,11 +1133,58 @@ function MemberRow({
             </View>
           )}
         </View>
+        {/* Line 2: roles */}
         <Text style={[styles.memberRole, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>{role}</Text>
+        {/* Line 3: price + Update + Remove (only for professionals, not client row) */}
+        {showBottomRow && (
+          <View style={[styles.memberActionsRow, { flexDirection: rowDir }]}>
+            {payment !== undefined && (
+              <View style={[styles.memberPriceGroup, { flexDirection: rowDir }]}>
+                <Text style={[styles.memberPrice, { fontFamily: font.semiBold }]}>
+                  ₪{payment.price.toLocaleString()}
+                </Text>
+                {payment.hasBundle && (
+                  <View style={styles.bundlePayBadge}>
+                    <Text style={[styles.bundlePayBadgeText, { fontFamily: font.bold }]}>{t('offers.bundle_badge')}</Text>
+                  </View>
+                )}
+                {payment.individualOffer && onUpdate && (
+                  <TouchableOpacity
+                    style={styles.requestUpdateBtn}
+                    onPress={() => onUpdate(payment.individualOffer!)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.requestUpdateText, { fontFamily: font.semiBold }]}>{t('project_details.update')}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+            <View style={{ flex: 1 }} />
+            {isPendingRemoval ? (
+              <View style={styles.pendingRemovalChip}>
+                <Text style={[styles.pendingRemovalText, { fontFamily: font.semiBold }]}>{t('project_details.pending_removal')}</Text>
+              </View>
+            ) : onRemove ? (
+              <TouchableOpacity style={styles.removeBtn} onPress={onRemove} disabled={isRemoving} activeOpacity={0.7}>
+                {isRemoving
+                  ? <ActivityIndicator size="small" color="#ef4444" />
+                  : <Text style={[styles.removeBtnText, { fontFamily: font.semiBold }]}>{t('project_details.remove_member')}</Text>}
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
       </View>
     </View>
   );
 }
+
+const CARD_SHADOW = {
+  shadowColor: '#000' as const,
+  shadowOpacity: 0.08,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 3,
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -1099,71 +1192,107 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   errorText: { fontSize: 16 },
 
+  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
+    paddingTop: 52,
+    paddingBottom: 20,
     paddingHorizontal: 8,
   },
-  headerBack: { width: 40, height: 56, alignItems: 'center', justifyContent: 'center' },
-  headerBackText: { fontSize: 36, color: '#004aad', lineHeight: 44 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#111' },
+  headerBack: { width: 40, alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
+  headerBackText: { fontSize: 36, color: '#ffffff', lineHeight: 44 },
   headerRight: { width: 40 },
+  headerCenter: { flex: 1, alignItems: 'center', gap: 4 },
+  headerLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.75)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  headerProjectTitle: {
+    fontSize: 22,
+    color: '#ffffff',
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 28,
+  },
 
-  content: { padding: 16, gap: 12, paddingBottom: 100 },
+  content: { padding: 16, gap: 14, paddingBottom: 100 },
 
-  projectTitle: { fontSize: 26, fontWeight: '800', lineHeight: 32 },
-
+  // ── Status badge ─────────────────────────────────────────────────────────────
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 13, fontWeight: '700' },
 
-  metaCard: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  // ── Three meta cards ─────────────────────────────────────────────────────────
+  metaCardsRow: { flexDirection: 'row', gap: 10 },
+  metaCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 12,
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 12,
+    gap: 4,
+    ...CARD_SHADOW,
   },
-  metaLabel: { fontSize: 13, fontWeight: '600' },
-  metaValue: { fontSize: 14, fontWeight: '500', flex: 1 },
-
-  section: { gap: 6 },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+  metaCardLabel: {
+    fontSize: 11,
+    color: '#6b7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginTop: 4,
+    textAlign: 'center',
   },
+  metaCardValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#004aad',
+    textAlign: 'center',
+  },
+
+  // ── Description card ─────────────────────────────────────────────────────────
+  descriptionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    gap: 6,
+    ...CARD_SHADOW,
+  },
+  descriptionText: { fontSize: 15, lineHeight: 22 },
+
+  // ── Section headers ───────────────────────────────────────────────────────────
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
   },
-  descriptionText: { fontSize: 15, lineHeight: 22 },
-  addButtonText: { fontSize: 14, fontWeight: '600', color: '#004aad' },
-  emptyNote: { fontSize: 14, fontStyle: 'italic' },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  addButtonText: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  emptyNote: { fontSize: 14, fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', textAlign: 'center' },
 
-  memberRow: {
+  // ── Member cards ──────────────────────────────────────────────────────────────
+  memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    padding: 14,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    ...CARD_SHADOW,
   },
   avatar: { width: 44, height: 44, borderRadius: 22 },
   avatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
@@ -1171,7 +1300,16 @@ const styles = StyleSheet.create({
   memberInfo: { flex: 1, gap: 2 },
   memberNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   memberName: { fontSize: 15, fontWeight: '600' },
-  memberRole: { fontSize: 13 },
+  memberRole: { fontSize: 13, color: '#6b7280' },
+  memberActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  },
+  memberPriceGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  memberPrice: { fontSize: 14, fontWeight: '600', color: '#cb6ce6' },
   clientBadge: {
     backgroundColor: '#004aad',
     borderRadius: 4,
@@ -1180,26 +1318,8 @@ const styles = StyleSheet.create({
   },
   clientBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
-  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
-
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  paymentLeft: { flex: 1, gap: 2 },
-  paymentRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  paymentNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  paymentName: { fontSize: 14, fontWeight: '600' },
-  paymentRole: { fontSize: 12 },
-  paymentAmount: { fontSize: 15, fontWeight: '600' },
   bundlePayBadge: { backgroundColor: '#cb6ce6', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
   bundlePayBadgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
-  paymentTotalLabel: { fontSize: 15, fontWeight: '700' },
-  paymentTotalAmount: { fontSize: 17, fontWeight: '800' },
 
   requestUpdateBtn: {
     backgroundColor: 'rgba(0,74,173,0.1)',
@@ -1209,65 +1329,51 @@ const styles = StyleSheet.create({
   },
   requestUpdateText: { fontSize: 12, fontWeight: '600', color: '#004aad' },
 
-  pendingRequestCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    gap: 8,
+  // ── Mission rows ──────────────────────────────────────────────────────────────
+  missionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  pendingRequestText: { fontSize: 14, lineHeight: 20 },
-  pendingRequestBold: { fontWeight: '700' },
-  pendingRequestNote: { fontSize: 13, fontStyle: 'italic' },
-  pendingRequestActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  pendingActionBtn: {
+  missionAvatarWrap: { position: 'relative' },
+  missionAvatar: { width: 38, height: 38, borderRadius: 19 },
+  missionAvatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
+  missionAvatarInitial: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  missionAvatarExtra: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: '#cb6ce6',
+    borderRadius: 8,
+    minWidth: 16,
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+    alignItems: 'center',
+  },
+  missionAvatarExtraText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  missionTitleCard: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 38,
+    gap: 2,
+    ...CARD_SHADOW,
   },
-  pendingActionAccept: { backgroundColor: '#22c55e' },
-  pendingActionReject: { backgroundColor: '#ef4444' },
-  pendingActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  pendingOutgoingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  pendingBadge: {
-    backgroundColor: 'rgba(107,114,128,0.15)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  pendingBadgeText: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
-
-  bottomPad: { height: 32 },
-
-  missionCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    gap: 6,
-  },
-  missionTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  missionTitle: { flex: 1, fontSize: 15, fontWeight: '600', lineHeight: 20 },
-  missionStatusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  missionTitle: { fontSize: 14, fontWeight: '600', color: '#004aad', textAlign: 'center', lineHeight: 18 },
+  missionDue: { fontSize: 11, color: '#6b7280', textAlign: 'center' },
+  missionStatusCard: {
+    backgroundColor: '#ffffff',
     borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 72,
+    alignItems: 'center',
+    ...CARD_SHADOW,
   },
-  missionStatusText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  missionMeta: { flexDirection: 'row', gap: 12 },
-  missionMetaText: { fontSize: 12 },
+  missionStatusText: { fontSize: 11, fontWeight: '700' },
 
+  // ── Mission modal inputs ───────────────────────────────────────────────────────
   missionInputLabel: {
     fontSize: 13,
     fontWeight: '600',
@@ -1315,12 +1421,13 @@ const styles = StyleSheet.create({
   missionDatePlaceholder: { flex: 1, fontSize: 14 },
   missionDateClear: { color: '#ef4444', fontSize: 14, fontWeight: '700', paddingHorizontal: 4 },
 
+  // ── Complete bar ──────────────────────────────────────────────────────────────
   completeBar: {
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 90,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: 'rgba(255,255,255,0.2)',
   },
   completeBtn: {
     backgroundColor: '#004aad',
@@ -1340,6 +1447,7 @@ const styles = StyleSheet.create({
   },
   completedBadgeText: { color: '#16a34a', fontSize: 16, fontWeight: '700' },
 
+  // ── Modals ─────────────────────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1352,7 +1460,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
-
   feeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1374,7 +1481,6 @@ const styles = StyleSheet.create({
   },
   feePlatformNote: { fontSize: 12, marginTop: -6, marginBottom: 4 },
   feeAgreementNote: { fontSize: 12, marginTop: 4 },
-
   requestModalInfoRow: { gap: 2 },
   requestModalLabel: {
     fontSize: 12,
@@ -1383,11 +1489,89 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   requestModalValue: { fontSize: 16, fontWeight: '600' },
-
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   modalBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   modalBtnCancel: { borderWidth: 1 },
   modalBtnCancelText: { fontSize: 15, fontWeight: '600' },
   modalBtnConfirm: { backgroundColor: '#004aad' },
   modalBtnConfirmText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+
+  // ── Removal banner ────────────────────────────────────────────────────────────
+  removalBanner: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  removalBannerText: { fontSize: 14, lineHeight: 20, color: '#991b1b', flex: 1 },
+  removalAcceptBtn: {
+    backgroundColor: '#ef4444',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  removalAcceptText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+
+  // ── Pending removal chip & remove button ──────────────────────────────────────
+  pendingRemovalChip: {
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  pendingRemovalText: { color: '#ef4444', fontSize: 11, fontWeight: '600' },
+  removeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
+  removeBtnText: { color: '#ef4444', fontSize: 12, fontWeight: '600' },
+
+  // ── Pending payment request cards ─────────────────────────────────────────────
+  pendingRequestCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  pendingRequestText: { fontSize: 14, lineHeight: 20 },
+  pendingRequestBold: { fontWeight: '700' },
+  pendingRequestNote: { fontSize: 13, fontStyle: 'italic' },
+  pendingRequestActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  pendingActionBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 38,
+  },
+  pendingActionAccept: { backgroundColor: '#22c55e' },
+  pendingActionReject: { backgroundColor: '#ef4444' },
+  pendingActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  pendingOutgoingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  pendingBadge: {
+    backgroundColor: 'rgba(107,114,128,0.15)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  pendingBadgeText: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
+
+  bottomPad: { height: 32 },
 });

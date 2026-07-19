@@ -145,7 +145,7 @@ export default function ChatsScreen() {
             {bundles.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
-                  {t('chats_page.price_offers')}
+                  {t('offers.bundle_section')}
                 </Text>
                 {bundlesLoading ? (
                   <ActivityIndicator color={colors.accent} />
@@ -164,7 +164,7 @@ export default function ChatsScreen() {
             )}
 
             {offers.length > 0 && (
-              <View style={styles.section}>
+              <View style={[styles.section, bundles.length > 0 && { marginTop: 24 }]}>
                 <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('chats_page.price_offers')}
                 </Text>

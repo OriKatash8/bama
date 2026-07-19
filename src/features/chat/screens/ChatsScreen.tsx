@@ -69,6 +69,7 @@ export function ChatsScreen() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const rowDir = rtl ? 'row-reverse' : 'row' as const;
   const [chats, setChats] = useState<Chat[]>([]);
   const [dmInfo, setDmInfo] = useState<Record<string, DmInfo>>({});
   const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
@@ -137,21 +138,23 @@ export function ChatsScreen() {
     return map[status];
   };
 
+  const avatarMargin = { marginRight: rtl ? 0 : 12, marginLeft: rtl ? 12 : 0 };
+
   function renderAvatar(item: Chat) {
     if (item.type === 'group') {
       return (
-        <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
+        <View style={[styles.avatar, avatarMargin, { backgroundColor: colors.accent }]}>
           <Users size={24} color="#fff" strokeWidth={1.8} />
         </View>
       );
     }
     const info = dmInfo[item.id];
     if (info?.photoURL) {
-      return <Image source={{ uri: info.photoURL }} style={styles.avatar} />;
+      return <Image source={{ uri: info.photoURL }} style={[styles.avatar, avatarMargin]} />;
     }
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
-      <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+      <View style={[styles.avatar, avatarMargin, { backgroundColor: colors.primary }]}>
         <Text style={[styles.avatarInitial, { fontFamily: font.bold }]}>{initial}</Text>
       </View>
     );
@@ -181,39 +184,53 @@ export function ChatsScreen() {
         return (
           <TouchableOpacity
             key={item.id}
-            style={[styles.card, { backgroundColor: '#ffffff' }]}
+            style={[styles.card, { backgroundColor: '#ffffff', flexDirection: rowDir }]}
             onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}`)}
             activeOpacity={0.75}
           >
             {renderAvatar(item)}
             <View style={styles.content}>
-              <View style={styles.headerRow}>
-                <View style={styles.nameRow}>
-                  <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold }]} numberOfLines={1}>
+              <View style={[styles.headerRow, { flexDirection: rowDir }]}>
+                <View style={[styles.nameRow, {
+                  flexDirection: rowDir,
+                  marginRight: rtl ? 0 : 8,
+                  marginLeft: rtl ? 8 : 0,
+                }]}>
+                  <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {chatName}
                   </Text>
                   {status != null && (
-                    <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
+                    <View style={[styles.statusBadge, {
+                      backgroundColor: STATUS_CONFIG[status].color,
+                      marginLeft: rtl ? 0 : 6,
+                      marginRight: rtl ? 6 : 0,
+                    }]}>
                       <Text style={[styles.statusBadgeText, { fontFamily: font.bold }]}>{statusLabel(status)}</Text>
                     </View>
                   )}
                 </View>
                 <Text style={[styles.timestamp, { color: colors.textMuted, fontFamily: font.regular }]}>{timestamp}</Text>
               </View>
-              <View style={styles.bottomRow}>
+              <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
                 <Text
-                  style={[styles.preview, { color: colors.textMuted, fontFamily: font.regular }]}
+                  style={[styles.preview, {
+                    color: colors.textMuted,
+                    fontFamily: font.regular,
+                    textAlign: rtl ? 'right' : 'left',
+                    paddingRight: rtl ? 0 : 4,
+                    paddingLeft: rtl ? 4 : 0,
+                  }]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
                   {item.lastMessage?.text ?? ''}
                 </Text>
                 {unread > 0 ? (
-                  <View style={styles.unreadBadge}>
+                  <View style={[styles.unreadBadge, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
                     <Text style={[styles.unreadBadgeText, { fontFamily: font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
                   </View>
                 ) : (
-                  <View style={styles.badgePlaceholder} />
+                  <View style={[styles.badgePlaceholder, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]} />
                 )}
               </View>
             </View>
@@ -230,7 +247,6 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 15 },
 
   card: {
-    flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
     paddingHorizontal: 16,
@@ -249,20 +265,19 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
   avatarInitial: { color: '#fff', fontSize: 20, fontWeight: '700' },
 
   content: { flex: 1, gap: 4 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8, overflow: 'hidden' },
+  headerRow: { alignItems: 'center', justifyContent: 'space-between' },
+  nameRow: { alignItems: 'center', flex: 1, overflow: 'hidden' },
   name: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
-  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, marginLeft: 6, flexShrink: 0 },
+  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
   statusBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
   timestamp: { fontSize: 11, flexShrink: 0 },
-  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  preview: { fontSize: 13, flex: 1, paddingRight: 4 },
-  unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, marginLeft: 20, flexShrink: 0 },
+  bottomRow: { alignItems: 'center', justifyContent: 'space-between' },
+  preview: { fontSize: 13, flex: 1 },
+  unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, flexShrink: 0 },
   unreadBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  badgePlaceholder: { width: 20, height: 20, marginLeft: 20, flexShrink: 0 },
+  badgePlaceholder: { width: 20, height: 20, flexShrink: 0 },
 });

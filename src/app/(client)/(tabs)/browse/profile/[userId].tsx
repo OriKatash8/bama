@@ -148,7 +148,6 @@ export default function PublicProfileScreen() {
       {/* ── Equipment / Price List / Reviews ── */}
       <ContentTabs
         equipment={profile.equipment}
-        priceList={profile.priceList}
         reviews={reviews}
         isEditing={false}
       />

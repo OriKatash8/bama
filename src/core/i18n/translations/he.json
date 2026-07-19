@@ -71,6 +71,7 @@
   },
   "chats": {
     "status_open": "פתוח",
+    "sending_image": "שולח תמונה...",
     "status_in_progress": "בתהליך",
     "status_completed": "הושלם",
     "status_cancelled": "בוטל",
@@ -142,7 +143,18 @@
     "enter_amount": "הזן סכום חדש",
     "note_optional": "הערה (אופציונלי)",
     "reason_placeholder": "סיבה לעדכון...",
-    "send_request": "שלח בקשה"
+    "send_request": "שלח בקשה",
+    "remove_member": "הסר",
+    "confirm_remove": "לבקש להסיר את איש המקצוע? עליו לאשר לפני ההסרה.",
+    "pending_removal": "ממתין להסרה",
+    "removal_pending": "הלקוח ביקש להסיר אותך מהפרויקט.",
+    "accept_removal": "אשר ועזוב",
+    "member_left": "{{name}} עזב את הפרויקט",
+    "add_professional": "+ הוסף איש מקצוע",
+    "post_roles": "פרסם ללוח",
+    "error_remove": "לא ניתן לבקש הסרה. נסה שנית.",
+    "error_accept_removal": "לא ניתן לאשר הסרה. נסה שנית.",
+    "error_post_roles": "לא ניתן לפרסם תפקידים. נסה שנית."
   },
   "chats_page": {
     "title": "צ'אטים",
@@ -208,13 +220,10 @@
     "skills": "כישורים",
     "no_skills": "אין כישורים עדיין.",
     "equipment": "ציוד",
-    "price_list": "מחירון",
     "reviews": "ביקורות",
     "no_equipment": "אין ציוד עדיין.",
     "add_item": "הוסף פריט...",
-    "no_price": "אין רשומות מחיר עדיין.",
-    "price_placeholder": "מחיר",
-    "add_service": "הוסף שירות..."
+    "add_media": "הוסף מדיה"
   },
   "tabs": {
     "home": "בית",
@@ -248,7 +257,8 @@
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",
-    "instead_of": "במקום"
+    "instead_of": "במקום",
+    "bundle_section": "עסקאות חבילה"
   },
   "marketplace": {
     "category_camera": "מצלמה",
@@ -363,5 +373,11 @@
   },
   "common": {
     "cancel": "ביטול"
+  },
+  "media": {
+    "processing_video": "מעבד וידאו...",
+    "add_video": "הוסף וידאו",
+    "send_video": "שולח וידאו...",
+    "video_error": "עיבוד הוידאו נכשל"
   }
 }

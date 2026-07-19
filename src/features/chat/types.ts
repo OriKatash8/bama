@@ -13,6 +13,7 @@ export interface Message {
   senderId: string;
   text: string;
   imageURL?: string;
+  videoUrl?: string;
   timestamp: Timestamp;
   readBy: string[];
 }

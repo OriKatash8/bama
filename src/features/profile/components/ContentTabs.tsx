@@ -2,14 +2,14 @@ import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput,
 } from 'react-native';
-import { Wrench, List, Star } from 'lucide-react-native';
+import { Wrench, Star } from 'lucide-react-native';
 import { ReviewsList } from './ReviewsList';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { PriceEntry, Review } from '@core/types/project';
+import type { Review } from '@core/types/project';
 
 type Translations = typeof en;
 
@@ -22,32 +22,27 @@ function makeT(translations: Translations) {
   };
 }
 
-type SectionKey = 'equipment' | 'priceList' | 'reviews';
+type SectionKey = 'equipment' | 'reviews';
 
 const SECTION_ICONS: Record<SectionKey, React.ComponentType<{ size: number; color: string; strokeWidth: number }>> = {
   equipment: Wrench,
-  priceList: List,
   reviews:   Star,
 };
 
-const SECTION_KEYS: SectionKey[] = ['equipment', 'priceList', 'reviews'];
+const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews'];
 
 type ContentTabsProps = {
   equipment: string[];
-  priceList: PriceEntry[];
   reviews: Review[];
   isEditing: boolean;
   onEquipmentChange?: (items: string[]) => void;
-  onPriceListChange?: (items: PriceEntry[]) => void;
 };
 
 export function ContentTabs({
   equipment,
-  priceList,
   reviews,
   isEditing,
   onEquipmentChange,
-  onPriceListChange,
 }: ContentTabsProps) {
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
@@ -58,13 +53,10 @@ export function ContentTabs({
 
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');
-  const [newService, setNewService] = useState('');
-  const [newPrice, setNewPrice] = useState('');
 
   const sectionLabel = (key: SectionKey): string => {
     const map: Record<SectionKey, string> = {
       equipment: t('profile_sections.equipment'),
-      priceList: t('profile_sections.price_list'),
       reviews:   t('profile_sections.reviews'),
     };
     return map[key];
@@ -77,15 +69,6 @@ export function ContentTabs({
     if (!trimmed || !onEquipmentChange) return;
     onEquipmentChange([...equipment, trimmed]);
     setNewEquipment('');
-  }
-
-  function addPriceEntry() {
-    const trimmedService = newService.trim();
-    const parsedPrice = parseFloat(newPrice);
-    if (!trimmedService || isNaN(parsedPrice) || !onPriceListChange) return;
-    onPriceListChange([...priceList, { service: trimmedService, price: parsedPrice }]);
-    setNewService('');
-    setNewPrice('');
   }
 
   return (
@@ -165,66 +148,6 @@ export function ContentTabs({
                   placeholder={t('profile_sections.add_item')}
                   placeholderTextColor="rgba(0,74,173,0.4)"
                   onSubmitEditing={addEquipment}
-                  returnKeyType="done"
-                />
-              </View>
-            )}
-          </>
-        )}
-
-        {/* Price List */}
-        {active === 'priceList' && (
-          <>
-            {priceList.length === 0 && (
-              <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('profile_sections.no_price')}
-              </Text>
-            )}
-            <View style={styles.list}>
-              {priceList.map((entry, index) => (
-                <View
-                  key={`pl-${index}`}
-                  style={[
-                    styles.itemRow,
-                    { borderBottomColor: colors.border },
-                    index === 0 && styles.firstRow,
-                    index === priceList.length - 1 ? styles.lastRow : styles.rowBorder,
-                  ]}
-                >
-                  {isEditing && (
-                    <TouchableOpacity
-                      onPress={() => onPriceListChange?.(priceList.filter((_, i) => i !== index))}
-                      hitSlop={8}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.removeBtn}>×</Text>
-                    </TouchableOpacity>
-                  )}
-                  <Text style={[styles.priceLabel, { textAlign: rtl ? 'right' : 'left' }]}>${entry.price.toFixed(0)}</Text>
-                  <Text style={[styles.itemText, { textAlign: rtl ? 'right' : 'left' }]}>{entry.service}</Text>
-                </View>
-              ))}
-            </View>
-            {isEditing && (
-              <View style={styles.addRow}>
-                <TouchableOpacity style={styles.addBtn} onPress={addPriceEntry} activeOpacity={0.8}>
-                  <Text style={styles.addBtnText}>+</Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={[styles.addInput, styles.priceInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
-                  value={newPrice}
-                  onChangeText={setNewPrice}
-                  placeholder={t('profile_sections.price_placeholder')}
-                  placeholderTextColor="rgba(0,74,173,0.4)"
-                  keyboardType="decimal-pad"
-                />
-                <TextInput
-                  style={[styles.addInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
-                  value={newService}
-                  onChangeText={setNewService}
-                  placeholder={t('profile_sections.add_service')}
-                  placeholderTextColor="rgba(0,74,173,0.4)"
-                  onSubmitEditing={addPriceEntry}
                   returnKeyType="done"
                 />
               </View>
@@ -315,12 +238,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#004aad',
   },
-  priceLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#004aad',
-    minWidth: 48,
-  },
   removeBtn: {
     fontSize: 20,
     color: '#e53935',
@@ -359,7 +276,6 @@ const styles = StyleSheet.create({
     color: '#004aad',
     backgroundColor: 'rgba(0,74,173,0.06)',
   },
-  priceInput: { flex: 0, width: 72 },
 
   empty: {
     textAlign: 'center',

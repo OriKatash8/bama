@@ -4,6 +4,7 @@ import { getDocument } from '@core/firebase/firestore';
 import type { PriceOffer } from '@core/types/project';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { useSettingsStore } from '@core/stores/settingsStore';
 
 type Props = {
   offer: PriceOffer;
@@ -16,6 +17,9 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
   const [displayName, setDisplayName] = useState<string | null>(null);
   const colors = useTheme();
   const font = useAppFont();
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
+  const rowDir = rtl ? 'row-reverse' : 'row' as const;
 
   useEffect(() => {
     getDocument<{ displayName: string }>(`users/${offer.professionalId}`).then((u) => {
@@ -25,14 +29,14 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
 
   return (
     <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-      <View style={styles.top}>
+      <View style={[styles.top, { flexDirection: rowDir }]}>
         <View style={styles.info}>
-          <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold }]}>{displayName ?? '…'}</Text>
-          <Text style={[styles.role, { color: colors.textSec, fontFamily: font.regular }]}>
+          <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{displayName ?? '…'}</Text>
+          <Text style={[styles.role, { color: colors.textSec, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
             {offer.subcategory}
             <Text style={{ color: colors.textMuted, fontFamily: font.regular }}> · {offer.category}</Text>
           </Text>
-          <Text style={[styles.price, { fontFamily: font.bold }]}>${offer.price.toLocaleString()}</Text>
+          <Text style={[styles.price, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>${offer.price.toLocaleString()}</Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
@@ -72,7 +76,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  top: { alignItems: 'center', gap: 12 },
   info: { flex: 1 },
   name: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   role: { fontSize: 13, marginBottom: 4 },

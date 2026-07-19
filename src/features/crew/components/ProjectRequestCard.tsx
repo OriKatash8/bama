@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAppFont } from '@core/hooks/useAppFont';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { deleteDocument } from '@core/firebase/firestore';
 import { useUiStore } from '@core/stores/uiStore';
 
@@ -22,7 +24,11 @@ export function ProjectRequestCard({ request }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const { team, isLoading: teamLoading, load } = useProjectTeam(request.id);
   const colors = useTheme();
+  const font = useAppFont();
   const { showToast } = useUiStore();
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
+  const rowDir = rtl ? 'row-reverse' : 'row' as const;
 
   function handleEdit() {
     router.navigate({
@@ -63,22 +69,22 @@ export function ProjectRequestCard({ request }: Props) {
 
   return (
     <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-      <View style={styles.row}>
-        <Text style={[styles.title, { color: '#004aad' }]} numberOfLines={1}>{request.title}</Text>
+      <View style={[styles.row, { flexDirection: rowDir }]}>
+        <Text style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginRight: rtl ? 0 : 8, marginLeft: rtl ? 8 : 0 }]} numberOfLines={1}>{request.title}</Text>
         <View style={[styles.badge, { backgroundColor: STATUS_COLORS[request.status] }]}>
-          <Text style={styles.badgeText}>{request.status.replace('_', ' ')}</Text>
+          <Text style={[styles.badgeText, { fontFamily: font.regular }]}>{request.status.replace('_', ' ')}</Text>
         </View>
       </View>
-      <Text style={[styles.date, { color: colors.textSec }]}>
+      <Text style={[styles.date, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
         {request.exec ?? (request as any).date ?? ''}
         {request.deadline ? `  ·  Deadline: ${request.deadline}` : ''}
       </Text>
-      <Text style={[styles.location, { color: colors.textSec }]}>{request.location}</Text>
-      {crewSummary ? <Text style={[styles.crew, { color: colors.textSec }]}>{crewSummary}</Text> : null}
+      <Text style={[styles.location, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>{request.location}</Text>
+      {crewSummary ? <Text style={[styles.crew, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>{crewSummary}</Text> : null}
 
       {filledCount > 0 && (
-        <TouchableOpacity onPress={toggleTeam} style={styles.teamToggle} activeOpacity={0.7}>
-          <Text style={styles.teamToggleText}>
+        <TouchableOpacity onPress={toggleTeam} style={[styles.teamToggle, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]} activeOpacity={0.7}>
+          <Text style={[styles.teamToggleText, { fontFamily: font.semiBold }]}>
             {teamOpen ? '▴' : '▾'} Team ({filledCount})
           </Text>
         </TouchableOpacity>
@@ -98,14 +104,14 @@ export function ProjectRequestCard({ request }: Props) {
                   (m) => m.professionalId === filled?.professionalId && m.subcategory === slot.subcategory
                 );
                 return (
-                  <View key={i} style={styles.teamRow}>
+                  <View key={i} style={[styles.teamRow, { flexDirection: rowDir }]}>
                     <View style={styles.teamDot} />
                     <View style={styles.teamInfo}>
-                      <Text style={[styles.teamRole, { color: '#004aad' }]}>{slot.subcategory}</Text>
+                      <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{slot.subcategory}</Text>
                       {member ? (
-                        <Text style={[styles.teamName, { color: colors.textSec }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
+                        <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
                       ) : (
-                        <Text style={[styles.teamOpen, { color: colors.textMuted }]}>— Open</Text>
+                        <Text style={[styles.teamOpen, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>— Open</Text>
                       )}
                     </View>
                   </View>
@@ -117,27 +123,27 @@ export function ProjectRequestCard({ request }: Props) {
       )}
 
       {request.status === 'open' && !confirmDelete && (
-        <View style={[styles.actionRow, { borderTopColor: colors.border }]}>
+        <View style={[styles.actionRow, { borderTopColor: colors.border, flexDirection: rowDir }]}>
           <TouchableOpacity onPress={handleEdit} activeOpacity={0.7}>
-            <Text style={[styles.actionText, { color: colors.accent }]}>Edit</Text>
+            <Text style={[styles.actionText, { color: colors.accent, fontFamily: font.bold }]}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setConfirmDelete(true)} activeOpacity={0.7}>
-            <Text style={[styles.actionText, { color: '#e53e3e' }]}>Delete</Text>
+            <Text style={[styles.actionText, { color: '#e53e3e', fontFamily: font.bold }]}>Delete</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {request.status === 'open' && confirmDelete && (
         <View style={[styles.confirmRow, { borderTopColor: colors.border, backgroundColor: '#fef2f2' }]}>
-          <Text style={styles.confirmText}>Delete this project?</Text>
-          <View style={styles.confirmBtns}>
+          <Text style={[styles.confirmText, { textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>Delete this project?</Text>
+          <View style={[styles.confirmBtns, { flexDirection: rowDir }]}>
             <TouchableOpacity onPress={() => setConfirmDelete(false)} activeOpacity={0.7} disabled={isDeleting}>
-              <Text style={[styles.actionText, { color: colors.textMuted }]}>Cancel</Text>
+              <Text style={[styles.actionText, { color: colors.textMuted, fontFamily: font.bold }]}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDelete} activeOpacity={0.7} disabled={isDeleting}>
               {isDeleting
                 ? <ActivityIndicator size="small" color="#e53e3e" />
-                : <Text style={[styles.actionText, { color: '#e53e3e' }]}>Yes, Delete</Text>
+                : <Text style={[styles.actionText, { color: '#e53e3e', fontFamily: font.bold }]}>Yes, Delete</Text>
               }
             </TouchableOpacity>
           </View>
@@ -159,24 +165,23 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  title: { fontSize: 15, fontWeight: '700', flex: 1, marginRight: 8 },
+  row: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  title: { fontSize: 15, fontWeight: '700', flex: 1 },
   badge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   date: { fontSize: 13, marginBottom: 2 },
   location: { fontSize: 13, marginBottom: 4 },
   crew: { fontSize: 13, marginBottom: 4 },
-  teamToggle: { marginTop: 8, alignSelf: 'flex-start' },
+  teamToggle: { marginTop: 8 },
   teamToggleText: { fontSize: 13, color: '#cb6ce6', fontWeight: '600' },
   teamSection: { marginTop: 10, gap: 8 },
-  teamRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  teamRow: { alignItems: 'center', gap: 10 },
   teamDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#cb6ce6' },
   teamInfo: { flex: 1 },
   teamRole: { fontSize: 13, fontWeight: '600' },
   teamName: { fontSize: 12, marginTop: 1 },
   teamOpen: { fontSize: 12, marginTop: 1 },
   actionRow: {
-    flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 16,
     marginTop: 12,
@@ -194,5 +199,5 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   confirmText: { fontSize: 13, fontWeight: '600', color: '#e53e3e' },
-  confirmBtns: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16 },
+  confirmBtns: { justifyContent: 'flex-end', gap: 16 },
 });

@@ -8,6 +8,7 @@ import {
   addDoc,
   updateDoc,
   arrayUnion,
+  arrayRemove,
   increment,
   doc,
   onSnapshot,
@@ -26,6 +27,7 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
     senderId: data.senderId,
     text: data.text,
     imageURL: data.imageURL,
+    videoUrl: data.videoUrl,
     timestamp: data.timestamp,
     readBy: data.readBy ?? [],
   };
@@ -104,6 +106,12 @@ export async function addMemberToGroup(chatId: string, userId: string): Promise<
   });
 }
 
+export async function removeMemberFromGroup(chatId: string, userId: string): Promise<void> {
+  await updateDoc(doc(db, 'chats', chatId), {
+    members: arrayRemove(userId),
+  });
+}
+
 export function listenToUserChats(
   userId: string,
   callback: (chats: Chat[]) => void
@@ -153,17 +161,22 @@ export function listenToMessages(
 export async function sendMessage(
   chatId: string,
   senderId: string,
-  text: string
+  text: string,
+  opts?: { videoUrl?: string; imageURL?: string }
 ): Promise<void> {
   const messagesRef = collection(db, 'chats', chatId, 'messages');
   const chatRef = doc(db, 'chats', chatId);
 
-  await addDoc(messagesRef, {
+  const messageData: Record<string, unknown> = {
     senderId,
     text,
     timestamp: serverTimestamp(),
     readBy: [senderId],
-  });
+  };
+  if (opts?.videoUrl) messageData.videoUrl = opts.videoUrl;
+  if (opts?.imageURL) messageData.imageURL = opts.imageURL;
+
+  await addDoc(messagesRef, messageData);
 
   const chatSnap = await getDoc(chatRef);
   const members: string[] = chatSnap.exists() ? (chatSnap.data().members as string[]) : [];

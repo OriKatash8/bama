@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -9,15 +11,33 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDoc, updateDoc, doc } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
+import { Paperclip } from 'lucide-react-native';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import { useVideoUpload } from '@core/hooks/useVideoUpload';
+import { VideoPlayer } from '@components/ui/VideoPlayer';
+import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
 import { listenToMessages, sendMessage } from '../services/chatService';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { Chat, Message } from '../types';
+
+type Translations = typeof en;
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 const USER_COLORS = [
   '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab', '#1e88e5',
@@ -39,6 +59,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
   const font = useAppFont();
   const router = useRouter();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
   const currentUserId = auth.currentUser?.uid ?? '';
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -47,6 +69,9 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
+  const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
+  const [imageUploading, setImageUploading] = useState(false);
+  const mediaActive = videoUploading || videoProcessing || imageUploading;
 
   const gradientText = Platform.OS === 'web' ? ({
     background: 'linear-gradient(to right, #004aad, #cb6ce6)',
@@ -120,6 +145,33 @@ export function ChatRoomScreen({ chatId }: Props) {
     await sendMessage(chatId, currentUserId, text);
   }
 
+  async function handleAttachMedia() {
+    if (!currentUserId) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'] as const,
+      allowsEditing: false,
+      quality: 1,
+    });
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+
+    if (asset.type === 'video') {
+      const url = await uploadVideo('chat-videos', currentUserId, asset);
+      if (url) await sendMessage(chatId, currentUserId, '', { videoUrl: url });
+    } else {
+      setImageUploading(true);
+      try {
+        const blob = await fetch(asset.uri).then((r) => r.blob());
+        const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+        const imageURL = await uploadFile(path, blob);
+        await sendMessage(chatId, currentUserId, '', { imageURL });
+      } finally {
+        setImageUploading(false);
+      }
+    }
+  }
+
   return (
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
     <KeyboardAvoidingView
@@ -150,8 +202,11 @@ export function ChatRoomScreen({ chatId }: Props) {
         <View style={styles.headerRight} />
       </View>
 
-      <PurchaseBanner chatId={chatId} />
+      <View style={{ zIndex: 2 }}>
+        <PurchaseBanner chatId={chatId} />
+      </View>
 
+      <View style={{ flex: 1, zIndex: 0 }}>
       <FlatList
         data={[...messages].reverse()}
         keyExtractor={(item) => item.id}
@@ -161,46 +216,85 @@ export function ChatRoomScreen({ chatId }: Props) {
           const isOwn = item.senderId === currentUserId;
           return (
             <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
-              <View
-                style={[
-                  styles.bubble,
-                  isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' },
-                ]}
-              >
-                {!isOwn && (
-                  <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
-                    {userNames[item.senderId] ?? 'Loading...'}
+              {item.videoUrl ? (
+                <View style={styles.mediaBubble}>
+                  {!isOwn && (
+                    <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                      {userNames[item.senderId] ?? 'Loading...'}
+                    </Text>
+                  )}
+                  <VideoPlayer uri={item.videoUrl} style={styles.mediaMessage} />
+                </View>
+              ) : item.imageURL ? (
+                <View style={styles.mediaBubble}>
+                  {!isOwn && (
+                    <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                      {userNames[item.senderId] ?? 'Loading...'}
+                    </Text>
+                  )}
+                  <Image source={{ uri: item.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
+                </View>
+              ) : (
+                <View
+                  style={[
+                    styles.bubble,
+                    isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' },
+                  ]}
+                >
+                  {!isOwn && (
+                    <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                      {userNames[item.senderId] ?? 'Loading...'}
+                    </Text>
+                  )}
+                  <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, fontFamily: font.regular }]}>
+                    {item.text}
                   </Text>
-                )}
-                <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, fontFamily: font.regular }]}>
-                  {item.text}
-                </Text>
-              </View>
+                </View>
+              )}
             </View>
           );
         }}
       />
+      </View>
       <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent' }]}>
-        <TextInput
-          style={[
-            styles.input,
-            { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontFamily: font.regular },
-          ]}
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder="Message..."
-          placeholderTextColor={colors.placeholder}
-          multiline
-          returnKeyType="default"
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, { backgroundColor: colors.accent }]}
-          onPress={handleSend}
-          disabled={!inputText.trim()}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.sendLabel, { fontFamily: font.semiBold }]}>Send</Text>
-        </TouchableOpacity>
+        {mediaActive ? (
+          <View style={styles.mediaSendingRow}>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <Text style={[styles.mediaSendingText, { color: colors.textMuted, fontFamily: font.regular }]}>
+              {videoUploading || videoProcessing ? t('media.send_video') : t('chats.sending_image')}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={styles.attachBtn}
+              onPress={handleAttachMedia}
+              activeOpacity={0.7}
+            >
+              <Paperclip size={22} color={colors.accent} strokeWidth={1.5} />
+            </TouchableOpacity>
+            <TextInput
+              style={[
+                styles.input,
+                { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontFamily: font.regular },
+              ]}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Message..."
+              placeholderTextColor={colors.placeholder}
+              multiline
+              returnKeyType="default"
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, { backgroundColor: colors.accent }]}
+              onPress={handleSend}
+              disabled={!inputText.trim()}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.sendLabel, { fontFamily: font.semiBold }]}>Send</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </KeyboardAvoidingView>
     </LinearGradient>
@@ -298,5 +392,30 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 15,
+  },
+  attachBtn: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mediaBubble: {
+    maxWidth: '75%',
+  },
+  mediaMessage: {
+    width: 240,
+    height: 135,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  mediaSendingRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+  },
+  mediaSendingText: {
+    fontSize: 14,
   },
 });
