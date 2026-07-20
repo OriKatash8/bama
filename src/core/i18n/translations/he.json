@@ -258,7 +258,8 @@
   "offers": {
     "bundle_badge": "עסקת חבילה",
     "instead_of": "במקום",
-    "bundle_section": "עסקאות חבילה"
+    "bundle_section": "עסקאות חבילה",
+    "view_profile": "צפה בפרופיל"
   },
   "marketplace": {
     "category_camera": "מצלמה",

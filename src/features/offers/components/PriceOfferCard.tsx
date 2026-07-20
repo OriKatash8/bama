@@ -1,37 +1,47 @@
-import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { getDocument } from '@core/firebase/firestore';
 import type { PriceOffer } from '@core/types/project';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
+
+type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 
 type Props = {
   offer: PriceOffer;
+  professionalProfile?: ProfessionalProfileSummary;
+  onPressProfile: () => void;
   onAccept: () => void;
   onReject: () => void;
   isAccepting: boolean;
 };
 
-export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props) {
-  const [displayName, setDisplayName] = useState<string | null>(null);
+export function PriceOfferCard({ offer, professionalProfile, onPressProfile, onAccept, onReject, isAccepting }: Props) {
   const colors = useTheme();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
-
-  useEffect(() => {
-    getDocument<{ displayName: string }>(`users/${offer.professionalId}`).then((u) => {
-      setDisplayName(u?.displayName ?? 'Unknown');
-    });
-  }, [offer.professionalId]);
+  const displayName = professionalProfile?.displayName ?? '…';
 
   return (
     <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
       <View style={[styles.top, { flexDirection: rowDir }]}>
         <View style={styles.info}>
-          <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{displayName ?? '…'}</Text>
+          <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{displayName}</Text>
           <Text style={[styles.role, { color: colors.textSec, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
             {offer.subcategory}
             <Text style={{ color: colors.textMuted, fontFamily: font.regular }}> · {offer.category}</Text>
@@ -39,6 +49,13 @@ export function PriceOfferCard({ offer, onAccept, onReject, isAccepting }: Props
           <Text style={[styles.price, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>${offer.price.toLocaleString()}</Text>
         </View>
         <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.viewProfileBtn]}
+            onPress={onPressProfile}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.viewProfileText, { fontFamily: font.semiBold }]}>{t('offers.view_profile')}</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.acceptBtn, isAccepting && styles.disabled]}
             onPress={onAccept}
@@ -81,7 +98,16 @@ const styles = StyleSheet.create({
   name: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   role: { fontSize: 13, marginBottom: 4 },
   price: { fontSize: 16, fontWeight: '800', color: '#cb6ce6' },
-  actions: { flexDirection: 'row', gap: 8 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  viewProfileBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#004aad',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  viewProfileText: { color: '#004aad', fontSize: 12 },
   actionBtn: {
     width: 38,
     height: 38,

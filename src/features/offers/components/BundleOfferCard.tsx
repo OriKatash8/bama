@@ -19,15 +19,18 @@ function makeT(translations: Translations) {
   };
 }
 
+type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
+
 type Props = {
   bundle: BundleOffer;
+  professionalProfile?: ProfessionalProfileSummary;
+  onPressProfile: () => void;
   onAccept: () => void;
   onReject: () => void;
   isAccepting: boolean;
 };
 
-export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Props) {
-  const [displayName, setDisplayName] = useState<string | null>(null);
+export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, onAccept, onReject, isAccepting }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [offerDetails, setOfferDetails] = useState<PriceOffer[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -36,12 +39,7 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
   const font = useAppFont();
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
-
-  useEffect(() => {
-    getDocument<{ displayName: string }>(`users/${bundle.professionalId}`).then((u) => {
-      setDisplayName(u?.displayName ?? 'Unknown');
-    });
-  }, [bundle.professionalId]);
+  const displayName = professionalProfile?.displayName ?? '…';
 
   useEffect(() => {
     if (!expanded || offerDetails.length > 0) return;
@@ -60,7 +58,7 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
         <Text style={[styles.badgeText, { fontFamily: font.bold }]}>{t('offers.bundle_badge')}</Text>
       </View>
 
-      <Text style={[styles.name, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{displayName ?? '…'}</Text>
+      <Text style={[styles.name, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{displayName}</Text>
 
       {/* Tappable roles header */}
       <TouchableOpacity
@@ -110,6 +108,13 @@ export function BundleOfferCard({ bundle, onAccept, onReject, isAccepting }: Pro
       </View>
 
       <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.viewProfileBtn}
+          onPress={onPressProfile}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.viewProfileText, { fontFamily: font.semiBold }]}>{t('offers.view_profile')}</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, styles.acceptBtn, isAccepting && styles.disabled]}
           onPress={onAccept}
@@ -188,7 +193,16 @@ const styles = StyleSheet.create({
   },
   insteadOf: { fontSize: 12, color: '#004aad', opacity: 0.8 },
   bundlePrice: { fontSize: 20, fontWeight: '800', color: '#004aad' },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  viewProfileBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#004aad',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  viewProfileText: { color: '#004aad', fontSize: 12 },
   actionBtn: {
     width: 38,
     height: 38,

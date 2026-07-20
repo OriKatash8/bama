@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Platform, Animated, Easing, ActivityIndicator, Image,
+  View, Text, TextInput, TouchableOpacity, FlatList,
+  StyleSheet, Platform, Animated, Easing, ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, useSegments } from 'expo-router';
 import { ChevronRight, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -11,6 +12,7 @@ import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { useUnifiedSearch } from '@features/crew/hooks/useUnifiedSearch';
 import { ProfessionalCard } from '@features/crew/components';
+import type { ProfessionalResult } from '@features/crew/hooks/useSearchProfessionals';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -59,56 +61,6 @@ const SUB_ITEM_HEIGHT = 46;
 type ViewState =
   | { kind: 'grid' }
   | { kind: 'results'; category: string; subcategory: string };
-
-function ResultsView({
-  category,
-  subcategory,
-  onDirectProject,
-}: {
-  category: string;
-  subcategory: string;
-  onDirectProject: (id: string, name: string) => void;
-}) {
-  const { results, isLoading } = useSearchProfessionals(category, subcategory);
-  const colors = useTheme();
-  const router = useRouter();
-  const language = useSettingsStore((s) => s.language);
-  const t = makeT(language === 'he' ? he : en);
-  const rtl = language === 'he';
-
-  if (isLoading) {
-    return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
-  }
-  if (results.length === 0) {
-    return (
-      <View style={styles.emptyResults}>
-        <Text style={styles.emptyIcon}>👤</Text>
-        <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
-          {t('search.no_professionals_yet')}
-        </Text>
-        <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-          {t('search.no_professionals_subtext')}
-        </Text>
-      </View>
-    );
-  }
-  return (
-    <View style={styles.resultsList}>
-      {results.map((item) => (
-        <TouchableOpacity
-          key={item.user.id}
-          onPress={() => router.push(`/browse/profile/${item.user.id}` as never)}
-          activeOpacity={0.95}
-        >
-          <ProfessionalCard
-            item={item}
-            onDirectProject={() => onDirectProject(item.user.id, item.user.displayName)}
-          />
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -170,7 +122,17 @@ export default function SearchScreen() {
   } as object) : {};
 
   const isSearching = query.trim().length > 0;
+  const inResultsView = view.kind === 'results';
+  const showGrid = !isSearching && !inResultsView;
+
   const { results: unifiedResults, isLoading: unifiedLoading } = useUnifiedSearch(query);
+  const { results: subResults, isLoading: subLoading } = useSearchProfessionals(
+    inResultsView ? view.category : '',
+    inResultsView ? view.subcategory : ''
+  );
+
+  const listData: ProfessionalResult[] = isSearching ? unifiedResults : inResultsView ? subResults : [];
+  const listLoading = isSearching ? unifiedLoading : inResultsView ? subLoading : false;
 
   const filteredCategories = query.trim()
     ? CATEGORIES.filter(c =>
@@ -179,14 +141,53 @@ export default function SearchScreen() {
       )
     : CATEGORIES;
 
-  return (
-    <Screen scrollable={false}>
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+  function renderProfessional({ item }: { item: ProfessionalResult }) {
+    return (
+      <TouchableOpacity
+        style={styles.resultItem}
+        onPress={() => router.push(`/browse/profile/${item.user.id}` as never)}
+        activeOpacity={0.95}
       >
+        <ProfessionalCard
+          item={item}
+          onDirectProject={() => openDirectSheet(item.user.id, item.user.displayName)}
+        />
+      </TouchableOpacity>
+    );
+  }
+
+  function renderListEmpty() {
+    if (showGrid) return null;
+    if (listLoading) return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
+    if (isSearching) {
+      return (
+        <View style={styles.emptyResults}>
+          <Text style={styles.emptyIcon}>👤</Text>
+          <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('search.no_results_title')}
+          </Text>
+          <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('search.no_results_subtext', { query: query.trim() })}
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.emptyResults}>
+        <Text style={styles.emptyIcon}>👤</Text>
+        <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('search.no_professionals_yet')}
+        </Text>
+        <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          {t('search.no_professionals_subtext')}
+        </Text>
+      </View>
+    );
+  }
+
+  function renderListHeader() {
+    return (
+      <View>
         {/* Header */}
         <View style={styles.header}>
           {view.kind !== 'grid' && (
@@ -222,40 +223,8 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {/* Unified search results */}
-        {view.kind === 'grid' && isSearching && (
-          unifiedLoading ? (
-            <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
-          ) : unifiedResults.length > 0 ? (
-            <View style={styles.resultsList}>
-              {unifiedResults.map((item) => (
-                <TouchableOpacity
-                  key={item.user.id}
-                  onPress={() => router.push(`/browse/profile/${item.user.id}` as never)}
-                  activeOpacity={0.95}
-                >
-                  <ProfessionalCard
-                    item={item}
-                    onDirectProject={() => openDirectSheet(item.user.id, item.user.displayName)}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyResults}>
-              <Text style={styles.emptyIcon}>👤</Text>
-              <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('search.no_results_title')}
-              </Text>
-              <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('search.no_results_subtext', { query: query.trim() })}
-              </Text>
-            </View>
-          )
-        )}
-
-        {/* Category list */}
-        {view.kind === 'grid' && !isSearching && (
+        {/* Category list — bounded to ~9 categories, safe to render eagerly */}
+        {showGrid && (
           <View style={styles.listContent}>
             {filteredCategories.map((cat) => {
               const animVal = animValues[cat.key];
@@ -280,7 +249,13 @@ export default function SearchScreen() {
                     activeOpacity={0.7}
                   >
                     {cat.image && (
-                      <Image source={cat.image} style={styles.categoryIcon} />
+                      <Image
+                        source={cat.image}
+                        style={styles.categoryIcon}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        loading="lazy"
+                      />
                     )}
                     <Text style={[styles.categoryLabel, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
                     <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
@@ -311,20 +286,33 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {/* Subcategory results */}
-        {view.kind === 'results' && (
-          <>
-            <Text style={[styles.resultsHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-              {view.category} · {view.subcategory}
-            </Text>
-            <ResultsView
-              category={view.category}
-              subcategory={view.subcategory}
-              onDirectProject={openDirectSheet}
-            />
-          </>
+        {/* Subcategory results hint */}
+        {inResultsView && (
+          <Text style={[styles.resultsHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {view.category} · {view.subcategory}
+          </Text>
         )}
-      </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <Screen scrollable={false}>
+      <FlatList
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        data={listData}
+        keyExtractor={(item) => item.user.id}
+        renderItem={renderProfessional}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderListEmpty}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS !== 'web'}
+      />
 
       <DirectProjectSheet
         visible={sheetProfessionalId !== null}
@@ -443,7 +431,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   searchHintText: { fontSize: 13, fontWeight: '600' },
-  resultsList: { paddingHorizontal: 16, paddingBottom: 100 },
+  resultItem: { paddingHorizontal: 16 },
 
   resultsHint: {
     fontSize: 13,

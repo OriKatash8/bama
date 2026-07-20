@@ -13,6 +13,12 @@ export function useSearchProfessionals(category: string, subcategory: string) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!category || !subcategory) {
+      setResults([]);
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setIsLoading(true);
     setResults([]);

@@ -51,18 +51,19 @@ export function HelpTooltip({ text }: Props) {
 
 const styles = StyleSheet.create({
   btn: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#004aad',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#004aad',
     alignItems: 'center',
     justifyContent: 'center',
   },
   q: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 14,
+    color: '#004aad',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   overlay: {
     flex: 1,

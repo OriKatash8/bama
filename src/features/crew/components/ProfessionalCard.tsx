@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '@core/hooks/useTheme';
 import type { ProfessionalResult } from '../hooks/useSearchProfessionals';
 
@@ -35,7 +36,14 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.row}>
         {user.photoURL ? (
-          <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+          <Image
+            source={{ uri: user.photoURL, width: 52, height: 52 }}
+            style={styles.avatar}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            loading="lazy"
+            transition={150}
+          />
         ) : (
           <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.accent + '33' }]}>
             <Text style={[styles.avatarInitial, { color: colors.accent }]}>

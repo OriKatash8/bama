@@ -7,6 +7,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import { listenToUserChats } from '@features/chat/services/chatService';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -35,6 +36,7 @@ export default function ProfessionalTabsLayout() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const userId = useAuthStore((s) => s.user?.id);
+  const font = useAppFont();
 
   useEffect(() => {
     if (!userId) { setTotalUnread(0); return; }
@@ -53,7 +55,7 @@ export default function ProfessionalTabsLayout() {
           tabBarStyle: getFloatingTabBarStyle(isDark),
           tabBarActiveTintColor: FLOATING_TAB_BAR_ACTIVE_COLOR,
           tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
-          tabBarLabelStyle: { fontSize: 11 },
+          tabBarLabelStyle: { fontSize: 11, fontFamily: font.regular },
         }}
       >
         <Tabs.Screen name="dashboard" options={{ title: t('tabs.notice_board'), tabBarIcon: ({ color }) => <LayoutDashboard size={24} color={color} strokeWidth={1.5} /> }} />

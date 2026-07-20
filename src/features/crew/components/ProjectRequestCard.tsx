@@ -70,7 +70,7 @@ export function ProjectRequestCard({ request }: Props) {
   return (
     <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
       <View style={[styles.row, { flexDirection: rowDir }]}>
-        <Text style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginRight: rtl ? 0 : 8, marginLeft: rtl ? 8 : 0 }]} numberOfLines={1}>{request.title}</Text>
+        <Text style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginRight: rtl ? 0 : 8, marginLeft: rtl ? 8 : 0, fontFamily: font.bold }]} numberOfLines={1}>{request.title}</Text>
         <View style={[styles.badge, { backgroundColor: STATUS_COLORS[request.status] }]}>
           <Text style={[styles.badgeText, { fontFamily: font.regular }]}>{request.status.replace('_', ' ')}</Text>
         </View>

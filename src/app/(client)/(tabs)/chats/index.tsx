@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { useRouter, useSegments } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -14,9 +15,13 @@ import { useAcceptBundleOffer } from '@features/offers/hooks/useAcceptBundleOffe
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { getDocument } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceOffer, BundleOffer } from '@core/types/project';
+import type { User } from '@core/types/user';
+
+export type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 
 type Translations = typeof en;
 
@@ -47,6 +52,9 @@ const gradientStyle = Platform.OS === 'web' ? ({
 
 export default function ChatsScreen() {
   const colors = useTheme();
+  const router = useRouter();
+  const segments = useSegments();
+  const modeSegment = segments[0];
   const { showToast } = useUiStore();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -59,6 +67,35 @@ export default function ChatsScreen() {
   const { bundles, isLoading: bundlesLoading } = useBundleOffers();
   const { accept, reject, isAccepting } = useAcceptOffer();
   const { acceptBundle, rejectBundle, isAccepting: isBundleAccepting } = useAcceptBundleOffer();
+
+  const [professionalProfiles, setProfessionalProfiles] = useState<Record<string, ProfessionalProfileSummary>>({});
+  const fetchedProfileIds = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const ids = new Set<string>();
+    offers.forEach((o) => ids.add(o.professionalId));
+    bundles.forEach((b) => ids.add(b.professionalId));
+
+    const toFetch = Array.from(ids).filter((id) => !fetchedProfileIds.current.has(id));
+    if (toFetch.length === 0) return;
+    toFetch.forEach((id) => fetchedProfileIds.current.add(id));
+
+    Promise.all(
+      toFetch.map((id) => getDocument<User>(`users/${id}`).then((u) => [id, u] as const))
+    ).then((results) => {
+      setProfessionalProfiles((prev) => {
+        const next = { ...prev };
+        for (const [id, u] of results) {
+          if (u) next[id] = { displayName: u.displayName, photoURL: u.photoURL ?? undefined };
+        }
+        return next;
+      });
+    });
+  }, [offers, bundles]);
+
+  function goToProfessionalProfile(professionalId: string) {
+    router.push(`/${modeSegment}/(tabs)/browse/profile/${professionalId}` as never);
+  }
 
   const TAB_LABELS: Record<TabKey, string> = {
     chats:         t('chats_page.tab_chats'),
@@ -154,6 +191,8 @@ export default function ChatsScreen() {
                     <BundleOfferCard
                       key={bundle.id}
                       bundle={bundle}
+                      professionalProfile={professionalProfiles[bundle.professionalId]}
+                      onPressProfile={() => goToProfessionalProfile(bundle.professionalId)}
                       onAccept={() => handleAcceptBundle(bundle)}
                       onReject={() => handleRejectBundle(bundle.id)}
                       isAccepting={isBundleAccepting === bundle.id}
@@ -175,6 +214,8 @@ export default function ChatsScreen() {
                     <PriceOfferCard
                       key={offer.id}
                       offer={offer}
+                      professionalProfile={professionalProfiles[offer.professionalId]}
+                      onPressProfile={() => goToProfessionalProfile(offer.professionalId)}
                       onAccept={() => handleAccept(offer)}
                       onReject={() => handleReject(offer.id)}
                       isAccepting={isAccepting === offer.id}
