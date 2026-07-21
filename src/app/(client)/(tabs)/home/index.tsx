@@ -14,7 +14,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, X } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
@@ -40,6 +40,23 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   image: CATEGORY_META[key]?.image,
   subcategories: subs,
 }));
+
+export const ISRAEL_LOCATIONS = [
+  // Major cities
+  'תל אביב', 'ירושלים', 'חיפה', 'ראשון לציון', 'פתח תקווה', 'אשדוד',
+  'נתניה', 'באר שבע', 'בני ברק', 'רמת גן', 'בת ים', 'הרצליה',
+  'כפר סבא', 'חולון', 'רעננה', 'מודיעין', 'רחובות', 'אשקלון',
+  'הוד השרון', 'גבעתיים', 'עכו', 'נהריה', 'טבריה', 'צפת',
+  'לוד', 'רמלה', 'אילת', 'נצרת', 'אום אל-פחם', 'אלעד',
+  'יבנה', 'קרית גת', 'דימונה', 'אופקים', 'קרית שמונה',
+  // Regions and areas
+  'גוש דן', 'שפלה', 'צפון', 'דרום', 'מרכז', 'שרון',
+  'גליל', 'נגב', 'ירושלים והסביבה', 'עמק יזרעאל',
+  // English versions
+  'Tel Aviv', 'Jerusalem', 'Haifa', 'Rishon LeZion', 'Petah Tikva',
+  'Ashdod', 'Netanya', 'Beer Sheva', 'Herzliya', 'Ra\'anana',
+  'Modi\'in', 'Rehovot', 'Ashkelon', 'Eilat', 'Nazareth',
+];
 
 const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as object;
 
@@ -92,6 +109,28 @@ export default function HomeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [summaryVisible, setSummaryVisible] = useState(false);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+
+  const filteredLocations = useMemo(() => {
+    const query = locationSearch.trim().toLowerCase();
+    if (!query) return ISRAEL_LOCATIONS;
+    return ISRAEL_LOCATIONS.filter((city) => city.toLowerCase().includes(query));
+  }, [locationSearch]);
+
+  function openLocationModal() {
+    setLocationSearch('');
+    setLocationModalVisible(true);
+  }
+
+  function closeLocationModal() {
+    setLocationModalVisible(false);
+  }
+
+  function selectLocation(city: string) {
+    setLocation(city);
+    setLocationModalVisible(false);
+  }
 
   useEffect(() => {
     if (!projectId) return;
@@ -246,16 +285,37 @@ export default function HomeScreen() {
               />
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
-              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 16, alignItems: 'flex-start', marginTop: 16 }}>
-                {/* Execution square */}
+              {/* Labels row — kept separate from the squares row so differing label
+                  heights (e.g. Execution's "(optional)" suffix wrapping) never push
+                  one square out of alignment with the others. */}
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 16 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: rtl ? 'right' : 'left' }]}>
+                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
                       {t('builder.execution')}{' '}
                       <Text style={{ fontWeight: '400', color: '#004aad99' }}>({t('builder.optional')})</Text>
                     </Text>
                     <HelpTooltip text={t('builder.help_execution')} />
                   </View>
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>{t('builder.deadline')}</Text>
+                    <HelpTooltip text={t('builder.help_deadline')} />
+                  </View>
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>{t('builder.location')}</Text>
+                    <HelpTooltip text={t('builder.help_location')} />
+                  </View>
+                </View>
+              </View>
+
+              {/* Squares row */}
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 }}>
+                {/* Execution square */}
+                <View style={{ flex: 1, alignItems: 'center' }}>
                   <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
                     {exec ? (
                       <TouchableOpacity
@@ -276,10 +336,6 @@ export default function HomeScreen() {
 
                 {/* Deadline square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: rtl ? 'right' : 'left' }]}>{t('builder.deadline')}</Text>
-                    <HelpTooltip text={t('builder.help_deadline')} />
-                  </View>
                   <TouchableOpacity
                     style={[styles.dateSquare, errors.deadline ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
                     onPress={() => setCalOpen('deadline')}
@@ -292,20 +348,32 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                   {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
-              </View>
 
-              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 6 }}>
-                <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0 }]}>{t('builder.location')}</Text>
-                <HelpTooltip text={t('builder.help_location')} />
+                {/* Location square */}
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    style={[styles.dateSquare, errors.location ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
+                    onPress={openLocationModal}
+                    activeOpacity={0.8}
+                  >
+                    {location ? (
+                      <TouchableOpacity
+                        style={styles.dateSquareClear}
+                        onPress={(e) => { e.stopPropagation?.(); setLocation(''); }}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <X size={12} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    ) : null}
+                    <MapPin size={location ? 20 : 28} color="#004aad" strokeWidth={1.8} />
+                    <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                      {location || t('builder.placeholder_location')}
+                    </Text>
+                  </TouchableOpacity>
+                  {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
+                </View>
               </View>
-              <TextInput
-                style={[styles.input, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow]}
-                value={location}
-                onChangeText={setLocation}
-                placeholder={t('builder.placeholder_location')}
-                placeholderTextColor="#004aad99"
-              />
-              {errors.location ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.location}</Text> : null}
             </View>
 
             <View style={styles.submitWrap}>
@@ -536,13 +604,12 @@ export default function HomeScreen() {
 
                 {/* Location */}
                 <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>{t('builder.location')}</Text>
-                <TextInput
-                  style={[styles.summaryInput, { textAlign: rtl ? 'right' : 'left' }]}
-                  value={location}
-                  onChangeText={setLocation}
-                  placeholder={t('builder.placeholder_location')}
-                  placeholderTextColor="#004aad99"
-                />
+                <TouchableOpacity style={styles.summaryDateBtn} onPress={openLocationModal} activeOpacity={0.8}>
+                  <Text style={[styles.summaryDateText, { color: location ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
+                    {location || t('builder.placeholder_location')}
+                  </Text>
+                  <MapPin size={14} color="#cb6ce6" strokeWidth={1.8} />
+                </TouchableOpacity>
 
                 {/* Roles */}
                 <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>{t('builder.select_roles')}</Text>
@@ -622,6 +689,48 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
+      {/* ── Location picker modal ── */}
+      <Modal visible={locationModalVisible} transparent animationType="fade" onRequestClose={closeLocationModal}>
+        <View style={styles.backdrop}>
+          <View style={styles.locationModalCard}>
+            <LinearGradient colors={['#efd4f6', '#b7cae6']} style={styles.locationModalGradient}>
+              <View style={styles.locationModalHeader}>
+                <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <MapPin size={20} color="#004aad" strokeWidth={2} />
+                  <Text style={[styles.locationModalTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                    {t('builder.choose_location')}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={closeLocationModal} hitSlop={12} activeOpacity={0.7}>
+                  <X size={20} color="#004aad" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+
+              <TextInput
+                style={[styles.locationSearchInput, { textAlign: rtl ? 'right' : 'left' }]}
+                value={locationSearch}
+                onChangeText={setLocationSearch}
+                placeholder={t('builder.search_city')}
+                placeholderTextColor="#004aad99"
+              />
+
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.locationList} keyboardShouldPersistTaps="handled">
+                {filteredLocations.map((city) => (
+                  <TouchableOpacity
+                    key={city}
+                    style={styles.locationRow}
+                    onPress={() => selectLocation(city)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.locationRowText, { textAlign: rtl ? 'right' : 'left' }]}>{city}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </LinearGradient>
+          </View>
+        </View>
+      </Modal>
+
       {calOpen !== null && (
         <MiniCalendar
           value={calOpen === 'exec' ? exec : deadline}
@@ -694,7 +803,8 @@ function createStyles(
     dateSquare: {
       backgroundColor: '#ffffff',
       borderRadius: 16,
-      width: 120,
+      width: '100%',
+      maxWidth: 120,
       height: 100,
       justifyContent: 'center',
       alignItems: 'center',
@@ -771,5 +881,25 @@ function createStyles(
     summarySlotSub: { fontSize: 14, fontWeight: '600', fontFamily: ffSemiBold, color: '#004aad' },
     summarySlotCat: { fontSize: 12, color: '#004aad', fontFamily: ff, marginTop: 1 },
     removeSlotBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+
+    // Location picker modal
+    locationModalCard: { width: '90%', maxHeight: '80%', borderRadius: 24, overflow: 'hidden' },
+    locationModalGradient: { flex: 1, borderRadius: 24, paddingBottom: 8 },
+    locationModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, gap: 8 },
+    locationModalTitle: { fontSize: 18, fontWeight: '800', fontFamily: ffBold, color: '#004aad' },
+    locationSearchInput: {
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      borderRadius: 10,
+      marginHorizontal: 20,
+      marginBottom: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 15,
+      fontFamily: ff,
+      color: '#004aad',
+    },
+    locationList: { maxHeight: 360, paddingHorizontal: 20 },
+    locationRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,74,173,0.12)' },
+    locationRowText: { fontSize: 15, fontFamily: ffMedium, color: '#004aad' },
   });
 }

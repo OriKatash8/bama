@@ -15,7 +15,9 @@
     "placeholder_description": "תאר את הפרויקט שלך",
     "placeholder_date": "בחר תאריך",
     "placeholder_deadline": "בחר דדליין",
-    "placeholder_location": "עיר, מדינה",
+    "placeholder_location": "בחר מיקום הפרויקט",
+    "choose_location": "בחר מיקום הפרויקט",
+    "search_city": "חפש עיר...",
     "select_roles": "בחר תפקידים",
     "error_role": "יש לבחור לפחות תפקיד אחד.",
     "error_required": "שדה חובה",
@@ -172,7 +174,9 @@
     "offer_accepted": "ההצעה אושרה!",
     "failed_accept": "אישור ההצעה נכשל.",
     "failed_reject": "דחיית ההצעה נכשלה.",
-    "coming_soon": "בקרוב"
+    "coming_soon": "בקרוב",
+    "delete_project": "מחק",
+    "edit_project": "ערוך"
   },
   "profile": {
     "title": "פרופיל",

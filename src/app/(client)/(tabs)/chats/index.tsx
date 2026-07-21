@@ -226,7 +226,7 @@ export default function ChatsScreen() {
               </View>
             )}
 
-            <View style={styles.section}>
+            <View style={[styles.section, { marginTop: 24 }]}>
               <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('chats_page.my_projects')}
               </Text>

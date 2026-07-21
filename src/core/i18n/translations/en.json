@@ -15,7 +15,9 @@
     "placeholder_description": "Describe your project",
     "placeholder_date": "Select date",
     "placeholder_deadline": "Select deadline",
-    "placeholder_location": "City, Country",
+    "placeholder_location": "Choose project location",
+    "choose_location": "Choose project location",
+    "search_city": "Search city...",
     "select_roles": "Select Roles",
     "error_role": "Select at least one role.",
     "error_required": "Required",
@@ -172,7 +174,9 @@
     "offer_accepted": "Offer accepted!",
     "failed_accept": "Failed to accept offer.",
     "failed_reject": "Failed to reject offer.",
-    "coming_soon": "Coming soon"
+    "coming_soon": "Coming soon",
+    "delete_project": "Delete",
+    "edit_project": "Edit"
   },
   "profile": {
     "title": "Profile",
