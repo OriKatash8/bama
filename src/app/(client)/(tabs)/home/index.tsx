@@ -376,10 +376,11 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={styles.submitWrap}>
+            <View style={[styles.submitWrap, { paddingHorizontal: 36, marginBottom: 90 }]}>
               <TouchableOpacity
                 style={[
                   styles.submitBtn,
+                  { alignSelf: 'stretch' },
                   isGenerating && styles.disabled,
                   Platform.OS === 'web' && ({ background: isGenerating ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
                 ]}
