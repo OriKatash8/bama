@@ -30,6 +30,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ fullName?: string; email?: string }>({});
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const { isLoading, register } = useRegister();
   const router = useRouter();
@@ -93,30 +94,34 @@ export function RegisterForm() {
           textAlign={textAlign}
           writingDirection={rtl ? 'rtl' : 'ltr'}
           style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
+          onFocus={() => setPasswordFocused(true)}
+          onBlur={() => setPasswordFocused(false)}
         />
 
-        {/* Live password checklist */}
-        <View style={styles.checklist}>
-          {pwValidation.rules.map((rule) => (
-            <View key={rule.key} style={[styles.checkRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {rule.met
-                ? <CheckCircle size={14} color="#43a047" />
-                : <Circle size={14} color="rgba(0,0,0,0.3)" />}
-              <Text style={[
-                styles.checkLabel,
-                {
-                  fontFamily: font.regular,
-                  color: rule.met ? '#43a047' : 'rgba(0,0,0,0.45)',
-                  marginLeft: rtl ? 0 : 6,
-                  marginRight: rtl ? 6 : 0,
-                  textAlign,
-                },
-              ]}>
-                {t(rule.key)}
-              </Text>
-            </View>
-          ))}
-        </View>
+        {/* Live password checklist — only visible while password field is focused */}
+        {passwordFocused && (
+          <View style={styles.checklist}>
+            {pwValidation.rules.map((rule) => (
+              <View key={rule.key} style={[styles.checkRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                {rule.met
+                  ? <CheckCircle size={14} color="#43a047" />
+                  : <Circle size={14} color="rgba(0,0,0,0.3)" />}
+                <Text style={[
+                  styles.checkLabel,
+                  {
+                    fontFamily: font.regular,
+                    color: rule.met ? '#43a047' : 'rgba(0,0,0,0.45)',
+                    marginLeft: rtl ? 0 : 6,
+                    marginRight: rtl ? 6 : 0,
+                    textAlign,
+                  },
+                ]}>
+                  {t(rule.key)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         <Button
           label={t('auth.create_account')}

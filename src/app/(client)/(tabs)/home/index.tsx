@@ -14,7 +14,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
-import { Calendar, ChevronLeft, X } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, X } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
@@ -246,38 +246,51 @@ export default function HomeScreen() {
               />
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
-              <View style={styles.dateRow}>
-                <View style={styles.dateCol}>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 0 }}>
-                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0 }]}>
-                      {t('builder.execution')} <Text style={{ fontWeight: '400', color: '#004aad99' }}>({t('builder.optional')})</Text>
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 16, alignItems: 'flex-start', marginTop: 16 }}>
+                {/* Execution square */}
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: rtl ? 'right' : 'left' }]}>
+                      {t('builder.execution')}{' '}
+                      <Text style={{ fontWeight: '400', color: '#004aad99' }}>({t('builder.optional')})</Text>
                     </Text>
                     <HelpTooltip text={t('builder.help_execution')} />
                   </View>
-                  <TouchableOpacity
-                    style={[styles.dateBtn, { backgroundColor: '#ffffff' }, Platform.OS === 'web' && webInputShadow]}
-                    onPress={() => setCalOpen('exec')}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.dateBtnText, { color: exec ? colors.text : '#004aad99', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{exec || t('builder.placeholder_date')}</Text>
-                    <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
+                  <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
+                    {exec ? (
+                      <TouchableOpacity
+                        style={styles.dateSquareClear}
+                        onPress={(e) => { e.stopPropagation?.(); setExec(''); }}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <X size={12} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    ) : null}
+                    <CalendarDays size={exec ? 20 : 28} color="#004aad" strokeWidth={1.8} />
+                    <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                      {exec || t('builder.placeholder_date')}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
-                <View style={styles.dateCol}>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 0 }}>
-                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0 }]}>{t('builder.deadline')}</Text>
+                {/* Deadline square */}
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: rtl ? 'right' : 'left' }]}>{t('builder.deadline')}</Text>
                     <HelpTooltip text={t('builder.help_deadline')} />
                   </View>
                   <TouchableOpacity
-                    style={[styles.dateBtn, { backgroundColor: '#ffffff' }, errors.deadline && { borderWidth: 1, borderColor: '#fc8181' }, Platform.OS === 'web' && webInputShadow]}
+                    style={[styles.dateSquare, errors.deadline ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
                     onPress={() => setCalOpen('deadline')}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.dateBtnText, { color: deadline ? colors.text : '#004aad99', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{deadline || t('builder.placeholder_deadline')}</Text>
-                    <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
+                    <CalendarDays size={deadline ? 20 : 28} color="#004aad" strokeWidth={1.8} />
+                    <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                      {deadline || t('builder.placeholder_deadline')}
+                    </Text>
                   </TouchableOpacity>
-                  {errors.deadline ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.deadline}</Text> : null}
+                  {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
               </View>
 
@@ -504,7 +517,7 @@ export default function HomeScreen() {
                       activeOpacity={0.8}
                     >
                       <Text style={[styles.summaryDateText, { color: exec ? '#004aad' : '#004aad99' }]} numberOfLines={1}>{exec || t('builder.placeholder_date')}</Text>
-                      <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
+                      <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
                     </TouchableOpacity>
                   </View>
 
@@ -516,7 +529,7 @@ export default function HomeScreen() {
                       activeOpacity={0.8}
                     >
                       <Text style={[styles.summaryDateText, { color: deadline ? '#004aad' : '#004aad99' }]} numberOfLines={1}>{deadline || t('builder.placeholder_deadline')}</Text>
-                      <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
+                      <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -676,18 +689,46 @@ function createStyles(
     qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700', fontFamily: ffBold },
     qtyBadge: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
     qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: ffBold },
-    dateRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+    dateRow: { flexDirection: 'row', gap: 16, marginTop: 0 },
     dateCol: { flex: 1 },
-    dateBtn: {
-      flexDirection: 'row',
+    dateSquare: {
+      backgroundColor: '#ffffff',
+      borderRadius: 16,
+      width: 120,
+      height: 100,
+      justifyContent: 'center',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      borderRadius: 8,
-      paddingHorizontal: 10,
-      paddingVertical: 8,
-      marginTop: 6,
+      gap: 6,
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 3,
+      padding: 8,
     },
-    dateBtnText: { fontSize: 13, flex: 1, fontFamily: ff },
+    dateSquarePlaceholder: {
+      fontSize: 11,
+      color: '#004aad66',
+      textAlign: 'center',
+      fontFamily: ff,
+    },
+    dateSquareValue: {
+      fontSize: 13,
+      fontWeight: 'bold',
+      color: '#004aad',
+      textAlign: 'center',
+      fontFamily: ffBold,
+    },
+    dateSquareClear: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      backgroundColor: '#004aad',
+      borderRadius: 10,
+      width: 18,
+      height: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
     // Summary modal
     summaryCard: { width: '100%', maxHeight: '90%', borderRadius: 24, overflow: 'hidden' },

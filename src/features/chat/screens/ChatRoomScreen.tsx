@@ -186,15 +186,16 @@ export function ChatRoomScreen({ chatId }: Props) {
         <View style={styles.headerCenter}>
           {chatType === 'group' && chatProjectId ? (
             <TouchableOpacity
+              style={styles.headerNameTouchable}
               onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.headerName, { color: colors.text, fontFamily: font.bold }, gradientText]} numberOfLines={1}>
+              <Text style={[styles.headerName, { color: colors.text, fontFamily: font.bold }, gradientText]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={[styles.headerName, { color: colors.text, fontFamily: font.bold }, gradientText]} numberOfLines={1}>
+            <Text style={[styles.headerName, { color: colors.text, fontFamily: font.bold }, gradientText]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
             </Text>
           )}
@@ -326,10 +327,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
   },
+  headerNameTouchable: {
+    width: '100%',
+  },
   headerName: {
-    fontSize: 42,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: 'bold',
     textAlign: 'center',
+    width: '100%',
   },
   headerRight: {
     width: 48,

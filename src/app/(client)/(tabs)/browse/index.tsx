@@ -185,10 +185,10 @@ export default function SearchScreen() {
     );
   }
 
-  function renderListHeader() {
-    return (
-      <View>
-        {/* Header */}
+  return (
+    <Screen scrollable={false}>
+      <View style={styles.flex}>
+        {/* Heading + back button — always visible */}
         <View style={styles.header}>
           {view.kind !== 'grid' && (
             <TouchableOpacity onPress={() => setView({ kind: 'grid' })} style={styles.backBtn} activeOpacity={0.7}>
@@ -203,7 +203,7 @@ export default function SearchScreen() {
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
         </View>
 
-        {/* Search bar */}
+        {/* Search bar — only in grid view */}
         {view.kind === 'grid' && (
           <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
             <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
@@ -223,96 +223,101 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {/* Category list — bounded to ~9 categories, safe to render eagerly */}
-        {showGrid && (
-          <View style={styles.listContent}>
-            {filteredCategories.map((cat) => {
-              const animVal = animValues[cat.key];
-              const maxHeight = animVal.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, cat.subcategories.length * SUB_ITEM_HEIGHT],
-              });
-              const chevronRotate = animVal.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '90deg'],
-              });
-              const subOpacity = animVal.interpolate({
-                inputRange: [0, 0.4, 1],
-                outputRange: [0, 0, 1],
-              });
-
-              return (
-                <View key={cat.key} style={styles.categoryCard}>
-                  <TouchableOpacity
-                    style={styles.categoryCardRow}
-                    onPress={() => toggleCategory(cat.key)}
-                    activeOpacity={0.7}
-                  >
-                    {cat.image && (
-                      <Image
-                        source={cat.image}
-                        style={styles.categoryIcon}
-                        contentFit="cover"
-                        cachePolicy="memory-disk"
-                        loading="lazy"
-                      />
-                    )}
-                    <Text style={[styles.categoryLabel, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
-                    <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
-                      <ChevronRight size={18} color="#004aad" />
-                    </Animated.View>
-                  </TouchableOpacity>
-
-                  <Animated.View style={{ maxHeight, opacity: subOpacity, overflow: 'hidden' }}>
-                    {cat.subcategories.map((sub) => (
-                      <TouchableOpacity
-                        key={sub}
-                        style={styles.subItem}
-                        onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.subItemText, { fontFamily: font.medium, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </Animated.View>
-                </View>
-              );
-            })}
-            {filteredCategories.length === 0 && (
-              <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: font.regular }}>
-                {t('search.no_categories_match', { query })}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* Subcategory results hint */}
+        {/* Results hint — only in results view */}
         {inResultsView && (
           <Text style={[styles.resultsHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
             {view.category} · {view.subcategory}
           </Text>
         )}
-      </View>
-    );
-  }
 
-  return (
-    <Screen scrollable={false}>
-      <FlatList
-        style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        data={listData}
-        keyExtractor={(item) => item.user.id}
-        renderItem={renderProfessional}
-        ListHeaderComponent={renderListHeader}
-        ListEmptyComponent={renderListEmpty}
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={7}
-        removeClippedSubviews={Platform.OS !== 'web'}
-      />
+        {/* Category accordion — outside FlatList so state changes re-render reliably */}
+        {showGrid && (
+          <Animated.ScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.gridContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.listContent}>
+              {filteredCategories.map((cat) => {
+                const animVal = animValues[cat.key];
+                const maxHeight = animVal.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, cat.subcategories.length * SUB_ITEM_HEIGHT],
+                });
+                const chevronRotate = animVal.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '90deg'],
+                });
+                const subOpacity = animVal.interpolate({
+                  inputRange: [0, 0.4, 1],
+                  outputRange: [0, 0, 1],
+                });
+
+                return (
+                  <View key={cat.key} style={styles.categoryCard}>
+                    <TouchableOpacity
+                      style={styles.categoryCardRow}
+                      onPress={() => toggleCategory(cat.key)}
+                      activeOpacity={0.7}
+                    >
+                      {cat.image && (
+                        <Image
+                          source={cat.image}
+                          style={styles.categoryIcon}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                          loading="lazy"
+                        />
+                      )}
+                      <Text style={[styles.categoryLabel, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
+                      <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
+                        <ChevronRight size={18} color="#004aad" />
+                      </Animated.View>
+                    </TouchableOpacity>
+
+                    <Animated.View style={{ maxHeight, opacity: subOpacity, overflow: 'hidden' }}>
+                      {cat.subcategories.map((sub) => (
+                        <TouchableOpacity
+                          key={sub}
+                          style={styles.subItem}
+                          onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.subItemText, { fontFamily: font.medium, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </Animated.View>
+                  </View>
+                );
+              })}
+              {filteredCategories.length === 0 && (
+                <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: font.regular }}>
+                  {t('search.no_categories_match', { query })}
+                </Text>
+              )}
+            </View>
+          </Animated.ScrollView>
+        )}
+
+        {/* Results list — only rendered in search / subcategory results mode */}
+        {!showGrid && (
+          <FlatList
+            style={styles.flex}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            data={listData}
+            keyExtractor={(item) => item.user.id}
+            renderItem={renderProfessional}
+            ListEmptyComponent={renderListEmpty}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            removeClippedSubviews={Platform.OS !== 'web'}
+          />
+        )}
+      </View>
 
       <DirectProjectSheet
         visible={sheetProfessionalId !== null}
@@ -329,7 +334,8 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingTop: 16, paddingBottom: 100 },
+  scrollContent: { paddingBottom: 100 },
+  gridContent: { paddingBottom: 100 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'flex-start',

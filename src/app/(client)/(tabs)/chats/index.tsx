@@ -40,8 +40,8 @@ function makeT(translations: Translations) {
   };
 }
 
-type TabKey = 'chats' | 'notifications';
-const TAB_KEYS: TabKey[] = ['chats', 'notifications'];
+type TabKey = 'chats' | 'projects';
+const TAB_KEYS: TabKey[] = ['chats', 'projects'];
 
 const gradientStyle = Platform.OS === 'web' ? ({
   background: 'linear-gradient(to right, #004aad, #cb6ce6)',
@@ -62,6 +62,7 @@ export default function ChatsScreen() {
   const font = useAppFont();
 
   const [active, setActive] = useState<TabKey>('chats');
+  const activeTabIndex = TAB_KEYS.indexOf(active);
   const { requests, isLoading: requestsLoading } = useProjectRequests();
   const { offers, isLoading: offersLoading } = usePriceOffers();
   const { bundles, isLoading: bundlesLoading } = useBundleOffers();
@@ -98,8 +99,8 @@ export default function ChatsScreen() {
   }
 
   const TAB_LABELS: Record<TabKey, string> = {
-    chats:         t('chats_page.tab_chats'),
-    notifications: t('chats_page.tab_notifications'),
+    chats:    t('chats_page.tab_chats'),
+    projects: t('chats_page.tab_projects'),
   };
 
   async function handleAccept(offer: PriceOffer) {
@@ -148,7 +149,7 @@ export default function ChatsScreen() {
         <View style={styles.headerWrap}>
           <View style={styles.gradient}>
             <Text style={[styles.headerTitle, { fontFamily: font.bold }, Platform.OS !== 'web' && { color: colors.accent }, gradientStyle]}>
-              {t('chats_page.title')}
+              {activeTabIndex === 1 ? t('chats_page.title_projects') : t('chats_page.title')}
             </Text>
 
             <View style={styles.tabBar}>
@@ -176,8 +177,8 @@ export default function ChatsScreen() {
         {/* Chats list */}
         {active === 'chats' && <ChatsList />}
 
-        {/* Notifications */}
-        {active === 'notifications' && (
+        {/* Projects Management */}
+        {active === 'projects' && (
           <View style={styles.notifContent}>
             {bundles.length > 0 && (
               <View style={styles.section}>

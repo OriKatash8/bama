@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { router, useSegments } from 'expo-router';
 import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
 import { useTheme } from '@core/hooks/useTheme';
@@ -8,6 +8,18 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { deleteDocument } from '@core/firebase/firestore';
 import { useUiStore } from '@core/stores/uiStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+type Translations = typeof en;
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 type Props = { request: ProjectRequest };
 
@@ -29,6 +41,9 @@ export function ProjectRequestCard({ request }: Props) {
   const language = useSettingsStore((s) => s.language);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
+  const t = makeT(language === 'he' ? he : en);
+  const segments = useSegments();
+  const modeSegment = segments[0];
 
   function handleEdit() {
     router.navigate({
@@ -149,6 +164,23 @@ export function ProjectRequestCard({ request }: Props) {
           </View>
         </View>
       )}
+
+      {/* Open Chat button */}
+      <View style={[styles.chatRow, { borderTopColor: colors.border }]}>
+        {request.chatId ? (
+          <TouchableOpacity
+            style={styles.chatBtn}
+            onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${request.chatId}` as never)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.chatBtnText, { fontFamily: font.semiBold }]}>{t('chats_page.open_chat')}</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.chatBtn, styles.chatBtnDisabled]}>
+            <Text style={[styles.chatBtnText, styles.chatBtnTextDisabled, { fontFamily: font.semiBold }]}>{t('chats_page.no_chat_yet')}</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -200,4 +232,27 @@ const styles = StyleSheet.create({
   },
   confirmText: { fontSize: 13, fontWeight: '600', color: '#e53e3e' },
   confirmBtns: { justifyContent: 'flex-end', gap: 16 },
+  chatRow: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    alignItems: 'flex-start',
+  },
+  chatBtn: {
+    backgroundColor: '#004aad',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  chatBtnDisabled: {
+    backgroundColor: '#e0e0e0',
+  },
+  chatBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  chatBtnTextDisabled: {
+    color: '#9e9e9e',
+  },
 });
