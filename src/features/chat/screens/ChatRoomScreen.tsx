@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getDoc, updateDoc, doc } from 'firebase/firestore';
+import { getDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { Paperclip } from 'lucide-react-native';
 import { useTheme } from '@core/hooks/useTheme';
@@ -49,6 +49,14 @@ function colorForUser(userId: string): string {
   let hash = 0;
   for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
   return USER_COLORS[hash % USER_COLORS.length];
+}
+
+function formatMessageTime(timestamp: Timestamp | number | string | null | undefined): string {
+  if (!timestamp) return '';
+  const date = typeof timestamp === 'object' && 'seconds' in timestamp
+    ? new Date(timestamp.seconds * 1000)
+    : new Date(timestamp);
+  return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 interface Props {
@@ -225,6 +233,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                     </Text>
                   )}
                   <VideoPlayer uri={item.videoUrl} style={styles.mediaMessage} />
+                  <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                    {formatMessageTime(item.timestamp)}
+                  </Text>
                 </View>
               ) : item.imageURL ? (
                 <View style={styles.mediaBubble}>
@@ -234,6 +245,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                     </Text>
                   )}
                   <Image source={{ uri: item.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
+                  <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                    {formatMessageTime(item.timestamp)}
+                  </Text>
                 </View>
               ) : (
                 <View
@@ -249,6 +263,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                   )}
                   <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, fontFamily: font.regular }]}>
                     {item.text}
+                  </Text>
+                  <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                    {formatMessageTime(item.timestamp)}
                   </Text>
                 </View>
               )}
@@ -367,6 +384,11 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 15,
     lineHeight: 20,
+  },
+  messageTime: {
+    fontSize: 10,
+    textAlign: 'left',
+    marginTop: 2,
   },
   inputRow: {
     flexDirection: 'row',

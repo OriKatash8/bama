@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { TouchableOpacity } from 'react-native';
 import { Tabs } from 'expo-router';
 import { LayoutDashboard, ShoppingBag, User, MessageCircle } from 'lucide-react-native';
 import { ModeSwitcherSheet } from '@features/auth/components/ModeSwitcherSheet';
@@ -16,6 +15,7 @@ import {
   FLOATING_TAB_BAR_ACTIVE_COLOR,
   FLOATING_TAB_BAR_INACTIVE_COLOR,
 } from '@core/navigation/floatingTabBar';
+import { TabButton } from '@core/navigation/TabButton';
 
 type Translations = typeof en;
 
@@ -56,6 +56,7 @@ export default function ProfessionalTabsLayout() {
           tabBarActiveTintColor: FLOATING_TAB_BAR_ACTIVE_COLOR,
           tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
           tabBarLabelStyle: { fontSize: 11, fontFamily: font.regular },
+          tabBarButton: (props) => <TabButton {...props} />,
         }}
       >
         <Tabs.Screen name="dashboard" options={{ title: t('tabs.notice_board'), tabBarIcon: ({ color }) => <LayoutDashboard size={24} color={color} strokeWidth={1.5} /> }} />
@@ -73,15 +74,8 @@ export default function ProfessionalTabsLayout() {
             headerTintColor: colors.text,
             headerTitleStyle: { fontWeight: '800', fontSize: 20 },
             tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={1.5} />,
-            tabBarButton: ({ style, children, onPress }) => (
-              <TouchableOpacity
-                style={style ?? undefined}
-                onPress={onPress ?? undefined}
-                onLongPress={() => setSheetVisible(true)}
-                delayLongPress={500}
-              >
-                {children as React.ReactNode}
-              </TouchableOpacity>
+            tabBarButton: (props) => (
+              <TabButton {...props} onLongPress={() => setSheetVisible(true)} delayLongPress={500} />
             ),
           }}
         />

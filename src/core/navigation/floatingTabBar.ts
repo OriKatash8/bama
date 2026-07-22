@@ -8,6 +8,8 @@ export const FLOATING_TAB_BAR_INACTIVE_COLOR = {
   light: 'rgba(15,15,31,0.4)',
 } as const;
 
+export const FLOATING_TAB_BAR_ACTIVE_BG = 'rgba(255,255,255,0.3)';
+
 export function getFloatingTabBarStyle(isDark: boolean): ViewStyle {
   return {
     position: 'absolute',

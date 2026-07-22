@@ -267,7 +267,8 @@
     "bundle_badge": "Bundle deal",
     "instead_of": "instead of",
     "bundle_section": "Bundle Offers",
-    "view_profile": "View Profile"
+    "view_profile": "View Profile",
+    "for_project": "For: "
   },
   "marketplace": {
     "category_camera": "Camera",

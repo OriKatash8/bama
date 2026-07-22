@@ -18,7 +18,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { getDocument } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { PriceOffer, BundleOffer } from '@core/types/project';
+import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
 
 export type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
@@ -72,6 +72,9 @@ export default function ChatsScreen() {
   const [professionalProfiles, setProfessionalProfiles] = useState<Record<string, ProfessionalProfileSummary>>({});
   const fetchedProfileIds = useRef<Set<string>>(new Set());
 
+  const [projectTitles, setProjectTitles] = useState<Record<string, string>>({});
+  const fetchedProjectIds = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     const ids = new Set<string>();
     offers.forEach((o) => ids.add(o.professionalId));
@@ -93,6 +96,29 @@ export default function ChatsScreen() {
       });
     });
   }, [offers, bundles]);
+
+  useEffect(() => {
+    const ids = new Set<string>();
+    offers.forEach((o) => ids.add(o.projectId));
+
+    const toFetch = Array.from(ids).filter((id) => !fetchedProjectIds.current.has(id));
+    if (toFetch.length === 0) return;
+    toFetch.forEach((id) => fetchedProjectIds.current.add(id));
+
+    Promise.all(
+      toFetch.map((id) =>
+        getDocument<Pick<ProjectRequest, 'title'>>(`projects/${id}`).then((p) => [id, p] as const)
+      )
+    ).then((results) => {
+      setProjectTitles((prev) => {
+        const next = { ...prev };
+        for (const [id, p] of results) {
+          if (p) next[id] = p.title;
+        }
+        return next;
+      });
+    });
+  }, [offers]);
 
   function goToProfessionalProfile(professionalId: string) {
     router.push(`/${modeSegment}/(tabs)/browse/profile/${professionalId}` as never);
@@ -216,6 +242,7 @@ export default function ChatsScreen() {
                       key={offer.id}
                       offer={offer}
                       professionalProfile={professionalProfiles[offer.professionalId]}
+                      projectTitle={projectTitles[offer.projectId]}
                       onPressProfile={() => goToProfessionalProfile(offer.professionalId)}
                       onAccept={() => handleAccept(offer)}
                       onReject={() => handleReject(offer.id)}
