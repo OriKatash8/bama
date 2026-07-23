@@ -95,6 +95,8 @@ export function ProjectRequestCard({ request }: Props) {
   }
 
   const filledCount = request.filledSlots?.length ?? 0;
+  const totalSlots = request.crewSlots.reduce((acc, s) => acc + s.quantity, 0);
+  const isTeamFull = totalSlots > 0 && filledCount >= totalSlots;
   const canEdit = request.status === 'open';
 
   return (
@@ -103,7 +105,6 @@ export function ProjectRequestCard({ request }: Props) {
         style={[
           styles.statusBadge,
           { backgroundColor: STATUS_COLORS[request.status] },
-          rtl ? styles.statusBadgeLeft : styles.statusBadgeRight,
         ]}
       >
         <Text style={[styles.statusBadgeText, { fontFamily: font.semiBold }]}>
@@ -154,7 +155,7 @@ export function ProjectRequestCard({ request }: Props) {
 
         {filledCount > 0 && (
           <TouchableOpacity onPress={toggleTeam} style={[styles.teamToggle, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]} activeOpacity={0.7}>
-            <Text style={[styles.teamToggleText, { fontFamily: font.semiBold }]}>
+            <Text style={[styles.teamToggleText, { fontFamily: font.semiBold, color: isTeamFull ? '#22c55e' : '#cb6ce6' }]}>
               {teamOpen ? '▴' : '▾'} Team ({filledCount})
             </Text>
           </TouchableOpacity>
@@ -193,7 +194,7 @@ export function ProjectRequestCard({ request }: Props) {
         )}
 
         {!confirmDelete ? (
-          <View style={[styles.btnRow, { borderTopColor: colors.border, flexDirection: rowDir }]}>
+          <View style={[styles.btnRow, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
             {request.chatId ? (
               <TouchableOpacity
                 style={styles.chatPill}
@@ -209,11 +210,11 @@ export function ProjectRequestCard({ request }: Props) {
             )}
             {canEdit && (
               <>
-                <TouchableOpacity style={styles.deletePill} onPress={() => setConfirmDelete(true)} activeOpacity={0.8}>
-                  <Text style={[styles.deletePillText, { fontFamily: font.semiBold }]}>{t('chats_page.delete_project')}</Text>
-                </TouchableOpacity>
                 <TouchableOpacity style={styles.editPill} onPress={handleEdit} activeOpacity={0.8}>
                   <Text style={[styles.editPillText, { fontFamily: font.semiBold }]}>{t('chats_page.edit_project')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.deletePill} onPress={() => setConfirmDelete(true)} activeOpacity={0.8}>
+                  <Text style={[styles.deletePillText, { fontFamily: font.semiBold }]}>{t('chats_page.delete_project')}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -243,22 +244,22 @@ const styles = StyleSheet.create({
   cardWrap: {
     position: 'relative',
     marginTop: 10,
-    marginBottom: 16,
+    marginBottom: 10,
+    overflow: 'visible',
   },
   statusBadge: {
     position: 'absolute',
     top: -10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    left: -10,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 12,
     zIndex: 2,
   },
-  statusBadgeRight: { right: 12 },
-  statusBadgeLeft: { left: 12 },
-  statusBadgeText: { color: '#ffffff', fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
+  statusBadgeText: { color: '#ffffff', fontSize: 13, fontWeight: 'bold', textTransform: 'capitalize' },
   card: {
     borderRadius: 16,
-    padding: 16,
+    padding: 10,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -266,14 +267,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  title: { fontSize: 16, marginBottom: 10 },
-  infoRow: { justifyContent: 'space-between', gap: 8, marginBottom: 8 },
+  title: { fontSize: 13, marginBottom: 6 },
+  infoRow: { justifyContent: 'space-between', gap: 8, marginBottom: 6 },
   infoCol: { flex: 1 },
-  infoLabel: { fontSize: 11, marginBottom: 2 },
-  infoValue: { fontSize: 13, color: '#004aad' },
+  infoLabel: { fontSize: 10, marginBottom: 2 },
+  infoValue: { fontSize: 12, color: '#004aad' },
   crew: { fontSize: 13, marginBottom: 4 },
   teamToggle: { marginTop: 8 },
-  teamToggleText: { fontSize: 13, color: '#cb6ce6', fontWeight: '600' },
+  teamToggleText: { fontSize: 13, fontWeight: '600' },
   teamSection: { marginTop: 10, gap: 8 },
   teamRow: { alignItems: 'center', gap: 10 },
   teamDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#cb6ce6' },
@@ -282,38 +283,37 @@ const styles = StyleSheet.create({
   teamName: { fontSize: 12, marginTop: 1 },
   teamOpen: { fontSize: 12, marginTop: 1 },
   btnRow: {
-    alignItems: 'center',
+    flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
   },
   chatPill: {
     backgroundColor: '#004aad',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   chatPillDisabled: { backgroundColor: '#e0e0e0' },
-  chatPillText: { color: '#ffffff', fontSize: 12 },
+  chatPillText: { color: '#ffffff', fontSize: 11 },
   chatPillTextDisabled: { color: '#9e9e9e' },
   deletePill: {
     backgroundColor: '#ff4d6d',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  deletePillText: { color: '#ffffff', fontSize: 12 },
+  deletePillText: { color: '#ffffff', fontSize: 11 },
   editPill: {
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#cccccc',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  editPillText: { fontSize: 12, color: '#666666' },
+  editPillText: { fontSize: 11, color: '#666666' },
   confirmRow: {
     marginTop: 12,
     paddingTop: 10,

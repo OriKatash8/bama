@@ -254,7 +254,7 @@ export default function HomeScreen() {
   return (
     <Screen scrollable={false}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
+        <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: '#ffffff' }]}>
           {t('builder.page_title')}
         </Text>
 
@@ -290,25 +290,22 @@ export default function HomeScreen() {
                   one square out of alignment with the others. */}
               <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 16 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
-                      {t('builder.execution')}{' '}
-                      <Text style={{ fontWeight: '400', color: '#004aad99' }}>({t('builder.optional')})</Text>
-                    </Text>
-                    <HelpTooltip text={t('builder.help_execution')} />
-                  </View>
+                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
+                    {t('builder.execution')}
+                  </Text>
+                  <Text style={{ fontSize: 9, color: colors.textMuted, textAlign: 'center', fontFamily: font.regular }}>
+                    ({t('builder.optional')})
+                  </Text>
                 </View>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>{t('builder.deadline')}</Text>
-                    <HelpTooltip text={t('builder.help_deadline')} />
-                  </View>
+                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
+                    {t('builder.deadline')}
+                  </Text>
                 </View>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>{t('builder.location')}</Text>
-                    <HelpTooltip text={t('builder.help_location')} />
-                  </View>
+                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
+                    {t('builder.location')}
+                  </Text>
                 </View>
               </View>
 
@@ -317,6 +314,9 @@ export default function HomeScreen() {
                 {/* Execution square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
+                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                      <HelpTooltip text={t('builder.help_execution')} />
+                    </View>
                     {exec ? (
                       <TouchableOpacity
                         style={styles.dateSquareClear}
@@ -341,6 +341,19 @@ export default function HomeScreen() {
                     onPress={() => setCalOpen('deadline')}
                     activeOpacity={0.8}
                   >
+                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                      <HelpTooltip text={t('builder.help_deadline')} />
+                    </View>
+                    {deadline ? (
+                      <TouchableOpacity
+                        style={styles.dateSquareClear}
+                        onPress={(e) => { e.stopPropagation?.(); setDeadline(''); }}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <X size={12} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    ) : null}
                     <CalendarDays size={deadline ? 20 : 28} color="#004aad" strokeWidth={1.8} />
                     <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {deadline || t('builder.placeholder_deadline')}
@@ -356,6 +369,9 @@ export default function HomeScreen() {
                     onPress={openLocationModal}
                     activeOpacity={0.8}
                   >
+                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                      <HelpTooltip text={t('builder.help_location')} />
+                    </View>
                     {location ? (
                       <TouchableOpacity
                         style={styles.dateSquareClear}

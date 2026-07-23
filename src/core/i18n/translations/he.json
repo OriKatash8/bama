@@ -237,6 +237,7 @@
     "home": "בית",
     "search": "חיפוש",
     "chats": "צ'אטים",
+    "projects": "פרויקטים",
     "profile": "פרופיל",
     "notice_board": "לוח מודעות",
     "marketplace": "מרקטפלייס"
@@ -389,5 +390,25 @@
     "add_video": "הוסף וידאו",
     "send_video": "שולח וידאו...",
     "video_error": "עיבוד הוידאו נכשל"
+  },
+  "header": {
+    "client_mode": "לקוח",
+    "pro_mode": "יוצר"
+  },
+  "settings": {
+    "language": "שפה",
+    "appearance": "מראה",
+    "information": "מידע",
+    "privacy": "פרטיות ואבטחה",
+    "logout": "התנתק"
+  },
+  "review": {
+    "title": "דרג את הצוות שלך",
+    "progress": "{{current}} מתוך {{total}}",
+    "placeholder": "שתף את חוויית העבודה שלך עם איש המקצוע...",
+    "next": "הבא",
+    "submit": "שלח והשלם",
+    "required_stars": "אנא בחר דירוג",
+    "required_text": "אנא כתוב לפחות 10 תווים"
   }
 }

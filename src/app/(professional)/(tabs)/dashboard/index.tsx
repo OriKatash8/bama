@@ -157,7 +157,6 @@ export default function DashboardScreen() {
     backgroundClip: 'text',
   } as object) : {};
 
-  const greeting = t(getGreetingKey());
   const openProjectsLabel = visible.length === 1
     ? t('noticeboard.open_projects_one', { count: visible.length })
     : t('noticeboard.open_projects_other', { count: visible.length });
@@ -170,12 +169,6 @@ export default function DashboardScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topBar}>
-          <Text style={[styles.greetText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }, gradientText]} numberOfLines={2}>
-            {greeting}, {user?.displayName} :)
-          </Text>
-        </View>
-
         {activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
             <Text style={[styles.heading, { fontFamily: font.bold, color: colors.text, marginBottom: 16, textAlign: rtl ? 'right' : 'left' }, gradientText]}>

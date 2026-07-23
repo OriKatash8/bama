@@ -88,6 +88,8 @@ export type ProjectRequest = {
   filledSlots: FilledSlot[];
   targetProfessionalId?: string | null;
   chatId?: string;
+  reviewsCompleted?: boolean;
+  reviewsPending?: string[];
 };
 
 export type PriceOffer = {

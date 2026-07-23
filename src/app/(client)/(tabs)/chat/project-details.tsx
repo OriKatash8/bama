@@ -14,7 +14,7 @@ import {
 import { confirmDialog } from '@utils/confirmDialog';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { auth } from '@core/firebase/config';
@@ -39,6 +39,7 @@ import {
   updateMissionStatus,
 } from '@features/chat/services/missionService';
 import { MiniCalendar, RolePickerModal } from '@features/crew/components';
+import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
 import { Calendar } from 'lucide-react-native';
 
@@ -104,6 +105,7 @@ export default function ProjectDetailsScreen() {
   const [feeData, setFeeData] = useState<ProjectFee | null>(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showReviewFlow, setShowReviewFlow] = useState(false);
 
   const [missions, setMissions] = useState<Mission[]>([]);
   const [showAddMission, setShowAddMission] = useState(false);
@@ -222,18 +224,59 @@ export default function ProjectDetailsScreen() {
   }
 
   async function handleConfirmComplete() {
-    if (!projectId) return;
+    console.log('[ReviewFlow] handleConfirmComplete called — projectId:', projectId, 'project exists:', !!project);
+    if (!projectId || !project) return;
+
+    console.log('[ReviewFlow] project.reviewsCompleted:', project.reviewsCompleted, 'filledSlots:', project.filledSlots?.length ?? 0);
+
+    // Already reviewed — proceed directly
+    if (project.reviewsCompleted === true) {
+      console.log('[ReviewFlow] already reviewed — running normal complete flow');
+      setIsConfirming(true);
+      try {
+        await markProjectComplete(projectId);
+        setProject((prev) => (prev ? { ...prev, status: 'completed' } : prev));
+        setShowPaymentSummary(false);
+        Alert.alert(t('project_details.success_complete'));
+      } catch {
+        Alert.alert('Error', t('project_details.error_complete'));
+      } finally {
+        setIsConfirming(false);
+      }
+      return;
+    }
+
+    // Mark complete and require reviews
+    const uniqueProfIds = [...new Set((project.filledSlots ?? []).map((s) => s.professionalId))];
+    console.log('[ReviewFlow] uniqueProfIds:', uniqueProfIds);
     setIsConfirming(true);
     try {
-      await markProjectComplete(projectId);
-      setProject((prev) => (prev ? { ...prev, status: 'completed' } : prev));
+      await updateDoc(doc(db, 'projects', projectId), {
+        status: 'completed',
+        completedAt: serverTimestamp(),
+        reviewsCompleted: false,
+        reviewsPending: uniqueProfIds,
+      });
+      console.log('[ReviewFlow] Firestore updated — setting showReviewFlow=true');
+      setProject((prev) =>
+        prev
+          ? { ...prev, status: 'completed', reviewsCompleted: false, reviewsPending: uniqueProfIds }
+          : prev,
+      );
       setShowPaymentSummary(false);
-      Alert.alert(t('project_details.success_complete'));
-    } catch {
+      setShowReviewFlow(true);
+    } catch (err) {
+      console.error('[ReviewFlow] updateDoc failed:', err);
       Alert.alert('Error', t('project_details.error_complete'));
     } finally {
       setIsConfirming(false);
     }
+  }
+
+  function handleReviewsComplete() {
+    setShowReviewFlow(false);
+    setProject((prev) => (prev ? { ...prev, reviewsCompleted: true } : prev));
+    Alert.alert(t('project_details.success_complete'));
   }
 
   async function handleSendPaymentRequest() {
@@ -424,6 +467,30 @@ export default function ProjectDetailsScreen() {
 
   const statusColor = STATUS_COLORS[project.status];
   const filledSlots: FilledSlot[] = project.filledSlots ?? [];
+
+  const reviewProfessionals: ReviewProfessional[] = Object.values(
+    filledSlots.reduce<Record<string, { professionalId: string; roles: string[] }>>(
+      (acc, slot) => {
+        const role = `${slot.subcategory} · ${slot.category}`;
+        const entry = acc[slot.professionalId];
+        if (entry) entry.roles.push(role);
+        else acc[slot.professionalId] = { professionalId: slot.professionalId, roles: [role] };
+        return acc;
+      },
+      {},
+    ),
+  ).flatMap(({ professionalId, roles }) => {
+    const member = memberUsers[professionalId];
+    if (!member) {
+      console.log('[ReviewFlow] memberUsers missing for professionalId:', professionalId, '— known keys:', Object.keys(memberUsers));
+      return [];
+    }
+    return [{ id: professionalId, displayName: member.displayName, photoURL: member.photoURL, role: roles.join(' | ') }];
+  });
+
+  if (showReviewFlow) {
+    console.log('[ReviewFlow] showReviewFlow=true, reviewProfessionals:', reviewProfessionals.length, reviewProfessionals.map(p => p.id));
+  }
 
   // Per-professional payment summary (bundles counted once at bundlePrice)
   type MemberPaymentInfo = { price: number; hasBundle: boolean; individualOffer: PriceOffer | null };
@@ -1080,6 +1147,15 @@ export default function ProjectDetailsScreen() {
         onDismiss={() => setShowRolePicker(false)}
         onPost={handlePostRoles}
         isPosting={isPostingRoles}
+      />
+
+      <ReviewFlow
+        visible={showReviewFlow}
+        projectId={projectId ?? ''}
+        clientId={currentUserId}
+        clientDisplayName={auth.currentUser?.displayName ?? clientUser?.displayName ?? ''}
+        professionals={reviewProfessionals}
+        onComplete={handleReviewsComplete}
       />
     </LinearGradient>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { CheckCircle } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
@@ -33,9 +34,8 @@ type Props = {
 
 const MODES: ActiveMode[] = ['professional', 'client'];
 
-// Card is ~180×90px; origin offset from center → bottom-right corner
-const ORIGIN_X = 90;
-const ORIGIN_Y = 45;
+// Slide-down from top-right: translateY from -20 to 0
+const SLIDE_START = -20;
 
 // Web-only CSS gradient text
 const gradientTextStyle = Platform.OS === 'web' ? ({
@@ -48,6 +48,7 @@ const gradientTextStyle = Platform.OS === 'web' ? ({
 export function ModeSwitcherSheet({ visible, onClose }: Props) {
   const activeMode = useAuthStore((s) => s.activeMode);
   const { switchMode } = useSwitchMode();
+  const router = useRouter();
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -60,24 +61,25 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
     return map[mode];
   };
 
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale   = useRef(new Animated.Value(0.8)).current;
+  const opacity     = useRef(new Animated.Value(0)).current;
+  const translateY  = useRef(new Animated.Value(SLIDE_START)).current;
 
   useEffect(() => {
     if (visible) {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
-        Animated.timing(scale,   { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(opacity,    { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration: 180, useNativeDriver: true }),
       ]).start();
     } else {
       opacity.setValue(0);
-      scale.setValue(0.8);
+      translateY.setValue(SLIDE_START);
     }
   }, [visible]);
 
   function handleSelect(mode: ActiveMode) {
     if (mode !== activeMode) switchMode(mode);
     onClose();
+    if (mode === 'client') router.push('/(client)/(tabs)/home');
   }
 
   return (
@@ -92,13 +94,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
           { backgroundColor: colors.card, borderColor: colors.border },
           {
             opacity,
-            transform: [
-              { translateX: ORIGIN_X },
-              { translateY: ORIGIN_Y },
-              { scale },
-              { translateX: -ORIGIN_X },
-              { translateY: -ORIGIN_Y },
-            ],
+            transform: [{ translateY }],
           },
         ]}
       >
@@ -148,11 +144,11 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   card: {
     position: 'absolute',
-    bottom: 80,
+    top: 70,
     right: 16,
     width: 180,
     borderRadius: 24,
-    borderBottomRightRadius: 4,
+    borderTopRightRadius: 4,
     borderWidth: 1,
     padding: 8,
     shadowColor: '#000',

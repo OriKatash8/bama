@@ -7,6 +7,7 @@ import { StyleSheet, Text, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@core/hooks/useAuth';
 import { ToastContainer } from '@components/ui/Toast';
+import { ReviewFlowGate } from '@features/reviews/components/ReviewFlowGate';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 import { LanguageSync } from '@components/layout/LanguageSync';
 import { I18nextProvider } from 'react-i18next';
@@ -79,6 +80,7 @@ function AppShell() {
         <LanguageSync />
         <Slot />
         <ToastContainer />
+        <ReviewFlowGate />
       </LinearGradient>
     </I18nextProvider>
   );

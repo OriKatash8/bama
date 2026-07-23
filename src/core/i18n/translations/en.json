@@ -237,6 +237,7 @@
     "home": "Home",
     "search": "Search",
     "chats": "Chats",
+    "projects": "Projects",
     "profile": "Profile",
     "notice_board": "Notice Board",
     "marketplace": "Marketplace"
@@ -389,5 +390,25 @@
     "add_video": "Add Video",
     "send_video": "Sending video...",
     "video_error": "Video processing failed"
+  },
+  "header": {
+    "client_mode": "Client",
+    "pro_mode": "Pro"
+  },
+  "settings": {
+    "language": "Language",
+    "appearance": "Appearance",
+    "information": "Information",
+    "privacy": "Privacy & Security",
+    "logout": "Log out"
+  },
+  "review": {
+    "title": "Rate your crew",
+    "progress": "{{current}} of {{total}}",
+    "placeholder": "Share your experience working with this person...",
+    "next": "Next",
+    "submit": "Submit & Complete",
+    "required_stars": "Please select a rating",
+    "required_text": "Please write at least 10 characters"
   }
 }

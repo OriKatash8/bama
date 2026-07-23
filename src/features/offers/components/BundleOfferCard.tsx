@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, X, Check } from 'lucide-react-native';
 import { getDocument } from '@core/firebase/firestore';
 import type { BundleOffer, PriceOffer } from '@core/types/project';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -122,9 +122,9 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
           activeOpacity={0.8}
         >
           {isAccepting ? (
-            <ActivityIndicator size="small" color="#4caf50" />
+            <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <Text style={[styles.acceptIcon, { fontFamily: font.bold }]}>✓</Text>
+            <Check size={20} color="#ffffff" />
           )}
         </TouchableOpacity>
         <TouchableOpacity
@@ -132,7 +132,7 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
           onPress={onReject}
           activeOpacity={0.8}
         >
-          <Text style={[styles.rejectIcon, { fontFamily: font.bold }]}>✕</Text>
+          <X size={20} color="#666666" />
         </TouchableOpacity>
       </View>
     </View>
@@ -204,15 +204,13 @@ const styles = StyleSheet.create({
   },
   viewProfileText: { color: '#004aad', fontSize: 12 },
   actionBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 52,
+    height: 52,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  acceptBtn: { backgroundColor: 'rgba(255,255,255,0.35)', borderWidth: 1.5, borderColor: '#4caf50' },
-  rejectBtn: { backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 1.5, borderColor: '#e53935' },
+  acceptBtn: { backgroundColor: '#004aad' },
+  rejectBtn: { backgroundColor: '#f5f5f5' },
   disabled: { opacity: 0.5 },
-  acceptIcon: { fontSize: 16, color: '#4caf50', fontWeight: '700' },
-  rejectIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
 });
