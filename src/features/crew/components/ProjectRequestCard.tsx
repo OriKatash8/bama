@@ -79,15 +79,6 @@ export function ProjectRequestCard({ request }: Props) {
     }
   }
 
-  const firstTwo = request.crewSlots.slice(0, 2);
-  const overflow = request.crewSlots.length - 2;
-  const crewSummary = [
-    ...firstTwo.map((s) => `${s.quantity}× ${s.subcategory}`),
-    overflow > 0 ? `+${overflow} more` : null,
-  ]
-    .filter(Boolean)
-    .join(', ');
-
   function toggleTeam() {
     const next = !teamOpen;
     setTeamOpen(next);
@@ -146,12 +137,6 @@ export function ProjectRequestCard({ request }: Props) {
             </Text>
           </View>
         </View>
-
-        {crewSummary ? (
-          <Text style={[styles.crew, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
-            {crewSummary}
-          </Text>
-        ) : null}
 
         {filledCount > 0 && (
           <TouchableOpacity onPress={toggleTeam} style={[styles.teamToggle, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]} activeOpacity={0.7}>
@@ -272,7 +257,6 @@ const styles = StyleSheet.create({
   infoCol: { flex: 1 },
   infoLabel: { fontSize: 10, marginBottom: 2 },
   infoValue: { fontSize: 12, color: '#004aad' },
-  crew: { fontSize: 13, marginBottom: 4 },
   teamToggle: { marginTop: 8 },
   teamToggleText: { fontSize: 13, fontWeight: '600' },
   teamSection: { marginTop: 10, gap: 8 },

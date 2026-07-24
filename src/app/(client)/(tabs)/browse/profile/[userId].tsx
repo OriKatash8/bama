@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import {
   View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, Star, User as UserIcon } from 'lucide-react-native';
+import { ChevronLeft, User as UserIcon } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { BioSection } from '@features/profile/components/BioSection';
 import { RoleChips } from '@features/profile/components/RoleChips';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
+import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
 import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -36,6 +37,8 @@ function makeT(translations: Translations) {
 export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
+  const segments = useSegments();
+  const modeSegment = segments[0];
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const font = useAppFont();
@@ -73,6 +76,10 @@ export default function PublicProfileScreen() {
     })();
   }, [userId]);
 
+  function goToBrowse() {
+    router.push(`/${modeSegment}/(tabs)/browse` as never);
+  }
+
   if (isLoading) {
     return (
       <Screen scrollable={false}>
@@ -88,7 +95,7 @@ export default function PublicProfileScreen() {
       <Screen scrollable={false}>
         <View style={styles.center}>
           <Text style={[styles.errorText, { color: colors.textMuted }]}>Profile not found</Text>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backFallback} activeOpacity={0.7}>
+          <TouchableOpacity onPress={goToBrowse} style={styles.backFallback} activeOpacity={0.7}>
             <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '600' }}>← Go back</Text>
           </TouchableOpacity>
         </View>
@@ -108,7 +115,7 @@ export default function PublicProfileScreen() {
         style={styles.hero}
       >
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={goToBrowse}
           style={styles.heroBack}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -126,16 +133,13 @@ export default function PublicProfileScreen() {
             </View>
           )}
           <Text style={[styles.heroName, { fontFamily: font.bold }]}>{user.displayName}</Text>
-          {profile.rating > 0 && (
-            <View style={styles.heroRatingRow}>
-              <Star size={13} color="#FFD700" fill="#FFD700" />
-              <Text style={styles.heroRatingText}>
-                {profile.rating.toFixed(1)} · {profile.reviewCount} review{profile.reviewCount !== 1 ? 's' : ''}
-              </Text>
-            </View>
-          )}
         </View>
       </LinearGradient>
+
+      {/* ── Rating ── */}
+      <View style={styles.ratingSection}>
+        <AverageRatingDisplay reviews={reviews} showEmptyState />
+      </View>
 
       {/* ── Bio ── */}
       <BioSection bio={profile.bio} isEditing={false} />
@@ -231,16 +235,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
     marginBottom: 6,
   },
-  heroRatingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  heroRatingText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 13,
-    fontWeight: '500',
-  },
+  ratingSection: { alignItems: 'center', marginTop: 16 },
 
   portfolioSection: { marginTop: 8 },
   sectionLabel: {

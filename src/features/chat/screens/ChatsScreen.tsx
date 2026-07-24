@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { TouchableOpacity, View, Text, Image, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, Text, Image, StyleSheet, ScrollView } from 'react-native';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
 import { Users } from 'lucide-react-native';
@@ -162,16 +162,18 @@ export function ChatsScreen() {
 
   if (chats.length === 0) {
     return (
-      <View style={styles.empty}>
-        <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-          {t('chats.no_conversations')}
-        </Text>
+      <View style={styles.flex}>
+        <View style={styles.empty}>
+          <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('chats.no_conversations')}
+          </Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.listContent}>
+    <ScrollView style={styles.flex} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
       {chats.map((item) => {
         const currentUserId = user?.id ?? '';
         console.log('[ChatsScreen] chat id:', item.id, '| unreadCount:', item.unreadCount, '| my unread:', item.unreadCount?.[currentUserId]);
@@ -237,12 +239,13 @@ export function ChatsScreen() {
           </TouchableOpacity>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  listContent: { paddingTop: 8 },
+  flex: { flex: 1 },
+  listContent: { paddingTop: 8, paddingBottom: 16 },
   empty: { paddingTop: 60, alignItems: 'center' },
   emptyText: { fontSize: 15 },
 

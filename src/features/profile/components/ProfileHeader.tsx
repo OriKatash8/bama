@@ -1,6 +1,8 @@
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@core/hooks/useTheme';
+import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
+import type { Review } from '@core/types/project';
 
 type ProfileHeaderProps = {
   photoURL: string | null;
@@ -10,8 +12,7 @@ type ProfileHeaderProps = {
   onNameChange?: (v: string) => void;
   size?: number;
   email?: string;
-  rating?: number;
-  reviewCount?: number;
+  reviews?: Review[];
 };
 
 export function ProfileHeader({
@@ -22,8 +23,7 @@ export function ProfileHeader({
   onNameChange,
   size = 90,
   email,
-  rating,
-  reviewCount,
+  reviews,
 }: ProfileHeaderProps) {
   const colors = useTheme();
 
@@ -78,6 +78,8 @@ export function ProfileHeader({
         )}
 
         {email && <Text style={styles.email}>{email}</Text>}
+
+        {!isEditing && reviews && <AverageRatingDisplay reviews={reviews} />}
       </LinearGradient>
 
       {/* Concave bottom curve illusion: rounded-top bg-gradient cap overlaps the gradient */}

@@ -206,7 +206,9 @@
     "privacy_security": "פרטיות ואבטחה",
     "accessibility": "נגישות",
     "log_out": "התנתק",
-    "failed_photo": "עדכון התמונה נכשל"
+    "failed_photo": "עדכון התמונה נכשל",
+    "reviews_count": "({{count}} ביקורות)",
+    "no_reviews": "אין ביקורות עדיין"
   },
   "accessibility": {
     "language_header": "שפה",

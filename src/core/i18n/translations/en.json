@@ -206,7 +206,9 @@
     "privacy_security": "Privacy & Security",
     "accessibility": "Accessibility",
     "log_out": "Log out",
-    "failed_photo": "Failed to update photo"
+    "failed_photo": "Failed to update photo",
+    "reviews_count": "({{count}} reviews)",
+    "no_reviews": "No reviews yet"
   },
   "accessibility": {
     "language_header": "LANGUAGE",

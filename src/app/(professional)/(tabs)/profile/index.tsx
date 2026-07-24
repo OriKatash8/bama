@@ -170,23 +170,11 @@ export default function ProfessionalProfileScreen() {
         isEditing={isEditing}
         onPhotoPress={handlePhotoPress}
         onNameChange={setName}
-        rating={profile?.rating ?? 0}
-        reviewCount={profile?.reviewCount ?? 0}
+        reviews={reviews}
         size={90}
       />
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
       <RoleChips selected={skills} isEditing={isEditing} onChange={isEditing ? setSkills : undefined} />
-
-      {!isEditing && (
-        <View style={styles.starsRow}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Text key={i} style={styles.star}>
-              {(profile?.rating ?? 0) >= i - 0.5 ? '★' : '☆'}
-            </Text>
-          ))}
-          <Text style={styles.reviewLabel}>({profile?.reviewCount ?? 0})</Text>
-        </View>
-      )}
 
       <ContentTabs
         equipment={equipment}
@@ -220,10 +208,6 @@ const styles = StyleSheet.create({
   headerBtn: { paddingHorizontal: 8 },
   headerBtnText: { fontSize: 16 },
   save: { fontWeight: '700', color: '#004aad' },
-
-  starsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
-  star: { fontSize: 36, color: '#cb6ce6' },
-  reviewLabel: { fontSize: 13, color: '#cb6ce6', marginLeft: 4, fontWeight: '600' },
 
   portfolioSection: { gap: 12 },
   portfolioTitle: { fontSize: 18, fontWeight: '700' },
