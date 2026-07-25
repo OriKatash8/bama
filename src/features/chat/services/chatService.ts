@@ -40,6 +40,7 @@ function docToChat(doc: QueryDocumentSnapshot<DocumentData>): Chat {
     type: data.type,
     members: data.members,
     communityId: data.communityId ?? null,
+    ownerId: data.ownerId,
     projectId: data.projectId,
     name: data.name,
     photoURL: data.photoURL,
@@ -98,6 +99,23 @@ export async function createProjectGroup(
     createdAt: serverTimestamp(),
   });
   return newChat.id;
+}
+
+export async function createCommunityChat(
+  name: string,
+  description: string,
+  ownerId: string,
+): Promise<string> {
+  const ref = await addDoc(collection(db, 'chats'), {
+    type: 'community' as const,
+    name,
+    description,
+    ownerId,
+    members: [ownerId],
+    lastMessage: null,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
 }
 
 export async function addMemberToGroup(chatId: string, userId: string): Promise<void> {

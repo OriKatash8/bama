@@ -404,6 +404,31 @@
     "privacy": "פרטיות ואבטחה",
     "logout": "התנתק"
   },
+  "communities": {
+    "request_create": "בקש קהילה",
+    "request_sent": "הבקשה שלך נשלחה לבדיקה",
+    "empty": "אין קהילות עדיין",
+    "name_placeholder": "שם הקהילה",
+    "description_placeholder": "תיאור",
+    "submit": "שלח בקשה",
+    "modal_title": "צור קהילה",
+    "my_communities": "הקהילות שלי",
+    "discover": "גלה קהילות",
+    "request_join": "בקש להצטרף",
+    "pending": "ממתין",
+    "manage": "ניהול",
+    "pending_requests": "בקשות ממתינות",
+    "approve": "אשר",
+    "reject": "דחה",
+    "members": "חברים",
+    "no_communities": "אין קהילות עדיין",
+    "no_discover": "אין קהילות לגילוי"
+  },
+  "courses": {
+    "browse": "עיין בקורסים",
+    "empty": "אין קורסים זמינים עדיין",
+    "modal_title": "כל הקורסים"
+  },
   "review": {
     "title": "דרג את הצוות שלך",
     "progress": "{{current}} מתוך {{total}}",

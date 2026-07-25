@@ -7,29 +7,24 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
 type Translations = typeof en;
-
-function makeT(translations: Translations) {
-  return (key: string): string => {
-    const keys = key.split('.');
-    let result: unknown = translations;
-    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
-  };
+function t(translations: Translations, key: string): string {
+  const keys = key.split('.');
+  let result: unknown = translations;
+  for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+  return typeof result === 'string' ? result : key;
 }
 
 export default function ChatsPage() {
   const language = useSettingsStore((s) => s.language);
-  const t = makeT(language === 'he' ? he : en);
   const font = useAppFont();
+  const tr = language === 'he' ? he : en;
 
   return (
     <Screen scrollable={false}>
       <View style={styles.headerWrap}>
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
-            {t('chats_page.title')}
-          </Text>
-        </View>
+        <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
+          {t(tr, 'chats_page.title')}
+        </Text>
       </View>
       <ChatsList />
     </Screen>
@@ -38,19 +33,14 @@ export default function ChatsPage() {
 
 const styles = StyleSheet.create({
   headerWrap: {
-    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingVertical: 20,
     marginHorizontal: -16,
     marginTop: -16,
-  },
-  header: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
   },
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',
-    textAlign: 'center',
     textTransform: 'uppercase',
     color: '#ffffff',
     textShadowColor: '#004aad',

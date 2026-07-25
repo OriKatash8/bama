@@ -28,6 +28,7 @@ function AppShell() {
 
   useAuth();
 
+
   const [fontsLoaded] = useFonts({
     'Heebo-Thin':       require('../../assets/fonts/Heebo-Thin.ttf'),
     'Heebo-ExtraLight': require('../../assets/fonts/Heebo-ExtraLight.ttf'),

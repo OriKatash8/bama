@@ -4,7 +4,9 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,7 +15,11 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import {
+  getDoc, updateDoc, doc, Timestamp,
+  collection, onSnapshot, query, where,
+  arrayUnion, arrayRemove,
+} from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { Paperclip } from 'lucide-react-native';
 import { useTheme } from '@core/hooks/useTheme';
@@ -79,6 +85,11 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
+  const [chatOwnerId, setChatOwnerId] = useState<string>('');
+  const [manageVisible, setManageVisible] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<{ userId: string; displayName: string }[]>([]);
+  const [memberNames, setMemberNames] = useState<Record<string, string>>({});
+  const [chatMembers, setChatMembers] = useState<string[]>([]);
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const [imageUploading, setImageUploading] = useState(false);
   const mediaActive = videoUploading || videoProcessing || imageUploading;
@@ -98,6 +109,8 @@ export function ChatRoomScreen({ chatId }: Props) {
       const data = snap.data() as Omit<Chat, 'id'>;
       setChatType(data.type);
       setChatProjectId(data.projectId);
+      if (data.ownerId) setChatOwnerId(data.ownerId);
+      if (data.members) setChatMembers(data.members as string[]);
 
       if (data.type === 'dm') {
         const otherId = data.members.find((id) => id !== currentUserId);
@@ -129,6 +142,33 @@ export function ChatRoomScreen({ chatId }: Props) {
   }, [chatId]);
 
   useEffect(() => {
+    if (chatType !== 'community' || currentUserId !== chatOwnerId || !chatOwnerId) return;
+    const q = query(
+      collection(db, 'chats', chatId, 'joinRequests'),
+      where('status', '==', 'pending'),
+    );
+    return onSnapshot(q, (snap) => {
+      setPendingRequests(snap.docs.map((d) => ({
+        userId: d.data().userId as string,
+        displayName: d.data().displayName as string,
+      })));
+    });
+  }, [chatId, chatType, chatOwnerId, currentUserId]);
+
+  useEffect(() => {
+    if (chatType !== 'community' || chatMembers.length === 0) return;
+    const missing = chatMembers.filter((uid) => !memberNames[uid]);
+    if (missing.length === 0) return;
+    Promise.all(
+      missing.map(async (uid) => {
+        const snap = await getDoc(doc(db, 'users', uid));
+        const name = snap.exists() ? (snap.data() as { displayName: string }).displayName : uid;
+        return [uid, name] as const;
+      }),
+    ).then((entries) => setMemberNames((prev) => ({ ...prev, ...Object.fromEntries(entries) })));
+  }, [chatMembers, chatType]);
+
+  useEffect(() => {
     const senderIds = [...new Set(messages.map((m) => m.senderId))];
     const missing = senderIds.filter(
       (id) => id !== currentUserId && !fetchedIdsRef.current.has(id)
@@ -147,6 +187,21 @@ export function ChatRoomScreen({ chatId }: Props) {
       setUserNames((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
     });
   }, [messages]);
+
+  async function handleApproveRequest(userId: string) {
+    await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'approved' });
+    await updateDoc(doc(db, 'chats', chatId), { members: arrayUnion(userId) });
+  }
+
+  async function handleRejectRequest(userId: string) {
+    await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'rejected' });
+  }
+
+  async function handleRemoveMember(userId: string) {
+    if (userId === chatOwnerId) return;
+    await updateDoc(doc(db, 'chats', chatId), { members: arrayRemove(userId) });
+    setChatMembers((prev) => prev.filter((id) => id !== userId));
+  }
 
   async function handleSend() {
     const text = inputText.trim();
@@ -210,7 +265,15 @@ export function ChatRoomScreen({ chatId }: Props) {
             </Text>
           )}
         </View>
-        <View style={styles.headerRight} />
+        <View style={[styles.headerRight, { alignItems: 'center', justifyContent: 'center' }]}>
+          {chatType === 'community' && currentUserId === chatOwnerId && (
+            <TouchableOpacity onPress={() => setManageVisible(true)} style={{ padding: 8 }}>
+              <Text style={{ color: colors.accent, fontFamily: font.semiBold, fontSize: 13 }}>
+                {t('communities.manage')}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={{ zIndex: 2 }}>
@@ -317,6 +380,79 @@ export function ChatRoomScreen({ chatId }: Props) {
         )}
       </View>
     </KeyboardAvoidingView>
+      <Modal visible={manageVisible} transparent animationType="fade" onRequestClose={() => setManageVisible(false)}>
+        <TouchableOpacity style={manageStyles.overlay} activeOpacity={1} onPress={() => setManageVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={{ width: '90%', maxHeight: '80%' }}>
+            <LinearGradient colors={['#1a237e', '#004aad']} style={manageStyles.modal}>
+              <View style={manageStyles.modalHeader}>
+                <Text style={[manageStyles.modalTitle, { fontFamily: font.bold }]}>
+                  {t('communities.manage')}
+                </Text>
+                <TouchableOpacity onPress={() => setManageVisible(false)}>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 22 }}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Pending Requests */}
+                <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold }]}>
+                  {t('communities.pending_requests')} ({pendingRequests.length})
+                </Text>
+                {pendingRequests.length === 0 ? (
+                  <Text style={[manageStyles.emptyText, { fontFamily: font.regular }]}>—</Text>
+                ) : (
+                  pendingRequests.map((req) => (
+                    <View key={req.userId} style={manageStyles.requestRow}>
+                      <Text style={[manageStyles.requestName, { fontFamily: font.regular }]} numberOfLines={1}>
+                        {req.displayName}
+                      </Text>
+                      <TouchableOpacity
+                        style={[manageStyles.actionBtn, { backgroundColor: '#16a34a' }]}
+                        onPress={() => handleApproveRequest(req.userId)}
+                      >
+                        <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
+                          {t('communities.approve')}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[manageStyles.actionBtn, { backgroundColor: '#dc2626' }]}
+                        onPress={() => handleRejectRequest(req.userId)}
+                      >
+                        <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
+                          {t('communities.reject')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+
+                {/* Members */}
+                <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold, marginTop: 20 }]}>
+                  {t('communities.members')} ({chatMembers.length})
+                </Text>
+                {chatMembers.map((uid) => (
+                  <View key={uid} style={manageStyles.memberRow}>
+                    <View style={manageStyles.memberAvatar}>
+                      <Text style={[manageStyles.memberInitial, { fontFamily: font.bold }]}>
+                        {(memberNames[uid] ?? uid).charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={[manageStyles.memberName, { fontFamily: font.regular }]} numberOfLines={1}>
+                      {memberNames[uid] ?? uid}
+                      {uid === chatOwnerId ? ' ★' : ''}
+                    </Text>
+                    {uid !== chatOwnerId && (
+                      <TouchableOpacity onPress={() => handleRemoveMember(uid)} style={{ padding: 4 }}>
+                        <Text style={{ color: '#dc2626', fontSize: 18 }}>✕</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                <View style={{ height: 16 }} />
+              </ScrollView>
+            </LinearGradient>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -447,4 +583,37 @@ const styles = StyleSheet.create({
   mediaSendingText: {
     fontSize: 14,
   },
+});
+
+const manageStyles = StyleSheet.create({
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  modal: { borderRadius: 24, padding: 24 },
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 20,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  sectionTitle: {
+    color: 'rgba(255,255,255,0.7)', fontSize: 12,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10,
+  },
+  emptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 8 },
+  requestRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  requestName: { flex: 1, color: '#fff', fontSize: 14 },
+  actionBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  actionBtnText: { color: '#fff', fontSize: 12 },
+  memberRow: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: 10, marginBottom: 10,
+  },
+  memberAvatar: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  memberInitial: { color: '#fff', fontSize: 14 },
+  memberName: { flex: 1, color: '#fff', fontSize: 14 },
 });

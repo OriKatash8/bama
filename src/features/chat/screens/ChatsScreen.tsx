@@ -141,6 +141,13 @@ export function ChatsScreen() {
   const avatarMargin = { marginRight: rtl ? 0 : 12, marginLeft: rtl ? 12 : 0 };
 
   function renderAvatar(item: Chat) {
+    if (item.type === 'community') {
+      return (
+        <View style={[styles.avatar, avatarMargin, { backgroundColor: '#0d9488' }]}>
+          <Users size={24} color="#fff" strokeWidth={1.8} />
+        </View>
+      );
+    }
     if (item.type === 'group') {
       return (
         <View style={[styles.avatar, avatarMargin, { backgroundColor: colors.accent }]}>
@@ -177,7 +184,9 @@ export function ChatsScreen() {
       {chats.map((item) => {
         const currentUserId = user?.id ?? '';
         console.log('[ChatsScreen] chat id:', item.id, '| unreadCount:', item.unreadCount, '| my unread:', item.unreadCount?.[currentUserId]);
-        const chatName = item.type === 'group'
+        const chatName = item.type === 'community'
+          ? (item.name ?? 'Community')
+          : item.type === 'group'
           ? (item.name ?? t('chats.group_chat'))
           : (dmInfo[item.id]?.name ?? t('chats.loading'));
         const status = item.type === 'group' ? projectStatuses[item.id] : undefined;

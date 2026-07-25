@@ -404,6 +404,31 @@
     "privacy": "Privacy & Security",
     "logout": "Log out"
   },
+  "communities": {
+    "request_create": "Request Community",
+    "request_sent": "Your request has been submitted for review",
+    "empty": "No communities yet",
+    "name_placeholder": "Community name",
+    "description_placeholder": "Description",
+    "submit": "Submit Request",
+    "modal_title": "Create Community",
+    "my_communities": "My Communities",
+    "discover": "Discover Communities",
+    "request_join": "Request to Join",
+    "pending": "Pending",
+    "manage": "Manage",
+    "pending_requests": "Pending Requests",
+    "approve": "Approve",
+    "reject": "Reject",
+    "members": "Members",
+    "no_communities": "No communities yet",
+    "no_discover": "No communities to discover"
+  },
+  "courses": {
+    "browse": "Browse Courses",
+    "empty": "No courses available yet",
+    "modal_title": "All Courses"
+  },
   "review": {
     "title": "Rate your crew",
     "progress": "{{current}} of {{total}}",

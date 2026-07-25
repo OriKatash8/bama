@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type ChatType = 'dm' | 'group';
+export type ChatType = 'dm' | 'group' | 'community';
 
 export interface LastMessage {
   text: string;
@@ -23,6 +23,7 @@ export interface Chat {
   type: ChatType;
   members: string[];
   communityId?: string | null;
+  ownerId?: string;
   projectId?: string;
   name?: string;
   photoURL?: string;

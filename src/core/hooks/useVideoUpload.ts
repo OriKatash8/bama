@@ -18,7 +18,7 @@ export type UseVideoUploadResult = {
   url: string | null;
   error: string | null;
   uploadVideo: (
-    destination: 'portfolio' | 'chat-videos',
+    destination: 'portfolio' | 'chat-videos' | 'courses',
     userId: string,
     asset?: ImagePicker.ImagePickerAsset
   ) => Promise<string | null>;
@@ -41,7 +41,7 @@ export function useVideoUpload(): UseVideoUploadResult {
   }, []);
 
   async function uploadVideo(
-    destination: 'portfolio' | 'chat-videos',
+    destination: 'portfolio' | 'chat-videos' | 'courses',
     userId: string,
     asset?: ImagePicker.ImagePickerAsset
   ): Promise<string | null> {
