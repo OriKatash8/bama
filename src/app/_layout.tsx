@@ -1,3 +1,7 @@
+import { I18nManager } from 'react-native';
+I18nManager.forceRTL(false);
+I18nManager.allowRTL(false);
+
 import '../core/i18n';
 import i18n from '../core/i18n';
 import React from 'react';

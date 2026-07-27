@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput, Switch, Image,
+  StyleSheet, TextInput, Switch, Image, useWindowDimensions,
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
@@ -39,6 +39,7 @@ type Props = {
 export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details' }: Props) {
   const { submit, submitWithBundle, isSubmitting } = usePriceOffer();
   const colors = useTheme();
+  const { height: screenHeight } = useWindowDimensions();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -140,7 +141,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={handleClose} />
 
-        <View style={styles.card}>
+        <View style={[styles.card, { maxHeight: screenHeight * 0.85 }]}>
           {/* Header */}
           <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Text style={styles.headerTitle} numberOfLines={2}>
@@ -207,38 +208,40 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
 
           {/* ── Bid entry view ── */}
           {view === 'bid' && (
-            <>
-              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
-                <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
-                  <Text style={styles.backText}>← Back to Details</Text>
-                </TouchableOpacity>
-                <Text style={[styles.bidHint, { color: colors.textMuted }]}>Select the roles you want to fill and enter your price for each.</Text>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
+            >
+              <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
+                <Text style={styles.backText}>← Back to Details</Text>
+              </TouchableOpacity>
+              <Text style={[styles.bidHint, { color: colors.textMuted }]}>Select the roles you want to fill and enter your price for each.</Text>
 
-                {bids.map((b, i) => (
-                  <View key={i} style={styles.bidRow}>
-                    <Switch
-                      value={b.selected}
-                      onValueChange={() => toggleSelected(i)}
-                      trackColor={{ true: '#004aad' }}
-                    />
-                    <View style={styles.bidInfo}>
-                      <Text style={styles.bidSub}>{b.subcategory}</Text>
-                      <Text style={[styles.bidCat, { color: colors.textMuted }]}>{b.category} · {b.quantity} needed</Text>
-                    </View>
-                    {b.selected && (
-                      <TextInput
-                        style={styles.priceInput}
-                        value={b.price}
-                        onChangeText={(v) => setPrice(i, v)}
-                        placeholder="₪"
-                        placeholderTextColor="#aaa"
-                        keyboardType="numeric"
-                        maxLength={8}
-                      />
-                    )}
+              {bids.map((b, i) => (
+                <View key={i} style={styles.bidRow}>
+                  <Switch
+                    value={b.selected}
+                    onValueChange={() => toggleSelected(i)}
+                    trackColor={{ true: '#004aad' }}
+                  />
+                  <View style={styles.bidInfo}>
+                    <Text style={styles.bidSub}>{b.subcategory}</Text>
+                    <Text style={[styles.bidCat, { color: colors.textMuted }]}>{b.category} · {b.quantity} needed</Text>
                   </View>
-                ))}
-              </ScrollView>
+                  {b.selected && (
+                    <TextInput
+                      style={styles.priceInput}
+                      value={b.price}
+                      onChangeText={(v) => setPrice(i, v)}
+                      placeholder="₪"
+                      placeholderTextColor="#aaa"
+                      keyboardType="numeric"
+                      maxLength={8}
+                    />
+                  )}
+                </View>
+              ))}
 
               <View style={styles.actions}>
                 <TouchableOpacity
@@ -252,7 +255,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                   </Text>
                 </TouchableOpacity>
               </View>
-            </>
+            </ScrollView>
           )}
 
           {/* ── Bundle prompt view ── */}
@@ -331,7 +334,6 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '90%',
-    maxHeight: '80%',
     backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 24,
