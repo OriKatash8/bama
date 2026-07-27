@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { MotiView } from 'moti';
 import {
-  ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
+  FlatList, ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
   Image, useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -731,18 +731,26 @@ export default function HomeScreen() {
                 placeholderTextColor="#004aad99"
               />
 
-              <ScrollView showsVerticalScrollIndicator={false} style={styles.locationList} keyboardShouldPersistTaps="handled">
-                {filteredLocations.map((city) => (
-                  <TouchableOpacity
-                    key={city}
-                    style={styles.locationRow}
-                    onPress={() => selectLocation(city)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.locationRowText, { textAlign: rtl ? 'right' : 'left' }]}>{city}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <View style={styles.locationList}>
+                <FlatList
+                  data={filteredLocations}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.locationRow}
+                      onPress={() => selectLocation(item)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.locationRowText, { textAlign: rtl ? 'right' : 'left' }]}>{item}</Text>
+                    </TouchableOpacity>
+                  )}
+                  keyboardShouldPersistTaps="handled"
+                  initialNumToRender={20}
+                  maxToRenderPerBatch={20}
+                  windowSize={5}
+                  showsVerticalScrollIndicator={false}
+                />
+              </View>
             </LinearGradient>
           </View>
         </View>
@@ -915,7 +923,7 @@ function createStyles(
       fontFamily: ff,
       color: '#004aad',
     },
-    locationList: { maxHeight: 360, paddingHorizontal: 20 },
+    locationList: { height: 360, paddingHorizontal: 20 },
     locationRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,74,173,0.12)' },
     locationRowText: { fontSize: 15, fontFamily: ffMedium, color: '#004aad' },
   });

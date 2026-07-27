@@ -1,4 +1,12 @@
 {
+  "community": {
+    "channels": "Channels",
+    "add_channel": "+ Add Channel",
+    "channel_name": "Channel name",
+    "delete_channel": "Delete channel",
+    "general": "General",
+    "default_channel": "General"
+  },
   "builder": {
     "greeting_morning": "Good morning",
     "greeting_afternoon": "Good afternoon",
@@ -264,7 +272,8 @@
     "bundle_price_required": "Enter a bundle price",
     "bundle_price_error": "Bundle price must be less than the individual total",
     "skip_bundle": "Skip",
-    "add_bundle": "Add bundle offer"
+    "add_bundle": "Add bundle offer",
+    "make_offer": "Make Offer"
   },
   "offers": {
     "bundle_badge": "Bundle deal",

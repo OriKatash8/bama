@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -18,7 +19,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   getDoc, updateDoc, doc, Timestamp,
   collection, onSnapshot, query, where,
-  arrayUnion, arrayRemove,
+  arrayUnion, arrayRemove, addDoc, serverTimestamp,
+  orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { Paperclip } from 'lucide-react-native';
@@ -45,6 +47,14 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
+
+type Channel = {
+  id: string;
+  name: string;
+  createdAt: Timestamp | null;
+  createdBy: string;
+  lastMessage: { text: string; senderId: string; timestamp: Timestamp } | null;
+};
 
 const USER_COLORS = [
   '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab', '#1e88e5',
@@ -77,7 +87,9 @@ export function ChatRoomScreen({ chatId }: Props) {
   const language = useSettingsStore((s) => s.language);
   const activeMode = useAuthStore((s) => s.activeMode);
   const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
   const currentUserId = auth.currentUser?.uid ?? '';
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
@@ -94,24 +106,22 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [imageUploading, setImageUploading] = useState(false);
   const mediaActive = videoUploading || videoProcessing || imageUploading;
 
-  const gradientText = Platform.OS === 'web' ? ({
-    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-  } as object) : {};
+  // Channel state
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [activeChannelId, setActiveChannelId] = useState<string>('');
+  const [newChannelName, setNewChannelName] = useState('');
+  const [addingChannel, setAddingChannel] = useState(false);
 
+  // Fetch chat metadata
   useEffect(() => {
     async function fetchChat() {
       const snap = await getDoc(doc(db, 'chats', chatId));
       if (!snap.exists()) return;
-
       const data = snap.data() as Omit<Chat, 'id'>;
       setChatType(data.type);
       setChatProjectId(data.projectId);
       if (data.ownerId) setChatOwnerId(data.ownerId);
       if (data.members) setChatMembers(data.members as string[]);
-
       if (data.type === 'dm') {
         const otherId = data.members.find((id) => id !== currentUserId);
         if (otherId) {
@@ -130,6 +140,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     fetchChat();
   }, [chatId]);
 
+  // Clear unread count
   useEffect(() => {
     if (!currentUserId) return;
     updateDoc(doc(db, 'chats', chatId), {
@@ -137,10 +148,62 @@ export function ChatRoomScreen({ chatId }: Props) {
     }).catch(() => {});
   }, [chatId, currentUserId]);
 
+  // Non-community messages listener
   useEffect(() => {
+    if (chatType === null || chatType === 'community') return;
     return listenToMessages(chatId, setMessages);
-  }, [chatId]);
+  }, [chatId, chatType]);
 
+  // Community: listen to channels subcollection, create General if empty
+  useEffect(() => {
+    if (chatType !== 'community') return;
+    const q = query(
+      collection(db, 'chats', chatId, 'channels'),
+      orderBy('createdAt', 'asc'),
+    );
+    return onSnapshot(q, (snap) => {
+      if (snap.empty && currentUserId) {
+        addDoc(collection(db, 'chats', chatId, 'channels'), {
+          name: t('community.default_channel'),
+          createdAt: serverTimestamp(),
+          createdBy: currentUserId,
+          lastMessage: null,
+        });
+        return;
+      }
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Channel));
+      setChannels(list);
+      setActiveChannelId((prev) => {
+        if (prev && list.some((c) => c.id === prev)) return prev;
+        return list[0]?.id ?? '';
+      });
+    });
+  }, [chatId, chatType]);
+
+  // Community: listen to active channel messages
+  useEffect(() => {
+    if (chatType !== 'community' || !activeChannelId) return;
+    const q = query(
+      collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages'),
+      orderBy('timestamp', 'asc'),
+    );
+    return onSnapshot(q, (snap) => {
+      setMessages(snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          senderId: data.senderId as string,
+          text: (data.text as string) ?? '',
+          timestamp: data.timestamp as Timestamp,
+          readBy: (data.readBy as string[]) ?? [],
+          imageURL: data.imageURL as string | undefined,
+          videoUrl: data.videoUrl as string | undefined,
+        } satisfies Message;
+      }));
+    });
+  }, [chatId, chatType, activeChannelId]);
+
+  // Join request listener (owner only)
   useEffect(() => {
     if (chatType !== 'community' || currentUserId !== chatOwnerId || !chatOwnerId) return;
     const q = query(
@@ -155,6 +218,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     });
   }, [chatId, chatType, chatOwnerId, currentUserId]);
 
+  // Member display names
   useEffect(() => {
     if (chatType !== 'community' || chatMembers.length === 0) return;
     const missing = chatMembers.filter((uid) => !memberNames[uid]);
@@ -168,6 +232,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     ).then((entries) => setMemberNames((prev) => ({ ...prev, ...Object.fromEntries(entries) })));
   }, [chatMembers, chatType]);
 
+  // Sender display names
   useEffect(() => {
     const senderIds = [...new Set(messages.map((m) => m.senderId))];
     const missing = senderIds.filter(
@@ -203,11 +268,51 @@ export function ChatRoomScreen({ chatId }: Props) {
     setChatMembers((prev) => prev.filter((id) => id !== userId));
   }
 
+  async function handleAddChannel() {
+    const name = newChannelName.trim();
+    if (!name || !currentUserId) return;
+    await addDoc(collection(db, 'chats', chatId, 'channels'), {
+      name,
+      createdAt: serverTimestamp(),
+      createdBy: currentUserId,
+      lastMessage: null,
+    });
+    setNewChannelName('');
+    setAddingChannel(false);
+  }
+
+  function handleDeleteChannel(channelId: string, channelName: string) {
+    Alert.alert(t('community.delete_channel'), channelName, [
+      { text: t('communities.reject'), style: 'cancel' },
+      {
+        text: '✕',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteDoc(doc(db, 'chats', chatId, 'channels', channelId));
+          if (activeChannelId === channelId) {
+            const remaining = channels.filter((c) => c.id !== channelId);
+            setActiveChannelId(remaining[0]?.id ?? '');
+          }
+        },
+      },
+    ]);
+  }
+
   async function handleSend() {
     const text = inputText.trim();
     if (!text || !currentUserId) return;
     setInputText('');
-    await sendMessage(chatId, currentUserId, text);
+    if (chatType === 'community' && activeChannelId) {
+      await addDoc(
+        collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages'),
+        { senderId: currentUserId, text, timestamp: serverTimestamp(), readBy: [currentUserId] },
+      );
+      await updateDoc(doc(db, 'chats', chatId, 'channels', activeChannelId), {
+        lastMessage: { text, senderId: currentUserId, timestamp: serverTimestamp() },
+      });
+    } else {
+      await sendMessage(chatId, currentUserId, text);
+    }
   }
 
   async function handleAttachMedia() {
@@ -218,24 +323,46 @@ export function ChatRoomScreen({ chatId }: Props) {
       quality: 1,
     });
     if (result.canceled) return;
-
     const asset = result.assets[0];
 
-    if (asset.type === 'video') {
-      const url = await uploadVideo('chat-videos', currentUserId, asset);
-      if (url) await sendMessage(chatId, currentUserId, '', { videoUrl: url });
+    if (chatType === 'community' && activeChannelId) {
+      const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
+      if (asset.type === 'video') {
+        const url = await uploadVideo('chat-videos', currentUserId, asset);
+        if (url) {
+          await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], videoUrl: url });
+        }
+      } else {
+        setImageUploading(true);
+        try {
+          const blob = await fetch(asset.uri).then((r) => r.blob());
+          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+          const imageURL = await uploadFile(path, blob);
+          await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
+        } finally {
+          setImageUploading(false);
+        }
+      }
     } else {
-      setImageUploading(true);
-      try {
-        const blob = await fetch(asset.uri).then((r) => r.blob());
-        const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-        const imageURL = await uploadFile(path, blob);
-        await sendMessage(chatId, currentUserId, '', { imageURL });
-      } finally {
-        setImageUploading(false);
+      if (asset.type === 'video') {
+        const url = await uploadVideo('chat-videos', currentUserId, asset);
+        if (url) await sendMessage(chatId, currentUserId, '', { videoUrl: url });
+      } else {
+        setImageUploading(true);
+        try {
+          const blob = await fetch(asset.uri).then((r) => r.blob());
+          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+          const imageURL = await uploadFile(path, blob);
+          await sendMessage(chatId, currentUserId, '', { imageURL });
+        } finally {
+          setImageUploading(false);
+        }
       }
     }
   }
+
+  const isGeneralChannel = (name: string) =>
+    name === 'כללי' || name === 'General' || name === t('community.default_channel');
 
   return (
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
@@ -244,6 +371,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
     >
+      {/* Header */}
       <View style={[styles.header, { backgroundColor: 'transparent', borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats`)} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={[styles.headerBackText, { color: colors.accent, fontFamily: font.regular }]}>‹</Text>
@@ -276,69 +404,93 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
       </View>
 
+      {/* Channel tab bar (community only) */}
+      {chatType === 'community' && channels.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.channelBar}
+          contentContainerStyle={[styles.channelBarContent, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+        >
+          {channels.map((ch) => {
+            const isActive = activeChannelId === ch.id;
+            return (
+              <TouchableOpacity
+                key={ch.id}
+                style={[styles.channelPill, isActive && styles.channelPillActive]}
+                onPress={() => setActiveChannelId(ch.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.channelPillText, { fontFamily: isActive ? font.semiBold : font.regular }, isActive && styles.channelPillTextActive]}>
+                  # {ch.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
       <View style={{ zIndex: 2 }}>
         <PurchaseBanner chatId={chatId} />
       </View>
 
+      {/* Messages */}
       <View style={{ flex: 1, zIndex: 0 }}>
-      <FlatList
-        data={[...messages].reverse()}
-        keyExtractor={(item) => item.id}
-        inverted
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
-          const isOwn = item.senderId === currentUserId;
-          return (
-            <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
-              {item.videoUrl ? (
-                <View style={styles.mediaBubble}>
-                  {!isOwn && (
-                    <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
-                      {userNames[item.senderId] ?? 'Loading...'}
+        <FlatList
+          data={[...messages].reverse()}
+          keyExtractor={(item) => item.id}
+          inverted
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => {
+            const isOwn = item.senderId === currentUserId;
+            return (
+              <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
+                {item.videoUrl ? (
+                  <View style={styles.mediaBubble}>
+                    {!isOwn && (
+                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                        {userNames[item.senderId] ?? 'Loading...'}
+                      </Text>
+                    )}
+                    <VideoPlayer uri={item.videoUrl} style={styles.mediaMessage} />
+                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                      {formatMessageTime(item.timestamp)}
                     </Text>
-                  )}
-                  <VideoPlayer uri={item.videoUrl} style={styles.mediaMessage} />
-                  <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                    {formatMessageTime(item.timestamp)}
-                  </Text>
-                </View>
-              ) : item.imageURL ? (
-                <View style={styles.mediaBubble}>
-                  {!isOwn && (
-                    <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
-                      {userNames[item.senderId] ?? 'Loading...'}
+                  </View>
+                ) : item.imageURL ? (
+                  <View style={styles.mediaBubble}>
+                    {!isOwn && (
+                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                        {userNames[item.senderId] ?? 'Loading...'}
+                      </Text>
+                    )}
+                    <Image source={{ uri: item.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
+                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                      {formatMessageTime(item.timestamp)}
                     </Text>
-                  )}
-                  <Image source={{ uri: item.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
-                  <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                    {formatMessageTime(item.timestamp)}
-                  </Text>
-                </View>
-              ) : (
-                <View
-                  style={[
-                    styles.bubble,
-                    isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' },
-                  ]}
-                >
-                  {!isOwn && (
-                    <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
-                      {userNames[item.senderId] ?? 'Loading...'}
+                  </View>
+                ) : (
+                  <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
+                    {!isOwn && (
+                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                        {userNames[item.senderId] ?? 'Loading...'}
+                      </Text>
+                    )}
+                    <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, fontFamily: font.regular }]}>
+                      {item.text}
                     </Text>
-                  )}
-                  <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, fontFamily: font.regular }]}>
-                    {item.text}
-                  </Text>
-                  <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                    {formatMessageTime(item.timestamp)}
-                  </Text>
-                </View>
-              )}
-            </View>
-          );
-        }}
-      />
+                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                      {formatMessageTime(item.timestamp)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            );
+          }}
+        />
       </View>
+
+      {/* Input */}
       <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent' }]}>
         {mediaActive ? (
           <View style={styles.mediaSendingRow}>
@@ -349,18 +501,11 @@ export function ChatRoomScreen({ chatId }: Props) {
           </View>
         ) : (
           <>
-            <TouchableOpacity
-              style={styles.attachBtn}
-              onPress={handleAttachMedia}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.attachBtn} onPress={handleAttachMedia} activeOpacity={0.7}>
               <Paperclip size={22} color={colors.accent} strokeWidth={1.5} />
             </TouchableOpacity>
             <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontFamily: font.regular },
-              ]}
+              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontFamily: font.regular }]}
               value={inputText}
               onChangeText={setInputText}
               placeholder="Message..."
@@ -380,79 +525,119 @@ export function ChatRoomScreen({ chatId }: Props) {
         )}
       </View>
     </KeyboardAvoidingView>
-      <Modal visible={manageVisible} transparent animationType="fade" onRequestClose={() => setManageVisible(false)}>
-        <TouchableOpacity style={manageStyles.overlay} activeOpacity={1} onPress={() => setManageVisible(false)}>
-          <TouchableOpacity activeOpacity={1} style={{ width: '90%', maxHeight: '80%' }}>
-            <LinearGradient colors={['#1a237e', '#004aad']} style={manageStyles.modal}>
-              <View style={manageStyles.modalHeader}>
-                <Text style={[manageStyles.modalTitle, { fontFamily: font.bold }]}>
-                  {t('communities.manage')}
-                </Text>
-                <TouchableOpacity onPress={() => setManageVisible(false)}>
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 22 }}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Pending Requests */}
-                <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold }]}>
-                  {t('communities.pending_requests')} ({pendingRequests.length})
-                </Text>
-                {pendingRequests.length === 0 ? (
-                  <Text style={[manageStyles.emptyText, { fontFamily: font.regular }]}>—</Text>
-                ) : (
-                  pendingRequests.map((req) => (
-                    <View key={req.userId} style={manageStyles.requestRow}>
-                      <Text style={[manageStyles.requestName, { fontFamily: font.regular }]} numberOfLines={1}>
-                        {req.displayName}
-                      </Text>
-                      <TouchableOpacity
-                        style={[manageStyles.actionBtn, { backgroundColor: '#16a34a' }]}
-                        onPress={() => handleApproveRequest(req.userId)}
-                      >
-                        <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
-                          {t('communities.approve')}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[manageStyles.actionBtn, { backgroundColor: '#dc2626' }]}
-                        onPress={() => handleRejectRequest(req.userId)}
-                      >
-                        <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
-                          {t('communities.reject')}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))
-                )}
 
-                {/* Members */}
-                <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold, marginTop: 20 }]}>
-                  {t('communities.members')} ({chatMembers.length})
-                </Text>
-                {chatMembers.map((uid) => (
-                  <View key={uid} style={manageStyles.memberRow}>
-                    <View style={manageStyles.memberAvatar}>
-                      <Text style={[manageStyles.memberInitial, { fontFamily: font.bold }]}>
-                        {(memberNames[uid] ?? uid).charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={[manageStyles.memberName, { fontFamily: font.regular }]} numberOfLines={1}>
-                      {memberNames[uid] ?? uid}
-                      {uid === chatOwnerId ? ' ★' : ''}
+    {/* Manage modal */}
+    <Modal visible={manageVisible} transparent animationType="fade" onRequestClose={() => setManageVisible(false)}>
+      <TouchableOpacity style={manageStyles.overlay} activeOpacity={1} onPress={() => setManageVisible(false)}>
+        <TouchableOpacity activeOpacity={1} style={{ width: '90%', maxHeight: '85%' }}>
+          <LinearGradient colors={['#1a237e', '#004aad']} style={manageStyles.modal}>
+            <View style={[manageStyles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Text style={[manageStyles.modalTitle, { fontFamily: font.bold }]}>
+                {t('communities.manage')}
+              </Text>
+              <TouchableOpacity onPress={() => setManageVisible(false)}>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 22 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+
+              {/* Pending Requests */}
+              <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold }]}>
+                {t('communities.pending_requests')} ({pendingRequests.length})
+              </Text>
+              {pendingRequests.length === 0 ? (
+                <Text style={[manageStyles.emptyText, { fontFamily: font.regular }]}>—</Text>
+              ) : (
+                pendingRequests.map((req) => (
+                  <View key={req.userId} style={[manageStyles.requestRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                    <Text style={[manageStyles.requestName, { fontFamily: font.regular }]} numberOfLines={1}>
+                      {req.displayName}
                     </Text>
-                    {uid !== chatOwnerId && (
-                      <TouchableOpacity onPress={() => handleRemoveMember(uid)} style={{ padding: 4 }}>
-                        <Text style={{ color: '#dc2626', fontSize: 18 }}>✕</Text>
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                      style={[manageStyles.actionBtn, { backgroundColor: '#16a34a' }]}
+                      onPress={() => handleApproveRequest(req.userId)}
+                    >
+                      <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
+                        {t('communities.approve')}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[manageStyles.actionBtn, { backgroundColor: '#dc2626' }]}
+                      onPress={() => handleRejectRequest(req.userId)}
+                    >
+                      <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
+                        {t('communities.reject')}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                ))}
-                <View style={{ height: 16 }} />
-              </ScrollView>
-            </LinearGradient>
-          </TouchableOpacity>
+                ))
+              )}
+
+              {/* Members */}
+              <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold, marginTop: 20 }]}>
+                {t('communities.members')} ({chatMembers.length})
+              </Text>
+              {chatMembers.map((uid) => (
+                <View key={uid} style={[manageStyles.memberRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <View style={manageStyles.memberAvatar}>
+                    <Text style={[manageStyles.memberInitial, { fontFamily: font.bold }]}>
+                      {(memberNames[uid] ?? uid).charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={[manageStyles.memberName, { fontFamily: font.regular }]} numberOfLines={1}>
+                    {memberNames[uid] ?? uid}
+                    {uid === chatOwnerId ? ' ★' : ''}
+                  </Text>
+                  {uid !== chatOwnerId && (
+                    <TouchableOpacity onPress={() => handleRemoveMember(uid)} style={{ padding: 4 }}>
+                      <Text style={{ color: '#dc2626', fontSize: 18 }}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+
+              {/* Channels */}
+              <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold, marginTop: 20 }]}>
+                {t('community.channels')} ({channels.length})
+              </Text>
+              {channels.map((ch) => (
+                <View key={ch.id} style={[manageStyles.channelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <Text style={[manageStyles.channelName, { fontFamily: font.regular }]}># {ch.name}</Text>
+                  {!isGeneralChannel(ch.name) && (
+                    <TouchableOpacity onPress={() => handleDeleteChannel(ch.id, ch.name)} style={{ padding: 4 }}>
+                      <Text style={{ color: '#dc2626', fontSize: 16 }}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              {addingChannel ? (
+                <View style={[manageStyles.addChannelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <TextInput
+                    value={newChannelName}
+                    onChangeText={setNewChannelName}
+                    placeholder={t('community.channel_name')}
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    style={[manageStyles.channelInput, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                    autoFocus
+                  />
+                  <TouchableOpacity style={manageStyles.addBtn} onPress={handleAddChannel}>
+                    <Text style={[{ color: '#004aad', fontFamily: font.bold, fontSize: 15 }]}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity onPress={() => setAddingChannel(true)} style={manageStyles.addChannelTrigger}>
+                  <Text style={[{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semiBold, fontSize: 13 }]}>
+                    {t('community.add_channel')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <View style={{ height: 16 }} />
+            </ScrollView>
+          </LinearGradient>
         </TouchableOpacity>
-      </Modal>
+      </TouchableOpacity>
+    </Modal>
     </LinearGradient>
   );
 }
@@ -493,6 +678,35 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     width: 48,
+  },
+  channelBar: {
+    flexGrow: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.15)',
+  },
+  channelBarContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  channelPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'transparent',
+  },
+  channelPillActive: {
+    backgroundColor: '#004aad',
+    borderColor: '#004aad',
+  },
+  channelPillText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  channelPillTextActive: {
+    color: '#ffffff',
   },
   list: {
     paddingHorizontal: 16,
@@ -587,33 +801,79 @@ const styles = StyleSheet.create({
 
 const manageStyles = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center', alignItems: 'center',
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modal: { borderRadius: 24, padding: 24 },
   modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
   sectionTitle: {
-    color: 'rgba(255,255,255,0.7)', fontSize: 12,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
   },
   emptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 8 },
-  requestRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  requestRow: { alignItems: 'center', gap: 8, marginBottom: 10 },
   requestName: { flex: 1, color: '#fff', fontSize: 14 },
   actionBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   actionBtnText: { color: '#fff', fontSize: 12 },
   memberRow: {
-    flexDirection: 'row', alignItems: 'center',
-    gap: 10, marginBottom: 10,
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
   },
   memberAvatar: {
-    width: 32, height: 32, borderRadius: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   memberInitial: { color: '#fff', fontSize: 14 },
   memberName: { flex: 1, color: '#fff', fontSize: 14 },
+  channelRow: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  channelName: { color: '#fff', fontSize: 14, flex: 1 },
+  addChannelRow: {
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  channelInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#fff',
+    fontSize: 14,
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addChannelTrigger: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 10,
+    marginTop: 8,
+  },
 });

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Calendar } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -56,6 +56,8 @@ function formatDeadline(deadline: string): string {
 }
 
 export default function DashboardScreen() {
+  const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = (screenWidth - 48) / 2;
   const { user, profile, isLoading: profileLoading } = useProfile();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const router = useRouter();
@@ -157,6 +159,14 @@ export default function DashboardScreen() {
     backgroundClip: 'text',
   } as object) : {};
 
+  const headingStyle = {
+    color: '#ffffff',
+    fontFamily: font.bold,
+    textShadowColor: 'rgba(0,0,74,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  };
+
   const openProjectsLabel = visible.length === 1
     ? t('noticeboard.open_projects_one', { count: visible.length })
     : t('noticeboard.open_projects_other', { count: visible.length });
@@ -171,11 +181,11 @@ export default function DashboardScreen() {
       >
         {activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
-            <Text style={[styles.heading, { fontFamily: font.bold, color: colors.text, marginBottom: 16, textAlign: rtl ? 'right' : 'left' }, gradientText]}>
+            <Text style={[styles.heading, headingStyle, { marginBottom: 16, textAlign: 'center' }]}>
               {t('noticeboard.projects_in_progress')}
             </Text>
             <ScrollView
-              horizontal
+              horizontal={true}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.projectsScroll}
             >
@@ -186,15 +196,15 @@ export default function DashboardScreen() {
                   onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}`)}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.projectCardTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                  <Text style={[styles.projectCardTitle, { fontFamily: font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {project.title}
                   </Text>
-                  <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.projectCardMeta, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                     {t('noticeboard.client_prefix')}{clientName}
                   </Text>
                   <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     <Calendar size={12} color={colors.textMuted} strokeWidth={1.5} />
-                    <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    <Text style={[styles.projectCardMeta, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                       {formatDeadline(project.deadline)}
                     </Text>
                   </View>
@@ -204,7 +214,7 @@ export default function DashboardScreen() {
                       style={styles.locationIcon}
                       resizeMode="contain"
                     />
-                    <Text style={[styles.projectCardMeta, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                    <Text style={[styles.projectCardMeta, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                       {project.location}
                     </Text>
                   </View>
@@ -215,11 +225,11 @@ export default function DashboardScreen() {
         )}
 
         <View style={styles.header}>
-          <Text style={[styles.heading, { fontFamily: font.bold, color: colors.text }, gradientText]}>
+          <Text style={[styles.heading, headingStyle]}>
             {t('noticeboard.notice_board')}
           </Text>
           {!isLoading && (
-            <Text style={[styles.count, { color: colors.textMuted, textAlign: 'center' }]}>
+            <Text style={[styles.count, { fontFamily: font.regular, color: colors.textMuted, textAlign: 'center' }]}>
               {openProjectsLabel}
             </Text>
           )}
@@ -230,18 +240,23 @@ export default function DashboardScreen() {
         ) : visible.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={[styles.emptyText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.emptyText, { fontFamily: font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
               {t('noticeboard.no_projects')}
             </Text>
-            <Text style={[styles.emptySubtext, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.emptySubtext, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
               {t('noticeboard.check_back')}
             </Text>
           </View>
         ) : (
-          <View style={styles.list}>
-            {visible.map((item) => (
+          <FlatList
+            data={visible}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            scrollEnabled={false}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.gridContent}
+            renderItem={({ item }) => (
               <NoticeBoardCard
-                key={item.id}
                 request={item}
                 poster={posters[item.clientId]}
                 onPress={() => { setSelectedView('details'); setSelected(item); }}
@@ -251,9 +266,11 @@ export default function DashboardScreen() {
                 isApplying={false}
                 isDirectInvite={item.targetProfessionalId === currentUserId}
                 directInviteLabel={t('noticeboard.direct_invite')}
+                compact
+                cardWidth={cardWidth}
               />
-            ))}
-          </View>
+            )}
+          />
         )}
       </ScrollView>
 
@@ -276,10 +293,10 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   greetText: { fontSize: 26, fontWeight: '600', textAlign: 'left' },
-  projectsSection: { marginBottom: 8, alignItems: 'center' },
+  projectsSection: { marginBottom: 8 },
   projectsScroll: { paddingHorizontal: 16, gap: 12, paddingBottom: 16 },
   projectCard: {
-    width: 200,
+    width: 180,
     borderRadius: 12,
     borderWidth: 1,
     padding: 14,
@@ -301,7 +318,8 @@ const styles = StyleSheet.create({
   count: { fontSize: 13, fontWeight: '500' },
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  list: { paddingVertical: 8 },
+  columnWrapper: { gap: 12, paddingHorizontal: 16 },
+  gridContent: { paddingVertical: 8, gap: 12 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: 17, fontWeight: '600' },

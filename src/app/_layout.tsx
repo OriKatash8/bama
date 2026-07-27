@@ -1,9 +1,10 @@
 import '../core/i18n';
 import i18n from '../core/i18n';
+import React from 'react';
 import { Slot, SplashScreen } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput, View, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@core/hooks/useAuth';
 import { ToastContainer } from '@components/ui/Toast';
@@ -15,17 +16,30 @@ import { useAppFont } from '@core/hooks/useAppFont';
 
 SplashScreen.preventAutoHideAsync();
 
-function AppShell() {
-  const storedSettings = localStorage.getItem('bama-settings');
-  if (storedSettings) {
-    try {
-      const { state } = JSON.parse(storedSettings) as { state?: { language?: string } };
-      if (state?.language && state.language !== i18n.language) {
-        i18n.changeLanguage(state.language);
-      }
-    } catch {}
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      const err = this.state.error as Error;
+      return (
+        <View style={{ flex: 1, padding: 20, paddingTop: 60, backgroundColor: 'white' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'red', marginBottom: 10 }}>App Crash:</Text>
+          <ScrollView>
+            <Text style={{ fontSize: 12, color: 'black' }}>{err.toString()}</Text>
+            <Text style={{ fontSize: 12, color: 'black', marginTop: 10 }}>{err.stack}</Text>
+          </ScrollView>
+        </View>
+      );
+    }
+    return this.props.children;
   }
+}
 
+function AppShell() {
   useAuth();
 
 
@@ -89,9 +103,11 @@ function AppShell() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AppShell />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AppShell />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

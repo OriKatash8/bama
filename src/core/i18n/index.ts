@@ -5,10 +5,12 @@ import he from './translations/he.json';
 
 const getInitialLanguage = (): string => {
   try {
-    const stored = localStorage.getItem('bama-settings');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return parsed?.state?.language ?? 'he';
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('bama-settings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed?.state?.language ?? 'he';
+      }
     }
   } catch {
     // ignore

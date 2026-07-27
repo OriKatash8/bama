@@ -1,4 +1,12 @@
 {
+  "community": {
+    "channels": "ערוצים",
+    "add_channel": "+ הוסף ערוץ",
+    "channel_name": "שם הערוץ",
+    "delete_channel": "מחק ערוץ",
+    "general": "כללי",
+    "default_channel": "כללי"
+  },
   "builder": {
     "greeting_morning": "בוקר טוב",
     "greeting_afternoon": "צהריים טובים",
@@ -264,7 +272,8 @@
     "bundle_price_required": "הזן מחיר חבילה",
     "bundle_price_error": "מחיר החבילה חייב להיות נמוך מהסכום הכולל",
     "skip_bundle": "דלג",
-    "add_bundle": "הוסף הצעת חבילה"
+    "add_bundle": "הוסף הצעת חבילה",
+    "make_offer": "הגש הצעה"
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",

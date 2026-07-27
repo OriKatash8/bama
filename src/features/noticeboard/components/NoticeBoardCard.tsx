@@ -5,6 +5,19 @@ import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+type Translations = typeof en;
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 type Props = {
   request: ProjectRequest;
@@ -16,23 +29,70 @@ type Props = {
   isApplying: boolean;
   isDirectInvite?: boolean;
   directInviteLabel?: string;
+  compact?: boolean;
+  cardWidth?: number;
 };
 
-export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel }: Props) {
+export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
   const allRoles = [...new Set(request.crewSlots.map((s) => s.subcategory))];
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
   const language = useSettingsStore((s) => s.language);
+  const font = useAppFont();
+  const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
 
+  const cardStyle = [
+    styles.card,
+    compact && styles.cardCompact,
+    { backgroundColor: cardBg, borderColor: isDirectInvite ? '#cb6ce6' : colors.border },
+    cardWidth !== undefined && { width: cardWidth },
+  ];
+
+  if (compact) {
+    return (
+      <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
+        {isDirectInvite && directInviteLabel && (
+          <View style={styles.directBadge}>
+            <Text style={[styles.directBadgeText, { fontFamily: font.bold }]}>{directInviteLabel}</Text>
+          </View>
+        )}
+        <Text style={[styles.titleCompact, { fontFamily: font.bold, color: textColor }]} numberOfLines={2}>
+          {request.title}
+        </Text>
+        <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <Image
+            source={require('../../../../assets/images/location-icon.png')}
+            style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+            resizeMode="contain"
+          />
+          <Text style={[styles.locationCompact, { fontFamily: font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
+        </View>
+        <Text style={[styles.metaCompact, { fontFamily: font.regular, color: textColor }]}>
+          {roleCount} role{roleCount === 1 ? '' : 's'}
+        </Text>
+        <Text style={[styles.rolesCompact, { fontFamily: font.semiBold, color: textColor }]} numberOfLines={2}>
+          {allRoles.join(' · ')}
+        </Text>
+        <TouchableOpacity
+          style={styles.offerPill}
+          onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.offerPillText, { fontFamily: font.bold }]}>{t('noticeboard.make_offer')}</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  }
+
   return (
-    <TouchableOpacity style={[styles.card, { backgroundColor: cardBg, borderColor: isDirectInvite ? '#cb6ce6' : colors.border }]} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
       {isDirectInvite && directInviteLabel && (
         <View style={styles.directBadge}>
-          <Text style={styles.directBadgeText}>{directInviteLabel}</Text>
+          <Text style={[styles.directBadgeText, { fontFamily: font.bold }]}>{directInviteLabel}</Text>
         </View>
       )}
       {poster && (
@@ -41,27 +101,27 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} />
           ) : (
             <View style={[styles.posterAvatar, styles.posterAvatarFallback]}>
-              <Text style={styles.posterInitial}>{poster.displayName.charAt(0).toUpperCase()}</Text>
+              <Text style={[styles.posterInitial, { fontFamily: font.bold }]}>{poster.displayName.charAt(0).toUpperCase()}</Text>
             </View>
           )}
-          <Text style={[styles.posterName, { color: colors.textMuted }]}>{poster.displayName}</Text>
+          <Text style={[styles.posterName, { fontFamily: font.medium, color: colors.textMuted }]}>{poster.displayName}</Text>
         </View>
       )}
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.title, { color: textColor, fontWeight: isDirectInvite ? '800' : '700' }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.title, { fontFamily: font.bold, color: textColor }]} numberOfLines={1}>{request.title}</Text>
           <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Image
               source={require('../../../../assets/images/location-icon.png')}
               style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
               resizeMode="contain"
             />
-            <Text style={[styles.location, { color: textColor }]} numberOfLines={1}>{request.location}</Text>
+            <Text style={[styles.location, { fontFamily: font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
           </View>
-          <Text style={[styles.meta, { color: textColor }]}>
+          <Text style={[styles.meta, { fontFamily: font.regular, color: textColor }]}>
             {request.exec ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
           </Text>
-          <Text style={[styles.roles, { color: textColor, fontWeight: isDirectInvite ? '700' : '600' }]} numberOfLines={2}>
+          <Text style={[styles.roles, { fontFamily: font.semiBold, color: textColor }]} numberOfLines={2}>
             {allRoles.join(' | ')}
           </Text>
         </View>
@@ -71,18 +131,17 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
-            <Text style={styles.offerIcon}>₪</Text>
+            <Text style={[styles.offerIcon, { fontFamily: font.bold }]}>₪</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.dismissBtn]}
             onPress={(e) => { e.stopPropagation?.(); onDismiss(); }}
             activeOpacity={0.8}
           >
-            <Text style={styles.dismissIcon}>✕</Text>
+            <Text style={[styles.dismissIcon, { fontFamily: font.bold }]}>✕</Text>
           </TouchableOpacity>
         </View>
       </View>
-
     </TouchableOpacity>
   );
 }
@@ -101,6 +160,26 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  cardCompact: {
+    marginHorizontal: 0,
+    marginVertical: 0,
+    padding: 10,
+    gap: 5,
+  },
+  titleCompact: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  locationCompact: { fontSize: 11, flex: 1 },
+  metaCompact: { fontSize: 11 },
+  rolesCompact: { fontSize: 11, fontWeight: '600', marginBottom: 6 },
+  offerPill: {
+    backgroundColor: '#004aad',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  offerPillText: { fontSize: 13, color: '#ffffff', fontWeight: '700' },
   directBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#cb6ce6',
