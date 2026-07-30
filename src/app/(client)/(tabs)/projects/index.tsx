@@ -39,13 +39,6 @@ function makeT(translations: Translations) {
   };
 }
 
-const gradientStyle = Platform.OS === 'web' ? ({
-  background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-} as object) : {};
-
 export default function ProjectsPage() {
   const colors = useTheme();
   const router = useRouter();
@@ -162,14 +155,7 @@ export default function ProjectsPage() {
       >
         <View style={styles.headerWrap}>
           <View style={styles.header}>
-            <Text
-              style={[
-                styles.headerTitle,
-                { fontFamily: font.bold },
-                Platform.OS !== 'web' && { color: colors.accent },
-                gradientStyle,
-              ]}
-            >
+            <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
               {t('chats_page.title_projects')}
             </Text>
           </View>
@@ -263,6 +249,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',
+    color: '#ffffff',
+    textShadowColor: '#004aad',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
     textAlign: 'center',
     textTransform: 'uppercase',
   },

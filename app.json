@@ -10,7 +10,7 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "supportsTablet": true,
-      "bundleIdentifier": "com.bama.app",
+      "bundleIdentifier": "com.bamaapp.bama",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -23,7 +23,7 @@
         "backgroundColor": "#E6F4FE"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.bama.app"
+      "package": "com.bamaapp.bama"
     },
     "web": {
       "bundler": "metro",

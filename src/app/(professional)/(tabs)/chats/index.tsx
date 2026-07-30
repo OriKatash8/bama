@@ -119,7 +119,7 @@ export default function ProfessionalChatsScreen() {
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={styles.gradient}>
-          <Text style={[styles.headerTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
             {t('chats_page.title')}
           </Text>
           <View style={styles.tabBar}>
@@ -298,8 +298,14 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#ffffff',
+    textShadowColor: '#004aad',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
   tabBar: {
     flexDirection: 'row',

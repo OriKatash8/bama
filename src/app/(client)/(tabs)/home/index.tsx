@@ -1,21 +1,18 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { MotiView } from 'moti';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform, Pressable,
-  useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
+  ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
+  useWindowDimensions, ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@components/layout/Screen';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
-import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
+import { useCrewBuilder } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
-import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, X } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
@@ -54,36 +51,11 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   subcategories: subs,
 }));
 
-export const ISRAEL_LOCATIONS = [
-  // Major cities
-  'תל אביב', 'ירושלים', 'חיפה', 'ראשון לציון', 'פתח תקווה', 'אשדוד',
-  'נתניה', 'באר שבע', 'בני ברק', 'רמת גן', 'בת ים', 'הרצליה',
-  'כפר סבא', 'חולון', 'רעננה', 'מודיעין', 'רחובות', 'אשקלון',
-  'הוד השרון', 'גבעתיים', 'עכו', 'נהריה', 'טבריה', 'צפת',
-  'לוד', 'רמלה', 'אילת', 'נצרת', 'אום אל-פחם', 'אלעד',
-  'יבנה', 'קרית גת', 'דימונה', 'אופקים', 'קרית שמונה',
-  // Regions and areas
-  'גוש דן', 'שפלה', 'צפון', 'דרום', 'מרכז', 'שרון',
-  'גליל', 'נגב', 'ירושלים והסביבה', 'עמק יזרעאל',
-  // English versions
-  'Tel Aviv', 'Jerusalem', 'Haifa', 'Rishon LeZion', 'Petah Tikva',
-  'Ashdod', 'Netanya', 'Beer Sheva', 'Herzliya', 'Ra\'anana',
-  'Modi\'in', 'Rehovot', 'Ashkelon', 'Eilat', 'Nazareth',
-];
 
 const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as object;
 
-const gradientStyle = {
-  background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-} as object;
-
 export default function HomeScreen() {
-  const { slots, totalCount, addSlot, removeSlot, reset: resetSlots, loadSlots } = useCrewBuilder();
-  const { submit, updateProject } = useProjectRequests();
-  const { showToast } = useUiStore();
+  const { slots, totalCount, addSlot, removeSlot, loadSlots } = useCrewBuilder();
   const colors = useTheme();
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const isEditMode = !!projectId;
@@ -119,23 +91,8 @@ export default function HomeScreen() {
   const [title, setTitle] = useState('');
   const [titleFailed, setTitleFailed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
-  const [summaryVisible, setSummaryVisible] = useState(false);
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
-  const [locationSearch, setLocationSearch] = useState('');
-
-  const displayedCities = useMemo(() => {
-    const query = locationSearch.trim().toLowerCase();
-    if (!query) return ISRAEL_LOCATIONS.slice(0, 30);
-    return ISRAEL_LOCATIONS.filter((c) => c.toLowerCase().includes(query));
-  }, [locationSearch]);
-
-  function selectLocation(city: string) {
-    setLocation(city);
-    setLocationDropdownOpen(false);
-    setLocationSearch('');
-  }
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -153,37 +110,6 @@ export default function HomeScreen() {
       .finally(() => setIsLoadingProject(false));
   }, [projectId, loadSlots]);
 
-  // ── Category picker modal ──
-  const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number] | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const scaleAnim = useRef(new Animated.Value(0.3)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-
-  function openCategory(cat: typeof CATEGORIES[number]) {
-    setSelectedCategory(cat);
-    setModalVisible(true);
-    scaleAnim.setValue(0.3);
-    opacityAnim.setValue(0);
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 180 }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
-    ]).start();
-  }
-
-  function closeModal() {
-    Animated.parallel([
-      Animated.timing(scaleAnim, { toValue: 0.3, duration: 150, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-    ]).start(() => {
-      setModalVisible(false);
-      setSelectedCategory(null);
-    });
-  }
-
-  function getQty(sub: string) {
-    return slots.find(s => s.category === selectedCategory?.key && s.subcategory === sub)?.quantity ?? 0;
-  }
-
   // ── Step 1 → Step 2 ──
   async function handleNext() {
     const next: Record<string, string> = {};
@@ -195,7 +121,10 @@ export default function HomeScreen() {
 
     if (!isEditMode) {
       try {
-        const generated = await generateTitle(description);
+        const generated = await Promise.race([
+          generateTitle(description),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 30_000)),
+        ]);
         setTitle(generated);
         setTitleFailed(false);
       } catch {
@@ -206,44 +135,25 @@ export default function HomeScreen() {
     setStep(2);
   }
 
-  // ── Step 2 → Summary ──
+  // ── Step 2 → Summary screen ──
   function handleReview() {
     if (totalCount === 0) {
       setErrors({ slots: t('builder.error_role') });
       return;
     }
     setErrors({});
-    setSummaryVisible(true);
-  }
-
-  // ── Final submit (from summary) ──
-  async function handleConfirm() {
-    setIsSubmitting(true);
-    try {
-      if (isEditMode && projectId) {
-        await updateProject(projectId as string, slots, { title, description, exec, deadline, location });
-        showToast(t('builder.project_updated'), 'success');
-      } else {
-        await submit(slots, { title, description, exec, deadline, location });
-        showToast(t('builder.request_submitted'), 'success');
-      }
-      setSummaryVisible(false);
-      setStep(1);
-      resetSlots();
-      setTitle('');
-      setTitleFailed(false);
-      setDescription('');
-      setExec('');
-      setDeadline('');
-      setLocation('');
-      setErrors({});
-      if (isEditMode) router.navigate('/(client)/(tabs)/chats' as never);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : undefined;
-      showToast(msg ?? (isEditMode ? t('builder.failed_update') : t('builder.failed_submit')), 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
+    router.push({
+      pathname: '/(client)/(tabs)/home/summary' as never,
+      params: {
+        title,
+        description,
+        exec,
+        deadline,
+        location,
+        projectId: (projectId as string) ?? '',
+        titleFailed: titleFailed ? 'true' : 'false',
+      },
+    });
   }
 
   if (isLoadingProject) {
@@ -254,15 +164,9 @@ export default function HomeScreen() {
     );
   }
 
-  const canConfirm = title.trim().length > 0 && !isSubmitting;
-
   return (
     <Screen scrollable={false}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.pageTitle, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: '#ffffff' }]}>
-          {t('builder.page_title')}
-        </Text>
-
         {/* ── Progress indicator ── */}
         <View style={styles.progressRow}>
           <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -272,8 +176,8 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 1: Project details ══════════════ */}
         {step === 1 && (
           <>
-            <Text style={[styles.sectionTitle, { color: '#ffffff', textAlign: 'center', marginTop: 20, textTransform: 'uppercase', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 }, Platform.OS === 'web' && { textShadow: '0 2px 8px rgba(0,0,0,0.4)' } as object]}>
-              {t('builder.project_details')}
+            <Text style={styles.pageTitle}>
+              {rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}
             </Text>
 
             <View style={styles.card}>
@@ -290,9 +194,7 @@ export default function HomeScreen() {
               />
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
-              {/* Labels row — kept separate from the squares row so differing label
-                  heights (e.g. Execution's "(optional)" suffix wrapping) never push
-                  one square out of alignment with the others. */}
+              {/* Labels row */}
               <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 16 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
@@ -307,127 +209,79 @@ export default function HomeScreen() {
                     {t('builder.deadline')}
                   </Text>
                 </View>
+              </View>
+
+              {/* Date squares row */}
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 }}>
+                {/* Execution square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
-                    {t('builder.location')}
-                  </Text>
+                  <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
+                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                      <HelpTooltip text={t('builder.help_execution')} />
+                    </View>
+                    {exec ? (
+                      <TouchableOpacity
+                        style={styles.dateSquareClear}
+                        onPress={(e) => { e.stopPropagation?.(); setExec(''); }}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <X size={12} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    ) : null}
+                    <CalendarDays size={exec ? 20 : 28} color="#004aad" strokeWidth={1.8} />
+                    <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                      {exec || t('builder.placeholder_date')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Deadline square */}
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    style={[styles.dateSquare, errors.deadline ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
+                    onPress={() => setCalOpen('deadline')}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                      <HelpTooltip text={t('builder.help_deadline')} />
+                    </View>
+                    {deadline ? (
+                      <TouchableOpacity
+                        style={styles.dateSquareClear}
+                        onPress={(e) => { e.stopPropagation?.(); setDeadline(''); }}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <X size={12} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    ) : null}
+                    <CalendarDays size={deadline ? 20 : 28} color="#004aad" strokeWidth={1.8} />
+                    <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                      {deadline || t('builder.placeholder_deadline')}
+                    </Text>
+                  </TouchableOpacity>
+                  {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
               </View>
 
-              {/* Squares row — outer View is the positioned ancestor for the inline location dropdown */}
-              <View style={{ position: 'relative', zIndex: locationDropdownOpen ? 999 : 1 }}>
-                <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 }}>
-                  {/* Execution square */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
-                      <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                        <HelpTooltip text={t('builder.help_execution')} />
-                      </View>
-                      {exec ? (
-                        <TouchableOpacity
-                          style={styles.dateSquareClear}
-                          onPress={(e) => { e.stopPropagation?.(); setExec(''); }}
-                          hitSlop={8}
-                          activeOpacity={0.7}
-                        >
-                          <X size={12} color="#fff" strokeWidth={2.5} />
-                        </TouchableOpacity>
-                      ) : null}
-                      <CalendarDays size={exec ? 20 : 28} color="#004aad" strokeWidth={1.8} />
-                      <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                        {exec || t('builder.placeholder_date')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Deadline square */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <TouchableOpacity
-                      style={[styles.dateSquare, errors.deadline ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
-                      onPress={() => setCalOpen('deadline')}
-                      activeOpacity={0.8}
-                    >
-                      <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                        <HelpTooltip text={t('builder.help_deadline')} />
-                      </View>
-                      {deadline ? (
-                        <TouchableOpacity
-                          style={styles.dateSquareClear}
-                          onPress={(e) => { e.stopPropagation?.(); setDeadline(''); }}
-                          hitSlop={8}
-                          activeOpacity={0.7}
-                        >
-                          <X size={12} color="#fff" strokeWidth={2.5} />
-                        </TouchableOpacity>
-                      ) : null}
-                      <CalendarDays size={deadline ? 20 : 28} color="#004aad" strokeWidth={1.8} />
-                      <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                        {deadline || t('builder.placeholder_deadline')}
-                      </Text>
-                    </TouchableOpacity>
-                    {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
-                  </View>
-
-                  {/* Location square */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <TouchableOpacity
-                      style={[styles.dateSquare, errors.location ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
-                      onPress={() => { setLocationSearch(''); setLocationDropdownOpen((o) => !o); }}
-                      activeOpacity={0.8}
-                    >
-                      <View style={{ position: 'absolute', top: 6, left: 6 }}>
-                        <HelpTooltip text={t('builder.help_location')} />
-                      </View>
-                      {location ? (
-                        <TouchableOpacity
-                          style={styles.dateSquareClear}
-                          onPress={(e) => { e.stopPropagation?.(); setLocation(''); setLocationDropdownOpen(false); }}
-                          hitSlop={8}
-                          activeOpacity={0.7}
-                        >
-                          <X size={12} color="#fff" strokeWidth={2.5} />
-                        </TouchableOpacity>
-                      ) : null}
-                      <MapPin size={location ? 20 : 28} color="#004aad" strokeWidth={1.8} />
-                      <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                        {location || t('builder.placeholder_location')}
-                      </Text>
-                    </TouchableOpacity>
-                    {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
-                  </View>
-                </View>
-
-                {locationDropdownOpen && (
-                  <View style={styles.locationDropdown}>
-                    <TextInput
-                      style={styles.locationDropdownSearch}
-                      value={locationSearch}
-                      onChangeText={setLocationSearch}
-                      placeholder={t('builder.search_city')}
-                      placeholderTextColor="#004aad99"
-                      autoFocus
-                      textAlign={rtl ? 'right' : 'left'}
-                    />
-                    <ScrollView
-                      style={{ maxHeight: 160 }}
-                      keyboardShouldPersistTaps="handled"
-                      showsVerticalScrollIndicator={false}
-                      nestedScrollEnabled
-                    >
-                      {displayedCities.map((city) => (
-                        <TouchableOpacity
-                          key={city}
-                          style={styles.locationDropdownRow}
-                          onPress={() => selectLocation(city)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={[styles.locationDropdownRowText, { textAlign: rtl ? 'right' : 'left' }]}>{city}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
+              {/* Location — plain TextInput, no overlay */}
+              <Text style={[styles.label, { color: '#004aad', marginTop: 16, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('builder.location')}
+              </Text>
+              <TextInput
+                style={[
+                  styles.locationInput,
+                  { color: '#004aad', textAlign: rtl ? 'right' : 'left' },
+                  errors.location ? { borderColor: '#fc8181', borderWidth: 1.5 } : null,
+                ]}
+                value={location}
+                onChangeText={setLocation}
+                placeholder={t('builder.placeholder_location')}
+                placeholderTextColor="#004aad99"
+                returnKeyType="done"
+              />
+              {errors.location ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.location}</Text> : null}
             </View>
 
             <View style={[styles.submitWrap, { paddingHorizontal: 36, marginBottom: 90 }]}>
@@ -465,39 +319,101 @@ export default function HomeScreen() {
             <View style={styles.rolesCard}>
               {errors.slots ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left', marginBottom: 8 }]}>{errors.slots}</Text> : null}
 
-              <View style={styles.grid}>
-                {CATEGORIES.map((cat, index) => {
+              <FlatList
+                data={CATEGORIES}
+                numColumns={3}
+                scrollEnabled={false}
+                keyExtractor={(cat) => cat.key}
+                initialNumToRender={9}
+                maxToRenderPerBatch={9}
+                windowSize={3}
+                columnWrapperStyle={{ gap: 6 }}
+                ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+                renderItem={({ item: cat }) => {
                   const catTotal = slots
                     .filter(s => s.category === cat.key)
                     .reduce((sum, s) => sum + s.quantity, 0);
+                  const isSelected = expandedCategory === cat.key;
                   return (
-                    <MotiView
-                      key={cat.key}
-                      from={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: 'timing', duration: 300, delay: index * 50 }}
+                    <TouchableOpacity
+                      style={[
+                        styles.tile,
+                        { width: tileSize, height: tileSize },
+                        isSelected && { borderWidth: 2, borderColor: colors.accent },
+                      ]}
+                      onPress={() => setExpandedCategory(isSelected ? null : cat.key)}
+                      activeOpacity={0.85}
                     >
-                      <TouchableOpacity
-                        style={[styles.tile, { width: tileSize, height: tileSize }]}
-                        onPress={() => openCategory(cat)}
-                        activeOpacity={0.85}
-                      >
-                        {cat.image ? (
-                          <Image source={cat.image} style={styles.tileImage} contentFit="contain" cachePolicy="memory-disk" />
-                        ) : null}
-                        <View style={styles.tileOverlay}>
-                          <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
+                      {cat.image ? (
+                        <Image source={cat.image} style={styles.tileImage} contentFit="contain" cachePolicy="memory-disk" />
+                      ) : null}
+                      <View style={styles.tileOverlay}>
+                        <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
+                      </View>
+                      {catTotal > 0 && (
+                        <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
+                          <Text style={styles.tileBadgeText}>{catTotal}</Text>
                         </View>
-                        {catTotal > 0 && (
-                          <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
-                            <Text style={styles.tileBadgeText}>{catTotal}</Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    </MotiView>
+                      )}
+                    </TouchableOpacity>
                   );
-                })}
-              </View>
+                }}
+              />
+
+              {/* ── Inline subcategory panel ── */}
+              {expandedCategory !== null && (() => {
+                const cat = CATEGORIES.find(c => c.key === expandedCategory);
+                if (!cat) return null;
+                return (
+                  <View style={[styles.subcatPanel, { borderColor: colors.accent }]}>
+                    <View style={styles.panelHeader}>
+                      <Text style={[styles.panelTitle, { color: colors.text }]}>
+                        {getCategoryLabel(cat.labelKey)}
+                      </Text>
+                      <TouchableOpacity onPress={() => setExpandedCategory(null)} hitSlop={12} activeOpacity={0.7}>
+                        <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={[styles.panelDivider, { backgroundColor: colors.accent }]} />
+                    <Text style={[styles.subHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                      {t('builder.tap_to_add')}
+                    </Text>
+                    {cat.subcategories.map((sub) => {
+                      const qty = slots.find(s => s.category === cat.key && s.subcategory === sub)?.quantity ?? 0;
+                      return (
+                        <View key={sub} style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}>
+                          <Text style={[styles.subLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
+                          <View style={styles.qtyControls}>
+                            {qty > 0 && (
+                              <TouchableOpacity
+                                style={[styles.qtyBtn, { borderColor: colors.inputBorder }]}
+                                onPress={() => removeSlot(cat.key, sub)}
+                                hitSlop={8}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
+                              </TouchableOpacity>
+                            )}
+                            {qty > 0 && (
+                              <View style={[styles.qtyBadge, { backgroundColor: colors.accent }]}>
+                                <Text style={styles.qtyBadgeText}>{qty}</Text>
+                              </View>
+                            )}
+                            <TouchableOpacity
+                              style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]}
+                              onPress={() => addSlot(cat.key, sub)}
+                              hitSlop={8}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[styles.qtyBtnText, { color: colors.accent }]}>+</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
             </View>
 
             <View style={styles.submitWrap}>
@@ -518,239 +434,7 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {locationDropdownOpen && (
-        <Pressable
-          style={[StyleSheet.absoluteFillObject, { zIndex: 998 }]}
-          onPress={() => setLocationDropdownOpen(false)}
-        />
-      )}
 
-      {/* ── Category picker modal ── */}
-      <Modal visible={modalVisible} transparent animationType="none" onRequestClose={closeModal}>
-        <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.backdrop}>
-            <TouchableWithoutFeedback>
-              <Animated.View
-                style={[
-                  styles.panel,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.accent,
-                    transform: [{ scale: scaleAnim }],
-                    opacity: opacityAnim,
-                  },
-                  Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as object),
-                ]}
-              >
-                <View style={styles.panelHeader}>
-                  <Text style={[styles.panelTitle, { color: colors.text }]}>
-                    {selectedCategory ? getCategoryLabel(selectedCategory.labelKey) : ''}
-                  </Text>
-                  <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
-                    <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={[styles.panelDivider, { backgroundColor: colors.accent }]} />
-
-                <ScrollView showsVerticalScrollIndicator={false} style={styles.panelScroll}>
-                  <Text style={[styles.subHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>{t('builder.tap_to_add')}</Text>
-                  {selectedCategory?.subcategories.map((sub) => {
-                    const qty = getQty(sub);
-                    return (
-                      <View key={sub} style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}>
-                        <Text style={[styles.subLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
-                        <View style={styles.qtyControls}>
-                          {qty > 0 && (
-                            <TouchableOpacity
-                              style={[styles.qtyBtn, { borderColor: colors.inputBorder }]}
-                              onPress={() => removeSlot(selectedCategory.key, sub)}
-                              hitSlop={8}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
-                            </TouchableOpacity>
-                          )}
-                          {qty > 0 && (
-                            <View style={[styles.qtyBadge, { backgroundColor: colors.accent }]}>
-                              <Text style={styles.qtyBadgeText}>{qty}</Text>
-                            </View>
-                          )}
-                          <TouchableOpacity
-                            style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]}
-                            onPress={() => addSlot(selectedCategory.key, sub)}
-                            hitSlop={8}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.qtyBtnText, { color: colors.accent }]}>+</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ── Summary modal ── */}
-      <Modal visible={summaryVisible} transparent animationType="fade" onRequestClose={() => setSummaryVisible(false)}>
-        <View style={styles.backdrop}>
-          <View style={styles.summaryCard}>
-            <LinearGradient colors={['#efd4f6', '#b7cae6']} style={styles.summaryGradient}>
-              {/* Header */}
-              <View style={styles.summaryHeader}>
-                <Text style={[styles.summaryTitle, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.summary_title')}</Text>
-                <TouchableOpacity onPress={() => setSummaryVisible(false)} hitSlop={12} activeOpacity={0.7}>
-                  <X size={20} color="#004aad" strokeWidth={2.5} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.summaryScroll}>
-
-                {/* Title */}
-                <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.confirm_title')}</Text>
-                <TextInput
-                  style={[styles.summaryInput, { textAlign: rtl ? 'right' : 'left' }]}
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder={t('builder.confirm_title')}
-                  placeholderTextColor="#004aad99"
-                />
-                <Text style={[styles.summaryHint, { textAlign: rtl ? 'right' : 'left' }]}>
-                  {titleFailed ? t('builder.title_failed') : t('builder.title_ai_hint')}
-                </Text>
-
-                {/* Description */}
-                <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>{t('builder.tell_us')}</Text>
-                <TextInput
-                  style={[styles.summaryInput, styles.summaryMultiline, { textAlign: rtl ? 'right' : 'left' }]}
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                  placeholderTextColor="#004aad99"
-                />
-
-                {/* Dates */}
-                <View style={styles.dateRow}>
-                  <View style={styles.dateCol}>
-                    <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left' }]}>
-                      {t('builder.execution')} <Text style={{ fontWeight: '400', opacity: 0.6 }}>({t('builder.optional')})</Text>
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.summaryDateBtn}
-                      onPress={() => setCalOpen('exec')}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.summaryDateText, { color: exec ? '#004aad' : '#004aad99' }]} numberOfLines={1}>{exec || t('builder.placeholder_date')}</Text>
-                      <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.dateCol}>
-                    <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.deadline')}</Text>
-                    <TouchableOpacity
-                      style={styles.summaryDateBtn}
-                      onPress={() => setCalOpen('deadline')}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.summaryDateText, { color: deadline ? '#004aad' : '#004aad99' }]} numberOfLines={1}>{deadline || t('builder.placeholder_deadline')}</Text>
-                      <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Location */}
-                <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>{t('builder.location')}</Text>
-                <TextInput
-                  style={[styles.summaryInput, { textAlign: rtl ? 'right' : 'left' }]}
-                  value={location}
-                  onChangeText={setLocation}
-                  placeholder={t('builder.placeholder_location')}
-                  placeholderTextColor="#004aad99"
-                />
-
-                {/* Roles */}
-                <Text style={[styles.summaryFieldLabel, { textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>{t('builder.select_roles')}</Text>
-                {slots.map((slot) => (
-                  <View key={`${slot.category}-${slot.subcategory}`} style={styles.summarySlotRow}>
-                    <View style={styles.summarySlotInfo}>
-                      <Text style={styles.summarySlotSub}>{slot.subcategory}</Text>
-                      <Text style={styles.summarySlotCat}>{slot.category}</Text>
-                    </View>
-                    <View style={styles.qtyControls}>
-                      <TouchableOpacity
-                        style={[styles.qtyBtn, { borderColor: '#004aad33' }]}
-                        onPress={() => removeSlot(slot.category, slot.subcategory)}
-                        hitSlop={8}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.qtyBtnText, { color: '#004aad' }]}>−</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.qtyBadge, { backgroundColor: '#004aad' }]}>
-                        <Text style={styles.qtyBadgeText}>{slot.quantity}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.qtyBtn, { borderColor: '#004aad', backgroundColor: '#004aad22' }]}
-                        onPress={() => addSlot(slot.category, slot.subcategory)}
-                        hitSlop={8}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.qtyBtnText, { color: '#004aad' }]}>+</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.removeSlotBtn}
-                        onPress={() => loadSlots(slots.filter(s => !(s.category === slot.category && s.subcategory === slot.subcategory)))}
-                        hitSlop={8}
-                        activeOpacity={0.7}
-                      >
-                        <X size={14} color="#e53935" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-                {slots.length === 0 && (
-                  <Text style={[styles.summaryHint, { textAlign: rtl ? 'right' : 'left', color: '#e53935' }]}>
-                    {t('builder.error_role')}
-                  </Text>
-                )}
-
-                {/* Confirm & Post */}
-                <TouchableOpacity
-                  style={[
-                    styles.submitBtn,
-                    { marginTop: 20 },
-                    (!canConfirm || slots.length === 0) && styles.disabled,
-                    Platform.OS === 'web' && ({ background: (canConfirm && slots.length > 0) ? 'linear-gradient(to right, #004aad, #cb6ce6)' : '#555' } as object),
-                  ]}
-                  onPress={() => void handleConfirm()}
-                  disabled={!canConfirm || slots.length === 0}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.submitText}>
-                    {isSubmitting ? t('builder.submitting') : t('builder.confirm_submit')}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Back */}
-                <TouchableOpacity
-                  style={styles.cancelBtn}
-                  onPress={() => setSummaryVisible(false)}
-                  disabled={isSubmitting}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.cancelText, { color: '#004aad' }]}>{t('builder.back_to_edit')}</Text>
-                </TouchableOpacity>
-
-              </ScrollView>
-            </LinearGradient>
-          </View>
-        </View>
-      </Modal>
 
       {calOpen !== null && (
         <MiniCalendar
@@ -776,7 +460,7 @@ function createStyles(
   return StyleSheet.create({
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 100 },
-    pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: ffBold, marginTop: 24, marginHorizontal: 16, textAlign: 'center', textTransform: 'uppercase' },
+    pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: ffBold, color: '#ffffff', textShadowColor: '#004aad', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1, textAlign: 'center', textTransform: 'uppercase', marginTop: 20 },
 
     progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 16, marginBottom: 4 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },
@@ -805,7 +489,9 @@ function createStyles(
     cancelBtn: { alignItems: 'center', paddingVertical: 12 },
     cancelText: { fontSize: 15, fontFamily: ff },
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-    panel: { width: '100%', maxHeight: '80%', borderRadius: 24, borderWidth: 2, overflow: 'hidden' },
+    modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    panel: { width: '100%', maxHeight: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 2, overflow: 'hidden' },
+    subcatPanel: { marginTop: 12, borderWidth: 2, borderRadius: 16, overflow: 'hidden' },
     panelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
     panelTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold },
     closeBtn: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold },
@@ -903,42 +589,14 @@ function createStyles(
     summarySlotCat: { fontSize: 12, color: '#004aad', fontFamily: ff, marginTop: 1 },
     removeSlotBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
 
-    // Location inline dropdown
-    locationDropdown: {
-      position: 'absolute',
-      top: 108,
-      left: 0,
-      right: 0,
+    locationInput: {
       backgroundColor: '#ffffff',
-      borderRadius: 12,
-      padding: 8,
-      zIndex: 999,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 8,
-    },
-    locationDropdownSearch: {
-      backgroundColor: '#f0f4ff',
-      borderRadius: 8,
+      borderRadius: 10,
       paddingHorizontal: 12,
-      paddingVertical: 8,
-      fontSize: 14,
+      paddingVertical: 12,
+      fontSize: 15,
       fontFamily: ff,
-      color: '#004aad',
-      marginBottom: 6,
-    },
-    locationDropdownRow: {
-      paddingVertical: 10,
-      paddingHorizontal: 8,
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0,74,173,0.08)',
-    },
-    locationDropdownRowText: {
-      fontSize: 14,
-      fontFamily: ffMedium,
-      color: '#004aad',
+      marginTop: 6,
     },
   });
 }

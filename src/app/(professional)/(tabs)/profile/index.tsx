@@ -17,6 +17,7 @@ import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProfessionalSkill } from '@core/types/user';
@@ -48,6 +49,7 @@ export default function ProfessionalProfileScreen() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const font = useAppFont();
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -164,6 +166,9 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <Screen style={styles.content} scrollable>
+      <Text style={[styles.pageTitle, { fontFamily: font.bold }]}>
+        {t('profile.title')}
+      </Text>
       <ProfileHeader
         photoURL={photoUri ?? user?.photoURL ?? null}
         name={name}
@@ -209,6 +214,16 @@ const styles = StyleSheet.create({
   headerBtnText: { fontSize: 16 },
   save: { fontWeight: '700', color: '#004aad' },
 
+  pageTitle: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#ffffff',
+    textShadowColor: '#004aad',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
   portfolioSection: { gap: 12 },
   portfolioTitle: { fontSize: 18, fontWeight: '700' },
 });

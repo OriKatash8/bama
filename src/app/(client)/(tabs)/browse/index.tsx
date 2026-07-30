@@ -114,13 +114,6 @@ export default function SearchScreen() {
     setExpandedCategory(isExpanding ? key : null);
   }
 
-  const gradientText = Platform.OS === 'web' ? ({
-    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-  } as object) : {};
-
   const isSearching = query.trim().length > 0;
   const inResultsView = view.kind === 'results';
   const showGrid = !isSearching && !inResultsView;
@@ -197,7 +190,7 @@ export default function SearchScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={[styles.heading, { fontFamily: font.bold, color: colors.text }, gradientText]}>
+          <Text style={[styles.heading, { fontFamily: font.bold }]}>
             {view.kind === 'grid' ? t('search.heading') : view.subcategory}
           </Text>
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
@@ -360,7 +353,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 24,
   },
-  heading: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat', textAlign: 'center', textTransform: 'uppercase', flex: 1 },
+  heading: { fontSize: 36, fontWeight: '800', color: '#ffffff', textShadowColor: '#004aad', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1, textAlign: 'center', textTransform: 'uppercase', flex: 1 },
   backBtn: { width: 60 },
   backText: { fontSize: 15, fontWeight: '600' },
 

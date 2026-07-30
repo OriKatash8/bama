@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
-import { View, Pressable } from 'react-native';
-import type { StyleProp, ViewStyle, GestureResponderEvent } from 'react-native';
+import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Search, Home, MessageCircle, FolderKanban } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
@@ -18,36 +16,6 @@ import {
   FLOATING_TAB_BAR_ACTIVE_COLOR,
   FLOATING_TAB_BAR_INACTIVE_COLOR,
 } from '@core/navigation/floatingTabBar';
-
-type TabButtonProps = {
-  children: ReactNode;
-  onPress?: ((event: GestureResponderEvent) => void) | null;
-  accessibilityState?: { selected?: boolean };
-  style?: StyleProp<ViewStyle>;
-};
-
-function TabButton({ children, onPress, accessibilityState, style }: TabButtonProps) {
-  const isActive = accessibilityState?.selected ?? false;
-  return (
-    <Pressable
-      onPress={onPress ?? undefined}
-      style={[style, { flex: 1, alignItems: 'center', justifyContent: 'center' }]}
-    >
-      <View
-        style={{
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          borderRadius: 16,
-          backgroundColor: isActive ? 'rgba(0,74,173,0.15)' : 'transparent',
-        }}
-      >
-        {children}
-      </View>
-    </Pressable>
-  );
-}
 
 type Translations = typeof en;
 
@@ -88,41 +56,96 @@ export default function ClientTabsLayout() {
             tabBarStyle: getFloatingTabBarStyle(isDark),
             tabBarActiveTintColor: FLOATING_TAB_BAR_ACTIVE_COLOR,
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
-            tabBarLabelStyle: { fontSize: 11, fontFamily: font.regular },
+            tabBarActiveBackgroundColor: 'transparent',
+            tabBarInactiveBackgroundColor: 'transparent',
+            tabBarItemStyle: { paddingVertical: 4 },
+            tabBarLabelStyle: { fontSize: 10, fontFamily: font.regular, marginTop: -4 },
           }}
         >
           <Tabs.Screen
             name="home"
             options={{
               title: t('tabs.home'),
-              tabBarButton: TabButton,
-              tabBarIcon: ({ color }) => <Home size={24} color={color} strokeWidth={2.5} />,
+              tabBarIcon: ({ color, focused }) => (
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 48,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
+                    marginBottom: 2,
+                  }}>
+                    <Home size={20} color={color} strokeWidth={2.5} />
+                  </View>
+                </View>
+              ),
             }}
           />
           <Tabs.Screen
             name="browse"
             options={{
               title: t('tabs.search'),
-              tabBarButton: TabButton,
-              tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2.5} />,
+              tabBarIcon: ({ color, focused }) => (
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 48,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
+                    marginBottom: 2,
+                  }}>
+                    <Search size={20} color={color} strokeWidth={2.5} />
+                  </View>
+                </View>
+              ),
             }}
           />
           <Tabs.Screen
             name="chats"
             options={{
               title: t('tabs.chats'),
-              tabBarButton: TabButton,
               tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
               tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
-              tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} strokeWidth={2.5} />,
+              tabBarIcon: ({ color, focused }) => (
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 48,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
+                    marginBottom: 2,
+                  }}>
+                    <MessageCircle size={20} color={color} strokeWidth={2.5} />
+                  </View>
+                </View>
+              ),
             }}
           />
           <Tabs.Screen
             name="projects"
             options={{
               title: t('tabs.projects'),
-              tabBarButton: TabButton,
-              tabBarIcon: ({ color }) => <FolderKanban size={24} color={color} strokeWidth={2.5} />,
+              tabBarIcon: ({ color, focused }) => (
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 48,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
+                    marginBottom: 2,
+                  }}>
+                    <FolderKanban size={20} color={color} strokeWidth={2.5} />
+                  </View>
+                </View>
+              ),
             }}
           />
           <Tabs.Screen name="profile" options={{ href: null }} />
