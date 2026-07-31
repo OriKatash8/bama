@@ -164,7 +164,19 @@
     "post_roles": "פרסם ללוח",
     "error_remove": "לא ניתן לבקש הסרה. נסה שנית.",
     "error_accept_removal": "לא ניתן לאשר הסרה. נסה שנית.",
-    "error_post_roles": "לא ניתן לפרסם תפקידים. נסה שנית."
+    "error_post_roles": "לא ניתן לפרסם תפקידים. נסה שנית.",
+    "meetings": "פגישות",
+    "no_meetings": "אין פגישות מתוכננות",
+    "add_meeting_title": "הוסף פגישה",
+    "meeting_title_label": "כותרת",
+    "meeting_title_placeholder": "לדוגמה: סקירת הפקה",
+    "meeting_date": "תאריך",
+    "meeting_time": "שעה",
+    "meeting_time_placeholder": "HH:MM",
+    "meeting_location": "מיקום",
+    "meeting_location_placeholder": "לדוגמה: סטודיו / קישור זום",
+    "meeting_invitees": "מוזמנים",
+    "error_add_meeting": "לא ניתן להוסיף פגישה. נסה שוב."
   },
   "chats_page": {
     "title": "צ'אטים",

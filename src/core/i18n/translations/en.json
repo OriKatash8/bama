@@ -164,7 +164,19 @@
     "post_roles": "Post to noticeboard",
     "error_remove": "Could not request removal. Please try again.",
     "error_accept_removal": "Could not accept removal. Please try again.",
-    "error_post_roles": "Could not post roles. Please try again."
+    "error_post_roles": "Could not post roles. Please try again.",
+    "meetings": "Meetings",
+    "no_meetings": "No meetings scheduled",
+    "add_meeting_title": "Add Meeting",
+    "meeting_title_label": "Title",
+    "meeting_title_placeholder": "e.g. Production review",
+    "meeting_date": "Date",
+    "meeting_time": "Time",
+    "meeting_time_placeholder": "HH:MM",
+    "meeting_location": "Location",
+    "meeting_location_placeholder": "e.g. Studio / Zoom link",
+    "meeting_invitees": "Invitees",
+    "error_add_meeting": "Could not add meeting. Please try again."
   },
   "chats_page": {
     "title": "Chats",
