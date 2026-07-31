@@ -23,7 +23,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { BundleOffer, CrewRequestSlot, FilledSlot, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest, RemovalRequest } from '@core/types/project';
+import type { BundleOffer, CrewRequestSlot, FilledSlot, Meeting, Mission, MissionStatus, PaymentRequest, PriceOffer, ProjectRequest, RemovalRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
 import {
   calculateProjectFee,
@@ -38,6 +38,10 @@ import {
   addMission,
   updateMissionStatus,
 } from '@features/chat/services/missionService';
+import {
+  listenToMeetings,
+  addMeeting,
+} from '@features/chat/services/meetingService';
 import { MiniCalendar, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
@@ -114,6 +118,16 @@ export default function ProjectDetailsScreen() {
   const [newMissionDueDate, setNewMissionDueDate] = useState('');
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [isAddingMission, setIsAddingMission] = useState(false);
+
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [showAddMeeting, setShowAddMeeting] = useState(false);
+  const [newMeetingTitle, setNewMeetingTitle] = useState('');
+  const [newMeetingDate, setNewMeetingDate] = useState('');
+  const [newMeetingTime, setNewMeetingTime] = useState('');
+  const [newMeetingLocation, setNewMeetingLocation] = useState('');
+  const [newMeetingInvitedIds, setNewMeetingInvitedIds] = useState<string[]>([]);
+  const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
+  const [isAddingMeeting, setIsAddingMeeting] = useState(false);
 
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
@@ -196,6 +210,11 @@ export default function ProjectDetailsScreen() {
   useEffect(() => {
     if (!projectId) return;
     return listenToMissions(projectId, setMissions);
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    return listenToMeetings(projectId, setMeetings);
   }, [projectId]);
 
   useEffect(() => {
@@ -414,6 +433,60 @@ export default function ProjectDetailsScreen() {
     );
   }
 
+  function getMeetingUrgency(date: string, time: string): 'past' | 'imminent' | 'soon' | 'normal' {
+    const meetingAt = new Date(`${date}T${time}`);
+    const now = new Date();
+    if (meetingAt <= now) return 'past';
+    const diffDays = (meetingAt.getTime() - now.getTime()) / 86_400_000;
+    if (diffDays <= 2) return 'imminent';
+    if (diffDays <= 7) return 'soon';
+    return 'normal';
+  }
+
+  function formatMeetingDateTime(date: string, time: string): string {
+    const d = new Date(`${date}T${time}`);
+    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`;
+  }
+
+  function toggleInvitee(id: string) {
+    setNewMeetingInvitedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  async function handleAddMeeting() {
+    if (
+      !projectId ||
+      !newMeetingTitle.trim() ||
+      !newMeetingDate ||
+      !newMeetingTime.trim() ||
+      !newMeetingLocation.trim() ||
+      newMeetingInvitedIds.length === 0
+    ) return;
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) return;
+    setIsAddingMeeting(true);
+    try {
+      await addMeeting(projectId, currentUserId, {
+        title: newMeetingTitle.trim(),
+        date: newMeetingDate,
+        time: newMeetingTime.trim(),
+        location: newMeetingLocation.trim(),
+        invitedIds: newMeetingInvitedIds,
+      });
+      setNewMeetingTitle('');
+      setNewMeetingDate('');
+      setNewMeetingTime('');
+      setNewMeetingLocation('');
+      setNewMeetingInvitedIds([]);
+      setShowAddMeeting(false);
+    } catch {
+      Alert.alert('Error', t('project_details.error_add_meeting'));
+    } finally {
+      setIsAddingMeeting(false);
+    }
+  }
+
   async function handleAddMission() {
     if (!projectId || !newMissionTitle.trim() || newMissionAssignedTo.length === 0) return;
     const currentUserId = auth.currentUser?.uid;
@@ -546,6 +619,11 @@ export default function ProjectDetailsScreen() {
 
   const incomingRequests = paymentRequests.filter((r) => r.toUserId === currentUserId);
   const outgoingRequests = paymentRequests.filter((r) => r.fromUserId === currentUserId);
+
+  const sortedMeetings = [
+    ...meetings.filter((m) => getMeetingUrgency(m.date, m.time) !== 'past'),
+    ...[...meetings.filter((m) => getMeetingUrgency(m.date, m.time) === 'past')].reverse(),
+  ];
 
   return (
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
@@ -750,6 +828,66 @@ export default function ProjectDetailsScreen() {
                     {missionLabel(mission.status)}
                   </Text>
                 </TouchableOpacity>
+              </View>
+            );
+          })
+        )}
+
+        {/* SECTION 4 — Meetings */}
+        <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+          <Text style={[styles.sectionTitle, { fontFamily: font.bold }]}>
+            {t('project_details.meetings')}
+          </Text>
+          <TouchableOpacity onPress={() => setShowAddMeeting(true)} activeOpacity={0.8}>
+            <Text style={[styles.addButtonText, { fontFamily: font.semiBold }]}>{t('project_details.add')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {meetings.length === 0 ? (
+          <Text style={[styles.emptyNote, { fontFamily: font.regular }]}>
+            {t('project_details.no_meetings')}
+          </Text>
+        ) : (
+          sortedMeetings.map((meeting) => {
+            const urgency = getMeetingUrgency(meeting.date, meeting.time);
+            const titleColor =
+              urgency === 'past'     ? '#22c55e' :
+              urgency === 'imminent' ? '#ef4444' :
+              urgency === 'soon'     ? '#f59e0b' :
+              colors.text;
+            const firstInviteeId = meeting.invitedIds[0];
+            const firstInviteeName = firstInviteeId ? (allMemberNames[firstInviteeId] ?? firstInviteeId) : '';
+            const extraCount = meeting.invitedIds.length - 1;
+            const firstMemberInfo = firstInviteeId ? memberUsers[firstInviteeId] : undefined;
+            return (
+              <View key={meeting.id} style={[styles.missionRow, { flexDirection: rowDirection }]}>
+                <View style={styles.missionAvatarWrap}>
+                  {firstMemberInfo?.photoURL ? (
+                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
+                  ) : (
+                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
+                      <Text style={[styles.missionAvatarInitial, { fontFamily: font.bold }]}>
+                        {firstInviteeName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  {extraCount > 0 && (
+                    <View style={styles.missionAvatarExtra}>
+                      <Text style={[styles.missionAvatarExtraText, { fontFamily: font.bold }]}>+{extraCount}</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.missionTitleCard}>
+                  <Text style={[styles.missionTitle, { fontFamily: font.semiBold, color: titleColor }]} numberOfLines={2}>
+                    {meeting.title}
+                  </Text>
+                  <Text style={[styles.missionDue, { fontFamily: font.regular }]}>
+                    {formatMeetingDateTime(meeting.date, meeting.time)}
+                  </Text>
+                  <Text style={[styles.missionDue, { fontFamily: font.regular }]} numberOfLines={1}>
+                    {meeting.location}
+                  </Text>
+                </View>
               </View>
             );
           })
@@ -962,6 +1100,142 @@ export default function ProjectDetailsScreen() {
           value={newMissionDueDate}
           onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
           onClose={() => setShowDueDatePicker(false)}
+        />
+      )}
+
+      {/* Add Meeting Modal */}
+      <Modal
+        visible={showAddMeeting}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddMeeting(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
+              {t('project_details.add_meeting_title')}
+            </Text>
+
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+              {t('project_details.meeting_title_label')}
+            </Text>
+            <TextInput
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}
+              value={newMeetingTitle}
+              onChangeText={setNewMeetingTitle}
+              placeholder={t('project_details.meeting_title_placeholder')}
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+              {t('project_details.meeting_date')}
+            </Text>
+            {newMeetingDate ? (
+              <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
+                <Calendar size={15} color="#004aad" strokeWidth={2} />
+                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>
+                  {formatDueDate(newMeetingDate, '')}
+                </Text>
+                <TouchableOpacity onPress={() => setNewMeetingDate('')} hitSlop={10} activeOpacity={0.7}>
+                  <Text style={[styles.missionDateClear, { fontFamily: font.bold }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.missionDateRow, { borderColor: colors.border }]}
+                onPress={() => setShowMeetingDatePicker(true)}
+                activeOpacity={0.8}
+              >
+                <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
+                <Text style={[styles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+                  {t('project_details.meeting_date')}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+              {t('project_details.meeting_time')}
+            </Text>
+            <TextInput
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}
+              value={newMeetingTime}
+              onChangeText={setNewMeetingTime}
+              placeholder={t('project_details.meeting_time_placeholder')}
+              placeholderTextColor={colors.textMuted}
+              keyboardType="numbers-and-punctuation"
+            />
+
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+              {t('project_details.meeting_location')}
+            </Text>
+            <TextInput
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}
+              value={newMeetingLocation}
+              onChangeText={setNewMeetingLocation}
+              placeholder={t('project_details.meeting_location_placeholder')}
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+              {t('project_details.meeting_invitees')}
+            </Text>
+            {assignableMembers.map((m) => {
+              const selected = newMeetingInvitedIds.includes(m.id);
+              return (
+                <TouchableOpacity
+                  key={m.id}
+                  style={[
+                    styles.missionAssignRow,
+                    { borderColor: selected ? '#004aad' : colors.border },
+                    selected && styles.missionAssignRowSelected,
+                  ]}
+                  onPress={() => toggleInvitee(m.id)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>
+                    {m.displayName}
+                  </Text>
+                  <View style={[styles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
+                    {selected && <Text style={[styles.missionCheckboxTick, { fontFamily: font.bold }]}>✓</Text>}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]}
+                onPress={() => setShowAddMeeting(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.modalBtnCancelText, { color: '#004aad', fontFamily: font.semiBold }]}>{t('project_details.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalBtn,
+                  styles.modalBtnConfirm,
+                  (!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting) && styles.completeBtnDisabled,
+                ]}
+                onPress={handleAddMeeting}
+                disabled={!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting}
+                activeOpacity={0.8}
+              >
+                {isAddingMeeting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={[styles.modalBtnConfirmText, { fontFamily: font.bold }]}>{t('project_details.add')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {showMeetingDatePicker && (
+        <MiniCalendar
+          value={newMeetingDate}
+          onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
+          onClose={() => setShowMeetingDatePicker(false)}
         />
       )}
 
