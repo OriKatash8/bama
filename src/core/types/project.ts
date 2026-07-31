@@ -144,6 +144,18 @@ export type Mission = {
   createdAt: Timestamp;
 };
 
+export type Meeting = {
+  id: string;
+  projectId: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  invitedIds: string[];
+  createdBy: string;
+  createdAt: Timestamp;
+};
+
 export type PaymentRequestStatus = 'pending' | 'accepted' | 'rejected';
 
 export type PaymentRequest = {
