@@ -143,25 +143,25 @@ export function ChatsScreen() {
   function renderAvatar(item: Chat) {
     if (item.type === 'community') {
       return (
-        <View style={[styles.avatar, avatarMargin, { backgroundColor: '#0d9488' }]}>
+        <View style={[styles.avatar, { backgroundColor: '#0d9488' }]}>
           <Users size={24} color="#fff" strokeWidth={1.8} />
         </View>
       );
     }
     if (item.type === 'group') {
       return (
-        <View style={[styles.avatar, avatarMargin, { backgroundColor: colors.accent }]}>
+        <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
           <Users size={24} color="#fff" strokeWidth={1.8} />
         </View>
       );
     }
     const info = dmInfo[item.id];
     if (info?.photoURL) {
-      return <Image source={{ uri: info.photoURL }} style={[styles.avatar, avatarMargin]} />;
+      return <Image source={{ uri: info.photoURL }} style={styles.avatar} />;
     }
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
-      <View style={[styles.avatar, avatarMargin, { backgroundColor: colors.primary }]}>
+      <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
         <Text style={[styles.avatarInitial, { fontFamily: font.bold }]}>{initial}</Text>
       </View>
     );
@@ -199,28 +199,26 @@ export function ChatsScreen() {
             onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}`)}
             activeOpacity={0.75}
           >
-            {renderAvatar(item)}
+            <View style={[styles.avatarWrap, avatarMargin]}>
+              {renderAvatar(item)}
+              {timestamp ? (
+                <View style={styles.avatarTimestampOverlay}>
+                  <Text style={[styles.avatarTimestampText, { color: colors.textMuted, fontFamily: font.regular }]}>
+                    {timestamp}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             <View style={styles.content}>
               <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-                <View style={[styles.nameRow, {
-                  flexDirection: rowDir,
-                  marginRight: rtl ? 0 : 8,
-                  marginLeft: rtl ? 8 : 0,
-                }]}>
-                  <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-                    {chatName}
-                  </Text>
-                  {status != null && (
-                    <View style={[styles.statusBadge, {
-                      backgroundColor: STATUS_CONFIG[status].color,
-                      marginLeft: rtl ? 0 : 6,
-                      marginRight: rtl ? 6 : 0,
-                    }]}>
-                      <Text style={[styles.statusBadgeText, { fontFamily: font.bold }]}>{statusLabel(status)}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.timestamp, { color: colors.textMuted, fontFamily: font.regular }]}>{timestamp}</Text>
+                <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
+                  {chatName}
+                </Text>
+                {status != null && (
+                  <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
+                    <Text style={[styles.statusBadgeText, { fontFamily: font.bold }]}>{statusLabel(status)}</Text>
+                  </View>
+                )}
               </View>
               <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
                 <Text
@@ -271,6 +269,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
+  avatarWrap: { position: 'relative' },
   avatar: {
     width: 48,
     height: 48,
@@ -279,14 +278,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarInitial: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  avatarTimestampOverlay: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: 'white',
+    borderRadius: 6,
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+  },
+  avatarTimestampText: { fontSize: 9 },
 
   content: { flex: 1, gap: 4 },
   headerRow: { alignItems: 'center', justifyContent: 'space-between' },
-  nameRow: { alignItems: 'center', flex: 1, overflow: 'hidden' },
-  name: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  name: { fontSize: 15, fontWeight: '700' },
   statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
   statusBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  timestamp: { fontSize: 11, flexShrink: 0 },
   bottomRow: { alignItems: 'center', justifyContent: 'space-between' },
   preview: { fontSize: 13, flex: 1 },
   unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, flexShrink: 0 },

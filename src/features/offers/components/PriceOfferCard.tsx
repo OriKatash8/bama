@@ -88,7 +88,7 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
 
             {professionalProfile?.photoURL ? (
               <Image
-                source={{ uri: professionalProfile.photoURL, width: 36, height: 36 }}
+                source={{ uri: professionalProfile.photoURL, width: 32, height: 32 }}
                 style={styles.avatar}
                 contentFit="cover"
                 cachePolicy="memory-disk"
@@ -108,7 +108,7 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 8,
     paddingHorizontal: 12,
     width: '100%',
@@ -116,7 +116,6 @@ const styles = StyleSheet.create({
   },
   xSquare: {
     width: 52,
-    height: 52,
     borderRadius: 12,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
@@ -124,7 +123,6 @@ const styles = StyleSheet.create({
   },
   acceptSquare: {
     width: 52,
-    height: 52,
     borderRadius: 12,
     backgroundColor: '#004aad',
     justifyContent: 'center',
@@ -134,9 +132,10 @@ const styles = StyleSheet.create({
   infoSquare: {
     flex: 1,
     minWidth: 0,
+    alignSelf: 'stretch',
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 10,
+    padding: 8,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -146,20 +145,20 @@ const styles = StyleSheet.create({
   infoOuterRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   infoRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   infoCol: { flex: 1 },
-  projectTitle: { fontSize: 11, color: '#888', fontStyle: 'italic', textAlign: 'right' },
-  name: { fontWeight: 'bold', color: '#004aad', fontSize: 13, textAlign: 'right' },
+  projectTitle: { fontSize: 10, color: '#888', fontStyle: 'italic', textAlign: 'right' },
+  name: { fontWeight: 'bold', color: '#004aad', fontSize: 12, textAlign: 'right' },
   role: { color: '#888888', fontSize: 11, textAlign: 'right' },
-  price: { fontWeight: 'bold', color: '#004aad', fontSize: 13, textAlign: 'right' },
+  price: { fontWeight: 'bold', color: '#004aad', fontSize: 12, textAlign: 'right' },
   viewProfileBtn: {
     marginRight: 8,
     borderWidth: 1,
     borderColor: '#004aad',
     borderRadius: 10,
     paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   viewProfileText: { color: '#004aad', fontSize: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 18, marginLeft: 10, alignSelf: 'center' },
+  avatar: { width: 32, height: 32, borderRadius: 16, marginLeft: 10, alignSelf: 'center' },
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },
   avatarInitial: { color: '#ffffff', fontWeight: 'bold' },
 });
