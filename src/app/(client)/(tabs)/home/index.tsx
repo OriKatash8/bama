@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  useWindowDimensions, ActivityIndicator,
+  useWindowDimensions, ActivityIndicator, Modal, TouchableWithoutFeedback,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,7 +12,7 @@ import { MiniCalendar } from '@features/crew/components';
 import { useTheme } from '@core/hooks/useTheme';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, X } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
@@ -51,6 +51,42 @@ const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
   subcategories: subs,
 }));
 
+const ISRAEL_LOCATIONS_HE = [
+  'תל אביב', 'ירושלים', 'חיפה', 'ראשון לציון', 'פתח תקווה', 'אשדוד',
+  'נתניה', 'באר שבע', 'בני ברק', 'רמת גן', 'בת ים', 'הרצליה',
+  'כפר סבא', 'חולון', 'רעננה', 'מודיעין', 'רחובות', 'אשקלון',
+  'הוד השרון', 'גבעתיים', 'עכו', 'נהריה', 'טבריה', 'צפת',
+  'לוד', 'רמלה', 'אילת', 'נצרת', 'קדימה צורן', 'כפר יונה',
+  'נשר', 'קרית ביאליק', 'קרית מוצקין', 'קרית ים', 'קרית אתא',
+  'עפולה', 'בית שאן', 'מגדל העמק', 'יוקנעם', 'זכרון יעקב',
+  'פרדס חנה', 'בנימינה', 'טירת כרמל', 'גדרה', 'נס ציונה',
+  'באר יעקב', 'אבן יהודה', 'תל מונד', 'נתיבות', 'שדרות',
+  'קרית מלאכי', 'גן יבנה', 'מעלה אדומים', 'בית שמש', 'שוהם',
+  'ראש העין', 'כפר עזה', 'בארי', 'נחל עוז', 'רעים', 'אופקים',
+  'דגניה', 'עין חרוד', 'מרחביה', 'גינוסר', 'לביא',
+  'גוש דן', 'שפלה', 'צפון', 'דרום', 'מרכז', 'שרון',
+  'גליל', 'נגב', 'ירושלים והסביבה', 'עמק יזרעאל', 'הכרמל',
+  'הגולן', 'עמק הירדן', 'ערבה', 'אילת והסביבה',
+];
+
+const ISRAEL_LOCATIONS_EN = [
+  'Tel Aviv', 'Jerusalem', 'Haifa', 'Rishon LeZion', 'Petah Tikva',
+  'Ashdod', 'Netanya', 'Beer Sheva', 'Bnei Brak', 'Ramat Gan',
+  'Bat Yam', 'Herzliya', 'Kfar Saba', 'Holon', 'Raanana',
+  "Modi'in", 'Rehovot', 'Ashkelon', 'Hod HaSharon', 'Givatayim',
+  'Acre', 'Nahariya', 'Tiberias', 'Safed', 'Lod', 'Ramla',
+  'Eilat', 'Nazareth', 'Kadima Zoran', 'Kfar Yona',
+  'Nesher', 'Kiryat Bialik', 'Kiryat Motzkin', 'Kiryat Yam',
+  'Kiryat Ata', 'Afula', 'Beit Shean', 'Migdal HaEmek',
+  'Yokneam', 'Zichron Yaakov', 'Pardes Hanna', 'Binyamina',
+  'Tirat Carmel', 'Gadera', 'Nes Ziona', 'Beer Yaakov',
+  'Even Yehuda', 'Tel Mond', 'Netivot', 'Sderot',
+  'Kiryat Malakhi', 'Gan Yavne', 'Maale Adumim', 'Beit Shemesh',
+  'Shoham', 'Rosh HaAyin', 'Ofakim', 'Degania', 'Ein Harod',
+  'Gush Dan', 'Shephelah', 'North', 'South', 'Center', 'Sharon',
+  'Galilee', 'Negev', 'Jerusalem Area', 'Jezreel Valley',
+  'Carmel', 'Golan', 'Jordan Valley', 'Arava', 'Eilat Area',
+];
 
 const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as object;
 
@@ -93,6 +129,15 @@ export default function HomeScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+
+  const locationList = language === 'he' ? ISRAEL_LOCATIONS_HE : ISRAEL_LOCATIONS_EN;
+  const locations = useMemo(() => {
+    const q = locationSearch.trim().toLowerCase();
+    if (!q) return locationList;
+    return locationList.filter((c) => c.toLowerCase().includes(q));
+  }, [locationSearch, locationList]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -194,7 +239,7 @@ export default function HomeScreen() {
               />
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
-              {/* Labels row */}
+              {/* Labels row — exec / deadline / location */}
               <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 16 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
@@ -209,9 +254,14 @@ export default function HomeScreen() {
                     {t('builder.deadline')}
                   </Text>
                 </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
+                    {t('builder.location')}
+                  </Text>
+                </View>
               </View>
 
-              {/* Date squares row */}
+              {/* Squares row — exec / deadline / location */}
               <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 }}>
                 {/* Execution square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
@@ -263,25 +313,32 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                   {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
-              </View>
 
-              {/* Location — plain TextInput, no overlay */}
-              <Text style={[styles.label, { color: '#004aad', marginTop: 16, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('builder.location')}
-              </Text>
-              <TextInput
-                style={[
-                  styles.locationInput,
-                  { color: '#004aad', textAlign: rtl ? 'right' : 'left' },
-                  errors.location ? { borderColor: '#fc8181', borderWidth: 1.5 } : null,
-                ]}
-                value={location}
-                onChangeText={setLocation}
-                placeholder={t('builder.placeholder_location')}
-                placeholderTextColor="#004aad99"
-                returnKeyType="done"
-              />
-              {errors.location ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.location}</Text> : null}
+                {/* Location square */}
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    style={[styles.dateSquare, errors.location ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
+                    onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
+                    activeOpacity={0.8}
+                  >
+                    {location ? (
+                      <TouchableOpacity
+                        style={styles.dateSquareClear}
+                        onPress={(e) => { e.stopPropagation?.(); setLocation(''); }}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <X size={12} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    ) : null}
+                    <MapPin size={location ? 20 : 28} color="#004aad" strokeWidth={1.8} />
+                    <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                      {location || t('builder.placeholder_location')}
+                    </Text>
+                  </TouchableOpacity>
+                  {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
+                </View>
+              </View>
             </View>
 
             <View style={[styles.submitWrap, { paddingHorizontal: 36, marginBottom: 90 }]}>
@@ -436,6 +493,72 @@ export default function HomeScreen() {
 
 
 
+      {/* ── Location picker modal — same style as MiniCalendar ── */}
+      <Modal
+        visible={locationModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLocationModalOpen(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setLocationModalOpen(false)}>
+          <View style={styles.locationOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.locationBox, { backgroundColor: colors.card, borderColor: colors.accent }]}>
+                {/* Header — mirrors MiniCalendar nav row */}
+                <View style={styles.locationNav}>
+                  <Text style={[styles.locationNavTitle, { color: colors.text, fontFamily: font.bold }]}>
+                    {t('builder.location')}
+                  </Text>
+                  <TouchableOpacity onPress={() => setLocationModalOpen(false)} hitSlop={12} activeOpacity={0.7}>
+                    <X size={18} color={colors.accent} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Search input */}
+                <TextInput
+                  style={[styles.locationSearchInput, { color: colors.text, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left', borderColor: colors.accent }]}
+                  value={locationSearch}
+                  onChangeText={setLocationSearch}
+                  placeholder={t('builder.search_city')}
+                  placeholderTextColor={colors.textMuted}
+                  autoFocus
+                  returnKeyType="search"
+                  clearButtonMode="while-editing"
+                />
+
+                {/* City list */}
+                <FlatList
+                  data={locations}
+                  keyExtractor={(item) => item}
+                  keyboardShouldPersistTaps="handled"
+                  initialNumToRender={15}
+                  maxToRenderPerBatch={15}
+                  windowSize={3}
+                  style={styles.locationList}
+                  ItemSeparatorComponent={() => <View style={[styles.locationSeparator, { backgroundColor: colors.border }]} />}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.locationRow}
+                      onPress={() => {
+                        setLocation(item);
+                        setLocationModalOpen(false);
+                        setLocationSearch('');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <MapPin size={14} color={colors.accent} strokeWidth={1.8} />
+                      <Text style={[styles.locationRowText, { color: colors.text, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {calOpen !== null && (
         <MiniCalendar
           value={calOpen === 'exec' ? exec : deadline}
@@ -589,14 +712,56 @@ function createStyles(
     summarySlotCat: { fontSize: 12, color: '#004aad', fontFamily: ff, marginTop: 1 },
     removeSlotBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
 
-    locationInput: {
-      backgroundColor: '#ffffff',
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 12,
-      fontSize: 15,
-      fontFamily: ff,
-      marginTop: 6,
+    // Location picker — mirrors MiniCalendar overlay/box/nav
+    locationOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 32,
+    },
+    locationBox: {
+      width: 300,
+      maxHeight: 420,
+      borderRadius: 16,
+      borderWidth: 2,
+      padding: 12,
+    },
+    locationNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    locationNavTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    locationSearchInput: {
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      fontSize: 14,
+      marginBottom: 6,
+    },
+    locationList: {
+      maxHeight: 280,
+    },
+    locationRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 7,
+    },
+    locationRowText: {
+      fontSize: 14,
+      fontWeight: '500',
+      flex: 1,
+    },
+    locationSeparator: {
+      height: 1,
+      opacity: 0.4,
     },
   });
 }
