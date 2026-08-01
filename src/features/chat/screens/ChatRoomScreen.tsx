@@ -372,7 +372,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: 'transparent', borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats`)} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={[styles.headerBackText, { color: colors.accent, fontFamily: font.regular }]}>‹</Text>
         </TouchableOpacity>
@@ -383,12 +383,12 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.headerName, { color: '#ffffff', fontFamily: font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <Text style={[styles.headerName, { color: '#004aad', fontFamily: font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={[styles.headerName, { color: '#ffffff', fontFamily: font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+            <Text style={[styles.headerName, { color: '#004aad', fontFamily: font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
             </Text>
           )}
