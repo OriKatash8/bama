@@ -32,11 +32,11 @@ function makeT(translations: Translations) {
   };
 }
 
-const STATUS_CONFIG: Record<ProjectStatus, { color: string }> = {
-  open:        { color: '#004aad' },
-  in_progress: { color: '#f59e0b' },
-  completed:   { color: '#22c55e' },
-  cancelled:   { color: '#ef4444' },
+const STATUS_CONFIG: Record<ProjectStatus, { bg: string; text: string }> = {
+  open:        { bg: '#c1ecf9', text: '#004aad' },
+  in_progress: { bg: '#f59e0b', text: '#fff' },
+  completed:   { bg: '#ecf9c1', text: '#2d6a2d' },
+  cancelled:   { bg: '#ef4444', text: '#fff' },
 };
 
 function formatTimestamp(ts: { toDate(): Date } | null | undefined): string {
@@ -150,8 +150,8 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     }
     if (item.type === 'group') {
       return (
-        <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-          <Users size={24} color="#fff" strokeWidth={1.8} />
+        <View style={[styles.avatar, { backgroundColor: '#e7c8f2' }]}>
+          <Users size={24} color="#7c3aed" strokeWidth={1.8} />
         </View>
       );
     }
@@ -212,8 +212,8 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
               {chatName}
             </Text>
             {status != null && (
-              <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
-                <Text style={[styles.statusBadgeText, { fontFamily: font.bold }]}>{statusLabel(status)}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
+                <Text style={[styles.statusBadgeText, { fontFamily: font.bold, color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</Text>
               </View>
             )}
           </View>
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'center', justifyContent: 'space-between' },
   name: { fontSize: 15, fontWeight: '700' },
   statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
-  statusBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  statusBadgeText: { fontSize: 11, fontWeight: '700' },
   bottomRow: { alignItems: 'center', justifyContent: 'space-between' },
   preview: { fontSize: 13, flex: 1 },
   unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, flexShrink: 0 },
