@@ -96,6 +96,7 @@ export function ProjectRequestCard({ request }: Props) {
         style={[
           styles.statusBadge,
           { backgroundColor: STATUS_COLORS[request.status] },
+          rtl ? { left: -10 } : { right: -10 },
         ]}
       >
         <Text style={[styles.statusBadgeText, { fontFamily: font.semiBold }]}>
@@ -105,7 +106,7 @@ export function ProjectRequestCard({ request }: Props) {
 
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
         <Text
-          style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}
+          style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(request.title, 'bold') }]}
           numberOfLines={1}
         >
           {request.title}
@@ -132,7 +133,7 @@ export function ProjectRequestCard({ request }: Props) {
             <Text style={[styles.infoLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
               {t('project_details.location')}
             </Text>
-            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]} numberOfLines={1}>
+            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(request.location, 'bold') }]} numberOfLines={1}>
               {request.location}
             </Text>
           </View>
@@ -163,9 +164,9 @@ export function ProjectRequestCard({ request }: Props) {
                     <View key={i} style={[styles.teamRow, { flexDirection: rowDir }]}>
                       <View style={styles.teamDot} />
                       <View style={styles.teamInfo}>
-                        <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>{slot.subcategory}</Text>
+                        <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(slot.subcategory, 'semiBold') }]}>{slot.subcategory}</Text>
                         {member ? (
-                          <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
+                          <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(member.displayName, 'regular') }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
                         ) : (
                           <Text style={[styles.teamOpen, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>— Open</Text>
                         )}
@@ -235,7 +236,6 @@ const styles = StyleSheet.create({
   statusBadge: {
     position: 'absolute',
     top: -10,
-    left: -10,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 12,
