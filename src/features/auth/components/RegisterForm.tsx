@@ -70,7 +70,7 @@ export function RegisterForm() {
           autoCapitalize="words"
           error={fieldErrors.fullName}
           textAlign={textAlign}
-          writingDirection={rtl ? 'rtl' : 'ltr'}
+
           style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
         />
         <Input
@@ -82,7 +82,7 @@ export function RegisterForm() {
           autoCapitalize="none"
           error={fieldErrors.email}
           textAlign={textAlign}
-          writingDirection={rtl ? 'rtl' : 'ltr'}
+
           style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
         />
         <Input
@@ -92,7 +92,7 @@ export function RegisterForm() {
           onChangeText={setPassword}
           secureTextEntry
           textAlign={textAlign}
-          writingDirection={rtl ? 'rtl' : 'ltr'}
+
           style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
           onFocus={() => setPasswordFocused(true)}
           onBlur={() => setPasswordFocused(false)}
@@ -135,7 +135,7 @@ export function RegisterForm() {
           <Text style={[styles.footerText, { color: colors.text, fontFamily: font.regular }]}>
             {t('auth.have_account')}
           </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/')}>
+          <TouchableOpacity onPress={() => router.push('/(auth)')}>
             <Text style={[styles.link, { color: colors.text, fontFamily: font.semiBold }]}>
               {t('auth.sign_in_link')}
             </Text>

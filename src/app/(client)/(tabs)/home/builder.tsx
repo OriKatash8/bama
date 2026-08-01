@@ -9,10 +9,14 @@ import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuth } from '@core/hooks/useAuth';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
 import { Calendar } from 'lucide-react-native';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest } from '@core/types/project';
 
 const CATEGORY_META: Record<string, { labelKey: string; image: ReturnType<typeof require>; contain?: boolean }> = {
@@ -48,6 +52,17 @@ export default function BuilderScreen() {
   const { showToast } = useUiStore();
   const colors = useTheme();
   const { user } = useAuth();
+  const language = useSettingsStore((s) => s.language);
+  const font = useAppFont();
+  const translations = language === 'he' ? he : en;
+  const t = (key: string, vars?: Record<string, string | number>): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    let str = typeof result === 'string' ? result : key;
+    if (vars) str = str.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
+    return str;
+  };
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);

@@ -26,6 +26,7 @@ export interface Chat {
   ownerId?: string;
   projectId?: string;
   name?: string;
+  description?: string;
   photoURL?: string;
   roles?: Record<string, 'admin' | 'member'>;
   lastMessage?: LastMessage | null;

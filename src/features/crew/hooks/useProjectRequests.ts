@@ -4,10 +4,12 @@ import { addDocument, subscribeToCollection, where, updateDocument, deleteDocume
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 
 type SubmitDetails = {
-  title: string;
+  title?: string;
   description: string;
   exec?: string;
-  deadline: string;
+  deadline?: string;
+  date?: string;
+  budget?: number;
   location: string;
   targetProfessionalId?: string | null;
 };

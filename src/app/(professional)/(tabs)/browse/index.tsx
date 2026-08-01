@@ -39,7 +39,7 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
     const currentUserId = auth.currentUser?.uid;
     if (!currentUserId) return;
     const chatId = await getOrCreateDM(currentUserId, professionalId);
-    router.push(`/${segments[0]}/(tabs)/chats/${chatId}`);
+    router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as never);
   }
 
   if (isLoading) {

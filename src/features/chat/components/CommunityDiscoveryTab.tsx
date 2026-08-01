@@ -38,7 +38,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   const { myCommunities, discover, joinStatuses, requestToJoin } = useCommunityDiscovery(user?.id);
 
   function navigateToCommunity(communityId: string) {
-    router.push(`/${modeSegment}/(tabs)/chats/${communityId}`);
+    router.push(`/${modeSegment}/(tabs)/chats/${communityId}` as never);
   }
 
   function formatLastMessage(c: Chat): string {

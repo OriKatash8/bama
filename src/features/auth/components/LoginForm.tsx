@@ -64,7 +64,7 @@ export function LoginForm() {
           autoCapitalize="none"
           error={fieldErrors.email}
           textAlign={textAlign}
-          writingDirection={rtl ? 'rtl' : 'ltr'}
+
           style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
         />
         <Input
@@ -75,7 +75,7 @@ export function LoginForm() {
           secureTextEntry
           error={fieldErrors.password}
           textAlign={textAlign}
-          writingDirection={rtl ? 'rtl' : 'ltr'}
+
           style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
         />
         <TouchableOpacity style={{ alignSelf: rtl ? 'flex-start' : 'flex-end' }} onPress={() => router.push('/(auth)/forgot-password')}>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 
 export type Lang = 'en' | 'he';
 
@@ -25,7 +25,7 @@ export const useSettingsStore = create<SettingsState>()(
           getItem: () => null,
           setItem: () => undefined,
           removeItem: () => undefined,
-        } as Storage)
+        } as StateStorage)
       ),
       partialize: (state) => ({ language: state.language }),
       onRehydrateStorage: () => {

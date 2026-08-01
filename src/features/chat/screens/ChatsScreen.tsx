@@ -193,7 +193,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
       <TouchableOpacity
         key={item.id}
         style={[styles.card, { backgroundColor: '#ffffff', flexDirection: rowDir }]}
-        onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}`)}
+        onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}` as never)}
         activeOpacity={0.75}
       >
         <View style={[styles.avatarWrap, avatarMargin]}>

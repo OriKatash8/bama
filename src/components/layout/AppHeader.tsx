@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   gearBtn: { padding: 4 },
 
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   panel: {
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   },
   avatarImg: { width: 64, height: 64 },
   avatarOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center',
     justifyContent: 'center',

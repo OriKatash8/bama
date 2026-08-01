@@ -37,7 +37,7 @@ export function ForgotPasswordForm() {
         <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
           <Text style={styles.title}>CHECK INBOX</Text>
           <Text style={[styles.body, { color: colors.textSec }]}>We sent a password reset link to {email}.</Text>
-          <TouchableOpacity onPress={() => router.replace('/(auth)/')}>
+          <TouchableOpacity onPress={() => router.replace('/(auth)')}>
             <Text style={[styles.link, { color: colors.text }]}>Back to login</Text>
           </TouchableOpacity>
         </View>
@@ -73,7 +73,7 @@ export function ForgotPasswordForm() {
           } as any) : { backgroundColor: '#004aad' }}
         />
         <View style={styles.footer}>
-          <TouchableOpacity onPress={() => router.replace('/(auth)/')}>
+          <TouchableOpacity onPress={() => router.replace('/(auth)')}>
             <Text style={[styles.link, { color: colors.text }]}>Back to login</Text>
           </TouchableOpacity>
         </View>

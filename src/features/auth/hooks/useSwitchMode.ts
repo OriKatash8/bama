@@ -13,9 +13,9 @@ export function useSwitchMode(): SwitchModeState {
   function switchMode(mode: ActiveMode) {
     setActiveMode(mode);
     if (mode === 'client') {
-      router.replace('/(client)/(tabs)/browse/');
+      router.replace('/(client)/(tabs)/browse');
     } else {
-      router.replace('/(professional)/(tabs)/dashboard/');
+      router.replace('/(professional)/(tabs)/dashboard');
     }
   }
 

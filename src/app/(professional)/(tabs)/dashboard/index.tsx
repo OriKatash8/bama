@@ -196,7 +196,7 @@ export default function DashboardScreen() {
                 <TouchableOpacity
                   key={chat.id}
                   style={[styles.projectCard, { borderColor: colors.border }]}
-                  onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}`)}
+                  onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}` as never)}
                   activeOpacity={0.75}
                 >
                   <Text style={[styles.projectCardTitle, { fontFamily: font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
