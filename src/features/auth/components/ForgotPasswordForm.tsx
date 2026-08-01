@@ -32,9 +32,7 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <View style={styles.container}>
-        <View style={[styles.titleWrap, { marginBottom: -60 }]}>
-          <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
-        </View>
+        <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
         <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
           <Text style={styles.title}>CHECK INBOX</Text>
           <Text style={[styles.body, { color: colors.textSec }]}>We sent a password reset link to {email}.</Text>
@@ -49,13 +47,9 @@ export function ForgotPasswordForm() {
   return (
     <View style={styles.container}>
       <AuthSettingsButton />
-      <View style={[styles.titleWrap, { marginBottom: -60 }]}>
-        <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
-      </View>
+      <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
-        <View style={styles.titleWrap}>
-          <Text style={styles.title}>RESET PASSWORD</Text>
-        </View>
+        <Text style={styles.title}>RESET PASSWORD</Text>
         <Input
           placeholder="Email"
           placeholderTextColor={colors.placeholder}
@@ -85,8 +79,7 @@ export function ForgotPasswordForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16, justifyContent: 'center', paddingHorizontal: 40, marginTop: -100 },
-  titleWrap: { alignItems: 'center', width: '100%' },
+  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 40 },
   card: {
     borderRadius: 20,
     padding: 24,
@@ -98,7 +91,7 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 10,
   },
-  appLogo: { width: 1040, height: 520 },
+  appLogo: { width: '80%', height: 130, resizeMode: 'contain', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 28, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },
   body: { fontSize: 15, lineHeight: 22 },
   link: { fontSize: 14, fontWeight: '500', textDecorationLine: 'underline' },
