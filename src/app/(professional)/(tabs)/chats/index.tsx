@@ -115,7 +115,7 @@ export default function ProfessionalChatsScreen() {
   };
 
   return (
-    <Screen scrollable={false}>
+    <Screen style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={styles.gradient}>
@@ -149,7 +149,7 @@ export default function ProfessionalChatsScreen() {
       </View>
 
       {/* Chats tab */}
-      {active === 'chats' && <ChatsList />}
+      {active === 'chats' && <ChatsList scrollable={false} />}
 
       {/* Communities tab */}
       {active === 'communities' && (
@@ -158,7 +158,7 @@ export default function ProfessionalChatsScreen() {
 
       {/* Courses tab */}
       {active === 'courses' && (
-        <View style={{ flex: 1 }}>
+        <View>
           <View style={[styles.tabContentHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Text style={[styles.sectionTitle, { fontFamily: font.semiBold, color: colors.text }]}>
               {t('chats_page.tab_courses')}
@@ -184,6 +184,7 @@ export default function ProfessionalChatsScreen() {
             <FlatList
               data={courses}
               keyExtractor={(c) => c.id}
+              scrollEnabled={false}
               contentContainerStyle={{ padding: 16, paddingTop: 8 }}
               ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
               renderItem={({ item }) => (
@@ -288,8 +289,6 @@ export default function ProfessionalChatsScreen() {
 const styles = StyleSheet.create({
   headerWrap: {
     alignSelf: 'stretch',
-    marginHorizontal: -16,
-    marginTop: -16,
   },
   gradient: {
     alignItems: 'center',

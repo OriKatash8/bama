@@ -105,6 +105,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const [imageUploading, setImageUploading] = useState(false);
   const mediaActive = videoUploading || videoProcessing || imageUploading;
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Channel state
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -430,9 +431,11 @@ export function ChatRoomScreen({ chatId }: Props) {
         </ScrollView>
       )}
 
-      <View style={{ zIndex: 2 }}>
-        <PurchaseBanner chatId={chatId} />
-      </View>
+      {!bannerDismissed && (
+        <View style={{ zIndex: 2 }}>
+          <PurchaseBanner chatId={chatId} onDismiss={() => setBannerDismissed(true)} />
+        </View>
+      )}
 
       {/* Messages */}
       <View style={{ flex: 1, zIndex: 0 }}>

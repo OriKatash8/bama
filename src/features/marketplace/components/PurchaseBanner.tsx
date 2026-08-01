@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
+import { X } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -29,9 +30,9 @@ function makeT(translations: Translations) {
   };
 }
 
-type Props = { chatId: string };
+type Props = { chatId: string; onDismiss?: () => void };
 
-export function PurchaseBanner({ chatId }: Props) {
+export function PurchaseBanner({ chatId, onDismiss }: Props) {
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   // Separate loading states so seller action can't disable buyer buttons and vice-versa
   const [buyerLoading, setBuyerLoading] = useState(false);
@@ -150,6 +151,11 @@ export function PurchaseBanner({ chatId }: Props) {
             {isCompleted ? '✓' : '⏳'}
           </Text>
         </View>
+        {isCompleted && onDismiss && (
+          <TouchableOpacity onPress={onDismiss} hitSlop={8} activeOpacity={0.7} style={styles.dismissBtn}>
+            <X size={16} color="#004aad99" strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Product + price */}
@@ -325,4 +331,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   disabledBtn: { opacity: 0.5 },
+  dismissBtn: { padding: 4, marginLeft: 4 },
 });
