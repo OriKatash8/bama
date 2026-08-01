@@ -19,7 +19,7 @@ describe('useSwitchMode', () => {
       result.current.switchMode('client');
     });
     expect(useAuthStore.getState().activeMode).toBe('client');
-    expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/browse/');
+    expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/browse');
   });
 
   it('sets activeMode to professional and navigates to dashboard', () => {
@@ -28,6 +28,6 @@ describe('useSwitchMode', () => {
       result.current.switchMode('professional');
     });
     expect(useAuthStore.getState().activeMode).toBe('professional');
-    expect(mockReplace).toHaveBeenCalledWith('/(professional)/(tabs)/dashboard/');
+    expect(mockReplace).toHaveBeenCalledWith('/(professional)/(tabs)/dashboard');
   });
 });
