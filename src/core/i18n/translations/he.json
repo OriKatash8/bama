@@ -228,7 +228,18 @@
     "log_out": "התנתק",
     "failed_photo": "עדכון התמונה נכשל",
     "reviews_count": "({{count}} ביקורות)",
-    "no_reviews": "אין ביקורות עדיין"
+    "no_reviews": "אין ביקורות עדיין",
+    "report": "דווח על חשבון"
+  },
+  "report": {
+    "title": "דיווח על חשבון",
+    "reporting": "מדווח על: {{name}}",
+    "reason_label": "מה קרה?",
+    "reason_placeholder": "תאר את הבעיה...",
+    "add_evidence": "הוסף צילום מסך (אופציונלי)",
+    "submit": "שלח דיווח",
+    "success": "הדיווח נשלח. נבדוק אותו בקרוב.",
+    "min_chars": "אנא תאר את הבעיה (מינימום 20 תווים)"
   },
   "accessibility": {
     "language_header": "שפה",

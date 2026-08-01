@@ -228,7 +228,18 @@
     "log_out": "Log out",
     "failed_photo": "Failed to update photo",
     "reviews_count": "({{count}} reviews)",
-    "no_reviews": "No reviews yet"
+    "no_reviews": "No reviews yet",
+    "report": "Report Account"
+  },
+  "report": {
+    "title": "Report Account",
+    "reporting": "Reporting: {{name}}",
+    "reason_label": "What happened?",
+    "reason_placeholder": "Describe the issue...",
+    "add_evidence": "Add Screenshot (optional)",
+    "submit": "Submit Report",
+    "success": "Report submitted. We'll review it soon.",
+    "min_chars": "Please describe the issue (min 20 characters)"
   },
   "accessibility": {
     "language_header": "LANGUAGE",

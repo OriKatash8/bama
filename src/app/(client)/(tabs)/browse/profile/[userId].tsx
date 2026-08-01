@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator,
+  Modal, TextInput, ScrollView, Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, User as UserIcon } from 'lucide-react-native';
+import { ChevronLeft, User as UserIcon, Flag, X } from 'lucide-react-native';
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
 import { BioSection } from '@features/profile/components/BioSection';
 import { RoleChips } from '@features/profile/components/RoleChips';
@@ -13,10 +16,13 @@ import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
 import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
 import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
+import { uploadFile } from '@core/firebase/storage';
+import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
+import { useAuthStore } from '@core/stores/authStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { User, ProfessionalProfile } from '@core/types/user';
@@ -26,13 +32,19 @@ import type { Review } from '@core/types/project';
 type Translations = typeof en;
 
 function makeT(translations: Translations) {
-  return (key: string): string => {
+  return (key: string, vars?: Record<string, string>): string => {
     const keys = key.split('.');
     let result: unknown = translations;
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
+    let str = typeof result === 'string' ? result : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) str = str.replace(`{{${k}}}`, v);
+    }
+    return str;
   };
 }
+
+const MAX_EVIDENCE = 3;
 
 export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -43,7 +55,9 @@ export default function PublicProfileScreen() {
   const language = useSettingsStore((s) => s.language);
   const font = useAppFont();
   const { showToast } = useUiStore();
+  const currentUserId = useAuthStore((s) => s.user?.id ?? '');
   const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
 
   const [sheetVisible, setSheetVisible] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -51,6 +65,12 @@ export default function PublicProfileScreen() {
   const [portfolio, setPortfolio] = useState<MediaAsset[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Report modal state
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportEvidence, setReportEvidence] = useState<string[]>([]);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -80,6 +100,62 @@ export default function PublicProfileScreen() {
     router.push(`/${modeSegment}/(tabs)/browse` as never);
   }
 
+  async function pickEvidence() {
+    if (reportEvidence.length >= MAX_EVIDENCE) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setReportEvidence((prev) => [...prev, result.assets[0].uri]);
+    }
+  }
+
+  function removeEvidence(idx: number) {
+    setReportEvidence((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function closeReport() {
+    setReportVisible(false);
+    setReportReason('');
+    setReportEvidence([]);
+  }
+
+  async function submitReport() {
+    if (reportReason.trim().length < 20 || !userId || !currentUserId) return;
+    setReportSubmitting(true);
+    try {
+      const docRef = await addDoc(collection(db, 'reports'), {
+        reporterId: currentUserId,
+        reportedUserId: userId,
+        reportedUserName: user?.displayName ?? '',
+        reason: reportReason.trim(),
+        evidenceURLs: [] as string[],
+        status: 'pending' as const,
+        createdAt: serverTimestamp(),
+      });
+
+      if (reportEvidence.length > 0) {
+        const urls = await Promise.all(
+          reportEvidence.map(async (uri, i) => {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const ext = uri.split('.').pop() ?? 'jpg';
+            return uploadFile(`reports/${docRef.id}/evidence/${Date.now()}_${i}.${ext}`, blob);
+          })
+        );
+        await updateDoc(doc(db, 'reports', docRef.id), { evidenceURLs: urls });
+      }
+
+      closeReport();
+      showToast(t('report.success'), 'success');
+    } catch {
+      Alert.alert('Error', t('report.min_chars'));
+    } finally {
+      setReportSubmitting(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <Screen scrollable={false}>
@@ -104,6 +180,7 @@ export default function PublicProfileScreen() {
   }
 
   const skills = profile.skills ?? [];
+  const canSubmit = reportReason.trim().length >= 20;
 
   return (
     <Screen scrollable style={styles.screenContent}>
@@ -175,6 +252,18 @@ export default function PublicProfileScreen() {
         </Text>
       </TouchableOpacity>
 
+      {/* ── Report button ── */}
+      <TouchableOpacity
+        style={[styles.reportBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+        onPress={() => setReportVisible(true)}
+        activeOpacity={0.7}
+      >
+        <Flag size={13} color="#ff4d6d" strokeWidth={2} />
+        <Text style={[styles.reportBtnText, { fontFamily: font.regular }]}>
+          {t('profile.report')}
+        </Text>
+      </TouchableOpacity>
+
       <View style={styles.bottomPad} />
 
       <DirectProjectSheet
@@ -187,6 +276,94 @@ export default function PublicProfileScreen() {
           showToast(t('builder.request_submitted'), 'success');
         }}
       />
+
+      {/* ── Report Modal ── */}
+      <Modal visible={reportVisible} transparent animationType="slide" onRequestClose={closeReport}>
+        <View style={styles.modalOverlay}>
+          <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modalSheet}>
+            {/* Header */}
+            <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Text style={[styles.modalTitle, { fontFamily: font.bold }]}>
+                {t('report.title')}
+              </Text>
+              <TouchableOpacity onPress={closeReport} hitSlop={8} activeOpacity={0.7}>
+                <X size={22} color="#fff" strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Reporting name */}
+            <Text style={[styles.modalSubtitle, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+              {t('report.reporting', { name: user.displayName })}
+            </Text>
+
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {/* Reason label */}
+              <Text style={[styles.modalLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('report.reason_label')}
+              </Text>
+
+              {/* Reason input */}
+              <TextInput
+                style={[styles.reasonInput, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                multiline
+                value={reportReason}
+                onChangeText={setReportReason}
+                placeholder={t('report.reason_placeholder')}
+                placeholderTextColor="rgba(255,255,255,0.45)"
+                returnKeyType="default"
+              />
+
+              {/* Char hint */}
+              {reportReason.length > 0 && reportReason.length < 20 && (
+                <Text style={[styles.charHint, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('report.min_chars')}
+                </Text>
+              )}
+
+              {/* Evidence */}
+              <TouchableOpacity
+                style={[styles.evidenceBtn, { flexDirection: rtl ? 'row-reverse' : 'row', opacity: reportEvidence.length >= MAX_EVIDENCE ? 0.4 : 1 }]}
+                onPress={pickEvidence}
+                disabled={reportEvidence.length >= MAX_EVIDENCE}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.evidenceBtnText, { fontFamily: font.semiBold }]}>
+                  {t('report.add_evidence')}
+                </Text>
+              </TouchableOpacity>
+
+              {reportEvidence.length > 0 && (
+                <View style={styles.thumbRow}>
+                  {reportEvidence.map((uri, idx) => (
+                    <View key={idx} style={styles.thumbWrap}>
+                      <Image source={{ uri }} style={styles.thumb} resizeMode="cover" />
+                      <TouchableOpacity style={styles.thumbRemove} onPress={() => removeEvidence(idx)} hitSlop={4}>
+                        <X size={12} color="#fff" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Submit */}
+            <TouchableOpacity
+              style={[styles.submitBtn, { opacity: canSubmit && !reportSubmitting ? 1 : 0.45 }]}
+              onPress={submitReport}
+              disabled={!canSubmit || reportSubmitting}
+              activeOpacity={0.8}
+            >
+              {reportSubmitting ? (
+                <ActivityIndicator size="small" color="#004aad" />
+              ) : (
+                <Text style={[styles.submitBtnText, { fontFamily: font.bold }]}>
+                  {t('report.submit')}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -261,5 +438,124 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
   },
 
+  reportBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginTop: 16,
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  reportBtnText: {
+    color: '#ff4d6d',
+    fontSize: 13,
+  },
+
   bottomPad: { height: 40 },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 20,
+  },
+  modalScroll: { flexGrow: 0 },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  reasonInput: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 120,
+    color: '#fff',
+    fontSize: 14,
+    textAlignVertical: 'top',
+    marginBottom: 6,
+  },
+  charHint: {
+    fontSize: 12,
+    color: '#ffb347',
+    marginBottom: 12,
+  },
+  evidenceBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 12,
+    gap: 6,
+  },
+  evidenceBtnText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  thumbRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  thumbWrap: {
+    position: 'relative',
+  },
+  thumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+  },
+  thumbRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#ff4d6d',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  submitBtnText: {
+    color: '#004aad',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
