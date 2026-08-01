@@ -84,10 +84,11 @@ export default function DashboardScreen() {
   const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');
 
   const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
+  const [activeProjectsLoading, setActiveProjectsLoading] = useState(true);
 
   useEffect(() => {
     if (!currentUserId) {
-      console.log('[ActiveProjects] No currentUserId, skipping fetch');
+      setActiveProjectsLoading(false);
       return;
     }
 
@@ -134,6 +135,8 @@ export default function DashboardScreen() {
         setActiveProjects(active);
       } catch (err) {
         console.error('[ActiveProjects] Error fetching active projects:', err);
+      } finally {
+        setActiveProjectsLoading(false);
       }
     }
 
@@ -179,7 +182,7 @@ export default function DashboardScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {activeProjects.length > 0 && (
+        {!activeProjectsLoading && activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
             <Text style={[styles.heading, headingStyle, { marginBottom: 16, textAlign: 'center' }]}>
               {t('noticeboard.projects_in_progress')}
