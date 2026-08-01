@@ -26,7 +26,7 @@ export default function DetailsScreen() {
   }) {
     setIsSubmitting(true);
     try {
-      await submit(slots, details);
+      await submit(slots, { ...details, budget: String(details.budget) });
       router.dismiss(2);
     } catch (e: any) {
       showToast(e.message ?? 'Failed to submit request', 'error');

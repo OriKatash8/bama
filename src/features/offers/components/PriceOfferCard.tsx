@@ -37,7 +37,7 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const rowDir = rtl ? 'row-reverse' : 'row' as const;
+  const rowDir = rtl ? 'row' : 'row-reverse' as const;
   const textAlign = rtl ? 'right' : 'left' as const;
   const displayName = professionalProfile?.displayName ?? '…';
 

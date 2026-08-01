@@ -90,6 +90,8 @@ export type ProjectRequest = {
   chatId?: string;
   reviewsCompleted?: boolean;
   reviewsPending?: string[];
+  vibe?: string;
+  budget?: string;
 };
 
 export type PriceOffer = {

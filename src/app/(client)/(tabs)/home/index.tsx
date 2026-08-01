@@ -90,6 +90,13 @@ const ISRAEL_LOCATIONS_EN = [
 
 const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as object;
 
+const BUDGET_KEYS = [
+  'builder.budget_low',
+  'builder.budget_mid',
+  'builder.budget_high',
+  'builder.budget_top',
+] as const;
+
 export default function HomeScreen() {
   const { slots, totalCount, addSlot, removeSlot, loadSlots } = useCrewBuilder();
   const colors = useTheme();
@@ -131,6 +138,10 @@ export default function HomeScreen() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
+  const [vibe, setVibe] = useState('');
+  const [vibeText, setVibeText] = useState('');
+  const [vibeModalOpen, setVibeModalOpen] = useState(false);
+  const [budget, setBudget] = useState('');
 
   const locationList = language === 'he' ? ISRAEL_LOCATIONS_HE : ISRAEL_LOCATIONS_EN;
   const locations = useMemo(() => {
@@ -150,6 +161,8 @@ export default function HomeScreen() {
         setExec(project.exec ?? '');
         setDeadline(project.deadline ?? '');
         setLocation(project.location);
+        setVibe(project.vibe ?? '');
+        setBudget(project.budget ?? '');
         loadSlots(project.crewSlots);
       })
       .finally(() => setIsLoadingProject(false));
@@ -177,16 +190,21 @@ export default function HomeScreen() {
         setTitleFailed(true);
       }
     }
-    setStep(2);
+    if (isEditMode) {
+      setStep(2);
+    } else {
+      setVibeText(vibe);
+      setVibeModalOpen(true);
+    }
   }
 
   // ── Step 2 → Summary screen ──
   function handleReview() {
-    if (totalCount === 0) {
-      setErrors({ slots: t('builder.error_role') });
-      return;
-    }
-    setErrors({});
+    const errs: Record<string, string> = {};
+    if (totalCount === 0) errs.slots = t('builder.error_role');
+    if (!budget) errs.budget = t('builder.error_budget');
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     router.push({
       pathname: '/(client)/(tabs)/home/summary' as never,
       params: {
@@ -195,6 +213,8 @@ export default function HomeScreen() {
         exec,
         deadline,
         location,
+        vibe,
+        budget,
         projectId: (projectId as string) ?? '',
         titleFailed: titleFailed ? 'true' : 'false',
       },
@@ -473,6 +493,32 @@ export default function HomeScreen() {
               })()}
             </View>
 
+            {/* Budget Range */}
+            <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: 'center', marginTop: 16, marginBottom: 4, textTransform: 'uppercase' }]}>
+              {t('builder.budget')}
+            </Text>
+            {errors.budget ? (
+              <Text style={[styles.error, { textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]}>{errors.budget}</Text>
+            ) : null}
+            <View style={styles.budgetGrid}>
+              {BUDGET_KEYS.map((key) => {
+                const label = t(key);
+                const isSelected = budget === label;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.budgetPill, isSelected && styles.budgetPillActive]}
+                    onPress={() => setBudget(label)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.budgetPillText, isSelected && styles.budgetPillTextActive, { fontFamily: font.semiBold }]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             <View style={styles.submitWrap}>
               <TouchableOpacity
                 style={[
@@ -492,6 +538,56 @@ export default function HomeScreen() {
       </ScrollView>
 
 
+
+      {/* ── Vibe & Style modal ── */}
+      <Modal
+        visible={vibeModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setVibeModalOpen(false); setStep(2); }}
+      >
+        <TouchableWithoutFeedback onPress={() => { setVibe(''); setVibeText(''); setVibeModalOpen(false); setStep(2); }}>
+          <View style={styles.vibeOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.vibeCard}>
+                <Text style={[styles.vibeTitleText, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('builder.vibe_title')}
+                </Text>
+                <Text style={[styles.vibeSubtitle, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('builder.vibe_subtitle')}
+                </Text>
+                <TextInput
+                  style={[styles.vibeInput, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left', color: '#004aad' }]}
+                  value={vibeText}
+                  onChangeText={setVibeText}
+                  placeholder={t('builder.vibe_placeholder')}
+                  placeholderTextColor="#004aad66"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  autoFocus
+                />
+                <View style={[styles.vibeBtnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <TouchableOpacity
+                    style={styles.vibeSkipBtn}
+                    onPress={() => { setVibe(''); setVibeText(''); setVibeModalOpen(false); setStep(2); }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.vibeSkipText, { fontFamily: font.semiBold }]}>{t('builder.skip')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.vibeAddBtn}
+                    onPress={() => { setVibe(vibeText.trim()); setVibeModalOpen(false); setStep(2); }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.vibeAddText, { fontFamily: font.bold }]}>{t('builder.add_vibe')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* ── Location picker modal — same style as MiniCalendar ── */}
       <Modal
@@ -762,6 +858,95 @@ function createStyles(
     locationSeparator: {
       height: 1,
       opacity: 0.4,
+    },
+
+    // Vibe modal
+    vibeOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    vibeCard: {
+      width: '85%',
+      backgroundColor: '#ffffff',
+      borderRadius: 20,
+      padding: 24,
+      gap: 12,
+    },
+    vibeTitleText: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: '#004aad',
+    },
+    vibeSubtitle: {
+      fontSize: 14,
+      color: '#666666',
+    },
+    vibeInput: {
+      borderWidth: 1,
+      borderColor: '#004aad33',
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 15,
+      height: 80,
+    },
+    vibeBtnRow: {
+      gap: 10,
+      marginTop: 4,
+    },
+    vibeSkipBtn: {
+      flex: 1,
+      borderWidth: 1.5,
+      borderColor: '#cccccc',
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    vibeSkipText: {
+      fontSize: 14,
+      color: '#666666',
+    },
+    vibeAddBtn: {
+      flex: 1,
+      backgroundColor: '#004aad',
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    vibeAddText: {
+      fontSize: 14,
+      color: '#ffffff',
+    },
+
+    // Budget pills
+    budgetGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginHorizontal: 16,
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    budgetPill: {
+      width: '47%',
+      borderWidth: 1.5,
+      borderColor: '#004aad',
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    budgetPillActive: {
+      backgroundColor: '#004aad',
+    },
+    budgetPillText: {
+      fontSize: 14,
+      color: '#004aad',
+    },
+    budgetPillTextActive: {
+      color: '#ffffff',
     },
   });
 }

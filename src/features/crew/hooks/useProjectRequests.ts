@@ -9,7 +9,8 @@ type SubmitDetails = {
   exec?: string;
   deadline?: string;
   date?: string;
-  budget?: number;
+  budget?: string;
+  vibe?: string;
   location: string;
   targetProfessionalId?: string | null;
 };

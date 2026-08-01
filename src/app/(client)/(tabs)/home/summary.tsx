@@ -33,6 +33,8 @@ export default function SummaryScreen() {
     exec: string;
     deadline: string;
     location: string;
+    vibe: string;
+    budget: string;
     projectId: string;
     titleFailed: string;
   }>();
@@ -53,6 +55,8 @@ export default function SummaryScreen() {
   const [exec, setExec] = useState(params.exec ?? '');
   const [deadline, setDeadline] = useState(params.deadline ?? '');
   const [location, setLocation] = useState(params.location ?? '');
+  const [vibe, setVibe] = useState(params.vibe ?? '');
+  const [budget] = useState(params.budget ?? '');
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,7 +66,7 @@ export default function SummaryScreen() {
     if (!canConfirm) return;
     setIsSubmitting(true);
     try {
-      const details = { title, description, exec: exec || undefined, deadline, location };
+      const details = { title, description, exec: exec || undefined, deadline, location, vibe: vibe || undefined, budget: budget || undefined };
       if (isEditMode) {
         await updateProject(params.projectId, slots, details);
         showToast(t('builder.project_updated'), 'success');
@@ -187,6 +191,33 @@ export default function SummaryScreen() {
             placeholder={t('builder.placeholder_location')}
             placeholderTextColor="#004aad99"
           />
+
+          {/* Vibe & Style (editable, shown if set) */}
+          {vibe.length > 0 && (
+            <>
+              <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+                {t('builder.vibe_label')}
+              </Text>
+              <TextInput
+                style={[styles.input, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                value={vibe}
+                onChangeText={setVibe}
+                placeholderTextColor="#004aad99"
+              />
+            </>
+          )}
+
+          {/* Budget (read-only pill) */}
+          {budget.length > 0 && (
+            <>
+              <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+                {t('builder.budget')}
+              </Text>
+              <View style={styles.budgetPillDisplay}>
+                <Text style={[styles.budgetPillDisplayText, { fontFamily: font.bold }]}>{budget}</Text>
+              </View>
+            </>
+          )}
 
           {/* Slots */}
           <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
@@ -354,4 +385,13 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { backgroundColor: '#555' },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  budgetPillDisplay: {
+    backgroundColor: '#004aad',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+  },
+  budgetPillDisplayText: { color: '#ffffff', fontSize: 14 },
 });

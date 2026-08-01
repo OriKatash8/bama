@@ -77,6 +77,11 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         <Text style={[styles.rolesCompact, { fontFamily: font.semiBold, color: textColor }]} numberOfLines={2}>
           {allRoles.join(' · ')}
         </Text>
+        {request.budget ? (
+          <View style={styles.budgetBadge}>
+            <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget}</Text>
+          </View>
+        ) : null}
         <TouchableOpacity
           style={styles.offerPill}
           onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
@@ -124,6 +129,11 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           <Text style={[styles.roles, { fontFamily: font.semiBold, color: textColor }]} numberOfLines={2}>
             {allRoles.join(' | ')}
           </Text>
+          {request.budget ? (
+            <View style={styles.budgetBadge}>
+              <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget}</Text>
+            </View>
+          ) : null}
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
@@ -224,4 +234,15 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   offerIcon: { fontSize: 16, color: '#004aad', fontWeight: '800' },
   dismissIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
+  budgetBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0,74,173,0.1)',
+    borderWidth: 1,
+    borderColor: '#004aad',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginTop: 4,
+  },
+  budgetBadgeText: { fontSize: 11, color: '#004aad', fontWeight: '600' },
 });

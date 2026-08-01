@@ -70,7 +70,19 @@
     "back_to_edit": "Back",
     "help_execution": "The date when the project work takes place — e.g. a shoot day",
     "help_deadline": "The date by which you want the project to be ready",
-    "help_location": "Where the project is planned to take place"
+    "help_location": "Where the project is planned to take place",
+    "vibe_title": "What's the vibe?",
+    "vibe_subtitle": "Describe the style or mood of your project",
+    "vibe_placeholder": "e.g. elegant, energetic, minimal...",
+    "skip": "Skip",
+    "add_vibe": "Add Vibe",
+    "budget": "Budget Range",
+    "budget_low": "Up to ₪5K",
+    "budget_mid": "₪5K–₪20K",
+    "budget_high": "₪20K–₪50K",
+    "budget_top": "₪50K+",
+    "error_budget": "Please select a budget range",
+    "vibe_label": "Vibe & Style"
   },
   "search": {
     "no_professionals_yet": "No professionals yet",

@@ -70,7 +70,19 @@
     "back_to_edit": "חזור",
     "help_execution": "תאריך בו יתבצע יום עבודה על הפרויקט. לדוגמה: יום צילום",
     "help_deadline": "התאריך בו אתה רוצה שהפרויקט יהיה מוכן",
-    "help_location": "מיקום בו הפרויקט מתוכנן להתרחש"
+    "help_location": "מיקום בו הפרויקט מתוכנן להתרחש",
+    "vibe_title": "מה האווירה?",
+    "vibe_subtitle": "תאר את הסגנון או המצב רוח של הפרויקט",
+    "vibe_placeholder": "למשל: אלגנטי, אנרגטי, מינימליסטי...",
+    "skip": "דלג",
+    "add_vibe": "הוסף אווירה",
+    "budget": "טווח תקציב",
+    "budget_low": "עד ₪5K",
+    "budget_mid": "₪5K–₪20K",
+    "budget_high": "₪20K–₪50K",
+    "budget_top": "₪50K+",
+    "error_budget": "נא לבחור טווח תקציב",
+    "vibe_label": "אווירה וסגנון"
   },
   "search": {
     "no_professionals_yet": "אין אנשי מקצוע עדיין",
