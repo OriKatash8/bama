@@ -2,6 +2,11 @@ import { renderHook, act } from '@testing-library/react-native';
 import { useAcceptOffer } from '../useAcceptOffer';
 import { queryDocuments, runBatchUpdates, updateDocument, where } from '@core/firebase/firestore';
 
+jest.mock('../../../chat/services/chatService', () => ({
+  createProjectGroup: jest.fn(() => Promise.resolve('group1')),
+  addMemberToGroup: jest.fn(() => Promise.resolve()),
+}));
+
 jest.mock('@core/firebase/firestore', () => ({
   queryDocuments: jest.fn(),
   runBatchUpdates: jest.fn(),

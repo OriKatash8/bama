@@ -7,6 +7,20 @@ jest.mock('@core/firebase/auth', () => ({
   signIn: jest.fn(),
 }));
 
+jest.mock('@core/i18n', () => ({
+  __esModule: true,
+  default: {
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'auth.err_invalid_credentials': 'Invalid email or password.',
+        'auth.err_too_many': 'Too many attempts. Try again later.',
+        'auth.err_generic': 'Something went wrong. Please try again.',
+      };
+      return map[key] ?? key;
+    },
+  },
+}));
+
 const mockSignIn = signIn as jest.MockedFunction<typeof signIn>;
 
 beforeEach(() => {

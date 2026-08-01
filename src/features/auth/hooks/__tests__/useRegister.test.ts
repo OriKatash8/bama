@@ -9,6 +9,20 @@ jest.mock('@core/firebase/auth', () => ({
   signUp: jest.fn(),
 }));
 
+jest.mock('@core/i18n', () => ({
+  __esModule: true,
+  default: {
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'auth.err_email_exists': 'An account with this email already exists.',
+        'auth.err_email_invalid': 'Invalid email address.',
+        'auth.err_generic': 'Something went wrong. Please try again.',
+      };
+      return map[key] ?? key;
+    },
+  },
+}));
+
 jest.mock('@core/firebase/firestore', () => ({
   setDocument: jest.fn(),
 }));
