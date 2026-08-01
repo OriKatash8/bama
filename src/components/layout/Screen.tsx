@@ -7,9 +7,10 @@ type ScreenProps = {
   scrollable?: boolean;
   style?: StyleProp<ViewStyle>;
   backgroundColor?: string;
+  keyboardShouldPersistTaps?: 'always' | 'handled' | 'never';
 };
 
-export function Screen({ children, scrollable = true, style, backgroundColor }: ScreenProps) {
+export function Screen({ children, scrollable = true, style, backgroundColor, keyboardShouldPersistTaps }: ScreenProps) {
   const colors = useTheme();
   const gradient: readonly [string, string] = backgroundColor
     ? [backgroundColor, backgroundColor]
@@ -23,7 +24,7 @@ export function Screen({ children, scrollable = true, style, backgroundColor }: 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           {scrollable ? (
-            <ScrollView style={styles.transparent} contentContainerStyle={[styles.content, style]}>{children}</ScrollView>
+            <ScrollView style={styles.transparent} contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps={keyboardShouldPersistTaps} showsVerticalScrollIndicator={false}>{children}</ScrollView>
           ) : (
             children
           )}

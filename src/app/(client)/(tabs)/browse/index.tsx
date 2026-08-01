@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList,
-  StyleSheet, Platform, Animated, Easing, ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity,
+  StyleSheet, Animated, Easing, ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, useSegments } from 'expo-router';
@@ -179,8 +179,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <Screen scrollable={false}>
-      <View style={styles.flex}>
+    <Screen keyboardShouldPersistTaps="handled" style={{ padding: 0, paddingBottom: 100 }}>
         {/* Heading + back button — always visible */}
         <View style={styles.header}>
           {view.kind !== 'grid' && (
@@ -223,15 +222,9 @@ export default function SearchScreen() {
           </Text>
         )}
 
-        {/* Category accordion — outside FlatList so state changes re-render reliably */}
+        {/* Category accordion */}
         {showGrid && (
-          <Animated.ScrollView
-            style={styles.flex}
-            contentContainerStyle={styles.gridContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.listContent}>
+          <View style={styles.listContent}>
               {filteredCategories.map((cat) => {
                 const animVal = animValues[cat.key];
                 const maxHeight = animVal.interpolate({
@@ -290,27 +283,20 @@ export default function SearchScreen() {
                 </Text>
               )}
             </View>
-          </Animated.ScrollView>
         )}
 
         {/* Results list — only rendered in search / subcategory results mode */}
         {!showGrid && (
-          <FlatList
-            style={styles.flex}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            data={listData}
-            keyExtractor={(item) => item.user.id}
-            renderItem={renderProfessional}
-            ListEmptyComponent={renderListEmpty}
-            initialNumToRender={8}
-            maxToRenderPerBatch={8}
-            windowSize={7}
-            removeClippedSubviews={Platform.OS !== 'web'}
-          />
+          <View>
+            {listLoading && listData.length === 0 ? (
+              <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+            ) : listData.length === 0 ? (
+              renderListEmpty()
+            ) : (
+              listData.map((item) => renderProfessional({ item }))
+            )}
+          </View>
         )}
-      </View>
 
       <DirectProjectSheet
         visible={sheetProfessionalId !== null}
@@ -327,8 +313,6 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingBottom: 100 },
-  gridContent: { paddingBottom: 100 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -344,8 +328,6 @@ const styles = StyleSheet.create({
   avatar: { width: 152, height: 152, borderRadius: 76 },
   avatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontSize: 64, fontWeight: '700' },
-  flex: { flex: 1 },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',

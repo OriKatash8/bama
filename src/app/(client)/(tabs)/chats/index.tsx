@@ -20,13 +20,13 @@ export default function ChatsPage() {
   const tr = language === 'he' ? he : en;
 
   return (
-    <Screen scrollable={false}>
+    <Screen style={{ padding: 0, paddingBottom: 100 }}>
       <View style={styles.headerWrap}>
         <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
           {t(tr, 'chats_page.title')}
         </Text>
       </View>
-      <ChatsList />
+      <ChatsList scrollable={false} />
     </Screen>
   );
 }
@@ -35,8 +35,6 @@ const styles = StyleSheet.create({
   headerWrap: {
     alignItems: 'center',
     paddingVertical: 20,
-    marginHorizontal: -16,
-    marginTop: -16,
   },
   headerTitle: {
     fontSize: 36,

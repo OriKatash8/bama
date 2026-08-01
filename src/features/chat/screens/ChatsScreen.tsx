@@ -59,7 +59,7 @@ function formatTimestamp(ts: { toDate(): Date } | null | undefined): string {
 
 type DmInfo = { name: string; photoURL: string | null };
 
-export function ChatsScreen() {
+export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
@@ -179,75 +179,79 @@ export function ChatsScreen() {
     );
   }
 
-  return (
-    <ScrollView style={styles.flex} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-      {chats.map((item) => {
-        const currentUserId = user?.id ?? '';
-        console.log('[ChatsScreen] chat id:', item.id, '| unreadCount:', item.unreadCount, '| my unread:', item.unreadCount?.[currentUserId]);
-        const chatName = item.type === 'community'
-          ? (item.name ?? 'Community')
-          : item.type === 'group'
-          ? (item.name ?? t('chats.group_chat'))
-          : (dmInfo[item.id]?.name ?? t('chats.loading'));
-        const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
-        const timestamp = formatTimestamp(item.lastMessage?.timestamp);
-        const unread = item.unreadCount?.[currentUserId] ?? 0;
-        return (
-          <TouchableOpacity
-            key={item.id}
-            style={[styles.card, { backgroundColor: '#ffffff', flexDirection: rowDir }]}
-            onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}`)}
-            activeOpacity={0.75}
-          >
-            <View style={[styles.avatarWrap, avatarMargin]}>
-              {renderAvatar(item)}
-              {timestamp ? (
-                <View style={styles.avatarTimestampOverlay}>
-                  <Text style={[styles.avatarTimestampText, { color: colors.textMuted, fontFamily: font.regular }]}>
-                    {timestamp}
-                  </Text>
-                </View>
-              ) : null}
+  const cards = chats.map((item) => {
+    const currentUserId = user?.id ?? '';
+    const chatName = item.type === 'community'
+      ? (item.name ?? 'Community')
+      : item.type === 'group'
+      ? (item.name ?? t('chats.group_chat'))
+      : (dmInfo[item.id]?.name ?? t('chats.loading'));
+    const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
+    const timestamp = formatTimestamp(item.lastMessage?.timestamp);
+    const unread = item.unreadCount?.[currentUserId] ?? 0;
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={[styles.card, { backgroundColor: '#ffffff', flexDirection: rowDir }]}
+        onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}`)}
+        activeOpacity={0.75}
+      >
+        <View style={[styles.avatarWrap, avatarMargin]}>
+          {renderAvatar(item)}
+          {timestamp ? (
+            <View style={styles.avatarTimestampOverlay}>
+              <Text style={[styles.avatarTimestampText, { color: colors.textMuted, fontFamily: font.regular }]}>
+                {timestamp}
+              </Text>
             </View>
-            <View style={styles.content}>
-              <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-                <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
-                  {chatName}
-                </Text>
-                {status != null && (
-                  <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
-                    <Text style={[styles.statusBadgeText, { fontFamily: font.bold }]}>{statusLabel(status)}</Text>
-                  </View>
-                )}
+          ) : null}
+        </View>
+        <View style={styles.content}>
+          <View style={[styles.headerRow, { flexDirection: rowDir }]}>
+            <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
+              {chatName}
+            </Text>
+            {status != null && (
+              <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].color }]}>
+                <Text style={[styles.statusBadgeText, { fontFamily: font.bold }]}>{statusLabel(status)}</Text>
               </View>
-              <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
-                <Text
-                  style={[styles.preview, {
-                    color: colors.textMuted,
-                    fontFamily: font.regular,
-                    textAlign: rtl ? 'right' : 'left',
-                    paddingRight: rtl ? 0 : 4,
-                    paddingLeft: rtl ? 4 : 0,
-                  }]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.lastMessage?.text ?? ''}
-                </Text>
-                {unread > 0 ? (
-                  <View style={[styles.unreadBadge, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
-                    <Text style={[styles.unreadBadgeText, { fontFamily: font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.badgePlaceholder, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]} />
-                )}
+            )}
+          </View>
+          <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
+            <Text
+              style={[styles.preview, {
+                color: colors.textMuted,
+                fontFamily: font.regular,
+                textAlign: rtl ? 'right' : 'left',
+                paddingRight: rtl ? 0 : 4,
+                paddingLeft: rtl ? 4 : 0,
+              }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.lastMessage?.text ?? ''}
+            </Text>
+            {unread > 0 ? (
+              <View style={[styles.unreadBadge, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
+                <Text style={[styles.unreadBadgeText, { fontFamily: font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
               </View>
-            </View>
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
-  );
+            ) : (
+              <View style={[styles.badgePlaceholder, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]} />
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  });
+
+  if (scrollable) {
+    return (
+      <ScrollView style={styles.flex} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+        {cards}
+      </ScrollView>
+    );
+  }
+  return <View style={styles.listContent}>{cards}</View>;
 }
 
 const styles = StyleSheet.create({
