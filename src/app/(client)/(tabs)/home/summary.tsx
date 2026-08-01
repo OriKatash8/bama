@@ -36,7 +36,6 @@ export default function SummaryScreen() {
     vibe: string;
     budget: string;
     projectId: string;
-    titleFailed: string;
   }>();
 
   const { slots, addSlot, removeSlot, reset: resetSlots, loadSlots } = useCrewBuilder();
@@ -48,7 +47,6 @@ export default function SummaryScreen() {
   const font = useAppFont();
 
   const isEditMode = !!params.projectId;
-  const titleFailed = params.titleFailed === 'true';
 
   const [title, setTitle] = useState(params.title ?? '');
   const [description, setDescription] = useState(params.description ?? '');
@@ -124,12 +122,6 @@ export default function SummaryScreen() {
             placeholder={t('builder.confirm_title')}
             placeholderTextColor="#004aad99"
           />
-          {titleFailed && (
-            <Text style={[styles.hint, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-              {t('builder.title_failed')}
-            </Text>
-          )}
-
           {/* Description */}
           <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
             {t('builder.tell_us')}

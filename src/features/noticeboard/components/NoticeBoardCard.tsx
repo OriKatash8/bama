@@ -42,6 +42,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const perRoleLabel = rtl ? '/ תפקיד' : '/ role';
   const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
 
@@ -79,7 +80,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         </Text>
         {request.budget ? (
           <View style={styles.budgetBadge}>
-            <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget}</Text>
+            <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
           </View>
         ) : null}
         <TouchableOpacity
@@ -131,7 +132,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </Text>
           {request.budget ? (
             <View style={styles.budgetBadge}>
-              <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget}</Text>
+              <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
             </View>
           ) : null}
         </View>

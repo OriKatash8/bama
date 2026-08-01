@@ -15,7 +15,6 @@ import { getDocument } from '@core/firebase/firestore';
 import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest } from '@core/types/project';
@@ -123,8 +122,6 @@ export default function HomeScreen() {
     [font.regular, font.bold, font.semiBold, font.medium],
   );
 
-  const { generateTitle, isGenerating } = useGenerateTitle();
-
   // ── Form state (single source of truth for all steps + summary) ──
   const [step, setStep] = useState<1 | 2>(1);
   const [description, setDescription] = useState('');
@@ -132,7 +129,6 @@ export default function HomeScreen() {
   const [deadline, setDeadline] = useState('');
   const [location, setLocation] = useState('');
   const [title, setTitle] = useState('');
-  const [titleFailed, setTitleFailed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -169,27 +165,15 @@ export default function HomeScreen() {
   }, [projectId, loadSlots]);
 
   // ── Step 1 → Step 2 ──
-  async function handleNext() {
+  function handleNext() {
     const next: Record<string, string> = {};
+    if (!title.trim()) next.title = t('builder.error_required');
     if (!description.trim()) next.description = t('builder.error_required');
     if (!deadline) next.deadline = t('builder.error_required');
     if (!location.trim()) next.location = t('builder.error_required');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    if (!isEditMode) {
-      try {
-        const generated = await Promise.race([
-          generateTitle(description),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 30_000)),
-        ]);
-        setTitle(generated);
-        setTitleFailed(false);
-      } catch {
-        setTitle('');
-        setTitleFailed(true);
-      }
-    }
     if (isEditMode) {
       setStep(2);
     } else {
@@ -216,7 +200,6 @@ export default function HomeScreen() {
         vibe,
         budget,
         projectId: (projectId as string) ?? '',
-        titleFailed: titleFailed ? 'true' : 'false',
       },
     });
   }
@@ -246,7 +229,18 @@ export default function HomeScreen() {
             </Text>
 
             <View style={styles.card}>
-              <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>{t('builder.tell_us')}</Text>
+              <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>{t('builder.title')}</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow, errors.title ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
+                value={title}
+                onChangeText={setTitle}
+                placeholder={t('builder.placeholder_title')}
+                placeholderTextColor="#004aad99"
+                returnKeyType="next"
+              />
+              {errors.title ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.title}</Text> : null}
+
+              <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginTop: 16 }]}>{t('builder.tell_us')}</Text>
               <TextInput
                 style={[styles.input, styles.multiline, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow]}
                 value={description}
@@ -366,16 +360,12 @@ export default function HomeScreen() {
                 style={[
                   styles.submitBtn,
                   { alignSelf: 'stretch' },
-                  isGenerating && styles.disabled,
-                  Platform.OS === 'web' && ({ background: isGenerating ? '#004aad' : 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
+                  Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
                 ]}
-                onPress={() => void handleNext()}
-                disabled={isGenerating}
+                onPress={handleNext}
                 activeOpacity={0.8}
               >
-                <Text style={styles.submitText}>
-                  {isGenerating ? t('builder.generating_title') : t('builder.next_step')}
-                </Text>
+                <Text style={styles.submitText}>{t('builder.next_step')}</Text>
               </TouchableOpacity>
             </View>
           </>
