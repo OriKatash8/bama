@@ -7,6 +7,7 @@ import { Button } from '@components/ui/Button';
 import { useRegister } from '@features/auth/hooks/useRegister';
 import { validatePassword } from '@features/auth/utils/validatePassword';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -59,6 +60,7 @@ export function RegisterForm() {
 
   return (
     <View style={styles.container}>
+      <AuthSettingsButton />
       <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
         <Text style={[styles.title, { fontFamily: font.bold }]}>{t('auth.register_title')}</Text>

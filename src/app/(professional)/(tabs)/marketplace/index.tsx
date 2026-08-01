@@ -115,7 +115,7 @@ function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: Cat
       <Animated.View style={{ transform: [{ scale }] }}>
         <Image source={iconSource} style={styles.tileIcon} resizeMode="contain" />
       </Animated.View>
-      <Text style={[styles.catLabel, { color: isActive ? '#cb6ce6' : inactiveLabelColor }]}>
+      <Text style={[styles.catLabel, { color: isActive ? '#004aad' : inactiveLabelColor }]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -343,7 +343,7 @@ export default function MarketplaceScreen() {
         {/* Product grid */}
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#cb6ce6" />
+            <ActivityIndicator size="large" color="#004aad" />
           </View>
         ) : filtered.length === 0 ? (
           <View style={styles.center}>
@@ -520,10 +520,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#cb6ce6',
+    backgroundColor: '#004aad',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#cb6ce6',
+    shadowColor: '#004aad',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 8,
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
   filterSectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#cb6ce6',
+    color: '#004aad',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,

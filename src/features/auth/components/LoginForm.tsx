@@ -5,6 +5,7 @@ import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useLogin } from '@features/auth/hooks/useLogin';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -52,6 +53,7 @@ export function LoginForm() {
 
   return (
     <View style={styles.container}>
+      <AuthSettingsButton />
       <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
         <Text style={[styles.title, { fontFamily: font.bold }]}>{t('auth.sign_in')}</Text>

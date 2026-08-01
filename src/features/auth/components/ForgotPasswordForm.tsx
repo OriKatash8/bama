@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useForgotPassword } from '@features/auth/hooks/useForgotPassword';
+import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
 import { isValidEmail } from '@utils/validators';
 
@@ -47,6 +48,7 @@ export function ForgotPasswordForm() {
 
   return (
     <View style={styles.container}>
+      <AuthSettingsButton />
       <View style={[styles.titleWrap, { marginBottom: -60 }]}>
         <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
       </View>

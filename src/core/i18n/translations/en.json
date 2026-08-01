@@ -1,4 +1,8 @@
 {
+  "mode_picker": {
+    "client": "I'm a Customer",
+    "professional": "I'm a Professional"
+  },
   "community": {
     "channels": "Channels",
     "add_channel": "+ Add Channel",

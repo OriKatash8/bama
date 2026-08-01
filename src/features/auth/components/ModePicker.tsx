@@ -1,7 +1,22 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { ActiveMode } from '@core/types/user';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 function PersonIcon({ color = '#fff' }: { color?: string }) {
   return (
@@ -18,14 +33,17 @@ const personStyles = StyleSheet.create({
   body:  { width: 16, height: 10, borderRadius: 4, backgroundColor: '#fff' },
 });
 
-const CARDS: { mode: ActiveMode; title: string; color: string }[] = [
-  { mode: 'client',       title: "I'm a Customer",     color: '#004aad' },
-  { mode: 'professional', title: "I'm a Professional", color: '#cb6ce6' },
+const CARD_MODES: { mode: ActiveMode; key: string; color: string }[] = [
+  { mode: 'client',       key: 'mode_picker.client',       color: '#004aad' },
+  { mode: 'professional', key: 'mode_picker.professional', color: '#cb6ce6' },
 ];
 
 export function ModePicker() {
   const { switchMode } = useSwitchMode();
   const [pressed, setPressed] = useState<ActiveMode | null>(null);
+  const language = useSettingsStore((s) => s.language);
+  const font = useAppFont();
+  const t = makeT(language === 'he' ? he : en);
 
   return (
     <View style={styles.container}>
@@ -36,7 +54,7 @@ export function ModePicker() {
       />
 
       <View style={styles.buttons}>
-        {CARDS.map(({ mode, title, color }) => {
+        {CARD_MODES.map(({ mode, key, color }) => {
           const isPressed = pressed === mode;
           return (
             <TouchableOpacity
@@ -52,7 +70,9 @@ export function ModePicker() {
               onPressOut={() => setPressed(null)}
               activeOpacity={1}
             >
-              <Text style={[styles.btnText, { color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>{title}</Text>
+              <Text style={[styles.btnText, { fontFamily: font.bold, color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>
+                {t(key)}
+              </Text>
               {mode === 'client'
                 ? <PersonIcon color={isPressed ? '#ffffff' : '#004aad'} />
                 : <Text style={[styles.btnIcon, { color: isPressed ? '#ffffff' : '#cb6ce6' }]}>✦</Text>}

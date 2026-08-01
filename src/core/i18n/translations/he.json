@@ -1,4 +1,8 @@
 {
+  "mode_picker": {
+    "client": "אני לקוח",
+    "professional": "אני בעל מקצוע"
+  },
   "community": {
     "channels": "ערוצים",
     "add_channel": "+ הוסף ערוץ",
