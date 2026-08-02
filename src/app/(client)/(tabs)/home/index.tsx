@@ -375,14 +375,14 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 2: Select roles ══════════════ */}
         {step === 2 && (
           <>
+            <Text style={styles.pageTitle}>
+              {rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}
+            </Text>
+
             <TouchableOpacity style={styles.backArrow} onPress={() => setStep(1)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
               <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
             </TouchableOpacity>
-
-            <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: 'center', marginTop: 8, textTransform: 'uppercase' }]}>
-              {t('builder.select_roles')}
-            </Text>
 
             <View style={styles.rolesCard}>
               {errors.slots ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left', marginBottom: 8 }]}>{errors.slots}</Text> : null}
@@ -396,7 +396,7 @@ export default function HomeScreen() {
                 initialNumToRender={9}
                 maxToRenderPerBatch={9}
                 windowSize={3}
-                columnWrapperStyle={{ gap: 6 }}
+                columnWrapperStyle={{ gap: 6, justifyContent: 'center' }}
                 ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                 renderItem={({ item: cat }) => {
                   const catTotal = slots

@@ -23,11 +23,11 @@ function makeT(translations: Translations) {
 
 type Props = { request: ProjectRequest };
 
-const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
-  open: '#9e9e9e',
-  in_progress: '#FF9800',
-  completed: '#4CAF50',
-  cancelled: '#757575',
+const STATUS_CONFIG: Record<ProjectRequest['status'], { bg: string; text: string }> = {
+  open:        { bg: '#c1ecf9', text: '#004aad' },
+  in_progress: { bg: '#f59e0b', text: '#fff' },
+  completed:   { bg: '#ecf9c1', text: '#2d6a2d' },
+  cancelled:   { bg: '#ef4444', text: '#fff' },
 };
 
 const STATUS_LABEL_KEY: Record<ProjectRequest['status'], string> = {
@@ -92,18 +92,6 @@ export function ProjectRequestCard({ request }: Props) {
 
   return (
     <View style={styles.cardWrap}>
-      <View
-        style={[
-          styles.statusBadge,
-          { backgroundColor: STATUS_COLORS[request.status] },
-          rtl ? { left: -10 } : { right: -10 },
-        ]}
-      >
-        <Text style={[styles.statusBadgeText, { fontFamily: font.semiBold }]}>
-          {t(STATUS_LABEL_KEY[request.status])}
-        </Text>
-      </View>
-
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
         <Text
           style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(request.title, 'bold') }]}
@@ -111,6 +99,11 @@ export function ProjectRequestCard({ request }: Props) {
         >
           {request.title}
         </Text>
+        <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[request.status].bg, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
+          <Text style={[styles.statusBadgeText, { fontFamily: font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
+            {t(STATUS_LABEL_KEY[request.status])}
+          </Text>
+        </View>
 
         <View style={[styles.infoRow, { flexDirection: rowDir }]}>
           <View style={styles.infoCol}>
@@ -234,14 +227,13 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   statusBadge: {
-    position: 'absolute',
-    top: -10,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-    zIndex: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 20,
+    marginTop: 4,
+    marginBottom: 8,
   },
-  statusBadgeText: { color: '#ffffff', fontSize: 13, fontWeight: 'bold', textTransform: 'capitalize' },
+  statusBadgeText: { fontSize: 11, fontWeight: '700' },
   card: {
     borderRadius: 16,
     padding: 10,
