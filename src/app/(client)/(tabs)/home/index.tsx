@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  useWindowDimensions, ActivityIndicator, Modal, TouchableWithoutFeedback,
+  useWindowDimensions, ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -201,6 +201,7 @@ export default function HomeScreen() {
         vibe,
         budget,
         projectId: (projectId as string) ?? '',
+        slots: JSON.stringify(slots),
       },
     });
   }
@@ -486,9 +487,8 @@ export default function HomeScreen() {
             animationType="fade"
             onRequestClose={() => setExpandedCategory(null)}
           >
-            <TouchableWithoutFeedback onPress={() => setExpandedCategory(null)}>
-              <View style={styles.subcatOverlay}>
-                <TouchableWithoutFeedback>
+            <Pressable style={styles.subcatOverlay} onPress={() => setExpandedCategory(null)}>
+                <Pressable onPress={() => {}}>
                   <LinearGradient colors={['#1a237e', '#004aad']} style={styles.subcatModal}>
                   <View style={styles.subcatHeader}>
                     <Text style={[styles.subcatTitle, { fontFamily: font.bold }]}>
@@ -546,9 +546,8 @@ export default function HomeScreen() {
                     </Text>
                   </TouchableOpacity>
                 </LinearGradient>
-              </TouchableWithoutFeedback>
-              </View>
-            </TouchableWithoutFeedback>
+                </Pressable>
+            </Pressable>
           </Modal>
         );
       })()}

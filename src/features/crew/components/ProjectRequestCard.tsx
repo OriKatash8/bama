@@ -92,6 +92,18 @@ export function ProjectRequestCard({ request }: Props) {
 
   return (
     <View style={styles.cardWrap}>
+      <View
+        style={[
+          styles.statusBadge,
+          { backgroundColor: STATUS_CONFIG[request.status].bg },
+          rtl ? { left: -10 } : { right: -10 },
+        ]}
+      >
+        <Text style={[styles.statusBadgeText, { fontFamily: font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
+          {t(STATUS_LABEL_KEY[request.status])}
+        </Text>
+      </View>
+
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
         <Text
           style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(request.title, 'bold') }]}
@@ -99,15 +111,10 @@ export function ProjectRequestCard({ request }: Props) {
         >
           {request.title}
         </Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[request.status].bg, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
-          <Text style={[styles.statusBadgeText, { fontFamily: font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
-            {t(STATUS_LABEL_KEY[request.status])}
-          </Text>
-        </View>
 
         <View style={[styles.infoRow, { flexDirection: rowDir }]}>
           <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.execution')}
             </Text>
             <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
@@ -115,7 +122,7 @@ export function ProjectRequestCard({ request }: Props) {
             </Text>
           </View>
           <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.deadline')}
             </Text>
             <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
@@ -123,7 +130,7 @@ export function ProjectRequestCard({ request }: Props) {
             </Text>
           </View>
           <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
               {t('project_details.location')}
             </Text>
             <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(request.location, 'bold') }]} numberOfLines={1}>
@@ -161,7 +168,7 @@ export function ProjectRequestCard({ request }: Props) {
                         {member ? (
                           <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(member.displayName, 'regular') }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
                         ) : (
-                          <Text style={[styles.teamOpen, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>— Open</Text>
+                          <Text style={[styles.teamOpen, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>— Open</Text>
                         )}
                       </View>
                     </View>
@@ -227,11 +234,12 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   statusBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    position: 'absolute',
+    top: -10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 20,
-    marginTop: 4,
-    marginBottom: 8,
+    zIndex: 2,
   },
   statusBadgeText: { fontSize: 11, fontWeight: '700' },
   card: {
@@ -247,8 +255,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 13, marginBottom: 6 },
   infoRow: { justifyContent: 'space-between', gap: 8, marginBottom: 6 },
   infoCol: { flex: 1 },
-  infoLabel: { fontSize: 10, marginBottom: 2 },
-  infoValue: { fontSize: 12, color: '#004aad' },
+  infoLabel: { fontSize: 10, marginBottom: 2, opacity: 0.7 },
+  infoValue: { fontSize: 13, color: '#004aad', fontWeight: '800' },
   teamToggle: { marginTop: 8 },
   teamToggleText: { fontSize: 13, fontWeight: '600' },
   teamSection: { marginTop: 10, gap: 8 },

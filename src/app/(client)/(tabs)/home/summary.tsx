@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
 } from 'react-native';
@@ -36,9 +36,17 @@ export default function SummaryScreen() {
     vibe: string;
     budget: string;
     projectId: string;
+    slots: string;
   }>();
 
   const { slots, addSlot, removeSlot, reset: resetSlots, loadSlots } = useCrewBuilder();
+
+  useEffect(() => {
+    if (params.slots) {
+      try { loadSlots(JSON.parse(params.slots)); } catch {}
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { submit, updateProject } = useProjectRequests();
   const { showToast } = useUiStore();
   const language = useSettingsStore((s) => s.language);
