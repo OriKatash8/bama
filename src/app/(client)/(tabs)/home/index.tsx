@@ -388,6 +388,7 @@ export default function HomeScreen() {
 
               <FlatList
                 data={CATEGORIES}
+                extraData={slots}
                 numColumns={3}
                 scrollEnabled={false}
                 keyExtractor={(cat) => cat.key}
@@ -400,15 +401,14 @@ export default function HomeScreen() {
                   const catTotal = slots
                     .filter(s => s.category === cat.key)
                     .reduce((sum, s) => sum + s.quantity, 0);
-                  const isSelected = expandedCategory === cat.key;
                   return (
                     <TouchableOpacity
                       style={[
                         styles.tile,
                         { width: tileSize, height: tileSize },
-                        isSelected && { borderWidth: 2, borderColor: colors.accent },
+                        catTotal > 0 && { borderWidth: 2, borderColor: colors.accent },
                       ]}
-                      onPress={() => setExpandedCategory(isSelected ? null : cat.key)}
+                      onPress={() => setExpandedCategory(cat.key)}
                       activeOpacity={0.85}
                     >
                       {cat.image ? (
@@ -427,60 +427,6 @@ export default function HomeScreen() {
                 }}
               />
 
-              {/* ── Inline subcategory panel ── */}
-              {expandedCategory !== null && (() => {
-                const cat = CATEGORIES.find(c => c.key === expandedCategory);
-                if (!cat) return null;
-                return (
-                  <View style={[styles.subcatPanel, { borderColor: colors.accent }]}>
-                    <View style={styles.panelHeader}>
-                      <Text style={[styles.panelTitle, { color: colors.text }]}>
-                        {getCategoryLabel(cat.labelKey)}
-                      </Text>
-                      <TouchableOpacity onPress={() => setExpandedCategory(null)} hitSlop={12} activeOpacity={0.7}>
-                        <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={[styles.panelDivider, { backgroundColor: colors.accent }]} />
-                    <Text style={[styles.subHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-                      {t('builder.tap_to_add')}
-                    </Text>
-                    {cat.subcategories.map((sub) => {
-                      const qty = slots.find(s => s.category === cat.key && s.subcategory === sub)?.quantity ?? 0;
-                      return (
-                        <View key={sub} style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}>
-                          <Text style={[styles.subLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
-                          <View style={styles.qtyControls}>
-                            {qty > 0 && (
-                              <TouchableOpacity
-                                style={[styles.qtyBtn, { borderColor: colors.inputBorder }]}
-                                onPress={() => removeSlot(cat.key, sub)}
-                                hitSlop={8}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
-                              </TouchableOpacity>
-                            )}
-                            {qty > 0 && (
-                              <View style={[styles.qtyBadge, { backgroundColor: colors.accent }]}>
-                                <Text style={styles.qtyBadgeText}>{qty}</Text>
-                              </View>
-                            )}
-                            <TouchableOpacity
-                              style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]}
-                              onPress={() => addSlot(cat.key, sub)}
-                              hitSlop={8}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={[styles.qtyBtnText, { color: colors.accent }]}>+</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                );
-              })()}
             </View>
 
             {/* Budget Range */}
@@ -528,6 +474,84 @@ export default function HomeScreen() {
       </ScrollView>
 
 
+
+      {/* ── Subcategory picker modal ── */}
+      {(() => {
+        const cat = CATEGORIES.find(c => c.key === expandedCategory);
+        return (
+          <Modal
+            visible={expandedCategory !== null}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setExpandedCategory(null)}
+          >
+            <TouchableWithoutFeedback onPress={() => setExpandedCategory(null)}>
+              <View style={styles.modalBackdrop}>
+                <TouchableWithoutFeedback>
+                  <View style={[styles.panel, { backgroundColor: colors.card, borderColor: colors.accent }]}>
+                    <View style={styles.panelHeader}>
+                      <Text style={[styles.panelTitle, { color: colors.text, fontFamily: font.bold }]}>
+                        {cat ? getCategoryLabel(cat.labelKey) : ''}
+                      </Text>
+                      <TouchableOpacity onPress={() => setExpandedCategory(null)} hitSlop={12} activeOpacity={0.7}>
+                        <Text style={[styles.closeBtn, { color: colors.textMuted }]}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={[styles.panelDivider, { backgroundColor: colors.accent }]} />
+                    <Text style={[styles.subHint, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                      {t('builder.tap_to_add')}
+                    </Text>
+                    <ScrollView style={styles.panelScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                      {cat?.subcategories.map((sub) => {
+                        const qty = slots.find(s => s.category === cat.key && s.subcategory === sub)?.quantity ?? 0;
+                        return (
+                          <View key={sub} style={[styles.subRow, { borderBottomColor: colors.borderMuted }]}>
+                            <Text style={[styles.subLabel, { color: colors.text, textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>{sub}</Text>
+                            <View style={styles.qtyControls}>
+                              {qty > 0 && (
+                                <TouchableOpacity
+                                  style={[styles.qtyBtn, { borderColor: colors.inputBorder }]}
+                                  onPress={() => removeSlot(cat.key, sub)}
+                                  hitSlop={8}
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
+                                </TouchableOpacity>
+                              )}
+                              {qty > 0 && (
+                                <View style={[styles.qtyBadge, { backgroundColor: colors.accent }]}>
+                                  <Text style={styles.qtyBadgeText}>{qty}</Text>
+                                </View>
+                              )}
+                              <TouchableOpacity
+                                style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]}
+                                onPress={() => addSlot(cat.key, sub)}
+                                hitSlop={8}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={[styles.qtyBtnText, { color: colors.accent }]}>+</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </ScrollView>
+                    <TouchableOpacity
+                      style={[styles.subcatDoneBtn, { backgroundColor: colors.accent }]}
+                      onPress={() => setExpandedCategory(null)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.subcatDoneBtnText, { fontFamily: font.bold }]}>
+                        {rtl ? 'סיום' : 'Done'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+        );
+      })()}
 
       {/* ── Vibe & Style modal ── */}
       <Modal
@@ -705,7 +729,9 @@ function createStyles(
     panelTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold },
     closeBtn: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold },
     panelDivider: { height: 2, marginHorizontal: 20, borderRadius: 1, marginBottom: 4 },
-    panelScroll: { maxHeight: 400 },
+    panelScroll: { maxHeight: 360 },
+    subcatDoneBtn: { margin: 16, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+    subcatDoneBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
     subHint: { fontSize: 12, fontWeight: '600', fontFamily: ffSemiBold, textTransform: 'uppercase', letterSpacing: 0.8, paddingHorizontal: 20, paddingVertical: 12 },
     subRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20, borderBottomWidth: 1 },
     subLabel: { fontSize: 15, fontWeight: '500', fontFamily: ffMedium, flex: 1 },
