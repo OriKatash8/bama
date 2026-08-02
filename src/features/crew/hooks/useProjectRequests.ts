@@ -37,12 +37,13 @@ export function useProjectRequests() {
   async function submit(slots: CrewRequestSlot[], details: SubmitDetails): Promise<void> {
     if (!user) return;
     setError(null);
+    const clean = Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined));
     try {
       await addDocument('projects', {
         clientId: user.id,
         crewSlots: slots,
         filledSlots: [],
-        ...details,
+        ...clean,
         status: 'open' as const,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });
@@ -59,8 +60,9 @@ export function useProjectRequests() {
     details: SubmitDetails
   ): Promise<void> {
     setError(null);
+    const clean = Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined));
     try {
-      await updateDocument(`projects/${id}`, { crewSlots: slots, ...details });
+      await updateDocument(`projects/${id}`, { crewSlots: slots, ...clean });
     } catch (e: any) {
       const message = e.message ?? 'Failed to update project';
       setError(message);
