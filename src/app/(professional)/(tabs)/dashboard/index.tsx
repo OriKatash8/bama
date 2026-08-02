@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
+
+const LOCATION_ICON = require('../../../../../assets/images/location-icon.png');
 import { useRouter, useSegments } from 'expo-router';
 import { Calendar } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -213,9 +216,10 @@ export default function DashboardScreen() {
                   </View>
                   <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     <Image
-                      source={require('../../../../../assets/images/location-icon.png')}
+                      source={LOCATION_ICON}
                       style={styles.locationIcon}
-                      resizeMode="contain"
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
                     />
                     <Text style={[styles.projectCardMeta, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                       {project.location}

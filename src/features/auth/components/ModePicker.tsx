@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Image } from 'expo-image';
+
+const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -47,11 +50,7 @@ export function ModePicker() {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../../../../assets/images/bama-logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <Image source={BAMA_LOGO} style={styles.logo} contentFit="contain" cachePolicy="memory-disk" />
 
       <View style={styles.buttons}>
         {CARD_MODES.map(({ mode, key, color }) => {

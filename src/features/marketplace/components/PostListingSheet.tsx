@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, TextInput,
-  StyleSheet, ScrollView, ActivityIndicator, Image,
+  StyleSheet, ScrollView, ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
+
+const BLUE_CAM = require('../../../../assets/images/categories/blue-cam.png');
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -262,7 +265,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
               ) : (
                 <View style={styles.imagePickerPlaceholder}>
                   <Image
-                    source={require('../../../../assets/images/categories/blue-cam.png')}
+                    source={BLUE_CAM}
                     style={styles.cameraIcon}
                   />
                   <Text style={styles.imagePickerLabel}>{t('marketplace.upload_photo')}</Text>

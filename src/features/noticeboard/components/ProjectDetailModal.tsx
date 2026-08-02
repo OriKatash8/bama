@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput, Switch, Image, useWindowDimensions,
+  StyleSheet, TextInput, Switch, useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
+
+const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import { X } from 'lucide-react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import { usePriceOffer } from '@features/noticeboard/hooks/usePriceOffer';
@@ -172,7 +175,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                   <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Location</Text>
                   <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     <Image
-                      source={require('../../../../assets/images/location-icon.png')}
+                      source={LOCATION_ICON}
                       style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
                       resizeMode="contain"
                     />

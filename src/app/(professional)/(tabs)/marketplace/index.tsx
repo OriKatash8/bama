@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  View, Text, TextInput, Image, TouchableOpacity, ScrollView,
+  View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Platform, Animated, Modal,
 } from 'react-native';
-import type { ImageSourcePropType } from 'react-native';
+import { Image } from 'expo-image';
+
+const BAMA_RENTAL_IMG = require('../../../../../assets/images/bama-rental.png');
+const BAMA_MARKET_IMG = require('../../../../../assets/images/bama-market.png');
 import { LinearGradient } from 'expo-linear-gradient';
 import { SlidersHorizontal, X } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -32,8 +35,8 @@ function makeT(translations: Translations) {
 type Category = {
   id: string;
   labelKey: string;
-  icon: ImageSourcePropType;
-  selectedIcon?: ImageSourcePropType;
+  icon: number;
+  selectedIcon?: number;
 };
 
 const CATEGORIES: Category[] = [
@@ -113,7 +116,7 @@ function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: Cat
   return (
     <TouchableOpacity style={styles.catItem} onPress={onPress} activeOpacity={0.75}>
       <Animated.View style={{ transform: [{ scale }] }}>
-        <Image source={iconSource} style={styles.tileIcon} resizeMode="contain" />
+        <Image source={iconSource} style={styles.tileIcon} contentFit="contain" cachePolicy="memory-disk" />
       </Animated.View>
       <Text style={[styles.catLabel, { color: isActive ? '#004aad' : inactiveLabelColor }]}>
         {label}
@@ -259,11 +262,10 @@ export default function MarketplaceScreen() {
         {/* Page title */}
         <View style={styles.titleRow}>
           <Image
-            source={activeTab === 'rental'
-              ? require('../../../../../assets/images/bama-rental.png')
-              : require('../../../../../assets/images/bama-market.png')}
+            source={activeTab === 'rental' ? BAMA_RENTAL_IMG : BAMA_MARKET_IMG}
             style={styles.titleImage}
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy="memory-disk"
           />
         </View>
 

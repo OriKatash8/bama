@@ -1,7 +1,10 @@
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  Image, ScrollView, Alert, useWindowDimensions,
+  ScrollView, Alert, useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
+
+const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
@@ -121,7 +124,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
             {/* Image */}
             <View style={styles.imageWrap}>
               {listing.imageUrl ? (
-                <Image source={{ uri: listing.imageUrl }} style={styles.image} resizeMode="cover" />
+                <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
               ) : (
                 <Text style={styles.imagePlaceholder}>📦</Text>
               )}
@@ -132,9 +135,9 @@ export function ListingDetailModal({ listing, onClose }: Props) {
               <Text style={[styles.price, { fontFamily: font.bold }]}>{priceLabel}</Text>
               <View style={[styles.locationRow, { flexDirection: rowDir }]}>
                 <Image
-                  source={require('../../../../assets/images/location-icon.png')}
+                  source={LOCATION_ICON}
                   style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-                  resizeMode="contain"
+                  contentFit="contain" cachePolicy="memory-disk"
                 />
                 <Text style={[styles.location, { fontFamily: font.regular }]} numberOfLines={1}>{listing.location}</Text>
               </View>

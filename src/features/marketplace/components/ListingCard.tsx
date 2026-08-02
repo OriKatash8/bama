@@ -1,4 +1,7 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+
+const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { MarketplaceListing } from '../types';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -43,7 +46,7 @@ export function ListingCard({ listing, onPress }: Props) {
     >
       <View style={styles.imageWrap}>
         {listing.imageUrl ? (
-          <Image source={{ uri: listing.imageUrl }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
         ) : (
           <View style={[styles.imagePlaceholder, { backgroundColor: colors.cardAlt }]}>
             <Text style={styles.placeholderIcon}>{isRental ? '🎬' : '📦'}</Text>
@@ -77,9 +80,9 @@ export function ListingCard({ listing, onPress }: Props) {
         </Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Image
-            source={require('../../../../assets/images/location-icon.png')}
+            source={LOCATION_ICON}
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-            resizeMode="contain"
+            contentFit="contain" cachePolicy="memory-disk"
           />
           <Text style={[styles.location, { color: colors.textMuted }]} numberOfLines={1}>
             {listing.location}

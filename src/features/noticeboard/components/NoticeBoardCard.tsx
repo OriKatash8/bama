@@ -1,4 +1,7 @@
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+
+const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { ProjectRequest } from '@core/types/project';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
@@ -66,9 +69,9 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         </Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Image
-            source={require('../../../../assets/images/location-icon.png')}
+            source={LOCATION_ICON}
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-            resizeMode="contain"
+            contentFit="contain" cachePolicy="memory-disk"
           />
           <Text style={[styles.locationCompact, { fontFamily: font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
         </View>
@@ -104,7 +107,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       {poster && (
         <View style={styles.posterRow}>
           {poster.photoURL ? (
-            <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} />
+            <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
             <View style={[styles.posterAvatar, styles.posterAvatarFallback]}>
               <Text style={[styles.posterInitial, { fontFamily: font.bold }]}>{poster.displayName.charAt(0).toUpperCase()}</Text>
@@ -118,9 +121,9 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           <Text style={[styles.title, { fontFamily: font.bold, color: textColor }]} numberOfLines={1}>{request.title}</Text>
           <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Image
-              source={require('../../../../assets/images/location-icon.png')}
+              source={LOCATION_ICON}
               style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-              resizeMode="contain"
+              contentFit="contain" cachePolicy="memory-disk"
             />
             <Text style={[styles.location, { fontFamily: font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
           </View>

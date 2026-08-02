@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Image } from 'expo-image';
+
+const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
 import { useRouter } from 'expo-router';
 import { CheckCircle, Circle } from 'lucide-react-native';
 import { Input } from '@components/ui/Input';
@@ -61,7 +64,7 @@ export function RegisterForm() {
   return (
     <View style={styles.container}>
       <AuthSettingsButton />
-      <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
+      <Image source={BAMA_LOGO} style={styles.appLogo} contentFit="contain" cachePolicy="memory-disk" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
         <Text style={[styles.title, { fontFamily: font.bold }]}>{t('auth.register_title')}</Text>
         <Input

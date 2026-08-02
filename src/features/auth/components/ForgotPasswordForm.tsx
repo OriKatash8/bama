@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Image } from 'expo-image';
+
+const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
 import { useRouter } from 'expo-router';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
@@ -32,7 +35,7 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <View style={styles.container}>
-        <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
+        <Image source={BAMA_LOGO} style={styles.appLogo} contentFit="contain" cachePolicy="memory-disk" />
         <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
           <Text style={styles.title}>CHECK INBOX</Text>
           <Text style={[styles.body, { color: colors.textSec }]}>We sent a password reset link to {email}.</Text>
@@ -47,7 +50,7 @@ export function ForgotPasswordForm() {
   return (
     <View style={styles.container}>
       <AuthSettingsButton />
-      <Image source={require('../../../../assets/images/bama-logo.png')} style={styles.appLogo} resizeMode="contain" />
+      <Image source={BAMA_LOGO} style={styles.appLogo} contentFit="contain" cachePolicy="memory-disk" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as any)]}>
         <Text style={styles.title}>RESET PASSWORD</Text>
         <Input

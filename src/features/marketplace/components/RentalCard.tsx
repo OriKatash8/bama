@@ -1,4 +1,7 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+
+const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { MarketplaceListing } from '../types';
 import { useSettingsStore } from '@core/stores/settingsStore';
 
@@ -14,7 +17,7 @@ export function RentalCard({ listing, onPress }: Props) {
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.imageWrap}>
         {listing.imageUrl ? (
-          <Image source={{ uri: listing.imageUrl }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
         ) : (
           <Text style={styles.placeholder}>🎬</Text>
         )}
@@ -24,9 +27,9 @@ export function RentalCard({ listing, onPress }: Props) {
         <Text style={styles.price}>₪{listing.price.toLocaleString()}/day</Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Image
-            source={require('../../../../assets/images/location-icon.png')}
+            source={LOCATION_ICON}
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-            resizeMode="contain"
+            contentFit="contain" cachePolicy="memory-disk"
           />
           <Text style={styles.location} numberOfLines={1}>{listing.location}</Text>
         </View>

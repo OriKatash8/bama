@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { TouchableOpacity, View, Text, Image, StyleSheet, ScrollView } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
 import { Users } from 'lucide-react-native';
@@ -157,7 +158,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     }
     const info = dmInfo[item.id];
     if (info?.photoURL) {
-      return <Image source={{ uri: info.photoURL }} style={styles.avatar} />;
+      return <Image source={{ uri: info.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
     }
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (

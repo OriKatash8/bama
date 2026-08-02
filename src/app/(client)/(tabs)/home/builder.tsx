@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   ScrollView, FlatList, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
-  Image, useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
+  useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
+
+const BAMA_LOGO = require('../../../../../assets/images/bama-logo.png');
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
@@ -190,7 +193,7 @@ export default function BuilderScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.topBar}>
           <View style={styles.logoWrap}>
-            <Image source={require('../../../../../assets/images/bama-logo.png')} style={styles.bamaLogo} resizeMode="contain" />
+            <Image source={BAMA_LOGO} style={styles.bamaLogo} contentFit="contain" cachePolicy="memory-disk" />
           </View>
           <Text style={[styles.greetText, { color: colors.text }, Platform.OS === 'web' && gradientStyle]} numberOfLines={2}>
             {getGreeting()}, {user?.displayName} :)
@@ -286,7 +289,7 @@ export default function BuilderScreen() {
                   activeOpacity={0.85}
                 >
                   {cat.image ? (
-                    <Image source={cat.image} style={styles.tileImage} resizeMode={cat.contain ? 'contain' : 'cover'} />
+                    <Image source={cat.image} style={styles.tileImage} contentFit={cat.contain ? 'contain' : 'cover'} cachePolicy="memory-disk" />
                   ) : null}
                   <View style={styles.tileOverlay}>
                     <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>

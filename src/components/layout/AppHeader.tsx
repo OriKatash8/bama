@@ -3,13 +3,15 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Image,
   Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
+
+const BAMA_LOGO = require('../../../assets/images/bama-logo.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -124,11 +126,7 @@ export function AppHeader() {
       {/* ── Top bar ── */}
       <View style={[styles.header, { paddingTop: insets.top + 8, paddingBottom: 10 }]}>
         {/* LEFT — logo */}
-        <Image
-          source={require('../../../assets/images/bama-logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <Image source={BAMA_LOGO} style={styles.logo} contentFit="contain" cachePolicy="memory-disk" />
 
         {/* CENTER — greeting only */}
         <View style={styles.center}>
@@ -193,7 +191,7 @@ export function AppHeader() {
             <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8} style={styles.avatarWrap}>
               <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
                 {user?.photoURL ? (
-                  <Image source={{ uri: user.photoURL }} style={styles.avatarImg} />
+                  <Image source={{ uri: user.photoURL }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" />
                 ) : (
                   <User size={24} color="#fff" strokeWidth={1.5} />
                 )}
