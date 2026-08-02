@@ -487,67 +487,68 @@ export default function HomeScreen() {
             animationType="fade"
             onRequestClose={() => setExpandedCategory(null)}
           >
-            <Pressable style={styles.subcatOverlay} onPress={() => setExpandedCategory(null)}>
-                <Pressable onPress={() => {}}>
-                  <LinearGradient colors={['#1a237e', '#004aad']} style={styles.subcatModal}>
-                  <View style={styles.subcatHeader}>
-                    <Text style={[styles.subcatTitle, { fontFamily: font.bold }]}>
-                      {cat ? getCategoryLabel(cat.labelKey) : ''}
-                    </Text>
-                    <TouchableOpacity onPress={() => setExpandedCategory(null)} hitSlop={12} activeOpacity={0.7}>
-                      <X size={22} color="#fff" />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={[styles.subcatHint, { textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
-                    {t('builder.tap_to_add')}
+            <View style={styles.subcatOverlay}>
+              {/* Backdrop — tapping outside the card closes the modal */}
+              <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setExpandedCategory(null)} activeOpacity={1} />
+              {/* Card sits on top — no gesture-intercepting parent, so ScrollView works freely */}
+              <LinearGradient colors={['#1a237e', '#004aad']} style={styles.subcatModal}>
+                <View style={styles.subcatHeader}>
+                  <Text style={[styles.subcatTitle, { fontFamily: font.bold }]}>
+                    {cat ? getCategoryLabel(cat.labelKey) : ''}
                   </Text>
-                  <ScrollView style={styles.subcatScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
-                    {cat?.subcategories.map((sub) => {
-                      const qty = slots.find(s => s.category === cat.key && s.subcategory === sub)?.quantity ?? 0;
-                      return (
-                        <View key={sub} style={styles.subcatRow}>
-                          <Text style={[styles.subcatRowLabel, { textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>{sub}</Text>
-                          <View style={styles.qtyControls}>
-                            {qty > 0 && (
-                              <TouchableOpacity
-                                style={styles.subcatQtyBtn}
-                                onPress={() => removeSlot(cat.key, sub)}
-                                hitSlop={8}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={[styles.subcatQtyBtnText, { fontFamily: font.bold }]}>−</Text>
-                              </TouchableOpacity>
-                            )}
-                            {qty > 0 && (
-                              <View style={styles.subcatQtyBadge}>
-                                <Text style={[styles.subcatQtyBadgeText, { fontFamily: font.bold }]}>{qty}</Text>
-                              </View>
-                            )}
+                  <TouchableOpacity onPress={() => setExpandedCategory(null)} hitSlop={12} activeOpacity={0.7}>
+                    <X size={22} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={[styles.subcatHint, { textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+                  {t('builder.tap_to_add')}
+                </Text>
+                <ScrollView style={styles.subcatScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                  {cat?.subcategories.map((sub) => {
+                    const qty = slots.find(s => s.category === cat.key && s.subcategory === sub)?.quantity ?? 0;
+                    return (
+                      <View key={sub} style={styles.subcatRow}>
+                        <Text style={[styles.subcatRowLabel, { textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>{sub}</Text>
+                        <View style={styles.qtyControls}>
+                          {qty > 0 && (
                             <TouchableOpacity
                               style={styles.subcatQtyBtn}
-                              onPress={() => addSlot(cat.key, sub)}
+                              onPress={() => removeSlot(cat.key, sub)}
                               hitSlop={8}
                               activeOpacity={0.7}
                             >
-                              <Text style={[styles.subcatQtyBtnText, { fontFamily: font.bold }]}>+</Text>
+                              <Text style={[styles.subcatQtyBtnText, { fontFamily: font.bold }]}>−</Text>
                             </TouchableOpacity>
-                          </View>
+                          )}
+                          {qty > 0 && (
+                            <View style={styles.subcatQtyBadge}>
+                              <Text style={[styles.subcatQtyBadgeText, { fontFamily: font.bold }]}>{qty}</Text>
+                            </View>
+                          )}
+                          <TouchableOpacity
+                            style={styles.subcatQtyBtn}
+                            onPress={() => addSlot(cat.key, sub)}
+                            hitSlop={8}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.subcatQtyBtnText, { fontFamily: font.bold }]}>+</Text>
+                          </TouchableOpacity>
                         </View>
-                      );
-                    })}
-                  </ScrollView>
-                  <TouchableOpacity
-                    style={styles.subcatDoneBtn}
-                    onPress={() => setExpandedCategory(null)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.subcatDoneBtnText, { fontFamily: font.bold }]}>
-                      {rtl ? 'סיום' : 'Done'}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-                </Pressable>
-            </Pressable>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.subcatDoneBtn}
+                  onPress={() => setExpandedCategory(null)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.subcatDoneBtnText, { fontFamily: font.bold }]}>
+                    {rtl ? 'סיום' : 'Done'}
+                  </Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            </View>
           </Modal>
         );
       })()}
