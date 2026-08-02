@@ -71,21 +71,28 @@ export default function SummaryScreen() {
   async function handleConfirm() {
     if (!canConfirm) return;
     setIsSubmitting(true);
+    const details = { title, description, exec: exec || undefined, deadline, location, vibe: vibe || undefined, budget: budget || undefined };
     try {
-      const details = { title, description, exec: exec || undefined, deadline, location, vibe: vibe || undefined, budget: budget || undefined };
       if (isEditMode) {
         await updateProject(params.projectId, slots, details);
-        showToast(t('builder.project_updated'), 'success');
-        router.back();
       } else {
         await submit(slots, details);
-        resetSlots();
-        showToast(t('builder.submitted'), 'success');
-        router.navigate('/(client)/(tabs)/chats' as never);
       }
-    } catch {
-      showToast(t('builder.failed_submit'), 'error');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[submit] Firestore write failed:', msg);
+      showToast(msg || t('builder.failed_submit'), 'error');
       setIsSubmitting(false);
+      return;
+    }
+    // Firestore write succeeded — navigate outside the try so navigation errors don't look like write failures
+    if (isEditMode) {
+      showToast(t('builder.project_updated'), 'success');
+      router.back();
+    } else {
+      resetSlots();
+      showToast(t('builder.submitted'), 'success');
+      router.navigate('/(client)/(tabs)/chats' as never);
     }
   }
 
