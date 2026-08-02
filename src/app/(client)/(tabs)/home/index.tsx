@@ -486,9 +486,10 @@ export default function HomeScreen() {
             animationType="fade"
             onRequestClose={() => setExpandedCategory(null)}
           >
-            <TouchableOpacity style={styles.subcatOverlay} activeOpacity={1} onPress={() => setExpandedCategory(null)}>
-              <TouchableOpacity activeOpacity={1}>
-                <LinearGradient colors={['#1a237e', '#004aad']} style={styles.subcatModal}>
+            <TouchableWithoutFeedback onPress={() => setExpandedCategory(null)}>
+              <View style={styles.subcatOverlay}>
+                <TouchableWithoutFeedback>
+                  <LinearGradient colors={['#1a237e', '#004aad']} style={styles.subcatModal}>
                   <View style={styles.subcatHeader}>
                     <Text style={[styles.subcatTitle, { fontFamily: font.bold }]}>
                       {cat ? getCategoryLabel(cat.labelKey) : ''}
@@ -500,7 +501,7 @@ export default function HomeScreen() {
                   <Text style={[styles.subcatHint, { textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
                     {t('builder.tap_to_add')}
                   </Text>
-                  <ScrollView style={styles.subcatScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                  <ScrollView style={styles.subcatScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
                     {cat?.subcategories.map((sub) => {
                       const qty = slots.find(s => s.category === cat.key && s.subcategory === sub)?.quantity ?? 0;
                       return (
@@ -545,8 +546,9 @@ export default function HomeScreen() {
                     </Text>
                   </TouchableOpacity>
                 </LinearGradient>
-              </TouchableOpacity>
-            </TouchableOpacity>
+              </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
           </Modal>
         );
       })()}
