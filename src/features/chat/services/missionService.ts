@@ -46,13 +46,18 @@ export async function addMission(
   createdBy: string,
   data: { title: string; assignedTo: string[]; dueDate?: string },
 ): Promise<void> {
-  await addDoc(collection(db, 'projects', projectId, 'missions'), {
-    ...data,
+  const { dueDate, ...rest } = data;
+  const payload: Record<string, unknown> = {
+    ...rest,
     projectId,
     status: 'todo' as MissionStatus,
     createdBy,
     createdAt: serverTimestamp(),
-  });
+  };
+  if (dueDate !== undefined) payload.dueDate = dueDate;
+  console.log('[addMission] writing to projects/' + projectId + '/missions', payload);
+  await addDoc(collection(db, 'projects', projectId, 'missions'), payload);
+  console.log('[addMission] success');
 }
 
 export async function updateMissionStatus(

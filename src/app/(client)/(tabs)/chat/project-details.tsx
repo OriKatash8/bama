@@ -491,19 +491,24 @@ export default function ProjectDetailsScreen() {
     if (!projectId || !newMissionTitle.trim() || newMissionAssignedTo.length === 0) return;
     const currentUserId = auth.currentUser?.uid;
     if (!currentUserId) return;
+    const missionData = {
+      title: newMissionTitle.trim(),
+      assignedTo: newMissionAssignedTo,
+      dueDate: newMissionDueDate || undefined,
+    };
+    console.log('[handleAddMission] submitting', { projectId, currentUserId, missionData });
     setIsAddingMission(true);
     try {
-      await addMission(projectId, currentUserId, {
-        title: newMissionTitle.trim(),
-        assignedTo: newMissionAssignedTo,
-        dueDate: newMissionDueDate || undefined,
-      });
+      await addMission(projectId, currentUserId, missionData);
+      console.log('[handleAddMission] success');
       setNewMissionTitle('');
       setNewMissionAssignedTo([]);
       setNewMissionDueDate('');
       setShowAddMission(false);
-    } catch {
-      Alert.alert('Error', t('project_details.error_add_mission'));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[handleAddMission] failed:', msg);
+      Alert.alert('Error', msg || t('project_details.error_add_mission'));
     } finally {
       setIsAddingMission(false);
     }
