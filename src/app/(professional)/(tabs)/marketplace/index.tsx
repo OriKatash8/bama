@@ -6,7 +6,7 @@ import {
 import { Image } from 'expo-image';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { SlidersHorizontal, X } from 'lucide-react-native';
+import { SlidersHorizontal, X, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceToggle';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
@@ -264,7 +264,7 @@ export default function MarketplaceScreen() {
 
         {/* Search */}
         <View style={[styles.searchWrap, { flexDirection: rtl ? 'row-reverse' : 'row', borderColor: colors.borderMuted }]}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Search size={18} color={colors.placeholder} strokeWidth={2} />
           <TextInput
             style={[styles.searchBar, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
             placeholder={t('marketplace.search_placeholder')}
@@ -530,14 +530,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 50,
     borderWidth: 1,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 8,
   },
-  searchIcon: { fontSize: 16 },
   searchBar: {
     flex: 1,
     fontSize: 15,
