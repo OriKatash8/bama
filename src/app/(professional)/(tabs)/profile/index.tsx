@@ -124,9 +124,10 @@ export default function ProfessionalProfileScreen() {
   return (
     <Screen style={styles.content} scrollable>
       <View style={styles.titleRow}>
-        <Text style={[styles.pageTitle, { fontFamily: font.bold }]}>
+        <Text style={[styles.pageTitle, { fontFamily: font.bold, position: 'absolute', left: 0, right: 0, textAlign: 'center' }]}>
           {t('profile.title')}
         </Text>
+        <View style={{ flex: 1 }} />
         {isEditing ? (
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   headerBtnText: { fontSize: 16 },
   save: { fontWeight: '700', color: '#004aad' },
 
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
   pageTitle: {
     fontSize: 36,
     fontWeight: '800',

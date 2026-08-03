@@ -2,11 +2,11 @@ import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Wrench, Star, Award } from 'lucide-react-native';
 import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
 import { useTheme } from '@core/hooks/useTheme';
-import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -49,8 +49,6 @@ export function ContentTabs({
   onEquipmentChange,
 }: ContentTabsProps) {
   const colors = useTheme();
-  const isDark = useUiStore((s) => s.isDark);
-  const cardBg = isDark ? '#1a1a2e' : '#ffffff';
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -79,8 +77,13 @@ export function ContentTabs({
   return (
     <View>
 
-      {/* ── Tab bar (no card background) ── */}
-      <View style={styles.tabBar}>
+      {/* ── Tab bar — purple-to-blue gradient background ── */}
+      <LinearGradient
+        colors={['rgba(203,108,230,0.18)', 'rgba(0,74,173,0.18)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.tabBar, { borderRadius: 16 }]}
+      >
         {SECTION_KEYS.map((key) => {
           const isActive = key === active;
           return (
@@ -90,16 +93,16 @@ export function ContentTabs({
               onPress={() => setActive(key)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.tabText, { color: isActive ? '#fff' : 'rgba(0,74,173,0.45)', textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.tabText, { color: isActive ? '#fff' : 'rgba(0,74,173,0.55)', textAlign: rtl ? 'right' : 'left' }]}>
                 {sectionLabel(key)}
               </Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </LinearGradient>
 
-      {/* ── Content card ── */}
-      <View style={[styles.panel, { backgroundColor: cardBg, borderColor: colors.border }]}>
+      {/* ── Content (no card background) ── */}
+      <View style={styles.panel}>
 
         {/* Section header */}
         <View style={styles.sectionHeader}>
@@ -119,15 +122,7 @@ export function ContentTabs({
             )}
             <View style={styles.list}>
               {equipment.map((item, index) => (
-                <View
-                  key={`eq-${index}`}
-                  style={[
-                    styles.itemRow,
-                    { borderBottomColor: colors.border },
-                    index === 0 && styles.firstRow,
-                    index === equipment.length - 1 ? styles.lastRow : styles.rowBorder,
-                  ]}
-                >
+                <View key={`eq-${index}`} style={styles.itemRow}>
                   {isEditing && (
                     <TouchableOpacity
                       onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
@@ -187,7 +182,7 @@ export function ContentTabs({
 }
 
 const styles = StyleSheet.create({
-  /* Tab bar — no card background */
+  /* Tab bar — gradient bg applied inline */
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
@@ -207,18 +202,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  /* Content card */
+  /* Content — no card background */
   panel: {
-    borderWidth: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-    padding: 16,
+    paddingVertical: 8,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
 
   sectionHeader: {
@@ -234,27 +221,17 @@ const styles = StyleSheet.create({
     color: '#004aad',
   },
 
-  /* Item list */
-  list: { borderRadius: 8, overflow: 'hidden' },
+  /* Standalone pill items */
+  list: { gap: 6 },
 
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: 'rgba(0,74,173,0.06)',
+    backgroundColor: 'rgba(0,74,173,0.07)',
+    borderRadius: 20,
     gap: 8,
-  },
-  firstRow: {
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  lastRow: {
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
   itemText: {

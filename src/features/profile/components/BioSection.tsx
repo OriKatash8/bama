@@ -56,6 +56,9 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
 
 const styles = StyleSheet.create({
   card: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 8,
   },
   cardLabel: {
@@ -70,7 +73,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 20,
     padding: 12,
     minHeight: 100,
     textAlignVertical: 'top',
