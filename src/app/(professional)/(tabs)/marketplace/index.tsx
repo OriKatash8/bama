@@ -5,8 +5,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 
-const BAMA_RENTAL_IMG = require('../../../../../assets/images/bama-rental.png');
-const BAMA_MARKET_IMG = require('../../../../../assets/images/bama-market.png');
 import { LinearGradient } from 'expo-linear-gradient';
 import { SlidersHorizontal, X } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -259,25 +257,16 @@ export default function MarketplaceScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Page title */}
-        <View style={styles.titleRow}>
-          <Image
-            source={activeTab === 'rental' ? BAMA_RENTAL_IMG : BAMA_MARKET_IMG}
-            style={styles.titleImage}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
-        </View>
-
         {/* Toggle */}
         <View style={styles.toggleWrap}>
           <MarketplaceToggle active={activeTab} onChange={(tab) => { setActiveTab(tab); setFilterCondition(null); }} />
         </View>
 
         {/* Search */}
-        <View style={styles.searchWrap}>
+        <View style={[styles.searchWrap, { flexDirection: rtl ? 'row-reverse' : 'row', borderColor: colors.borderMuted }]}>
+          <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
-            style={[styles.searchBar, { color: colors.text, borderColor: colors.borderMuted, textAlign: rtl ? 'right' : 'left' }]}
+            style={[styles.searchBar, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
             placeholder={t('marketplace.search_placeholder')}
             placeholderTextColor={colors.placeholder}
             value={searchQuery}
@@ -533,28 +522,25 @@ const styles = StyleSheet.create({
   },
   fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
 
-  titleRow: {
+  toggleWrap: { paddingHorizontal: 16, paddingVertical: 4, marginTop: 12 },
+
+  searchWrap: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    marginBottom: -24,
-  },
-  titleImage: {
-    width: '100%',
-    height: 180,
-    alignSelf: 'center',
-  },
-
-  toggleWrap: { paddingHorizontal: 16, paddingVertical: 4, marginTop: 0 },
-
-  searchWrap: { paddingHorizontal: 16, paddingBottom: 8, marginTop: 8 },
-  searchBar: {
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
     borderWidth: 1,
     backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchIcon: { fontSize: 16 },
+  searchBar: {
+    flex: 1,
+    fontSize: 15,
   },
 
   categoriesRow: {
