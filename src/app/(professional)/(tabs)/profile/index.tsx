@@ -166,7 +166,7 @@ export default function ProfessionalProfileScreen() {
       />
 
       <View style={styles.portfolioSection}>
-        <Text style={[styles.portfolioTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.portfolioTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
           {t('profile.portfolio')}
         </Text>
         <PortfolioGrid

@@ -77,29 +77,38 @@ export function ContentTabs({
   return (
     <View>
 
-      {/* ── Tab bar — purple-to-blue gradient background ── */}
-      <LinearGradient
-        colors={['rgba(203,108,230,0.18)', 'rgba(0,74,173,0.18)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={[styles.tabBar, { borderRadius: 16 }]}
-      >
+      {/* ── Tab bar ── */}
+      <View style={styles.tabBar}>
         {SECTION_KEYS.map((key) => {
           const isActive = key === active;
           return (
             <TouchableOpacity
               key={key}
-              style={[styles.tab, isActive && styles.tabActive]}
               onPress={() => setActive(key)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.tabText, { color: isActive ? '#fff' : 'rgba(0,74,173,0.55)', textAlign: rtl ? 'right' : 'left' }]}>
-                {sectionLabel(key)}
-              </Text>
+              {isActive ? (
+                <LinearGradient
+                  colors={['#004aad', '#cb6ce6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.tabActive}
+                >
+                  <Text style={[styles.tabText, { color: '#fff', textAlign: rtl ? 'right' : 'left' }]}>
+                    {sectionLabel(key)}
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View style={styles.tab}>
+                  <Text style={[styles.tabText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+                    {sectionLabel(key)}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           );
         })}
-      </LinearGradient>
+      </View>
 
       {/* ── Content (no card background) ── */}
       <View style={styles.panel}>
@@ -182,7 +191,7 @@ export function ContentTabs({
 }
 
 const styles = StyleSheet.create({
-  /* Tab bar — gradient bg applied inline */
+  /* Tab bar */
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
@@ -193,16 +202,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    backgroundColor: '#ffffff',
   },
   tabActive: {
-    backgroundColor: '#cb6ce6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   tabText: {
     fontSize: 13,
     fontWeight: '600',
   },
 
-  /* Content — no card background */
+  /* Content */
   panel: {
     paddingVertical: 8,
     gap: 12,
@@ -221,7 +233,7 @@ const styles = StyleSheet.create({
     color: '#004aad',
   },
 
-  /* Standalone pill items */
+  /* Plain pill items (no background) */
   list: { gap: 6 },
 
   itemRow: {
@@ -229,7 +241,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: 'rgba(0,74,173,0.07)',
     borderRadius: 20,
     gap: 8,
   },

@@ -32,25 +32,32 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
 
   if (!isEditing) {
     return (
-      <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}>
+      <View style={{ gap: 6 }}>
         <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
           {t('profile_sections.about')}
         </Text>
-        <Text style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
-          {bio || t('profile_sections.no_bio')}
-        </Text>
+        <View style={[styles.card, { backgroundColor: cardBg }]}>
+          <Text style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+            {bio || t('profile_sections.no_bio')}
+          </Text>
+        </View>
       </View>
     );
   }
   return (
-    <TextInput
-      style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
-      value={bio}
-      onChangeText={onChange}
-      multiline
-      placeholder={t('profile_sections.bio_placeholder')}
-      placeholderTextColor={colors.placeholder}
-    />
+    <View style={{ gap: 6 }}>
+      <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+        {t('profile_sections.about')}
+      </Text>
+      <TextInput
+        style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+        value={bio}
+        onChangeText={onChange}
+        multiline
+        placeholder={t('profile_sections.bio_placeholder')}
+        placeholderTextColor={colors.placeholder}
+      />
+    </View>
   );
 }
 
@@ -59,7 +66,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 8,
   },
   cardLabel: {
     fontSize: 11,

@@ -134,12 +134,6 @@ export default function ProfessionalTabsLayout() {
             name="profile"
             options={{
               title: t('tabs.profile'),
-              headerShown: true,
-              headerTitleAlign: 'center',
-              headerStyle: { backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: '#cb6ce6' },
-              headerShadowVisible: false,
-              headerTintColor: colors.text,
-              headerTitleStyle: { fontWeight: '800', fontSize: 20 },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{
