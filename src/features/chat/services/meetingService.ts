@@ -31,17 +31,35 @@ export function listenToMeetings(
   projectId: string,
   callback: (meetings: Meeting[]) => void,
 ): Unsubscribe {
-  const q = query(
-    collection(db, 'projects', projectId, 'meetings'),
-    orderBy('date', 'asc'),
-    orderBy('time', 'asc'),
-  );
-  return onSnapshot(q, (snap) => {
-    console.log('[listenToMeetings] received', snap.docs.length, 'meetings for project', projectId);
-    callback(snap.docs.map(docToMeeting));
-  }, (err) => {
-    console.error('[listenToMeetings] snapshot error:', err.code, err.message);
-  });
+  let inner: Unsubscribe | null = null;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let cancelled = false;
+
+  function subscribe() {
+    const q = query(
+      collection(db, 'projects', projectId, 'meetings'),
+      orderBy('date', 'asc'),
+      orderBy('time', 'asc'),
+    );
+    inner = onSnapshot(q, (snap) => {
+      console.log('[listenToMeetings] received', snap.docs.length, 'meetings for project', projectId);
+      callback(snap.docs.map(docToMeeting));
+    }, (err) => {
+      console.error('[listenToMeetings] snapshot error:', err.code, err.message);
+      // Index still building — retry every 10 s until ready or unsubscribed
+      if (err.code === 'failed-precondition' && !cancelled) {
+        retryTimer = setTimeout(subscribe, 10_000);
+      }
+    });
+  }
+
+  subscribe();
+
+  return () => {
+    cancelled = true;
+    if (retryTimer) clearTimeout(retryTimer);
+    if (inner) inner();
+  };
 }
 
 export async function addMeeting(
