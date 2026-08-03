@@ -536,18 +536,18 @@ const styles = StyleSheet.create({
   titleRow: {
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 8,
-    marginBottom: -60,
+    paddingTop: 0,
+    marginBottom: -24,
   },
   titleImage: {
     width: '100%',
-    height: 450,
+    height: 180,
     alignSelf: 'center',
   },
 
   toggleWrap: { paddingHorizontal: 16, paddingVertical: 4, marginTop: 0 },
 
-  searchWrap: { paddingHorizontal: 16, paddingBottom: 8, marginTop: 24 },
+  searchWrap: { paddingHorizontal: 16, paddingBottom: 8, marginTop: 8 },
   searchBar: {
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -560,15 +560,15 @@ const styles = StyleSheet.create({
   categoriesRow: {
     flexDirection: 'row',
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 6,
     gap: 8,
-    marginTop: 8,
+    marginTop: 0,
   },
   catItem: {
     width: 112,
     alignItems: 'center',
     paddingVertical: 10,
-    gap: 8,
+    gap: 4,
   },
   tileIcon: { width: 96, height: 96 },
   catLabel: { fontSize: 13, fontWeight: '600' },
