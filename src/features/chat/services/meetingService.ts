@@ -37,7 +37,10 @@ export function listenToMeetings(
     orderBy('time', 'asc'),
   );
   return onSnapshot(q, (snap) => {
+    console.log('[listenToMeetings] received', snap.docs.length, 'meetings for project', projectId);
     callback(snap.docs.map(docToMeeting));
+  }, (err) => {
+    console.error('[listenToMeetings] snapshot error:', err.code, err.message);
   });
 }
 

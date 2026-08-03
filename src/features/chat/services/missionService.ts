@@ -37,7 +37,11 @@ export function listenToMissions(
     orderBy('createdAt', 'asc'),
   );
   return onSnapshot(q, (snap) => {
+    console.log('[listenToMissions] received', snap.docs.length, 'missions for project', projectId);
+    snap.docs.forEach(d => console.log('[listenToMissions] doc', d.id, JSON.stringify(d.data())));
     callback(snap.docs.map(docToMission));
+  }, (err) => {
+    console.error('[listenToMissions] snapshot error:', err.code, err.message);
   });
 }
 

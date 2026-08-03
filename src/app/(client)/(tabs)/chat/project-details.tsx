@@ -209,6 +209,7 @@ export default function ProjectDetailsScreen() {
 
   useEffect(() => {
     if (!projectId) return;
+    console.log('[ProjectDetails] subscribing to missions for projectId:', projectId);
     return listenToMissions(projectId, setMissions);
   }, [projectId]);
 
