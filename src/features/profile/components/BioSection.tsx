@@ -56,15 +56,7 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   cardLabel: {
     fontSize: 11,

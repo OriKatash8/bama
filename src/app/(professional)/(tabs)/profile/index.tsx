@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, TouchableOpacity, Text, StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
@@ -45,7 +43,6 @@ export default function ProfessionalProfileScreen() {
   const { assets, upload, addVideoUrl, remove } = usePortfolio();
   const { showToast } = useUiStore();
   const colors = useTheme();
-  const navigation = useNavigation();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -62,46 +59,6 @@ export default function ProfessionalProfileScreen() {
   const initialised = useRef(false);
   const handleSaveRef = useRef<() => void>(() => {});
   const handleCancelRef = useRef<() => void>(() => {});
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: t('profile.title'),
-      headerTintColor: '#004aad',
-      headerTitleStyle: { color: '#004aad', fontWeight: '700' as const },
-      headerShadowVisible: false,
-      headerBackground: () => (
-        <LinearGradient
-          colors={['#efd4f6', '#b7cae6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-      ),
-      headerRight: () =>
-        isEditing ? (
-          <View style={styles.headerBtns}>
-            <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
-                {t('profile.cancel')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
-              {isSaving
-                ? <ActivityIndicator size="small" color="#004aad" />
-                : <Text style={[styles.headerBtnText, styles.save, { textAlign: rtl ? 'right' : 'left' }]}>
-                    {t('profile.save')}
-                  </Text>}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={[styles.headerBtnText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
-              {t('profile.edit')}
-            </Text>
-          </TouchableOpacity>
-        ),
-    });
-  }, [isEditing, isSaving, language]);
 
   useEffect(() => {
     if (user) setName(user.displayName);
@@ -166,9 +123,27 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <Screen style={styles.content} scrollable>
-      <Text style={[styles.pageTitle, { fontFamily: font.bold }]}>
-        {t('profile.title')}
-      </Text>
+      <View style={styles.titleRow}>
+        <Text style={[styles.pageTitle, { fontFamily: font.bold }]}>
+          {t('profile.title')}
+        </Text>
+        {isEditing ? (
+          <View style={styles.headerBtns}>
+            <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
+              <Text style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
+              {isSaving
+                ? <ActivityIndicator size="small" color="#004aad" />
+                : <Text style={[styles.headerBtnText, styles.save]}>{t('profile.save')}</Text>}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
+            <Text style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.edit')}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       <ProfileHeader
         photoURL={photoUri ?? user?.photoURL ?? null}
         name={name}
@@ -179,11 +154,12 @@ export default function ProfessionalProfileScreen() {
         size={90}
       />
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
-      <RoleChips selected={skills} isEditing={isEditing} onChange={isEditing ? setSkills : undefined} />
+      {isEditing && <RoleChips selected={skills} isEditing onChange={setSkills} />}
 
       <ContentTabs
         equipment={equipment}
         reviews={reviews}
+        skills={skills}
         isEditing={isEditing}
         onEquipmentChange={setEquipment}
       />
@@ -214,14 +190,11 @@ const styles = StyleSheet.create({
   headerBtnText: { fontSize: 16 },
   save: { fontWeight: '700', color: '#004aad' },
 
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pageTitle: {
     fontSize: 36,
     fontWeight: '800',
-    color: '#ffffff',
-    textShadowColor: '#004aad',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-    textAlign: 'center',
+    color: '#004aad',
     textTransform: 'uppercase',
   },
   portfolioSection: { gap: 12 },

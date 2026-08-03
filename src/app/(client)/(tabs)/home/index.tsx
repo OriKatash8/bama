@@ -693,7 +693,7 @@ function createStyles(
   return StyleSheet.create({
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 100 },
-    pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: ffBold, color: '#ffffff', textShadowColor: '#004aad', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1, textAlign: 'center', textTransform: 'uppercase', marginTop: 20 },
+    pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textTransform: 'uppercase', marginTop: 20 },
 
     progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 16, marginBottom: 4 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },

@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 24,
   },
-  heading: { fontSize: 36, fontWeight: '800', color: '#ffffff', textShadowColor: '#004aad', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1, textAlign: 'center', textTransform: 'uppercase', flex: 1 },
+  heading: { fontSize: 36, fontWeight: '800', color: '#004aad', textAlign: 'center', textTransform: 'uppercase', flex: 1 },
   backBtn: { width: 60 },
   backText: { fontSize: 15, fontWeight: '600' },
 

@@ -166,11 +166,8 @@ export default function DashboardScreen() {
   } as object) : {};
 
   const headingStyle = {
-    color: '#ffffff',
+    color: '#004aad',
     fontFamily: font.bold,
-    textShadowColor: 'rgba(0,0,74,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   };
 
   const openProjectsLabel = visible.length === 1

@@ -249,10 +249,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',
-    color: '#ffffff',
-    textShadowColor: '#004aad',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    color: '#004aad',
     textAlign: 'center',
     textTransform: 'uppercase',
   },

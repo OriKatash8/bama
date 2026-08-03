@@ -40,9 +40,6 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '800',
     textTransform: 'uppercase',
-    color: '#ffffff',
-    textShadowColor: '#004aad',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    color: '#004aad',
   },
 });

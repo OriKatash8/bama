@@ -148,15 +148,7 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   cardLabel: {
     fontSize: 11,

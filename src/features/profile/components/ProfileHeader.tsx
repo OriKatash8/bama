@@ -1,6 +1,4 @@
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '@core/hooks/useTheme';
 import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
 import type { Review } from '@core/types/project';
 
@@ -25,8 +23,6 @@ export function ProfileHeader({
   email,
   reviews,
 }: ProfileHeaderProps) {
-  const colors = useTheme();
-
   const initials = name
     .split(' ')
     .map((n) => n[0] ?? '')
@@ -36,85 +32,57 @@ export function ProfileHeader({
     .toUpperCase();
 
   return (
-    <View style={styles.bannerWrap}>
-      <LinearGradient
-        colors={['#cb6ce6', '#004aad']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.banner}
+    <View style={styles.headerContent}>
+      <TouchableOpacity
+        onPress={isEditing ? onPhotoPress : undefined}
+        disabled={!isEditing}
+        activeOpacity={0.8}
+        style={[styles.avatarWrap, { width: size, height: size, borderRadius: size / 2 }]}
       >
-        <TouchableOpacity
-          onPress={isEditing ? onPhotoPress : undefined}
-          disabled={!isEditing}
-          activeOpacity={0.8}
-          style={[styles.avatarWrap, { width: size, height: size, borderRadius: size / 2 }]}
-        >
-          {photoURL ? (
-            <Image
-              source={{ uri: photoURL }}
-              style={[styles.avatarImage, { borderRadius: size / 2 }]}
-            />
-          ) : (
-            <View style={[styles.avatarFallback, { borderRadius: size / 2 }]}>
-              <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials}</Text>
-            </View>
-          )}
-          {isEditing && (
-            <View style={[styles.editOverlay, { borderBottomLeftRadius: size / 2, borderBottomRightRadius: size / 2 }]}>
-              <Text style={styles.editOverlayText}>Edit</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {isEditing ? (
-          <TextInput
-            style={styles.nameInput}
-            value={name}
-            onChangeText={onNameChange}
-            autoCapitalize="words"
+        {photoURL ? (
+          <Image
+            source={{ uri: photoURL }}
+            style={[styles.avatarImage, { borderRadius: size / 2 }]}
           />
         ) : (
-          <Text style={styles.name}>{name}</Text>
+          <View style={[styles.avatarFallback, { borderRadius: size / 2 }]}>
+            <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials}</Text>
+          </View>
         )}
+        {isEditing && (
+          <View style={[styles.editOverlay, { borderBottomLeftRadius: size / 2, borderBottomRightRadius: size / 2 }]}>
+            <Text style={styles.editOverlayText}>Edit</Text>
+          </View>
+        )}
+      </TouchableOpacity>
 
-        {email && <Text style={styles.email}>{email}</Text>}
+      {isEditing ? (
+        <TextInput
+          style={styles.nameInput}
+          value={name}
+          onChangeText={onNameChange}
+          autoCapitalize="words"
+        />
+      ) : (
+        <Text style={styles.name}>{name}</Text>
+      )}
 
-        {!isEditing && reviews && <AverageRatingDisplay reviews={reviews} />}
-      </LinearGradient>
+      {email && <Text style={styles.email}>{email}</Text>}
 
-      {/* Concave bottom curve illusion: rounded-top bg-gradient cap overlaps the gradient */}
-      <LinearGradient
-        colors={colors.bgGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.concaveCap}
-      />
+      {!isEditing && reviews && <AverageRatingDisplay reviews={reviews} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bannerWrap: {
-    alignSelf: 'stretch',
-    marginHorizontal: -16,
-    marginTop: -16,
-  },
-  banner: {
-    height: 270,
+  headerContent: {
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    paddingBottom: 48,
-  },
-  concaveCap: {
-    height: 40,
-    marginTop: -40,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    paddingVertical: 16,
   },
   avatarWrap: {
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: '#004aad',
     overflow: 'hidden',
   },
   avatarImage: {
@@ -123,14 +91,14 @@ const styles = StyleSheet.create({
   },
   avatarFallback: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(0,74,173,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
   },
   avatarInitials: {
     fontWeight: '700',
-    color: '#fff',
+    color: '#004aad',
   },
   editOverlay: {
     position: 'absolute',
@@ -141,16 +109,16 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   editOverlayText: { color: '#fff', fontSize: 11, textAlign: 'center', fontWeight: '600' },
-  name: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  name: { fontSize: 20, fontWeight: '700', color: '#004aad' },
   nameInput: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
+    color: '#004aad',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.5)',
+    borderBottomColor: 'rgba(0,74,173,0.3)',
     textAlign: 'center',
     paddingVertical: 4,
     minWidth: 160,
   },
-  email: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
+  email: { fontSize: 13, color: 'rgba(0,74,173,0.6)' },
 });

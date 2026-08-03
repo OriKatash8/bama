@@ -51,8 +51,8 @@ export function AverageRatingDisplay({ reviews, showEmptyState = false }: Props)
           <Star
             key={i}
             size={16}
-            color={rounded >= i ? '#FFD700' : '#cccccc'}
-            fill={rounded >= i ? '#FFD700' : '#cccccc'}
+            color={rounded >= i ? '#cb6ce6' : '#cccccc'}
+            fill={rounded >= i ? '#cb6ce6' : '#cccccc'}
           />
         ))}
         <Text style={styles.averageText}>{average.toFixed(1)} ★</Text>

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput,
 } from 'react-native';
-import { Wrench, Star } from 'lucide-react-native';
+import { Wrench, Star, Award } from 'lucide-react-native';
+import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
@@ -22,18 +23,20 @@ function makeT(translations: Translations) {
   };
 }
 
-type SectionKey = 'equipment' | 'reviews';
+type SectionKey = 'equipment' | 'reviews' | 'skills';
 
 const SECTION_ICONS: Record<SectionKey, React.ComponentType<{ size: number; color: string; strokeWidth: number }>> = {
   equipment: Wrench,
   reviews:   Star,
+  skills:    Award,
 };
 
-const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews'];
+const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews', 'skills'];
 
 type ContentTabsProps = {
   equipment: string[];
   reviews: Review[];
+  skills?: ProfessionalSkill[];
   isEditing: boolean;
   onEquipmentChange?: (items: string[]) => void;
 };
@@ -41,6 +44,7 @@ type ContentTabsProps = {
 export function ContentTabs({
   equipment,
   reviews,
+  skills,
   isEditing,
   onEquipmentChange,
 }: ContentTabsProps) {
@@ -58,6 +62,7 @@ export function ContentTabs({
     const map: Record<SectionKey, string> = {
       equipment: t('profile_sections.equipment'),
       reviews:   t('profile_sections.reviews'),
+      skills:    t('profile_sections.skills'),
     };
     return map[key];
   };
@@ -157,6 +162,25 @@ export function ContentTabs({
 
         {/* Reviews */}
         {active === 'reviews' && <ReviewsList reviews={reviews} />}
+
+        {/* Skills */}
+        {active === 'skills' && (
+          <>
+            {(skills ?? []).length === 0 ? (
+              <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('profile_sections.no_skills')}
+              </Text>
+            ) : (
+              <View style={styles.chipsWrap}>
+                {(skills ?? []).map((s, i) => (
+                  <View key={`${s.category}-${s.subcategory}-${i}`} style={styles.chip}>
+                    <Text style={styles.chipText}>{s.subcategory}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
       </View>
     </View>
   );
@@ -283,4 +307,15 @@ const styles = StyleSheet.create({
     color: 'rgba(0,74,173,0.4)',
     paddingVertical: 12,
   },
+
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,74,173,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.2)',
+  },
+  chipText: { fontSize: 12, color: '#004aad' },
 });
