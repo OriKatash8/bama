@@ -67,24 +67,24 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
         <View style={[styles.infoOuterRow, { flexDirection: rowDir }]}>
           {/* View Profile button */}
           <TouchableOpacity onPress={onPressProfile} style={styles.viewProfileBtn} activeOpacity={0.8}>
-            <Text style={[styles.viewProfileText, { fontFamily: font.semiBold }]}>{t('offers.view_profile')}</Text>
+            <Text style={[styles.viewProfileText, { ...font.semiBold }]}>{t('offers.view_profile')}</Text>
           </TouchableOpacity>
 
           {/* Professional info + avatar */}
           <View style={[styles.infoRow, { flexDirection: rowDir }]}>
             <View style={styles.infoCol}>
               {projectTitle && (
-                <Text style={[styles.projectTitle, { fontFamily: font.forText(projectTitle, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
+                <Text style={[styles.projectTitle, { ...font.forText(projectTitle, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
                   {t('offers.for_project')}{projectTitle}
                 </Text>
               )}
-              <Text style={[styles.name, { fontFamily: font.forText(displayName, 'bold'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
+              <Text style={[styles.name, { ...font.forText(displayName, 'bold'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
                 {displayName}
               </Text>
-              <Text style={[styles.role, { fontFamily: font.forText(offer.subcategory, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
+              <Text style={[styles.role, { ...font.forText(offer.subcategory, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
                 {offer.subcategory}
               </Text>
-              <Text style={[styles.price, { fontFamily: font.bold, textAlign }]}>
+              <Text style={[styles.price, { ...font.bold, textAlign }]}>
                 ₪{offer.price.toLocaleString()}
               </Text>
             </View>
@@ -98,7 +98,7 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
               />
             ) : (
               <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.primary }]}>
-                <Text style={[styles.avatarInitial, { fontFamily: font.bold }]}>{displayName.charAt(0).toUpperCase()}</Text>
+                <Text style={[styles.avatarInitial, { ...font.bold }]}>{displayName.charAt(0).toUpperCase()}</Text>
               </View>
             )}
           </View>

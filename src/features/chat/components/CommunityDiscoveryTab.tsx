@@ -49,21 +49,21 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header row */}
       <View style={[styles.headerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <Text style={[styles.pageTitle, { fontFamily: font.bold, color: colors.text }]}>
+        <Text style={[styles.pageTitle, { ...font.bold, color: colors.text }]}>
           {t('chats_page.tab_communities')}
         </Text>
         <TouchableOpacity style={[styles.plusBtn, { backgroundColor: colors.primary }]} onPress={onRequestCommunity}>
           <Plus size={16} color="#fff" />
-          <Text style={[styles.plusBtnText, { fontFamily: font.semiBold }]}>{t('communities.request_create')}</Text>
+          <Text style={[styles.plusBtnText, { ...font.semiBold }]}>{t('communities.request_create')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* My Communities */}
-      <Text style={[styles.sectionLabel, { fontFamily: font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+      <Text style={[styles.sectionLabel, { ...font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.my_communities')}
       </Text>
       {myCommunities.length === 0 ? (
-        <Text style={[styles.empty, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.empty, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
           {t('communities.no_communities')}
         </Text>
       ) : (
@@ -75,15 +75,15 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
             activeOpacity={0.75}
           >
             <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.cardName, { fontFamily: font.semiBold, color: colors.text }]} numberOfLines={1}>
+              <Text style={[styles.cardName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
                 {c.name}
               </Text>
-              <Text style={[styles.memberCount, { fontFamily: font.regular, color: colors.textMuted }]}>
+              <Text style={[styles.memberCount, { ...font.regular, color: colors.textMuted }]}>
                 {c.members.length} {t('communities.members')}
               </Text>
             </View>
             {!!formatLastMessage(c) && (
-              <Text style={[styles.preview, { fontFamily: font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+              <Text style={[styles.preview, { ...font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                 {formatLastMessage(c)}
               </Text>
             )}
@@ -92,11 +92,11 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       )}
 
       {/* Discover */}
-      <Text style={[styles.sectionLabel, { fontFamily: font.semiBold, color: colors.textSec, marginTop: 20, textAlign: rtl ? 'right' : 'left' }]}>
+      <Text style={[styles.sectionLabel, { ...font.semiBold, color: colors.textSec, marginTop: 20, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
       </Text>
       {discover.length === 0 ? (
-        <Text style={[styles.empty, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.empty, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
           {t('communities.no_discover')}
         </Text>
       ) : (
@@ -105,29 +105,29 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
           return (
             <View key={c.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.cardName, { fontFamily: font.semiBold, color: colors.text }]} numberOfLines={1}>
+                <Text style={[styles.cardName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
                   {c.name}
                 </Text>
-                <Text style={[styles.memberCount, { fontFamily: font.regular, color: colors.textMuted }]}>
+                <Text style={[styles.memberCount, { ...font.regular, color: colors.textMuted }]}>
                   {c.members.length} {t('communities.members')}
                 </Text>
               </View>
               {!!c.description && (
-                <Text style={[styles.description, { fontFamily: font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                <Text style={[styles.description, { ...font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                   {c.description as string}
                 </Text>
               )}
               <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {status === 'pending' ? (
                   <View style={styles.pendingBadge}>
-                    <Text style={[styles.pendingText, { fontFamily: font.semiBold }]}>{t('communities.pending')}</Text>
+                    <Text style={[styles.pendingText, { ...font.semiBold }]}>{t('communities.pending')}</Text>
                   </View>
                 ) : (
                   <TouchableOpacity
                     style={[styles.joinBtn, { backgroundColor: colors.primary }]}
                     onPress={() => requestToJoin(c.id, user?.displayName ?? '')}
                   >
-                    <Text style={[styles.joinBtnText, { fontFamily: font.semiBold }]}>{t('communities.request_join')}</Text>
+                    <Text style={[styles.joinBtnText, { ...font.semiBold }]}>{t('communities.request_join')}</Text>
                   </TouchableOpacity>
                 )}
               </View>

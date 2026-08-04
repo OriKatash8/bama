@@ -58,12 +58,7 @@ function AppShell() {
     'Heebo-ExtraBold':  require('../../assets/fonts/Heebo-ExtraBold.ttf'),
     'Heebo-Black':      require('../../assets/fonts/Heebo-Black.ttf'),
     PeaceSans:          require('../../assets/fonts/peace-sans.ttf'),
-    'Montserrat-Regular':  require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
-    'Montserrat-Medium':   require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
-    'Montserrat-SemiBold': require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
-    'Montserrat-Bold':     require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
-    'Montserrat-Light':    require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
-    Montserrat:            require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    Montserrat: require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
   });
 
   const [langKey, setLangKey] = useState(i18n.language);
@@ -77,11 +72,11 @@ function AppShell() {
   useEffect(() => {
     (Text as unknown as Record<string, unknown>).defaultProps = {
       ...((Text as unknown as Record<string, unknown>).defaultProps as object | undefined),
-      style: [{ fontFamily: font.regular }],
+      style: [{ ...font.regular }],
     };
     (TextInput as unknown as Record<string, unknown>).defaultProps = {
       ...((TextInput as unknown as Record<string, unknown>).defaultProps as object | undefined),
-      style: [{ fontFamily: font.regular }],
+      style: [{ ...font.regular }],
     };
   }, [font.regular]);
 

@@ -104,7 +104,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
           {/* Header */}
           <View style={[styles.header, { flexDirection: rowDir }]}>
             <Text
-              style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}
+              style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}
               numberOfLines={2}
             >
               {listing.productName}
@@ -132,22 +132,22 @@ export function ListingDetailModal({ listing, onClose }: Props) {
 
             {/* Price & location */}
             <View style={[styles.infoBox, { flexDirection: rowDir }]}>
-              <Text style={[styles.price, { fontFamily: font.bold }]}>{priceLabel}</Text>
+              <Text style={[styles.price, { ...font.bold }]}>{priceLabel}</Text>
               <View style={[styles.locationRow, { flexDirection: rowDir }]}>
                 <Image
                   source={LOCATION_ICON}
                   style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
                   contentFit="contain" cachePolicy="memory-disk"
                 />
-                <Text style={[styles.location, { fontFamily: font.regular }]} numberOfLines={1}>{listing.location}</Text>
+                <Text style={[styles.location, { ...font.regular }]} numberOfLines={1}>{listing.location}</Text>
               </View>
             </View>
 
             {/* Seller */}
             <View style={styles.sellerBox}>
-              <Text style={[styles.poster, { textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+              <Text style={[styles.poster, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                 {t('marketplace.posted_by')}{' '}
-                <Text style={[styles.posterName, { fontFamily: font.semiBold }]}>{listing.posterName}</Text>
+                <Text style={[styles.posterName, { ...font.semiBold }]}>{listing.posterName}</Text>
               </Text>
             </View>
           </ScrollView>
@@ -156,7 +156,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
           {!isOwnListing && (
             isUnavailable ? (
               <View style={styles.reservedBtn}>
-                <Text style={[styles.reservedText, { fontFamily: font.bold }]}>
+                <Text style={[styles.reservedText, { ...font.bold }]}>
                   {t('marketplace.reserved')}
                 </Text>
               </View>
@@ -166,7 +166,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
                 onPress={() => setCheckoutVisible(true)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.buyText, { fontFamily: font.bold }]}>{t('marketplace.buy_button')}</Text>
+                <Text style={[styles.buyText, { ...font.bold }]}>{t('marketplace.buy_button')}</Text>
               </TouchableOpacity>
             )
           )}

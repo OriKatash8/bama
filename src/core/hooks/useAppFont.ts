@@ -1,21 +1,24 @@
+import type { TextStyle } from 'react-native';
 import { useSettingsStore } from '../stores/settingsStore';
 
 type Weight = 'regular' | 'medium' | 'semiBold' | 'bold' | 'light';
 
-const HE_FONTS: Record<Weight, string> = {
-  regular:  'Heebo-Regular',
-  medium:   'Heebo-Medium',
-  semiBold: 'Heebo-SemiBold',
-  bold:     'Heebo-Bold',
-  light:    'Heebo-Light',
+export type FontStyle = { fontFamily: string; fontWeight?: TextStyle['fontWeight'] };
+
+const HE_FONTS: Record<Weight, FontStyle> = {
+  regular:  { fontFamily: 'Heebo-Regular' },
+  medium:   { fontFamily: 'Heebo-Medium' },
+  semiBold: { fontFamily: 'Heebo-SemiBold' },
+  bold:     { fontFamily: 'Heebo-Bold' },
+  light:    { fontFamily: 'Heebo-Light' },
 };
 
-const EN_FONTS: Record<Weight, string> = {
-  regular:  'Montserrat-Regular',
-  medium:   'Montserrat-Medium',
-  semiBold: 'Montserrat-SemiBold',
-  bold:     'Montserrat-Bold',
-  light:    'Montserrat-Light',
+const EN_FONTS: Record<Weight, FontStyle> = {
+  regular:  { fontFamily: 'Montserrat', fontWeight: '400' },
+  medium:   { fontFamily: 'Montserrat', fontWeight: '500' },
+  semiBold: { fontFamily: 'Montserrat', fontWeight: '600' },
+  bold:     { fontFamily: 'Montserrat', fontWeight: '700' },
+  light:    { fontFamily: 'Montserrat', fontWeight: '300' },
 };
 
 const HEBREW_RE = /[֐-׿]/;
@@ -25,7 +28,7 @@ export function useAppFont() {
   const isHe = language === 'he';
   const appFonts = isHe ? HE_FONTS : EN_FONTS;
 
-  function forText(text: string, weight: Weight = 'regular'): string {
+  function forText(text: string, weight: Weight = 'regular'): FontStyle {
     return HEBREW_RE.test(text) ? HE_FONTS[weight] : EN_FONTS[weight];
   }
 

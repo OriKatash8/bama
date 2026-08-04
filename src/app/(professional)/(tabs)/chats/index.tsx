@@ -119,7 +119,7 @@ export default function ProfessionalChatsScreen() {
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={styles.gradient}>
-          <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
+          <Text style={[styles.headerTitle, { ...font.bold }]}>
             {t('chats_page.title')}
           </Text>
           <View style={styles.tabBar}>
@@ -135,7 +135,7 @@ export default function ProfessionalChatsScreen() {
                   <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
                     <Text style={[
                       styles.tabText,
-                      { color: colors.textSec, fontFamily: isActive ? font.bold : font.regular, textAlign: rtl ? 'right' : 'left' },
+                      { color: colors.textSec, ...(isActive ? font.bold : font.regular), textAlign: rtl ? 'right' : 'left' },
                       isActive && styles.tabTextActive,
                     ]}>
                       {TAB_LABELS[key]}
@@ -160,7 +160,7 @@ export default function ProfessionalChatsScreen() {
       {active === 'courses' && (
         <View>
           <View style={[styles.tabContentHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.sectionTitle, { fontFamily: font.semiBold, color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { ...font.semiBold, color: colors.text }]}>
               {t('chats_page.tab_courses')}
             </Text>
             <TouchableOpacity
@@ -168,7 +168,7 @@ export default function ProfessionalChatsScreen() {
               onPress={() => setCoursesModal(true)}
             >
               <Plus size={16} color="#fff" />
-              <Text style={[styles.plusBtnText, { fontFamily: font.semiBold }]}>
+              <Text style={[styles.plusBtnText, { ...font.semiBold }]}>
                 {t('courses.browse')}
               </Text>
             </TouchableOpacity>
@@ -176,7 +176,7 @@ export default function ProfessionalChatsScreen() {
 
           {courses.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={[styles.emptyText, { fontFamily: font.regular, color: colors.textMuted }]}>
+              <Text style={[styles.emptyText, { ...font.regular, color: colors.textMuted }]}>
                 {t('courses.empty')}
               </Text>
             </View>
@@ -190,13 +190,13 @@ export default function ProfessionalChatsScreen() {
               renderItem={({ item }) => (
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={[styles.cardTitle, { fontFamily: font.semiBold, color: colors.text }]}>{item.title}</Text>
-                    <Text style={[styles.coursePrice, { fontFamily: font.bold, color: colors.primary }]}>₪{item.price}</Text>
+                    <Text style={[styles.cardTitle, { ...font.semiBold, color: colors.text }]}>{item.title}</Text>
+                    <Text style={[styles.coursePrice, { ...font.bold, color: colors.primary }]}>₪{item.price}</Text>
                   </View>
-                  <Text style={[styles.courseInstructor, { fontFamily: font.regular, color: colors.textSec }]}>
+                  <Text style={[styles.courseInstructor, { ...font.regular, color: colors.textSec }]}>
                     {item.instructorName}
                   </Text>
-                  <Text style={[styles.cardDesc, { fontFamily: font.regular, color: colors.textSec }]} numberOfLines={2}>
+                  <Text style={[styles.cardDesc, { ...font.regular, color: colors.textSec }]} numberOfLines={2}>
                     {item.description}
                   </Text>
                 </View>
@@ -213,7 +213,7 @@ export default function ProfessionalChatsScreen() {
             <TouchableOpacity activeOpacity={1}>
               <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modal}>
                 <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { fontFamily: font.bold }]}>{t('communities.modal_title')}</Text>
+                  <Text style={[styles.modalTitle, { ...font.bold }]}>{t('communities.modal_title')}</Text>
                   <TouchableOpacity onPress={() => setCommModal(false)}>
                     <X size={22} color="#fff" />
                   </TouchableOpacity>
@@ -223,7 +223,7 @@ export default function ProfessionalChatsScreen() {
                   placeholderTextColor="rgba(255,255,255,0.5)"
                   value={commName}
                   onChangeText={setCommName}
-                  style={[styles.input, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                  style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 />
                 <TextInput
                   placeholder={t('communities.description_placeholder')}
@@ -232,7 +232,7 @@ export default function ProfessionalChatsScreen() {
                   onChangeText={setCommDesc}
                   multiline
                   numberOfLines={3}
-                  style={[styles.input, { fontFamily: font.regular, height: 80, textAlignVertical: 'top', textAlign: rtl ? 'right' : 'left' }]}
+                  style={[styles.input, { ...font.regular, height: 80, textAlignVertical: 'top', textAlign: rtl ? 'right' : 'left' }]}
                 />
                 <TouchableOpacity
                   style={[styles.submitBtn, { opacity: submitting ? 0.6 : 1 }]}
@@ -241,7 +241,7 @@ export default function ProfessionalChatsScreen() {
                 >
                   {submitting
                     ? <ActivityIndicator color="#004aad" />
-                    : <Text style={[styles.submitBtnText, { fontFamily: font.bold }]}>{t('communities.submit')}</Text>
+                    : <Text style={[styles.submitBtnText, { ...font.bold }]}>{t('communities.submit')}</Text>
                   }
                 </TouchableOpacity>
               </LinearGradient>
@@ -256,13 +256,13 @@ export default function ProfessionalChatsScreen() {
           <TouchableOpacity activeOpacity={1}>
             <LinearGradient colors={['#1a237e', '#004aad']} style={[styles.modal, { maxHeight: 500 }]}>
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { fontFamily: font.bold }]}>{t('courses.modal_title')}</Text>
+                <Text style={[styles.modalTitle, { ...font.bold }]}>{t('courses.modal_title')}</Text>
                 <TouchableOpacity onPress={() => setCoursesModal(false)}>
                   <X size={22} color="#fff" />
                 </TouchableOpacity>
               </View>
               {courses.length === 0 ? (
-                <Text style={[styles.emptyText, { fontFamily: font.regular, color: 'rgba(255,255,255,0.6)', textAlign: 'center', paddingVertical: 24 }]}>
+                <Text style={[styles.emptyText, { ...font.regular, color: 'rgba(255,255,255,0.6)', textAlign: 'center', paddingVertical: 24 }]}>
                   {t('courses.empty')}
                 </Text>
               ) : (
@@ -270,10 +270,10 @@ export default function ProfessionalChatsScreen() {
                   {courses.map((c) => (
                     <View key={c.id} style={styles.modalCourseRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.modalCourseTitle, { fontFamily: font.semiBold }]}>{c.title}</Text>
-                        <Text style={[styles.modalCourseSub, { fontFamily: font.regular }]}>{c.instructorName}</Text>
+                        <Text style={[styles.modalCourseTitle, { ...font.semiBold }]}>{c.title}</Text>
+                        <Text style={[styles.modalCourseSub, { ...font.regular }]}>{c.instructorName}</Text>
                       </View>
-                      <Text style={[styles.modalCoursePrice, { fontFamily: font.bold }]}>₪{c.price}</Text>
+                      <Text style={[styles.modalCoursePrice, { ...font.bold }]}>₪{c.price}</Text>
                     </View>
                   ))}
                 </ScrollView>

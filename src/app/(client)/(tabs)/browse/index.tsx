@@ -189,7 +189,7 @@ export default function SearchScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={[styles.heading, { fontFamily: font.bold }]}>
+          <Text style={[styles.heading, { ...font.bold }]}>
             {view.kind === 'grid' ? t('search.heading') : view.subcategory}
           </Text>
           {view.kind !== 'grid' && <View style={styles.backBtn} />}
@@ -256,7 +256,7 @@ export default function SearchScreen() {
                           loading="lazy"
                         />
                       )}
-                      <Text style={[styles.categoryLabel, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
+                      <Text style={[styles.categoryLabel, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{cat.label}</Text>
                       <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
                         <ChevronRight size={18} color="#004aad" />
                       </Animated.View>
@@ -270,7 +270,7 @@ export default function SearchScreen() {
                           onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
                           activeOpacity={0.7}
                         >
-                          <Text style={[styles.subItemText, { fontFamily: font.medium, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
+                          <Text style={[styles.subItemText, { ...font.medium, textAlign: rtl ? 'right' : 'left' }]}>{sub}</Text>
                         </TouchableOpacity>
                       ))}
                     </Animated.View>
@@ -278,7 +278,7 @@ export default function SearchScreen() {
                 );
               })}
               {filteredCategories.length === 0 && (
-                <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, fontFamily: font.regular }}>
+                <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, ...font.regular }}>
                   {t('search.no_categories_match', { query })}
                 </Text>
               )}

@@ -29,7 +29,7 @@ export default function AdminTabsLayout() {
             tabBarStyle: getFloatingTabBarStyle(isDark),
             tabBarActiveTintColor: FLOATING_TAB_BAR_ACTIVE_COLOR,
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
-            tabBarLabelStyle: { fontSize: 11, fontFamily: font.regular },
+            tabBarLabelStyle: { fontSize: 11, ...font.regular },
           }}
         >
           <Tabs.Screen

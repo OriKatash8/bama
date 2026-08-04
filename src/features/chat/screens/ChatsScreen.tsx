@@ -163,7 +163,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
       <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <Text style={[styles.avatarInitial, { fontFamily: font.bold }]}>{initial}</Text>
+        <Text style={[styles.avatarInitial, { ...font.bold }]}>{initial}</Text>
       </View>
     );
   }
@@ -172,7 +172,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     return (
       <View style={styles.flex}>
         <View style={styles.empty}>
-          <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
             {t('chats.no_conversations')}
           </Text>
         </View>
@@ -201,7 +201,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
           {renderAvatar(item)}
           {timestamp ? (
             <View style={styles.avatarTimestampOverlay}>
-              <Text style={[styles.avatarTimestampText, { color: colors.textMuted, fontFamily: font.regular }]}>
+              <Text style={[styles.avatarTimestampText, { color: colors.textMuted, ...font.regular }]}>
                 {timestamp}
               </Text>
             </View>
@@ -209,12 +209,12 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
         </View>
         <View style={styles.content}>
           <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-            <Text style={[styles.name, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
+            <Text style={[styles.name, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
               {chatName}
             </Text>
             {status != null && (
               <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
-                <Text style={[styles.statusBadgeText, { fontFamily: font.bold, color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</Text>
+                <Text style={[styles.statusBadgeText, { ...font.bold, color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</Text>
               </View>
             )}
           </View>
@@ -222,7 +222,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
             <Text
               style={[styles.preview, {
                 color: colors.textMuted,
-                fontFamily: font.regular,
+                ...font.regular,
                 textAlign: rtl ? 'right' : 'left',
                 paddingRight: rtl ? 0 : 4,
                 paddingLeft: rtl ? 4 : 0,
@@ -234,7 +234,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
             </Text>
             {unread > 0 ? (
               <View style={[styles.unreadBadge, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
-                <Text style={[styles.unreadBadgeText, { fontFamily: font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
+                <Text style={[styles.unreadBadgeText, { ...font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
               </View>
             ) : (
               <View style={[styles.badgePlaceholder, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]} />

@@ -112,7 +112,7 @@ export default function SummaryScreen() {
         hitSlop={12}
       >
         <ChevronLeft size={20} color="#004aad" strokeWidth={2} />
-        <Text style={[styles.backText, { fontFamily: font.semiBold }]}>{t('builder.back_to_edit')}</Text>
+        <Text style={[styles.backText, { ...font.semiBold }]}>{t('builder.back_to_edit')}</Text>
       </TouchableOpacity>
 
       <ScrollView
@@ -122,27 +122,27 @@ export default function SummaryScreen() {
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient colors={['#efd4f6', '#b7cae6']} style={styles.card}>
-          <Text style={[styles.cardTitle, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.cardTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
             {t('builder.summary_title')}
           </Text>
 
           {/* Title */}
-          <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
             {t('builder.confirm_title')}
           </Text>
           <TextInput
-            style={[styles.input, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+            style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
             value={title}
             onChangeText={setTitle}
             placeholder={t('builder.confirm_title')}
             placeholderTextColor="#004aad99"
           />
           {/* Description */}
-          <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
             {t('builder.tell_us')}
           </Text>
           <TextInput
-            style={[styles.input, styles.multiline, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+            style={[styles.input, styles.multiline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -154,7 +154,7 @@ export default function SummaryScreen() {
           {/* Dates */}
           <View style={styles.dateRow}>
             <View style={styles.dateCol}>
-              <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('builder.execution')}{' '}
                 <Text style={{ fontWeight: '400', opacity: 0.6 }}>({t('builder.optional')})</Text>
               </Text>
@@ -163,7 +163,7 @@ export default function SummaryScreen() {
                 onPress={() => setCalOpen('exec')}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.dateBtnText, { fontFamily: font.regular, color: exec ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
+                <Text style={[styles.dateBtnText, { ...font.regular, color: exec ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
                   {exec || t('builder.placeholder_date')}
                 </Text>
                 <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
@@ -171,7 +171,7 @@ export default function SummaryScreen() {
             </View>
 
             <View style={styles.dateCol}>
-              <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('builder.deadline')}
               </Text>
               <TouchableOpacity
@@ -179,7 +179,7 @@ export default function SummaryScreen() {
                 onPress={() => setCalOpen('deadline')}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.dateBtnText, { fontFamily: font.regular, color: deadline ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
+                <Text style={[styles.dateBtnText, { ...font.regular, color: deadline ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
                   {deadline || t('builder.placeholder_deadline')}
                 </Text>
                 <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
@@ -188,11 +188,11 @@ export default function SummaryScreen() {
           </View>
 
           {/* Location */}
-          <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
             {t('builder.location')}
           </Text>
           <TextInput
-            style={[styles.input, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+            style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
             value={location}
             onChangeText={setLocation}
             placeholder={t('builder.placeholder_location')}
@@ -202,11 +202,11 @@ export default function SummaryScreen() {
           {/* Vibe & Style (editable, shown if set) */}
           {vibe.length > 0 && (
             <>
-              <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
                 {t('builder.vibe_label')}
               </Text>
               <TextInput
-                style={[styles.input, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 value={vibe}
                 onChangeText={setVibe}
                 placeholderTextColor="#004aad99"
@@ -217,24 +217,24 @@ export default function SummaryScreen() {
           {/* Budget (read-only pill) */}
           {budget.length > 0 && (
             <>
-              <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
                 {t('builder.budget')}
               </Text>
               <View style={styles.budgetPillDisplay}>
-                <Text style={[styles.budgetPillDisplayText, { fontFamily: font.bold }]}>{budget}</Text>
+                <Text style={[styles.budgetPillDisplayText, { ...font.bold }]}>{budget}</Text>
               </View>
             </>
           )}
 
           {/* Slots */}
-          <Text style={[styles.fieldLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
             {t('builder.select_roles')}
           </Text>
           {slots.map((slot) => (
             <View key={`${slot.category}-${slot.subcategory}`} style={styles.slotRow}>
               <View style={styles.slotInfo}>
-                <Text style={[styles.slotSub, { fontFamily: font.semiBold }]}>{slot.subcategory}</Text>
-                <Text style={[styles.slotCat, { fontFamily: font.regular }]}>{slot.category}</Text>
+                <Text style={[styles.slotSub, { ...font.semiBold }]}>{slot.subcategory}</Text>
+                <Text style={[styles.slotCat, { ...font.regular }]}>{slot.category}</Text>
               </View>
               <View style={styles.qtyControls}>
                 <TouchableOpacity
@@ -243,10 +243,10 @@ export default function SummaryScreen() {
                   hitSlop={8}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.qtyBtnText, { fontFamily: font.bold }]}>−</Text>
+                  <Text style={[styles.qtyBtnText, { ...font.bold }]}>−</Text>
                 </TouchableOpacity>
                 <View style={styles.qtyBadge}>
-                  <Text style={[styles.qtyBadgeText, { fontFamily: font.bold }]}>{slot.quantity}</Text>
+                  <Text style={[styles.qtyBadgeText, { ...font.bold }]}>{slot.quantity}</Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.qtyBtn, styles.qtyBtnAdd]}
@@ -254,7 +254,7 @@ export default function SummaryScreen() {
                   hitSlop={8}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.qtyBtnText, styles.qtyBtnAddText, { fontFamily: font.bold }]}>+</Text>
+                  <Text style={[styles.qtyBtnText, styles.qtyBtnAddText, { ...font.bold }]}>+</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.removeBtn}
@@ -268,7 +268,7 @@ export default function SummaryScreen() {
             </View>
           ))}
           {slots.length === 0 && (
-            <Text style={[styles.hint, { fontFamily: font.regular, color: '#e53935', textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.hint, { ...font.regular, color: '#e53935', textAlign: rtl ? 'right' : 'left' }]}>
               {t('builder.error_role')}
             </Text>
           )}
@@ -287,7 +287,7 @@ export default function SummaryScreen() {
             disabled={!canConfirm}
             activeOpacity={0.8}
           >
-            <Text style={[styles.submitText, { fontFamily: font.bold }]}>
+            <Text style={[styles.submitText, { ...font.bold }]}>
               {isSubmitting
                 ? t('builder.submitting')
                 : isEditMode

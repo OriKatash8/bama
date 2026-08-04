@@ -55,7 +55,7 @@ export function CheckoutModal({
         >
           {/* Header */}
           <View style={[styles.header, { flexDirection: rowDir }]}>
-            <Text style={[styles.title, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.title, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.checkout_title')}
             </Text>
             <TouchableOpacity onPress={onCancel} style={styles.closeBtn} activeOpacity={0.7}>
@@ -66,14 +66,14 @@ export function CheckoutModal({
           {/* Product row */}
           <View style={[styles.row, { flexDirection: rowDir }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.productName, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+              <Text style={[styles.productName, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                 {productName}
               </Text>
-              <Text style={[styles.priceNote, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.priceNote, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.seller_price_note')}
               </Text>
             </View>
-            <Text style={[styles.amount, { fontFamily: font.bold }]}>
+            <Text style={[styles.amount, { ...font.bold }]}>
               ₪{price.toLocaleString()}
             </Text>
           </View>
@@ -83,23 +83,23 @@ export function CheckoutModal({
 
           {/* Platform fee row */}
           <View style={[styles.row, { flexDirection: rowDir }]}>
-            <Text style={[styles.feeLabel, { fontFamily: font.medium, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
+            <Text style={[styles.feeLabel, { ...font.medium, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
               {t('marketplace.platform_fee')}
             </Text>
-            <Text style={[styles.feeAmount, { fontFamily: font.bold }]}>
+            <Text style={[styles.feeAmount, { ...font.bold }]}>
               ₪{platformFee.toLocaleString()}
             </Text>
           </View>
 
           {/* Note */}
-          <Text style={[styles.note, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.note, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
             {t('marketplace.fee_note')}
           </Text>
 
           {/* Buttons */}
           <View style={[styles.btnRow, { flexDirection: rowDir }]}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} disabled={isLoading} activeOpacity={0.7}>
-              <Text style={[styles.cancelText, { fontFamily: font.semiBold }]}>
+              <Text style={[styles.cancelText, { ...font.semiBold }]}>
                 {t('common.cancel')}
               </Text>
             </TouchableOpacity>
@@ -111,7 +111,7 @@ export function CheckoutModal({
             >
               {isLoading
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={[styles.confirmText, { fontFamily: font.bold }]}>
+                : <Text style={[styles.confirmText, { ...font.bold }]}>
                     {t('marketplace.confirm_purchase')}
                   </Text>}
             </TouchableOpacity>

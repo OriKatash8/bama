@@ -66,7 +66,7 @@ export function RegisterForm() {
       <AuthSettingsButton />
       <Image source={BAMA_LOGO} style={styles.appLogo} contentFit="contain" cachePolicy="memory-disk" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
-        <Text style={[styles.title, { fontFamily: font.bold }]}>{t('auth.register_title')}</Text>
+        <Text style={[styles.title, { ...font.bold }]}>{t('auth.register_title')}</Text>
         <Input
           placeholder={t('auth.full_name')}
           placeholderTextColor={colors.placeholder}
@@ -76,7 +76,7 @@ export function RegisterForm() {
           error={fieldErrors.fullName}
           textAlign={textAlign}
 
-          style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
+          style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
         />
         <Input
           placeholder={t('auth.email')}
@@ -88,7 +88,7 @@ export function RegisterForm() {
           error={fieldErrors.email}
           textAlign={textAlign}
 
-          style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
+          style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
         />
         <Input
           placeholder={t('auth.password')}
@@ -98,7 +98,7 @@ export function RegisterForm() {
           secureTextEntry
           textAlign={textAlign}
 
-          style={{ borderColor: '#cb6ce6', color: colors.text, fontFamily: font.regular, textAlign }}
+          style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
           onFocus={() => setPasswordFocused(true)}
           onBlur={() => setPasswordFocused(false)}
         />
@@ -114,7 +114,7 @@ export function RegisterForm() {
                 <Text style={[
                   styles.checkLabel,
                   {
-                    fontFamily: font.regular,
+                    ...font.regular,
                     color: rule.met ? '#43a047' : 'rgba(0,0,0,0.45)',
                     marginLeft: rtl ? 0 : 6,
                     marginRight: rtl ? 6 : 0,
@@ -137,11 +137,11 @@ export function RegisterForm() {
           } as object) : { backgroundColor: '#004aad' }}
         />
         <View style={[styles.footer, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.footerText, { color: colors.text, fontFamily: font.regular }]}>
+          <Text style={[styles.footerText, { color: colors.text, ...font.regular }]}>
             {t('auth.have_account')}
           </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)')}>
-            <Text style={[styles.link, { color: colors.text, fontFamily: font.semiBold }]}>
+            <Text style={[styles.link, { color: colors.text, ...font.semiBold }]}>
               {t('auth.sign_in_link')}
             </Text>
           </TouchableOpacity>

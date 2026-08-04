@@ -55,10 +55,10 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
   return (
     <View style={styles.card}>
       <View style={[styles.badge, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.badgeText, { fontFamily: font.bold }]}>{t('offers.bundle_badge')}</Text>
+        <Text style={[styles.badgeText, { ...font.bold }]}>{t('offers.bundle_badge')}</Text>
       </View>
 
-      <Text style={[styles.name, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>{displayName}</Text>
+      <Text style={[styles.name, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{displayName}</Text>
 
       {/* Tappable roles header */}
       <TouchableOpacity
@@ -66,7 +66,7 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
         onPress={() => setExpanded((v) => !v)}
         activeOpacity={0.7}
       >
-        <Text style={[styles.rolesSummary, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.rolesSummary, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
           {bundle.slots.map((s) => s.subcategory).join(' · ')}
         </Text>
         {expanded ? (
@@ -84,17 +84,17 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
           ) : (
             offerDetails.map((o, i) => (
               <View key={i} style={[styles.breakdownRow, { flexDirection: rowDir }]}>
-                <Text style={[styles.breakdownRole, { fontFamily: font.medium }]}>{o.subcategory}</Text>
-                <Text style={[styles.breakdownPrice, { fontFamily: font.semiBold }]}>₪{o.price.toLocaleString()}</Text>
+                <Text style={[styles.breakdownRole, { ...font.medium }]}>{o.subcategory}</Text>
+                <Text style={[styles.breakdownPrice, { ...font.semiBold }]}>₪{o.price.toLocaleString()}</Text>
               </View>
             ))
           )}
           <View style={styles.breakdownDivider} />
           <View style={[styles.breakdownRow, { flexDirection: rowDir }]}>
-            <Text style={[styles.breakdownRole, styles.breakdownTotal, { fontFamily: font.bold }]}>
+            <Text style={[styles.breakdownRole, styles.breakdownTotal, { ...font.bold }]}>
               {t('offers.instead_of')}
             </Text>
-            <Text style={[styles.breakdownPrice, styles.breakdownTotalPrice, { fontFamily: font.bold }]}>
+            <Text style={[styles.breakdownPrice, styles.breakdownTotalPrice, { ...font.bold }]}>
               ₪{bundle.individualTotal.toLocaleString()}
             </Text>
           </View>
@@ -102,9 +102,9 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
       )}
 
       <View style={[styles.priceRow, { flexDirection: rowDir }]}>
-        <Text style={[styles.strikethrough, { fontFamily: font.semiBold }]}>₪{bundle.individualTotal.toLocaleString()}</Text>
-        <Text style={[styles.insteadOf, { fontFamily: font.regular }]}>{t('offers.instead_of')}</Text>
-        <Text style={[styles.bundlePrice, { fontFamily: font.bold }]}>₪{bundle.bundlePrice.toLocaleString()}</Text>
+        <Text style={[styles.strikethrough, { ...font.semiBold }]}>₪{bundle.individualTotal.toLocaleString()}</Text>
+        <Text style={[styles.insteadOf, { ...font.regular }]}>{t('offers.instead_of')}</Text>
+        <Text style={[styles.bundlePrice, { ...font.bold }]}>₪{bundle.bundlePrice.toLocaleString()}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -113,7 +113,7 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
           onPress={onPressProfile}
           activeOpacity={0.8}
         >
-          <Text style={[styles.viewProfileText, { fontFamily: font.semiBold }]}>{t('offers.view_profile')}</Text>
+          <Text style={[styles.viewProfileText, { ...font.semiBold }]}>{t('offers.view_profile')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, styles.acceptBtn, isAccepting && styles.disabled]}

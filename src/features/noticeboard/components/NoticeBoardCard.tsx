@@ -61,10 +61,10 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
-            <Text style={[styles.directBadgeText, { fontFamily: font.bold }]}>{directInviteLabel}</Text>
+            <Text style={[styles.directBadgeText, { ...font.bold }]}>{directInviteLabel}</Text>
           </View>
         )}
-        <Text style={[styles.titleCompact, { fontFamily: font.bold, color: textColor }]} numberOfLines={2}>
+        <Text style={[styles.titleCompact, { ...font.bold, color: textColor }]} numberOfLines={2}>
           {request.title}
         </Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -73,17 +73,17 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
             contentFit="contain" cachePolicy="memory-disk"
           />
-          <Text style={[styles.locationCompact, { fontFamily: font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
+          <Text style={[styles.locationCompact, { ...font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
         </View>
-        <Text style={[styles.metaCompact, { fontFamily: font.regular, color: textColor }]}>
+        <Text style={[styles.metaCompact, { ...font.regular, color: textColor }]}>
           {roleCount} role{roleCount === 1 ? '' : 's'}
         </Text>
-        <Text style={[styles.rolesCompact, { fontFamily: font.semiBold, color: textColor }]} numberOfLines={2}>
+        <Text style={[styles.rolesCompact, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
           {allRoles.join(' · ')}
         </Text>
         {request.budget ? (
           <View style={styles.budgetBadge}>
-            <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
+            <Text style={[styles.budgetBadgeText, { ...font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
           </View>
         ) : null}
         <TouchableOpacity
@@ -91,7 +91,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
           activeOpacity={0.8}
         >
-          <Text style={[styles.offerPillText, { fontFamily: font.bold }]}>{t('noticeboard.make_offer')}</Text>
+          <Text style={[styles.offerPillText, { ...font.bold }]}>{t('noticeboard.make_offer')}</Text>
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -101,7 +101,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
       {isDirectInvite && directInviteLabel && (
         <View style={styles.directBadge}>
-          <Text style={[styles.directBadgeText, { fontFamily: font.bold }]}>{directInviteLabel}</Text>
+          <Text style={[styles.directBadgeText, { ...font.bold }]}>{directInviteLabel}</Text>
         </View>
       )}
       {poster && (
@@ -110,32 +110,32 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
             <View style={[styles.posterAvatar, styles.posterAvatarFallback]}>
-              <Text style={[styles.posterInitial, { fontFamily: font.bold }]}>{poster.displayName.charAt(0).toUpperCase()}</Text>
+              <Text style={[styles.posterInitial, { ...font.bold }]}>{poster.displayName.charAt(0).toUpperCase()}</Text>
             </View>
           )}
-          <Text style={[styles.posterName, { fontFamily: font.medium, color: colors.textMuted }]}>{poster.displayName}</Text>
+          <Text style={[styles.posterName, { ...font.medium, color: colors.textMuted }]}>{poster.displayName}</Text>
         </View>
       )}
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.title, { fontFamily: font.bold, color: textColor }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.title, { ...font.bold, color: textColor }]} numberOfLines={1}>{request.title}</Text>
           <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Image
               source={LOCATION_ICON}
               style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
               contentFit="contain" cachePolicy="memory-disk"
             />
-            <Text style={[styles.location, { fontFamily: font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
+            <Text style={[styles.location, { ...font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
           </View>
-          <Text style={[styles.meta, { fontFamily: font.regular, color: textColor }]}>
+          <Text style={[styles.meta, { ...font.regular, color: textColor }]}>
             {request.exec ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
           </Text>
-          <Text style={[styles.roles, { fontFamily: font.semiBold, color: textColor }]} numberOfLines={2}>
+          <Text style={[styles.roles, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
             {allRoles.join(' | ')}
           </Text>
           {request.budget ? (
             <View style={styles.budgetBadge}>
-              <Text style={[styles.budgetBadgeText, { fontFamily: font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
+              <Text style={[styles.budgetBadgeText, { ...font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
             </View>
           ) : null}
         </View>
@@ -145,14 +145,14 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
-            <Text style={[styles.offerIcon, { fontFamily: font.bold }]}>₪</Text>
+            <Text style={[styles.offerIcon, { ...font.bold }]}>₪</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.dismissBtn]}
             onPress={(e) => { e.stopPropagation?.(); onDismiss(); }}
             activeOpacity={0.8}
           >
-            <Text style={[styles.dismissIcon, { fontFamily: font.bold }]}>✕</Text>
+            <Text style={[styles.dismissIcon, { ...font.bold }]}>✕</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -131,7 +131,7 @@ export function AppHeader() {
         {/* CENTER — greeting only */}
         <View style={styles.center}>
           <Text
-            style={[styles.greeting, { color: colors.text, fontFamily: font.regular }]}
+            style={[styles.greeting, { color: colors.text, ...font.regular }]}
             numberOfLines={1}
           >
             {greeting}
@@ -152,7 +152,7 @@ export function AppHeader() {
             onPress={() => setModeSheetVisible(true)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.modeBadgeText, { fontFamily: font.semiBold }]}>
+            <Text style={[styles.modeBadgeText, { ...font.semiBold }]}>
               {modeBadgeLabel}
             </Text>
           </TouchableOpacity>
@@ -207,13 +207,13 @@ export function AppHeader() {
               </View>
             </TouchableOpacity>
             <Text
-              style={[styles.userName, { color: colors.text, fontFamily: font.bold }]}
+              style={[styles.userName, { color: colors.text, ...font.bold }]}
               numberOfLines={1}
             >
               {user?.displayName ?? ''}
             </Text>
             <Text
-              style={[styles.userEmail, { color: colors.textMuted, fontFamily: font.regular }]}
+              style={[styles.userEmail, { color: colors.textMuted, ...font.regular }]}
               numberOfLines={1}
             >
               {user?.email ?? ''}
@@ -225,7 +225,7 @@ export function AppHeader() {
             {/* Language */}
             <View style={[styles.menuRow, { borderBottomColor: colors.border }]}>
               <Globe size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text, fontFamily: font.regular }]}>
+              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
                 {t('settings.language')}
               </Text>
               <View style={[styles.langToggle, { borderColor: colors.border }]}>
@@ -238,7 +238,7 @@ export function AppHeader() {
                       onPress={() => setLanguage(lang)}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted, fontFamily: font.semiBold }]}>
+                      <Text style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted, ...font.semiBold }]}>
                         {lang === 'he' ? 'עב' : 'EN'}
                       </Text>
                     </TouchableOpacity>
@@ -252,7 +252,7 @@ export function AppHeader() {
               {isDark
                 ? <Moon size={18} color={colors.textMuted} strokeWidth={1.5} />
                 : <Sun size={18} color={colors.textMuted} strokeWidth={1.5} />}
-              <Text style={[styles.menuLabel, { color: colors.text, fontFamily: font.regular }]}>
+              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
                 {t('settings.appearance')}
               </Text>
               <TouchableOpacity
@@ -271,7 +271,7 @@ export function AppHeader() {
               activeOpacity={0.7}
             >
               <Info size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text, fontFamily: font.regular }]}>
+              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
                 {t('settings.information')}
               </Text>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
@@ -284,7 +284,7 @@ export function AppHeader() {
               activeOpacity={0.7}
             >
               <Shield size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text, fontFamily: font.regular }]}>
+              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
                 {t('settings.privacy')}
               </Text>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
@@ -299,7 +299,7 @@ export function AppHeader() {
               activeOpacity={0.7}
             >
               <LogOut size={18} color="#ff4d6d" strokeWidth={1.5} />
-              <Text style={[styles.logoutText, { fontFamily: font.semiBold }]}>
+              <Text style={[styles.logoutText, { ...font.semiBold }]}>
                 {t('settings.logout')}
               </Text>
             </TouchableOpacity>

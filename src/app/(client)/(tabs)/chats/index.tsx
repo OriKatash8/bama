@@ -22,7 +22,7 @@ export default function ChatsPage() {
   return (
     <Screen style={{ padding: 0, paddingBottom: 100 }}>
       <View style={styles.headerWrap}>
-        <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
+        <Text style={[styles.headerTitle, { ...font.bold }]}>
           {t(tr, 'chats_page.title')}
         </Text>
       </View>

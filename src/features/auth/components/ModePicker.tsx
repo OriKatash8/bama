@@ -69,7 +69,7 @@ export function ModePicker() {
               onPressOut={() => setPressed(null)}
               activeOpacity={1}
             >
-              <Text style={[styles.btnText, { fontFamily: font.bold, color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>
+              <Text style={[styles.btnText, { ...font.bold, color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>
                 {t(key)}
               </Text>
               {mode === 'client'

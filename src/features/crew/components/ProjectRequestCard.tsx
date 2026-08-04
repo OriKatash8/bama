@@ -99,14 +99,14 @@ export function ProjectRequestCard({ request }: Props) {
           rtl ? { left: -10 } : { right: -10 },
         ]}
       >
-        <Text style={[styles.statusBadgeText, { fontFamily: font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
+        <Text style={[styles.statusBadgeText, { ...font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
           {t(STATUS_LABEL_KEY[request.status])}
         </Text>
       </View>
 
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
         <Text
-          style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(request.title, 'bold') }]}
+          style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.forText(request.title, 'bold') }]}
           numberOfLines={1}
         >
           {request.title}
@@ -114,26 +114,26 @@ export function ProjectRequestCard({ request }: Props) {
 
         <View style={[styles.infoRow, { flexDirection: rowDir }]}>
           <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.execution')}
             </Text>
-            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
+            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {formatDate(request.exec)}
             </Text>
           </View>
           <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.deadline')}
             </Text>
-            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.bold }]}>
+            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {formatDate(request.deadline)}
             </Text>
           </View>
           <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>
+            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.location')}
             </Text>
-            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(request.location, 'bold') }]} numberOfLines={1}>
+            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', ...font.forText(request.location, 'bold') }]} numberOfLines={1}>
               {request.location}
             </Text>
           </View>
@@ -141,7 +141,7 @@ export function ProjectRequestCard({ request }: Props) {
 
         {filledCount > 0 && (
           <TouchableOpacity onPress={toggleTeam} style={[styles.teamToggle, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]} activeOpacity={0.7}>
-            <Text style={[styles.teamToggleText, { fontFamily: font.semiBold, color: isTeamFull ? '#22c55e' : '#cb6ce6' }]}>
+            <Text style={[styles.teamToggleText, { ...font.semiBold, color: isTeamFull ? '#22c55e' : '#cb6ce6' }]}>
               {teamOpen ? '▴' : '▾'} Team ({filledCount})
             </Text>
           </TouchableOpacity>
@@ -164,11 +164,11 @@ export function ProjectRequestCard({ request }: Props) {
                     <View key={i} style={[styles.teamRow, { flexDirection: rowDir }]}>
                       <View style={styles.teamDot} />
                       <View style={styles.teamInfo}>
-                        <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(slot.subcategory, 'semiBold') }]}>{slot.subcategory}</Text>
+                        <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.forText(slot.subcategory, 'semiBold') }]}>{slot.subcategory}</Text>
                         {member ? (
-                          <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', fontFamily: font.forText(member.displayName, 'regular') }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
+                          <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', ...font.forText(member.displayName, 'regular') }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
                         ) : (
-                          <Text style={[styles.teamOpen, { color: '#004aad', textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>— Open</Text>
+                          <Text style={[styles.teamOpen, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>— Open</Text>
                         )}
                       </View>
                     </View>
@@ -187,35 +187,35 @@ export function ProjectRequestCard({ request }: Props) {
                 onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${request.chatId}` as never)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chatPillText, { fontFamily: font.semiBold }]}>{t('chats_page.open_chat')}</Text>
+                <Text style={[styles.chatPillText, { ...font.semiBold }]}>{t('chats_page.open_chat')}</Text>
               </TouchableOpacity>
             ) : (
               <View style={[styles.chatPill, styles.chatPillDisabled]}>
-                <Text style={[styles.chatPillText, styles.chatPillTextDisabled, { fontFamily: font.semiBold }]}>{t('chats_page.no_chat_yet')}</Text>
+                <Text style={[styles.chatPillText, styles.chatPillTextDisabled, { ...font.semiBold }]}>{t('chats_page.no_chat_yet')}</Text>
               </View>
             )}
             {canEdit && (
               <>
                 <TouchableOpacity style={styles.editPill} onPress={handleEdit} activeOpacity={0.8}>
-                  <Text style={[styles.editPillText, { fontFamily: font.semiBold }]}>{t('chats_page.edit_project')}</Text>
+                  <Text style={[styles.editPillText, { ...font.semiBold }]}>{t('chats_page.edit_project')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.deletePill} onPress={() => setConfirmDelete(true)} activeOpacity={0.8}>
-                  <Text style={[styles.deletePillText, { fontFamily: font.semiBold }]}>{t('chats_page.delete_project')}</Text>
+                  <Text style={[styles.deletePillText, { ...font.semiBold }]}>{t('chats_page.delete_project')}</Text>
                 </TouchableOpacity>
               </>
             )}
           </View>
         ) : (
           <View style={[styles.confirmRow, { borderTopColor: colors.border, backgroundColor: '#fef2f2' }]}>
-            <Text style={[styles.confirmText, { textAlign: rtl ? 'right' : 'left', fontFamily: font.semiBold }]}>Delete this project?</Text>
+            <Text style={[styles.confirmText, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>Delete this project?</Text>
             <View style={[styles.confirmBtns, { flexDirection: rowDir }]}>
               <TouchableOpacity style={styles.editPill} onPress={() => setConfirmDelete(false)} activeOpacity={0.8} disabled={isDeleting}>
-                <Text style={[styles.editPillText, { fontFamily: font.semiBold }]}>Cancel</Text>
+                <Text style={[styles.editPillText, { ...font.semiBold }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.deletePill} onPress={handleDelete} activeOpacity={0.8} disabled={isDeleting}>
                 {isDeleting
                   ? <ActivityIndicator size="small" color="#ffffff" />
-                  : <Text style={[styles.deletePillText, { fontFamily: font.semiBold }]}>Yes, Delete</Text>
+                  : <Text style={[styles.deletePillText, { ...font.semiBold }]}>Yes, Delete</Text>
                 }
               </TouchableOpacity>
             </View>

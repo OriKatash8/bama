@@ -38,7 +38,7 @@ export function HelpTooltip({ text }: Props) {
               ]}
               onPress={() => setVisible(false)}
             >
-              <Text style={[styles.popoverText, { color: colors.text, fontFamily: font.regular }]}>
+              <Text style={[styles.popoverText, { color: colors.text, ...font.regular }]}>
                 {text}
               </Text>
             </Pressable>

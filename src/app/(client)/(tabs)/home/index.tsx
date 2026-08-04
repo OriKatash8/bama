@@ -119,7 +119,7 @@ export default function HomeScreen() {
 
   const font = useAppFont();
   const styles = useMemo(
-    () => createStyles(font.regular, font.bold, font.semiBold, font.medium),
+    () => createStyles(font.regular.fontFamily, font.bold.fontFamily, font.semiBold.fontFamily, font.medium.fontFamily),
     [font.regular, font.bold, font.semiBold, font.medium],
   );
 
@@ -261,7 +261,7 @@ export default function HomeScreen() {
                   <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
                     {t('builder.execution')}
                   </Text>
-                  <Text style={{ fontSize: 9, color: colors.textMuted, textAlign: 'center', fontFamily: font.regular }}>
+                  <Text style={{ fontSize: 9, color: colors.textMuted, textAlign: 'center', ...font.regular }}>
                     ({t('builder.optional')})
                   </Text>
                 </View>
@@ -449,7 +449,7 @@ export default function HomeScreen() {
                     onPress={() => setBudget(label)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.budgetPillText, isSelected && styles.budgetPillTextActive, { fontFamily: font.semiBold }]}>
+                    <Text style={[styles.budgetPillText, isSelected && styles.budgetPillTextActive, { ...font.semiBold }]}>
                       {label}
                     </Text>
                   </TouchableOpacity>
@@ -493,14 +493,14 @@ export default function HomeScreen() {
               {/* Card sits on top — no gesture-intercepting parent, so ScrollView works freely */}
               <LinearGradient colors={['#1a237e', '#004aad']} style={styles.subcatModal}>
                 <View style={styles.subcatHeader}>
-                  <Text style={[styles.subcatTitle, { fontFamily: font.bold }]}>
+                  <Text style={[styles.subcatTitle, { ...font.bold }]}>
                     {cat ? getCategoryLabel(cat.labelKey) : ''}
                   </Text>
                   <TouchableOpacity onPress={() => setExpandedCategory(null)} hitSlop={12} activeOpacity={0.7}>
                     <X size={22} color="#fff" />
                   </TouchableOpacity>
                 </View>
-                <Text style={[styles.subcatHint, { textAlign: rtl ? 'right' : 'left', fontFamily: font.regular }]}>
+                <Text style={[styles.subcatHint, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('builder.tap_to_add')}
                 </Text>
                 <ScrollView style={styles.subcatScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -508,7 +508,7 @@ export default function HomeScreen() {
                     const qty = slots.find(s => s.category === cat.key && s.subcategory === sub)?.quantity ?? 0;
                     return (
                       <View key={sub} style={styles.subcatRow}>
-                        <Text style={[styles.subcatRowLabel, { textAlign: rtl ? 'right' : 'left', fontFamily: font.medium }]}>{sub}</Text>
+                        <Text style={[styles.subcatRowLabel, { textAlign: rtl ? 'right' : 'left', ...font.medium }]}>{sub}</Text>
                         <View style={styles.qtyControls}>
                           {qty > 0 && (
                             <TouchableOpacity
@@ -517,12 +517,12 @@ export default function HomeScreen() {
                               hitSlop={8}
                               activeOpacity={0.7}
                             >
-                              <Text style={[styles.subcatQtyBtnText, { fontFamily: font.bold }]}>−</Text>
+                              <Text style={[styles.subcatQtyBtnText, { ...font.bold }]}>−</Text>
                             </TouchableOpacity>
                           )}
                           {qty > 0 && (
                             <View style={styles.subcatQtyBadge}>
-                              <Text style={[styles.subcatQtyBadgeText, { fontFamily: font.bold }]}>{qty}</Text>
+                              <Text style={[styles.subcatQtyBadgeText, { ...font.bold }]}>{qty}</Text>
                             </View>
                           )}
                           <TouchableOpacity
@@ -531,7 +531,7 @@ export default function HomeScreen() {
                             hitSlop={8}
                             activeOpacity={0.7}
                           >
-                            <Text style={[styles.subcatQtyBtnText, { fontFamily: font.bold }]}>+</Text>
+                            <Text style={[styles.subcatQtyBtnText, { ...font.bold }]}>+</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -543,7 +543,7 @@ export default function HomeScreen() {
                   onPress={() => setExpandedCategory(null)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.subcatDoneBtnText, { fontFamily: font.bold }]}>
+                  <Text style={[styles.subcatDoneBtnText, { ...font.bold }]}>
                     {rtl ? 'סיום' : 'Done'}
                   </Text>
                 </TouchableOpacity>
@@ -564,14 +564,14 @@ export default function HomeScreen() {
           <View style={styles.vibeOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.vibeCard}>
-                <Text style={[styles.vibeTitleText, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.vibeTitleText, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('builder.vibe_title')}
                 </Text>
-                <Text style={[styles.vibeSubtitle, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.vibeSubtitle, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('builder.vibe_subtitle')}
                 </Text>
                 <TextInput
-                  style={[styles.vibeInput, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left', color: '#004aad' }]}
+                  style={[styles.vibeInput, { ...font.regular, textAlign: rtl ? 'right' : 'left', color: '#004aad' }]}
                   value={vibeText}
                   onChangeText={setVibeText}
                   placeholder={t('builder.vibe_placeholder')}
@@ -587,14 +587,14 @@ export default function HomeScreen() {
                     onPress={() => { setVibe(''); setVibeText(''); setVibeModalOpen(false); setStep(2); }}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.vibeSkipText, { fontFamily: font.semiBold }]}>{t('builder.skip')}</Text>
+                    <Text style={[styles.vibeSkipText, { ...font.semiBold }]}>{t('builder.skip')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.vibeAddBtn}
                     onPress={() => { setVibe(vibeText.trim()); setVibeModalOpen(false); setStep(2); }}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.vibeAddText, { fontFamily: font.bold }]}>{t('builder.add_vibe')}</Text>
+                    <Text style={[styles.vibeAddText, { ...font.bold }]}>{t('builder.add_vibe')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -616,7 +616,7 @@ export default function HomeScreen() {
               <View style={[styles.locationBox, { backgroundColor: colors.card, borderColor: colors.accent }]}>
                 {/* Header — mirrors MiniCalendar nav row */}
                 <View style={styles.locationNav}>
-                  <Text style={[styles.locationNavTitle, { color: colors.text, fontFamily: font.bold }]}>
+                  <Text style={[styles.locationNavTitle, { color: colors.text, ...font.bold }]}>
                     {t('builder.location')}
                   </Text>
                   <TouchableOpacity onPress={() => setLocationModalOpen(false)} hitSlop={12} activeOpacity={0.7}>
@@ -626,7 +626,7 @@ export default function HomeScreen() {
 
                 {/* Search input */}
                 <TextInput
-                  style={[styles.locationSearchInput, { color: colors.text, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left', borderColor: colors.accent }]}
+                  style={[styles.locationSearchInput, { color: colors.text, ...font.regular, textAlign: rtl ? 'right' : 'left', borderColor: colors.accent }]}
                   value={locationSearch}
                   onChangeText={setLocationSearch}
                   placeholder={t('builder.search_city')}
@@ -657,7 +657,7 @@ export default function HomeScreen() {
                       activeOpacity={0.7}
                     >
                       <MapPin size={14} color={colors.accent} strokeWidth={1.8} />
-                      <Text style={[styles.locationRowText, { color: colors.text, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                      <Text style={[styles.locationRowText, { color: colors.text, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                         {item}
                       </Text>
                     </TouchableOpacity>

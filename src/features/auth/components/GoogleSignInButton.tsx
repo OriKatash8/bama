@@ -28,7 +28,7 @@ export function GoogleSignInButton() {
       {/* "or" divider */}
       <View style={[styles.divider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <View style={styles.dividerLine} />
-        <Text style={[styles.dividerText, { fontFamily: font.regular }]}>
+        <Text style={[styles.dividerText, { ...font.regular }]}>
           {t('auth.or')}
         </Text>
         <View style={styles.dividerLine} />
@@ -46,7 +46,7 @@ export function GoogleSignInButton() {
         ) : (
           <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Text style={styles.googleG}>G</Text>
-            <Text style={[styles.btnLabel, { fontFamily: font.semiBold }]}>
+            <Text style={[styles.btnLabel, { ...font.semiBold }]}>
               {t('auth.continue_google')}
             </Text>
           </View>

@@ -79,7 +79,7 @@ export default function ReportsAdmin() {
         showsVerticalScrollIndicator={false}
       >
         {/* Title */}
-        <Text style={[styles.title, { fontFamily: font.bold, color: colors.text }]}>
+        <Text style={[styles.title, { ...font.bold, color: colors.text }]}>
           Reports
         </Text>
 
@@ -99,7 +99,7 @@ export default function ReportsAdmin() {
                 onPress={() => setFilter(tab)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tabText, { fontFamily: font.semiBold, color: active ? '#fff' : colors.textMuted }]}>
+                <Text style={[styles.tabText, { ...font.semiBold, color: active ? '#fff' : colors.textMuted }]}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)} ({count})
                 </Text>
               </TouchableOpacity>
@@ -111,7 +111,7 @@ export default function ReportsAdmin() {
           <ActivityIndicator size="large" color="#004aad" style={{ marginTop: 40 }} />
         ) : filtered.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={[styles.emptyText, { fontFamily: font.regular, color: colors.textMuted }]}>
+            <Text style={[styles.emptyText, { ...font.regular, color: colors.textMuted }]}>
               No {filter === 'all' ? '' : filter} reports.
             </Text>
           </View>
@@ -121,22 +121,22 @@ export default function ReportsAdmin() {
               {/* Header row */}
               <View style={styles.cardHeader}>
                 <View style={styles.cardHeaderLeft}>
-                  <Text style={[styles.reportedName, { fontFamily: font.bold, color: colors.text }]}>
+                  <Text style={[styles.reportedName, { ...font.bold, color: colors.text }]}>
                     {report.reportedUserName || 'Unknown User'}
                   </Text>
-                  <Text style={[styles.date, { fontFamily: font.regular, color: colors.textMuted }]}>
+                  <Text style={[styles.date, { ...font.regular, color: colors.textMuted }]}>
                     {formatDate(report.createdAt)}
                   </Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: STATUS_COLORS[report.status] + '22' }]}>
-                  <Text style={[styles.badgeText, { fontFamily: font.semiBold, color: STATUS_COLORS[report.status] }]}>
+                  <Text style={[styles.badgeText, { ...font.semiBold, color: STATUS_COLORS[report.status] }]}>
                     {report.status}
                   </Text>
                 </View>
               </View>
 
               {/* Reason */}
-              <Text style={[styles.reasonText, { fontFamily: font.regular, color: colors.textSec }]}>
+              <Text style={[styles.reasonText, { ...font.regular, color: colors.textSec }]}>
                 {report.reason}
               </Text>
 
@@ -161,7 +161,7 @@ export default function ReportsAdmin() {
                     {updating[report.id] ? (
                       <ActivityIndicator size="small" color="#2196f3" />
                     ) : (
-                      <Text style={[styles.actionText, { fontFamily: font.semiBold, color: '#2196f3' }]}>
+                      <Text style={[styles.actionText, { ...font.semiBold, color: '#2196f3' }]}>
                         Mark Reviewed
                       </Text>
                     )}
@@ -177,7 +177,7 @@ export default function ReportsAdmin() {
                     {updating[report.id] ? (
                       <ActivityIndicator size="small" color="#4caf50" />
                     ) : (
-                      <Text style={[styles.actionText, { fontFamily: font.semiBold, color: '#4caf50' }]}>
+                      <Text style={[styles.actionText, { ...font.semiBold, color: '#4caf50' }]}>
                         Resolve
                       </Text>
                     )}

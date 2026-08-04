@@ -29,6 +29,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Release",
+        "distribution": "store"
+      },
       "env": {
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAgECKwk9l1gV-F8zbaNSWViXeG7Vc6Uz8",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "bama-af0a0.firebaseapp.com",

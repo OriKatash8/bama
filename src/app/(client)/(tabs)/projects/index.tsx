@@ -155,7 +155,7 @@ export default function ProjectsPage() {
       >
         <View style={styles.headerWrap}>
           <View style={styles.header}>
-            <Text style={[styles.headerTitle, { fontFamily: font.bold }]}>
+            <Text style={[styles.headerTitle, { ...font.bold }]}>
               {t('chats_page.title_projects')}
             </Text>
           </View>
@@ -164,7 +164,7 @@ export default function ProjectsPage() {
         <View style={styles.content}>
           {bundles.length > 0 && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('offers.bundle_section')}
               </Text>
               {bundlesLoading ? (
@@ -187,7 +187,7 @@ export default function ProjectsPage() {
 
           {offers.length > 0 && (
             <View style={[styles.section, bundles.length > 0 && { marginTop: 24 }]}>
-              <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('chats_page.price_offers')}
               </Text>
               {offersLoading ? (
@@ -210,14 +210,14 @@ export default function ProjectsPage() {
           )}
 
           <View style={[styles.section, { marginTop: 24 }]}>
-            <Text style={[styles.sectionTitle, { color: '#004aad', fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
               {t('chats_page.my_projects')}
             </Text>
             {requestsLoading ? (
               <ActivityIndicator color={colors.accent} />
             ) : requests.length === 0 ? (
               <View style={styles.emptyWrap}>
-                <Text style={[styles.emptyText, { color: colors.textMuted, fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('chats_page.no_projects')}
                 </Text>
               </View>

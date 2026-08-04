@@ -209,7 +209,7 @@ export default function PublicProfileScreen() {
               <UserIcon size={44} color="#fff" strokeWidth={1.5} />
             </View>
           )}
-          <Text style={[styles.heroName, { fontFamily: font.bold }]}>{user.displayName}</Text>
+          <Text style={[styles.heroName, { ...font.bold }]}>{user.displayName}</Text>
         </View>
       </LinearGradient>
 
@@ -247,7 +247,7 @@ export default function PublicProfileScreen() {
         onPress={() => setSheetVisible(true)}
         activeOpacity={0.8}
       >
-        <Text style={[styles.projectBtnText, { fontFamily: font.bold }]}>
+        <Text style={[styles.projectBtnText, { ...font.bold }]}>
           {t('search.tell_us_about_project')}
         </Text>
       </TouchableOpacity>
@@ -259,7 +259,7 @@ export default function PublicProfileScreen() {
         activeOpacity={0.7}
       >
         <Flag size={13} color="#ff4d6d" strokeWidth={2} />
-        <Text style={[styles.reportBtnText, { fontFamily: font.regular }]}>
+        <Text style={[styles.reportBtnText, { ...font.regular }]}>
           {t('profile.report')}
         </Text>
       </TouchableOpacity>
@@ -283,7 +283,7 @@ export default function PublicProfileScreen() {
           <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modalSheet}>
             {/* Header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.modalTitle, { fontFamily: font.bold }]}>
+              <Text style={[styles.modalTitle, { ...font.bold }]}>
                 {t('report.title')}
               </Text>
               <TouchableOpacity onPress={closeReport} hitSlop={8} activeOpacity={0.7}>
@@ -292,19 +292,19 @@ export default function PublicProfileScreen() {
             </View>
 
             {/* Reporting name */}
-            <Text style={[styles.modalSubtitle, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.modalSubtitle, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
               {t('report.reporting', { name: user.displayName })}
             </Text>
 
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {/* Reason label */}
-              <Text style={[styles.modalLabel, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.modalLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
                 {t('report.reason_label')}
               </Text>
 
               {/* Reason input */}
               <TextInput
-                style={[styles.reasonInput, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.reasonInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 multiline
                 value={reportReason}
                 onChangeText={setReportReason}
@@ -315,7 +315,7 @@ export default function PublicProfileScreen() {
 
               {/* Char hint */}
               {reportReason.length > 0 && reportReason.length < 20 && (
-                <Text style={[styles.charHint, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.charHint, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('report.min_chars')}
                 </Text>
               )}
@@ -327,7 +327,7 @@ export default function PublicProfileScreen() {
                 disabled={reportEvidence.length >= MAX_EVIDENCE}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.evidenceBtnText, { fontFamily: font.semiBold }]}>
+                <Text style={[styles.evidenceBtnText, { ...font.semiBold }]}>
                   {t('report.add_evidence')}
                 </Text>
               </TouchableOpacity>
@@ -356,7 +356,7 @@ export default function PublicProfileScreen() {
               {reportSubmitting ? (
                 <ActivityIndicator size="small" color="#004aad" />
               ) : (
-                <Text style={[styles.submitBtnText, { fontFamily: font.bold }]}>
+                <Text style={[styles.submitBtnText, { ...font.bold }]}>
                   {t('report.submit')}
                 </Text>
               )}

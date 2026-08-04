@@ -119,22 +119,22 @@ export default function CommunitiesAdmin() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={styles.container}>
-      <Text style={[styles.pageTitle, { fontFamily: font.bold, color: colors.text }]}>
+      <Text style={[styles.pageTitle, { ...font.bold, color: colors.text }]}>
         Communities
       </Text>
 
       {/* Pending Requests */}
-      <Text style={[styles.sectionTitle, { fontFamily: font.semiBold, color: colors.textSec }]}>
+      <Text style={[styles.sectionTitle, { ...font.semiBold, color: colors.textSec }]}>
         Pending Requests ({requests.length})
       </Text>
       {requests.length === 0 ? (
-        <Text style={[styles.empty, { fontFamily: font.regular, color: colors.textMuted }]}>No pending requests</Text>
+        <Text style={[styles.empty, { ...font.regular, color: colors.textMuted }]}>No pending requests</Text>
       ) : (
         requests.map((req) => (
           <View key={req.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { fontFamily: font.semiBold, color: colors.text }]}>{req.name}</Text>
-            <Text style={[styles.cardSub, { fontFamily: font.regular, color: colors.textSec }]}>{req.description}</Text>
-            <Text style={[styles.cardMeta, { fontFamily: font.regular, color: colors.textMuted }]}>
+            <Text style={[styles.cardTitle, { ...font.semiBold, color: colors.text }]}>{req.name}</Text>
+            <Text style={[styles.cardSub, { ...font.regular, color: colors.textSec }]}>{req.description}</Text>
+            <Text style={[styles.cardMeta, { ...font.regular, color: colors.textMuted }]}>
               By {req.requesterName}
             </Text>
             <View style={styles.actionRow}>
@@ -142,13 +142,13 @@ export default function CommunitiesAdmin() {
                 style={[styles.actionBtn, { backgroundColor: '#16a34a' }]}
                 onPress={() => handleApprove(req)}
               >
-                <Text style={[styles.actionBtnText, { fontFamily: font.semiBold }]}>Approve</Text>
+                <Text style={[styles.actionBtnText, { ...font.semiBold }]}>Approve</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: '#dc2626' }]}
                 onPress={() => handleReject(req.id)}
               >
-                <Text style={[styles.actionBtnText, { fontFamily: font.semiBold }]}>Reject</Text>
+                <Text style={[styles.actionBtnText, { ...font.semiBold }]}>Reject</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -156,24 +156,24 @@ export default function CommunitiesAdmin() {
       )}
 
       {/* Active Communities */}
-      <Text style={[styles.sectionTitle, { fontFamily: font.semiBold, color: colors.textSec, marginTop: 24 }]}>
+      <Text style={[styles.sectionTitle, { ...font.semiBold, color: colors.textSec, marginTop: 24 }]}>
         All Communities ({communities.length})
       </Text>
       {loading ? (
         <ActivityIndicator color={colors.primary} />
       ) : communities.length === 0 ? (
-        <Text style={[styles.empty, { fontFamily: font.regular, color: colors.textMuted }]}>No communities yet</Text>
+        <Text style={[styles.empty, { ...font.regular, color: colors.textMuted }]}>No communities yet</Text>
       ) : (
         communities.map((c) => (
           <View key={c.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeaderRow}>
-              <Text style={[styles.cardTitle, { fontFamily: font.semiBold, color: colors.text, flex: 1 }]}>{c.name}</Text>
+              <Text style={[styles.cardTitle, { ...font.semiBold, color: colors.text, flex: 1 }]}>{c.name}</Text>
               <View style={[styles.statusBadge, { backgroundColor: c.status === 'active' ? '#16a34a' : '#f59e0b' }]}>
                 <Text style={styles.statusText}>{c.status}</Text>
               </View>
             </View>
 
-            <Text style={[styles.cardMeta, { fontFamily: font.regular, color: colors.textMuted }]}>
+            <Text style={[styles.cardMeta, { ...font.regular, color: colors.textMuted }]}>
               Owner: {ownerNames[c.ownerId] ?? c.ownerId} · {c.members.length} members
             </Text>
 
@@ -184,13 +184,13 @@ export default function CommunitiesAdmin() {
                 placeholderTextColor={colors.placeholder}
                 value={newOwnerInput[c.id] ?? ''}
                 onChangeText={(v) => setNewOwnerInput((prev) => ({ ...prev, [c.id]: v }))}
-                style={[styles.ownerInput, { fontFamily: font.regular, color: colors.text, borderColor: colors.border }]}
+                style={[styles.ownerInput, { ...font.regular, color: colors.text, borderColor: colors.border }]}
               />
               <TouchableOpacity
                 style={[styles.smallBtn, { backgroundColor: colors.primary }]}
                 onPress={() => handleChangeOwner(c.id)}
               >
-                <Text style={[styles.smallBtnText, { fontFamily: font.semiBold }]}>Set</Text>
+                <Text style={[styles.smallBtnText, { ...font.semiBold }]}>Set</Text>
               </TouchableOpacity>
             </View>
 
@@ -199,7 +199,7 @@ export default function CommunitiesAdmin() {
               style={styles.membersToggle}
               onPress={() => setExpandedMembers((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
             >
-              <Text style={[styles.membersToggleText, { fontFamily: font.regular, color: colors.primary }]}>
+              <Text style={[styles.membersToggleText, { ...font.regular, color: colors.primary }]}>
                 Members
               </Text>
               {expandedMembers[c.id]
@@ -212,7 +212,7 @@ export default function CommunitiesAdmin() {
               <View style={{ marginTop: 8 }}>
                 {c.members.map((uid) => (
                   <View key={uid} style={styles.memberRow}>
-                    <Text style={[styles.memberUid, { fontFamily: font.regular, color: colors.textSec }]} numberOfLines={1}>
+                    <Text style={[styles.memberUid, { ...font.regular, color: colors.textSec }]} numberOfLines={1}>
                       {uid}
                     </Text>
                     <TouchableOpacity onPress={() => handleRemoveMember(c.id, uid)}>
@@ -228,7 +228,7 @@ export default function CommunitiesAdmin() {
                 style={[styles.actionBtn, { backgroundColor: c.status === 'active' ? '#f59e0b' : '#16a34a' }]}
                 onPress={() => handleToggleSuspend(c)}
               >
-                <Text style={[styles.actionBtnText, { fontFamily: font.semiBold }]}>
+                <Text style={[styles.actionBtnText, { ...font.semiBold }]}>
                   {c.status === 'active' ? 'Suspend' : 'Unsuspend'}
                 </Text>
               </TouchableOpacity>
@@ -236,7 +236,7 @@ export default function CommunitiesAdmin() {
                 style={[styles.actionBtn, { backgroundColor: '#dc2626' }]}
                 onPress={() => handleDelete(c.id)}
               >
-                <Text style={[styles.actionBtnText, { fontFamily: font.semiBold }]}>Delete</Text>
+                <Text style={[styles.actionBtnText, { ...font.semiBold }]}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>

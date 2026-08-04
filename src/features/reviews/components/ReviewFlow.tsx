@@ -153,11 +153,11 @@ export function ReviewFlow({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.title, { fontFamily: font.bold }]}>
+          <Text style={[styles.title, { ...font.bold }]}>
             {t('review.title')}
           </Text>
 
-          <Text style={[styles.progress, { fontFamily: font.regular }]}>
+          <Text style={[styles.progress, { ...font.regular }]}>
             {t('review.progress', {
               current: String(currentIndex + 1),
               total: String(professionals.length),
@@ -175,10 +175,10 @@ export function ReviewFlow({
               )}
             </View>
 
-            <Text style={[styles.profName, { fontFamily: font.bold }]}>
+            <Text style={[styles.profName, { ...font.bold }]}>
               {current.displayName}
             </Text>
-            <Text style={[styles.profRole, { fontFamily: font.regular }]}>
+            <Text style={[styles.profRole, { ...font.regular }]}>
               {current.role}
             </Text>
 
@@ -201,7 +201,7 @@ export function ReviewFlow({
             </View>
 
             {draft.rating === 0 && (
-              <Text style={[styles.hint, { fontFamily: font.regular, textAlign: 'center' }]}>
+              <Text style={[styles.hint, { ...font.regular, textAlign: 'center' }]}>
                 {t('review.required_stars')}
               </Text>
             )}
@@ -209,7 +209,7 @@ export function ReviewFlow({
             <TextInput
               style={[
                 styles.textInput,
-                { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' },
+                { ...font.regular, textAlign: rtl ? 'right' : 'left' },
               ]}
               multiline
               value={draft.text}
@@ -222,7 +222,7 @@ export function ReviewFlow({
               <Text
                 style={[
                   styles.hint,
-                  { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' },
+                  { ...font.regular, textAlign: rtl ? 'right' : 'left' },
                 ]}
               >
                 {t('review.required_text')}
@@ -239,7 +239,7 @@ export function ReviewFlow({
             {isSubmitting ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={[styles.btnText, { fontFamily: font.bold }]}>
+              <Text style={[styles.btnText, { ...font.bold }]}>
                 {isLast ? t('review.submit') : t('review.next')}
               </Text>
             )}

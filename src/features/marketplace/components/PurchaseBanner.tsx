@@ -141,13 +141,13 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
     <View style={styles.banner}>
       {/* Status header */}
       <View style={[styles.bannerHeader, { flexDirection: rowDir }]}>
-        <Text style={[styles.bannerTitle, { fontFamily: font.semiBold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
+        <Text style={[styles.bannerTitle, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
           {isCompleted
             ? t('marketplace.sale_completed_label')
             : t('marketplace.purchase_active_label')}
         </Text>
         <View style={[styles.statusBadge, isCompleted ? styles.badgeSold : styles.badgeReserved]}>
-          <Text style={[styles.statusText, { fontFamily: font.semiBold }]}>
+          <Text style={[styles.statusText, { ...font.semiBold }]}>
             {isCompleted ? '✓' : '⏳'}
           </Text>
         </View>
@@ -160,15 +160,15 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
 
       {/* Product + price */}
       <View style={{ gap: 2 }}>
-        <Text style={[styles.productName, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+        <Text style={[styles.productName, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
           {snap.productName}
         </Text>
         <View style={[styles.priceRow, { flexDirection: rowDir }]}>
-          <Text style={[styles.priceLabel, { fontFamily: font.regular }]}>
+          <Text style={[styles.priceLabel, { ...font.regular }]}>
             ₪{snap.price.toLocaleString()}
           </Text>
           {snap.platformFee != null && (
-            <Text style={[styles.feeLabel, { fontFamily: font.regular }]}>
+            <Text style={[styles.feeLabel, { ...font.regular }]}>
               {' · '}{t('marketplace.platform_fee')}: ₪{snap.platformFee}
             </Text>
           )}
@@ -186,7 +186,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
           >
             {buyerLoading
               ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={[styles.primaryBtnText, { fontFamily: font.bold }]}>
+              : <Text style={[styles.primaryBtnText, { ...font.bold }]}>
                   {t('marketplace.mark_received')}
                 </Text>}
           </TouchableOpacity>
@@ -197,7 +197,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
             disabled={buyerLoading}
             activeOpacity={0.7}
           >
-            <Text style={[styles.secondaryBtnText, { fontFamily: font.semiBold }]}>
+            <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
               {t('marketplace.cancel_purchase')}
             </Text>
           </TouchableOpacity>
@@ -208,7 +208,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
       {!isCompleted && isSeller && (
         <View style={styles.sellerRow}>
           {snap.sellerConfirmed ? (
-            <Text style={[styles.waitingText, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.waiting_buyer')}
             </Text>
           ) : (
@@ -220,7 +220,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
             >
               {sellerLoading
                 ? <ActivityIndicator color="#004aad" size="small" />
-                : <Text style={[styles.sellerBtnText, { fontFamily: font.semiBold }]}>
+                : <Text style={[styles.sellerBtnText, { ...font.semiBold }]}>
                     {t('marketplace.mark_handed')}
                   </Text>}
             </TouchableOpacity>

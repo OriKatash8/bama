@@ -167,7 +167,7 @@ export default function DashboardScreen() {
 
   const headingStyle = {
     color: '#004aad',
-    fontFamily: font.bold,
+    ...font.bold,
   };
 
   const openProjectsLabel = visible.length === 1
@@ -199,15 +199,15 @@ export default function DashboardScreen() {
                   onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}` as never)}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.projectCardTitle, { fontFamily: font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                  <Text style={[styles.projectCardTitle, { ...font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {project.title}
                   </Text>
-                  <Text style={[styles.projectCardMeta, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.projectCardMeta, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                     {t('noticeboard.client_prefix')}{clientName}
                   </Text>
                   <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     <Calendar size={12} color={colors.textMuted} strokeWidth={1.5} />
-                    <Text style={[styles.projectCardMeta, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                    <Text style={[styles.projectCardMeta, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                       {formatDeadline(project.deadline)}
                     </Text>
                   </View>
@@ -218,7 +218,7 @@ export default function DashboardScreen() {
                       contentFit="contain"
                       cachePolicy="memory-disk"
                     />
-                    <Text style={[styles.projectCardMeta, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                    <Text style={[styles.projectCardMeta, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                       {project.location}
                     </Text>
                   </View>
@@ -233,7 +233,7 @@ export default function DashboardScreen() {
             {t('noticeboard.notice_board')}
           </Text>
           {!isLoading && (
-            <Text style={[styles.count, { fontFamily: font.regular, color: colors.textMuted, textAlign: 'center' }]}>
+            <Text style={[styles.count, { ...font.regular, color: colors.textMuted, textAlign: 'center' }]}>
               {openProjectsLabel}
             </Text>
           )}
@@ -244,10 +244,10 @@ export default function DashboardScreen() {
         ) : visible.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={[styles.emptyText, { fontFamily: font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.emptyText, { ...font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
               {t('noticeboard.no_projects')}
             </Text>
-            <Text style={[styles.emptySubtext, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.emptySubtext, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
               {t('noticeboard.check_back')}
             </Text>
           </View>

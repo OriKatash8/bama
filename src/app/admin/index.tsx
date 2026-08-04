@@ -49,7 +49,7 @@ export default function AdminDashboard() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={styles.container}
     >
-      <Text style={[styles.title, { fontFamily: font.bold, color: colors.text }]}>
+      <Text style={[styles.title, { ...font.bold, color: colors.text }]}>
         Admin Dashboard
       </Text>
 
@@ -59,10 +59,10 @@ export default function AdminDashboard() {
         <View style={styles.grid}>
           {stats.map(({ label, key }) => (
             <View key={key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.count, { fontFamily: font.bold, color: colors.primary }]}>
+              <Text style={[styles.count, { ...font.bold, color: colors.primary }]}>
                 {counts?.[key] ?? 0}
               </Text>
-              <Text style={[styles.label, { fontFamily: font.regular, color: colors.textSec }]}>
+              <Text style={[styles.label, { ...font.regular, color: colors.textSec }]}>
                 {label}
               </Text>
             </View>

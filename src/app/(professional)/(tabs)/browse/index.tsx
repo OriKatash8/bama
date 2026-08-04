@@ -216,7 +216,7 @@ export default function BrowseScreen() {
                     onPress={() => toggleCategory(cat.key)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.categoryLabel, { fontFamily: font.bold }]}>{cat.label}</Text>
+                    <Text style={[styles.categoryLabel, { ...font.bold }]}>{cat.label}</Text>
                     <Animated.Text style={[styles.categoryChevron, { transform: [{ rotate: chevronRotate }] }]}>
                       ›
                     </Animated.Text>
@@ -230,7 +230,7 @@ export default function BrowseScreen() {
                         onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.subItemText, { fontFamily: font.medium }]}>{sub}</Text>
+                        <Text style={[styles.subItemText, { ...font.medium }]}>{sub}</Text>
                       </TouchableOpacity>
                     ))}
                   </Animated.View>
@@ -238,7 +238,7 @@ export default function BrowseScreen() {
               );
             })}
             {filteredCategories.length === 0 && (
-              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, fontFamily: font.regular }}>
+              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, ...font.regular }}>
                 No categories match "{query}"
               </Text>
             )}

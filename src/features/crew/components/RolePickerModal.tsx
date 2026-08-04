@@ -50,11 +50,11 @@ export function RolePickerModal({ visible, onDismiss, onPost, isPosting = false 
         <View style={styles.sheet}>
           {/* Header */}
           <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.title, { fontFamily: font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
+            <Text style={[styles.title, { ...font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
               {t('project_details.add_professional')}
             </Text>
             <TouchableOpacity onPress={handleDismiss} hitSlop={12} activeOpacity={0.7}>
-              <Text style={[styles.closeBtn, { fontFamily: font.bold }]}>✕</Text>
+              <Text style={[styles.closeBtn, { ...font.bold }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -77,7 +77,7 @@ export function RolePickerModal({ visible, onDismiss, onPost, isPosting = false 
           >
             {isPosting
               ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={[styles.postBtnText, { fontFamily: font.bold }]}>
+              : <Text style={[styles.postBtnText, { ...font.bold }]}>
                   {t('project_details.post_roles')}
                 </Text>}
           </TouchableOpacity>

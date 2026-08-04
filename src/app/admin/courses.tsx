@@ -123,10 +123,10 @@ export default function CoursesAdmin() {
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { fontFamily: font.bold, color: colors.text }]}>Courses</Text>
+        <Text style={[styles.title, { ...font.bold, color: colors.text }]}>Courses</Text>
         <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openAdd}>
           <Plus size={20} color="#fff" />
-          <Text style={[styles.addBtnText, { fontFamily: font.semiBold }]}>Add Course</Text>
+          <Text style={[styles.addBtnText, { ...font.semiBold }]}>Add Course</Text>
         </TouchableOpacity>
       </View>
 
@@ -138,8 +138,8 @@ export default function CoursesAdmin() {
         renderItem={({ item }) => (
           <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { fontFamily: font.semiBold, color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.rowSub, { fontFamily: font.regular, color: colors.textSec }]}>
+              <Text style={[styles.rowTitle, { ...font.semiBold, color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.rowSub, { ...font.regular, color: colors.textSec }]}>
                 ₪{item.price} · {item.instructorName}
               </Text>
             </View>
@@ -155,7 +155,7 @@ export default function CoursesAdmin() {
           </View>
         )}
         ListEmptyComponent={
-          <Text style={[styles.empty, { fontFamily: font.regular, color: colors.textMuted }]}>
+          <Text style={[styles.empty, { ...font.regular, color: colors.textMuted }]}>
             No courses yet
           </Text>
         }
@@ -167,7 +167,7 @@ export default function CoursesAdmin() {
             <TouchableOpacity activeOpacity={1}>
               <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modal}>
                 <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { fontFamily: font.bold }]}>
+                  <Text style={[styles.modalTitle, { ...font.bold }]}>
                     {editId ? 'Edit Course' : 'New Course'}
                   </Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -189,7 +189,7 @@ export default function CoursesAdmin() {
                       onChangeText={(v) => setForm((f) => ({ ...f, [key]: v }))}
                       multiline={multiline}
                       numberOfLines={multiline ? 3 : 1}
-                      style={[styles.input, { fontFamily: font.regular, height: multiline ? 80 : 48 }]}
+                      style={[styles.input, { ...font.regular, height: multiline ? 80 : 48 }]}
                     />
                   ))}
 
@@ -199,7 +199,7 @@ export default function CoursesAdmin() {
                     value={form.price === 0 ? '' : String(form.price)}
                     onChangeText={(v) => setForm((f) => ({ ...f, price: parseFloat(v) || 0 }))}
                     keyboardType="numeric"
-                    style={[styles.input, { fontFamily: font.regular, height: 48 }]}
+                    style={[styles.input, { ...font.regular, height: 48 }]}
                   />
 
                   <TouchableOpacity
@@ -208,18 +208,18 @@ export default function CoursesAdmin() {
                     disabled={uploading || processing}
                   >
                     <Video size={18} color="#fff" />
-                    <Text style={[styles.uploadBtnText, { fontFamily: font.semiBold }]}>
+                    <Text style={[styles.uploadBtnText, { ...font.semiBold }]}>
                       {uploading ? 'Uploading…' : processing ? 'Processing…' : form.videoUrl ? 'Replace Video' : 'Upload Video'}
                     </Text>
                   </TouchableOpacity>
                   {!!form.videoUrl && (
-                    <Text style={[styles.videoUrl, { fontFamily: font.regular }]} numberOfLines={1}>
+                    <Text style={[styles.videoUrl, { ...font.regular }]} numberOfLines={1}>
                       ✓ {form.videoUrl}
                     </Text>
                   )}
 
                   <View style={styles.toggleRow}>
-                    <Text style={[styles.toggleLabel, { fontFamily: font.regular }]}>Published</Text>
+                    <Text style={[styles.toggleLabel, { ...font.regular }]}>Published</Text>
                     <Switch
                       value={form.published}
                       onValueChange={(v) => setForm((f) => ({ ...f, published: v }))}
@@ -233,7 +233,7 @@ export default function CoursesAdmin() {
                     disabled={saving}
                   >
                     {saving ? <ActivityIndicator color="#fff" /> : (
-                      <Text style={[styles.saveBtnText, { fontFamily: font.bold }]}>Save</Text>
+                      <Text style={[styles.saveBtnText, { ...font.bold }]}>Save</Text>
                     )}
                   </TouchableOpacity>
                 </ScrollView>

@@ -375,7 +375,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats`)} style={styles.headerBack} activeOpacity={0.7}>
-          <Text style={[styles.headerBackText, { color: colors.accent, fontFamily: font.regular }]}>‹</Text>
+          <Text style={[styles.headerBackText, { color: colors.accent, ...font.regular }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           {chatType === 'group' && chatProjectId ? (
@@ -384,12 +384,12 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.headerName, { color: '#004aad', fontFamily: font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <Text style={[styles.headerName, { color: '#004aad', ...font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={[styles.headerName, { color: '#004aad', fontFamily: font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+            <Text style={[styles.headerName, { color: '#004aad', ...font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
             </Text>
           )}
@@ -397,7 +397,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         <View style={[styles.headerRight, { alignItems: 'center', justifyContent: 'center' }]}>
           {chatType === 'community' && currentUserId === chatOwnerId && (
             <TouchableOpacity onPress={() => setManageVisible(true)} style={{ padding: 8 }}>
-              <Text style={{ color: colors.accent, fontFamily: font.semiBold, fontSize: 13 }}>
+              <Text style={{ color: colors.accent, ...font.semiBold, fontSize: 13 }}>
                 {t('communities.manage')}
               </Text>
             </TouchableOpacity>
@@ -422,7 +422,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 onPress={() => setActiveChannelId(ch.id)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.channelPillText, { fontFamily: isActive ? font.semiBold : font.regular }, isActive && styles.channelPillTextActive]}>
+                <Text style={[styles.channelPillText, (isActive ? font.semiBold : font.regular), isActive && styles.channelPillTextActive]}>
                   # {ch.name}
                 </Text>
               </TouchableOpacity>
@@ -451,7 +451,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 {item.videoUrl ? (
                   <View style={styles.mediaBubble}>
                     {!isOwn && (
-                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), ...font.regular }]}>
                         {userNames[item.senderId] ?? 'Loading...'}
                       </Text>
                     )}
@@ -463,7 +463,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 ) : item.imageURL ? (
                   <View style={styles.mediaBubble}>
                     {!isOwn && (
-                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), ...font.regular }]}>
                         {userNames[item.senderId] ?? 'Loading...'}
                       </Text>
                     )}
@@ -475,11 +475,11 @@ export function ChatRoomScreen({ chatId }: Props) {
                 ) : (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
                     {!isOwn && (
-                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), fontFamily: font.regular }]}>
+                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), ...font.regular }]}>
                         {userNames[item.senderId] ?? 'Loading...'}
                       </Text>
                     )}
-                    <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, fontFamily: font.regular }]}>
+                    <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, ...font.regular }]}>
                       {item.text}
                     </Text>
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
@@ -498,7 +498,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         {mediaActive ? (
           <View style={styles.mediaSendingRow}>
             <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={[styles.mediaSendingText, { color: colors.textMuted, fontFamily: font.regular }]}>
+            <Text style={[styles.mediaSendingText, { color: colors.textMuted, ...font.regular }]}>
               {videoUploading || videoProcessing ? t('media.send_video') : t('chats.sending_image')}
             </Text>
           </View>
@@ -508,7 +508,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               <Paperclip size={22} color={colors.accent} strokeWidth={1.5} />
             </TouchableOpacity>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, fontFamily: font.regular }]}
+              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, ...font.regular }]}
               value={inputText}
               onChangeText={setInputText}
               placeholder="Message..."
@@ -522,7 +522,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               disabled={!inputText.trim()}
               activeOpacity={0.7}
             >
-              <Text style={[styles.sendLabel, { fontFamily: font.semiBold }]}>Send</Text>
+              <Text style={[styles.sendLabel, { ...font.semiBold }]}>Send</Text>
             </TouchableOpacity>
           </>
         )}
@@ -535,7 +535,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         <TouchableOpacity activeOpacity={1} style={{ width: '90%', maxHeight: '85%' }}>
           <LinearGradient colors={['#1a237e', '#004aad']} style={manageStyles.modal}>
             <View style={[manageStyles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[manageStyles.modalTitle, { fontFamily: font.bold }]}>
+              <Text style={[manageStyles.modalTitle, { ...font.bold }]}>
                 {t('communities.manage')}
               </Text>
               <TouchableOpacity onPress={() => setManageVisible(false)}>
@@ -545,22 +545,22 @@ export function ChatRoomScreen({ chatId }: Props) {
             <ScrollView showsVerticalScrollIndicator={false}>
 
               {/* Pending Requests */}
-              <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold }]}>
+              <Text style={[manageStyles.sectionTitle, { ...font.semiBold }]}>
                 {t('communities.pending_requests')} ({pendingRequests.length})
               </Text>
               {pendingRequests.length === 0 ? (
-                <Text style={[manageStyles.emptyText, { fontFamily: font.regular }]}>—</Text>
+                <Text style={[manageStyles.emptyText, { ...font.regular }]}>—</Text>
               ) : (
                 pendingRequests.map((req) => (
                   <View key={req.userId} style={[manageStyles.requestRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <Text style={[manageStyles.requestName, { fontFamily: font.regular }]} numberOfLines={1}>
+                    <Text style={[manageStyles.requestName, { ...font.regular }]} numberOfLines={1}>
                       {req.displayName}
                     </Text>
                     <TouchableOpacity
                       style={[manageStyles.actionBtn, { backgroundColor: '#16a34a' }]}
                       onPress={() => handleApproveRequest(req.userId)}
                     >
-                      <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
+                      <Text style={[manageStyles.actionBtnText, { ...font.semiBold }]}>
                         {t('communities.approve')}
                       </Text>
                     </TouchableOpacity>
@@ -568,7 +568,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                       style={[manageStyles.actionBtn, { backgroundColor: '#dc2626' }]}
                       onPress={() => handleRejectRequest(req.userId)}
                     >
-                      <Text style={[manageStyles.actionBtnText, { fontFamily: font.semiBold }]}>
+                      <Text style={[manageStyles.actionBtnText, { ...font.semiBold }]}>
                         {t('communities.reject')}
                       </Text>
                     </TouchableOpacity>
@@ -577,17 +577,17 @@ export function ChatRoomScreen({ chatId }: Props) {
               )}
 
               {/* Members */}
-              <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold, marginTop: 20 }]}>
+              <Text style={[manageStyles.sectionTitle, { ...font.semiBold, marginTop: 20 }]}>
                 {t('communities.members')} ({chatMembers.length})
               </Text>
               {chatMembers.map((uid) => (
                 <View key={uid} style={[manageStyles.memberRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <View style={manageStyles.memberAvatar}>
-                    <Text style={[manageStyles.memberInitial, { fontFamily: font.bold }]}>
+                    <Text style={[manageStyles.memberInitial, { ...font.bold }]}>
                       {(memberNames[uid] ?? uid).charAt(0).toUpperCase()}
                     </Text>
                   </View>
-                  <Text style={[manageStyles.memberName, { fontFamily: font.regular }]} numberOfLines={1}>
+                  <Text style={[manageStyles.memberName, { ...font.regular }]} numberOfLines={1}>
                     {memberNames[uid] ?? uid}
                     {uid === chatOwnerId ? ' ★' : ''}
                   </Text>
@@ -600,12 +600,12 @@ export function ChatRoomScreen({ chatId }: Props) {
               ))}
 
               {/* Channels */}
-              <Text style={[manageStyles.sectionTitle, { fontFamily: font.semiBold, marginTop: 20 }]}>
+              <Text style={[manageStyles.sectionTitle, { ...font.semiBold, marginTop: 20 }]}>
                 {t('community.channels')} ({channels.length})
               </Text>
               {channels.map((ch) => (
                 <View key={ch.id} style={[manageStyles.channelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <Text style={[manageStyles.channelName, { fontFamily: font.regular }]}># {ch.name}</Text>
+                  <Text style={[manageStyles.channelName, { ...font.regular }]}># {ch.name}</Text>
                   {!isGeneralChannel(ch.name) && (
                     <TouchableOpacity onPress={() => handleDeleteChannel(ch.id, ch.name)} style={{ padding: 4 }}>
                       <Text style={{ color: '#dc2626', fontSize: 16 }}>✕</Text>
@@ -620,16 +620,16 @@ export function ChatRoomScreen({ chatId }: Props) {
                     onChangeText={setNewChannelName}
                     placeholder={t('community.channel_name')}
                     placeholderTextColor="rgba(255,255,255,0.4)"
-                    style={[manageStyles.channelInput, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                    style={[manageStyles.channelInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                     autoFocus
                   />
                   <TouchableOpacity style={manageStyles.addBtn} onPress={handleAddChannel}>
-                    <Text style={[{ color: '#004aad', fontFamily: font.bold, fontSize: 15 }]}>+</Text>
+                    <Text style={[{ color: '#004aad', ...font.bold, fontSize: 15 }]}>+</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity onPress={() => setAddingChannel(true)} style={manageStyles.addChannelTrigger}>
-                  <Text style={[{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semiBold, fontSize: 13 }]}>
+                  <Text style={[{ color: 'rgba(255,255,255,0.85)', ...font.semiBold, fontSize: 13 }]}>
                     {t('community.add_channel')}
                   </Text>
                 </TouchableOpacity>

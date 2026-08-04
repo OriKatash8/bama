@@ -59,7 +59,7 @@ export default function ClientTabsLayout() {
             tabBarActiveBackgroundColor: 'transparent',
             tabBarInactiveBackgroundColor: 'transparent',
             tabBarItemStyle: { paddingVertical: 4 },
-            tabBarLabelStyle: { fontSize: 10, fontFamily: font.regular, marginTop: -4 },
+            tabBarLabelStyle: { fontSize: 10, ...font.regular, marginTop: -4 },
           }}
         >
           <Tabs.Screen

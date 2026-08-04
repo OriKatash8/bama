@@ -124,7 +124,7 @@ export default function ProfessionalProfileScreen() {
   return (
     <Screen style={styles.content} scrollable>
       <View style={styles.titleRow}>
-        <Text style={[styles.pageTitle, { fontFamily: font.bold, position: 'absolute', left: 0, right: 0, textAlign: 'center' }]}>
+        <Text style={[styles.pageTitle, { ...font.bold, position: 'absolute', left: 0, right: 0, textAlign: 'center' }]}>
           {t('profile.title')}
         </Text>
         <View style={{ flex: 1 }} />

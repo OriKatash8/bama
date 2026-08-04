@@ -174,7 +174,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
         >
           {/* Header */}
           <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.heading, { fontFamily: font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+            <Text style={[styles.heading, { ...font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
               {professionalName}
             </Text>
             <TouchableOpacity onPress={handleClose} hitSlop={12} activeOpacity={0.7}>
@@ -184,7 +184,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.scroll}>
             {/* Description */}
-            <Text style={[styles.label, { fontFamily: font.semiBold, color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>
               {t('builder.tell_us')}
             </Text>
             <TextInput
@@ -202,7 +202,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             {/* Dates */}
             <View style={styles.dateRow}>
               <View style={styles.dateCol}>
-                <Text style={[styles.label, { fontFamily: font.semiBold, color: '#7b2fa8', marginTop: 0, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('builder.execution')} <Text style={{ fontWeight: '400', color: '#7b2fa899' }}>({t('builder.optional')})</Text>
                 </Text>
                 <TouchableOpacity
@@ -210,7 +210,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                   onPress={() => setCalOpen('exec')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.dateBtnText, { fontFamily: font.regular, color: exec ? '#1a1a2e' : '#7b2fa899', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                  <Text style={[styles.dateBtnText, { ...font.regular, color: exec ? '#1a1a2e' : '#7b2fa899', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {exec || t('builder.placeholder_date')}
                   </Text>
                   <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
@@ -218,7 +218,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               </View>
 
               <View style={styles.dateCol}>
-                <Text style={[styles.label, { fontFamily: font.semiBold, color: '#7b2fa8', marginTop: 0, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('builder.deadline')}
                 </Text>
                 <TouchableOpacity
@@ -226,7 +226,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                   onPress={() => setCalOpen('deadline')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.dateBtnText, { fontFamily: font.regular, color: deadline ? '#1a1a2e' : '#7b2fa899', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                  <Text style={[styles.dateBtnText, { ...font.regular, color: deadline ? '#1a1a2e' : '#7b2fa899', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {deadline || t('builder.placeholder_deadline')}
                   </Text>
                   <Calendar size={14} color="#cb6ce6" strokeWidth={1.8} />
@@ -236,7 +236,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             </View>
 
             {/* Location */}
-            <Text style={[styles.label, { fontFamily: font.semiBold, color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>
               {t('builder.location')}
             </Text>
             <TextInput
@@ -249,13 +249,13 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             {errors.location ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.location}</Text> : null}
 
             {/* Skills */}
-            <Text style={[styles.label, { fontFamily: font.semiBold, color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>
               {t('builder.select_roles')}
             </Text>
             {skillsLoading ? (
               <ActivityIndicator color="#cb6ce6" style={{ marginVertical: 12 }} />
             ) : skills.length === 0 ? (
-              <Text style={[styles.emptySkills, { fontFamily: font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.emptySkills, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                 No skills listed for this professional.
               </Text>
             ) : (
@@ -264,7 +264,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                   const qty = getQty(s);
                   return (
                     <View key={skillKey(s)} style={[styles.skillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.skillLabel, { fontFamily: font.medium, color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
+                      <Text style={[styles.skillLabel, { ...font.medium, color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
                         {s.subcategory}
                       </Text>
                       <View style={[styles.qtyControls, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -300,7 +300,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               disabled={isGenerating}
               activeOpacity={0.8}
             >
-              <Text style={[styles.submitText, { fontFamily: font.bold }]}>
+              <Text style={[styles.submitText, { ...font.bold }]}>
                 {isGenerating ? t('builder.generating_title') : t('search.tell_us_about_project')}
               </Text>
             </TouchableOpacity>
@@ -314,10 +314,10 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
       <Modal visible={titleModalVisible} transparent animationType="fade" onRequestClose={() => setTitleModalVisible(false)}>
         <View style={styles.backdrop}>
           <View style={[styles.titleModal, { backgroundColor: colors.card, borderColor: colors.accent }, Platform.OS === 'web' && ({ boxShadow: '0 0 48px #7b4fd488' } as object)]}>
-            <Text style={[styles.titleModalHeading, { fontFamily: font.bold, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.titleModalHeading, { ...font.bold, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
               {t('builder.confirm_title')}
             </Text>
-            <Text style={[styles.titleModalHint, { fontFamily: font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.titleModalHint, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
               {titleFailed ? t('builder.title_failed') : t('builder.confirm_title_hint')}
             </Text>
             <TextInput
@@ -339,7 +339,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               disabled={!pendingTitle.trim() || isSubmitting}
               activeOpacity={0.8}
             >
-              <Text style={[styles.submitText, { fontFamily: font.bold }]}>
+              <Text style={[styles.submitText, { ...font.bold }]}>
                 {isSubmitting ? t('builder.submitting') : t('builder.looks_good')}
               </Text>
             </TouchableOpacity>
@@ -349,7 +349,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               disabled={isSubmitting}
               activeOpacity={0.7}
             >
-              <Text style={[styles.cancelText, { fontFamily: font.regular, color: colors.textMuted }]}>
+              <Text style={[styles.cancelText, { ...font.regular, color: colors.textMuted }]}>
                 {t('project_details.cancel')}
               </Text>
             </TouchableOpacity>

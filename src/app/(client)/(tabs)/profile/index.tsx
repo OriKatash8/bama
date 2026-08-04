@@ -70,7 +70,7 @@ export default function ClientProfileScreen() {
       <View style={styles.content}>
 
         {/* ── AVATAR ── */}
-        <Text style={[styles.pageTitle, { fontFamily: font.bold }, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
+        <Text style={[styles.pageTitle, { ...font.bold }, Platform.OS === 'web' && gradientStyle, Platform.OS !== 'web' && { color: colors.accent }]}>
           {t('profile.my_profile')}
         </Text>
         <View style={styles.avatarSection}>
