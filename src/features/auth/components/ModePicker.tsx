@@ -90,14 +90,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 20,
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   logo: {
     width: '80%',
     height: 120,
     resizeMode: 'contain',
     alignSelf: 'center',
-    marginTop: -30,
+    marginTop: -80,
   },
   buttons: {
     width: '100%',
