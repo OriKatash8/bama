@@ -2,7 +2,23 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
+import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { ProfessionalResult } from '../hooks/useSearchProfessionals';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 const AVAILABILITY_COLOR: Record<string, string> = {
   available: '#22c55e',
@@ -18,6 +34,10 @@ type Props = {
 
 export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
+  const font = useAppFont();
   const { user, profile } = item;
   const [isMessaging, setIsMessaging] = useState(false);
 
@@ -30,11 +50,16 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
       setIsMessaging(false);
     }
   }
+
   const availColor = AVAILABILITY_COLOR[profile.availability] ?? colors.textMuted;
 
+  function skillLabel(category: string): string {
+    return rtl && CATEGORY_LABEL_KEY[category] ? t(CATEGORY_LABEL_KEY[category]) : category;
+  }
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.row}>
+    <View style={[styles.card, { borderColor: colors.border }]}>
+      <View style={[styles.row, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         {user.photoURL ? (
           <Image
             source={{ uri: user.photoURL, width: 52, height: 52 }}
@@ -53,23 +78,23 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
         )}
 
         <View style={styles.info}>
-          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+          <Text style={[styles.name, { color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={1}>
             {user.displayName}
           </Text>
           {profile.bio ? (
-            <Text style={[styles.bio, { color: colors.textSec }]} numberOfLines={2}>
+            <Text style={[styles.bio, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', ...font.regular }]} numberOfLines={2}>
               {profile.bio}
             </Text>
           ) : null}
-          <View style={styles.badgeRow}>
+          <View style={[styles.badgeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <View style={[styles.availBadge, { backgroundColor: availColor + '22', borderColor: availColor }]}>
               <View style={[styles.availDot, { backgroundColor: availColor }]} />
-              <Text style={[styles.availText, { color: availColor }]}>
+              <Text style={[styles.availText, { color: availColor, ...font.medium }]}>
                 {profile.availability}
               </Text>
             </View>
             {profile.rating > 0 && (
-              <Text style={[styles.rating, { color: colors.textMuted }]}>
+              <Text style={[styles.rating, { color: colors.textMuted, ...font.medium }]}>
                 ★ {profile.rating.toFixed(1)} ({profile.reviewCount})
               </Text>
             )}
@@ -78,11 +103,11 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
       </View>
 
       {profile.skills && profile.skills.length > 0 && (
-        <View style={styles.skillsRow}>
+        <View style={[styles.skillsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {profile.skills.slice(0, 4).map((s, i) => (
             <View key={i} style={[styles.skillChip, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '44' }]}>
-              <Text style={[styles.skillText, { color: colors.accent }]} numberOfLines={1}>
-                {s.category}
+              <Text style={[styles.skillText, { color: colors.accent, ...font.semiBold }]} numberOfLines={1}>
+                {skillLabel(s.category)}
               </Text>
             </View>
           ))}
@@ -98,7 +123,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
           onPress={onDirectProject}
           activeOpacity={0.8}
         >
-          <Text style={styles.messageBtnText}>Tell us about your project</Text>
+          <Text style={[styles.messageBtnText, { ...font.bold }]}>{t('search.tell_us_about_project')}</Text>
         </TouchableOpacity>
       )}
       {onMessage && !onDirectProject && (
@@ -110,7 +135,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
         >
           {isMessaging
             ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={styles.messageBtnText}>Message</Text>
+            : <Text style={[styles.messageBtnText, { ...font.bold }]}>{t('search.message')}</Text>
           }
         </TouchableOpacity>
       )}
@@ -120,19 +145,20 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
   },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  row: { alignItems: 'flex-start', gap: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26 },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { fontSize: 22, fontWeight: '700' },
   info: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
+  name: { fontSize: 16, marginBottom: 2 },
   bio: { fontSize: 13, lineHeight: 18, marginBottom: 6 },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  badgeRow: { alignItems: 'center', gap: 10 },
   availBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -143,16 +169,16 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   availDot: { width: 6, height: 6, borderRadius: 3 },
-  availText: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
-  rating: { fontSize: 12, fontWeight: '600' },
-  skillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  availText: { fontSize: 11, textTransform: 'capitalize' },
+  rating: { fontSize: 12 },
+  skillsRow: { flexWrap: 'wrap', gap: 6, marginTop: 10 },
   skillChip: {
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  skillText: { fontSize: 11, fontWeight: '600' },
+  skillText: { fontSize: 11 },
   moreSkills: { fontSize: 12, alignSelf: 'center' },
   messageBtn: {
     marginTop: 12,
@@ -162,5 +188,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 38,
   },
-  messageBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  messageBtnText: { color: '#fff', fontSize: 14 },
 });

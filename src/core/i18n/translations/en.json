@@ -93,7 +93,8 @@
     "no_results_title": "No professionals found",
     "no_results_subtext": "No results for \"{{query}}\"",
     "no_categories_match": "No categories match \"{{query}}\"",
-    "tell_us_about_project": "Tell us about your project"
+    "tell_us_about_project": "Tell us about your project",
+    "message": "Message"
   },
   "chats": {
     "status_open": "Open",
