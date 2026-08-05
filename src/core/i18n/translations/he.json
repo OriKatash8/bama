@@ -313,7 +313,22 @@
     "bundle_price_error": "מחיר החבילה חייב להיות נמוך מהסכום הכולל",
     "skip_bundle": "דלג",
     "add_bundle": "הוסף הצעת חבילה",
-    "make_offer": "הגש הצעה"
+    "make_offer": "הגש הצעה",
+    "role_singular": "תפקיד",
+    "role_plural": "תפקידים",
+    "execution_label": "ביצוע",
+    "deadline_label": "דדליין",
+    "location_label": "מיקום",
+    "description_label": "תיאור",
+    "roles_needed": "תפקידים נדרשים",
+    "make_offer_action": "✦  הגש הצעה",
+    "not_interested": "✕  לא מעניין",
+    "back_to_details": "→ חזרה לפרטים",
+    "submit_offer_header": "שלח את ההצעה שלך",
+    "submit_offer_btn": "שלח הצעה",
+    "sending": "שולח…",
+    "needed": "נדרש",
+    "individual_total": "סה״כ פרטני"
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",

@@ -313,7 +313,22 @@
     "bundle_price_error": "Bundle price must be less than the individual total",
     "skip_bundle": "Skip",
     "add_bundle": "Add bundle offer",
-    "make_offer": "Make Offer"
+    "make_offer": "Make Offer",
+    "role_singular": "role",
+    "role_plural": "roles",
+    "execution_label": "Execution",
+    "deadline_label": "Deadline",
+    "location_label": "Location",
+    "description_label": "Description",
+    "roles_needed": "Roles Needed",
+    "make_offer_action": "✦  Make an Offer",
+    "not_interested": "✕  Not interested",
+    "back_to_details": "← Back to Details",
+    "submit_offer_header": "Submit Your Offer",
+    "submit_offer_btn": "Submit Offer",
+    "sending": "Sending…",
+    "needed": "needed",
+    "individual_total": "Individual total"
   },
   "offers": {
     "bundle_badge": "Bundle deal",
