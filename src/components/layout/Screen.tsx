@@ -17,7 +17,7 @@ export function Screen({ children, scrollable = true, style, backgroundColor, ke
     : colors.bgGradient;
 
   return (
-    <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.safe}>
+    <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.safe}>
       <SafeAreaView style={styles.safe}>
         <KeyboardAvoidingView
           style={styles.flex}

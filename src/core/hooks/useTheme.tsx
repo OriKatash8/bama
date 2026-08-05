@@ -38,8 +38,8 @@ export const DARK: AppColors = {
 };
 
 export const LIGHT: AppColors = {
-  bg: '#efd4f6',
-  bgGradient: ['#efd4f6', '#b7cae6'],
+  bg: '#E6E0F4',
+  bgGradient: ['#E6E0F4', '#D0DFF7'],
   card: '#dce8ff',
   cardAlt: '#d0dfff',
   text: '#0f0f1f',
