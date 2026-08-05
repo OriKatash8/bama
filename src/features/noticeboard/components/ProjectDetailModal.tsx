@@ -252,7 +252,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
                 <Text style={styles.backText}>{t('noticeboard.back_to_details')}</Text>
               </TouchableOpacity>
-              <Text style={[styles.bidHint, { color: colors.textMuted }]}>Select the roles you want to fill and enter your price for each.</Text>
+              <Text style={[styles.bidHint, { color: colors.textMuted }]}>{t('noticeboard.bid_hint')}</Text>
 
               {bids.map((b, i) => (
                 <View key={i} style={styles.bidRow}>

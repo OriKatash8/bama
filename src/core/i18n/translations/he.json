@@ -328,7 +328,9 @@
     "submit_offer_btn": "שלח הצעה",
     "sending": "שולח…",
     "needed": "נדרש",
-    "individual_total": "סה״כ פרטני"
+    "individual_total": "סה״כ פרטני",
+    "bid_hint": "בחר את התפקידים שאתה רוצה למלא והזן את המחיר שלך לכל אחד.",
+    "per_role": "/ תפקיד"
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",

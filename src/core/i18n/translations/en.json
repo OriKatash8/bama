@@ -328,7 +328,9 @@
     "submit_offer_btn": "Submit Offer",
     "sending": "Sending…",
     "needed": "needed",
-    "individual_total": "Individual total"
+    "individual_total": "Individual total",
+    "bid_hint": "Select the roles you want to fill and enter your price for each.",
+    "per_role": "/ role"
   },
   "offers": {
     "bundle_badge": "Bundle deal",

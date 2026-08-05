@@ -50,7 +50,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const translatedRoles = allRoles.map(r =>
     rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
   );
-  const perRoleLabel = rtl ? '/ תפקיד' : '/ role';
+  const perRoleLabel = `/ ${t('noticeboard.role_singular')}`;
   const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
 
