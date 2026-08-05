@@ -372,7 +372,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={[styles.submitWrap, { paddingHorizontal: 36, marginBottom: 90 }]}>
+            <View style={[styles.submitWrap, { paddingHorizontal: 36 }]}>
               <TouchableOpacity
                 style={[
                   styles.submitBtn,
