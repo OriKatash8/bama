@@ -36,7 +36,7 @@ export function CategoryItem({
       {expanded &&
         subcategories.map((sub) => {
           const slot = slots.find(
-            (s) => s.category === category && s.subcategory === sub
+            (s) => s.category === category
           );
           return (
             <SubCategoryRow

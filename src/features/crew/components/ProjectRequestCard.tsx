@@ -155,16 +155,16 @@ export function ProjectRequestCard({ request }: Props) {
               <>
                 {request.crewSlots.map((slot, i) => {
                   const filled = request.filledSlots?.find(
-                    (f) => f.category === slot.category && f.subcategory === slot.subcategory
+                    (f) => f.category === slot.category
                   );
                   const member = team.find(
-                    (m) => m.professionalId === filled?.professionalId && m.subcategory === slot.subcategory
+                    (m) => m.professionalId === filled?.professionalId && m.category === slot.category
                   );
                   return (
                     <View key={i} style={[styles.teamRow, { flexDirection: rowDir }]}>
                       <View style={styles.teamDot} />
                       <View style={styles.teamInfo}>
-                        <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.forText(slot.subcategory, 'semiBold') }]}>{slot.subcategory}</Text>
+                        <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.forText(slot.category, 'semiBold') }]}>{slot.category}</Text>
                         {member ? (
                           <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', ...font.forText(member.displayName, 'regular') }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
                         ) : (

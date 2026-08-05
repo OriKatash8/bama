@@ -67,7 +67,7 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
         activeOpacity={0.7}
       >
         <Text style={[styles.rolesSummary, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
-          {bundle.slots.map((s) => s.subcategory).join(' · ')}
+          {bundle.slots.map((s) => s.subcategory ?? s.category).join(' · ')}
         </Text>
         {expanded ? (
           <ChevronUp size={16} color="#004aad" />
@@ -84,7 +84,7 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
           ) : (
             offerDetails.map((o, i) => (
               <View key={i} style={[styles.breakdownRow, { flexDirection: rowDir }]}>
-                <Text style={[styles.breakdownRole, { ...font.medium }]}>{o.subcategory}</Text>
+                <Text style={[styles.breakdownRole, { ...font.medium }]}>{o.subcategory ?? o.category}</Text>
                 <Text style={[styles.breakdownPrice, { ...font.semiBold }]}>₪{o.price.toLocaleString()}</Text>
               </View>
             ))

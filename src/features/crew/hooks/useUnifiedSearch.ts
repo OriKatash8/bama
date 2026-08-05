@@ -4,7 +4,7 @@ import type { User } from '@core/types/user';
 import type { ProfessionalProfile } from '@core/types/user';
 import type { ProfessionalResult } from './useSearchProfessionals';
 
-type MatchPriority = 0 | 1 | 2; // 0=name, 1=category, 2=subcategory
+type MatchPriority = 0 | 1; // 0=name, 1=category
 
 type RankedResult = ProfessionalResult & { priority: MatchPriority };
 
@@ -41,13 +41,10 @@ export function useUnifiedSearch(query: string): { results: ProfessionalResult[]
               const categoryMatch = profile.skills.some((s) =>
                 s.category.toLowerCase().includes(trimmed)
               );
-              const subcategoryMatch = profile.skills.some((s) =>
-                s.subcategory.toLowerCase().includes(trimmed)
-              );
 
-              if (!nameMatch && !categoryMatch && !subcategoryMatch) return;
+              if (!nameMatch && !categoryMatch) return;
 
-              const priority: MatchPriority = nameMatch ? 0 : categoryMatch ? 1 : 2;
+              const priority: MatchPriority = nameMatch ? 0 : 1;
               ranked.push({ user, profile, priority });
             })
           );

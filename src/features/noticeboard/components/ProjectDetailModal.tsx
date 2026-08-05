@@ -10,6 +10,7 @@ import { X } from 'lucide-react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import { usePriceOffer } from '@features/noticeboard/hooks/usePriceOffer';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
+import { CATEGORY_QUESTION_MAP, ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -37,9 +38,10 @@ type Props = {
   onDismiss: () => void;
   isApplying: boolean;
   initialView?: 'details' | 'bid';
+  professionalCategories?: string[];
 };
 
-export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details' }: Props) {
+export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories }: Props) {
   const { submit, submitWithBundle, isSubmitting } = usePriceOffer();
   const colors = useTheme();
   const { height: screenHeight } = useWindowDimensions();
@@ -97,7 +99,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
     try {
       await submit(
         request!.id,
-        validBids.map((b) => ({ category: b.category, subcategory: b.subcategory, price: Number(b.price) }))
+        validBids.map((b) => ({ category: b.category, price: Number(b.price) }))
       );
       setView('details');
       onApply();
@@ -124,7 +126,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
     try {
       await submitWithBundle(
         request!.id,
-        validBids.map((b) => ({ category: b.category, subcategory: b.subcategory, price: Number(b.price) })),
+        validBids.map((b) => ({ category: b.category, price: Number(b.price) })),
         bp,
       );
       setView('details');
@@ -187,13 +189,38 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Description</Text>
               <Text style={[styles.description, { color: colors.textSec }]}>{request.description}</Text>
 
+              {(() => {
+                const myRoleKeys = (professionalCategories ?? [])
+                  .map(cat => CATEGORY_QUESTION_MAP[cat])
+                  .filter((k): k is string => !!k);
+                const myAnswers = Object.entries(request.roleAnswers ?? {})
+                  .filter(([roleKey]) => myRoleKeys.includes(roleKey));
+                if (myAnswers.length === 0) return null;
+                return (
+                  <View style={styles.roleAnswersSection}>
+                    {myAnswers.flatMap(([roleKey, answers]) =>
+                      Object.entries(answers).map(([questionId, value]) => {
+                        const question = ROLE_QUESTIONS[roleKey]?.find(q => q.id === questionId);
+                        if (!question) return null;
+                        return (
+                          <View key={`${roleKey}-${questionId}`} style={styles.roleAnswerChip}>
+                            <Text style={styles.roleAnswerChipText}>
+                              {questionLabel(question, rtl)}: {value}
+                            </Text>
+                          </View>
+                        );
+                      })
+                    )}
+                  </View>
+                );
+              })()}
+
               <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Roles Needed</Text>
               {getVacantSlots(request).map((s, i) => (
                 <View key={i} style={styles.slotRow}>
                   <Text style={styles.slotQty}>{s.quantity}×</Text>
                   <View>
-                    <Text style={styles.slotSub}>{s.subcategory}</Text>
-                    <Text style={[styles.slotCat, { color: colors.textMuted }]}>{s.category}</Text>
+                    <Text style={styles.slotSub}>{s.category}</Text>
                   </View>
                 </View>
               ))}
@@ -229,8 +256,8 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                     trackColor={{ true: '#004aad' }}
                   />
                   <View style={styles.bidInfo}>
-                    <Text style={styles.bidSub}>{b.subcategory}</Text>
-                    <Text style={[styles.bidCat, { color: colors.textMuted }]}>{b.category} · {b.quantity} needed</Text>
+                    <Text style={styles.bidSub}>{b.category}</Text>
+                    <Text style={[styles.bidCat, { color: colors.textMuted }]}>{b.quantity} needed</Text>
                   </View>
                   {b.selected && (
                     <TextInput
@@ -293,7 +320,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               <View style={styles.bundleRoles}>
                 {validBids.map((b, i) => (
                   <Text key={i} style={[styles.bundleRoleItem, { color: colors.textSec }]}>
-                    · {b.subcategory} — ₪{Number(b.price).toLocaleString()}
+                    · {b.category} — ₪{Number(b.price).toLocaleString()}
                   </Text>
                 ))}
               </View>
@@ -396,4 +423,14 @@ const styles = StyleSheet.create({
   bundleRoleItem: { fontSize: 14 },
   skipBtn: { alignItems: 'center', paddingVertical: 12 },
   skipText: { fontSize: 15 },
+  roleAnswersSection: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 8 },
+  roleAnswerChip: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(0,74,173,0.08)',
+    borderWidth: 1,
+    borderColor: '#004aad',
+  },
+  roleAnswerChipText: { fontSize: 11, color: '#004aad' },
 });

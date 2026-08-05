@@ -27,7 +27,6 @@ const CATEGORY_META: Record<string, { labelKey: string; image: ReturnType<typeof
   'Still Photographer': { labelKey: 'builder.category_photographer', image: require('../../../../../assets/images/categories/photographer.png') },
   'Editor':             { labelKey: 'builder.category_editor',        image: require('../../../../../assets/images/categories/editor.png') },
   'Graphic Designer':   { labelKey: 'builder.category_graphic_designer', image: require('../../../../../assets/images/categories/graphic-designer.png') },
-  'AI Specialist':      { labelKey: 'AI',                             image: require('../../../../../assets/images/categories/ai.png') },
   'Social Media':       { labelKey: 'builder.category_social',        image: require('../../../../../assets/images/categories/social.png') },
   'Studio & Audio':     { labelKey: 'builder.category_studios',       image: require('../../../../../assets/images/categories/studios.png') },
   'Lighting Tech':      { labelKey: 'builder.category_lighting',      image: require('../../../../../assets/images/categories/lighting-tech.png'), contain: true },
@@ -131,8 +130,8 @@ export default function BuilderScreen() {
     });
   }
 
-  function getQty(sub: string) {
-    return slots.find(s => s.category === selectedCategory?.key && s.subcategory === sub)?.quantity ?? 0;
+  function getQty(_sub: string) {
+    return slots.find(s => s.category === selectedCategory?.key)?.quantity ?? 0;
   }
 
   function validate(): boolean {
@@ -378,7 +377,7 @@ export default function BuilderScreen() {
                         <Text style={[styles.roleCellLabel, { color: colors.text }]} numberOfLines={2}>{sub}</Text>
                         <View style={styles.qtyControls}>
                           {qty > 0 && (
-                            <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.inputBorder }]} onPress={() => removeSlot(selectedCategory!.key, sub)} hitSlop={8} activeOpacity={0.7}>
+                            <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.inputBorder }]} onPress={() => removeSlot(selectedCategory!.key)} hitSlop={8} activeOpacity={0.7}>
                               <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
                             </TouchableOpacity>
                           )}
@@ -387,7 +386,7 @@ export default function BuilderScreen() {
                               <Text style={styles.qtyBadgeText}>{qty}</Text>
                             </View>
                           )}
-                          <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]} onPress={() => addSlot(selectedCategory!.key, sub)} hitSlop={8} activeOpacity={0.7}>
+                          <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]} onPress={() => addSlot(selectedCategory!.key)} hitSlop={8} activeOpacity={0.7}>
                             <Text style={[styles.qtyBtnText, { color: colors.accent }]}>+</Text>
                           </TouchableOpacity>
                         </View>

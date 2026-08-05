@@ -82,7 +82,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
           {profile.skills.slice(0, 4).map((s, i) => (
             <View key={i} style={[styles.skillChip, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '44' }]}>
               <Text style={[styles.skillText, { color: colors.accent }]} numberOfLines={1}>
-                {s.subcategory}
+                {s.category}
               </Text>
             </View>
           ))}

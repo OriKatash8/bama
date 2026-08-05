@@ -272,6 +272,7 @@ export default function DashboardScreen() {
                 directInviteLabel={t('noticeboard.direct_invite')}
                 compact
                 cardWidth={cardWidth}
+                professionalCategories={categories ?? []}
               />
             )}
           />
@@ -285,6 +286,7 @@ export default function DashboardScreen() {
         onDismiss={() => selected && dismiss(selected.id)}
         isApplying={false}
         initialView={selectedView}
+        professionalCategories={categories ?? []}
       />
     </Screen>
   );

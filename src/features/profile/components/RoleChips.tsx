@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useTheme } from '@core/hooks/useTheme';
@@ -24,7 +23,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
   'Still Photographer': '📸',
   'Editor': '✂️',
   'Graphic Designer': '🎨',
-  'AI Specialist': '🤖',
   'Social Media': '📱',
   'Studio & Audio': '🎵',
   'Lighting Tech': '💡',
@@ -37,15 +35,15 @@ type RoleChipsProps = {
   onChange?: (skills: ProfessionalSkill[]) => void;
 };
 
-function isSelected(selected: ProfessionalSkill[], category: string, subcategory: string) {
-  return selected.some((s) => s.category === category && s.subcategory === subcategory);
+function isCategorySelected(selected: ProfessionalSkill[], category: string) {
+  return selected.some(s => s.category === category);
 }
 
-function toggle(selected: ProfessionalSkill[], category: string, subcategory: string): ProfessionalSkill[] {
-  if (isSelected(selected, category, subcategory)) {
-    return selected.filter((s) => !(s.category === category && s.subcategory === subcategory));
+function toggleCategory(selected: ProfessionalSkill[], category: string): ProfessionalSkill[] {
+  if (isCategorySelected(selected, category)) {
+    return selected.filter(s => s.category !== category);
   }
-  return [...selected, { category, subcategory }];
+  return [...selected, { category }];
 }
 
 export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
@@ -56,29 +54,25 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const allCategories = Object.keys(CREW_CATEGORIES);
 
   if (!isEditing) {
-    const allChips = Object.keys(CREW_CATEGORIES).flatMap((cat) =>
-      selected
-        .filter((s) => s.category === cat)
-        .map((s) => ({ key: `${cat}-${s.subcategory}`, label: s.subcategory }))
-    );
-
     return (
       <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}>
         <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
           {t('profile_sections.skills')}
         </Text>
-        {allChips.length === 0 ? (
+        {selected.length === 0 ? (
           <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
             {t('profile_sections.no_skills')}
           </Text>
         ) : (
           <View style={styles.chipsWrap}>
-            {allChips.map(({ key, label }) => (
-              <View key={key} style={styles.chip}>
-                <Text style={styles.chipText}>{label}</Text>
+            {selected.map((s) => (
+              <View key={s.category} style={styles.chip}>
+                <Text style={styles.chipText}>
+                  {CATEGORY_EMOJI[s.category] ?? ''} {s.category}
+                </Text>
               </View>
             ))}
           </View>
@@ -92,56 +86,23 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
       <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
         {t('profile_sections.skills')}
       </Text>
-
-      {Object.entries(CREW_CATEGORIES).map(([category, subcategories]) => {
-        const open = expanded === category;
-        const selectedCount = subcategories.filter((sub) =>
-          isSelected(selected, category, sub)
-        ).length;
-
-        return (
-          <View key={category} style={[styles.accordion, { backgroundColor: 'rgba(0,74,173,0.04)', borderColor: colors.border }]}>
+      <View style={styles.chipsWrap}>
+        {allCategories.map((category) => {
+          const active = isCategorySelected(selected, category);
+          return (
             <TouchableOpacity
-              style={styles.accordionHeader}
-              onPress={() => setExpanded(open ? null : category)}
-              activeOpacity={0.75}
+              key={category}
+              style={[styles.editChip, active && styles.editChipActive]}
+              onPress={() => onChange?.(toggleCategory(selected, category))}
+              activeOpacity={0.7}
             >
-              <View style={styles.accordionLeft}>
-                <Text style={styles.accordionEmoji}>{CATEGORY_EMOJI[category] ?? '•'}</Text>
-                <Text style={[styles.accordionTitle, { textAlign: rtl ? 'right' : 'left' }]}>{category}</Text>
-              </View>
-              <View style={styles.accordionRight}>
-                {selectedCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{selectedCount}</Text>
-                  </View>
-                )}
-                <Text style={styles.chevron}>{open ? '▲' : '▼'}</Text>
-              </View>
+              <Text style={[styles.editChipText, active && styles.editChipTextActive]}>
+                {CATEGORY_EMOJI[category] ?? '•'} {category}
+              </Text>
             </TouchableOpacity>
-
-            {open && (
-              <View style={[styles.subRow, { borderTopColor: colors.border }]}>
-                {subcategories.map((sub) => {
-                  const active = isSelected(selected, category, sub);
-                  return (
-                    <TouchableOpacity
-                      key={sub}
-                      style={[styles.subChip, active && styles.subChipActive]}
-                      onPress={() => onChange?.(toggle(selected, category, sub))}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.subChipText, active && styles.subChipTextActive]}>
-                        {sub}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -157,65 +118,26 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-
-  // View mode
   empty: { color: 'rgba(0,74,173,0.4)', fontSize: 13, fontStyle: 'italic' },
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
     backgroundColor: 'rgba(0,74,173,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.2)',
   },
-  chipText: { fontSize: 12, color: '#004aad' },
-
-  // Edit mode
-  accordion: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  accordionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  accordionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  accordionEmoji: { fontSize: 18 },
-  accordionTitle: { fontSize: 15, fontWeight: '600', color: '#004aad' },
-  accordionRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  badge: {
-    backgroundColor: '#004aad',
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  badgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  chevron: { fontSize: 10, color: '#004aad' },
-  subRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    borderTopWidth: 1,
-    paddingTop: 12,
-  },
-  subChip: {
+  chipText: { fontSize: 13, color: '#004aad' },
+  editChip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.25)',
-    backgroundColor: 'rgba(0,74,173,0.06)',
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,74,173,0.3)',
+    backgroundColor: 'rgba(0,74,173,0.05)',
   },
-  subChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  subChipText: { fontSize: 13, color: 'rgba(0,74,173,0.55)' },
-  subChipTextActive: { color: '#fff', fontWeight: '600' },
+  editChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  editChipText: { fontSize: 13, color: 'rgba(0,74,173,0.65)', fontWeight: '500' },
+  editChipTextActive: { color: '#fff', fontWeight: '700' },
 });

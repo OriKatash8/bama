@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
 } from 'react-native';
@@ -14,6 +14,7 @@ import { CalendarDays, ChevronLeft, X } from 'lucide-react-native';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { CrewRequestSlot } from '@core/types/project';
+import { ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
 
 type Translations = typeof en;
 
@@ -33,10 +34,10 @@ export default function SummaryScreen() {
     exec: string;
     deadline: string;
     location: string;
-    vibe: string;
     budget: string;
     projectId: string;
     slots: string;
+    roleAnswers: string;
   }>();
 
   const { slots, addSlot, removeSlot, reset: resetSlots, loadSlots } = useCrewBuilder();
@@ -61,17 +62,29 @@ export default function SummaryScreen() {
   const [exec, setExec] = useState(params.exec ?? '');
   const [deadline, setDeadline] = useState(params.deadline ?? '');
   const [location, setLocation] = useState(params.location ?? '');
-  const [vibe, setVibe] = useState(params.vibe ?? '');
   const [budget] = useState(params.budget ?? '');
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const parsedRoleAnswers = useMemo<Record<string, Record<string, string>>>(() => {
+    try { return JSON.parse(params.roleAnswers || '{}'); } catch { return {}; }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const canConfirm = !isSubmitting && !!deadline && !!location && slots.length > 0;
 
   async function handleConfirm() {
     if (!canConfirm) return;
     setIsSubmitting(true);
-    const details = { title, description, exec: exec || undefined, deadline, location, vibe: vibe || undefined, budget: budget || undefined };
+    const details = {
+      title,
+      description: description || undefined,
+      exec: exec || undefined,
+      deadline,
+      location,
+      budget: budget || undefined,
+      roleAnswers: Object.keys(parsedRoleAnswers).length > 0 ? parsedRoleAnswers : undefined,
+    };
     try {
       if (isEditMode) {
         await updateProject(params.projectId, slots, details);
@@ -97,9 +110,7 @@ export default function SummaryScreen() {
   }
 
   function removeSlotEntirely(slot: CrewRequestSlot) {
-    loadSlots(slots.filter(
-      (s) => !(s.category === slot.category && s.subcategory === slot.subcategory),
-    ));
+    loadSlots(slots.filter(s => s.category !== slot.category));
   }
 
   return (
@@ -137,19 +148,17 @@ export default function SummaryScreen() {
             placeholder={t('builder.confirm_title')}
             placeholderTextColor="#004aad99"
           />
-          {/* Description */}
-          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
-            {t('builder.tell_us')}
-          </Text>
-          <TextInput
-            style={[styles.input, styles.multiline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            placeholderTextColor="#004aad99"
-          />
+          {/* Description (read-only, only shown for projects that have one) */}
+          {description.length > 0 && (
+            <>
+              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+                {t('builder.tell_us')}
+              </Text>
+              <Text style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left', color: '#004aad' }]}>
+                {description}
+              </Text>
+            </>
+          )}
 
           {/* Dates */}
           <View style={styles.dateRow}>
@@ -199,21 +208,6 @@ export default function SummaryScreen() {
             placeholderTextColor="#004aad99"
           />
 
-          {/* Vibe & Style (editable, shown if set) */}
-          {vibe.length > 0 && (
-            <>
-              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
-                {t('builder.vibe_label')}
-              </Text>
-              <TextInput
-                style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                value={vibe}
-                onChangeText={setVibe}
-                placeholderTextColor="#004aad99"
-              />
-            </>
-          )}
-
           {/* Budget (read-only pill) */}
           {budget.length > 0 && (
             <>
@@ -226,20 +220,53 @@ export default function SummaryScreen() {
             </>
           )}
 
+          {/* Role answers */}
+          {Object.keys(parsedRoleAnswers).length > 0 && (
+            <>
+              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
+                {rtl ? 'פרטי הפרויקט' : 'Project Details'}
+              </Text>
+              {Object.entries(parsedRoleAnswers).map(([roleKey, answers]) => {
+                const questions = ROLE_QUESTIONS[roleKey];
+                if (!questions) return null;
+                return (
+                  <View key={roleKey} style={{ marginBottom: 12 }}>
+                    <Text style={[styles.hint, { ...font.semiBold, color: '#004aad', opacity: 1, marginBottom: 4, textAlign: rtl ? 'right' : 'left' }]}>
+                      {roleKey}
+                    </Text>
+                    {questions.map(q => {
+                      const value = answers[q.id];
+                      if (!value) return null;
+                      return (
+                        <View key={q.id} style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 6, marginBottom: 2 }}>
+                          <Text style={[styles.hint, { ...font.regular, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
+                            {questionLabel(q, rtl)}:
+                          </Text>
+                          <Text style={[styles.hint, { ...font.semiBold, color: '#004aad', opacity: 1, textAlign: rtl ? 'right' : 'left' }]}>
+                            {value}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </>
+          )}
+
           {/* Slots */}
           <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
             {t('builder.select_roles')}
           </Text>
           {slots.map((slot) => (
-            <View key={`${slot.category}-${slot.subcategory}`} style={styles.slotRow}>
+            <View key={slot.category} style={styles.slotRow}>
               <View style={styles.slotInfo}>
-                <Text style={[styles.slotSub, { ...font.semiBold }]}>{slot.subcategory}</Text>
-                <Text style={[styles.slotCat, { ...font.regular }]}>{slot.category}</Text>
+                <Text style={[styles.slotSub, { ...font.semiBold }]}>{slot.category}</Text>
               </View>
               <View style={styles.qtyControls}>
                 <TouchableOpacity
                   style={styles.qtyBtn}
-                  onPress={() => removeSlot(slot.category, slot.subcategory)}
+                  onPress={() => removeSlot(slot.category)}
                   hitSlop={8}
                   activeOpacity={0.7}
                 >
@@ -250,7 +277,7 @@ export default function SummaryScreen() {
                 </View>
                 <TouchableOpacity
                   style={[styles.qtyBtn, styles.qtyBtnAdd]}
-                  onPress={() => addSlot(slot.category, slot.subcategory)}
+                  onPress={() => addSlot(slot.category)}
                   hitSlop={8}
                   activeOpacity={0.7}
                 >

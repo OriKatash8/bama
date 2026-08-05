@@ -27,7 +27,6 @@ export function useAcceptBundleOffer() {
             collection(db, 'priceOffers'),
             where('projectId', '==', bundle.projectId),
             where('category', '==', slot.category),
-            where('subcategory', '==', slot.subcategory),
             where('status', '==', 'pending'),
           )
         );
@@ -49,9 +48,7 @@ export function useAcceptBundleOffer() {
           if (d.id === bundle.id) return false;
           const b = d.data() as BundleOffer;
           return b.slots.some((bs) =>
-            bundle.slots.some(
-              (s) => s.category === bs.category && s.subcategory === bs.subcategory,
-            )
+            bundle.slots.some((s) => s.category === bs.category)
           );
         })
         .map((d) => d.id);
@@ -80,7 +77,6 @@ export function useAcceptBundleOffer() {
       // Add all slots to project.filledSlots in one arrayUnion call
       const filledEntries = bundle.slots.map((s) => ({
         category: s.category,
-        subcategory: s.subcategory,
         professionalId: bundle.professionalId,
       }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

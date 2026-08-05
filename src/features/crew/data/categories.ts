@@ -18,7 +18,6 @@ export const CREW_CATEGORIES: Record<string, string[]> = {
     'Illustrator', 'UI/UX Designer', 'Presentation Designer',
     'Branding Specialist', 'Animator', 'Motion Graphics',
   ],
-  'AI Specialist': ['AI Images', 'AI Videos'],
   'Social Media': [
     'Social Media Manager', 'Content Creator', 'Campaign Manager',
     'TikToker', 'Reels Creator', 'Instagram Manager', 'YouTube Expert',

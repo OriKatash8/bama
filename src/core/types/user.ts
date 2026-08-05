@@ -21,7 +21,6 @@ export type ClientProfile = {
 
 export type ProfessionalSkill = {
   category: string;
-  subcategory: string;
 };
 
 export type ProfessionalProfile = {

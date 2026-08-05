@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
 import { addDocument, runBatchUpdates } from '@core/firebase/firestore';
 
-type OfferSlot = { category: string; subcategory: string; price: number };
+type OfferSlot = { category: string; price: number };
 
 export function usePriceOffer() {
   const user = useAuthStore((s) => s.user);
@@ -18,7 +18,6 @@ export function usePriceOffer() {
             projectId,
             professionalId: user.id,
             category: slot.category,
-            subcategory: slot.subcategory,
             price: slot.price,
             status: 'pending' as const,
             createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
@@ -45,7 +44,6 @@ export function usePriceOffer() {
             projectId,
             professionalId: user.id,
             category: slot.category,
-            subcategory: slot.subcategory,
             price: slot.price,
             status: 'pending' as const,
             createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
@@ -57,7 +55,7 @@ export function usePriceOffer() {
       const bundleId = await addDocument('bundleOffers', {
         projectId,
         professionalId: user.id,
-        slots: slots.map((s) => ({ category: s.category, subcategory: s.subcategory })),
+        slots: slots.map((s) => ({ category: s.category })),
         individualTotal: slots.reduce((sum, s) => sum + s.price, 0),
         bundlePrice,
         offerIds,

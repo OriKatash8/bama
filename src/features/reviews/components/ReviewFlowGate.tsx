@@ -54,7 +54,7 @@ export function ReviewFlowGate() {
           if (!u) return [];
           const roles = filledSlots
             .filter((s) => s.professionalId === id)
-            .map((s) => `${s.subcategory} · ${s.category}`)
+            .map((s) => s.category)
             .join(' | ');
           return [{ id, displayName: u.displayName, photoURL: u.photoURL ?? null, role: roles }];
         });

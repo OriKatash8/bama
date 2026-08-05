@@ -5,7 +5,7 @@ import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 
 type SubmitDetails = {
   title?: string;
-  description: string;
+  description?: string;
   exec?: string;
   deadline?: string;
   date?: string;
@@ -13,6 +13,7 @@ type SubmitDetails = {
   vibe?: string;
   location: string;
   targetProfessionalId?: string | null;
+  roleAnswers?: Record<string, Record<string, string>>;
 };
 
 export function useProjectRequests() {
@@ -47,8 +48,8 @@ export function useProjectRequests() {
         status: 'open' as const,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });
-    } catch (e: any) {
-      const message = e.message ?? 'Failed to submit request';
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to submit request';
       setError(message);
       throw e;
     }
@@ -63,8 +64,8 @@ export function useProjectRequests() {
     const clean = Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined));
     try {
       await updateDocument(`projects/${id}`, { crewSlots: slots, ...clean });
-    } catch (e: any) {
-      const message = e.message ?? 'Failed to update project';
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to update project';
       setError(message);
       throw e;
     }
@@ -74,8 +75,8 @@ export function useProjectRequests() {
     setError(null);
     try {
       await deleteDocument(`projects/${id}`);
-    } catch (e: any) {
-      const message = e.message ?? 'Failed to delete project';
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to delete project';
       setError(message);
       throw e;
     }

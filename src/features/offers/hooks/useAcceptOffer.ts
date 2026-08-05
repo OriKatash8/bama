@@ -16,7 +16,6 @@ export function useAcceptOffer() {
           'priceOffers',
           where('projectId', '==', offer.projectId),
           where('category', '==', offer.category),
-          where('subcategory', '==', offer.subcategory),
           where('status', '==', 'pending')
         );
         const others = competing.filter((o) => o.id !== offer.id);
@@ -26,8 +25,8 @@ export function useAcceptOffer() {
           );
         }
         console.log('[useAcceptOffer] step 1 ok — rejected', competing.length - 1, 'competing offers');
-      } catch (e: any) {
-        console.error('[useAcceptOffer] step 1 FAILED (batch-reject competing offers) — code:', e?.code, 'message:', e?.message, e);
+      } catch (e: unknown) {
+        console.error('[useAcceptOffer] step 1 FAILED (batch-reject competing offers)', e);
         throw e;
       }
 
@@ -35,8 +34,8 @@ export function useAcceptOffer() {
       try {
         await updateDocument(`priceOffers/${offer.id}`, { status: 'accepted' });
         console.log('[useAcceptOffer] step 2 ok — offer', offer.id, 'marked accepted');
-      } catch (e: any) {
-        console.error('[useAcceptOffer] step 2 FAILED (accept offer status) — code:', e?.code, 'message:', e?.message, e);
+      } catch (e: unknown) {
+        console.error('[useAcceptOffer] step 2 FAILED (accept offer status)', e);
         throw e;
       }
 
@@ -54,8 +53,8 @@ export function useAcceptOffer() {
           );
           console.log('[useAcceptOffer] step 2.5 ok — rejected', pendingBundles.length, 'pending bundle(s) from this professional');
         }
-      } catch (e: any) {
-        console.error('[useAcceptOffer] step 2.5 FAILED (reject stale bundles) — code:', e?.code, 'message:', e?.message, e);
+      } catch (e: unknown) {
+        console.error('[useAcceptOffer] step 2.5 FAILED (reject stale bundles)', e);
         // Non-fatal: don't throw — the individual offer is already accepted
       }
 
@@ -64,13 +63,12 @@ export function useAcceptOffer() {
         await updateDocument(`projects/${offer.projectId}`, {
           filledSlots: arrayUnion({
             category: offer.category,
-            subcategory: offer.subcategory,
             professionalId: offer.professionalId,
-          }) as any,
+          }) as unknown,
         });
         console.log('[useAcceptOffer] step 3 ok — filledSlots updated on project', offer.projectId);
-      } catch (e: any) {
-        console.error('[useAcceptOffer] step 3 FAILED (filledSlots arrayUnion) — code:', e?.code, 'message:', e?.message, e);
+      } catch (e: unknown) {
+        console.error('[useAcceptOffer] step 3 FAILED (filledSlots arrayUnion)', e);
         throw e;
       }
 
@@ -96,8 +94,8 @@ export function useAcceptOffer() {
         } else {
           console.error('[useAcceptOffer] step 4 — project', offer.projectId, 'not found, skipping chat setup');
         }
-      } catch (e: any) {
-        console.error('[useAcceptOffer] step 4 FAILED (group chat setup) — code:', e?.code, 'message:', e?.message, e);
+      } catch (e: unknown) {
+        console.error('[useAcceptOffer] step 4 FAILED (group chat setup)', e);
       }
     } finally {
       setIsAccepting(null);

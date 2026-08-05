@@ -177,8 +177,8 @@ export function ContentTabs({
             ) : (
               <View style={styles.chipsWrap}>
                 {(skills ?? []).map((s, i) => (
-                  <View key={`${s.category}-${s.subcategory}-${i}`} style={styles.chip}>
-                    <Text style={styles.chipText}>{s.subcategory}</Text>
+                  <View key={`${s.category}-${i}`} style={styles.chip}>
+                    <Text style={styles.chipText}>{s.category}</Text>
                   </View>
                 ))}
               </View>

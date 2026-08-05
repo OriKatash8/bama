@@ -27,8 +27,8 @@ describe('usePriceOffer', () => {
   it('creates one priceOffer document per slot on submit', async () => {
     const { result } = renderHook(() => usePriceOffer());
     const slots = [
-      { category: 'Video Production', subcategory: 'Cinematographer', price: 800 },
-      { category: 'Audio', subcategory: 'Sound Mixer', price: 400 },
+      { category: 'Video Production', price: 800 },
+      { category: 'Audio', price: 400 },
     ];
     await act(async () => {
       await result.current.submit('proj1', slots);
@@ -40,7 +40,6 @@ describe('usePriceOffer', () => {
         projectId: 'proj1',
         professionalId: 'pro1',
         category: 'Video Production',
-        subcategory: 'Cinematographer',
         price: 800,
         status: 'pending',
       })
@@ -51,7 +50,6 @@ describe('usePriceOffer', () => {
         projectId: 'proj1',
         professionalId: 'pro1',
         category: 'Audio',
-        subcategory: 'Sound Mixer',
         price: 400,
         status: 'pending',
       })
@@ -63,7 +61,7 @@ describe('usePriceOffer', () => {
     mockAddDocument.mockReturnValue(new Promise<string>((r) => { resolve = () => r('id'); }));
     const { result } = renderHook(() => usePriceOffer());
     act(() => {
-      result.current.submit('proj1', [{ category: 'Video', subcategory: 'DP', price: 500 }]);
+      result.current.submit('proj1', [{ category: 'Video', price: 500 }]);
     });
     expect(result.current.isSubmitting).toBe(true);
     await act(async () => { resolve!(); });
@@ -74,7 +72,7 @@ describe('usePriceOffer', () => {
     useAuthStore.setState({ user: null, activeMode: 'professional', isLoading: false });
     const { result } = renderHook(() => usePriceOffer());
     await act(async () => {
-      await result.current.submit('proj1', [{ category: 'Video', subcategory: 'DP', price: 500 }]);
+      await result.current.submit('proj1', [{ category: 'Video', price: 500 }]);
     });
     expect(mockAddDocument).not.toHaveBeenCalled();
   });

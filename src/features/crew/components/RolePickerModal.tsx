@@ -62,8 +62,8 @@ export function RolePickerModal({ visible, onDismiss, onPost, isPosting = false 
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             <CategoryAccordion
               slots={slots}
-              onSelectSubcategory={(cat, sub) => addSlot(cat, sub)}
-              onRemoveSubcategory={(cat, sub) => removeSlot(cat, sub)}
+              onSelectSubcategory={(cat, _sub) => addSlot(cat)}
+              onRemoveSubcategory={(cat, _sub) => removeSlot(cat)}
             />
             <View style={{ height: 24 }} />
           </ScrollView>

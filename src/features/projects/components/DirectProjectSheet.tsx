@@ -92,7 +92,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
   }
 
   function skillKey(s: ProfessionalSkill) {
-    return `${s.category}::${s.subcategory}`;
+    return s.category;
   }
 
   function setQty(s: ProfessionalSkill, delta: number) {
@@ -110,7 +110,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
   function buildSlots(): CrewRequestSlot[] {
     return skills
       .filter((s) => getQty(s) > 0)
-      .map((s) => ({ category: s.category, subcategory: s.subcategory, quantity: getQty(s) }));
+      .map((s) => ({ category: s.category, quantity: getQty(s) }));
   }
 
   function validate(): boolean {
@@ -265,7 +265,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                   return (
                     <View key={skillKey(s)} style={[styles.skillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                       <Text style={[styles.skillLabel, { ...font.medium, color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
-                        {s.subcategory}
+                        {s.category}
                       </Text>
                       <View style={[styles.qtyControls, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                         {qty > 0 && (

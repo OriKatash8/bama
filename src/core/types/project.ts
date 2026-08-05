@@ -56,13 +56,11 @@ export type Review = {
 
 export type CrewRequestSlot = {
   category: string;
-  subcategory: string;
   quantity: number;
 };
 
 export type FilledSlot = {
   category: string;
-  subcategory: string;
   professionalId: string;
 };
 
@@ -92,6 +90,7 @@ export type ProjectRequest = {
   reviewsPending?: string[];
   vibe?: string;
   budget?: string;
+  roleAnswers?: Record<string, Record<string, string>>;
 };
 
 export type PriceOffer = {
@@ -99,7 +98,7 @@ export type PriceOffer = {
   projectId: string;
   professionalId: string;
   category: string;
-  subcategory: string;
+  subcategory?: string;
   price: number;
   status: 'pending' | 'accepted' | 'rejected' | 'removed';
   bundleId?: string;
@@ -117,7 +116,7 @@ export type BundleOffer = {
   id: string;
   projectId: string;
   professionalId: string;
-  slots: Array<{ category: string; subcategory: string }>;
+  slots: Array<{ category: string; subcategory?: string }>;
   individualTotal: number;
   bundlePrice: number;
   offerIds: string[];
@@ -128,7 +127,7 @@ export type BundleOffer = {
 export type AcceptedMember = {
   professionalId: string;
   category: string;
-  subcategory: string;
+  subcategory?: string;
   price: number;
   displayName: string;
 };

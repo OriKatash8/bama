@@ -81,9 +81,15 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
               <Text style={[styles.name, { ...font.forText(displayName, 'bold'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
                 {displayName}
               </Text>
-              <Text style={[styles.role, { ...font.forText(offer.subcategory, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
-                {offer.subcategory}
-              </Text>
+              {offer.subcategory ? (
+                <Text style={[styles.role, { ...font.forText(offer.subcategory, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
+                  {offer.subcategory}
+                </Text>
+              ) : (
+                <Text style={[styles.role, { ...font.forText(offer.category, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
+                  {offer.category}
+                </Text>
+              )}
               <Text style={[styles.price, { ...font.bold, textAlign }]}>
                 ₪{offer.price.toLocaleString()}
               </Text>

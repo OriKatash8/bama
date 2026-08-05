@@ -35,6 +35,14 @@ export function useProfile() {
       (data) => {
         setProfile(data);
         setIsLoading(false);
+        const rawSkills = (data?.skills ?? []) as Array<Record<string, unknown>>;
+        const needsMigration = rawSkills.some(s => 'subcategory' in s || s['category'] === 'AI');
+        if (needsMigration) {
+          const cleaned: ProfessionalSkill[] = rawSkills
+            .filter(s => s['category'] !== 'AI')
+            .map(s => ({ category: s['category'] as string }));
+          mergeDocument(`users/${user.id}/profile/data`, { skills: cleaned }).catch(() => {});
+        }
       }
     );
     // One-shot fetch intentional: review submission is out of scope, so cards won't change

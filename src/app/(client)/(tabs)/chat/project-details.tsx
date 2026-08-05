@@ -550,7 +550,7 @@ export default function ProjectDetailsScreen() {
   const reviewProfessionals: ReviewProfessional[] = Object.values(
     filledSlots.reduce<Record<string, { professionalId: string; roles: string[] }>>(
       (acc, slot) => {
-        const role = `${slot.subcategory} · ${slot.category}`;
+        const role = slot.category;
         const entry = acc[slot.professionalId];
         if (entry) entry.roles.push(role);
         else acc[slot.professionalId] = { professionalId: slot.professionalId, roles: [role] };
@@ -728,7 +728,7 @@ export default function ProjectDetailsScreen() {
         {Object.values(
           filledSlots.reduce<Record<string, { professionalId: string; roles: string[] }>>(
             (acc, slot) => {
-              const role = `${slot.subcategory} · ${slot.category}`;
+              const role = slot.category;
               const entry = acc[slot.professionalId];
               if (entry) {
                 entry.roles.push(role);

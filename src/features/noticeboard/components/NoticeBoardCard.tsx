@@ -11,6 +11,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { CATEGORY_QUESTION_MAP, ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -34,11 +35,12 @@ type Props = {
   directInviteLabel?: string;
   compact?: boolean;
   cardWidth?: number;
+  professionalCategories?: string[];
 };
 
-export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth }: Props) {
+export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth, professionalCategories }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
-  const allRoles = [...new Set(request.crewSlots.map((s) => s.subcategory))];
+  const allRoles = [...new Set(request.crewSlots.map((s) => s.category))];
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
   const language = useSettingsStore((s) => s.language);
@@ -48,6 +50,12 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const perRoleLabel = rtl ? '/ תפקיד' : '/ role';
   const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
+
+  const myRoleKeys = (professionalCategories ?? [])
+    .map(cat => CATEGORY_QUESTION_MAP[cat])
+    .filter((k): k is string => !!k);
+  const myAnswers = Object.entries(request.roleAnswers ?? {})
+    .filter(([roleKey]) => myRoleKeys.includes(roleKey));
 
   const cardStyle = [
     styles.card,
@@ -86,6 +94,21 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             <Text style={[styles.budgetBadgeText, { ...font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
           </View>
         ) : null}
+        {myAnswers.length > 0 && (
+          <View style={styles.roleAnswersBlock}>
+            {myAnswers.flatMap(([roleKey, answers]) =>
+              Object.entries(answers).map(([questionId, value]) => {
+                const question = ROLE_QUESTIONS[roleKey]?.find(q => q.id === questionId);
+                if (!question) return null;
+                return (
+                  <Text key={`${roleKey}-${questionId}`} style={[styles.roleAnswerText, { color: textColor, ...font.regular }]} numberOfLines={1}>
+                    {questionLabel(question, rtl)}: {value}
+                  </Text>
+                );
+              })
+            )}
+          </View>
+        )}
         <TouchableOpacity
           style={styles.offerPill}
           onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
@@ -249,4 +272,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   budgetBadgeText: { fontSize: 11, color: '#004aad', fontWeight: '600' },
+  roleAnswersBlock: { marginTop: 6, gap: 2 },
+  roleAnswerText: { fontSize: 10, opacity: 0.75 },
 });

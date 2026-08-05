@@ -25,20 +25,18 @@ export type UseAiCrewRecommendationReturn = {
   clear: () => void;
 };
 
-const CATEGORIES_LIST = Object.entries(CREW_CATEGORIES)
-  .map(([cat, subs]) => `${cat}: ${subs.join(', ')}`)
-  .join('\n');
+const CATEGORIES_LIST = Object.keys(CREW_CATEGORIES).join('\n');
 
 const SYSTEM_PROMPT = `You are a film and media production expert helping clients assemble the right crew for their project.
 
-You must recommend roles ONLY from this exact list — use the exact category and subcategory names as written:
+You must recommend roles ONLY from this exact list — use the exact category names as written:
 ${CATEGORIES_LIST}
 
 Respond ONLY with a valid JSON object in this exact format (no markdown, no text outside the JSON):
 {
   "explanation": "2-3 sentences explaining why you recommend these roles for this specific project",
   "slots": [
-    { "category": "exact category name", "subcategory": "exact subcategory name", "quantity": 1 }
+    { "category": "exact category name", "quantity": 1 }
   ]
 }`;
 
@@ -81,8 +79,7 @@ export function useAiCrewRecommendation(): UseAiCrewRecommendationReturn {
       }
 
       const validSlots: CrewRequestSlot[] = parsed.slots.filter((s: Record<string, unknown>) => {
-        const subs = CREW_CATEGORIES[s.category as keyof typeof CREW_CATEGORIES];
-        return subs && subs.includes(s.subcategory as string) && typeof s.quantity === 'number' && s.quantity > 0;
+        return typeof s.category === 'string' && s.category in CREW_CATEGORIES && typeof s.quantity === 'number' && s.quantity > 0;
       });
 
       setResult({ explanation: parsed.explanation, slots: validSlots });
