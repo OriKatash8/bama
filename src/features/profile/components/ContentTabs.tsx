@@ -176,7 +176,7 @@ export function ContentTabs({
                 {t('profile_sections.no_skills')}
               </Text>
             ) : (
-              <View style={styles.chipsWrap}>
+              <View style={[styles.chipsWrap, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {(skills ?? []).map((s, i) => (
                   <View key={`${s.category}-${i}`} style={styles.chip}>
                     <Text style={styles.chipText}>

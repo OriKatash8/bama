@@ -71,7 +71,7 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
             {t('profile_sections.no_skills')}
           </Text>
         ) : (
-          <View style={styles.chipsWrap}>
+          <View style={[styles.chipsWrap, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             {selected.map((s) => (
               <View key={s.category} style={styles.chip}>
                 <Text style={styles.chipText}>
