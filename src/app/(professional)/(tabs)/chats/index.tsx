@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
-  ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView,
+  ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Plus } from 'lucide-react-native';
 import {
   collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy,
 } from 'firebase/firestore';
+import { SubmitCourseModal } from '@features/courses/components/SubmitCourseModal';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { CommunityDiscoveryTab } from '@features/chat/components/CommunityDiscoveryTab';
 import { Screen } from '@components/layout/Screen';
@@ -40,6 +41,7 @@ type Course = {
   description: string;
   price: number;
   instructorName: string;
+  courseUrl?: string;
 };
 
 export default function ProfessionalChatsScreen() {
@@ -62,6 +64,7 @@ export default function ProfessionalChatsScreen() {
   // Courses state
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesModal, setCoursesModal] = useState(false);
+  const [submitCourseModal, setSubmitCourseModal] = useState(false);
 
   useEffect(() => {
     const q = query(
@@ -165,11 +168,11 @@ export default function ProfessionalChatsScreen() {
             </Text>
             <TouchableOpacity
               style={[styles.plusBtn, { backgroundColor: colors.primary }]}
-              onPress={() => setCoursesModal(true)}
+              onPress={() => setSubmitCourseModal(true)}
             >
               <Plus size={16} color="#fff" />
               <Text style={[styles.plusBtnText, { ...font.semiBold }]}>
-                {t('courses.browse')}
+                {t('courses.add_your_course')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -250,6 +253,16 @@ export default function ProfessionalChatsScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Submit course modal */}
+      <SubmitCourseModal
+        visible={submitCourseModal}
+        onClose={() => setSubmitCourseModal(false)}
+        onSubmitted={() => {
+          setSubmitCourseModal(false);
+          showToast(t('courses.course_submitted'), 'success');
+        }}
+      />
+
       {/* Browse courses modal */}
       <Modal visible={coursesModal} transparent animationType="fade" onRequestClose={() => setCoursesModal(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setCoursesModal(false)}>
@@ -272,6 +285,15 @@ export default function ProfessionalChatsScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.modalCourseTitle, { ...font.semiBold }]}>{c.title}</Text>
                         <Text style={[styles.modalCourseSub, { ...font.regular }]}>{c.instructorName}</Text>
+                        {c.courseUrl ? (
+                          <TouchableOpacity
+                            onPress={() => Linking.openURL(c.courseUrl!)}
+                            activeOpacity={0.8}
+                            style={styles.visitBtn}
+                          >
+                            <Text style={[styles.visitBtnText, { ...font.semiBold }]}>{t('courses.visit_course')}</Text>
+                          </TouchableOpacity>
+                        ) : null}
                       </View>
                       <Text style={[styles.modalCoursePrice, { ...font.bold }]}>₪{c.price}</Text>
                     </View>
@@ -299,8 +321,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',
-    color: '#ffffff',
-    textShadowColor: '#004aad',
+    color: '#004aad',
+    textShadowColor: 'transparent',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
     textAlign: 'center',
@@ -454,4 +476,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
   },
+  visitBtn: { marginTop: 6, alignSelf: 'flex-start' },
+  visitBtnText: { color: 'rgba(255,255,255,0.9)', fontSize: 13, textDecorationLine: 'underline' },
 });
