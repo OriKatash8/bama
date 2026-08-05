@@ -272,7 +272,6 @@ export default function DashboardScreen() {
                 directInviteLabel={t('noticeboard.direct_invite')}
                 compact
                 cardWidth={cardWidth}
-                professionalCategories={categories ?? []}
               />
             )}
           />

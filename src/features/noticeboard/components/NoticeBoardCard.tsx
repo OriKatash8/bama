@@ -11,7 +11,8 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { CATEGORY_QUESTION_MAP, ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
+import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { translateCity } from '@core/utils/cityTranslations';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -35,10 +36,9 @@ type Props = {
   directInviteLabel?: string;
   compact?: boolean;
   cardWidth?: number;
-  professionalCategories?: string[];
 };
 
-export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth, professionalCategories }: Props) {
+export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth }: Props) {
   const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
   const allRoles = [...new Set(request.crewSlots.map((s) => s.category))];
   const colors = useTheme();
@@ -47,15 +47,12 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const translatedRoles = allRoles.map(r =>
+    rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
+  );
   const perRoleLabel = rtl ? '/ תפקיד' : '/ role';
   const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
-
-  const myRoleKeys = (professionalCategories ?? [])
-    .map(cat => CATEGORY_QUESTION_MAP[cat])
-    .filter((k): k is string => !!k);
-  const myAnswers = Object.entries(request.roleAnswers ?? {})
-    .filter(([roleKey]) => myRoleKeys.includes(roleKey));
 
   const cardStyle = [
     styles.card,
@@ -81,34 +78,21 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
             contentFit="contain" cachePolicy="memory-disk"
           />
-          <Text style={[styles.locationCompact, { ...font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
+          <Text style={[styles.locationCompact, { ...font.regular, color: textColor }]} numberOfLines={1}>
+            {translateCity(request.location, rtl)}
+          </Text>
         </View>
         <Text style={[styles.metaCompact, { ...font.regular, color: textColor }]}>
-          {roleCount} role{roleCount === 1 ? '' : 's'}
+          {roleCount} {roleCount === 1 ? t('noticeboard.role_singular') : t('noticeboard.role_plural')}
         </Text>
         <Text style={[styles.rolesCompact, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
-          {allRoles.join(' · ')}
+          {translatedRoles.join(' · ')}
         </Text>
         {request.budget ? (
           <View style={styles.budgetBadge}>
             <Text style={[styles.budgetBadgeText, { ...font.semiBold }]}>{request.budget} {perRoleLabel}</Text>
           </View>
         ) : null}
-        {myAnswers.length > 0 && (
-          <View style={styles.roleAnswersBlock}>
-            {myAnswers.flatMap(([roleKey, answers]) =>
-              Object.entries(answers).map(([questionId, value]) => {
-                const question = ROLE_QUESTIONS[roleKey]?.find(q => q.id === questionId);
-                if (!question) return null;
-                return (
-                  <Text key={`${roleKey}-${questionId}`} style={[styles.roleAnswerText, { color: textColor, ...font.regular }]} numberOfLines={1}>
-                    {questionLabel(question, rtl)}: {value}
-                  </Text>
-                );
-              })
-            )}
-          </View>
-        )}
         <TouchableOpacity
           style={styles.offerPill}
           onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
@@ -148,13 +132,13 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
               contentFit="contain" cachePolicy="memory-disk"
             />
-            <Text style={[styles.location, { ...font.regular, color: textColor }]} numberOfLines={1}>{request.location}</Text>
+            <Text style={[styles.location, { ...font.regular, color: textColor }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
           </View>
           <Text style={[styles.meta, { ...font.regular, color: textColor }]}>
-            {request.exec ?? ''}  ·  {roleCount} role{roleCount === 1 ? '' : 's'}
+            {request.exec ?? ''}  ·  {roleCount} {roleCount === 1 ? t('noticeboard.role_singular') : t('noticeboard.role_plural')}
           </Text>
           <Text style={[styles.roles, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
-            {allRoles.join(' | ')}
+            {translatedRoles.join(' | ')}
           </Text>
           {request.budget ? (
             <View style={styles.budgetBadge}>
@@ -272,6 +256,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   budgetBadgeText: { fontSize: 11, color: '#004aad', fontWeight: '600' },
-  roleAnswersBlock: { marginTop: 6, gap: 2 },
-  roleAnswerText: { fontSize: 10, opacity: 0.75 },
 });
