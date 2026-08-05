@@ -12,7 +12,10 @@ import { usePriceOffer } from '@features/noticeboard/hooks/usePriceOffer';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
 import { CATEGORY_QUESTION_MAP, ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { translateCity } from '@core/utils/cityTranslations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -48,6 +51,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const font = useAppFont();
 
   const [view, setView] = useState<'details' | 'bid' | 'bundle'>('details');
   const [bids, setBids] = useState<BidEntry[]>([]);
@@ -149,11 +153,11 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
         <View style={[styles.card, { maxHeight: screenHeight * 0.85 }]}>
           {/* Header */}
           <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={styles.headerTitle} numberOfLines={2}>
+            <Text style={[styles.headerTitle, { ...font.bold }]} numberOfLines={2}>
               {view === 'details'
                 ? request.title
                 : view === 'bid'
-                  ? 'Submit Your Offer'
+                  ? t('noticeboard.submit_offer_header')
                   : t('noticeboard.bundle_title')}
             </Text>
             <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.7}>
@@ -166,27 +170,27 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               <View style={styles.metaRow}>
                 <View style={styles.metaItem}>
-                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Execution</Text>
+                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{t('noticeboard.execution_label')}</Text>
                   <Text style={styles.metaValue}>{request.exec ?? '—'}</Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Deadline</Text>
+                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{t('noticeboard.deadline_label')}</Text>
                   <Text style={styles.metaValue}>{request.deadline ?? '—'}</Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Location</Text>
+                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{t('noticeboard.location_label')}</Text>
                   <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     <Image
                       source={LOCATION_ICON}
                       style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
                       resizeMode="contain"
                     />
-                    <Text style={styles.metaValue} numberOfLines={1}>{request.location}</Text>
+                    <Text style={styles.metaValue} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
                   </View>
                 </View>
               </View>
 
-              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Description</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('noticeboard.description_label')}</Text>
               <Text style={[styles.description, { color: colors.textSec }]}>{request.description}</Text>
 
               {(() => {
@@ -215,22 +219,24 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 );
               })()}
 
-              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Roles Needed</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('noticeboard.roles_needed')}</Text>
               {getVacantSlots(request).map((s, i) => (
                 <View key={i} style={styles.slotRow}>
                   <Text style={styles.slotQty}>{s.quantity}×</Text>
                   <View>
-                    <Text style={styles.slotSub}>{s.category}</Text>
+                    <Text style={[styles.slotSub, { ...font.semiBold }]}>
+                    {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
+                  </Text>
                   </View>
                 </View>
               ))}
 
               <View style={styles.actions}>
                 <TouchableOpacity style={styles.applyBtn} onPress={openBid} activeOpacity={0.8}>
-                  <Text style={styles.applyText}>✦  Make an Offer</Text>
+                  <Text style={[styles.applyText, { ...font.bold }]}>{t('noticeboard.make_offer_action')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.dismissBtn} onPress={onDismiss} activeOpacity={0.8}>
-                  <Text style={styles.dismissText}>✕  Not interested</Text>
+                  <Text style={[styles.dismissText, { ...font.semiBold }]}>{t('noticeboard.not_interested')}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -244,7 +250,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
             >
               <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
-                <Text style={styles.backText}>← Back to Details</Text>
+                <Text style={styles.backText}>{t('noticeboard.back_to_details')}</Text>
               </TouchableOpacity>
               <Text style={[styles.bidHint, { color: colors.textMuted }]}>Select the roles you want to fill and enter your price for each.</Text>
 
@@ -256,8 +262,12 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                     trackColor={{ true: '#004aad' }}
                   />
                   <View style={styles.bidInfo}>
-                    <Text style={styles.bidSub}>{b.category}</Text>
-                    <Text style={[styles.bidCat, { color: colors.textMuted }]}>{b.quantity} needed</Text>
+                    <Text style={[styles.bidSub, { ...font.semiBold }]}>
+                      {rtl && CATEGORY_LABEL_KEY[b.category] ? t(CATEGORY_LABEL_KEY[b.category]) : b.category}
+                    </Text>
+                    <Text style={[styles.bidCat, { color: colors.textMuted }]}>
+                      {b.quantity} {t('noticeboard.needed')}
+                    </Text>
                   </View>
                   {b.selected && (
                     <TextInput
@@ -280,8 +290,11 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                   disabled={!canSubmit}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.applyText}>
-                    {isSubmitting ? 'Sending…' : `Submit Offer (${validBids.length} role${validBids.length === 1 ? '' : 's'})`}
+                  <Text style={[styles.applyText, { ...font.bold }]}>
+                    {isSubmitting
+                      ? t('noticeboard.sending')
+                      : `${t('noticeboard.submit_offer_btn')} (${validBids.length} ${validBids.length === 1 ? t('noticeboard.role_singular') : t('noticeboard.role_plural')})`
+                    }
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -296,7 +309,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               </Text>
 
               <View style={styles.bundleTotalRow}>
-                <Text style={[styles.bundleTotalLabel, { color: colors.textMuted }]}>Individual total</Text>
+                <Text style={[styles.bundleTotalLabel, { color: colors.textMuted }]}>{t('noticeboard.individual_total')}</Text>
                 <Text style={styles.bundleTotalValue}>₪{individualTotal.toLocaleString()}</Text>
               </View>
 
@@ -320,7 +333,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               <View style={styles.bundleRoles}>
                 {validBids.map((b, i) => (
                   <Text key={i} style={[styles.bundleRoleItem, { color: colors.textSec }]}>
-                    · {b.category} — ₪{Number(b.price).toLocaleString()}
+                    · {rtl && CATEGORY_LABEL_KEY[b.category] ? t(CATEGORY_LABEL_KEY[b.category]) : b.category} — ₪{Number(b.price).toLocaleString()}
                   </Text>
                 ))}
               </View>
@@ -332,8 +345,8 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                   disabled={isSubmitting}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.applyText}>
-                    {isSubmitting ? 'Sending…' : t('noticeboard.add_bundle')}
+                  <Text style={[styles.applyText, { ...font.bold }]}>
+                    {isSubmitting ? t('noticeboard.sending') : t('noticeboard.add_bundle')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
