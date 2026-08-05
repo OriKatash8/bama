@@ -165,6 +165,7 @@ export default function CoursesAdmin() {
       price: req.price,
       instructorName: req.instructorName,
       courseUrl: req.courseUrl,
+      videoUrl: '',
       published: true,
       createdAt: serverTimestamp(),
     });
