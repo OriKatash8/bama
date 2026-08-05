@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
-  StyleSheet, Platform, Animated, Easing, ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity, FlatList, Modal,
+  StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
+import { Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -11,29 +12,32 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { auth } from '@core/firebase/config';
 import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
+import type { ProfessionalResult } from '@features/crew/hooks/useSearchProfessionals';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
 
-const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
+const CATEGORIES = Object.keys(CREW_CATEGORIES).map((key) => ({
   key,
   label: key,
-  subcategories: subs,
 }));
 
-const SUB_ITEM_HEIGHT = 46;
-
-type ViewState =
-  | { kind: 'grid' }
-  | { kind: 'results'; category: string; subcategory: string };
-
-function ResultsView({ category, subcategory }: { category: string; subcategory: string }) {
-  const { results, isLoading } = useSearchProfessionals(category, subcategory);
+export default function BrowseScreen() {
+  const [query, setQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [modalQuery, setModalQuery] = useState('');
   const colors = useTheme();
+  const language = useSettingsStore((s) => s.language);
+  const font = useAppFont();
   const router = useRouter();
   const segments = useSegments();
+  const rtl = language === 'he';
 
   const currentUid = auth.currentUser?.uid;
-  const filtered = results.filter((r) => r.user.id !== currentUid);
+
+  function closeModal() {
+    setSelectedCategory(null);
+    setModalQuery('');
+  }
 
   async function handleMessage(professionalId: string) {
     const currentUserId = auth.currentUser?.uid;
@@ -42,249 +46,162 @@ function ResultsView({ category, subcategory }: { category: string; subcategory:
     router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as never);
   }
 
-  if (isLoading) {
-    return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
-  }
-  if (filtered.length === 0) {
-    return (
-      <View style={styles.emptyResults}>
-        <Text style={styles.emptyIcon}>👤</Text>
-        <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals yet</Text>
-        <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
-          Professionals in this category will appear here once they set up their profile.
-        </Text>
-      </View>
-    );
-  }
-  return (
-    <FlatList
-      data={filtered}
-      keyExtractor={(item) => item.user.id}
-      contentContainerStyle={styles.resultsList}
-      showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => (
-        <ProfessionalCard
-          item={item}
-          onMessage={() => handleMessage(item.user.id)}
-        />
-      )}
-    />
+  const { results: modalResults, isLoading: modalLoading } = useSearchProfessionals(
+    selectedCategory ?? ''
   );
-}
 
-export default function BrowseScreen() {
-  const [query, setQuery] = useState('');
-  const [view, setView] = useState<ViewState>({ kind: 'grid' });
-  const colors = useTheme();
-  const language = useSettingsStore((s) => s.language);
-  const font = useAppFont();
-
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-
-  const animValues = useRef<Record<string, Animated.Value>>(
-    Object.fromEntries(CATEGORIES.map(c => [c.key, new Animated.Value(0)]))
-  ).current;
-
-  function toggleCategory(key: string) {
-    const isExpanding = expandedCategory !== key;
-
-    if (expandedCategory && expandedCategory !== key) {
-      Animated.timing(animValues[expandedCategory], {
-        toValue: 0,
-        duration: 200,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: false,
-      }).start();
-    }
-
-    Animated.timing(animValues[key], {
-      toValue: isExpanding ? 1 : 0,
-      duration: isExpanding ? 280 : 200,
-      easing: isExpanding ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-
-    setExpandedCategory(isExpanding ? key : null);
-  }
-
-  const gradientText = Platform.OS === 'web' ? ({
-    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-  } as any) : {};
+  const filteredModalResults: ProfessionalResult[] = (
+    modalQuery.trim()
+      ? modalResults.filter((r) =>
+          r.user.displayName.toLowerCase().includes(modalQuery.toLowerCase())
+        )
+      : modalResults
+  ).filter((r) => r.user.id !== currentUid);
 
   const filteredCategories = query.trim()
-    ? CATEGORIES.filter(c =>
-        c.label.toLowerCase().includes(query.toLowerCase()) ||
-        c.subcategories.some(s => s.toLowerCase().includes(query.toLowerCase()))
-      )
+    ? CATEGORIES.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()))
     : CATEGORIES;
-
-  function getSearchTarget(): { category: string; subcategory: string } | null {
-    if (!query.trim()) return null;
-    const q = query.toLowerCase();
-    for (const [cat, subs] of Object.entries(CREW_CATEGORIES)) {
-      for (const sub of subs) {
-        if (sub.toLowerCase().includes(q) || q.includes(sub.toLowerCase())) {
-          return { category: cat, subcategory: sub };
-        }
-      }
-      if (cat.toLowerCase().includes(q)) {
-        return { category: cat, subcategory: CREW_CATEGORIES[cat as keyof typeof CREW_CATEGORIES][0] };
-      }
-    }
-    return null;
-  }
-
-  const searchTarget = getSearchTarget();
 
   return (
     <Screen scrollable={false}>
       <View style={styles.container}>
+        {/* Header */}
         <View style={styles.header}>
-          {view.kind !== 'grid' && (
-            <TouchableOpacity onPress={() => setView({ kind: 'grid' })} style={styles.backBtn} activeOpacity={0.7}>
-              <Text style={[styles.backText, { color: colors.accent }]}>← Back</Text>
-            </TouchableOpacity>
-          )}
-          <Text style={[styles.heading, { color: colors.text }, gradientText]}>
-            {view.kind === 'grid' ? 'Browse Professionals' : (view as any).subcategory}
+          <Text style={[styles.heading, { color: colors.text, ...font.bold }]}>
+            Browse Professionals
           </Text>
-          {view.kind !== 'grid' && <View style={styles.backBtn} />}
         </View>
 
-        {view.kind === 'grid' && (
-          <View style={[styles.searchRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Search by role, skill, or name…"
-              placeholderTextColor={colors.placeholder}
-              value={query}
-              onChangeText={setQuery}
-              returnKeyType="search"
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} activeOpacity={0.7}>
-                <Text style={[styles.clearBtn, { color: colors.textMuted }]}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+        {/* Top search bar */}
+        <View style={[styles.searchRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search by category…"
+            placeholderTextColor={colors.placeholder}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} activeOpacity={0.7}>
+              <Text style={[styles.clearBtn, { color: colors.textMuted }]}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        {view.kind === 'grid' && query.trim() !== '' && searchTarget && (
-          <View style={[styles.searchHintRow, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
-            <Text style={[styles.searchHintText, { color: colors.accent }]}>
-              Showing professionals for "{searchTarget.subcategory}"
+        {/* Flat category list */}
+        <FlatList
+          data={filteredCategories}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item: cat }) => (
+            <TouchableOpacity
+              style={[styles.categoryRow, { borderBottomColor: colors.border }]}
+              onPress={() => setSelectedCategory(cat.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.categoryLabel, { ...font.bold }]}>{cat.label}</Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, ...font.regular }}>
+              No categories match "{query}"
             </Text>
-          </View>
-        )}
-
-        {view.kind === 'grid' && query.trim() !== '' && searchTarget && (
-          <View style={styles.flex}>
-            <ResultsView category={searchTarget.category} subcategory={searchTarget.subcategory} />
-          </View>
-        )}
-
-        {view.kind === 'grid' && !searchTarget && (
-          <ScrollView
-            style={styles.flex}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {filteredCategories.map((cat) => {
-              const animVal = animValues[cat.key];
-              const maxHeight = animVal.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, cat.subcategories.length * SUB_ITEM_HEIGHT],
-              });
-              const chevronRotate = animVal.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '90deg'],
-              });
-              const subOpacity = animVal.interpolate({
-                inputRange: [0, 0.4, 1],
-                outputRange: [0, 0, 1],
-              });
-
-              return (
-                <View key={cat.key}>
-                  <TouchableOpacity
-                    style={styles.categoryRow}
-                    onPress={() => toggleCategory(cat.key)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.categoryLabel, { ...font.bold }]}>{cat.label}</Text>
-                    <Animated.Text style={[styles.categoryChevron, { transform: [{ rotate: chevronRotate }] }]}>
-                      ›
-                    </Animated.Text>
-                  </TouchableOpacity>
-
-                  <Animated.View style={[styles.subList, { maxHeight, opacity: subOpacity, overflow: 'hidden' }]}>
-                    {cat.subcategories.map((sub) => (
-                      <TouchableOpacity
-                        key={sub}
-                        style={styles.subItem}
-                        onPress={() => setView({ kind: 'results', category: cat.key, subcategory: sub })}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.subItemText, { ...font.medium }]}>{sub}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </Animated.View>
-                </View>
-              );
-            })}
-            {filteredCategories.length === 0 && (
-              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 32, ...font.regular }}>
-                No categories match "{query}"
-              </Text>
-            )}
-          </ScrollView>
-        )}
-
-        {view.kind === 'results' && (
-          <View style={styles.flex}>
-            <Text style={[styles.resultsHint, { color: colors.textMuted }]}>
-              {(view as any).category} · {(view as any).subcategory}
-            </Text>
-            <ResultsView category={(view as any).category} subcategory={(view as any).subcategory} />
-          </View>
-        )}
+          }
+        />
       </View>
+
+      {/* Category results modal */}
+      <Modal
+        visible={selectedCategory !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={closeModal}
+      >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeModal}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { ...font.bold, color: colors.text }]}>
+                {selectedCategory}
+              </Text>
+              <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
+                <Text style={[styles.modalClose, { color: colors.textMuted }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Pill search bar */}
+            <View style={[styles.modalSearchRow, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+              <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
+              <TextInput
+                style={[styles.modalSearchInput, { color: colors.text }]}
+                placeholder="Search by name…"
+                placeholderTextColor={colors.placeholder}
+                value={modalQuery}
+                onChangeText={setModalQuery}
+              />
+              {modalQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setModalQuery('')} activeOpacity={0.7}>
+                  <Text style={{ color: colors.textMuted, fontSize: 14 }}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Results */}
+            {modalLoading ? (
+              <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />
+            ) : filteredModalResults.length === 0 ? (
+              <View style={styles.emptyResults}>
+                <Text style={styles.emptyIcon}>👤</Text>
+                <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals yet</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
+                  Professionals in this category will appear here once they set up their profile.
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredModalResults}
+                keyExtractor={(item) => item.user.id}
+                contentContainerStyle={styles.resultsList}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <ProfessionalCard
+                    item={item}
+                    onMessage={() => handleMessage(item.user.id)}
+                  />
+                )}
+              />
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 16 },
-  flex: { flex: 1 },
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     marginBottom: 12,
   },
-  heading: { fontSize: 22, fontWeight: '800', textAlign: 'center', flex: 1 },
-  backBtn: { width: 60 },
-  backText: { fontSize: 15, fontWeight: '600' },
+  heading: { fontSize: 22, fontWeight: '800' },
 
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 24,
     marginHorizontal: 16,
     marginBottom: 16,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    height: 44,
     borderWidth: 1,
     gap: 8,
   },
-  searchIcon: { fontSize: 16 },
   searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
@@ -297,66 +214,60 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#004aad33',
   },
   categoryLabel: {
     fontSize: 17,
     fontWeight: '700',
-    fontFamily: 'Montserrat-Regular',
-    color: '#004aad',
-  },
-  categoryChevron: {
-    fontSize: 22,
-    color: '#004aad',
-    fontWeight: '600',
-  },
-
-  subList: {
-    marginLeft: 16,
-    borderLeftWidth: 2,
-    borderLeftColor: '#004aad',
-    marginBottom: 4,
-  },
-  subItem: {
-    height: SUB_ITEM_HEIGHT,
-    justifyContent: 'center',
-    paddingLeft: 16,
-    paddingRight: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#004aad22',
-  },
-  subItemText: {
-    fontSize: 15,
-    fontWeight: '500',
-    fontFamily: 'Montserrat-Regular',
     color: '#004aad',
   },
 
-  searchHintRow: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  searchHintText: { fontSize: 13, fontWeight: '600' },
-  resultsList: { paddingHorizontal: 16, paddingBottom: 100 },
-
-  resultsHint: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  emptyResults: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingHorizontal: 16,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    flex: 1,
+  },
+  modalClose: {
+    fontSize: 18,
+    paddingHorizontal: 4,
+  },
+  modalSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 24,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    height: 44,
+    borderWidth: 1,
+    gap: 8,
+  },
+  modalSearchInput: { flex: 1, fontSize: 15 },
+
+  resultsList: { paddingBottom: 32 },
+
+  emptyResults: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     paddingHorizontal: 40,
+    paddingVertical: 40,
   },
   emptyIcon: { fontSize: 52, marginBottom: 4 },
   emptyText: { fontSize: 18, fontWeight: '700' },
