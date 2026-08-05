@@ -63,7 +63,6 @@ export default function ProfessionalChatsScreen() {
 
   // Courses state
   const [courses, setCourses] = useState<Course[]>([]);
-  const [coursesModal, setCoursesModal] = useState(false);
   const [submitCourseModal, setSubmitCourseModal] = useState(false);
 
   useEffect(() => {
@@ -202,6 +201,15 @@ export default function ProfessionalChatsScreen() {
                   <Text style={[styles.cardDesc, { ...font.regular, color: colors.textSec }]} numberOfLines={2}>
                     {item.description}
                   </Text>
+                  {item.courseUrl ? (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(item.courseUrl!)}
+                      activeOpacity={0.8}
+                      style={styles.visitBtn}
+                    >
+                      <Text style={[styles.visitBtnText, { ...font.semiBold }]}>{t('courses.visit_course')}</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               )}
             />
@@ -263,47 +271,6 @@ export default function ProfessionalChatsScreen() {
         }}
       />
 
-      {/* Browse courses modal */}
-      <Modal visible={coursesModal} transparent animationType="fade" onRequestClose={() => setCoursesModal(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setCoursesModal(false)}>
-          <TouchableOpacity activeOpacity={1}>
-            <LinearGradient colors={['#1a237e', '#004aad']} style={[styles.modal, { maxHeight: 500 }]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { ...font.bold }]}>{t('courses.modal_title')}</Text>
-                <TouchableOpacity onPress={() => setCoursesModal(false)}>
-                  <X size={22} color="#fff" />
-                </TouchableOpacity>
-              </View>
-              {courses.length === 0 ? (
-                <Text style={[styles.emptyText, { ...font.regular, color: 'rgba(255,255,255,0.6)', textAlign: 'center', paddingVertical: 24 }]}>
-                  {t('courses.empty')}
-                </Text>
-              ) : (
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {courses.map((c) => (
-                    <View key={c.id} style={styles.modalCourseRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.modalCourseTitle, { ...font.semiBold }]}>{c.title}</Text>
-                        <Text style={[styles.modalCourseSub, { ...font.regular }]}>{c.instructorName}</Text>
-                        {c.courseUrl ? (
-                          <TouchableOpacity
-                            onPress={() => Linking.openURL(c.courseUrl!)}
-                            activeOpacity={0.8}
-                            style={styles.visitBtn}
-                          >
-                            <Text style={[styles.visitBtnText, { ...font.semiBold }]}>{t('courses.visit_course')}</Text>
-                          </TouchableOpacity>
-                        ) : null}
-                      </View>
-                      <Text style={[styles.modalCoursePrice, { ...font.bold }]}>₪{c.price}</Text>
-                    </View>
-                  ))}
-                </ScrollView>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
     </Screen>
   );
 }
