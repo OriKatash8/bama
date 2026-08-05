@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Plus } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
@@ -9,6 +11,7 @@ import type { Chat } from '../types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -19,6 +22,19 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
+
+const CATEGORY_IMAGE: Record<string, number> = {
+  'Video Photographer': require('../../../../assets/images/categories/videographer-blue.png'),
+  'Still Photographer': require('../../../../assets/images/categories/blue-cam.png'),
+  'Editor':             require('../../../../assets/images/categories/blue-edit.png'),
+  'Graphic Designer':   require('../../../../assets/images/categories/blue-grafic.png'),
+  'Social Media':       require('../../../../assets/images/categories/blue-social.png'),
+  'Studio & Audio':     require('../../../../assets/images/categories/blue-sound.png'),
+  'Lighting Tech':      require('../../../../assets/images/categories/blue-lightning.png'),
+  'Sound Recordist':    require('../../../../assets/images/categories/blue-mic.png'),
+};
+
+const CATEGORIES = Object.keys(CREW_CATEGORIES);
 
 interface Props {
   onRequestCommunity: () => void;
@@ -35,7 +51,13 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
+  const [filterCategory, setFilterCategory] = useState<string | null>(null);
+
   const { myCommunities, discover, joinStatuses, requestToJoin } = useCommunityDiscovery(user?.id);
+
+  const filteredDiscover = filterCategory
+    ? discover.filter((c) => c.category === filterCategory)
+    : discover;
 
   function navigateToCommunity(communityId: string) {
     router.push(`/${modeSegment}/(tabs)/chats/${communityId}` as never);
@@ -70,11 +92,19 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
         myCommunities.map((c) => (
           <TouchableOpacity
             key={c.id}
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}
             onPress={() => navigateToCommunity(c.id)}
             activeOpacity={0.75}
           >
             <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              {c.category && CATEGORY_IMAGE[c.category] ? (
+                <Image
+                  source={CATEGORY_IMAGE[c.category]}
+                  style={{ width: 32, height: 32, borderRadius: 6, marginRight: rtl ? 0 : 8, marginLeft: rtl ? 8 : 0 }}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              ) : null}
               <Text style={[styles.cardName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
                 {c.name}
               </Text>
@@ -95,16 +125,57 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       <Text style={[styles.sectionLabel, { ...font.semiBold, color: colors.textSec, marginTop: 20, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
       </Text>
-      {discover.length === 0 ? (
+
+      {/* Category filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, flexDirection: rtl ? 'row-reverse' : 'row' }}
+        style={{ marginBottom: 12 }}
+      >
+        {/* "All" chip */}
+        <TouchableOpacity
+          style={[styles.filterChip, filterCategory === null && styles.filterChipActive]}
+          onPress={() => setFilterCategory(null)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.filterChipText, filterCategory === null && styles.filterChipTextActive, { ...font.semiBold }]}>
+            {t('chats_page.filter_all')}
+          </Text>
+        </TouchableOpacity>
+
+        {CATEGORIES.map((cat) => (
+          <TouchableOpacity
+            key={cat}
+            style={[styles.filterChip, filterCategory === cat && styles.filterChipActive]}
+            onPress={() => setFilterCategory(filterCategory === cat ? null : cat)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.filterChipText, filterCategory === cat && styles.filterChipTextActive, { ...font.semiBold }]}>
+              {rtl && CATEGORY_LABEL_KEY[cat] ? t(CATEGORY_LABEL_KEY[cat]) : cat}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {filteredDiscover.length === 0 ? (
         <Text style={[styles.empty, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
           {t('communities.no_discover')}
         </Text>
       ) : (
-        discover.map((c) => {
+        filteredDiscover.map((c) => {
           const status = joinStatuses[c.id];
           return (
             <View key={c.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                {c.category && CATEGORY_IMAGE[c.category] ? (
+                  <Image
+                    source={CATEGORY_IMAGE[c.category]}
+                    style={{ width: 32, height: 32, borderRadius: 6, marginRight: rtl ? 0 : 8, marginLeft: rtl ? 8 : 0 }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                ) : null}
                 <Text style={[styles.cardName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
                   {c.name}
                 </Text>
@@ -160,4 +231,15 @@ const styles = StyleSheet.create({
   joinBtnText: { color: '#fff', fontSize: 13 },
   pendingBadge: { backgroundColor: '#9ca3af', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   pendingText: { color: '#fff', fontSize: 13 },
+  filterChip: {
+    borderWidth: 1,
+    borderColor: '#004aad',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    backgroundColor: 'transparent',
+  },
+  filterChipActive: { backgroundColor: '#004aad' },
+  filterChipText: { fontSize: 12, color: '#004aad' },
+  filterChipTextActive: { color: '#ffffff' },
 });
