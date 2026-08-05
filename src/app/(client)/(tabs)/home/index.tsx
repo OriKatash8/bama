@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
   useWindowDimensions, ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable,
@@ -115,6 +115,7 @@ export default function HomeScreen() {
   const getCategoryLabel = (labelKey: string) => labelKey === 'AI' ? 'AI' : t(labelKey);
   const rtl = language === 'he';
 
+  const scrollRef = useRef<ScrollView>(null);
   const font = useAppFont();
   const styles = useMemo(
     () => createStyles(font.regular.fontFamily, font.bold.fontFamily, font.semiBold.fontFamily, font.medium.fontFamily),
@@ -171,6 +172,7 @@ export default function HomeScreen() {
     if (Object.keys(next).length > 0) return;
 
     setStep(2);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
   // ── Step 2 → Step 3 ──
@@ -181,6 +183,7 @@ export default function HomeScreen() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setStep(3);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
   }
 
   // ── Step 3 → Summary screen ──
@@ -222,7 +225,7 @@ export default function HomeScreen() {
 
   return (
     <Screen scrollable={false}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* ══════════════ STEP 1: Project details ══════════════ */}
         {step === 1 && (
           <>

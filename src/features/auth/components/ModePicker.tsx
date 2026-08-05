@@ -109,7 +109,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 14,
   },
   btnText: {
     color: '#ffffff',

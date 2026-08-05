@@ -191,7 +191,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheetWrapper: { borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden', maxHeight: '90%' },
-  sheet: { paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32 },
+  sheet: { flex: 1, paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32 },
   header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   headerTitle: { fontSize: 20, color: '#ffffff', flex: 1 },
   form: { gap: 4, paddingBottom: 16 },
