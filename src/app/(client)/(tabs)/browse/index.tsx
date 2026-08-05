@@ -253,7 +253,7 @@ export default function SearchScreen() {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.resultItem}
-                    onPress={() => router.push(`/browse/profile/${item.user.id}` as never)}
+                    onPress={() => { closeModal(); router.push(`/browse/profile/${item.user.id}` as never); }}
                     activeOpacity={0.95}
                   >
                     <ProfessionalCard
