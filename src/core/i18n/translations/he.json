@@ -213,7 +213,8 @@
     "failed_reject": "דחיית ההצעה נכשלה.",
     "coming_soon": "בקרוב",
     "delete_project": "מחק",
-    "edit_project": "ערוך"
+    "edit_project": "ערוך",
+    "filter_all": "הכל"
   },
   "profile": {
     "title": "פרופיל",
@@ -493,7 +494,23 @@
   "courses": {
     "browse": "עיין בקורסים",
     "empty": "אין קורסים זמינים עדיין",
-    "modal_title": "כל הקורסים"
+    "modal_title": "כל הקורסים",
+    "add_your_course": "הוסף את הקורס שלך",
+    "submit_course": "שלח קורס",
+    "course_submitted": "הקורס נשלח לבדיקה!",
+    "course_title_label": "שם הקורס",
+    "course_category": "קטגוריה",
+    "course_link": "קישור לקורס (URL)",
+    "instructor_label": "שם המרצה",
+    "price_label": "מחיר (₪)",
+    "description_label": "תיאור",
+    "submitting": "שולח...",
+    "visit_course": "← לקורס",
+    "select_category": "בחר קטגוריה",
+    "pending_requests": "בקשות קורסים ממתינות",
+    "approve": "הוסף לקורסים",
+    "reject": "דחה",
+    "no_requests": "אין בקשות ממתינות"
   },
   "review": {
     "title": "דרג את הצוות שלך",

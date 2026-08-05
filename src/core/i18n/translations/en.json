@@ -213,7 +213,8 @@
     "failed_reject": "Failed to reject offer.",
     "coming_soon": "Coming soon",
     "delete_project": "Delete",
-    "edit_project": "Edit"
+    "edit_project": "Edit",
+    "filter_all": "All"
   },
   "profile": {
     "title": "Profile",
@@ -493,7 +494,23 @@
   "courses": {
     "browse": "Browse Courses",
     "empty": "No courses available yet",
-    "modal_title": "All Courses"
+    "modal_title": "All Courses",
+    "add_your_course": "Add Your Course",
+    "submit_course": "Submit Course",
+    "course_submitted": "Course submitted for review!",
+    "course_title_label": "Course Title",
+    "course_category": "Category",
+    "course_link": "Course Link (URL)",
+    "instructor_label": "Instructor Name",
+    "price_label": "Price (₪)",
+    "description_label": "Description",
+    "submitting": "Submitting...",
+    "visit_course": "Visit Course →",
+    "select_category": "Select category",
+    "pending_requests": "Pending Course Requests",
+    "approve": "Add to Courses",
+    "reject": "Reject",
+    "no_requests": "No pending requests"
   },
   "review": {
     "title": "Rate your crew",

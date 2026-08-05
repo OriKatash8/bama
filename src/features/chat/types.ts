@@ -32,4 +32,5 @@ export interface Chat {
   lastMessage?: LastMessage | null;
   createdAt?: Timestamp;
   unreadCount?: Record<string, number>;
+  category?: string;
 }

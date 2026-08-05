@@ -25,9 +25,23 @@ type Course = {
   videoUrl: string;
   published: boolean;
   createdAt: Timestamp | null;
+  courseUrl?: string;
 };
 
 type CourseForm = Omit<Course, 'id' | 'createdAt'>;
+
+type CourseRequest = {
+  id: string;
+  title: string;
+  category: string;
+  courseUrl: string;
+  instructorName: string;
+  price: number;
+  description: string;
+  submittedBy: string;
+  submittedByName: string;
+  createdAt: Timestamp | null;
+};
 
 const EMPTY_FORM: CourseForm = {
   title: '',
