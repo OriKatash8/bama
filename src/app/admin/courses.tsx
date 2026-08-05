@@ -15,6 +15,20 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { useUiStore } from '@core/stores/uiStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 type Course = {
   id: string;
@@ -58,8 +72,11 @@ export default function CoursesAdmin() {
   const user = useAuthStore((s) => s.user);
   const { showToast } = useUiStore();
   const { uploading, processing, uploadVideo } = useVideoUpload();
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
 
   const [courses, setCourses] = useState<Course[]>([]);
+  const [requests, setRequests] = useState<CourseRequest[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<CourseForm>(EMPTY_FORM);
@@ -69,6 +86,13 @@ export default function CoursesAdmin() {
     const q = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
       setCourses(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Course)));
+    });
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'courseRequests'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      setRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() } as CourseRequest)));
     });
   }, []);
 
@@ -134,6 +158,23 @@ export default function CoursesAdmin() {
     if (url) setForm((f) => ({ ...f, videoUrl: url }));
   }
 
+  async function handleApprove(req: CourseRequest) {
+    await addDoc(collection(db, 'courses'), {
+      title: req.title,
+      description: req.description,
+      price: req.price,
+      instructorName: req.instructorName,
+      courseUrl: req.courseUrl,
+      published: true,
+      createdAt: serverTimestamp(),
+    });
+    await deleteDoc(doc(db, 'courseRequests', req.id));
+  }
+
+  async function handleReject(id: string) {
+    await deleteDoc(doc(db, 'courseRequests', id));
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
@@ -149,6 +190,32 @@ export default function CoursesAdmin() {
         keyExtractor={(c) => c.id}
         contentContainerStyle={{ padding: 16, paddingTop: 8 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListHeaderComponent={
+          requests.length > 0 ? (
+            <View style={styles.requestsSection}>
+              <Text style={[styles.sectionTitle, { ...font.bold }]}>{t('courses.pending_requests')}</Text>
+              {requests.map((req) => (
+                <View key={req.id} style={styles.requestCard}>
+                  <Text style={[styles.requestTitle, { ...font.bold }]}>{req.title}</Text>
+                  <Text style={[styles.requestMeta, { ...font.regular }]}>{req.category} · ₪{req.price}</Text>
+                  <Text style={[styles.requestMeta, { ...font.regular }]}>{req.instructorName}</Text>
+                  <Text style={[styles.requestLink, { ...font.regular }]} numberOfLines={1}>{req.courseUrl}</Text>
+                  {req.description ? (
+                    <Text style={[styles.requestDesc, { ...font.regular }]} numberOfLines={2}>{req.description}</Text>
+                  ) : null}
+                  <View style={styles.requestActions}>
+                    <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(req)} activeOpacity={0.8}>
+                      <Text style={[styles.approveBtnText, { ...font.bold }]}>{t('courses.approve')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(req.id)} activeOpacity={0.8}>
+                      <Text style={[styles.rejectBtnText, { ...font.semiBold }]}>{t('courses.reject')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => (
           <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={{ flex: 1 }}>
@@ -305,4 +372,23 @@ const styles = StyleSheet.create({
   toggleLabel: { color: '#fff', fontSize: 15 },
   saveBtn: { backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   saveBtnText: { color: '#004aad', fontSize: 16, fontWeight: '700' },
+  requestsSection: { marginBottom: 24 },
+  sectionTitle: { fontSize: 17, color: '#004aad', marginBottom: 12 },
+  requestCard: {
+    backgroundColor: '#fff8e1',
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  requestTitle: { fontSize: 15, color: '#1a1a2e', marginBottom: 2 },
+  requestMeta: { fontSize: 12, color: '#555', marginBottom: 1 },
+  requestLink: { fontSize: 11, color: '#004aad', marginBottom: 4 },
+  requestDesc: { fontSize: 12, color: '#555', marginBottom: 8 },
+  requestActions: { flexDirection: 'row', gap: 8 },
+  approveBtn: { backgroundColor: '#004aad', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
+  approveBtnText: { color: '#fff', fontSize: 13 },
+  rejectBtn: { borderWidth: 1, borderColor: '#ef4444', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
+  rejectBtnText: { color: '#ef4444', fontSize: 13 },
 });
