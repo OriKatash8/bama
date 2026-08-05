@@ -172,7 +172,7 @@ export default function HomeScreen() {
     if (Object.keys(next).length > 0) return;
 
     setStep(2);
-    scrollRef.current?.scrollTo({ y: 0, animated: false });
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
   }
 
   // ── Step 2 → Step 3 ──
@@ -183,7 +183,7 @@ export default function HomeScreen() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setStep(3);
-    scrollRef.current?.scrollTo({ y: 0, animated: false });
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
   }
 
   // ── Step 3 → Summary screen ──
