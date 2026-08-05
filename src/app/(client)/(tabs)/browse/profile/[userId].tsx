@@ -10,7 +10,6 @@ import { ChevronLeft, User as UserIcon, Flag, X } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
 import { BioSection } from '@features/profile/components/BioSection';
-import { RoleChips } from '@features/profile/components/RoleChips';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
@@ -221,15 +220,11 @@ export default function PublicProfileScreen() {
       {/* ── Bio ── */}
       <BioSection bio={profile.bio} isEditing={false} />
 
-      {/* ── Skills ── */}
-      {skills.length > 0 && (
-        <RoleChips selected={skills} isEditing={false} />
-      )}
-
-      {/* ── Equipment / Price List / Reviews ── */}
+      {/* ── Equipment / Reviews / Skills ── */}
       <ContentTabs
         equipment={profile.equipment}
         reviews={reviews}
+        skills={skills}
         isEditing={false}
       />
 
