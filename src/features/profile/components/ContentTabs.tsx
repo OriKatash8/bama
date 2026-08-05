@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import { Wrench, Star, Award } from 'lucide-react-native';
 import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
@@ -178,7 +179,9 @@ export function ContentTabs({
               <View style={styles.chipsWrap}>
                 {(skills ?? []).map((s, i) => (
                   <View key={`${s.category}-${i}`} style={styles.chip}>
-                    <Text style={styles.chipText}>{s.category}</Text>
+                    <Text style={styles.chipText}>
+                      {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
+                    </Text>
                   </View>
                 ))}
               </View>

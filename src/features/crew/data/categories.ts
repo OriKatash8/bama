@@ -35,3 +35,14 @@ export const CREW_CATEGORIES: Record<string, string[]> = {
     'Post-Production Mixer', 'Podcast/Interview Tech', 'Other',
   ],
 };
+
+export const CATEGORY_LABEL_KEY: Record<string, string> = {
+  'Video Photographer': 'builder.category_videographer',
+  'Still Photographer': 'builder.category_photographer',
+  'Editor':             'builder.category_editor',
+  'Graphic Designer':   'builder.category_graphic_designer',
+  'Social Media':       'builder.category_social',
+  'Studio & Audio':     'builder.category_studios',
+  'Lighting Tech':      'builder.category_lighting',
+  'Sound Recordist':    'builder.category_sound',
+};

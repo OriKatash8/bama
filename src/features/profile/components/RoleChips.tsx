@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -16,6 +16,10 @@ function makeT(translations: Translations) {
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
     return typeof result === 'string' ? result : key;
   };
+}
+
+function catLabel(key: string, rtl: boolean, t: (k: string) => string): string {
+  return rtl && CATEGORY_LABEL_KEY[key] ? t(CATEGORY_LABEL_KEY[key]) : key;
 }
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -71,7 +75,7 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
             {selected.map((s) => (
               <View key={s.category} style={styles.chip}>
                 <Text style={styles.chipText}>
-                  {CATEGORY_EMOJI[s.category] ?? ''} {s.category}
+                  {CATEGORY_EMOJI[s.category] ?? ''} {catLabel(s.category, rtl, t)}
                 </Text>
               </View>
             ))}
@@ -97,7 +101,7 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
               activeOpacity={0.7}
             >
               <Text style={[styles.editChipText, active && styles.editChipTextActive]}>
-                {CATEGORY_EMOJI[category] ?? '•'} {category}
+                {CATEGORY_EMOJI[category] ?? '•'} {catLabel(category, rtl, t)}
               </Text>
             </TouchableOpacity>
           );
