@@ -28,21 +28,21 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
 
         return (
           <View key={review.id} style={styles.card}>
-            {/* Date — top left */}
+            {/* Date — top right */}
             <Text style={styles.date}>{date}</Text>
 
-            {/* Name (left) + avatar (right) on same row, stars below */}
-            <View style={styles.reviewerBlock}>
-              <View style={styles.nameAvatarRow}>
-                <Text style={styles.author}>{review.authorName}</Text>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials(review.authorName)}</Text>
-                </View>
+            {/* Avatar (left) + name (right of avatar) */}
+            <View style={styles.nameAvatarRow}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initials(review.authorName)}</Text>
               </View>
-              <Text style={styles.stars}>{stars}</Text>
+              <Text style={styles.author}>{review.authorName}</Text>
             </View>
 
-            {/* Review body */}
+            {/* Stars — right aligned */}
+            <Text style={styles.stars}>{stars}</Text>
+
+            {/* Review body — right aligned */}
             <Text style={styles.body}>{review.body}</Text>
           </View>
         );
@@ -67,29 +67,28 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 11,
     color: 'rgba(0,74,173,0.4)',
-    alignSelf: 'flex-start',
-  },
-
-  reviewerBlock: {
-    gap: 6,
+    alignSelf: 'flex-end',
+    textAlign: 'right',
   },
 
   nameAvatarRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
   },
 
   author: {
     fontSize: 14,
     fontWeight: '700',
     color: '#004aad',
+    textAlign: 'right',
     flex: 1,
   },
 
   stars: {
     fontSize: 15,
     color: '#cb6ce6',
+    textAlign: 'right',
   },
 
   avatar: {
@@ -111,5 +110,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#004aad',
     lineHeight: 20,
+    textAlign: 'right',
   },
 });
