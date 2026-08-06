@@ -205,7 +205,7 @@ export default function SearchScreen() {
       >
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeModal}>
           <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.modalSheetWrapper}>
-          <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modalSheet}>
+          <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalSheet}>
             {/* Modal header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.modalTitle, { ...font.bold }]}>{catLabel(selectedCategory ?? '', rtl, t)}</Text>
@@ -215,32 +215,32 @@ export default function SearchScreen() {
             </View>
 
             {/* Pill search bar */}
-            <View style={[styles.modalSearchRow, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.3)' }]}>
-              <Search size={16} color="rgba(255,255,255,0.7)" strokeWidth={2.5} />
+            <View style={[styles.modalSearchRow, { backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(0,74,173,0.2)' }]}>
+              <Search size={16} color="rgba(0,74,173,0.6)" strokeWidth={2.5} />
               <TextInput
-                style={[styles.modalSearchInput, { color: '#ffffff', textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.modalSearchInput, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={t('search.placeholder')}
-                placeholderTextColor="rgba(255,255,255,0.6)"
+                placeholderTextColor="rgba(0,74,173,0.4)"
                 value={modalQuery}
                 onChangeText={setModalQuery}
               />
               {modalQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setModalQuery('')} activeOpacity={0.7}>
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>✕</Text>
+                  <Text style={{ color: 'rgba(0,74,173,0.5)', fontSize: 14 }}>✕</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Results */}
             {modalLoading ? (
-              <ActivityIndicator color="rgba(255,255,255,0.8)" style={{ marginTop: 24 }} />
+              <ActivityIndicator color="#004aad" style={{ marginTop: 24 }} />
             ) : filteredModalResults.length === 0 ? (
               <View style={styles.emptyResults}>
                 <Text style={styles.emptyIcon}>👤</Text>
-                <Text style={[styles.emptyText, { color: '#ffffff' }]}>
+                <Text style={[styles.emptyText, { color: '#004aad' }]}>
                   {t('search.no_professionals_yet')}
                 </Text>
-                <Text style={[styles.emptySubtext, { color: 'rgba(255,255,255,0.7)' }]}>
+                <Text style={[styles.emptySubtext, { color: 'rgba(0,74,173,0.6)' }]}>
                   {t('search.no_professionals_subtext')}
                 </Text>
               </View>
@@ -366,12 +366,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#ffffff',
+    color: '#004aad',
     flex: 1,
   },
   modalClose: {
     fontSize: 18,
-    color: '#ffffff',
+    color: '#004aad',
     paddingHorizontal: 4,
   },
   modalSearchRow: {
