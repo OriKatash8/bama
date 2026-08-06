@@ -31,15 +31,13 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
             {/* Date — top left */}
             <Text style={styles.date}>{date}</Text>
 
-            {/* Name (left) + avatar (right) */}
-            <View style={styles.row}>
-              <View style={styles.nameStars}>
-                <Text style={styles.author}>{review.authorName}</Text>
-                <Text style={styles.stars}>{stars}</Text>
-              </View>
+            {/* Avatar → name → stars, stacked on the right */}
+            <View style={styles.reviewerBlock}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials(review.authorName)}</Text>
               </View>
+              <Text style={styles.author}>{review.authorName}</Text>
+              <Text style={styles.stars}>{stars}</Text>
             </View>
 
             {/* Review body */}
@@ -70,21 +68,17 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
 
-  row: {
-    flexDirection: 'row',
+  reviewerBlock: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  nameStars: {
-    flex: 1,
+    alignSelf: 'flex-end',
     gap: 4,
   },
 
   author: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#004aad',
+    textAlign: 'center',
   },
 
   stars: {
@@ -93,13 +87,12 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(0,74,173,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
   },
 
   avatarText: {
