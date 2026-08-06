@@ -102,7 +102,7 @@ export default function HomeScreen() {
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const { width } = useWindowDimensions();
-  const tileSize = Math.floor((width - 64 - 32 - 12) / 3);
+  const tileSize = Math.floor((width - 64 - 32 - 6) / 2);
 
   const language = useSettingsStore((s) => s.language);
   const translations = language === 'he' ? he : en;
@@ -412,11 +412,11 @@ export default function HomeScreen() {
               <FlatList
                 data={CATEGORIES}
                 extraData={slots}
-                numColumns={3}
+                numColumns={2}
                 scrollEnabled={false}
                 keyExtractor={(cat) => cat.key}
-                initialNumToRender={9}
-                maxToRenderPerBatch={9}
+                initialNumToRender={8}
+                maxToRenderPerBatch={8}
                 windowSize={3}
                 columnWrapperStyle={{ gap: 6, justifyContent: 'center' }}
                 ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
