@@ -207,9 +207,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.sheetWrapper}>
 
         <LinearGradient
           colors={['#efd4f6', '#b7cae6']}
@@ -424,14 +424,20 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
+  sheetWrapper: {
+    width: '100%',
+    overflow: 'hidden',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
   card: {
-    width: '90%',
-    maxHeight: '85%',
-    borderRadius: 24,
+    width: '100%',
+    maxHeight: '90%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 24,
     shadowColor: '#000',
     shadowOpacity: 0.2,
@@ -457,7 +463,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 24 },
+  scrollContent: { paddingBottom: 100 },
 
   toggle: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   pill: {
