@@ -88,12 +88,6 @@ const ISRAEL_LOCATIONS_EN = [
 
 const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as object;
 
-const BUDGET_KEYS = [
-  'builder.budget_low',
-  'builder.budget_mid',
-  'builder.budget_high',
-  'builder.budget_top',
-] as const;
 
 export default function HomeScreen() {
   const { slots, totalCount, addSlot, removeSlot, loadSlots } = useCrewBuilder();
@@ -133,7 +127,6 @@ export default function HomeScreen() {
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
-  const [budget, setBudget] = useState('');
   const [roleAnswers, setRoleAnswers] = useState<Record<string, Record<string, string>>>({});
 
   const locationList = language === 'he' ? ISRAEL_LOCATIONS_HE : ISRAEL_LOCATIONS_EN;
@@ -154,7 +147,6 @@ export default function HomeScreen() {
         setExec(project.exec ?? '');
         setDeadline(project.deadline ?? '');
         setLocation(project.location);
-        setBudget(project.budget ?? '');
         setRoleAnswers(project.roleAnswers ?? {});
         loadSlots(project.crewSlots);
       })
@@ -179,7 +171,6 @@ export default function HomeScreen() {
   function handleToStep3() {
     const errs: Record<string, string> = {};
     if (totalCount === 0) errs.slots = t('builder.error_role');
-    if (!budget) errs.budget = t('builder.error_budget');
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setStep(3);
@@ -196,7 +187,6 @@ export default function HomeScreen() {
         exec,
         deadline,
         location,
-        budget,
         projectId: (projectId as string) ?? '',
         slots: JSON.stringify(slots),
         roleAnswers: JSON.stringify(roleAnswers),
@@ -459,32 +449,6 @@ export default function HomeScreen() {
                 }}
               />
 
-            </View>
-
-            {/* Budget Range */}
-            <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: 'center', marginTop: 16, marginBottom: 4, textTransform: 'uppercase' }]}>
-              {t('builder.budget')}
-            </Text>
-            {errors.budget ? (
-              <Text style={[styles.error, { textAlign: 'center', marginBottom: 4, marginHorizontal: 16 }]}>{errors.budget}</Text>
-            ) : null}
-            <View style={styles.budgetGrid}>
-              {BUDGET_KEYS.map((key) => {
-                const label = t(key);
-                const isSelected = budget === label;
-                return (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.budgetPill, isSelected && styles.budgetPillActive]}
-                    onPress={() => setBudget(label)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.budgetPillText, isSelected && styles.budgetPillTextActive, { ...font.semiBold }]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
             </View>
 
             <View style={styles.submitWrap}>
@@ -992,34 +956,6 @@ function createStyles(
     },
     vibeAddText: {
       fontSize: 14,
-      color: '#ffffff',
-    },
-
-    // Budget pills
-    budgetGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
-      marginHorizontal: 16,
-      marginTop: 8,
-      marginBottom: 8,
-    },
-    budgetPill: {
-      width: '47%',
-      borderWidth: 1.5,
-      borderColor: '#004aad',
-      borderRadius: 10,
-      paddingVertical: 12,
-      alignItems: 'center',
-    },
-    budgetPillActive: {
-      backgroundColor: '#004aad',
-    },
-    budgetPillText: {
-      fontSize: 14,
-      color: '#004aad',
-    },
-    budgetPillTextActive: {
       color: '#ffffff',
     },
 

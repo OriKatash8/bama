@@ -34,7 +34,6 @@ export default function SummaryScreen() {
     exec: string;
     deadline: string;
     location: string;
-    budget: string;
     projectId: string;
     slots: string;
     roleAnswers: string;
@@ -62,7 +61,6 @@ export default function SummaryScreen() {
   const [exec, setExec] = useState(params.exec ?? '');
   const [deadline, setDeadline] = useState(params.deadline ?? '');
   const [location, setLocation] = useState(params.location ?? '');
-  const [budget] = useState(params.budget ?? '');
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -82,7 +80,6 @@ export default function SummaryScreen() {
       exec: exec || undefined,
       deadline,
       location,
-      budget: budget || undefined,
       roleAnswers: Object.keys(parsedRoleAnswers).length > 0 ? parsedRoleAnswers : undefined,
     };
     try {
@@ -207,18 +204,6 @@ export default function SummaryScreen() {
             placeholder={t('builder.placeholder_location')}
             placeholderTextColor="#004aad99"
           />
-
-          {/* Budget (read-only pill) */}
-          {budget.length > 0 && (
-            <>
-              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
-                {t('builder.budget')}
-              </Text>
-              <View style={styles.budgetPillDisplay}>
-                <Text style={[styles.budgetPillDisplayText, { ...font.bold }]}>{budget}</Text>
-              </View>
-            </>
-          )}
 
           {/* Role answers */}
           {Object.keys(parsedRoleAnswers).length > 0 && (
@@ -420,12 +405,4 @@ const styles = StyleSheet.create({
   submitBtnDisabled: { backgroundColor: '#555' },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
-  budgetPillDisplay: {
-    backgroundColor: '#004aad',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignSelf: 'flex-start',
-  },
-  budgetPillDisplayText: { color: '#ffffff', fontSize: 14 },
 });
