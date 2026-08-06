@@ -304,9 +304,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#004aad',
   },
-  chipText: { fontSize: 12, color: '#004aad' },
+  chipText: { fontSize: 12, color: '#ffffff' },
 });
