@@ -122,7 +122,7 @@ export default function BrowseScreen() {
         animationType="slide"
         onRequestClose={closeModal}
       >
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeModal}>
+        <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: colors.bg + 'CC' }]} activeOpacity={1} onPress={closeModal}>
           <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.modalSheet}>
             <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modalGradient}>
               {/* Header */}
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,74,173,0.65)',
+    backgroundColor: 'transparent',
     justifyContent: 'flex-end',
   },
   modalSheet: {
