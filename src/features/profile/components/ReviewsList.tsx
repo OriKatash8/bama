@@ -28,15 +28,13 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
 
         return (
           <View key={review.id} style={styles.card}>
-            {/* Date — top right */}
-            <Text style={styles.date}>{date}</Text>
-
-            {/* Avatar (left) + name (right of avatar) */}
+            {/* Date (left) + name (middle) + avatar (right) — one row */}
             <View style={styles.nameAvatarRow}>
+              <Text style={styles.date}>{date}</Text>
+              <Text style={styles.author}>{review.authorName}</Text>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials(review.authorName)}</Text>
               </View>
-              <Text style={styles.author}>{review.authorName}</Text>
             </View>
 
             {/* Stars — right aligned */}
@@ -67,14 +65,12 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 11,
     color: 'rgba(0,74,173,0.4)',
-    alignSelf: 'flex-start',
-    textAlign: 'left',
   },
 
   nameAvatarRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
 
   author: {
