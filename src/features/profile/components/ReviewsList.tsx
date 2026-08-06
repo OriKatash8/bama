@@ -31,12 +31,14 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
             {/* Date — top left */}
             <Text style={styles.date}>{date}</Text>
 
-            {/* Avatar → name → stars, stacked on the right */}
+            {/* Name (left) + avatar (right) on same row, stars below */}
             <View style={styles.reviewerBlock}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials(review.authorName)}</Text>
+              <View style={styles.nameAvatarRow}>
+                <Text style={styles.author}>{review.authorName}</Text>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initials(review.authorName)}</Text>
+                </View>
               </View>
-              <Text style={styles.author}>{review.authorName}</Text>
               <Text style={styles.stars}>{stars}</Text>
             </View>
 
@@ -69,16 +71,20 @@ const styles = StyleSheet.create({
   },
 
   reviewerBlock: {
+    gap: 6,
+  },
+
+  nameAvatarRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-end',
-    gap: 4,
+    justifyContent: 'space-between',
   },
 
   author: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: '#004aad',
-    textAlign: 'center',
+    flex: 1,
   },
 
   stars: {
