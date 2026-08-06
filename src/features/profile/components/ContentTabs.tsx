@@ -4,7 +4,6 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
-import { Wrench, Star, Award } from 'lucide-react-native';
 import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
 import { useTheme } from '@core/hooks/useTheme';
@@ -25,12 +24,6 @@ function makeT(translations: Translations) {
 }
 
 type SectionKey = 'equipment' | 'reviews' | 'skills';
-
-const SECTION_ICONS: Record<SectionKey, React.ComponentType<{ size: number; color: string; strokeWidth: number }>> = {
-  equipment: Wrench,
-  reviews:   Star,
-  skills:    Award,
-};
 
 const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews', 'skills'];
 
@@ -57,16 +50,14 @@ export function ContentTabs({
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');
 
-  const sectionLabel = (key: SectionKey): string => {
+  function sectionLabel(key: SectionKey): string {
     const map: Record<SectionKey, string> = {
       equipment: t('profile_sections.equipment'),
       reviews:   t('profile_sections.reviews'),
       skills:    t('profile_sections.skills'),
     };
     return map[key];
-  };
-
-  const ActiveIcon = SECTION_ICONS[active];
+  }
 
   function addEquipment() {
     const trimmed = newEquipment.trim();
@@ -114,19 +105,11 @@ export function ContentTabs({
       {/* ── Content (no card background) ── */}
       <View style={styles.panel}>
 
-        {/* Section header */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
-            {sectionLabel(active)}
-          </Text>
-          <ActiveIcon size={18} color="#004aad" strokeWidth={1.8} />
-        </View>
-
         {/* Equipment */}
         {active === 'equipment' && (
           <>
             {equipment.length === 0 && (
-              <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.empty, { textAlign: 'center' }]}>
                 {t('profile_sections.no_equipment')}
               </Text>
             )}
@@ -142,7 +125,7 @@ export function ContentTabs({
                       <Text style={styles.removeBtn}>×</Text>
                     </TouchableOpacity>
                   )}
-                  <Text style={[styles.itemText, { textAlign: rtl ? 'right' : 'left' }]}>{item}</Text>
+                  <Text style={[styles.itemText, { textAlign: 'center' }]}>{item}</Text>
                 </View>
               ))}
             </View>
@@ -172,11 +155,11 @@ export function ContentTabs({
         {active === 'skills' && (
           <>
             {(skills ?? []).length === 0 ? (
-              <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
+              <Text style={[styles.empty, { textAlign: 'center' }]}>
                 {t('profile_sections.no_skills')}
               </Text>
             ) : (
-              <View style={[styles.chipsWrap, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={styles.chipsWrap}>
                 {(skills ?? []).map((s, i) => (
                   <View key={`${s.category}-${i}`} style={styles.chip}>
                     <Text style={styles.chipText}>
@@ -223,35 +206,29 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'right',
-    color: '#004aad',
-  },
-
-  /* Plain pill items (no background) */
+  /* Plain pill items */
   list: { gap: 6 },
 
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
     gap: 8,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
 
   itemText: {
     flex: 1,
     fontSize: 14,
     color: '#004aad',
+    textAlign: 'center',
   },
   removeBtn: {
     fontSize: 20,
@@ -299,12 +276,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,74,173,0.08)',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.2)',
   },

@@ -81,8 +81,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   avatarWrap: {
-    borderWidth: 3,
-    borderColor: '#004aad',
     overflow: 'hidden',
   },
   avatarImage: {

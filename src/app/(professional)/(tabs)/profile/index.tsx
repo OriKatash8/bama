@@ -152,7 +152,7 @@ export default function ProfessionalProfileScreen() {
         onPhotoPress={handlePhotoPress}
         onNameChange={setName}
         reviews={reviews}
-        size={90}
+        size={130}
       />
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
       {isEditing && <RoleChips selected={skills} isEditing onChange={setSkills} />}
