@@ -60,13 +60,13 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
 
   if (compact) {
     return (
-      <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
+      <TouchableOpacity style={[cardStyle, { alignItems: rtl ? 'flex-end' : 'flex-start' }]} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
             <Text style={[styles.directBadgeText, { ...font.bold }]}>{directInviteLabel}</Text>
           </View>
         )}
-        <Text style={[styles.titleCompact, { ...font.bold, color: textColor }]} numberOfLines={2}>
+        <Text style={[styles.titleCompact, { ...font.bold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
           {request.title}
         </Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -75,11 +75,11 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
             contentFit="contain" cachePolicy="memory-disk"
           />
-          <Text style={[styles.locationCompact, { ...font.regular, color: textColor }]} numberOfLines={1}>
+          <Text style={[styles.locationCompact, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
             {translateCity(request.location, rtl)}
           </Text>
         </View>
-        <Text style={[styles.rolesCompact, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
+        <Text style={[styles.rolesCompact, { ...font.semiBold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
           {translatedRoles.join(' · ')}
         </Text>
         <TouchableOpacity
@@ -114,21 +114,21 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       )}
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.title, { ...font.bold, color: textColor }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.title, { ...font.bold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{request.title}</Text>
           <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Image
               source={LOCATION_ICON}
               style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
               contentFit="contain" cachePolicy="memory-disk"
             />
-            <Text style={[styles.location, { ...font.regular, color: textColor }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
+            <Text style={[styles.location, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
           </View>
           {!!(request.exec) && (
-            <Text style={[styles.meta, { ...font.regular, color: textColor }]}>
+            <Text style={[styles.meta, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]}>
               {request.exec}
             </Text>
           )}
-          <Text style={[styles.roles, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
+          <Text style={[styles.roles, { ...font.semiBold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
             {translatedRoles.join(' | ')}
           </Text>
         </View>
