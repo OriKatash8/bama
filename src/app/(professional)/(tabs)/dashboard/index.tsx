@@ -60,7 +60,7 @@ function formatDeadline(deadline: string): string {
 
 export default function DashboardScreen() {
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = (screenWidth - 48) / 2;
+  const cardWidth = screenWidth - 32;
   const { user, profile, isLoading: profileLoading } = useProfile();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const router = useRouter();
@@ -255,9 +255,8 @@ export default function DashboardScreen() {
           <FlatList
             data={visible}
             keyExtractor={(item) => item.id}
-            numColumns={2}
+            numColumns={1}
             scrollEnabled={false}
-            columnWrapperStyle={styles.columnWrapper}
             contentContainerStyle={styles.gridContent}
             renderItem={({ item }) => (
               <NoticeBoardCard
@@ -323,7 +322,6 @@ const styles = StyleSheet.create({
   count: { fontSize: 13, fontWeight: '500' },
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  columnWrapper: { gap: 12, paddingHorizontal: 16 },
   gridContent: { paddingVertical: 8, gap: 12 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },

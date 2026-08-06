@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { ProjectRequest } from '@core/types/project';
-import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
@@ -39,7 +38,6 @@ type Props = {
 };
 
 export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth }: Props) {
-  const roleCount = getVacantSlots(request).reduce((sum, s) => sum + s.quantity, 0);
   const allRoles = [...new Set(request.crewSlots.map((s) => s.category))];
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
@@ -50,7 +48,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const translatedRoles = allRoles.map(r =>
     rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
   );
-  const perRoleLabel = `/ ${t('noticeboard.role_singular')}`;
   const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
 
@@ -82,9 +79,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             {translateCity(request.location, rtl)}
           </Text>
         </View>
-        <Text style={[styles.metaCompact, { ...font.regular, color: textColor }]}>
-          {roleCount} {roleCount === 1 ? t('noticeboard.role_singular') : t('noticeboard.role_plural')}
-        </Text>
         <Text style={[styles.rolesCompact, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
           {translatedRoles.join(' · ')}
         </Text>
@@ -129,9 +123,11 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             />
             <Text style={[styles.location, { ...font.regular, color: textColor }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
           </View>
-          <Text style={[styles.meta, { ...font.regular, color: textColor }]}>
-            {request.exec ?? ''}  ·  {roleCount} {roleCount === 1 ? t('noticeboard.role_singular') : t('noticeboard.role_plural')}
-          </Text>
+          {!!(request.exec) && (
+            <Text style={[styles.meta, { ...font.regular, color: textColor }]}>
+              {request.exec}
+            </Text>
+          )}
           <Text style={[styles.roles, { ...font.semiBold, color: textColor }]} numberOfLines={2}>
             {translatedRoles.join(' | ')}
           </Text>
