@@ -96,7 +96,7 @@ export default function HomeScreen() {
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const { width } = useWindowDimensions();
-  const tileSize = Math.floor((width - 64 - 32 - 18) / 4);
+  const tileSize = Math.floor((width - 64 - 12) / 2);
 
   const language = useSettingsStore((s) => s.language);
   const translations = language === 'he' ? he : en;
@@ -402,14 +402,14 @@ export default function HomeScreen() {
               <FlatList
                 data={CATEGORIES}
                 extraData={slots}
-                numColumns={4}
+                numColumns={2}
                 scrollEnabled={false}
                 keyExtractor={(cat) => cat.key}
                 initialNumToRender={8}
                 maxToRenderPerBatch={8}
                 windowSize={3}
-                columnWrapperStyle={{ gap: 6, justifyContent: 'center' }}
-                ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+                columnWrapperStyle={{ gap: 12, justifyContent: 'center' }}
+                ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
                 renderItem={({ item: cat }) => {
                   const catSlot = slots.find(s => s.category === cat.key);
                   const catTotal = catSlot?.quantity ?? 0;
@@ -657,7 +657,7 @@ function createStyles(
     tile: { borderRadius: 12, overflow: 'hidden', position: 'relative' },
     tileImage: { width: '100%', height: '100%', position: 'absolute' },
     tileOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 4, paddingHorizontal: 5 },
-    tileLabel: { fontSize: 10, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textShadowColor: 'rgba(255,255,255,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+    tileLabel: { fontSize: 16, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textShadowColor: 'rgba(255,255,255,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
     tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
     tileDecrement: { position: 'absolute', bottom: 5, right: 5, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
     tileDecrementText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 18 },
