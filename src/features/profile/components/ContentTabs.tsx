@@ -115,7 +115,13 @@ export function ContentTabs({
             )}
             <View style={styles.list}>
               {equipment.map((item, index) => (
-                <View key={`eq-${index}`} style={styles.itemRow}>
+                <View
+                  key={`eq-${index}`}
+                  style={[
+                    styles.itemRow,
+                    index < equipment.length - 1 && styles.itemRowDivider,
+                  ]}
+                >
                   {isEditing && (
                     <TouchableOpacity
                       onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
@@ -159,14 +165,16 @@ export function ContentTabs({
                 {t('profile_sections.no_skills')}
               </Text>
             ) : (
-              <View style={styles.chipsWrap}>
-                {(skills ?? []).map((s, i) => (
-                  <View key={`${s.category}-${i}`} style={styles.chip}>
-                    <Text style={styles.chipText}>
-                      {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
-                    </Text>
-                  </View>
-                ))}
+              <View style={styles.skillsCard}>
+                <View style={styles.chipsWrap}>
+                  {(skills ?? []).map((s, i) => (
+                    <View key={`${s.category}-${i}`} style={styles.chip}>
+                      <Text style={styles.chipText}>
+                        {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
           </>
@@ -206,22 +214,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  /* Plain pill items */
-  list: { gap: 6 },
+  /* Single-card item list */
+  list: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: 'hidden',
+  },
 
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingVertical: 12,
     gap: 8,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+  },
+  itemRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,74,173,0.08)',
   },
 
   itemText: {
@@ -276,6 +290,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
+  skillsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    padding: 16,
+  },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   chip: {
     paddingHorizontal: 10,
