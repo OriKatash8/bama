@@ -67,8 +67,8 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 11,
     color: 'rgba(0,74,173,0.4)',
-    alignSelf: 'flex-end',
-    textAlign: 'right',
+    alignSelf: 'flex-start',
+    textAlign: 'left',
   },
 
   nameAvatarRow: {
