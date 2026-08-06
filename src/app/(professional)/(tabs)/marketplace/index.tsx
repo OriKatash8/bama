@@ -6,7 +6,7 @@ import {
 import { Image } from 'expo-image';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { SlidersHorizontal, X, Search } from 'lucide-react-native';
+import { SlidersHorizontal, X, Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceToggle';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
@@ -275,22 +275,27 @@ export default function MarketplaceScreen() {
         </View>
 
         {/* Categories */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesRow}
-        >
-          {CATEGORIES.map((cat) => (
-            <CategoryTile
-              key={cat.id}
-              cat={cat}
-              label={t(`marketplace.${cat.labelKey}`)}
-              isActive={selectedCategory === cat.id}
-              onPress={() => setSelectedCategory(cat.id)}
-              inactiveLabelColor={colors.textMuted}
-            />
-          ))}
-        </ScrollView>
+        <View style={styles.categoriesWrapper}>
+          <ChevronLeft size={18} color="rgba(0,74,173,0.35)" strokeWidth={2.5} style={styles.catArrow} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesRow}
+            style={styles.categoriesScroll}
+          >
+            {CATEGORIES.map((cat) => (
+              <CategoryTile
+                key={cat.id}
+                cat={cat}
+                label={t(`marketplace.${cat.labelKey}`)}
+                isActive={selectedCategory === cat.id}
+                onPress={() => setSelectedCategory(cat.id)}
+                inactiveLabelColor={colors.textMuted}
+              />
+            ))}
+          </ScrollView>
+          <ChevronRight size={18} color="rgba(0,74,173,0.35)" strokeWidth={2.5} style={styles.catArrow} />
+        </View>
 
         {/* Filter button + active tags */}
         <View style={styles.filterBarRow}>
@@ -542,9 +547,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
+  categoriesWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  categoriesScroll: {
+    flex: 1,
+  },
+  catArrow: {
+    paddingHorizontal: 2,
+  },
   categoriesRow: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     gap: 8,
     marginTop: 0,
