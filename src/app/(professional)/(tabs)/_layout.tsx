@@ -73,9 +73,9 @@ export default function ProfessionalTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 48,
-                    height: 28,
-                    borderRadius: 14,
+                    width: 44,
+                    height: 36,
+                    borderRadius: 12,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
@@ -94,9 +94,9 @@ export default function ProfessionalTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 48,
-                    height: 28,
-                    borderRadius: 14,
+                    width: 44,
+                    height: 36,
+                    borderRadius: 12,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
@@ -117,9 +117,9 @@ export default function ProfessionalTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 48,
-                    height: 28,
-                    borderRadius: 14,
+                    width: 44,
+                    height: 36,
+                    borderRadius: 12,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
@@ -139,9 +139,9 @@ export default function ProfessionalTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 48,
-                    height: 28,
-                    borderRadius: 14,
+                    width: 44,
+                    height: 36,
+                    borderRadius: 12,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
