@@ -244,7 +244,9 @@ const styles = StyleSheet.create({
 
   /* Content */
   panel: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 16,
     gap: 12,
   },
 
