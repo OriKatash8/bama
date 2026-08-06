@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   count: { fontSize: 13, fontWeight: '500' },
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  gridContent: { paddingVertical: 8, gap: 12 },
+  gridContent: { paddingVertical: 8, gap: 12, alignItems: 'center' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: 17, fontWeight: '600' },
