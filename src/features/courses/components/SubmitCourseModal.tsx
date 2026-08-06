@@ -77,12 +77,12 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheetWrapper}>
-          <LinearGradient colors={['#1a237e', '#004aad']} style={styles.sheet}>
+          <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sheet}>
             {/* Header */}
             <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.headerTitle, { ...font.bold }]}>{t('courses.add_your_course')}</Text>
               <TouchableOpacity onPress={onClose} hitSlop={12} activeOpacity={0.7}>
-                <X size={20} color="#ffffff" />
+                <X size={20} color="#004aad" />
               </TouchableOpacity>
             </View>
 
@@ -94,7 +94,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={title}
                 onChangeText={setTitle}
                 placeholder={t('courses.course_title_label')}
-                placeholderTextColor="rgba(255,255,255,0.5)"
+                placeholderTextColor="rgba(0,74,173,0.4)"
               />
 
               {/* Category */}
@@ -104,7 +104,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 onPress={() => setShowCategoryPicker(!showCategoryPicker)}
                 activeOpacity={0.8}
               >
-                <Text style={[{ color: category ? '#ffffff' : 'rgba(255,255,255,0.5)', ...font.regular }]}>
+                <Text style={[{ color: category ? '#004aad' : 'rgba(0,74,173,0.4)', ...font.regular }]}>
                   {category || t('courses.select_category')}
                 </Text>
               </TouchableOpacity>
@@ -130,7 +130,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={courseUrl}
                 onChangeText={setCourseUrl}
                 placeholder="https://..."
-                placeholderTextColor="rgba(255,255,255,0.5)"
+                placeholderTextColor="rgba(0,74,173,0.4)"
                 autoCapitalize="none"
                 keyboardType="url"
               />
@@ -142,7 +142,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={instructorName}
                 onChangeText={setInstructorName}
                 placeholder={t('courses.instructor_label')}
-                placeholderTextColor="rgba(255,255,255,0.5)"
+                placeholderTextColor="rgba(0,74,173,0.4)"
               />
 
               {/* Price */}
@@ -152,7 +152,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={price}
                 onChangeText={setPrice}
                 placeholder="0"
-                placeholderTextColor="rgba(255,255,255,0.5)"
+                placeholderTextColor="rgba(0,74,173,0.4)"
                 keyboardType="numeric"
               />
 
@@ -163,7 +163,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={description}
                 onChangeText={setDescription}
                 placeholder={t('courses.description_label')}
-                placeholderTextColor="rgba(255,255,255,0.5)"
+                placeholderTextColor="rgba(0,74,173,0.4)"
                 multiline
                 numberOfLines={3}
               />
@@ -176,7 +176,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 activeOpacity={0.8}
               >
                 {isSubmitting
-                  ? <ActivityIndicator size="small" color="#004aad" />
+                  ? <ActivityIndicator size="small" color="#ffffff" />
                   : <Text style={[styles.submitBtnText, { ...font.bold }]}>{t('courses.submit_course')}</Text>
                 }
               </TouchableOpacity>
@@ -193,35 +193,35 @@ const styles = StyleSheet.create({
   sheetWrapper: { borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden', maxHeight: '90%' },
   sheet: { flex: 1, paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32 },
   header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  headerTitle: { fontSize: 20, color: '#ffffff', flex: 1 },
+  headerTitle: { fontSize: 20, color: '#004aad', flex: 1 },
   form: { gap: 4, paddingBottom: 16 },
-  label: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 4, marginTop: 12 },
+  label: { fontSize: 13, color: 'rgba(0,74,173,0.8)', marginBottom: 4, marginTop: 12 },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(0,74,173,0.2)',
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#ffffff',
+    color: '#004aad',
     fontSize: 14,
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
   picker: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.4)',
     borderRadius: 10,
     marginTop: 4,
     overflow: 'hidden',
   },
-  pickerItem: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
-  pickerItemText: { color: '#ffffff', fontSize: 14 },
+  pickerItem: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(0,74,173,0.1)' },
+  pickerItemText: { color: '#004aad', fontSize: 14 },
   submitBtn: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#004aad',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 24,
   },
   submitBtnDisabled: { opacity: 0.5 },
-  submitBtnText: { color: '#004aad', fontSize: 15 },
+  submitBtnText: { color: '#ffffff', fontSize: 15 },
 });
