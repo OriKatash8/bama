@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, TextInput,
+  View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
@@ -49,6 +48,8 @@ export function ContentTabs({
 
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');
+  const [tabBarWidth, setTabBarWidth] = useState(0);
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   function sectionLabel(key: SectionKey): string {
     const map: Record<SectionKey, string> = {
@@ -59,6 +60,16 @@ export function ContentTabs({
     return map[key];
   }
 
+  function switchTab(key: SectionKey) {
+    const idx = SECTION_KEYS.indexOf(key);
+    setActive(key);
+    Animated.timing(slideAnim, {
+      toValue: idx,
+      duration: 240,
+      useNativeDriver: true,
+    }).start();
+  }
+
   function addEquipment() {
     const trimmed = newEquipment.trim();
     if (!trimmed || !onEquipmentChange) return;
@@ -66,75 +77,86 @@ export function ContentTabs({
     setNewEquipment('');
   }
 
+  const pillWidth = tabBarWidth / 3;
+
   return (
-    <View>
+    <View style={styles.outerCard}>
 
       {/* ── Tab bar ── */}
-      <View style={styles.tabBar}>
-        {SECTION_KEYS.map((key) => {
-          const isActive = key === active;
-          return (
-            <TouchableOpacity
-              key={key}
-              onPress={() => setActive(key)}
-              activeOpacity={0.8}
-            >
-              {isActive ? (
-                <LinearGradient
-                  colors={['#004aad', '#cb6ce6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.tabActive}
-                >
-                  <Text style={[styles.tabText, { color: '#fff', textAlign: rtl ? 'right' : 'left' }]}>
-                    {sectionLabel(key)}
-                  </Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.tab}>
-                  <Text style={[styles.tabText, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
-                    {sectionLabel(key)}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+      <View
+        style={styles.tabBar}
+        onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
+      >
+        {/* Sliding pill behind labels */}
+        {tabBarWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.slidingPill,
+              {
+                width: pillWidth,
+                transform: [{
+                  translateX: slideAnim.interpolate({
+                    inputRange: [0, 1, 2],
+                    outputRange: [0, pillWidth, pillWidth * 2],
+                  }),
+                }],
+              },
+            ]}
+          />
+        )}
+
+        {/* Labels on top of pill */}
+        {SECTION_KEYS.map((key) => (
+          <TouchableOpacity
+            key={key}
+            style={styles.tab}
+            onPress={() => switchTab(key)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.tabText, { color: active === key ? '#fff' : '#004aad' }]}>
+              {sectionLabel(key)}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* ── Content (no card background) ── */}
+      <View style={styles.tabDivider} />
+
+      {/* ── Content ── */}
       <View style={styles.panel}>
 
         {/* Equipment */}
         {active === 'equipment' && (
           <>
             {equipment.length === 0 && (
-              <Text style={[styles.empty, { textAlign: 'center' }]}>
+              <Text style={styles.empty}>
                 {t('profile_sections.no_equipment')}
               </Text>
             )}
-            <View style={styles.list}>
-              {equipment.map((item, index) => (
-                <View
-                  key={`eq-${index}`}
-                  style={[
-                    styles.itemRow,
-                    index < equipment.length - 1 && styles.itemRowDivider,
-                  ]}
-                >
-                  {isEditing && (
-                    <TouchableOpacity
-                      onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
-                      hitSlop={8}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.removeBtn}>×</Text>
-                    </TouchableOpacity>
-                  )}
-                  <Text style={[styles.itemText, { textAlign: 'center' }]}>{item}</Text>
-                </View>
-              ))}
-            </View>
+            {equipment.length > 0 && (
+              <View style={styles.list}>
+                {equipment.map((item, index) => (
+                  <View
+                    key={`eq-${index}`}
+                    style={[
+                      styles.itemRow,
+                      index < equipment.length - 1 && styles.itemRowDivider,
+                    ]}
+                  >
+                    {isEditing && (
+                      <TouchableOpacity
+                        onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.removeBtn}>×</Text>
+                      </TouchableOpacity>
+                    )}
+                    <Text style={styles.itemText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
             {isEditing && (
               <View style={styles.addRow}>
                 <TouchableOpacity style={styles.addBtn} onPress={addEquipment} activeOpacity={0.8}>
@@ -161,20 +183,18 @@ export function ContentTabs({
         {active === 'skills' && (
           <>
             {(skills ?? []).length === 0 ? (
-              <Text style={[styles.empty, { textAlign: 'center' }]}>
+              <Text style={styles.empty}>
                 {t('profile_sections.no_skills')}
               </Text>
             ) : (
-              <View style={styles.skillsCard}>
-                <View style={styles.chipsWrap}>
-                  {(skills ?? []).map((s, i) => (
-                    <View key={`${s.category}-${i}`} style={styles.chip}>
-                      <Text style={styles.chipText}>
-                        {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+              <View style={styles.chipsWrap}>
+                {(skills ?? []).map((s, i) => (
+                  <View key={`${s.category}-${i}`} style={styles.chip}>
+                    <Text style={styles.chipText}>
+                      {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
+                    </Text>
+                  </View>
+                ))}
               </View>
             )}
           </>
@@ -185,46 +205,56 @@ export function ContentTabs({
 }
 
 const styles = StyleSheet.create({
+  outerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+
   /* Tab bar */
   tabBar: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    height: 48,
+    position: 'relative',
   },
   tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-  },
-  tabActive: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabText: {
     fontSize: 13,
     fontWeight: '600',
   },
+  slidingPill: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    borderRadius: 16,
+    backgroundColor: '#004aad',
+  },
+  tabDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,74,173,0.08)',
+  },
 
   /* Content */
   panel: {
-    paddingVertical: 8,
+    padding: 16,
     gap: 12,
   },
 
-  /* Single-card item list */
+  /* Equipment list */
   list: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.08)',
     overflow: 'hidden',
   },
-
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -237,7 +267,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,74,173,0.08)',
   },
-
   itemText: {
     flex: 1,
     fontSize: 14,
@@ -290,15 +319,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
-  skillsCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    padding: 16,
-  },
+  /* Skills */
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   chip: {
     paddingHorizontal: 10,
