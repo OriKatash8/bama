@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 8,
+    backgroundColor: 'rgba(0,74,173,0.05)',
   },
   itemRowDivider: {
     borderBottomWidth: 1,
