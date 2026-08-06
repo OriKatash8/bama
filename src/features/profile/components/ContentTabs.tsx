@@ -80,9 +80,10 @@ export function ContentTabs({
   const pillWidth = tabBarWidth / 3;
 
   return (
-    <View style={styles.outerCard}>
+    <View style={styles.wrapper}>
 
-      {/* ── Tab bar ── */}
+      {/* ── Tab bar card ── */}
+      <View style={styles.tabCard}>
       <View
         style={styles.tabBar}
         onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
@@ -119,13 +120,10 @@ export function ContentTabs({
           </TouchableOpacity>
         ))}
       </View>
-
-      <View style={styles.tabDividerRow}>
-        <View style={styles.tabDividerSegment} />
-        <View style={styles.tabDividerSegment} />
       </View>
 
-      {/* ── Content ── */}
+      {/* ── Content card ── */}
+      <View style={styles.contentCard}>
       <View style={styles.panel}>
 
         {/* Equipment */}
@@ -203,12 +201,16 @@ export function ContentTabs({
           </>
         )}
       </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outerCard: {
+  wrapper: {
+    gap: 12,
+  },
+  tabCard: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
     shadowColor: '#000',
@@ -217,7 +219,15 @@ const styles = StyleSheet.create({
     elevation: 3,
     overflow: 'hidden',
   },
-
+  contentCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+    overflow: 'hidden',
+  },
   /* Tab bar */
   tabBar: {
     flexDirection: 'row',
@@ -240,18 +250,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#004aad',
   },
-  tabDividerRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 16,
-  },
-  tabDividerSegment: {
-    flex: 1,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(0,74,173,0.1)',
-  },
-
   /* Content */
   panel: {
     paddingHorizontal: 16,
