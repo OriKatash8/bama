@@ -3,7 +3,6 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList, Modal,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useSegments } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -123,61 +122,59 @@ export default function BrowseScreen() {
         onRequestClose={closeModal}
       >
         <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: colors.bg + 'CC' }]} activeOpacity={1} onPress={closeModal}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.modalSheet}>
-            <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modalGradient}>
-              {/* Header */}
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { ...font.bold, color: '#ffffff' }]}>
-                  {selectedCategory}
-                </Text>
-                <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
-                  <Text style={[styles.modalClose, { color: 'rgba(255,255,255,0.7)' }]}>✕</Text>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.modalSheet, { backgroundColor: colors.bg }]}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { ...font.bold, color: colors.text }]}>
+                {selectedCategory}
+              </Text>
+              <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
+                <Text style={[styles.modalClose, { color: colors.textMuted }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Pill search bar */}
+            <View style={[styles.modalSearchRow, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+              <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
+              <TextInput
+                style={[styles.modalSearchInput, { color: colors.text }]}
+                placeholder="Search by name…"
+                placeholderTextColor={colors.placeholder}
+                value={modalQuery}
+                onChangeText={setModalQuery}
+              />
+              {modalQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setModalQuery('')} activeOpacity={0.7}>
+                  <Text style={{ color: colors.textMuted, fontSize: 14 }}>✕</Text>
                 </TouchableOpacity>
-              </View>
-
-              {/* Pill search bar */}
-              <View style={styles.modalSearchRow}>
-                <Search size={16} color="rgba(255,255,255,0.6)" strokeWidth={2.5} />
-                <TextInput
-                  style={[styles.modalSearchInput, { color: '#ffffff' }]}
-                  placeholder="Search by name…"
-                  placeholderTextColor="rgba(255,255,255,0.5)"
-                  value={modalQuery}
-                  onChangeText={setModalQuery}
-                />
-                {modalQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setModalQuery('')} activeOpacity={0.7}>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>✕</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Results */}
-              {modalLoading ? (
-                <ActivityIndicator color="#ffffff" style={{ marginTop: 24 }} />
-              ) : filteredModalResults.length === 0 ? (
-                <View style={styles.emptyResults}>
-                  <Text style={styles.emptyIcon}>👤</Text>
-                  <Text style={[styles.emptyText, { color: 'rgba(255,255,255,0.9)' }]}>No professionals yet</Text>
-                  <Text style={[styles.emptySubtext, { color: 'rgba(255,255,255,0.6)' }]}>
-                    Professionals in this category will appear here once they set up their profile.
-                  </Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={filteredModalResults}
-                  keyExtractor={(item) => item.user.id}
-                  contentContainerStyle={styles.resultsList}
-                  showsVerticalScrollIndicator={false}
-                  renderItem={({ item }) => (
-                    <ProfessionalCard
-                      item={item}
-                      onMessage={() => handleMessage(item.user.id)}
-                    />
-                  )}
-                />
               )}
-            </LinearGradient>
+            </View>
+
+            {/* Results */}
+            {modalLoading ? (
+              <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />
+            ) : filteredModalResults.length === 0 ? (
+              <View style={styles.emptyResults}>
+                <Text style={styles.emptyIcon}>👤</Text>
+                <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals yet</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
+                  Professionals in this category will appear here once they set up their profile.
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredModalResults}
+                keyExtractor={(item) => item.user.id}
+                contentContainerStyle={styles.resultsList}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <ProfessionalCard
+                    item={item}
+                    onMessage={() => handleMessage(item.user.id)}
+                  />
+                )}
+              />
+            )}
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -232,12 +229,9 @@ const styles = StyleSheet.create({
   modalSheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    overflow: 'hidden',
-    maxHeight: '85%',
-  },
-  modalGradient: {
     paddingTop: 20,
     paddingHorizontal: 16,
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
