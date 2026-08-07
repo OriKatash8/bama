@@ -71,9 +71,9 @@ export default function ClientTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 14,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
@@ -92,9 +92,9 @@ export default function ClientTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 14,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
@@ -115,9 +115,9 @@ export default function ClientTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 14,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
@@ -136,9 +136,9 @@ export default function ClientTabsLayout() {
                   <View style={{
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 14,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
                     backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
                     marginBottom: 2,
                   }}>
