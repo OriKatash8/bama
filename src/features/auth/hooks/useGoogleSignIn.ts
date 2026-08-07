@@ -92,15 +92,14 @@ export function useGoogleSignIn(): GoogleSignInState {
         photoURL: result.user.photoURL,
       });
       router.replace('/(auth)/mode-select');
-    } catch (e: unknown) {
-      const code = (e as { code?: string }).code;
-      if (code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled — no error shown
-      } else {
-        const msg = i18n.t('auth.err_google_failed');
-        setError(msg);
-        showToast(msg, 'error');
-      }
+    } catch (error: any) {
+      console.log('[GoogleSignIn] full error:', JSON.stringify(error));
+      console.log('[GoogleSignIn] error code:', error.code);
+      console.log('[GoogleSignIn] error message:', error.message);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) return;
+      const msg = i18n.t('auth.err_google_failed');
+      setError(msg);
+      showToast(msg, 'error');
     }
   }
 
