@@ -19,7 +19,7 @@ const IOS_CLIENT_ID =
 
 // Get this from Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration → Web client ID
 const WEB_CLIENT_ID =
-  'PASTE_WEB_CLIENT_ID_HERE.apps.googleusercontent.com';
+  '165833515213-ne79l7lafiupu1gdvsubh6pjl7eogr7p.apps.googleusercontent.com';
 
 if (Platform.OS !== 'web') {
   GoogleSignin.configure({ iosClientId: IOS_CLIENT_ID, webClientId: WEB_CLIENT_ID });
