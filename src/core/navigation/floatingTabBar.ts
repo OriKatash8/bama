@@ -14,8 +14,8 @@ export function getFloatingTabBarStyle(isDark: boolean): ViewStyle {
   return {
     position: 'absolute',
     bottom: 24,
-    left: 40,
-    right: 40,
+    left: 30,
+    right: 30,
     minHeight: 65,
     paddingBottom: Platform.OS === 'ios' ? 20 : 8,
     paddingTop: 8,
