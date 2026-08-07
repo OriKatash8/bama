@@ -68,6 +68,7 @@ export default function ProfessionalTabsLayout() {
             name="dashboard"
             options={{
               title: t('tabs.notice_board'),
+              tabBarItemStyle: { paddingVertical: 6, height: 65 },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{
@@ -89,6 +90,7 @@ export default function ProfessionalTabsLayout() {
             name="marketplace"
             options={{
               title: t('tabs.marketplace'),
+              tabBarItemStyle: { paddingVertical: 6, height: 65 },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{
@@ -112,6 +114,7 @@ export default function ProfessionalTabsLayout() {
               title: t('tabs.chats'),
               tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
               tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
+              tabBarItemStyle: { paddingVertical: 6, height: 65 },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{
@@ -134,6 +137,7 @@ export default function ProfessionalTabsLayout() {
             name="profile"
             options={{
               title: t('tabs.profile'),
+              tabBarItemStyle: { paddingVertical: 6, height: 65 },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{
