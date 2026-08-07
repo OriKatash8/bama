@@ -210,7 +210,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.9 }]}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { height: screenHeight * 0.9 }]}>
 
         <LinearGradient
           colors={['#efd4f6', '#b7cae6']}
