@@ -84,7 +84,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.88 }]}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { height: screenHeight * 0.88 }]}>
           <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sheet}>
             {/* Drag handle */}
             <View style={styles.dragHandleArea} {...panResponder.panHandlers}>
@@ -99,7 +99,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form} style={{ maxHeight: screenHeight * 0.88 - 130 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form} style={{ flex: 1 }}>
               {/* Title */}
               <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.course_title_label')} *</Text>
               <TextInput
@@ -204,7 +204,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheetWrapper: { width: '100%', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
-  sheet: { paddingTop: 8, paddingHorizontal: 16, paddingBottom: 32 },
+  sheet: { flex: 1, paddingTop: 8, paddingHorizontal: 16, paddingBottom: 32 },
   dragHandleArea: { alignItems: 'center', paddingVertical: 8 },
   dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.18)' },
   header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
