@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
-  ScrollView, ActivityIndicator, StyleSheet,
+  ScrollView, ActivityIndicator, StyleSheet, useWindowDimensions, PanResponder,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
@@ -33,7 +33,15 @@ type Props = {
 };
 
 export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
+  const { height: screenHeight } = useWindowDimensions();
   const font = useAppFont();
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 8 && Math.abs(gs.dy) > Math.abs(gs.dx),
+      onPanResponderRelease: (_, gs) => { if (gs.dy > 80) onClose(); },
+    })
+  ).current;
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -75,9 +83,14 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheetWrapper}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.88 }]}>
           <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sheet}>
+            {/* Drag handle */}
+            <View style={styles.dragHandleArea} {...panResponder.panHandlers}>
+              <View style={styles.dragHandle} />
+            </View>
+
             {/* Header */}
             <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.headerTitle, { ...font.bold }]}>{t('courses.add_your_course')}</Text>
@@ -86,7 +99,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form} style={{ maxHeight: screenHeight * 0.88 - 130 }}>
               {/* Title */}
               <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.course_title_label')} *</Text>
               <TextInput
@@ -182,16 +195,18 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               </TouchableOpacity>
             </ScrollView>
           </LinearGradient>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  sheetWrapper: { borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden', maxHeight: '90%' },
-  sheet: { flex: 1, paddingTop: 20, paddingHorizontal: 16, paddingBottom: 32 },
+  sheetWrapper: { width: '100%', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
+  sheet: { paddingTop: 8, paddingHorizontal: 16, paddingBottom: 32 },
+  dragHandleArea: { alignItems: 'center', paddingVertical: 8 },
+  dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.18)' },
   header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   headerTitle: { fontSize: 20, color: '#004aad', flex: 1 },
   form: { gap: 4, paddingBottom: 16 },
