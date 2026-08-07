@@ -15,10 +15,14 @@ import i18n from '@core/i18n';
 import type { User } from '@core/types/user';
 
 const IOS_CLIENT_ID =
-  '165833515213-vnjr63akeo6tlrpr2a3i0q2ua742nj8f.apps.googleusercontent.com';
+  '165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r.apps.googleusercontent.com';
+
+// Get this from Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration → Web client ID
+const WEB_CLIENT_ID =
+  'PASTE_WEB_CLIENT_ID_HERE.apps.googleusercontent.com';
 
 if (Platform.OS !== 'web') {
-  GoogleSignin.configure({ iosClientId: IOS_CLIENT_ID });
+  GoogleSignin.configure({ iosClientId: IOS_CLIENT_ID, webClientId: WEB_CLIENT_ID });
 }
 
 type GoogleSignInState = {
