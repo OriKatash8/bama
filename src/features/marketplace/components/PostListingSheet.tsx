@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, TextInput,
-  StyleSheet, ScrollView, ActivityIndicator,
+  StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -136,6 +136,7 @@ type Props = {
 };
 
 export function PostListingSheet({ visible, initialType, lockedType = false, onClose }: Props) {
+  const { height: screenHeight } = useWindowDimensions();
   const { create, isSubmitting } = useCreateListing();
   const { showToast } = useUiStore();
   const language = useSettingsStore((s) => s.language);
@@ -209,7 +210,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.sheetWrapper}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.9 }]}>
 
         <LinearGradient
           colors={['#efd4f6', '#b7cae6']}
@@ -434,8 +435,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   card: {
+    flex: 1,
     width: '100%',
-    maxHeight: '90%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
