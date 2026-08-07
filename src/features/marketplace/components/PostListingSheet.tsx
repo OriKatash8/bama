@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, TextInput,
-  StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions,
+  StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -138,6 +138,13 @@ type Props = {
 export function PostListingSheet({ visible, initialType, lockedType = false, onClose }: Props) {
   const { height: screenHeight } = useWindowDimensions();
   const { create, isSubmitting } = useCreateListing();
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 8 && Math.abs(gs.dy) > Math.abs(gs.dx),
+      onPanResponderRelease: (_, gs) => { if (gs.dy > 80) onClose(); },
+    })
+  ).current;
   const { showToast } = useUiStore();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -210,7 +217,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { height: screenHeight * 0.9 }]}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.88 }]}>
 
         <LinearGradient
           colors={['#efd4f6', '#b7cae6']}
@@ -218,6 +225,11 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
           end={{ x: 1, y: 0 }}
           style={styles.card}
         >
+          {/* Drag handle */}
+          <View style={styles.dragHandleArea} {...panResponder.panHandlers}>
+            <View style={styles.dragHandle} />
+          </View>
+
           {/* Header */}
           <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Text style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -230,7 +242,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
           {/* Scrollable form */}
           <ScrollView
-            style={styles.scroll}
+            style={[styles.scroll, { maxHeight: screenHeight * 0.88 - 130 }]}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -435,16 +447,19 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   card: {
-    flex: 1,
     width: '100%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    paddingTop: 8,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 20,
   },
+  dragHandleArea: { alignItems: 'center', paddingVertical: 8 },
+  dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.18)' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -463,7 +478,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scroll: { flex: 1 },
+  scroll: {},
   scrollContent: { paddingBottom: 100 },
 
   toggle: { flexDirection: 'row', gap: 8, marginBottom: 16 },
