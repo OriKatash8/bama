@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
-import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
 import { useTheme } from '@core/hooks/useTheme';
@@ -32,6 +32,7 @@ type ContentTabsProps = {
   skills?: ProfessionalSkill[];
   isEditing: boolean;
   onEquipmentChange?: (items: string[]) => void;
+  onSkillsChange?: (skills: ProfessionalSkill[]) => void;
 };
 
 export function ContentTabs({
@@ -40,6 +41,7 @@ export function ContentTabs({
   skills,
   isEditing,
   onEquipmentChange,
+  onSkillsChange,
 }: ContentTabsProps) {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
@@ -183,20 +185,48 @@ export function ContentTabs({
         {/* Skills */}
         {active === 'skills' && (
           <>
-            {(skills ?? []).length === 0 ? (
-              <Text style={styles.empty}>
-                {t('profile_sections.no_skills')}
-              </Text>
-            ) : (
-              <View style={styles.chipsWrap}>
-                {(skills ?? []).map((s, i) => (
-                  <View key={`${s.category}-${i}`} style={styles.chip}>
-                    <Text style={styles.chipText}>
-                      {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
-                    </Text>
-                  </View>
-                ))}
+            {isEditing ? (
+              <View style={styles.tableList}>
+                {Object.keys(CREW_CATEGORIES).map((category) => {
+                  const isSelected = (skills ?? []).some(s => s.category === category);
+                  const label = rtl && CATEGORY_LABEL_KEY[category] ? t(CATEGORY_LABEL_KEY[category]) : category;
+                  return (
+                    <TouchableOpacity
+                      key={category}
+                      style={[styles.tableRow, isSelected && styles.tableRowActive]}
+                      onPress={() => {
+                        const current = skills ?? [];
+                        const next = isSelected
+                          ? current.filter(s => s.category !== category)
+                          : [...current, { category }];
+                        onSkillsChange?.(next);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.tableRowCheck, isSelected && styles.tableRowCheckActive]}>
+                        {isSelected ? '✓' : ''}
+                      </Text>
+                      <Text style={[styles.tableRowText, isSelected && styles.tableRowTextActive]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
+            ) : (
+              (skills ?? []).length === 0 ? (
+                <Text style={styles.empty}>{t('profile_sections.no_skills')}</Text>
+              ) : (
+                <View style={styles.chipsWrap}>
+                  {(skills ?? []).map((s, i) => (
+                    <View key={`${s.category}-${i}`} style={styles.chip}>
+                      <Text style={styles.chipText}>
+                        {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )
             )}
           </>
         )}
@@ -330,7 +360,25 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
-  /* Skills */
+  /* Skills table (edit mode) */
+  tableList: { gap: 2 },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,74,173,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.1)',
+  },
+  tableRowActive: { backgroundColor: 'rgba(0,74,173,0.1)', borderColor: '#004aad' },
+  tableRowCheck: { width: 20, fontSize: 13, color: '#004aad', fontWeight: '700' },
+  tableRowCheckActive: { color: '#004aad' },
+  tableRowText: { fontSize: 14, color: 'rgba(0,74,173,0.6)', fontWeight: '500', flex: 1 },
+  tableRowTextActive: { color: '#004aad', fontWeight: '700' },
+
+  /* Skills chips (view mode) */
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   chip: {
     paddingHorizontal: 10,

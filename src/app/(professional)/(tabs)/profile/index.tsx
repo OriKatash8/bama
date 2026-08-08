@@ -6,7 +6,6 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
-import { RoleChips } from '@features/profile/components/RoleChips';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
@@ -152,14 +151,13 @@ export default function ProfessionalProfileScreen() {
         size={130}
       />
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
-      {isEditing && <RoleChips selected={skills} isEditing onChange={setSkills} />}
-
       <ContentTabs
         equipment={equipment}
         reviews={reviews}
         skills={skills}
         isEditing={isEditing}
         onEquipmentChange={setEquipment}
+        onSkillsChange={setSkills}
       />
 
       <View style={styles.portfolioSection}>
