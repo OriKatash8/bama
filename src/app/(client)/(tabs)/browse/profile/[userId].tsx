@@ -6,14 +6,14 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, User as UserIcon, Flag, X } from 'lucide-react-native';
+import { ChevronLeft, Flag, X } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
+import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
-import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
 import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
 import { db } from '@core/firebase/config';
@@ -183,39 +183,30 @@ export default function PublicProfileScreen() {
 
   return (
     <Screen scrollable style={styles.screenContent}>
-      {/* ── Hero gradient ── */}
-      <LinearGradient
-        colors={['#cb6ce6', '#004aad']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.hero}
-      >
+      {/* ── Title row: back + report ── */}
+      <View style={styles.titleRow}>
         <TouchableOpacity
           onPress={goToBrowse}
-          style={styles.heroBack}
+          style={styles.backBtn}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <ChevronLeft size={20} color="#fff" strokeWidth={2.5} />
-          <Text style={styles.heroBackText}>Back</Text>
+          <ChevronLeft size={24} color="#004aad" strokeWidth={2.5} />
         </TouchableOpacity>
-
-        <View style={styles.heroBody}>
-          {user.photoURL ? (
-            <Image source={{ uri: user.photoURL }} style={styles.heroAvatar} />
-          ) : (
-            <View style={[styles.heroAvatar, styles.heroAvatarFallback]}>
-              <UserIcon size={44} color="#fff" strokeWidth={1.5} />
-            </View>
-          )}
-          <Text style={[styles.heroName, { ...font.bold }]}>{user.displayName}</Text>
-        </View>
-      </LinearGradient>
-
-      {/* ── Rating ── */}
-      <View style={styles.ratingSection}>
-        <AverageRatingDisplay reviews={reviews} showEmptyState />
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity onPress={() => setReportVisible(true)} activeOpacity={0.7} hitSlop={8}>
+          <Flag size={18} color="#ff4d6d" strokeWidth={2} />
+        </TouchableOpacity>
       </View>
+
+      {/* ── Profile header (avatar, name, rating) ── */}
+      <ProfileHeader
+        photoURL={user.photoURL ?? null}
+        name={user.displayName}
+        isEditing={false}
+        reviews={reviews}
+        size={130}
+      />
 
       {/* ── Bio ── */}
       <BioSection bio={profile.bio} isEditing={false} />
@@ -231,7 +222,6 @@ export default function PublicProfileScreen() {
       {/* ── Portfolio ── */}
       {portfolio.length > 0 && (
         <View style={styles.portfolioSection}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>PORTFOLIO</Text>
           <PortfolioGrid assets={portfolio} isEditing={false} />
         </View>
       )}
@@ -244,18 +234,6 @@ export default function PublicProfileScreen() {
       >
         <Text style={[styles.projectBtnText, { ...font.bold }]}>
           {t('search.tell_us_about_project')}
-        </Text>
-      </TouchableOpacity>
-
-      {/* ── Report button ── */}
-      <TouchableOpacity
-        style={[styles.reportBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-        onPress={() => setReportVisible(true)}
-        activeOpacity={0.7}
-      >
-        <Flag size={13} color="#ff4d6d" strokeWidth={2} />
-        <Text style={[styles.reportBtnText, { ...font.regular }]}>
-          {t('profile.report')}
         </Text>
       </TouchableOpacity>
 
@@ -364,59 +342,15 @@ export default function PublicProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screenContent: { paddingBottom: 100 },
+  screenContent: { gap: 24, paddingBottom: 100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   errorText: { fontSize: 16, fontWeight: '500' },
   backFallback: { paddingVertical: 8 },
 
-  hero: {
-    marginHorizontal: -16,
-    marginTop: -16,
-    paddingBottom: 28,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  heroBack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 2,
-    alignSelf: 'flex-start',
-  },
-  heroBackText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  heroBody: { alignItems: 'center', paddingTop: 4 },
-  heroAvatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.4)',
-    marginBottom: 12,
-  },
-  heroAvatarFallback: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroName: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '800',
-    fontFamily: 'Montserrat-Regular',
-    marginBottom: 6,
-  },
-  ratingSection: { alignItems: 'center', marginTop: 16 },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  backBtn: { paddingHorizontal: 4 },
 
-  portfolioSection: { marginTop: 8 },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    marginBottom: 8,
-    marginTop: 16,
-  },
+  portfolioSection: {},
 
   projectBtn: {
     alignItems: 'center',
@@ -431,20 +365,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Montserrat-Regular',
-  },
-
-  reportBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginTop: 16,
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  reportBtnText: {
-    color: '#ff4d6d',
-    fontSize: 13,
   },
 
   bottomPad: { height: 40 },
