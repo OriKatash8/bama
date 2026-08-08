@@ -90,18 +90,30 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
       <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
         {t('profile_sections.skills')}
       </Text>
-      <View style={styles.chipsWrap}>
+      {selected.length > 0 && (
+        <View style={[styles.chipsWrap, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          {selected.map((s) => (
+            <View key={s.category} style={styles.chip}>
+              <Text style={styles.chipText}>{catLabel(s.category, rtl, t)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      <View style={styles.tableList}>
         {allCategories.map((category) => {
           const active = isCategorySelected(selected, category);
           return (
             <TouchableOpacity
               key={category}
-              style={[styles.editChip, active && styles.editChipActive]}
+              style={[styles.tableRow, active && styles.tableRowActive]}
               onPress={() => onChange?.(toggleCategory(selected, category))}
               activeOpacity={0.7}
             >
-              <Text style={[styles.editChipText, active && styles.editChipTextActive]}>
-                {CATEGORY_EMOJI[category] ?? '•'} {catLabel(category, rtl, t)}
+              <Text style={[styles.tableRowCheck, active && styles.tableRowCheckActive]}>
+                {active ? '✓' : ''}
+              </Text>
+              <Text style={[styles.tableRowText, active && styles.tableRowTextActive]}>
+                {catLabel(category, rtl, t)}
               </Text>
             </TouchableOpacity>
           );
@@ -133,15 +145,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,74,173,0.2)',
   },
   chipText: { fontSize: 13, color: '#004aad' },
-  editChip: {
+  tableList: { gap: 2, marginTop: 4 },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,74,173,0.3)',
-    backgroundColor: 'rgba(0,74,173,0.05)',
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,74,173,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.1)',
   },
-  editChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  editChipText: { fontSize: 13, color: 'rgba(0,74,173,0.65)', fontWeight: '500' },
-  editChipTextActive: { color: '#fff', fontWeight: '700' },
+  tableRowActive: { backgroundColor: 'rgba(0,74,173,0.1)', borderColor: '#004aad' },
+  tableRowCheck: { width: 20, fontSize: 13, color: '#004aad', fontWeight: '700' },
+  tableRowCheckActive: { color: '#004aad' },
+  tableRowText: { fontSize: 14, color: 'rgba(0,74,173,0.6)', fontWeight: '500', flex: 1 },
+  tableRowTextActive: { color: '#004aad', fontWeight: '700' },
 });
