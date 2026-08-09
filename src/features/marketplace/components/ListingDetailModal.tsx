@@ -15,6 +15,13 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { confirmPurchase } from '../services/marketplaceService';
+
+const CONDITION_COLOR: Record<string, string> = {
+  new: '#43a047',
+  like_new: '#00897b',
+  good: '#fb8c00',
+  fair: '#e53935',
+};
 import { CheckoutModal } from './CheckoutModal';
 import type { MarketplaceListing } from '../types';
 import { useState } from 'react';
@@ -99,7 +106,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
           colors={['#efd4f6', '#b7cae6']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={[styles.card, { maxHeight: screenHeight * 0.85 }]}
+          style={[styles.card, { height: screenHeight * 0.82 }]}
         >
           {/* Header */}
           <View style={[styles.header, { flexDirection: rowDir }]}>
@@ -130,9 +137,42 @@ export function ListingDetailModal({ listing, onClose }: Props) {
               )}
             </View>
 
+            {/* Condition / Brand / Category */}
+            {(listing.condition || listing.brand || listing.category) && (
+              <View style={styles.detailsBox}>
+                {listing.condition && (
+                  <View style={[styles.detailRow, { flexDirection: rowDir }]}>
+                    <Text style={[styles.detailLabel, { ...font.regular }]}>
+                      {t('marketplace.condition')}
+                    </Text>
+                    <View style={[styles.conditionBadge, { backgroundColor: CONDITION_COLOR[listing.condition] ?? '#888' }]}>
+                      <Text style={[styles.conditionText, { ...font.semiBold }]}>
+                        {t(`marketplace.condition_${listing.condition}`)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                {listing.brand && (
+                  <View style={[styles.detailRow, { flexDirection: rowDir }]}>
+                    <Text style={[styles.detailLabel, { ...font.regular }]}>{t('marketplace.brand')}</Text>
+                    <Text style={[styles.detailValue, { ...font.semiBold }]}>{listing.brand}</Text>
+                  </View>
+                )}
+                {listing.category && (
+                  <View style={[styles.detailRow, { flexDirection: rowDir }]}>
+                    <Text style={[styles.detailLabel, { ...font.regular }]}>{t('marketplace.category')}</Text>
+                    <Text style={[styles.detailValue, { ...font.semiBold }]}>
+                      {t(`marketplace.category_${listing.category}`) || listing.category}
+                      {listing.subcategory ? ` › ${listing.subcategory}` : ''}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* Price & location */}
-            <View style={[styles.infoBox, { flexDirection: rowDir }]}>
-              <Text style={[styles.price, { ...font.bold }]}>{priceLabel}</Text>
+            <View style={styles.infoBox}>
+              <Text style={[styles.price, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{priceLabel}</Text>
               <View style={[styles.locationRow, { flexDirection: rowDir }]}>
                 <Image
                   source={LOCATION_ICON}
@@ -245,8 +285,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.1)',
   },
@@ -254,6 +293,40 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: 'row', alignItems: 'center' },
   locationIcon: { width: 14, height: 14 },
   location: { fontSize: 14, color: '#004aad99', flex: 1 },
+
+  detailsBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.1)',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#004aad99',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#004aad',
+    flexShrink: 1,
+    textAlign: 'right',
+  },
+  conditionBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  conditionText: {
+    color: '#fff',
+    fontSize: 12,
+  },
 
   sellerBox: {
     backgroundColor: '#ffffff',

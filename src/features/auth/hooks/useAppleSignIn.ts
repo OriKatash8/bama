@@ -28,13 +28,13 @@ export function useAppleSignIn(): AppleSignInState {
     try {
       // Generate a cryptographically random nonce to prevent replay attacks.
       // Apple receives the SHA256 hash; Firebase receives the raw value.
-      const rawNonceBytes = await Crypto.getRandomBytesAsync(32);
-      const rawNonce = Array.from(rawNonceBytes)
+      const rawNonce = Array.from(await Crypto.getRandomBytesAsync(16))
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
       const hashedNonce = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
         rawNonce,
+        { encoding: Crypto.CryptoEncoding.HEX },
       );
 
       const appleCredential = await AppleAuthentication.signInAsync({
@@ -70,9 +70,12 @@ export function useAppleSignIn(): AppleSignInState {
       }, setUser);
 
       router.replace('/(auth)/mode-select');
-    } catch (e: unknown) {
+    } catch (e: any) {
+      console.log('[AppleSignIn] full error:', JSON.stringify(e));
+      console.log('[AppleSignIn] code:', e?.code);
+      console.log('[AppleSignIn] message:', e?.message);
       const code = (e as { code?: string }).code ?? '';
-      if (code === 'ERR_REQUEST_CANCELED') return; // user dismissed — silent
+      if (code === 'ERR_REQUEST_CANCELED') return;
       const msg = i18n.t('auth.err_apple_failed');
       setError(msg);
       showToast(msg, 'error');

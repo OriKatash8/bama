@@ -1,4 +1,4 @@
-import { getDocument, setDocument } from '@core/firebase/firestore';
+import { getDocument, setDocument, updateDocument } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 
 export async function syncUser(
@@ -18,6 +18,18 @@ export async function syncUser(
     await setDocument(`users/${uid}`, userData);
     setUser(userData);
   } else {
-    setUser(existing);
+    // Backfill any fields that are blank on the stored doc but present in info.
+    // Only fills blanks — never overwrites non-empty values.
+    const backfill: Partial<User> = {};
+    if (!existing.displayName && info.displayName) backfill.displayName = info.displayName;
+    if (!existing.email && info.email) backfill.email = info.email;
+    if (!existing.photoURL && info.photoURL) backfill.photoURL = info.photoURL;
+
+    if (Object.keys(backfill).length > 0) {
+      await updateDocument<User>(`users/${uid}`, backfill);
+      setUser({ ...existing, ...backfill });
+    } else {
+      setUser(existing);
+    }
   }
 }

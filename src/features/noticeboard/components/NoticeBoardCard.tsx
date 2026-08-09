@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { Trash2 } from 'lucide-react-native';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { ProjectRequest } from '@core/types/project';
@@ -59,36 +60,86 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   ];
 
   if (compact) {
+    const rowDir: 'row' | 'row-reverse' = rtl ? 'row' : 'row-reverse';
+
     return (
-      <TouchableOpacity style={[cardStyle, { alignItems: rtl ? 'flex-end' : 'flex-start' }]} onPress={onPress} activeOpacity={0.85}>
+      <TouchableOpacity style={[cardStyle]} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
             <Text style={[styles.directBadgeText, { ...font.bold }]}>{directInviteLabel}</Text>
           </View>
         )}
-        <Text style={[styles.titleCompact, { ...font.bold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-          {request.title}
-        </Text>
-        <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <Image
-            source={LOCATION_ICON}
-            style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-            contentFit="contain" cachePolicy="memory-disk"
-          />
-          <Text style={[styles.locationCompact, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-            {translateCity(request.location, rtl)}
+
+        {/* Main row: side column (trash + avatar) + content */}
+        <View style={[styles.compactMain, { flexDirection: rowDir }]}>
+          <View style={styles.sideCol}>
+            <TouchableOpacity
+              style={styles.trashBtn}
+              onPress={(e) => { e.stopPropagation?.(); onDismiss(); }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={16} color="#e53935" />
+            </TouchableOpacity>
+            {poster?.photoURL ? (
+              <Image
+                source={{ uri: poster.photoURL }}
+                style={styles.compactAvatar}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+            ) : (
+              <View style={[styles.compactAvatar, styles.avatarFallback]}>
+                <Text style={[styles.avatarInitial, { ...font.bold }]}>
+                  {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.compactContent}>
+            <Text
+              style={[styles.titleCompact, { ...font.bold, color: textColor, textAlign: rtl ? 'right' : 'left' }]}
+              numberOfLines={2}
+            >
+              {request.title}
+            </Text>
+            <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Image
+                source={LOCATION_ICON}
+                style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+              <Text
+                style={[styles.locationCompact, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]}
+                numberOfLines={1}
+              >
+                {translateCity(request.location, rtl)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Grey separator */}
+        <View style={styles.separator} />
+
+        {/* Bottom row: offer button + roles */}
+        <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
+          <TouchableOpacity
+            style={styles.offerPill}
+            onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.offerPillText, { ...font.bold }]}>{t('noticeboard.make_offer')}</Text>
+          </TouchableOpacity>
+          <Text
+            style={[styles.rolesCompact, { ...font.semiBold, color: textColor, textAlign: rtl ? 'right' : 'left', flex: 1 }]}
+            numberOfLines={2}
+          >
+            {translatedRoles.join(' · ')}
           </Text>
         </View>
-        <Text style={[styles.rolesCompact, { ...font.semiBold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-          {translatedRoles.join(' · ')}
-        </Text>
-        <TouchableOpacity
-          style={styles.offerPill}
-          onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.offerPillText, { ...font.bold }]}>{t('noticeboard.make_offer')}</Text>
-        </TouchableOpacity>
       </TouchableOpacity>
     );
   }
@@ -170,23 +221,64 @@ const styles = StyleSheet.create({
   cardCompact: {
     marginHorizontal: 0,
     marginVertical: 0,
-    padding: 10,
-    gap: 5,
+    padding: 12,
   },
-  titleCompact: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  titleCompact: { fontSize: 13, fontWeight: '700' },
   locationCompact: { fontSize: 11, flex: 1 },
   metaCompact: { fontSize: 11 },
-  rolesCompact: { fontSize: 11, fontWeight: '600', marginBottom: 6 },
+  rolesCompact: { fontSize: 11, fontWeight: '600' },
   offerPill: {
     backgroundColor: '#004aad',
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    alignSelf: 'stretch',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     alignItems: 'center',
-    marginTop: 4,
   },
   offerPillText: { fontSize: 13, color: '#ffffff', fontWeight: '700' },
+  compactMain: {
+    gap: 10,
+    marginBottom: 0,
+    alignItems: 'flex-start',
+  },
+  sideCol: {
+    width: 40,
+    alignItems: 'center',
+    gap: 6,
+  },
+  trashBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  avatarFallback: {
+    backgroundColor: '#004aad',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  compactContent: {
+    flex: 1,
+    gap: 4,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 10,
+  },
+  bottomRow: {
+    alignItems: 'center',
+    gap: 8,
+  },
   directBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#cb6ce6',
