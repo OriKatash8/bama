@@ -8,11 +8,10 @@ import {
 } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 import { auth, googleProvider } from '@core/firebase/config';
-import { getDocument, setDocument } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
-import type { User } from '@core/types/user';
+import { syncUser } from '@features/auth/utils/syncUser';
 
 const IOS_CLIENT_ID =
   '165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r.apps.googleusercontent.com';
@@ -59,7 +58,7 @@ export function useGoogleSignIn(): GoogleSignInState {
         email: result.user.email ?? '',
         displayName: result.user.displayName ?? '',
         photoURL: result.user.photoURL,
-      });
+      }, setUser);
       router.replace('/(auth)/mode-select');
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? '';
@@ -94,7 +93,7 @@ export function useGoogleSignIn(): GoogleSignInState {
         email: result.user.email ?? '',
         displayName: result.user.displayName ?? '',
         photoURL: result.user.photoURL,
-      });
+      }, setUser);
       router.replace('/(auth)/mode-select');
     } catch (error: any) {
       console.log('[GoogleSignIn] full error:', JSON.stringify(error));
@@ -104,26 +103,6 @@ export function useGoogleSignIn(): GoogleSignInState {
       const msg = i18n.t('auth.err_google_failed');
       setError(msg);
       showToast(msg, 'error');
-    }
-  }
-
-  async function syncUser(
-    uid: string,
-    info: { email: string; displayName: string; photoURL: string | null },
-  ) {
-    const existing = await getDocument<User>(`users/${uid}`);
-    if (!existing) {
-      const userData: User = {
-        id: uid,
-        email: info.email,
-        displayName: info.displayName,
-        photoURL: info.photoURL,
-        createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
-      };
-      await setDocument(`users/${uid}`, userData);
-      setUser(userData);
-    } else {
-      setUser(existing);
     }
   }
 

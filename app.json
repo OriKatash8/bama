@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon",
       "supportsTablet": true,
       "bundleIdentifier": "com.bamaapp.bama",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -48,7 +49,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r"
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

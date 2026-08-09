@@ -157,7 +157,7 @@ export default function PublicProfileScreen() {
 
   if (isLoading) {
     return (
-      <Screen scrollable={false}>
+      <Screen scrollable={false} backgroundColor={colors.bg}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#cb6ce6" />
         </View>
@@ -167,7 +167,7 @@ export default function PublicProfileScreen() {
 
   if (!user || !profile) {
     return (
-      <Screen scrollable={false}>
+      <Screen scrollable={false} backgroundColor={colors.bg}>
         <View style={styles.center}>
           <Text style={[styles.errorText, { color: colors.textMuted }]}>Profile not found</Text>
           <TouchableOpacity onPress={goToBrowse} style={styles.backFallback} activeOpacity={0.7}>
@@ -182,7 +182,7 @@ export default function PublicProfileScreen() {
   const canSubmit = reportReason.trim().length >= 20;
 
   return (
-    <Screen scrollable style={styles.screenContent}>
+    <Screen scrollable style={styles.screenContent} backgroundColor={colors.bg}>
       {/* ── Title row: back + report ── */}
       <View style={styles.titleRow}>
         <TouchableOpacity

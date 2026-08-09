@@ -449,7 +449,9 @@
     "google_coming_soon_title": "בקרוב",
     "google_coming_soon_body": "התחברות עם Google בנייד תהיה זמינה בקרוב",
     "err_google_email_exists": "כבר קיים חשבון עם אימייל זה. אנא התחבר בשיטה המקורית שלך.",
-    "err_google_failed": "ההתחברות עם Google נכשלה. נסה שוב."
+    "err_google_failed": "ההתחברות עם Google נכשלה. נסה שוב.",
+    "continue_apple": "המשך עם Apple",
+    "err_apple_failed": "ההתחברות עם Apple נכשלה. נסה שוב."
   },
   "common": {
     "cancel": "ביטול"

@@ -8,6 +8,7 @@ import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useLogin } from '@features/auth/hooks/useLogin';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { AppleSignInButton } from './AppleSignInButton';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -108,6 +109,7 @@ export function LoginForm() {
         </View>
 
         <GoogleSignInButton />
+        <AppleSignInButton />
       </View>
     </View>
   );

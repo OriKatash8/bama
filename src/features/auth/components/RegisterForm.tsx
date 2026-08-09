@@ -10,6 +10,7 @@ import { Button } from '@components/ui/Button';
 import { useRegister } from '@features/auth/hooks/useRegister';
 import { validatePassword } from '@features/auth/utils/validatePassword';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { AppleSignInButton } from './AppleSignInButton';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -148,6 +149,7 @@ export function RegisterForm() {
         </View>
 
         <GoogleSignInButton />
+        <AppleSignInButton />
       </View>
     </View>
   );

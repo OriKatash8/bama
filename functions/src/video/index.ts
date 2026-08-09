@@ -5,6 +5,7 @@ import ffmpegStatic from 'ffmpeg-static';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
+import { randomUUID } from 'crypto';
 
 ffmpeg.setFfmpegPath(ffmpegStatic as string);
 
@@ -19,7 +20,11 @@ export const compressVideo = functions.storage.onObjectFinalized(
     const contentType = event.data.contentType;
 
     if (!contentType?.startsWith('video/')) return;
-    if (!filePath.startsWith('portfolio/') && !filePath.startsWith('chat-videos/')) return;
+    if (
+      !filePath.startsWith('portfolio/') &&
+      !filePath.startsWith('chat-videos/') &&
+      !filePath.startsWith('courses/')
+    ) return;
     if (filePath.includes('_compressed')) return;
 
     const bucket = admin.storage().bucket(event.data.bucket);
@@ -46,24 +51,40 @@ export const compressVideo = functions.storage.onObjectFinalized(
       await new Promise<void>((resolve, reject) => {
         ffmpeg(tempInput)
           .videoCodec('libx264')
-          .audioCodec('aac')
           .size('?x720')
-          .videoBitrate('800k')
+          .audioCodec('aac')
           .audioBitrate('128k')
-          .outputOptions(['-movflags faststart', '-preset fast'])
+          .outputOptions([
+            '-crf 23',             // variable bitrate tuned to scene complexity
+            '-preset medium',      // better compression than fast, fine for cloud encode times
+            '-movflags +faststart', // moov atom at front → progressive streaming, fast open
+            '-pix_fmt yuv420p',    // broad iOS/Android pixel format compatibility
+            '-profile:v baseline', // H.264 Baseline — widest device support
+            '-level 3.1',
+            '-map 0:v:0',          // explicit first video stream
+            '-map 0:a?',           // audio if present; skip gracefully if source has no audio
+          ])
           .output(tempOutput)
           .on('end', () => resolve())
           .on('error', (err: Error) => reject(err))
           .run();
       });
 
+      // Generate a permanent Firebase Storage download URL with an embedded token.
+      // This works regardless of GCS bucket ACL settings and is compatible with
+      // Firebase Storage security rules — no makePublic() required.
+      const token = randomUUID();
+
       await bucket.upload(tempOutput, {
         destination: compressedFilePath,
-        metadata: { contentType: 'video/mp4' },
+        metadata: {
+          contentType: 'video/mp4',
+          metadata: { firebaseStorageDownloadTokens: token },
+        },
       });
 
-      await bucket.file(compressedFilePath).makePublic();
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${compressedFilePath}`;
+      const encodedPath = encodeURIComponent(compressedFilePath);
+      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
 
       await admin.firestore().doc(`videoJobs/${jobId}`).update({
         status: 'done',

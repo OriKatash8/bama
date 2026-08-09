@@ -4,3 +4,4 @@ export { ForgotPasswordForm } from './ForgotPasswordForm';
 export { ModePicker } from './ModePicker';
 export { ModeSwitcherSheet } from './ModeSwitcherSheet';
 export { GoogleSignInButton } from './GoogleSignInButton';
+export { AppleSignInButton } from './AppleSignInButton';

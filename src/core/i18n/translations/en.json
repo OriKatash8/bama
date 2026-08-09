@@ -449,7 +449,9 @@
     "google_coming_soon_title": "Coming Soon",
     "google_coming_soon_body": "Google Sign-In on mobile coming soon",
     "err_google_email_exists": "An account with this email already exists. Please sign in with your original method.",
-    "err_google_failed": "Google sign-in failed. Please try again."
+    "err_google_failed": "Google sign-in failed. Please try again.",
+    "continue_apple": "Continue with Apple",
+    "err_apple_failed": "Apple sign-in failed. Please try again."
   },
   "common": {
     "cancel": "Cancel"

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
-  View, Image, TouchableOpacity, Text, StyleSheet, Modal,
+  View, Image, TouchableOpacity, Text, StyleSheet,
   ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
-import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
+import { PortfolioViewer } from './PortfolioViewer';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -39,7 +39,7 @@ export function PortfolioGrid({
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
 
-  const [fullscreenAsset, setFullscreenAsset] = useState<MediaAsset | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [tileSize, setTileSize] = useState(0);
 
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
@@ -121,7 +121,7 @@ export function PortfolioGrid({
           <TouchableOpacity
             key={asset.id}
             style={[styles.tile, { width: tileSize, height: tileSize }]}
-            onPress={() => !isEditing && setFullscreenAsset(asset)}
+            onPress={() => !isEditing && setViewerIndex(assets.indexOf(asset))}
             activeOpacity={isEditing ? 1 : 0.9}
           >
             {asset.type === 'video' ? (
@@ -144,32 +144,12 @@ export function PortfolioGrid({
         ))}
       </View>
 
-      {/* Fullscreen modal — image or video */}
-      <Modal
-        visible={!!fullscreenAsset}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setFullscreenAsset(null)}
-      >
-        <TouchableOpacity
-          style={styles.fullscreen}
-          onPress={() => setFullscreenAsset(null)}
-          activeOpacity={1}
-        >
-          {fullscreenAsset?.type === 'video' ? (
-            <VideoPlayer
-              uri={fullscreenAsset.url}
-              style={styles.fullscreenVideo}
-            />
-          ) : fullscreenAsset ? (
-            <Image
-              source={{ uri: fullscreenAsset.url }}
-              style={styles.fullscreenImage}
-              resizeMode="contain"
-            />
-          ) : null}
-        </TouchableOpacity>
-      </Modal>
+      <PortfolioViewer
+        assets={assets}
+        initialIndex={viewerIndex ?? 0}
+        visible={viewerIndex !== null}
+        onClose={() => setViewerIndex(null)}
+      />
     </View>
   );
 }
@@ -218,16 +198,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#cb6ce6',
     fontWeight: '500',
-  },
-  fullscreen: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fullscreenImage: { width: '100%', height: '100%' },
-  fullscreenVideo: {
-    width: '100%',
-    height: 300,
   },
 });

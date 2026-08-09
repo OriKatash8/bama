@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Search, Home, MessageCircle, FolderKanban } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
@@ -13,9 +13,9 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import {
   getFloatingTabBarStyle,
-  FLOATING_TAB_BAR_ACTIVE_COLOR,
   FLOATING_TAB_BAR_INACTIVE_COLOR,
 } from '@core/navigation/floatingTabBar';
+import { SlidingTabBackground } from '@core/navigation/SlidingTabBackground';
 
 type Translations = typeof en;
 
@@ -48,13 +48,14 @@ export default function ClientTabsLayout() {
   return (
     <View style={{ flex: 1 }}>
       <AppHeader />
-      <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0 }}>
+      <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0, bottom: 0 }}>
         <Tabs
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
             tabBarStyle: getFloatingTabBarStyle(isDark),
-            tabBarActiveTintColor: FLOATING_TAB_BAR_ACTIVE_COLOR,
+            tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['home', 'browse', 'chats', 'projects']} />,
+            tabBarActiveTintColor: '#004aad',
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
             tabBarActiveBackgroundColor: 'transparent',
             tabBarInactiveBackgroundColor: 'transparent',
@@ -66,18 +67,10 @@ export default function ClientTabsLayout() {
             name="home"
             options={{
               title: t('tabs.home'),
-              tabBarItemStyle: { paddingVertical: 6, height: 65 },
+              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
-                  <View style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 24,
-                    height: 24,
-                    borderRadius: 7,
-                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
-                    marginBottom: 2,
-                  }}>
+                  <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
                     <Home size={20} color={color} strokeWidth={2.5} />
                   </View>
                 </View>
@@ -88,18 +81,10 @@ export default function ClientTabsLayout() {
             name="browse"
             options={{
               title: t('tabs.search'),
-              tabBarItemStyle: { paddingVertical: 6, height: 65 },
+              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
-                  <View style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 24,
-                    height: 24,
-                    borderRadius: 7,
-                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
-                    marginBottom: 2,
-                  }}>
+                  <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
                     <Search size={20} color={color} strokeWidth={2.5} />
                   </View>
                 </View>
@@ -112,18 +97,10 @@ export default function ClientTabsLayout() {
               title: t('tabs.chats'),
               tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
               tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
-              tabBarItemStyle: { paddingVertical: 6, height: 65 },
+              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
-                  <View style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 24,
-                    height: 24,
-                    borderRadius: 7,
-                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
-                    marginBottom: 2,
-                  }}>
+                  <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
                     <MessageCircle size={20} color={color} strokeWidth={2.5} />
                   </View>
                 </View>
@@ -134,25 +111,16 @@ export default function ClientTabsLayout() {
             name="projects"
             options={{
               title: t('tabs.projects'),
-              tabBarItemStyle: { paddingVertical: 6, height: 65 },
+              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
-                  <View style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 24,
-                    height: 24,
-                    borderRadius: 7,
-                    backgroundColor: focused ? 'rgba(0,0,0,0.08)' : 'transparent',
-                    marginBottom: 2,
-                  }}>
+                  <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
                     <FolderKanban size={20} color={color} strokeWidth={2.5} />
                   </View>
                 </View>
               ),
             }}
           />
-          <Tabs.Screen name="profile" options={{ href: null }} />
           <Tabs.Screen name="chat/project-details" options={{ href: null }} />
           <Tabs.Screen name="chats/[chatId]" options={{ href: null }} />
           <Tabs.Screen name="switch" options={{ href: null }} />
