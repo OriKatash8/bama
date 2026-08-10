@@ -2,6 +2,7 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import type { MarketplaceListingType } from '../types';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -25,6 +26,7 @@ export function MarketplaceToggle({ active, onChange }: Props) {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
+  const font = useAppFont();
 
   return (
     <View style={styles.row}>
@@ -33,7 +35,7 @@ export function MarketplaceToggle({ active, onChange }: Props) {
         onPress={() => onChange('secondhand')}
         activeOpacity={0.8}
       >
-        <Text style={[styles.label, active === 'secondhand' ? styles.labelActive : styles.labelInactive]}>
+        <Text style={[styles.label, active === 'secondhand' ? styles.labelActive : styles.labelInactive, { ...font.semiBold }]}>
           {'BAMA Market'}
         </Text>
       </TouchableOpacity>
@@ -42,7 +44,7 @@ export function MarketplaceToggle({ active, onChange }: Props) {
         onPress={() => onChange('rental')}
         activeOpacity={0.8}
       >
-        <Text style={[styles.label, active === 'rental' ? styles.labelActive : styles.labelInactive]}>
+        <Text style={[styles.label, active === 'rental' ? styles.labelActive : styles.labelInactive, { ...font.semiBold }]}>
           {'BAMA Rental'}
         </Text>
       </TouchableOpacity>

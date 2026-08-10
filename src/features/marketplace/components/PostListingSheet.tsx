@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useCreateListing } from '../hooks/useCreateListing';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListingType, ProductCondition } from '../types';
@@ -149,6 +150,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const font = useAppFont();
 
   const [type, setType]               = useState<MarketplaceListingType>(initialType);
   const [imageUri, setImageUri]       = useState<string | null>(null);
@@ -232,7 +234,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
           {/* Header */}
           <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.title, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('marketplace.post_listing')}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -255,7 +257,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                   onPress={() => setType('secondhand')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive]}>
+                  <Text style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive, { ...font.semiBold }]}>
                     {t('marketplace.second_hand')}
                   </Text>
                 </TouchableOpacity>
@@ -264,7 +266,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                   onPress={() => setType('rental')}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive]}>
+                  <Text style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive, { ...font.semiBold }]}>
                     {t('marketplace.rental')}
                   </Text>
                 </TouchableOpacity>
@@ -281,7 +283,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                     source={BLUE_CAM}
                     style={styles.cameraIcon}
                   />
-                  <Text style={styles.imagePickerLabel}>{t('marketplace.upload_photo')}</Text>
+                  <Text style={[styles.imagePickerLabel, { ...font.regular }]}>{t('marketplace.upload_photo')}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -296,7 +298,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             />
 
             {/* Category */}
-            <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('marketplace.category')}
             </Text>
             <View style={styles.grid}>
@@ -307,7 +309,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                   onPress={() => handleCategorySelect(cat.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.catLabel, category === cat.id && styles.catLabelActive]}>
+                  <Text style={[styles.catLabel, category === cat.id && styles.catLabelActive, { ...font.semiBold }]}>
                     {t(`marketplace.${cat.labelKey}`)}
                   </Text>
                 </TouchableOpacity>
@@ -317,7 +319,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             {/* Subcategory */}
             {hasSubcategoryStep && subcategoryOptions && (
               <>
-                <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
                   {t('marketplace.subcategory')}
                 </Text>
                 <View style={styles.chipRow}>
@@ -328,7 +330,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                       onPress={() => handleSubcategorySelect(sub)}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.chipLabel, subcategory === sub && styles.chipLabelActive]}>
+                      <Text style={[styles.chipLabel, subcategory === sub && styles.chipLabelActive, { ...font.semiBold }]}>
                         {sub}
                       </Text>
                     </TouchableOpacity>
@@ -341,7 +343,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             {hasSubcategoryStep ? (
               subcategory.length > 0 && (
                 <>
-                  <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
                     {t('marketplace.brand')}
                   </Text>
                   <View style={styles.chipRow}>
@@ -352,7 +354,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                         onPress={() => setBrand(b)}
                         activeOpacity={0.8}
                       >
-                        <Text style={[styles.chipLabel, brand === b && styles.chipLabelActive]}>{b}</Text>
+                        <Text style={[styles.chipLabel, brand === b && styles.chipLabelActive, { ...font.semiBold }]}>{b}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -373,7 +375,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             {/* Condition (secondhand only) */}
             {type === 'secondhand' && (
               <>
-                <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
                   {t('marketplace.condition')}
                 </Text>
                 <View style={styles.conditionRow}>
@@ -387,7 +389,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                       onPress={() => setCondition(condition === c.value ? null : c.value)}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.conditionLabel, condition === c.value && { color: '#fff' }]}>
+                      <Text style={[styles.conditionLabel, condition === c.value && { color: '#fff' }, { ...font.semiBold }]}>
                         {t(`marketplace.condition_${c.value}`)}
                       </Text>
                     </TouchableOpacity>
@@ -424,7 +426,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             >
               {isSubmitting
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.submitText}>{t('marketplace.post_listing_btn')}</Text>}
+                : <Text style={[styles.submitText, { ...font.bold }]}>{t('marketplace.post_listing_btn')}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </LinearGradient>

@@ -1,5 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
+import { useAppFont } from '@core/hooks/useAppFont';
 import type { Review } from '@core/types/project';
 
 type ProfileHeaderProps = {
@@ -23,6 +24,7 @@ export function ProfileHeader({
   email,
   reviews,
 }: ProfileHeaderProps) {
+  const font = useAppFont();
   const initials = name
     .split(' ')
     .map((n) => n[0] ?? '')
@@ -46,28 +48,28 @@ export function ProfileHeader({
           />
         ) : (
           <View style={[styles.avatarFallback, { borderRadius: size / 2 }]}>
-            <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials}</Text>
+            <Text style={[styles.avatarInitials, { fontSize: size * 0.36, ...font.bold }]}>{initials}</Text>
           </View>
         )}
         {isEditing && (
           <View style={[styles.editOverlay, { borderBottomLeftRadius: size / 2, borderBottomRightRadius: size / 2 }]}>
-            <Text style={styles.editOverlayText}>Edit</Text>
+            <Text style={[styles.editOverlayText, { ...font.semiBold }]}>Edit</Text>
           </View>
         )}
       </TouchableOpacity>
 
       {isEditing ? (
         <TextInput
-          style={styles.nameInput}
+          style={[styles.nameInput, { ...font.bold }]}
           value={name}
           onChangeText={onNameChange}
           autoCapitalize="words"
         />
       ) : (
-        <Text style={styles.name}>{name}</Text>
+        <Text style={[styles.name, { ...font.bold }]}>{name}</Text>
       )}
 
-      {email && <Text style={styles.email}>{email}</Text>}
+      {email && <Text style={[styles.email, { ...font.regular }]}>{email}</Text>}
 
       {!isEditing && reviews && <AverageRatingDisplay reviews={reviews} />}
     </View>
