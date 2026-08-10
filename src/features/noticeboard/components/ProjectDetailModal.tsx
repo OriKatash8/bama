@@ -153,7 +153,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
         <View style={[styles.card, { maxHeight: screenHeight * 0.85 }]}>
           {/* Header */}
           <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.headerTitle, { ...font.bold }]} numberOfLines={2}>
+            <Text style={[styles.headerTitle, { ...(view === 'details' ? font.forText(request.title, 'bold') : font.bold) }]} numberOfLines={2}>
               {view === 'details'
                 ? request.title
                 : view === 'bid'
@@ -171,7 +171,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               <View style={styles.metaRow}>
                 <View style={styles.metaItem}>
                   <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{t('noticeboard.execution_label')}</Text>
-                  <Text style={styles.metaValue}>{request.exec ?? '—'}</Text>
+                  <Text style={[styles.metaValue, { ...font.forText(request.exec ?? '', 'regular') }]}>{request.exec ?? '—'}</Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{t('noticeboard.deadline_label')}</Text>
@@ -191,7 +191,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               </View>
 
               <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('noticeboard.description_label')}</Text>
-              <Text style={[styles.description, { color: colors.textSec }]}>{request.description}</Text>
+              <Text style={[styles.description, { color: colors.textSec, ...font.forText(request.description ?? '', 'regular') }]}>{request.description}</Text>
 
               {(() => {
                 const myRoleKeys = (professionalCategories ?? [])

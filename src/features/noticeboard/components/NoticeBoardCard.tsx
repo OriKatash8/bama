@@ -99,7 +99,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
 
           <View style={styles.compactContent}>
             <Text
-              style={[styles.titleCompact, { ...font.bold, color: textColor, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.titleCompact, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={2}
             >
               {request.title}
@@ -160,12 +160,12 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               <Text style={[styles.posterInitial, { ...font.bold }]}>{poster.displayName.charAt(0).toUpperCase()}</Text>
             </View>
           )}
-          <Text style={[styles.posterName, { ...font.medium, color: colors.textMuted }]}>{poster.displayName}</Text>
+          <Text style={[styles.posterName, { ...font.forText(poster.displayName, 'medium'), color: colors.textMuted }]}>{poster.displayName}</Text>
         </View>
       )}
       <View style={styles.top}>
         <View style={styles.info}>
-          <Text style={[styles.title, { ...font.bold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{request.title}</Text>
+          <Text style={[styles.title, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{request.title}</Text>
           <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Image
               source={LOCATION_ICON}
@@ -175,7 +175,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             <Text style={[styles.location, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
           </View>
           {!!(request.exec) && (
-            <Text style={[styles.meta, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.meta, { ...font.forText(request.exec, 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}>
               {request.exec}
             </Text>
           )}
