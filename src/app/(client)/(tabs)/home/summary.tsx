@@ -69,7 +69,7 @@ export default function SummaryScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const canConfirm = !isSubmitting && !!deadline && !!location && slots.length > 0;
+  const canConfirm = !isSubmitting && !!deadline && slots.length > 0;
 
   async function handleConfirm() {
     if (!canConfirm) return;

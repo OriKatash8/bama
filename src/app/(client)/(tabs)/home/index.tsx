@@ -159,7 +159,6 @@ export default function HomeScreen() {
     if (!title.trim()) next.title = t('builder.error_required');
     if (description.trim().length < 10) next.description = rtl ? 'נא לרשום לפחות 10 תווים' : 'Please write at least 10 characters';
     if (!deadline) next.deadline = t('builder.error_required');
-    if (!location.trim()) next.location = t('builder.error_required');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -278,6 +277,9 @@ export default function HomeScreen() {
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
                     {t('builder.location')}
+                  </Text>
+                  <Text style={{ fontSize: 9, color: colors.textMuted, textAlign: 'center', ...font.regular }}>
+                    ({t('builder.optional')})
                   </Text>
                 </View>
               </View>
