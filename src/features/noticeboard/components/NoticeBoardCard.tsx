@@ -112,7 +112,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
                 cachePolicy="memory-disk"
               />
               <Text
-                style={[styles.locationCompact, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.locationCompact, { ...font.forText(request.location, 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
                 numberOfLines={1}
               >
                 {translateCity(request.location, rtl)}
@@ -172,7 +172,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
               contentFit="contain" cachePolicy="memory-disk"
             />
-            <Text style={[styles.location, { ...font.regular, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
+            <Text style={[styles.location, { ...font.forText(request.location, 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
           </View>
           {!!(request.exec) && (
             <Text style={[styles.meta, { ...font.forText(request.exec, 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}>

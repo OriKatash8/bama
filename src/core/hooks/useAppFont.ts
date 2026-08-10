@@ -6,11 +6,11 @@ type Weight = 'regular' | 'medium' | 'semiBold' | 'bold' | 'light';
 export type FontStyle = { fontFamily: string; fontWeight?: TextStyle['fontWeight'] };
 
 const HE_FONTS: Record<Weight, FontStyle> = {
-  regular:  { fontFamily: 'Heebo-Regular' },
-  medium:   { fontFamily: 'Heebo-Medium' },
-  semiBold: { fontFamily: 'Heebo-SemiBold' },
-  bold:     { fontFamily: 'Heebo-Bold' },
-  light:    { fontFamily: 'Heebo-Light' },
+  regular:  { fontFamily: 'Heebo-Regular',  fontWeight: '400' },
+  medium:   { fontFamily: 'Heebo-Medium',   fontWeight: '500' },
+  semiBold: { fontFamily: 'Heebo-SemiBold', fontWeight: '600' },
+  bold:     { fontFamily: 'Heebo-Bold',     fontWeight: '700' },
+  light:    { fontFamily: 'Heebo-Light',    fontWeight: '300' },
 };
 
 const EN_FONTS: Record<Weight, FontStyle> = {

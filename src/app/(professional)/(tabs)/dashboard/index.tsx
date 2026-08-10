@@ -199,10 +199,10 @@ export default function DashboardScreen() {
                   onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}` as never)}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.projectCardTitle, { ...font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                  <Text style={[styles.projectCardTitle, { ...font.forText(project.title, 'bold'), color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {project.title}
                   </Text>
-                  <Text style={[styles.projectCardMeta, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[styles.projectCardMeta, { ...font.forText(clientName, 'regular'), color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
                     {t('noticeboard.client_prefix')}{clientName}
                   </Text>
                   <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -218,7 +218,7 @@ export default function DashboardScreen() {
                       contentFit="contain"
                       cachePolicy="memory-disk"
                     />
-                    <Text style={[styles.projectCardMeta, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                    <Text style={[styles.projectCardMeta, { ...font.forText(project.location, 'regular'), color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                       {project.location}
                     </Text>
                   </View>
