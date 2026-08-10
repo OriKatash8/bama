@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 
-const BAMA_LOGO = require('../../../assets/images/bama-logo.png');
+const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  logo: { width: 60, height: 22 },
+  logo: { width: 40, height: 40 },
   center: {
     flex: 1,
     paddingHorizontal: 10,
