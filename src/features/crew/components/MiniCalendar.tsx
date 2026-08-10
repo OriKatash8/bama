@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
-import { useTheme } from '@core/hooks/useTheme';
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -15,7 +14,6 @@ type Props = {
 };
 
 export function MiniCalendar({ value, onSelect, onClose }: Props) {
-  const colors = useTheme();
   const today = new Date();
   const init = value ? new Date(value + 'T00:00:00') : today;
   const [viewYear, setViewYear] = useState(init.getFullYear());
@@ -51,23 +49,23 @@ export function MiniCalendar({ value, onSelect, onClose }: Props) {
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={[styles.box, { backgroundColor: colors.card, borderColor: colors.accent }]}>
+            <View style={styles.box}>
               <View style={styles.nav}>
                 <TouchableOpacity onPress={prevMonth} hitSlop={12} activeOpacity={0.7}>
-                  <Text style={[styles.navArrow, { color: colors.accent }]}>‹</Text>
+                  <Text style={styles.navArrow}>‹</Text>
                 </TouchableOpacity>
-                <Text style={[styles.navTitle, { color: colors.text }]}>
+                <Text style={styles.navTitle}>
                   {MONTH_NAMES[viewMonth]} {viewYear}
                 </Text>
                 <TouchableOpacity onPress={nextMonth} hitSlop={12} activeOpacity={0.7}>
-                  <Text style={[styles.navArrow, { color: colors.accent }]}>›</Text>
+                  <Text style={styles.navArrow}>›</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.weekRow}>
                 {DAY_NAMES.map(d => (
                   <View key={d} style={styles.cell}>
-                    <Text style={[styles.dayName, { color: colors.textMuted }]}>{d}</Text>
+                    <Text style={styles.dayName}>{d}</Text>
                   </View>
                 ))}
               </View>
@@ -78,12 +76,12 @@ export function MiniCalendar({ value, onSelect, onClose }: Props) {
                   return (
                     <TouchableOpacity
                       key={i}
-                      style={[styles.cell, isSelected && { backgroundColor: colors.accent, borderRadius: 20 }]}
+                      style={[styles.cell, isSelected && styles.cellSelected]}
                       onPress={day ? () => pickDay(day) : undefined}
                       disabled={!day}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.dayNum, { color: isSelected ? '#fff' : day ? colors.text : 'transparent' }]}>
+                      <Text style={[styles.dayNum, isSelected && styles.dayNumSelected, !day && styles.dayNumEmpty]}>
                         {day ?? '.'}
                       </Text>
                     </TouchableOpacity>
@@ -111,13 +109,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 2,
     padding: 12,
+    backgroundColor: '#ffffff',
+    borderColor: '#004aad',
   },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  navArrow: { fontSize: 24, fontWeight: '600', paddingHorizontal: 8 },
-  navTitle: { fontSize: 16, fontWeight: '700' },
+  navArrow: { fontSize: 24, fontWeight: '600', paddingHorizontal: 8, color: '#004aad' },
+  navTitle: { fontSize: 16, fontWeight: '700', color: '#004aad' },
   weekRow: { flexDirection: 'row', marginBottom: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%` as any, alignItems: 'center', paddingVertical: 5 },
-  dayName: { fontSize: 11, fontWeight: '600' },
-  dayNum: { fontSize: 14, fontWeight: '500' },
+  cellSelected: { backgroundColor: '#004aad', borderRadius: 20 },
+  dayName: { fontSize: 11, fontWeight: '600', color: '#004aad', opacity: 0.6 },
+  dayNum: { fontSize: 14, fontWeight: '500', color: '#004aad' },
+  dayNumSelected: { color: '#ffffff' },
+  dayNumEmpty: { color: 'transparent' },
 });

@@ -574,24 +574,24 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setLocationModalOpen(false)}>
           <View style={styles.locationOverlay}>
             <TouchableWithoutFeedback>
-              <View style={[styles.locationBox, { backgroundColor: colors.card, borderColor: colors.accent }]}>
+              <View style={styles.locationBox}>
                 {/* Header — mirrors MiniCalendar nav row */}
                 <View style={styles.locationNav}>
-                  <Text style={[styles.locationNavTitle, { color: colors.text, ...font.bold }]}>
+                  <Text style={[styles.locationNavTitle, { ...font.bold }]}>
                     {t('builder.location')}
                   </Text>
                   <TouchableOpacity onPress={() => setLocationModalOpen(false)} hitSlop={12} activeOpacity={0.7}>
-                    <X size={18} color={colors.accent} strokeWidth={2.5} />
+                    <X size={18} color="#004aad" strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
 
                 {/* Search input */}
                 <TextInput
-                  style={[styles.locationSearchInput, { color: colors.text, ...font.regular, textAlign: rtl ? 'right' : 'left', borderColor: colors.accent }]}
+                  style={[styles.locationSearchInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                   value={locationSearch}
                   onChangeText={setLocationSearch}
                   placeholder={t('builder.search_city')}
-                  placeholderTextColor={colors.textMuted}
+                  placeholderTextColor="#004aad80"
                   autoFocus
                   returnKeyType="search"
                   clearButtonMode="while-editing"
@@ -606,7 +606,7 @@ export default function HomeScreen() {
                   maxToRenderPerBatch={15}
                   windowSize={3}
                   style={styles.locationList}
-                  ItemSeparatorComponent={() => <View style={[styles.locationSeparator, { backgroundColor: colors.border }]} />}
+                  ItemSeparatorComponent={() => <View style={styles.locationSeparator} />}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={styles.locationRow}
@@ -617,8 +617,8 @@ export default function HomeScreen() {
                       }}
                       activeOpacity={0.7}
                     >
-                      <MapPin size={14} color={colors.accent} strokeWidth={1.8} />
-                      <Text style={[styles.locationRowText, { color: colors.text, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                      <MapPin size={14} color="#004aad" strokeWidth={1.8} />
+                      <Text style={[styles.locationRowText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                         {item}
                       </Text>
                     </TouchableOpacity>
@@ -896,6 +896,8 @@ function createStyles(
       borderRadius: 16,
       borderWidth: 2,
       padding: 12,
+      backgroundColor: '#ffffff',
+      borderColor: '#004aad',
     },
     locationNav: {
       flexDirection: 'row',
@@ -906,6 +908,7 @@ function createStyles(
     locationNavTitle: {
       fontSize: 16,
       fontWeight: '700',
+      color: '#004aad',
     },
     locationSearchInput: {
       borderWidth: 1,
@@ -914,6 +917,8 @@ function createStyles(
       paddingVertical: 6,
       fontSize: 14,
       marginBottom: 6,
+      color: '#004aad',
+      borderColor: '#004aad',
     },
     locationList: {
       maxHeight: 280,
@@ -928,10 +933,12 @@ function createStyles(
       fontSize: 14,
       fontWeight: '500',
       flex: 1,
+      color: '#004aad',
     },
     locationSeparator: {
       height: 1,
-      opacity: 0.4,
+      backgroundColor: '#004aad',
+      opacity: 0.15,
     },
 
     // Vibe modal
