@@ -1,8 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Trash2 } from 'lucide-react-native';
+import { MapPin, Calendar, Clock } from 'lucide-react-native';
 
-const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { ProjectRequest } from '@core/types/project';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
 import { useTheme } from '@core/hooks/useTheme';
@@ -15,13 +14,27 @@ import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import { translateCity } from '@core/utils/cityTranslations';
 
 type Translations = typeof en;
+
 function makeT(translations: Translations) {
-  return (key: string): string => {
+  return (key: string, vars?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let result: unknown = translations;
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
+    if (typeof result !== 'string') return key;
+    if (!vars) return result;
+    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
   };
+}
+
+function formatTimeAgo(
+  ts: { seconds: number },
+  t: (key: string, vars?: Record<string, string | number>) => string
+): string {
+  const diff = Math.floor((Date.now() - ts.seconds * 1000) / 1000);
+  if (diff < 60) return t('noticeboard.just_now');
+  if (diff < 3600) return t('noticeboard.minutes_ago', { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t('noticeboard.hours_ago', { n: Math.floor(diff / 3600) });
+  return t('noticeboard.days_ago', { n: Math.floor(diff / 86400) });
 }
 
 type Props = {
@@ -49,7 +62,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const translatedRoles = allRoles.map(r =>
     rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
   );
-  const cardBg = isDirectInvite ? '#004aad' : (isDark ? '#ffffff' : '#ffffff');
+  const cardBg = isDirectInvite ? '#004aad' : '#ffffff';
   const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
 
   const cardStyle = [
@@ -60,72 +73,89 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   ];
 
   if (compact) {
-    const rowDir: 'row' | 'row-reverse' = rtl ? 'row' : 'row-reverse';
+    const timeAgo = formatTimeAgo(request.createdAt, t);
+    const visibleRoles = translatedRoles.slice(0, 3);
+    const extraRoles = translatedRoles.length - 3;
+    const hasDesc = !!(request.description?.trim());
+    const hasExec = !!(request.exec?.trim());
+    const hasDeadline = !!(request.deadline?.trim());
+    const hasMetaRow = hasExec || hasDeadline;
+    const locationText = translateCity(request.location, rtl);
 
     return (
-      <TouchableOpacity style={[cardStyle]} onPress={onPress} activeOpacity={0.85}>
+      <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
             <Text style={[styles.directBadgeText, { ...font.bold }]}>{directInviteLabel}</Text>
           </View>
         )}
 
-        {/* Main row: side column (trash + avatar) + content */}
-        <View style={[styles.compactMain, { flexDirection: rowDir }]}>
-          <View style={styles.sideCol}>
-            <TouchableOpacity
-              style={styles.trashBtn}
-              onPress={(e) => { e.stopPropagation?.(); onDismiss(); }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.7}
-            >
-              <Trash2 size={16} color="#e53935" />
-            </TouchableOpacity>
-            {poster?.photoURL ? (
-              <Image
-                source={{ uri: poster.photoURL }}
-                style={styles.compactAvatar}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-              />
-            ) : (
-              <View style={[styles.compactAvatar, styles.avatarFallback]}>
-                <Text style={[styles.avatarInitial, { ...font.bold }]}>
-                  {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.compactContent}>
+        {/* Header: avatar + title + location/time */}
+        <View style={[styles.headerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          {poster?.photoURL ? (
+            <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={[styles.avatarInitial, { ...font.bold }]}>
+                {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+          <View style={styles.headerContent}>
             <Text
-              style={[styles.titleCompact, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.cardTitle, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={2}
             >
               {request.title}
             </Text>
-            <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Image
-                source={LOCATION_ICON}
-                style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
+            <View style={[styles.locationTimeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <MapPin size={11} color={colors.textMuted} strokeWidth={1.5} />
               <Text
-                style={[styles.locationCompact, { ...font.forText(request.location, 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.locationTimeText, { ...font.forText(locationText, 'regular'), color: colors.textMuted }]}
                 numberOfLines={1}
               >
-                {translateCity(request.location, rtl)}
+                {locationText}{timeAgo ? ` · ${timeAgo}` : ''}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Grey separator */}
+        {/* Description snippet — hidden if empty */}
+        {hasDesc && (
+          <Text
+            style={[styles.snippetText, { ...font.forText(request.description, 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}
+            numberOfLines={2}
+          >
+            {request.description}
+          </Text>
+        )}
+
+        {/* Meta: execution dates + deadline */}
+        {hasMetaRow && (
+          <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            {hasExec && (
+              <View style={[styles.metaItem, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <Calendar size={11} color={colors.textMuted} strokeWidth={1.5} />
+                <Text style={[styles.metaText, { ...font.forText(request.exec!, 'regular'), color: colors.textMuted }]}>
+                  {request.exec}
+                </Text>
+              </View>
+            )}
+            {hasDeadline && (
+              <View style={[styles.metaItem, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <Clock size={11} color={colors.textMuted} strokeWidth={1.5} />
+                <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>
+                  {request.deadline}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <View style={styles.separator} />
 
-        {/* Bottom row: offer button + roles */}
-        <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
+        {/* Bottom: make-offer button + role pills */}
+        <View style={[styles.bottomRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <TouchableOpacity
             style={styles.offerPill}
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
@@ -133,17 +163,26 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           >
             <Text style={[styles.offerPillText, { ...font.bold }]}>{t('noticeboard.make_offer')}</Text>
           </TouchableOpacity>
-          <Text
-            style={[styles.rolesCompact, { ...font.semiBold, color: textColor, textAlign: rtl ? 'right' : 'left', flex: 1 }]}
-            numberOfLines={2}
-          >
-            {translatedRoles.join(' · ')}
-          </Text>
+          <View style={[styles.pillsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            {visibleRoles.map((role, i) => (
+              <View key={i} style={[styles.rolePill, { borderColor: isDirectInvite ? '#cb6ce6' : colors.border }]}>
+                <Text style={[styles.rolePillText, { ...font.forText(role, 'semiBold'), color: textColor }]} numberOfLines={1}>
+                  {role}
+                </Text>
+              </View>
+            ))}
+            {extraRoles > 0 && (
+              <View style={[styles.rolePill, { borderColor: isDirectInvite ? '#cb6ce6' : colors.border }]}>
+                <Text style={[styles.rolePillText, { ...font.semiBold, color: textColor }]}>+{extraRoles}</Text>
+              </View>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
   }
 
+  // Non-compact (full) card — preserved for future use
   return (
     <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
       {isDirectInvite && directInviteLabel && (
@@ -167,12 +206,10 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         <View style={styles.info}>
           <Text style={[styles.title, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{request.title}</Text>
           <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Image
-              source={LOCATION_ICON}
-              style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-              contentFit="contain" cachePolicy="memory-disk"
-            />
-            <Text style={[styles.location, { ...font.forText(request.location, 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{translateCity(request.location, rtl)}</Text>
+            <MapPin size={13} color={textColor} strokeWidth={1.5} />
+            <Text style={[styles.location, { ...font.forText(translateCity(request.location, rtl), 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+              {translateCity(request.location, rtl)}
+            </Text>
           </View>
           {!!(request.exec) && (
             <Text style={[styles.meta, { ...font.forText(request.exec, 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}>
@@ -185,18 +222,11 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.actionBtn, styles.offerBtn]}
+            style={[styles.actionBtn, styles.offerActionBtn]}
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
             <Text style={[styles.offerIcon, { ...font.bold }]}>₪</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.dismissBtn]}
-            onPress={(e) => { e.stopPropagation?.(); onDismiss(); }}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dismissIcon, { ...font.bold }]}>✕</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -221,40 +251,21 @@ const styles = StyleSheet.create({
   cardCompact: {
     marginHorizontal: 0,
     marginVertical: 0,
-    padding: 12,
+    padding: 14,
   },
-  titleCompact: { fontSize: 13, fontWeight: '700' },
-  locationCompact: { fontSize: 11, flex: 1 },
-  metaCompact: { fontSize: 11 },
-  rolesCompact: { fontSize: 11, fontWeight: '600' },
-  offerPill: {
-    backgroundColor: '#004aad',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    alignItems: 'center',
-  },
-  offerPillText: { fontSize: 13, color: '#ffffff', fontWeight: '700' },
-  compactMain: {
+
+  // --- Compact card: header ---
+  headerRow: {
+    flexDirection: 'row',
     gap: 10,
-    marginBottom: 0,
     alignItems: 'flex-start',
+    marginBottom: 8,
   },
-  sideCol: {
+  avatar: {
     width: 40,
-    alignItems: 'center',
-    gap: 6,
-  },
-  trashBtn: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compactAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    height: 40,
+    borderRadius: 20,
+    flexShrink: 0,
   },
   avatarFallback: {
     backgroundColor: '#004aad',
@@ -263,22 +274,95 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
   },
-  compactContent: {
+  headerContent: {
     flex: 1,
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    lineHeight: 22,
+    marginBottom: 3,
+  },
+  locationTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
+  locationTimeText: {
+    fontSize: 12,
+    flex: 1,
+  },
+
+  // --- Compact card: description + meta ---
+  snippetText: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 6,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 12,
+  },
+
+  // --- Shared separator ---
   separator: {
     height: 1,
     backgroundColor: '#e0e0e0',
-    marginVertical: 10,
+    marginVertical: 8,
   },
+
+  // --- Compact card: bottom row ---
   bottomRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
   },
+  offerPill: {
+    backgroundColor: '#004aad',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  offerPillText: {
+    fontSize: 13,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  pillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  rolePill: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    backgroundColor: 'rgba(0,74,173,0.06)',
+  },
+  rolePillText: {
+    fontSize: 11,
+  },
+
+  // --- Shared: direct invite badge ---
   directBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#cb6ce6',
@@ -287,7 +371,15 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginBottom: 8,
   },
-  directBadgeText: { color: '#004aad', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  directBadgeText: {
+    color: '#004aad',
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  // --- Non-compact card ---
   posterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   posterAvatar: { width: 28, height: 28, borderRadius: 14 },
   posterAvatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
@@ -296,8 +388,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1 },
   title: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-  locationIcon: { width: 14, height: 14 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3, gap: 4 },
   location: { fontSize: 13, flex: 1 },
   meta: { fontSize: 12 },
   roles: { fontSize: 12, marginTop: 3, fontWeight: '600' },
@@ -309,18 +400,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  offerBtn: { backgroundColor: 'rgba(0,74,173,0.15)', borderWidth: 1.5, borderColor: '#004aad' },
-  dismissBtn: { backgroundColor: 'rgba(229,57,53,0.15)', borderWidth: 1.5, borderColor: '#e53935' },
-  descBox: {
-    marginTop: 12,
-    borderWidth: 1.5,
-    borderColor: '#004aad',
-    borderRadius: 10,
-    padding: 10,
-    backgroundColor: 'rgba(0,74,173,0.08)',
-  },
-  descText: { fontSize: 13, lineHeight: 18 },
-  disabled: { opacity: 0.5 },
+  offerActionBtn: { backgroundColor: 'rgba(0,74,173,0.15)', borderWidth: 1.5, borderColor: '#004aad' },
   offerIcon: { fontSize: 16, color: '#004aad', fontWeight: '800' },
-  dismissIcon: { fontSize: 14, color: '#e53935', fontWeight: '700' },
 });

@@ -331,7 +331,11 @@
     "needed": "נדרש",
     "individual_total": "סה״כ פרטני",
     "bid_hint": "בחר את התפקידים שאתה רוצה למלא והזן את המחיר שלך לכל אחד.",
-    "per_role": "/ תפקיד"
+    "per_role": "/ תפקיד",
+    "just_now": "כרגע",
+    "minutes_ago": "לפני {{n}} ד׳",
+    "hours_ago": "לפני {{n}} ש׳",
+    "days_ago": "לפני {{n}} ימים"
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",
