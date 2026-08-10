@@ -70,8 +70,8 @@ const CATEGORIES: Category[] = [
     selectedIcon: require('../../../../../assets/images/categories/11.png'),
   },
   {
-    id: 'studio',
-    labelKey: 'category_studio',
+    id: 'accessories',
+    labelKey: 'category_accessories',
     icon: require('../../../../../assets/images/categories/studio.png'),
     selectedIcon: require('../../../../../assets/images/categories/14.png'),
   },
