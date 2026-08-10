@@ -114,7 +114,7 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'stretch',
+    alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
     width: '100%',
