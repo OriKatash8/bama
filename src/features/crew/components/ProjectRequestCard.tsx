@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { router, useSegments } from 'expo-router';
+import { MessageCircle, Pencil, Trash2, CalendarDays, MapPin } from 'lucide-react-native';
 import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
 import { useTheme } from '@core/hooks/useTheme';
@@ -24,10 +25,10 @@ function makeT(translations: Translations) {
 type Props = { request: ProjectRequest };
 
 const STATUS_CONFIG: Record<ProjectRequest['status'], { bg: string; text: string }> = {
-  open:        { bg: '#c1ecf9', text: '#004aad' },
-  in_progress: { bg: '#f59e0b', text: '#fff' },
-  completed:   { bg: '#ecf9c1', text: '#2d6a2d' },
-  cancelled:   { bg: '#ef4444', text: '#fff' },
+  open:        { bg: '#dcfce7', text: '#166534' },
+  in_progress: { bg: '#dbeafe', text: '#1e40af' },
+  completed:   { bg: '#f3f4f6', text: '#6b7280' },
+  cancelled:   { bg: '#fee2e2', text: '#dc2626' },
 };
 
 const STATUS_LABEL_KEY: Record<ProjectRequest['status'], string> = {
@@ -38,7 +39,7 @@ const STATUS_LABEL_KEY: Record<ProjectRequest['status'], string> = {
 };
 
 function formatDate(iso?: string): string {
-  if (!iso) return '—';
+  if (!iso) return '';
   const [y, m, d] = iso.split('-');
   if (!y || !m || !d) return iso;
   return `${d}/${m}/${y}`;
@@ -46,7 +47,6 @@ function formatDate(iso?: string): string {
 
 export function ProjectRequestCard({ request }: Props) {
   const [teamOpen, setTeamOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { team, isLoading: teamLoading, load } = useProjectTeam(request.id);
   const colors = useTheme();
@@ -70,13 +70,23 @@ export function ProjectRequestCard({ request }: Props) {
     setIsDeleting(true);
     try {
       await deleteDocument(`projects/${request.id}`);
-      showToast('Project deleted', 'success');
+      showToast(t('chats_page.project_deleted'), 'success');
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Failed to delete project', 'error');
+      showToast(e instanceof Error ? e.message : t('chats_page.project_delete_error'), 'error');
     } finally {
       setIsDeleting(false);
-      setConfirmDelete(false);
     }
+  }
+
+  function confirmAndDelete() {
+    Alert.alert(
+      t('chats_page.delete_confirm_title'),
+      t('chats_page.delete_confirm_body'),
+      [
+        { text: t('chats_page.delete_confirm_cancel'), style: 'cancel' },
+        { text: t('chats_page.delete_confirm_ok'), style: 'destructive', onPress: handleDelete },
+      ]
+    );
   }
 
   function toggleTeam() {
@@ -89,137 +99,123 @@ export function ProjectRequestCard({ request }: Props) {
   const totalSlots = request.crewSlots.reduce((acc, s) => acc + s.quantity, 0);
   const isTeamFull = totalSlots > 0 && filledCount >= totalSlots;
   const canEdit = request.status === 'open';
+  const deadlineStr = request.deadline === 'flexible' ? t('builder.flexible') : formatDate(request.deadline);
+  const locationStr = request.location ?? '';
 
   return (
-    <View style={styles.cardWrap}>
-      <View
-        style={[
-          styles.statusBadge,
-          { backgroundColor: STATUS_CONFIG[request.status].bg },
-          rtl ? { left: -10 } : { right: -10 },
-        ]}
-      >
-        <Text style={[styles.statusBadgeText, { ...font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
-          {t(STATUS_LABEL_KEY[request.status])}
-        </Text>
-      </View>
-
-      <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+      {/* Header: title + inline status badge */}
+      <View style={[styles.headerRow, { flexDirection: rowDir }]}>
         <Text
-          style={[styles.title, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.forText(request.title, 'bold') }]}
-          numberOfLines={1}
+          style={[styles.title, { ...font.forText(request.title, 'bold'), color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}
+          numberOfLines={2}
         >
           {request.title}
         </Text>
-
-        <View style={[styles.infoRow, { flexDirection: rowDir }]}>
-          <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-              {t('project_details.execution')}
-            </Text>
-            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-              {formatDate(request.exec)}
-            </Text>
-          </View>
-          <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-              {t('project_details.deadline')}
-            </Text>
-            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-              {formatDate(request.deadline)}
-            </Text>
-          </View>
-          <View style={styles.infoCol}>
-            <Text style={[styles.infoLabel, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-              {t('project_details.location')}
-            </Text>
-            <Text style={[styles.infoValue, { textAlign: rtl ? 'right' : 'left', ...font.forText(request.location, 'bold') }]} numberOfLines={1}>
-              {request.location}
-            </Text>
-          </View>
+        <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[request.status].bg }]}>
+          <Text style={[styles.statusBadgeText, { ...font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
+            {t(STATUS_LABEL_KEY[request.status])}
+          </Text>
         </View>
+      </View>
 
-        {filledCount > 0 && (
-          <TouchableOpacity onPress={toggleTeam} style={[styles.teamToggle, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]} activeOpacity={0.7}>
-            <Text style={[styles.teamToggleText, { ...font.semiBold, color: isTeamFull ? '#22c55e' : '#cb6ce6' }]}>
-              {teamOpen ? '▴' : '▾'} Team ({filledCount})
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {teamOpen && (
-          <View style={styles.teamSection}>
-            {teamLoading ? (
-              <ActivityIndicator size="small" color="#cb6ce6" />
-            ) : (
-              <>
-                {request.crewSlots.map((slot, i) => {
-                  const filled = request.filledSlots?.find(
-                    (f) => f.category === slot.category
-                  );
-                  const member = team.find(
-                    (m) => m.professionalId === filled?.professionalId && m.category === slot.category
-                  );
-                  return (
-                    <View key={i} style={[styles.teamRow, { flexDirection: rowDir }]}>
-                      <View style={styles.teamDot} />
-                      <View style={styles.teamInfo}>
-                        <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.forText(slot.category, 'semiBold') }]}>{slot.category}</Text>
-                        {member ? (
-                          <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', ...font.forText(member.displayName, 'regular') }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
-                        ) : (
-                          <Text style={[styles.teamOpen, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>— Open</Text>
-                        )}
-                      </View>
-                    </View>
-                  );
-                })}
-              </>
-            )}
-          </View>
-        )}
-
-        {!confirmDelete ? (
-          <View style={[styles.btnRow, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
-            {request.chatId ? (
-              <TouchableOpacity
-                style={styles.chatPill}
-                onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${request.chatId}` as never)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.chatPillText, { ...font.semiBold }]}>{t('chats_page.open_chat')}</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={[styles.chatPill, styles.chatPillDisabled]}>
-                <Text style={[styles.chatPillText, styles.chatPillTextDisabled, { ...font.semiBold }]}>{t('chats_page.no_chat_yet')}</Text>
-              </View>
-            )}
-            {canEdit && (
-              <>
-                <TouchableOpacity style={styles.editPill} onPress={handleEdit} activeOpacity={0.8}>
-                  <Text style={[styles.editPillText, { ...font.semiBold }]}>{t('chats_page.edit_project')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.deletePill} onPress={() => setConfirmDelete(true)} activeOpacity={0.8}>
-                  <Text style={[styles.deletePillText, { ...font.semiBold }]}>{t('chats_page.delete_project')}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        ) : (
-          <View style={[styles.confirmRow, { borderTopColor: colors.border, backgroundColor: '#fef2f2' }]}>
-            <Text style={[styles.confirmText, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>Delete this project?</Text>
-            <View style={[styles.confirmBtns, { flexDirection: rowDir }]}>
-              <TouchableOpacity style={styles.editPill} onPress={() => setConfirmDelete(false)} activeOpacity={0.8} disabled={isDeleting}>
-                <Text style={[styles.editPillText, { ...font.semiBold }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.deletePill} onPress={handleDelete} activeOpacity={0.8} disabled={isDeleting}>
-                {isDeleting
-                  ? <ActivityIndicator size="small" color="#ffffff" />
-                  : <Text style={[styles.deletePillText, { ...font.semiBold }]}>Yes, Delete</Text>
-                }
-              </TouchableOpacity>
+      {/* Details: deadline + location, hidden when empty */}
+      {(!!deadlineStr || !!locationStr) && (
+        <View style={[styles.detailsRow, { flexDirection: rowDir }]}>
+          {!!deadlineStr && (
+            <View style={[styles.detailItem, { flexDirection: rowDir }]}>
+              <CalendarDays size={13} color={colors.textMuted} strokeWidth={1.5} />
+              <Text style={[styles.detailText, { ...font.regular, color: colors.textMuted }]}>
+                {deadlineStr}
+              </Text>
             </View>
-          </View>
+          )}
+          {!!locationStr && (
+            <View style={[styles.detailItem, { flexDirection: rowDir }]}>
+              <MapPin size={13} color={colors.textMuted} strokeWidth={1.5} />
+              <Text style={[styles.detailText, { ...font.forText(locationStr, 'regular'), color: colors.textMuted }]} numberOfLines={1}>
+                {locationStr}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Team section */}
+      {filledCount > 0 && (
+        <TouchableOpacity onPress={toggleTeam} style={[styles.teamToggle, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]} activeOpacity={0.7}>
+          <Text style={[styles.teamToggleText, { ...font.semiBold, color: isTeamFull ? '#22c55e' : '#cb6ce6' }]}>
+            {teamOpen ? '▴' : '▾'} Team ({filledCount})
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {teamOpen && (
+        <View style={styles.teamSection}>
+          {teamLoading ? (
+            <ActivityIndicator size="small" color="#cb6ce6" />
+          ) : (
+            <>
+              {request.crewSlots.map((slot, i) => {
+                const filled = request.filledSlots?.find(
+                  (f) => f.category === slot.category
+                );
+                const member = team.find(
+                  (m) => m.professionalId === filled?.professionalId && m.category === slot.category
+                );
+                return (
+                  <View key={i} style={[styles.teamRow, { flexDirection: rowDir }]}>
+                    <View style={styles.teamDot} />
+                    <View style={styles.teamInfo}>
+                      <Text style={[styles.teamRole, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.forText(slot.category, 'semiBold') }]}>{slot.category}</Text>
+                      {member ? (
+                        <Text style={[styles.teamName, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', ...font.forText(member.displayName, 'regular') }]}>{member.displayName} · ${member.price.toLocaleString()}</Text>
+                      ) : (
+                        <Text style={[styles.teamOpen, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>— Open</Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          )}
+        </View>
+      )}
+
+      <View style={styles.divider} />
+
+      {/* Actions row */}
+      <View style={[styles.actionsRow, { flexDirection: rowDir }]}>
+        <View style={[styles.primaryActions, { flexDirection: rowDir }]}>
+          {!!request.chatId && (
+            <TouchableOpacity
+              style={styles.chatBtn}
+              onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${request.chatId}` as never)}
+              activeOpacity={0.8}
+            >
+              <MessageCircle size={14} color="#ffffff" strokeWidth={2} />
+              <Text style={[styles.chatBtnText, { ...font.semiBold }]}>{t('chats_page.open_chat')}</Text>
+            </TouchableOpacity>
+          )}
+          {canEdit && (
+            <TouchableOpacity style={styles.editBtn} onPress={handleEdit} activeOpacity={0.8}>
+              <Pencil size={14} color="#004aad" strokeWidth={2} />
+              <Text style={[styles.editBtnText, { ...font.semiBold }]}>{t('chats_page.edit_project')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {canEdit && (
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={confirmAndDelete}
+            activeOpacity={0.7}
+            disabled={isDeleting}
+          >
+            {isDeleting
+              ? <ActivityIndicator size="small" color="#dc2626" />
+              : <Trash2 size={18} color="#dc2626" strokeWidth={1.5} />
+            }
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -227,86 +223,84 @@ export function ProjectRequestCard({ request }: Props) {
 }
 
 const styles = StyleSheet.create({
-  cardWrap: {
-    position: 'relative',
-    marginTop: 10,
-    marginBottom: 10,
-    overflow: 'visible',
-  },
-  statusBadge: {
-    position: 'absolute',
-    top: -10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    zIndex: 2,
-  },
-  statusBadgeText: { fontSize: 11, fontWeight: '700' },
   card: {
     borderRadius: 16,
-    padding: 10,
+    padding: 14,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 4,
+    gap: 10,
+    marginVertical: 6,
   },
-  title: { fontSize: 13, marginBottom: 6 },
-  infoRow: { justifyContent: 'space-between', gap: 8, marginBottom: 6 },
-  infoCol: { flex: 1 },
-  infoLabel: { fontSize: 10, marginBottom: 2, opacity: 0.7 },
-  infoValue: { fontSize: 13, color: '#004aad', fontWeight: '800' },
-  teamToggle: { marginTop: 8 },
-  teamToggleText: { fontSize: 13, fontWeight: '600' },
-  teamSection: { marginTop: 10, gap: 8 },
+  headerRow: {
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  title: { fontSize: 18, lineHeight: 24, flex: 1 },
+  statusBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    flexShrink: 0,
+  },
+  statusBadgeText: { fontSize: 11 },
+  detailsRow: {
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  detailItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailText: { fontSize: 12 },
+  teamToggle: {},
+  teamToggleText: { fontSize: 13 },
+  teamSection: { gap: 8 },
   teamRow: { alignItems: 'center', gap: 10 },
   teamDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#cb6ce6' },
   teamInfo: { flex: 1 },
-  teamRole: { fontSize: 13, fontWeight: '600' },
+  teamRole: { fontSize: 13 },
   teamName: { fontSize: 12, marginTop: 1 },
   teamOpen: { fontSize: 12, marginTop: 1 },
-  btnRow: {
+  divider: { height: 1, backgroundColor: '#e0e0e0' },
+  actionsRow: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  primaryActions: {
+    gap: 8,
+    alignItems: 'center',
+  },
+  chatBtn: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 6,
-    marginTop: 8,
-  },
-  chatPill: {
     backgroundColor: '#004aad',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
-  chatPillDisabled: { backgroundColor: '#e0e0e0' },
-  chatPillText: { color: '#ffffff', fontSize: 11 },
-  chatPillTextDisabled: { color: '#9e9e9e' },
-  deletePill: {
-    backgroundColor: '#ff4d6d',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  chatBtnText: { color: '#ffffff', fontSize: 13 },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: '#004aad',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  deletePillText: { color: '#ffffff', fontSize: 11 },
-  editPill: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#cccccc',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  editBtnText: { color: '#004aad', fontSize: 13 },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  editPillText: { fontSize: 11, color: '#666666' },
-  confirmRow: {
-    marginTop: 12,
-    paddingTop: 10,
-    paddingHorizontal: 10,
-    paddingBottom: 8,
-    borderTopWidth: 1,
-    borderRadius: 8,
-    gap: 8,
-  },
-  confirmText: { fontSize: 13, fontWeight: '600', color: '#e53e3e' },
-  confirmBtns: { justifyContent: 'flex-end', gap: 8 },
 });

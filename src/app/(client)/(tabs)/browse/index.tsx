@@ -169,7 +169,7 @@ export default function SearchScreen() {
           {filteredCategories.map((cat) => (
             <View key={cat.key} style={styles.categoryCard}>
               <TouchableOpacity
-                style={styles.categoryCardRow}
+                style={[styles.categoryCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
                 onPress={() => setSelectedCategory(cat.key)}
                 activeOpacity={0.7}
               >
@@ -323,16 +323,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   categoryCardRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
+    gap: 12,
   },
   categoryIcon: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    marginRight: 12,
   },
   categoryLabel: {
     flex: 1,

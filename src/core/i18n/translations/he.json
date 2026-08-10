@@ -27,6 +27,7 @@
     "placeholder_description": "תאר את הפרויקט שלך",
     "placeholder_date": "בחר תאריך",
     "placeholder_deadline": "בחר תאריך סיום",
+    "flexible": "גמיש",
     "placeholder_location": "בחר מיקום הפרויקט",
     "choose_location": "בחר מיקום הפרויקט",
     "search_city": "חפש עיר...",
@@ -214,7 +215,13 @@
     "coming_soon": "בקרוב",
     "delete_project": "מחק",
     "edit_project": "ערוך",
-    "filter_all": "הכל"
+    "filter_all": "הכל",
+    "delete_confirm_title": "למחוק את הפרויקט?",
+    "delete_confirm_body": "פעולה זו אינה הפיכה.",
+    "delete_confirm_cancel": "ביטול",
+    "delete_confirm_ok": "מחק",
+    "project_deleted": "הפרויקט נמחק",
+    "project_delete_error": "שגיאה במחיקת הפרויקט"
   },
   "profile": {
     "title": "פרופיל",

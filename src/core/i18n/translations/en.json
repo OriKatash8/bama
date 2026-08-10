@@ -27,6 +27,7 @@
     "placeholder_description": "Describe your project",
     "placeholder_date": "Select date",
     "placeholder_deadline": "Select deadline",
+    "flexible": "Flexible",
     "placeholder_location": "Choose project location",
     "choose_location": "Choose project location",
     "search_city": "Search city...",
@@ -214,7 +215,13 @@
     "coming_soon": "Coming soon",
     "delete_project": "Delete",
     "edit_project": "Edit",
-    "filter_all": "All"
+    "filter_all": "All",
+    "delete_confirm_title": "Delete Project?",
+    "delete_confirm_body": "This action cannot be undone.",
+    "delete_confirm_cancel": "Cancel",
+    "delete_confirm_ok": "Delete",
+    "project_deleted": "Project deleted",
+    "project_delete_error": "Failed to delete project"
   },
   "profile": {
     "title": "Profile",

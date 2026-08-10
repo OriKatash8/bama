@@ -186,7 +186,7 @@ export default function SummaryScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.dateBtnText, { ...font.regular, color: deadline ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
-                  {deadline || t('builder.placeholder_deadline')}
+                  {deadline === 'flexible' ? t('builder.flexible') : (deadline || t('builder.placeholder_deadline'))}
                 </Text>
                 <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
               </TouchableOpacity>
@@ -312,7 +312,7 @@ export default function SummaryScreen() {
 
       {calOpen !== null && (
         <MiniCalendar
-          value={calOpen === 'exec' ? exec : deadline}
+          value={calOpen === 'exec' ? exec : (deadline === 'flexible' ? '' : deadline)}
           onSelect={(d) => {
             if (calOpen === 'exec') setExec(d);
             else setDeadline(d);

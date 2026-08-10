@@ -329,7 +329,16 @@ export default function HomeScreen() {
                     ) : null}
                     <CalendarDays size={deadline ? 20 : 28} color="#004aad" strokeWidth={1.8} />
                     <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                      {deadline || t('builder.placeholder_deadline')}
+                      {deadline === 'flexible' ? t('builder.flexible') : (deadline || t('builder.placeholder_deadline'))}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.flexiblePill, deadline === 'flexible' && styles.flexiblePillActive]}
+                    onPress={() => setDeadline(deadline === 'flexible' ? '' : 'flexible')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.flexiblePillText, deadline === 'flexible' && styles.flexiblePillTextActive, { ...font.semiBold }]}>
+                      {t('builder.flexible')}
                     </Text>
                   </TouchableOpacity>
                   {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
@@ -615,7 +624,7 @@ export default function HomeScreen() {
 
       {calOpen !== null && (
         <MiniCalendar
-          value={calOpen === 'exec' ? exec : deadline}
+          value={calOpen === 'exec' ? exec : (deadline === 'flexible' ? '' : deadline)}
           onSelect={(d) => {
             if (calOpen === 'exec') setExec(d);
             else setDeadline(d);
@@ -802,6 +811,24 @@ function createStyles(
       height: 18,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    flexiblePill: {
+      marginTop: 7,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: '#004aad',
+    },
+    flexiblePillActive: {
+      backgroundColor: '#004aad',
+    },
+    flexiblePillText: {
+      fontSize: 12,
+      color: '#004aad',
+    },
+    flexiblePillTextActive: {
+      color: '#ffffff',
     },
 
     // Summary modal

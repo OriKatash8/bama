@@ -164,7 +164,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               <View style={[styles.metaItem, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <Clock size={11} color={colors.textMuted} strokeWidth={1.5} />
                 <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>
-                  {request.deadline}
+                  {request.deadline === 'flexible' ? t('builder.flexible') : request.deadline}
                 </Text>
               </View>
             )}
