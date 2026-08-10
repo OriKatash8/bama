@@ -40,7 +40,7 @@ export function ListingCard({ listing, onPress }: Props) {
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}
       onPress={onPress}
       activeOpacity={0.85}
     >

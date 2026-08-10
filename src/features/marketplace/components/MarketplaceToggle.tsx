@@ -29,20 +29,20 @@ export function MarketplaceToggle({ active, onChange }: Props) {
   return (
     <View style={styles.row}>
       <TouchableOpacity
-        style={[styles.pill, { backgroundColor: colors.cardAlt }, active === 'secondhand' && styles.pillActive]}
+        style={[styles.pill, active === 'secondhand' ? styles.pillActive : styles.pillInactive]}
         onPress={() => onChange('secondhand')}
         activeOpacity={0.8}
       >
-        <Text style={[styles.label, { color: colors.textMuted }, active === 'secondhand' && styles.labelActive]}>
+        <Text style={[styles.label, active === 'secondhand' ? styles.labelActive : styles.labelInactive]}>
           {'BAMA Market'}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.pill, { backgroundColor: colors.cardAlt }, active === 'rental' && styles.pillActive]}
+        style={[styles.pill, active === 'rental' ? styles.pillActive : styles.pillInactive]}
         onPress={() => onChange('rental')}
         activeOpacity={0.8}
       >
-        <Text style={[styles.label, { color: colors.textMuted }, active === 'rental' && styles.labelActive]}>
+        <Text style={[styles.label, active === 'rental' ? styles.labelActive : styles.labelInactive]}>
           {'BAMA Rental'}
         </Text>
       </TouchableOpacity>
@@ -58,6 +58,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   pillActive: { backgroundColor: '#004aad' },
+  pillInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
   label: { fontSize: 14, fontWeight: '600' },
-  labelActive: { color: '#fff' },
+  labelActive: { color: '#ffffff' },
+  labelInactive: { color: '#004aad' },
 });
