@@ -38,14 +38,13 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row' : 'row-reverse' as const;
-  const textAlign = rtl ? 'right' : 'left' as const;
   const displayName = professionalProfile?.displayName ?? '…';
 
   return (
     <View style={[styles.container, { flexDirection: rowDir }]}>
       {/* Square 1: X button */}
       <TouchableOpacity onPress={onReject} style={styles.xSquare} activeOpacity={0.8}>
-        <X size={20} color="#666666" />
+        <X size={20} color="#888888" />
       </TouchableOpacity>
 
       {/* Square 2: ✓ button */}
@@ -62,52 +61,51 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
         )}
       </TouchableOpacity>
 
-      {/* Square 3: professional info */}
+      {/* Content card */}
       <View style={styles.infoSquare}>
-        <View style={[styles.infoOuterRow, { flexDirection: rowDir }]}>
-          {/* View Profile button */}
-          <TouchableOpacity onPress={onPressProfile} style={styles.viewProfileBtn} activeOpacity={0.8}>
-            <Text style={[styles.viewProfileText, { ...font.semiBold }]}>{t('offers.view_profile')}</Text>
-          </TouchableOpacity>
-
-          {/* Professional info + avatar */}
-          <View style={[styles.infoRow, { flexDirection: rowDir }]}>
-            <View style={styles.infoCol}>
-              {projectTitle && (
-                <Text style={[styles.projectTitle, { ...font.forText(projectTitle, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
-                  {t('offers.for_project')}{projectTitle}
-                </Text>
-              )}
-              <Text style={[styles.name, { ...font.forText(displayName, 'bold'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
-                {displayName}
-              </Text>
-              {offer.subcategory ? (
-                <Text style={[styles.role, { ...font.forText(offer.subcategory, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
-                  {offer.subcategory}
-                </Text>
-              ) : (
-                <Text style={[styles.role, { ...font.forText(offer.category, 'regular'), textAlign }]} numberOfLines={1} ellipsizeMode="tail">
-                  {offer.category}
-                </Text>
-              )}
-              <Text style={[styles.price, { ...font.bold, textAlign }]}>
-                ₪{offer.price.toLocaleString()}
+        {/* Top: avatar + for-project label + name + role */}
+        <View style={[styles.topRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          {professionalProfile?.photoURL ? (
+            <Image
+              source={{ uri: professionalProfile.photoURL }}
+              style={styles.avatar}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.avatarInitial, { ...font.bold }]}>
+                {displayName.charAt(0).toUpperCase()}
               </Text>
             </View>
-
-            {professionalProfile?.photoURL ? (
-              <Image
-                source={{ uri: professionalProfile.photoURL, width: 32, height: 32 }}
-                style={styles.avatar}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-              />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.primary }]}>
-                <Text style={[styles.avatarInitial, { ...font.bold }]}>{displayName.charAt(0).toUpperCase()}</Text>
-              </View>
-            )}
+          )}
+          <View style={[styles.nameCol, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+            {projectTitle ? (
+              <Text style={[styles.forProject, { ...font.forText(projectTitle, 'regular') }]} numberOfLines={1}>
+                {t('offers.for_project')}{projectTitle}
+              </Text>
+            ) : null}
+            <Text style={[styles.name, { ...font.forText(displayName, 'bold') }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={[styles.role, { ...font.forText(offer.subcategory ?? offer.category, 'regular') }]} numberOfLines={1}>
+              {offer.subcategory ?? offer.category}
+            </Text>
           </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Bottom: large price + quiet view-profile link */}
+        <View style={[styles.bottomRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.price, { ...font.bold }]}>
+            ₪{offer.price.toLocaleString()}
+          </Text>
+          <TouchableOpacity onPress={onPressProfile} activeOpacity={0.7}>
+            <Text style={[styles.viewProfileText, { ...font.semiBold }]}>
+              {t('offers.view_profile')}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -125,7 +123,9 @@ const styles = StyleSheet.create({
   xSquare: {
     width: 52,
     borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#d0d0d0',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -140,33 +140,64 @@ const styles = StyleSheet.create({
   infoSquare: {
     flex: 1,
     minWidth: 0,
-    alignSelf: 'stretch',
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 8,
-    overflow: 'hidden',
+    padding: 12,
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 3,
   },
-  infoOuterRow: { alignItems: 'center', flex: 1 },
-  infoRow: { flex: 1, alignItems: 'center', justifyContent: 'space-between' },
-  infoCol: { flex: 1 },
-  projectTitle: { fontSize: 10, color: '#888', fontStyle: 'italic' },
-  name: { fontWeight: 'bold', color: '#004aad', fontSize: 12 },
-  role: { color: '#888888', fontSize: 11 },
-  price: { fontWeight: 'bold', color: '#004aad', fontSize: 12 },
-  viewProfileBtn: {
-    marginEnd: 8,
-    borderWidth: 1,
-    borderColor: '#004aad',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
   },
-  viewProfileText: { color: '#004aad', fontSize: 10 },
-  avatar: { width: 32, height: 32, borderRadius: 16, marginStart: 10, alignSelf: 'center' },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    flexShrink: 0,
+  },
   avatarFallback: { justifyContent: 'center', alignItems: 'center' },
-  avatarInitial: { color: '#ffffff', fontWeight: 'bold' },
+  avatarInitial: { color: '#ffffff', fontSize: 17, fontWeight: '700' },
+  nameCol: {
+    flex: 1,
+    gap: 2,
+  },
+  forProject: {
+    fontSize: 10,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#004aad',
+  },
+  role: {
+    fontSize: 12,
+    color: '#888888',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginBottom: 10,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  price: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#004aad',
+  },
+  viewProfileText: {
+    fontSize: 12,
+    color: '#004aad',
+    textDecorationLine: 'underline',
+  },
 });
