@@ -43,14 +43,14 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
   return (
     <View style={[styles.container, { flexDirection: rowDir }]}>
       {/* Square 1: X button */}
-      <TouchableOpacity onPress={onReject} style={styles.xSquare} activeOpacity={0.8}>
+      <TouchableOpacity onPress={onReject} style={[styles.squareButton, styles.xSquare]} activeOpacity={0.8}>
         <X size={20} color="#888888" />
       </TouchableOpacity>
 
       {/* Square 2: ✓ button */}
       <TouchableOpacity
         onPress={onAccept}
-        style={[styles.acceptSquare, isAccepting && styles.disabled]}
+        style={[styles.squareButton, styles.acceptSquare, isAccepting && styles.disabled]}
         disabled={isAccepting}
         activeOpacity={0.8}
       >
@@ -120,21 +120,20 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 12,
   },
+  squareButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   xSquare: {
-    width: 52,
-    borderRadius: 12,
     backgroundColor: 'transparent',
     borderWidth: 1.5,
     borderColor: '#d0d0d0',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   acceptSquare: {
-    width: 52,
-    borderRadius: 12,
     backgroundColor: '#004aad',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   disabled: { opacity: 0.6 },
   infoSquare: {
