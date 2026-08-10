@@ -289,7 +289,7 @@ export default function HomeScreen() {
                 {/* Execution square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
-                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                    <View style={{ position: 'absolute', top: -8, left: -8 }}>
                       <HelpTooltip text={t('builder.help_execution')} />
                     </View>
                     {exec ? (
@@ -316,7 +316,7 @@ export default function HomeScreen() {
                     onPress={() => setCalOpen('deadline')}
                     activeOpacity={0.8}
                   >
-                    <View style={{ position: 'absolute', top: 6, left: 6 }}>
+                    <View style={{ position: 'absolute', top: -8, left: -8 }}>
                       <HelpTooltip text={t('builder.help_deadline')} />
                     </View>
                     {deadline ? (
@@ -353,6 +353,9 @@ export default function HomeScreen() {
                     onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
                     activeOpacity={0.8}
                   >
+                    <View style={{ position: 'absolute', top: -8, left: -8 }}>
+                      <HelpTooltip text={t('builder.help_location')} />
+                    </View>
                     {location ? (
                       <TouchableOpacity
                         style={styles.dateSquareClear}
