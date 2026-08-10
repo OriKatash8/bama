@@ -335,7 +335,11 @@
     "just_now": "כרגע",
     "minutes_ago": "לפני {{n}} ד׳",
     "hours_ago": "לפני {{n}} ש׳",
-    "days_ago": "לפני {{n}} ימים"
+    "days_ago": "לפני {{n}} ימים",
+    "dismiss_title": "הסרת מודעה",
+    "dismiss_body": "להסיר פרויקט זה מהלוח שלך?",
+    "dismiss_cancel": "השאר",
+    "dismiss_confirm": "הסר"
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",

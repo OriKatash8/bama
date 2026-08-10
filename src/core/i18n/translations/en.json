@@ -335,7 +335,11 @@
     "just_now": "Just now",
     "minutes_ago": "{{n}}m ago",
     "hours_ago": "{{n}}h ago",
-    "days_ago": "{{n}}d ago"
+    "days_ago": "{{n}}d ago",
+    "dismiss_title": "Remove Notice",
+    "dismiss_body": "Remove this project from your board?",
+    "dismiss_cancel": "Keep",
+    "dismiss_confirm": "Remove"
   },
   "offers": {
     "bundle_badge": "Bundle deal",
