@@ -105,7 +105,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                   cachePolicy="memory-disk"
                 />
               ) : null}
-              <Text style={[styles.cardName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
+              <Text style={[styles.cardName, { ...font.forText(c.name, 'semiBold'), color: colors.text }]} numberOfLines={1}>
                 {c.name}
               </Text>
               <Text style={[styles.memberCount, { ...font.regular, color: colors.textMuted }]}>
@@ -113,7 +113,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
               </Text>
             </View>
             {!!formatLastMessage(c) && (
-              <Text style={[styles.preview, { ...font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+              <Text style={[styles.preview, { ...font.forText(formatLastMessage(c), 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                 {formatLastMessage(c)}
               </Text>
             )}
@@ -184,7 +184,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                 </Text>
               </View>
               {!!c.description && (
-                <Text style={[styles.description, { ...font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                <Text style={[styles.description, { ...font.forText(c.description as string, 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                   {c.description as string}
                 </Text>
               )}
