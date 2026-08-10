@@ -7,6 +7,7 @@ import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Review } from '@core/types/project';
@@ -47,6 +48,7 @@ export function ContentTabs({
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const font = useAppFont();
 
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');
@@ -116,7 +118,7 @@ export function ContentTabs({
             onPress={() => switchTab(key)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.tabText, { color: active === key ? '#fff' : '#004aad' }]}>
+            <Text style={[styles.tabText, { color: active === key ? '#fff' : '#004aad', ...font.semiBold }]}>
               {sectionLabel(key)}
             </Text>
           </TouchableOpacity>
@@ -132,7 +134,7 @@ export function ContentTabs({
         {active === 'equipment' && (
           <>
             {equipment.length === 0 && (
-              <Text style={styles.empty}>
+              <Text style={[styles.empty, { ...font.regular }]}>
                 {t('profile_sections.no_equipment')}
               </Text>
             )}
@@ -155,7 +157,7 @@ export function ContentTabs({
                         <Text style={styles.removeBtn}>×</Text>
                       </TouchableOpacity>
                     )}
-                    <Text style={styles.itemText}>{item}</Text>
+                    <Text style={[styles.itemText, { ...font.regular }]}>{item}</Text>
                   </View>
                 ))}
               </View>
@@ -206,7 +208,7 @@ export function ContentTabs({
                       <Text style={[styles.tableRowCheck, isSelected && styles.tableRowCheckActive]}>
                         {isSelected ? '✓' : ''}
                       </Text>
-                      <Text style={[styles.tableRowText, isSelected && styles.tableRowTextActive]}>
+                      <Text style={[styles.tableRowText, isSelected && styles.tableRowTextActive, { ...font.medium }]}>
                         {label}
                       </Text>
                     </TouchableOpacity>
@@ -215,12 +217,12 @@ export function ContentTabs({
               </View>
             ) : (
               (skills ?? []).length === 0 ? (
-                <Text style={styles.empty}>{t('profile_sections.no_skills')}</Text>
+                <Text style={[styles.empty, { ...font.regular }]}>{t('profile_sections.no_skills')}</Text>
               ) : (
                 <View style={styles.chipsWrap}>
                   {(skills ?? []).map((s, i) => (
                     <View key={`${s.category}-${i}`} style={styles.chip}>
-                      <Text style={styles.chipText}>
+                      <Text style={[styles.chipText, { ...font.regular }]}>
                         {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
                       </Text>
                     </View>

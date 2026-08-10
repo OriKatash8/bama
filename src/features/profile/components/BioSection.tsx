@@ -2,6 +2,7 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -29,15 +30,16 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const font = useAppFont();
 
   if (!isEditing) {
     return (
       <View style={{ gap: 6 }}>
-        <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
           {t('profile_sections.about')}
         </Text>
         <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <Text style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {bio || t('profile_sections.no_bio')}
           </Text>
         </View>

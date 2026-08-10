@@ -127,17 +127,17 @@ export default function ProfessionalProfileScreen() {
         {isEditing ? (
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.cancel')}</Text>
+              <Text style={[styles.headerBtnText, { color: '#004aad', ...font.regular }]}>{t('profile.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
               {isSaving
                 ? <ActivityIndicator size="small" color="#004aad" />
-                : <Text style={[styles.headerBtnText, styles.save]}>{t('profile.save')}</Text>}
+                : <Text style={[styles.headerBtnText, styles.save, { ...font.bold }]}>{t('profile.save')}</Text>}
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.edit')}</Text>
+            <Text style={[styles.headerBtnText, { color: '#004aad', ...font.regular }]}>{t('profile.edit')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -161,7 +161,7 @@ export default function ProfessionalProfileScreen() {
       />
 
       <View style={styles.portfolioSection}>
-        <Text style={[styles.portfolioTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+        <Text style={[styles.portfolioTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
           {t('profile.portfolio')}
         </Text>
         <PortfolioGrid
