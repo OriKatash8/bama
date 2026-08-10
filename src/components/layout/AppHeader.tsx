@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  logo: { width: 72, height: 72 },
+  logo: { width: 72, height: 72, marginVertical: -20 },
   center: {
     flex: 1,
     paddingHorizontal: 10,
