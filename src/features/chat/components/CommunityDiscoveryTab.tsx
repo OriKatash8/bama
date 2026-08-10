@@ -166,7 +166,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
         filteredDiscover.map((c) => {
           const status = joinStatuses[c.id];
           return (
-            <View key={c.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View key={c.id} style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
               <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {c.category && CATEGORY_IMAGE[c.category] ? (
                   <Image
