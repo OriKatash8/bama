@@ -21,14 +21,14 @@ import type { ProjectRequest } from '@core/types/project';
 import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@features/projects/constants/roleQuestions';
 
 const categoryImages = {
-  videographer:    require('../../../../../assets/images/categories/videographer.png'),
-  photographer:    require('../../../../../assets/images/categories/photographer.png'),
-  editor:          require('../../../../../assets/images/categories/editor.png'),
-  graphicDesigner: require('../../../../../assets/images/categories/graphic-designer.png'),
-  social:          require('../../../../../assets/images/categories/social.png'),
-  studios:         require('../../../../../assets/images/categories/studios.png'),
-  lighting:        require('../../../../../assets/images/categories/lighting.png'),
-  sound:           require('../../../../../assets/images/categories/sound.png'),
+  videographer:    require('../../../../../assets/images/categories/videographer-wide.png'),
+  photographer:    require('../../../../../assets/images/categories/photographer-wide.png'),
+  editor:          require('../../../../../assets/images/categories/editor-wide.png'),
+  graphicDesigner: require('../../../../../assets/images/categories/graphic-designer-wide.png'),
+  social:          require('../../../../../assets/images/categories/social-wide.png'),
+  studios:         require('../../../../../assets/images/categories/studio-wide.png'),
+  lighting:        require('../../../../../assets/images/categories/lighting-wide.png'),
+  sound:           require('../../../../../assets/images/categories/sound-wide.png'),
 };
 
 const CATEGORY_META: Record<string, { labelKey: string; image: ReturnType<typeof require> }> = {
@@ -96,7 +96,7 @@ export default function HomeScreen() {
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const { width } = useWindowDimensions();
-  const tileSize = Math.floor((width - 64 - 12) / 2);
+  const tileSize = Math.floor((width - 64 - 8) / 2);
 
   const language = useSettingsStore((s) => s.language);
   const translations = language === 'he' ? he : en;
@@ -417,8 +417,8 @@ export default function HomeScreen() {
                 initialNumToRender={8}
                 maxToRenderPerBatch={8}
                 windowSize={3}
-                columnWrapperStyle={{ gap: 12, justifyContent: 'center' }}
-                ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
+                columnWrapperStyle={{ gap: 8, justifyContent: 'center' }}
+                ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
                 renderItem={({ item: cat }) => {
                   const catSlot = slots.find(s => s.category === cat.key);
                   const catTotal = catSlot?.quantity ?? 0;
@@ -426,14 +426,14 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       style={[
                         styles.tile,
-                        { width: tileSize, height: tileSize },
+                        { width: tileSize },
                         catTotal > 0 && { borderWidth: 2, borderColor: colors.accent },
                       ]}
                       onPress={() => addSlot(cat.key)}
                       activeOpacity={0.85}
                     >
                       {cat.image ? (
-                        <Image source={cat.image} style={styles.tileImage} contentFit="contain" cachePolicy="memory-disk" />
+                        <Image source={cat.image} style={styles.tileImage} contentFit="cover" cachePolicy="memory-disk" />
                       ) : null}
                       <View style={styles.tileOverlay}>
                         <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
@@ -663,12 +663,12 @@ function createStyles(
     multiline: { height: 100 },
     error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    tile: { borderRadius: 12, overflow: 'hidden', position: 'relative' },
-    tileImage: { width: '100%', height: '100%', position: 'absolute' },
-    tileOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 4, paddingHorizontal: 5 },
-    tileLabel: { fontSize: 16, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textShadowColor: 'rgba(255,255,255,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+    tile: { borderRadius: 12, overflow: 'hidden', position: 'relative', alignItems: 'center' },
+    tileImage: { width: '100%', height: 100 },
+    tileOverlay: { width: '100%', paddingVertical: 4, paddingHorizontal: 5 },
+    tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center' },
     tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
-    tileDecrement: { position: 'absolute', bottom: 5, right: 5, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
+    tileDecrement: { position: 'absolute', top: 74, right: 5, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
     tileDecrementText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 18 },
     tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: ffBold },
     submitWrap: { padding: 16, paddingBottom: 32 },
