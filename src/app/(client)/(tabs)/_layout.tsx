@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Platform } from 'react-native';
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { Search, Home, MessageCircle, FolderKanban } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useUiStore } from '@core/stores/uiStore';
@@ -45,9 +45,12 @@ export default function ClientTabsLayout() {
     });
   }, [userId]);
 
+  const pathname = usePathname();
+  const inChatRoom = /\/chats\/.+/.test(pathname);
+
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader />
+      {!inChatRoom && <AppHeader />}
       <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0, bottom: 0 }}>
         <Tabs
           screenOptions={{
