@@ -429,7 +429,7 @@ export default function HomeScreen() {
                         { width: tileSize },
                         catTotal > 0 && { borderWidth: 2, borderColor: colors.accent },
                       ]}
-                      onPress={() => addSlot(cat.key)}
+                      onPress={() => { if (catTotal === 0) addSlot(cat.key); }}
                       activeOpacity={0.85}
                     >
                       {cat.image ? (
@@ -440,17 +440,27 @@ export default function HomeScreen() {
                       </View>
                       {catTotal > 0 && (
                         <>
-                          <View style={[styles.tileBadge, { backgroundColor: colors.accent }]}>
+                          <View style={styles.tileBadge}>
                             <Text style={styles.tileBadgeText}>{catTotal}</Text>
                           </View>
-                          <TouchableOpacity
-                            style={styles.tileDecrement}
-                            onPress={(e) => { e.stopPropagation?.(); removeSlot(cat.key); }}
-                            hitSlop={6}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.tileDecrementText}>−</Text>
-                          </TouchableOpacity>
+                          <View style={styles.tileControls}>
+                            <TouchableOpacity
+                              style={[styles.tileControlBtn, styles.tileControlBtnRemove]}
+                              onPress={(e) => { e.stopPropagation?.(); removeSlot(cat.key); }}
+                              hitSlop={6}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.tileControlText}>−</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.tileControlBtn, styles.tileControlBtnAdd]}
+                              onPress={(e) => { e.stopPropagation?.(); addSlot(cat.key); }}
+                              hitSlop={6}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.tileControlText}>+</Text>
+                            </TouchableOpacity>
+                          </View>
                         </>
                       )}
                     </TouchableOpacity>
@@ -667,10 +677,13 @@ function createStyles(
     tileImage: { width: '100%', height: 100 },
     tileOverlay: { width: '100%', paddingVertical: 4, paddingHorizontal: 5 },
     tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center' },
-    tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
-    tileDecrement: { position: 'absolute', top: 74, right: 5, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
-    tileDecrementText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 18 },
-    tileBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', fontFamily: ffBold },
+    tileBadge: { position: 'absolute', top: 5, right: 5, minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, backgroundColor: '#004aad' },
+    tileBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', fontFamily: ffBold },
+    tileControls: { position: 'absolute', top: 72, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 10 },
+    tileControlBtn: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    tileControlBtnRemove: { backgroundColor: 'rgba(229,57,53,0.85)' },
+    tileControlBtnAdd: { backgroundColor: '#004aad' },
+    tileControlText: { color: '#fff', fontSize: 16, fontWeight: '700', lineHeight: 18 },
     submitWrap: { padding: 16, paddingBottom: 32 },
     submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginTop: 8 },
     disabled: { backgroundColor: '#555' },
