@@ -1,7 +1,7 @@
 {
   "mode_picker": {
     "client": "Customer",
-    "professional": "Professional"
+    "professional": "Creator"
   },
   "community": {
     "channels": "Channels",
@@ -269,7 +269,7 @@
     "close": "Close"
   },
   "mode_switcher": {
-    "professional": "Professional",
+    "professional": "Creator",
     "client": "Client"
   },
   "profile_sections": {
