@@ -1,7 +1,7 @@
 {
   "mode_picker": {
     "client": "לקוח",
-    "professional": "בעל מקצוע"
+    "professional": "יוצר"
   },
   "community": {
     "channels": "ערוצים",
@@ -26,7 +26,7 @@
     "placeholder_title": "לדוגמה: קליפ לשיר חדש",
     "placeholder_description": "תאר את הפרויקט שלך",
     "placeholder_date": "בחר תאריך",
-    "placeholder_deadline": "בחר דדליין",
+    "placeholder_deadline": "בחר תאריך סיום",
     "placeholder_location": "בחר מיקום הפרויקט",
     "choose_location": "בחר מיקום הפרויקט",
     "search_city": "חפש עיר...",
@@ -115,7 +115,7 @@
     "header": "פרטי פרויקט",
     "execution": "ביצוע",
     "tbd": "לא נקבע",
-    "deadline": "דדליין",
+    "deadline": "תאריך סיום",
     "location": "מיקום",
     "description": "תיאור",
     "team_members": "חברי צוות",
@@ -269,11 +269,11 @@
     "close": "סגור"
   },
   "mode_switcher": {
-    "professional": "איש מקצוע",
+    "professional": "יוצר",
     "client": "לקוח"
   },
   "profile_sections": {
-    "about": "אודות",
+    "about": "קצת עליי",
     "no_bio": "אין ביו עדיין.",
     "bio_placeholder": "ספר ללקוחות עליך...",
     "skills": "כישורים",
@@ -291,7 +291,7 @@
     "projects": "פרויקטים",
     "profile": "פרופיל",
     "notice_board": "לוח מודעות",
-    "marketplace": "מרקטפלייס"
+    "marketplace": "חנות"
   },
   "noticeboard": {
     "greeting_morning": "בוקר טוב",
@@ -318,7 +318,7 @@
     "role_singular": "תפקיד",
     "role_plural": "תפקידים",
     "execution_label": "ביצוע",
-    "deadline_label": "דדליין",
+    "deadline_label": "תאריך סיום",
     "location_label": "מיקום",
     "description_label": "תיאור",
     "roles_needed": "תפקידים נדרשים",
@@ -474,7 +474,7 @@
     "logout": "התנתק"
   },
   "communities": {
-    "request_create": "בקש קהילה",
+    "request_create": "צור קהילה",
     "request_sent": "הבקשה שלך נשלחה לבדיקה",
     "empty": "אין קהילות עדיין",
     "name_placeholder": "שם הקהילה",

@@ -50,23 +50,24 @@ export const compressVideo = functions.storage.onObjectFinalized(
 
       await new Promise<void>((resolve, reject) => {
         ffmpeg(tempInput)
-          .videoCodec('libx264')
-          .size('?x720')
-          .audioCodec('aac')
-          .audioBitrate('128k')
           .outputOptions([
-            '-crf 23',             // variable bitrate tuned to scene complexity
-            '-preset medium',      // better compression than fast, fine for cloud encode times
-            '-movflags +faststart', // moov atom at front → progressive streaming, fast open
-            '-pix_fmt yuv420p',    // broad iOS/Android pixel format compatibility
-            '-profile:v baseline', // H.264 Baseline — widest device support
-            '-level 3.1',
-            '-map 0:v:0',          // explicit first video stream
-            '-map 0:a?',           // audio if present; skip gracefully if source has no audio
+            '-vf', 'scale=-2:720',  // scale to 720p; -2 keeps width even (required by yuv420p)
+            '-c:v', 'libx264',
+            '-preset', 'veryfast',
+            '-crf', '23',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-movflags', '+faststart',
+            '-pix_fmt', 'yuv420p',
           ])
           .output(tempOutput)
+          .on('start', (cmd) => console.log('[ffmpeg] command:', cmd))
+          .on('stderr', (line) => console.log('[ffmpeg stderr]', line))
           .on('end', () => resolve())
-          .on('error', (err: Error) => reject(err))
+          .on('error', (err: Error) => {
+            console.log('[ffmpeg] error stack:', err?.message);
+            reject(err);
+          })
           .run();
       });
 
