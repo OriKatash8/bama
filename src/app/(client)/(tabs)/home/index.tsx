@@ -653,9 +653,9 @@ function createStyles(
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 100 },
     pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textTransform: 'uppercase', marginTop: 20 },
-    stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, textAlign: 'center', marginTop: 4, marginBottom: 6 },
+    stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, textAlign: 'center', marginTop: 2, marginBottom: 2 },
 
-    progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 16, marginBottom: 4 },
+    progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 6, marginBottom: 4 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },
 
     backArrow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4, alignSelf: 'flex-start' },
