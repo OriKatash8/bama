@@ -47,10 +47,13 @@ export function GoogleSignInButton() {
           <ActivityIndicator size="small" color="#555" />
         ) : (
           <View style={styles.btnRow}>
-            <Image source={GOOGLE_LOGO} style={[styles.googleLogo, rtl ? styles.logoRight : styles.logoLeft]} contentFit="contain" cachePolicy="memory-disk" />
+            <View style={styles.logoSlot}>
+              <Image source={GOOGLE_LOGO} style={styles.googleLogo} contentFit="contain" cachePolicy="memory-disk" />
+            </View>
             <AppText weight="semiBold" style={styles.btnLabel}>
               {t('auth.continue_google')}
             </AppText>
+            <View style={styles.logoSlot} />
           </View>
         )}
       </TouchableOpacity>
@@ -83,9 +86,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   buttonDisabled: { opacity: 0.6 },
-  btnRow: { width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  btnRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  logoSlot: { width: 50, alignItems: 'flex-start', justifyContent: 'center' },
   googleLogo: { width: 50, height: 50 },
-  logoLeft: { position: 'absolute', left: 14 },
-  logoRight: { position: 'absolute', right: 14 },
-  btnLabel: { fontSize: 15, color: '#333', textAlign: 'center' },
+  btnLabel: { flex: 1, fontSize: 15, color: '#333', textAlign: 'center' },
 });

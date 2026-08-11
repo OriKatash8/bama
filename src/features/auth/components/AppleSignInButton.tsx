@@ -37,12 +37,13 @@ function AppleButton() {
         <ActivityIndicator size="small" color="#555" />
       ) : (
         <View style={styles.btnRow}>
-          <View style={rtl ? styles.logoRight : styles.logoLeft}>
+          <View style={styles.logoSlot}>
             <SvgXml xml={APPLE_SVG} width={20} height={24} />
           </View>
           <AppText weight="semiBold" style={styles.btnLabel}>
             {t('auth.continue_apple')}
           </AppText>
+          <View style={styles.logoSlot} />
         </View>
       )}
     </TouchableOpacity>
@@ -70,8 +71,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   buttonDisabled: { opacity: 0.6 },
-  btnRow: { width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  logoLeft: { position: 'absolute', left: 6 },
-  logoRight: { position: 'absolute', right: 16 },
-  btnLabel: { fontSize: 15, color: '#333', textAlign: 'center' },
+  btnRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  logoSlot: { width: 36, alignItems: 'flex-start', justifyContent: 'center' },
+  btnLabel: { flex: 1, fontSize: 15, color: '#333', textAlign: 'center' },
 });
