@@ -77,12 +77,11 @@ export default function DashboardScreen() {
     [profile?.skills, profileLoading]
   );
 
-  const { requests, posters, isLoading } = useNoticeboard(categories, currentUserId);
+  const { requests: visible, posters, isLoading, dismiss: hookDismiss } = useNoticeboard(categories, currentUserId);
 
   const { showToast } = useUiStore();
   const colors = useTheme();
 
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<ProjectRequest | null>(null);
   const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');
 
@@ -146,10 +145,8 @@ export default function DashboardScreen() {
     fetchActiveProjects();
   }, [currentUserId]);
 
-  const visible = requests.filter((r) => !dismissed.has(r.id));
-
   function dismiss(id: string) {
-    setDismissed((prev) => new Set([...prev, id]));
+    hookDismiss(id);
     if (selected?.id === id) setSelected(null);
   }
 

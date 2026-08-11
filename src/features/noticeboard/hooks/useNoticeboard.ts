@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { subscribeToCollection, getDocument, where } from '@core/firebase/firestore';
+import { subscribeToCollection, getDocument, queryDocuments, setDocument, where } from '@core/firebase/firestore';
+import { serverTimestamp } from 'firebase/firestore';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import type { User } from '@core/types/user';
 
@@ -33,8 +34,32 @@ export function useNoticeboard(
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
   const [posters, setPosters] = useState<Record<string, PosterInfo>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const posterCacheRef = useRef<Map<string, PosterInfo>>(new Map());
   const categoriesKey = professionalCategories === null ? null : professionalCategories.join(',');
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    queryDocuments<{ id: string }>(`users/${currentUserId}/dismissedNotices`)
+      .then((docs) => setDismissed(new Set(docs.map((d) => d.id))))
+      .catch(() => {});
+  }, [currentUserId]);
+
+  async function dismiss(projectId: string) {
+    if (!currentUserId) return;
+    setDismissed((prev) => new Set([...prev, projectId]));
+    try {
+      await setDocument(`users/${currentUserId}/dismissedNotices/${projectId}`, {
+        dismissedAt: serverTimestamp(),
+      });
+    } catch {
+      setDismissed((prev) => {
+        const next = new Set(prev);
+        next.delete(projectId);
+        return next;
+      });
+    }
+  }
 
   useEffect(() => {
     if (professionalCategories === null) return;
@@ -85,5 +110,7 @@ export function useNoticeboard(
     );
   }, [categoriesKey, currentUserId]);
 
-  return { requests, posters, isLoading };
+  const visible = requests.filter((r) => !dismissed.has(r.id));
+
+  return { requests: visible, posters, isLoading, dismiss };
 }

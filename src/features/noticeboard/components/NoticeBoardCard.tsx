@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { MapPin, Calendar, Clock, Trash2 } from 'lucide-react-native';
+import { MapPin, Calendar, Clock, X } from 'lucide-react-native';
 
 import type { ProjectRequest } from '@core/types/project';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
@@ -135,7 +135,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.7}
           >
-            <Trash2 size={16} color="#e53935" />
+            <X size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
