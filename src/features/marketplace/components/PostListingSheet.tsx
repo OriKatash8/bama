@@ -158,6 +158,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   const [category, setCategory]       = useState('');
   const [subcategory, setSubcategory] = useState('');
   const [brand, setBrand]             = useState('');
+  const [customBrand, setCustomBrand] = useState('');
   const [condition, setCondition]     = useState<ProductCondition | null>(null);
   const [location, setLocation]       = useState('');
   const [price, setPrice]             = useState('');
@@ -183,16 +184,16 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
   function reset() {
     setImageUri(null); setProductName(''); setCategory('');
-    setSubcategory(''); setBrand(''); setCondition(null);
+    setSubcategory(''); setBrand(''); setCustomBrand(''); setCondition(null);
     setLocation(''); setPrice('');
   }
 
   function handleCategorySelect(id: string) {
-    setCategory(id); setSubcategory(''); setBrand('');
+    setCategory(id); setSubcategory(''); setBrand(''); setCustomBrand('');
   }
 
   function handleSubcategorySelect(sub: string) {
-    setSubcategory(sub); setBrand('');
+    setSubcategory(sub); setBrand(''); setCustomBrand('');
   }
 
   async function handleSubmit() {
@@ -206,7 +207,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
         condition,
         category,
         subcategory,
-        brand,
+        brand: brand === 'Other' ? customBrand.trim() : brand,
       });
       showToast(t('marketplace.listing_posted'), 'success');
       reset();
@@ -351,13 +352,23 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
                       <TouchableOpacity
                         key={b}
                         style={[styles.chip, brand === b && styles.chipActive]}
-                        onPress={() => setBrand(b)}
+                        onPress={() => { setBrand(b); if (b !== 'Other') setCustomBrand(''); }}
                         activeOpacity={0.8}
                       >
                         <Text style={[styles.chipLabel, brand === b && styles.chipLabelActive, { ...font.semiBold }]}>{b}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
+                  {brand === 'Other' && (
+                    <TextInput
+                      style={[styles.input, { textAlign: rtl ? 'right' : 'left', marginTop: -2 }]}
+                      placeholder={rtl ? 'שם החברה / המותג' : 'Brand / company name'}
+                      placeholderTextColor="rgba(0,0,0,0.3)"
+                      value={customBrand}
+                      onChangeText={setCustomBrand}
+                      autoFocus
+                    />
+                  )}
                 </>
               )
             ) : (
