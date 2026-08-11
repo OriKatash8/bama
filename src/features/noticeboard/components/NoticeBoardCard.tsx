@@ -83,6 +83,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     const locationText = translateCity(request.location, rtl);
 
     return (
+      <View style={{ position: 'relative' }}>
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
@@ -118,14 +119,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               </Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.trashBtn}
-            onPress={onDismiss}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.7}
-          >
-            <Trash2 size={16} color="#e53935" />
-          </TouchableOpacity>
         </View>
 
         {/* Description snippet — hidden if empty */}
@@ -187,6 +180,16 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
         </View>
       </TouchableOpacity>
+      {/* Trash button as sibling — outside the card touchable to avoid gesture conflict */}
+      <TouchableOpacity
+        style={styles.trashAbsolute}
+        onPress={onDismiss}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        activeOpacity={0.7}
+      >
+        <Trash2 size={16} color="#e53935" />
+      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -287,6 +290,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
+    paddingRight: 32,
   },
   trashBtn: {
     width: 28,
@@ -294,6 +298,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
+  },
+  trashAbsolute: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
   },
   cardTitle: {
     fontSize: 17,
