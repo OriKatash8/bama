@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { X, Check } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import type { PriceOffer } from '@core/types/project';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -37,33 +37,12 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const rowDir = rtl ? 'row' : 'row-reverse' as const;
   const displayName = professionalProfile?.displayName ?? '…';
 
   return (
-    <View style={[styles.container, { flexDirection: rowDir }]}>
-      {/* Square 1: X button */}
-      <TouchableOpacity onPress={onReject} style={[styles.squareButton, styles.xSquare]} activeOpacity={0.8}>
-        <X size={20} color="#888888" />
-      </TouchableOpacity>
-
-      {/* Square 2: ✓ button */}
-      <TouchableOpacity
-        onPress={onAccept}
-        style={[styles.squareButton, styles.acceptSquare, isAccepting && styles.disabled]}
-        disabled={isAccepting}
-        activeOpacity={0.8}
-      >
-        {isAccepting ? (
-          <ActivityIndicator size="small" color="#ffffff" />
-        ) : (
-          <Check size={20} color="#ffffff" />
-        )}
-      </TouchableOpacity>
-
-      {/* Content card */}
+    <View style={styles.container}>
       <View style={styles.infoSquare}>
-        {/* Top: avatar + for-project label + name + role */}
+        {/* Top: avatar + name/role + ✓ button */}
         <View style={[styles.topRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {professionalProfile?.photoURL ? (
             <Image
@@ -92,20 +71,39 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
               {offer.subcategory ?? offer.category}
             </Text>
           </View>
+          <TouchableOpacity
+            onPress={onAccept}
+            style={[styles.acceptBtn, isAccepting && styles.disabled]}
+            disabled={isAccepting}
+            activeOpacity={0.8}
+          >
+            {isAccepting ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Check size={22} color="#ffffff" />
+            )}
+          </TouchableOpacity>
         </View>
 
         <View style={styles.divider} />
 
-        {/* Bottom: large price + quiet view-profile link */}
+        {/* Bottom: price + view profile + deny */}
         <View style={[styles.bottomRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Text style={[styles.price, { ...font.bold }]}>
             ₪{offer.price.toLocaleString()}
           </Text>
-          <TouchableOpacity onPress={onPressProfile} activeOpacity={0.7}>
-            <Text style={[styles.viewProfileText, { ...font.semiBold }]}>
-              {t('offers.view_profile')}
-            </Text>
-          </TouchableOpacity>
+          <View style={[styles.bottomActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <TouchableOpacity onPress={onPressProfile} activeOpacity={0.7}>
+              <Text style={[styles.viewProfileText, { ...font.semiBold }]}>
+                {t('offers.view_profile')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onReject} activeOpacity={0.7}>
+              <Text style={[styles.denyText, { ...font.semiBold }]}>
+                {t('offers.deny')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -114,28 +112,10 @@ export function PriceOfferCard({ offer, professionalProfile, projectTitle, onPre
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    gap: 8,
     paddingHorizontal: 12,
     width: '100%',
     marginBottom: 12,
   },
-  squareButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  xSquare: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#d0d0d0',
-  },
-  acceptSquare: {
-    backgroundColor: '#004aad',
-  },
-  disabled: { opacity: 0.6 },
   infoSquare: {
     flex: 1,
     minWidth: 0,
@@ -179,6 +159,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888888',
   },
+  acceptBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#004aad',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  disabled: { opacity: 0.6 },
   divider: {
     height: 1,
     backgroundColor: '#e0e0e0',
@@ -194,9 +184,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#004aad',
   },
+  bottomActions: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
   viewProfileText: {
     fontSize: 12,
     color: '#004aad',
+    textDecorationLine: 'underline',
+  },
+  denyText: {
+    fontSize: 12,
+    color: '#888888',
     textDecorationLine: 'underline',
   },
 });

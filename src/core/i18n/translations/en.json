@@ -353,7 +353,8 @@
     "instead_of": "instead of",
     "bundle_section": "Bundle Offers",
     "view_profile": "View Profile",
-    "for_project": "For: "
+    "for_project": "For: ",
+    "deny": "Deny"
   },
   "marketplace": {
     "category_camera": "Camera",

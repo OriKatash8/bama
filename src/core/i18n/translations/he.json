@@ -353,7 +353,8 @@
     "instead_of": "במקום",
     "bundle_section": "עסקאות חבילה",
     "view_profile": "צפה בפרופיל",
-    "for_project": "עבור: "
+    "for_project": "עבור: ",
+    "deny": "דחה"
   },
   "marketplace": {
     "category_camera": "מצלמה",
