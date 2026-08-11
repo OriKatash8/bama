@@ -240,7 +240,7 @@ export default function HomeScreen() {
               />
               {errors.title ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.title}</Text> : null}
 
-              <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginTop: 12 }]}>
+              <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginTop: 6 }]}>
                 {rtl ? 'ספר לנו על הפרויקט' : 'Tell us about your project'}
               </Text>
               <TextInput
@@ -260,7 +260,7 @@ export default function HomeScreen() {
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
               {/* Labels row — exec / deadline / location */}
-              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 16 }}>
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 18 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
                     {t('builder.execution')}
@@ -376,7 +376,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={[styles.submitWrap, { paddingHorizontal: 36 }]}>
+            <View style={[styles.submitWrap, { paddingHorizontal: 36, paddingTop: 4 }]}>
               <TouchableOpacity
                 style={[
                   styles.submitBtn,
@@ -666,7 +666,7 @@ function createStyles(
     backArrow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4, alignSelf: 'flex-start' },
     backArrowText: { color: '#004aad', fontSize: 15, fontWeight: '600', fontFamily: ffSemiBold },
 
-    card: { margin: 16, marginTop: 24, padding: 20 },
+    card: { margin: 16, marginTop: 10, padding: 20 },
     rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
