@@ -1,5 +1,8 @@
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText } from '@components/ui/AppText';
+import { Image } from 'expo-image';
+
+const GOOGLE_LOGO = require('../../../../assets/images/auth icons/Logo-google-icon-PNG.avif');
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -44,7 +47,7 @@ export function GoogleSignInButton() {
           <ActivityIndicator size="small" color="#555" />
         ) : (
           <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={styles.googleG}>G</Text>
+            <Image source={GOOGLE_LOGO} style={styles.googleLogo} contentFit="contain" cachePolicy="memory-disk" />
             <AppText weight="semiBold" style={styles.btnLabel}>
               {t('auth.continue_google')}
             </AppText>
@@ -81,12 +84,9 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  googleG: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#4285F4',
+  googleLogo: {
     width: 22,
-    textAlign: 'center',
+    height: 22,
   },
   btnLabel: { fontSize: 15, color: '#333' },
 });
