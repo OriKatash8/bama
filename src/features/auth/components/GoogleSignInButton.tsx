@@ -2,7 +2,7 @@ import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-nat
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
-const GOOGLE_LOGO = require('../../../../assets/images/auth icons/Logo-google-icon-PNG.avif');
+const GOOGLE_LOGO = require('../../../../assets/images/auth icons/97a0b7ac-13bb-4f59-986e-8c3e960435fd-cover.png');
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
