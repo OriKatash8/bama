@@ -15,7 +15,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { queryDocuments, getDocument, updateDocument, arrayUnion } from '@core/firebase/firestore';
+import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { where } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -83,15 +83,6 @@ export default function DashboardScreen() {
   const colors = useTheme();
 
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!currentUserId) return;
-    getDocument<{ dismissedNotices?: string[] }>(`users/${currentUserId}`).then((doc) => {
-      if (doc?.dismissedNotices?.length) {
-        setDismissed(new Set(doc.dismissedNotices));
-      }
-    });
-  }, [currentUserId]);
   const [selected, setSelected] = useState<ProjectRequest | null>(null);
   const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');
 
@@ -160,9 +151,6 @@ export default function DashboardScreen() {
   function dismiss(id: string) {
     setDismissed((prev) => new Set([...prev, id]));
     if (selected?.id === id) setSelected(null);
-    if (currentUserId) {
-      updateDocument(`users/${currentUserId}`, { dismissedNotices: arrayUnion(id) });
-    }
   }
 
   function handleApply(request: ProjectRequest) {
