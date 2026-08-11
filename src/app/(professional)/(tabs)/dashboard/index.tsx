@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, useWindowDimensions, Alert } from 'react-native';
+import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 
 const LOCATION_ICON = require('../../../../../assets/images/location-icon.png');
@@ -165,17 +165,6 @@ export default function DashboardScreen() {
     }
   }
 
-  function handleDismiss(id: string) {
-    Alert.alert(
-      t('noticeboard.dismiss_title'),
-      t('noticeboard.dismiss_body'),
-      [
-        { text: t('noticeboard.dismiss_cancel'), style: 'cancel' },
-        { text: t('noticeboard.dismiss_confirm'), style: 'destructive', onPress: () => dismiss(id) },
-      ]
-    );
-  }
-
   function handleApply(request: ProjectRequest) {
     showToast(t('noticeboard.offer_submitted'), 'success');
     dismiss(request.id);
@@ -288,7 +277,7 @@ export default function DashboardScreen() {
                 onPress={() => { setSelectedView('details'); setSelected(item); }}
                 onApply={() => { setSelectedView('details'); setSelected(item); }}
                 onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
-                onDismiss={() => handleDismiss(item.id)}
+                onDismiss={() => dismiss(item.id)}
                 isApplying={false}
                 isDirectInvite={item.targetProfessionalId === currentUserId}
                 directInviteLabel={t('noticeboard.direct_invite')}
@@ -304,7 +293,7 @@ export default function DashboardScreen() {
         request={selected}
         onClose={() => setSelected(null)}
         onApply={() => selected && handleApply(selected)}
-        onDismiss={() => selected && handleDismiss(selected.id)}
+        onDismiss={() => selected && dismiss(selected.id)}
         isApplying={false}
         initialView={selectedView}
         professionalCategories={categories ?? []}
