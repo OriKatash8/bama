@@ -1,5 +1,6 @@
-import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText } from '@components/ui/AppText';
+import { Apple } from 'lucide-react-native';
 import { useAppleSignIn } from '../hooks/useAppleSignIn';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -34,7 +35,7 @@ function AppleButton() {
         <ActivityIndicator size="small" color="#555" />
       ) : (
         <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <Text style={styles.appleLogo}></Text>
+          <Apple size={20} color="#000000" />
           <AppText weight="semiBold" style={styles.btnLabel}>
             {t('auth.continue_apple')}
           </AppText>
@@ -66,12 +67,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  appleLogo: {
-    fontSize: 18,
-    color: '#000000',
-    width: 22,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
   btnLabel: { fontSize: 15, color: '#333' },
 });
