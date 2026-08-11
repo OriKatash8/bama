@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.6 },
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   googleLogo: {
-    width: 22,
-    height: 22,
+    width: 44,
+    height: 44,
   },
   btnLabel: { fontSize: 15, color: '#333' },
 });
