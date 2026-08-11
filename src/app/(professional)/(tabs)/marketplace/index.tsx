@@ -145,13 +145,11 @@ export default function MarketplaceScreen() {
   // Applied filters
   const [priceSort, setPriceSort]             = useState<'asc' | 'desc' | null>(null);
   const [filterBrands, setFilterBrands]       = useState<string[]>([]);
-  const [filterLocation, setFilterLocation]   = useState('');
   const [filterCondition, setFilterCondition] = useState<ProductCondition | null>(null);
 
   // Draft filters (inside modal, not yet applied)
   const [draftPriceSort, setDraftPriceSort]     = useState<'asc' | 'desc' | null>(null);
   const [draftBrands, setDraftBrands]           = useState<string[]>([]);
-  const [draftLocation, setDraftLocation]       = useState('');
   const [draftCondition, setDraftCondition]     = useState<ProductCondition | null>(null);
 
   const colors = useTheme();
@@ -173,18 +171,15 @@ export default function MarketplaceScreen() {
         filterBrands.some((b) => l.brand?.toLowerCase() === b.toLowerCase())
       );
     }
-    if (filterLocation) {
-      result = result.filter((l) => l.location.toLowerCase().includes(filterLocation.toLowerCase()));
-    }
     if (filterCondition) {
       result = result.filter((l) => l.condition === filterCondition);
     }
     if (priceSort === 'asc') result = [...result].sort((a, b) => a.price - b.price);
     if (priceSort === 'desc') result = [...result].sort((a, b) => b.price - a.price);
     return result;
-  }, [listings, searchQuery, selectedCategory, filterBrands, filterLocation, filterCondition, priceSort]);
+  }, [listings, searchQuery, selectedCategory, filterBrands, filterCondition, priceSort]);
 
-  const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterLocation || !!filterCondition;
+  const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterCondition;
 
   const activeFilterTags: FilterTag[] = [
     ...(priceSort ? [{
@@ -197,12 +192,7 @@ export default function MarketplaceScreen() {
       label: `${t('marketplace.filter_brand')}: ${filterBrands.join(', ')}`,
       onRemove: () => setFilterBrands([]),
     }] : []),
-    ...(filterLocation ? [{
-      key: 'location',
-      label: `${t('marketplace.filter_city')}: ${filterLocation}`,
-      onRemove: () => setFilterLocation(''),
-    }] : []),
-    ...(filterCondition ? [{
+...(filterCondition ? [{
       key: 'condition',
       label: `${t('marketplace.filter_condition')}: ${t(`marketplace.condition_${filterCondition}`)}`,
       onRemove: () => setFilterCondition(null),
@@ -215,7 +205,6 @@ export default function MarketplaceScreen() {
   function openFilterModal() {
     setDraftPriceSort(priceSort);
     setDraftBrands(filterBrands);
-    setDraftLocation(filterLocation);
     setDraftCondition(filterCondition);
     setFilterModalVisible(true);
   }
@@ -223,7 +212,6 @@ export default function MarketplaceScreen() {
   function applyFilters() {
     setPriceSort(draftPriceSort);
     setFilterBrands(draftBrands);
-    setFilterLocation(draftLocation);
     setFilterCondition(draftCondition);
     setFilterModalVisible(false);
   }
@@ -444,18 +432,6 @@ export default function MarketplaceScreen() {
                   );
                 })}
               </View>
-
-              {/* Location */}
-              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-                {t('marketplace.location')}
-              </Text>
-              <TextInput
-                style={[styles.filterModalInput, { textAlign: rtl ? 'right' : 'left' }]}
-                placeholder={t('marketplace.location_placeholder')}
-                placeholderTextColor="rgba(0,0,0,0.3)"
-                value={draftLocation}
-                onChangeText={setDraftLocation}
-              />
 
               {/* Condition */}
               <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
