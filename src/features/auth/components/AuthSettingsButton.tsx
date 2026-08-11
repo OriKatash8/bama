@@ -77,8 +77,8 @@ export function AuthSettingsButton() {
 const styles = StyleSheet.create({
   trigger: {
     position: 'absolute',
-    top: 12,
-    right: 16,
+    top: 10,
+    right: 10,
     zIndex: 10,
     padding: 6,
   },

@@ -65,9 +65,9 @@ export function RegisterForm() {
 
   return (
     <View style={styles.container}>
-      <AuthSettingsButton />
       <Image source={BAMA_LOGO} style={styles.appLogo} contentFit="contain" cachePolicy="memory-disk" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
+        <AuthSettingsButton />
         <AppText weight="bold" style={styles.title}>{t('auth.register_title')}</AppText>
         <Input
           placeholder={t('auth.full_name')}
