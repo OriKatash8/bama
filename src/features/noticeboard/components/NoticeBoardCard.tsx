@@ -5,6 +5,7 @@ import { MapPin, Calendar, Clock, X } from 'lucide-react-native';
 
 import type { ProjectRequest } from '@core/types/project';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
+import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -88,19 +89,19 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     if (confirmingDismiss) {
       return (
         <View style={[cardStyle, styles.confirmRow]}>
-          <Text style={[styles.confirmText, { ...font.regular, color: colors.textSec }]}>
+          <AppText weight="regular" style={[styles.confirmText, { color: colors.textSec }]}>
             {t('noticeboard.dismiss_body')}
-          </Text>
+          </AppText>
           <View style={styles.confirmBtns}>
             <TouchableOpacity style={styles.confirmCancel} onPress={() => setConfirmingDismiss(false)}>
-              <Text style={[styles.confirmCancelText, { ...font.semiBold, color: colors.textMuted }]}>
+              <AppText weight="semiBold" style={[styles.confirmCancelText, { color: colors.textMuted }]}>
                 {t('noticeboard.dismiss_cancel')}
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.confirmYes} onPress={() => { setConfirmingDismiss(false); onDismiss(); }}>
-              <Text style={[styles.confirmYesText, { ...font.bold }]}>
+              <AppText weight="bold" style={styles.confirmYesText}>
                 {t('noticeboard.dismiss_confirm')}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -112,7 +113,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
-            <Text style={[styles.directBadgeText, { ...font.bold }]}>{directInviteLabel}</Text>
+            <AppText weight="bold" style={styles.directBadgeText}>{directInviteLabel}</AppText>
           </View>
         )}
 
@@ -122,9 +123,9 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
             <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={[styles.avatarInitial, { ...font.bold }]}>
+              <AppText weight="bold" style={styles.avatarInitial}>
                 {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
-              </Text>
+              </AppText>
             </View>
           )}
           <View style={[styles.headerContent, rtl ? { paddingLeft: 36 } : { paddingRight: 36 }]}>
@@ -170,9 +171,9 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             {hasDeadline && (
               <View style={[styles.metaItem, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <Clock size={11} color={colors.textMuted} strokeWidth={1.5} />
-                <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>
+                <AppText weight="regular" style={[styles.metaText, { color: colors.textMuted }]}>
                   {request.deadline === 'flexible' ? t('builder.flexible') : request.deadline}
-                </Text>
+                </AppText>
               </View>
             )}
           </View>
@@ -187,7 +188,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
-            <Text style={[styles.offerPillText, { ...font.bold }]}>{t('noticeboard.make_offer')}</Text>
+            <AppText weight="bold" style={styles.offerPillText}>{t('noticeboard.make_offer')}</AppText>
           </TouchableOpacity>
           <View style={[styles.pillsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             {visibleRoles.map((role, i) => (
@@ -222,7 +223,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
       {isDirectInvite && directInviteLabel && (
         <View style={styles.directBadge}>
-          <Text style={[styles.directBadgeText, { ...font.bold }]}>{directInviteLabel}</Text>
+          <AppText weight="bold" style={styles.directBadgeText}>{directInviteLabel}</AppText>
         </View>
       )}
       {poster && (
@@ -231,7 +232,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
             <View style={[styles.posterAvatar, styles.posterAvatarFallback]}>
-              <Text style={[styles.posterInitial, { ...font.bold }]}>{poster.displayName.charAt(0).toUpperCase()}</Text>
+              <AppText weight="bold" style={styles.posterInitial}>{poster.displayName.charAt(0).toUpperCase()}</AppText>
             </View>
           )}
           <Text style={[styles.posterName, { ...font.forText(poster.displayName, 'medium'), color: colors.textMuted }]}>{poster.displayName}</Text>
@@ -251,9 +252,9 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               {request.exec}
             </Text>
           )}
-          <Text style={[styles.roles, { ...font.semiBold, color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+          <AppText weight="semiBold" style={[styles.roles, { color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
             {translatedRoles.join(' | ')}
-          </Text>
+          </AppText>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity
