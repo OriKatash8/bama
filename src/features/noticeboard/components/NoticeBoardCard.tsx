@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { MapPin, Calendar, Clock, Trash2 } from 'lucide-react-native';
 
@@ -82,17 +82,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     const hasMetaRow = hasExec || hasDeadline;
     const locationText = translateCity(request.location, rtl);
 
-    function confirmDismiss() {
-      Alert.alert(
-        t('noticeboard.dismiss_title'),
-        t('noticeboard.dismiss_body'),
-        [
-          { text: t('noticeboard.dismiss_cancel'), style: 'cancel' },
-          { text: t('noticeboard.dismiss_confirm'), style: 'destructive', onPress: onDismiss },
-        ]
-      );
-    }
-
     return (
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
@@ -131,7 +120,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
           <TouchableOpacity
             style={styles.trashBtn}
-            onPress={(e) => { e.stopPropagation?.(); confirmDismiss(); }}
+            onPress={onDismiss}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.7}
           >

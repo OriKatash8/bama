@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput, Switch, useWindowDimensions, Alert,
+  StyleSheet, TextInput, Switch, useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -235,20 +235,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 <TouchableOpacity style={styles.applyBtn} onPress={openBid} activeOpacity={0.8}>
                   <Text style={[styles.applyText, { ...font.bold }]}>{t('noticeboard.make_offer_action')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.dismissBtn}
-                  onPress={() => {
-                    Alert.alert(
-                      t('noticeboard.dismiss_title'),
-                      t('noticeboard.dismiss_body'),
-                      [
-                        { text: t('noticeboard.dismiss_cancel'), style: 'cancel' },
-                        { text: t('noticeboard.dismiss_confirm'), style: 'destructive', onPress: onDismiss },
-                      ]
-                    );
-                  }}
-                  activeOpacity={0.8}
-                >
+                <TouchableOpacity style={styles.dismissBtn} onPress={onDismiss} activeOpacity={0.8}>
                   <Text style={[styles.dismissText, { ...font.semiBold }]}>{t('noticeboard.not_interested')}</Text>
                 </TouchableOpacity>
               </View>
