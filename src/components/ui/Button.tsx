@@ -1,4 +1,5 @@
-import { TouchableOpacity, Text, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { TouchableOpacity, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { AppText } from './AppText';
 
 type ButtonProps = {
   label: string;
@@ -16,7 +17,7 @@ export function Button({ label, onPress, variant = 'primary', disabled = false, 
       disabled={disabled}
       activeOpacity={0.8}
     >
-      <Text style={[styles.label, variant === 'secondary' && styles.labelSecondary]}>{label}</Text>
+      <AppText weight="semiBold" style={[styles.label, variant === 'secondary' && styles.labelSecondary]}>{label}</AppText>
     </TouchableOpacity>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
+import { AppText } from './AppText';
 import { useUiStore, type Toast as ToastData } from '@core/stores/uiStore';
 
 function ToastItem({ toast }: { toast: ToastData }) {
@@ -18,7 +19,7 @@ function ToastItem({ toast }: { toast: ToastData }) {
 
   return (
     <Animated.View style={[styles.toast, { backgroundColor: bg, opacity }]}>
-      <Text style={styles.text}>{toast.message}</Text>
+      <AppText weight="medium" style={styles.text}>{toast.message}</AppText>
     </Animated.View>
   );
 }

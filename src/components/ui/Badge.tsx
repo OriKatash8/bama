@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { AppText } from './AppText';
 
 type BadgeProps = {
   label: string;
@@ -9,7 +10,7 @@ type BadgeProps = {
 export function Badge({ label, color = '#f0f0f0', textColor = '#333' }: BadgeProps) {
   return (
     <View style={[styles.pill, { backgroundColor: color }]}>
-      <Text style={[styles.text, { color: textColor }]}>{label}</Text>
+      <AppText weight="medium" style={[styles.text, { color: textColor }]}>{label}</AppText>
     </View>
   );
 }

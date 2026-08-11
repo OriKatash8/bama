@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { AppText } from './AppText';
 import { Image } from 'expo-image';
 
 type AvatarProps = {
@@ -21,7 +22,7 @@ export function Avatar({ uri, name = '', size = 40 }: AvatarProps) {
       {uri ? (
         <Image source={{ uri }} style={[styles.image, { borderRadius: size / 2 }]} contentFit="cover" cachePolicy="memory-disk" />
       ) : (
-        <Text style={[styles.initials, { fontSize: size * 0.36 }]}>{initials}</Text>
+        <AppText weight="semiBold" style={[styles.initials, { fontSize: size * 0.36 }]}>{initials}</AppText>
       )}
     </View>
   );
