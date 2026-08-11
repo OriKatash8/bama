@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Platform, Animated, Modal,
 } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,7 +16,6 @@ import { PostListingSheet } from '@features/marketplace/components/PostListingSh
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
@@ -97,7 +97,6 @@ type CategoryTileProps = {
 };
 
 function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: CategoryTileProps) {
-  const font = useAppFont();
   const anim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
   useEffect(() => {
@@ -118,9 +117,9 @@ function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: Cat
       <Animated.View style={{ transform: [{ scale }] }}>
         <Image source={iconSource} style={styles.tileIcon} contentFit="contain" cachePolicy="memory-disk" />
       </Animated.View>
-      <Text style={[styles.catLabel, { color: isActive ? '#004aad' : inactiveLabelColor, ...font.semiBold }]}>
+      <AppText weight="semiBold" style={[styles.catLabel, { color: isActive ? '#004aad' : inactiveLabelColor }]}>
         {label}
-      </Text>
+      </AppText>
     </TouchableOpacity>
   );
 }
@@ -156,7 +155,6 @@ export default function MarketplaceScreen() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const font = useAppFont();
   const { listings, isLoading } = useMarketplaceListings(activeTab);
 
   const filtered = useMemo(() => {
@@ -300,9 +298,9 @@ export default function MarketplaceScreen() {
             activeOpacity={0.8}
           >
             <SlidersHorizontal size={15} color={filtersActive ? '#fff' : colors.text} strokeWidth={2} />
-            <Text style={[styles.filterBtnText, { color: filtersActive ? '#fff' : colors.text, ...font.semiBold }]}>
+            <AppText weight="semiBold" style={[styles.filterBtnText, { color: filtersActive ? '#fff' : colors.text }]}>
               {t('marketplace.filter')}
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           {activeFilterTags.length > 0 && (
@@ -314,7 +312,7 @@ export default function MarketplaceScreen() {
             >
               {activeFilterTags.map((tag) => (
                 <View key={tag.key} style={styles.activeTag}>
-                  <Text style={[styles.activeTagText, { ...font.semiBold }]}>{tag.label}</Text>
+                  <AppText weight="semiBold" style={styles.activeTagText}>{tag.label}</AppText>
                   <TouchableOpacity
                     onPress={tag.onRemove}
                     hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
@@ -334,7 +332,7 @@ export default function MarketplaceScreen() {
           </View>
         ) : filtered.length === 0 ? (
           <View style={styles.center}>
-            <Text style={[styles.emptyText, { color: colors.textSec, ...font.semiBold }]}>{t('marketplace.no_listings')}</Text>
+            <AppText weight="semiBold" style={[styles.emptyText, { color: colors.textSec }]}>{t('marketplace.no_listings')}</AppText>
           </View>
         ) : (
           <View style={styles.list}>
@@ -352,7 +350,7 @@ export default function MarketplaceScreen() {
 
       {/* FAB — fixed above tab bar, outside the ScrollView */}
       <TouchableOpacity style={styles.fab} onPress={() => setPostSheetVisible(true)} activeOpacity={0.8}>
-        <Text style={[styles.fabText, { ...font.light }]}>+</Text>
+        <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
       {/* Filter modal */}
@@ -372,9 +370,9 @@ export default function MarketplaceScreen() {
           >
             {/* Header */}
             <View style={[styles.filterCardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.filterCardTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+              <AppText weight="bold" style={[styles.filterCardTitle, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.filters_title')}
-              </Text>
+              </AppText>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)} style={styles.filterCloseBtn} activeOpacity={0.7}>
                 <X size={20} color="#004aad" />
               </TouchableOpacity>
@@ -382,9 +380,9 @@ export default function MarketplaceScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.filterScroll}>
               {/* Price */}
-              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+              <AppText weight="bold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.price')}
-              </Text>
+              </AppText>
               <View style={styles.filterChipRow}>
                 {(['asc', 'desc', null] as const).map((val) => (
                   <TouchableOpacity
@@ -393,24 +391,24 @@ export default function MarketplaceScreen() {
                     onPress={() => setDraftPriceSort(val)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.filterChipLabel, draftPriceSort === val && styles.filterChipLabelActive]}>
+                    <AppText weight="semiBold" style={[styles.filterChipLabel, draftPriceSort === val && styles.filterChipLabelActive]}>
                       {val === 'asc'
                         ? t('marketplace.price_low_high')
                         : val === 'desc'
                           ? t('marketplace.price_high_low')
                           : t('marketplace.price_any')}
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* Brand */}
-              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+              <AppText weight="bold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.brand')}
                 {selectedCategory !== 'all' && selectedCatLabelKey
                   ? ` · ${t(`marketplace.${selectedCatLabelKey}`)}`
                   : ''}
-              </Text>
+              </AppText>
               <View style={styles.brandGrid}>
                 {availableBrands.map((brand) => {
                   const selected = draftBrands.includes(brand);
@@ -425,18 +423,18 @@ export default function MarketplaceScreen() {
                       onPress={() => toggleDraftBrand(brand)}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.brandPillLabel, { color: selected ? '#fff' : colors.text, ...font.semiBold }]}>
+                      <AppText weight="semiBold" style={[styles.brandPillLabel, { color: selected ? '#fff' : colors.text }]}>
                         {brand}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
               {/* Condition */}
-              <Text style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+              <AppText weight="bold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.condition')}
-              </Text>
+              </AppText>
               <View style={styles.filterChipRow}>
                 {([null, ...CONDITIONS]).map((c) => {
                   const val = c === null ? null : c.value;
@@ -450,9 +448,9 @@ export default function MarketplaceScreen() {
                       onPress={() => setDraftCondition(val)}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.filterChipLabel, draftCondition === val && styles.filterChipLabelActive, { ...font.semiBold }]}>
+                      <AppText weight="semiBold" style={[styles.filterChipLabel, draftCondition === val && styles.filterChipLabelActive]}>
                         {label}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   );
                 })}
@@ -462,10 +460,10 @@ export default function MarketplaceScreen() {
             {/* Actions */}
             <View style={styles.filterActions}>
               <TouchableOpacity style={styles.filterClearBtn} onPress={clearFilters} activeOpacity={0.8}>
-                <Text style={[styles.filterClearText, { ...font.bold }]}>{t('marketplace.clear_all')}</Text>
+                <AppText weight="bold" style={styles.filterClearText}>{t('marketplace.clear_all')}</AppText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterApplyBtn} onPress={applyFilters} activeOpacity={0.8}>
-                <Text style={[styles.filterApplyText, { ...font.bold }]}>{t('marketplace.apply_filters')}</Text>
+                <AppText weight="bold" style={styles.filterApplyText}>{t('marketplace.apply_filters')}</AppText>
               </TouchableOpacity>
             </View>
           </LinearGradient>

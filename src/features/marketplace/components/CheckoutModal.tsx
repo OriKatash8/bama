@@ -2,9 +2,9 @@ import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, useWindowDimensions,
 } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -38,7 +38,6 @@ export function CheckoutModal({
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const font = useAppFont();
   const { height: screenHeight } = useWindowDimensions();
 
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
@@ -55,9 +54,9 @@ export function CheckoutModal({
         >
           {/* Header */}
           <View style={[styles.header, { flexDirection: rowDir }]}>
-            <Text style={[styles.title, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+            <AppText weight="bold" style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.checkout_title')}
-            </Text>
+            </AppText>
             <TouchableOpacity onPress={onCancel} style={styles.closeBtn} activeOpacity={0.7}>
               <X size={20} color="#004aad" />
             </TouchableOpacity>
@@ -66,14 +65,14 @@ export function CheckoutModal({
           {/* Product row */}
           <View style={[styles.row, { flexDirection: rowDir }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.productName, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+              <AppText weight="semiBold" style={[styles.productName, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                 {productName}
-              </Text>
-              <Text style={[styles.priceNote, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+              </AppText>
+              <AppText weight="regular" style={[styles.priceNote, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.seller_price_note')}
-              </Text>
+              </AppText>
             </View>
-            <Text style={[styles.amount, { ...font.bold }]}>
+            <Text style={styles.amount}>
               ₪{price.toLocaleString()}
             </Text>
           </View>
@@ -83,25 +82,25 @@ export function CheckoutModal({
 
           {/* Platform fee row */}
           <View style={[styles.row, { flexDirection: rowDir }]}>
-            <Text style={[styles.feeLabel, { ...font.medium, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
+            <AppText weight="medium" style={[styles.feeLabel, { textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
               {t('marketplace.platform_fee')}
-            </Text>
-            <Text style={[styles.feeAmount, { ...font.bold }]}>
+            </AppText>
+            <Text style={styles.feeAmount}>
               ₪{platformFee.toLocaleString()}
             </Text>
           </View>
 
           {/* Note */}
-          <Text style={[styles.note, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+          <AppText weight="regular" style={[styles.note, { textAlign: rtl ? 'right' : 'left' }]}>
             {t('marketplace.fee_note')}
-          </Text>
+          </AppText>
 
           {/* Buttons */}
           <View style={[styles.btnRow, { flexDirection: rowDir }]}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} disabled={isLoading} activeOpacity={0.7}>
-              <Text style={[styles.cancelText, { ...font.semiBold }]}>
+              <AppText weight="semiBold" style={styles.cancelText}>
                 {t('common.cancel')}
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.confirmBtn, isLoading && styles.disabledBtn]}
@@ -111,9 +110,9 @@ export function CheckoutModal({
             >
               {isLoading
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={[styles.confirmText, { ...font.bold }]}>
+                : <AppText weight="bold" style={styles.confirmText}>
                     {t('marketplace.confirm_purchase')}
-                  </Text>}
+                  </AppText>}
             </TouchableOpacity>
           </View>
         </LinearGradient>

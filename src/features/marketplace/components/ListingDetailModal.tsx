@@ -2,6 +2,7 @@ import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
   ScrollView, Alert, useWindowDimensions,
 } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
@@ -11,7 +12,6 @@ import { useRouter, useSegments } from 'expo-router';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { confirmPurchase } from '../services/marketplaceService';
@@ -50,7 +50,6 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const font = useAppFont();
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
@@ -110,12 +109,13 @@ export function ListingDetailModal({ listing, onClose }: Props) {
         >
           {/* Header */}
           <View style={[styles.header, { flexDirection: rowDir }]}>
-            <Text
-              style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}
+            <AppText
+              weight="bold"
+              style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={2}
             >
               {listing.productName}
-            </Text>
+            </AppText>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
               <X size={20} color="#004aad" />
             </TouchableOpacity>
@@ -142,29 +142,29 @@ export function ListingDetailModal({ listing, onClose }: Props) {
               <View style={styles.detailsBox}>
                 {listing.condition && (
                   <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                    <Text style={[styles.detailLabel, { ...font.regular }]}>
+                    <AppText weight="regular" style={styles.detailLabel}>
                       {t('marketplace.condition')}
-                    </Text>
+                    </AppText>
                     <View style={[styles.conditionBadge, { backgroundColor: CONDITION_COLOR[listing.condition] ?? '#888' }]}>
-                      <Text style={[styles.conditionText, { ...font.semiBold }]}>
+                      <AppText weight="semiBold" style={styles.conditionText}>
                         {t(`marketplace.condition_${listing.condition}`)}
-                      </Text>
+                      </AppText>
                     </View>
                   </View>
                 )}
                 {listing.brand && (
                   <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                    <Text style={[styles.detailLabel, { ...font.regular }]}>{t('marketplace.brand')}</Text>
-                    <Text style={[styles.detailValue, { ...font.semiBold }]}>{listing.brand}</Text>
+                    <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.brand')}</AppText>
+                    <AppText weight="semiBold" style={styles.detailValue}>{listing.brand}</AppText>
                   </View>
                 )}
                 {listing.category && (
                   <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                    <Text style={[styles.detailLabel, { ...font.regular }]}>{t('marketplace.category')}</Text>
-                    <Text style={[styles.detailValue, { ...font.semiBold }]}>
+                    <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.category')}</AppText>
+                    <AppText weight="semiBold" style={styles.detailValue}>
                       {t(`marketplace.category_${listing.category}`) || listing.category}
                       {listing.subcategory ? ` › ${listing.subcategory}` : ''}
-                    </Text>
+                    </AppText>
                   </View>
                 )}
               </View>
@@ -172,23 +172,23 @@ export function ListingDetailModal({ listing, onClose }: Props) {
 
             {/* Price & location */}
             <View style={styles.infoBox}>
-              <Text style={[styles.price, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{priceLabel}</Text>
+              <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>{priceLabel}</Text>
               <View style={[styles.locationRow, { flexDirection: rowDir }]}>
                 <Image
                   source={LOCATION_ICON}
                   style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
                   contentFit="contain" cachePolicy="memory-disk"
                 />
-                <Text style={[styles.location, { ...font.regular }]} numberOfLines={1}>{listing.location}</Text>
+                <AppText weight="regular" style={styles.location} numberOfLines={1}>{listing.location}</AppText>
               </View>
             </View>
 
             {/* Seller */}
             <View style={styles.sellerBox}>
-              <Text style={[styles.poster, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+              <AppText weight="regular" style={[styles.poster, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.posted_by')}{' '}
-                <Text style={[styles.posterName, { ...font.semiBold }]}>{listing.posterName}</Text>
-              </Text>
+                <AppText weight="semiBold" style={styles.posterName}>{listing.posterName}</AppText>
+              </AppText>
             </View>
           </ScrollView>
 
@@ -196,9 +196,9 @@ export function ListingDetailModal({ listing, onClose }: Props) {
           {!isOwnListing && (
             isUnavailable ? (
               <View style={styles.reservedBtn}>
-                <Text style={[styles.reservedText, { ...font.bold }]}>
+                <AppText weight="bold" style={styles.reservedText}>
                   {t('marketplace.reserved')}
-                </Text>
+                </AppText>
               </View>
             ) : (
               <TouchableOpacity
@@ -206,7 +206,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
                 onPress={() => setCheckoutVisible(true)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.buyText, { ...font.bold }]}>{t('marketplace.buy_button')}</Text>
+                <AppText weight="bold" style={styles.buyText}>{t('marketplace.buy_button')}</AppText>
               </TouchableOpacity>
             )
           )}

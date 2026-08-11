@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { AppText } from '@components/ui/AppText';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { MarketplaceListing } from '../types';
@@ -54,26 +55,26 @@ export function ListingCard({ listing, onPress }: Props) {
         )}
         {listing.condition && (
           <View style={[styles.conditionBadge, { backgroundColor: CONDITION_COLOR[listing.condition] ?? '#888' }]}>
-            <Text style={styles.conditionText}>
+            <AppText weight="bold" style={styles.conditionText}>
               {t(`marketplace.condition_${listing.condition}`)}
-            </Text>
+            </AppText>
           </View>
         )}
         {isRental && (
           <View style={styles.rentalBadge}>
-            <Text style={styles.rentalBadgeText}>{t('marketplace.rental_badge')}</Text>
+            <AppText weight="bold" style={styles.rentalBadgeText}>{t('marketplace.rental_badge')}</AppText>
           </View>
         )}
       </View>
 
       <View style={styles.body}>
-        <Text style={[styles.name, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+        <AppText weight="bold" style={[styles.name, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
           {listing.productName}
-        </Text>
+        </AppText>
         {listing.brand && (
-          <Text style={[styles.brand, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+          <AppText style={[styles.brand, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
             {listing.brand}
-          </Text>
+          </AppText>
         )}
         <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>
           ₪{listing.price.toLocaleString()}{isRental ? t('marketplace.per_day') : ''}
@@ -84,13 +85,13 @@ export function ListingCard({ listing, onPress }: Props) {
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
             contentFit="contain" cachePolicy="memory-disk"
           />
-          <Text style={[styles.location, { color: colors.textMuted }]} numberOfLines={1}>
+          <AppText style={[styles.location, { color: colors.textMuted }]} numberOfLines={1}>
             {listing.location}
-          </Text>
+          </AppText>
         </View>
-        <Text style={[styles.seller, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+        <AppText style={[styles.seller, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
           {t('marketplace.by')} {listing.posterName}
-        </Text>
+        </AppText>
       </View>
     </TouchableOpacity>
   );

@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { AppText } from '@components/ui/AppText';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { MarketplaceListing } from '../types';
@@ -23,7 +24,7 @@ export function RentalCard({ listing, onPress }: Props) {
         )}
       </View>
       <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={2}>{listing.productName}</Text>
+        <AppText weight="bold" style={styles.name} numberOfLines={2}>{listing.productName}</AppText>
         <Text style={styles.price}>₪{listing.price.toLocaleString()}/day</Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Image
@@ -31,7 +32,7 @@ export function RentalCard({ listing, onPress }: Props) {
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
             contentFit="contain" cachePolicy="memory-disk"
           />
-          <Text style={styles.location} numberOfLines={1}>{listing.location}</Text>
+          <AppText style={styles.location} numberOfLines={1}>{listing.location}</AppText>
         </View>
       </View>
     </TouchableOpacity>
