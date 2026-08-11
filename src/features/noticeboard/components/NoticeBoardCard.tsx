@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
 import { Image } from 'expo-image';
 import { MapPin, Calendar, Clock, X } from 'lucide-react-native';
 
@@ -72,6 +73,8 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     cardWidth !== undefined && { width: cardWidth },
   ];
 
+  const [confirmingDismiss, setConfirmingDismiss] = useState(false);
+
   if (compact) {
     const timeAgo = formatTimeAgo(request.createdAt, t);
     const visibleRoles = translatedRoles.slice(0, 3);
@@ -82,18 +85,30 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     const hasMetaRow = hasExec || hasDeadline;
     const locationText = translateCity(request.location, rtl);
 
-    function confirmDismiss() {
-      Alert.alert(
-        t('noticeboard.dismiss_title'),
-        t('noticeboard.dismiss_body'),
-        [
-          { text: t('noticeboard.dismiss_cancel'), style: 'cancel' },
-          { text: t('noticeboard.dismiss_confirm'), style: 'destructive', onPress: onDismiss },
-        ]
+    if (confirmingDismiss) {
+      return (
+        <View style={[cardStyle, styles.confirmRow]}>
+          <Text style={[styles.confirmText, { ...font.regular, color: colors.textSec }]}>
+            {t('noticeboard.dismiss_body')}
+          </Text>
+          <View style={styles.confirmBtns}>
+            <TouchableOpacity style={styles.confirmCancel} onPress={() => setConfirmingDismiss(false)}>
+              <Text style={[styles.confirmCancelText, { ...font.semiBold, color: colors.textMuted }]}>
+                {t('noticeboard.dismiss_cancel')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.confirmYes} onPress={() => { setConfirmingDismiss(false); onDismiss(); }}>
+              <Text style={[styles.confirmYesText, { ...font.bold }]}>
+                {t('noticeboard.dismiss_confirm')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       );
     }
 
     return (
+      <View style={{ position: 'relative' }}>
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
@@ -112,7 +127,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               </Text>
             </View>
           )}
-          <View style={styles.headerContent}>
+          <View style={[styles.headerContent, rtl ? { paddingLeft: 36 } : { paddingRight: 36 }]}>
             <Text
               style={[styles.cardTitle, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={2}
@@ -129,14 +144,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               </Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.trashBtn}
-            onPress={(e) => { e.stopPropagation?.(); confirmDismiss(); }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.7}
-          >
-            <X size={16} color={colors.textMuted} />
-          </TouchableOpacity>
         </View>
 
         {/* Description snippet — hidden if empty */}
@@ -198,6 +205,15 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
         </View>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.dismissAbsolute, rtl ? { left: 14 } : { right: 14 }]}
+        onPress={() => setConfirmingDismiss(true)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        activeOpacity={0.7}
+      >
+        <X size={16} color={colors.textMuted} />
+      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -299,12 +315,48 @@ const styles = StyleSheet.create({
   headerContent: {
     flex: 1,
   },
-  trashBtn: {
+  dismissAbsolute: {
+    position: 'absolute',
+    top: 14,
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
+    zIndex: 10,
+  },
+  confirmRow: {
+    gap: 12,
+    justifyContent: 'center',
+    minHeight: 80,
+  },
+  confirmText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  confirmBtns: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  confirmCancel: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  confirmCancelText: {
+    fontSize: 14,
+  },
+  confirmYes: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#e53935',
+  },
+  confirmYesText: {
+    fontSize: 14,
+    color: '#fff',
   },
   cardTitle: {
     fontSize: 17,

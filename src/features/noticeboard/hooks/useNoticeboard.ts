@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { subscribeToCollection, getDocument, queryDocuments, setDocument, where } from '@core/firebase/firestore';
-import { serverTimestamp } from 'firebase/firestore';
+import { subscribeToCollection, getDocument, updateDocument, arrayUnion, where } from '@core/firebase/firestore';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import type { User } from '@core/types/user';
 
@@ -40,25 +39,21 @@ export function useNoticeboard(
 
   useEffect(() => {
     if (!currentUserId) return;
-    queryDocuments<{ id: string }>(`users/${currentUserId}/dismissedNotices`)
-      .then((docs) => setDismissed(new Set(docs.map((d) => d.id))))
+    getDocument<{ dismissedNotices?: string[] }>(`users/${currentUserId}`)
+      .then((doc) => {
+        if (doc?.dismissedNotices?.length) {
+          setDismissed(new Set(doc.dismissedNotices));
+        }
+      })
       .catch(() => {});
   }, [currentUserId]);
 
   async function dismiss(projectId: string) {
     if (!currentUserId) return;
     setDismissed((prev) => new Set([...prev, projectId]));
-    try {
-      await setDocument(`users/${currentUserId}/dismissedNotices/${projectId}`, {
-        dismissedAt: serverTimestamp(),
-      });
-    } catch {
-      setDismissed((prev) => {
-        const next = new Set(prev);
-        next.delete(projectId);
-        return next;
-      });
-    }
+    updateDocument(`users/${currentUserId}`, {
+      dismissedNotices: arrayUnion(projectId),
+    }).catch(() => {});
   }
 
   useEffect(() => {
