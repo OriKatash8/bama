@@ -24,6 +24,7 @@ import {
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { Paperclip } from 'lucide-react-native';
+import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -391,22 +392,22 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.headerName, { color: '#004aad', ...font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           ) : (
-            <Text style={[styles.headerName, { color: '#004aad', ...font.bold }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+            <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
-            </Text>
+            </AppText>
           )}
         </View>
         <View style={[styles.headerRight, { alignItems: 'center', justifyContent: 'center' }]}>
           {chatType === 'community' && currentUserId === chatOwnerId && (
             <TouchableOpacity onPress={() => setManageVisible(true)} style={{ padding: 8 }}>
-              <Text style={{ color: colors.accent, ...font.semiBold, fontSize: 13 }}>
+              <AppText weight="semiBold" style={{ color: colors.accent, fontSize: 13 }}>
                 {t('communities.manage')}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -429,9 +430,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                 onPress={() => setActiveChannelId(ch.id)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.channelPillText, (isActive ? font.semiBold : font.regular), isActive && styles.channelPillTextActive]}>
+                <AppText weight={isActive ? 'semiBold' : 'regular'} style={[styles.channelPillText, isActive && styles.channelPillTextActive]}>
                   # {ch.name}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             );
           })}
@@ -458,9 +459,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                 {item.videoUrl ? (
                   <View style={styles.mediaBubble}>
                     {!isOwn && (
-                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), ...font.regular }]}>
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
                         {userNames[item.senderId] ?? 'Loading...'}
-                      </Text>
+                      </AppText>
                     )}
                     <VideoPlayer uri={item.videoUrl} style={styles.mediaMessage} />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
@@ -470,9 +471,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                 ) : item.imageURL ? (
                   <View style={styles.mediaBubble}>
                     {!isOwn && (
-                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), ...font.regular }]}>
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
                         {userNames[item.senderId] ?? 'Loading...'}
-                      </Text>
+                      </AppText>
                     )}
                     <Image source={{ uri: item.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
@@ -482,13 +483,13 @@ export function ChatRoomScreen({ chatId }: Props) {
                 ) : (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
                     {!isOwn && (
-                      <Text style={[styles.senderName, { color: colorForUser(item.senderId), ...font.regular }]}>
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
                         {userNames[item.senderId] ?? 'Loading...'}
-                      </Text>
+                      </AppText>
                     )}
-                    <Text style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, ...font.regular }]}>
+                    <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text }]}>
                       {item.text}
-                    </Text>
+                    </AppText>
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
                       {formatMessageTime(item.timestamp)}
                     </Text>
@@ -505,9 +506,9 @@ export function ChatRoomScreen({ chatId }: Props) {
         {mediaActive ? (
           <View style={styles.mediaSendingRow}>
             <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={[styles.mediaSendingText, { color: colors.textMuted, ...font.regular }]}>
+            <AppText weight="regular" style={[styles.mediaSendingText, { color: colors.textMuted }]}>
               {videoUploading || videoProcessing ? t('media.send_video') : t('chats.sending_image')}
-            </Text>
+            </AppText>
           </View>
         ) : (
           <>
@@ -542,9 +543,9 @@ export function ChatRoomScreen({ chatId }: Props) {
         <TouchableOpacity activeOpacity={1} style={{ width: '90%', maxHeight: '85%' }}>
           <LinearGradient colors={['#1a237e', '#004aad']} style={manageStyles.modal}>
             <View style={[manageStyles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[manageStyles.modalTitle, { ...font.bold }]}>
+              <AppText weight="bold" style={manageStyles.modalTitle}>
                 {t('communities.manage')}
-              </Text>
+              </AppText>
               <TouchableOpacity onPress={() => setManageVisible(false)}>
                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 22 }}>✕</Text>
               </TouchableOpacity>
@@ -552,52 +553,52 @@ export function ChatRoomScreen({ chatId }: Props) {
             <ScrollView showsVerticalScrollIndicator={false}>
 
               {/* Pending Requests */}
-              <Text style={[manageStyles.sectionTitle, { ...font.semiBold }]}>
+              <AppText weight="semiBold" style={manageStyles.sectionTitle}>
                 {t('communities.pending_requests')} ({pendingRequests.length})
-              </Text>
+              </AppText>
               {pendingRequests.length === 0 ? (
-                <Text style={[manageStyles.emptyText, { ...font.regular }]}>—</Text>
+                <AppText weight="regular" style={manageStyles.emptyText}>—</AppText>
               ) : (
                 pendingRequests.map((req) => (
                   <View key={req.userId} style={[manageStyles.requestRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <Text style={[manageStyles.requestName, { ...font.regular }]} numberOfLines={1}>
+                    <AppText weight="regular" style={manageStyles.requestName} numberOfLines={1}>
                       {req.displayName}
-                    </Text>
+                    </AppText>
                     <TouchableOpacity
                       style={[manageStyles.actionBtn, { backgroundColor: '#16a34a' }]}
                       onPress={() => handleApproveRequest(req.userId)}
                     >
-                      <Text style={[manageStyles.actionBtnText, { ...font.semiBold }]}>
+                      <AppText weight="semiBold" style={manageStyles.actionBtnText}>
                         {t('communities.approve')}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[manageStyles.actionBtn, { backgroundColor: '#dc2626' }]}
                       onPress={() => handleRejectRequest(req.userId)}
                     >
-                      <Text style={[manageStyles.actionBtnText, { ...font.semiBold }]}>
+                      <AppText weight="semiBold" style={manageStyles.actionBtnText}>
                         {t('communities.reject')}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   </View>
                 ))
               )}
 
               {/* Members */}
-              <Text style={[manageStyles.sectionTitle, { ...font.semiBold, marginTop: 20 }]}>
+              <AppText weight="semiBold" style={[manageStyles.sectionTitle, { marginTop: 20 }]}>
                 {t('communities.members')} ({chatMembers.length})
-              </Text>
+              </AppText>
               {chatMembers.map((uid) => (
                 <View key={uid} style={[manageStyles.memberRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <View style={manageStyles.memberAvatar}>
-                    <Text style={[manageStyles.memberInitial, { ...font.bold }]}>
+                    <AppText weight="bold" style={manageStyles.memberInitial}>
                       {(memberNames[uid] ?? uid).charAt(0).toUpperCase()}
-                    </Text>
+                    </AppText>
                   </View>
-                  <Text style={[manageStyles.memberName, { ...font.regular }]} numberOfLines={1}>
+                  <AppText weight="regular" style={manageStyles.memberName} numberOfLines={1}>
                     {memberNames[uid] ?? uid}
                     {uid === chatOwnerId ? ' ★' : ''}
-                  </Text>
+                  </AppText>
                   {uid !== chatOwnerId && (
                     <TouchableOpacity onPress={() => handleRemoveMember(uid)} style={{ padding: 4 }}>
                       <Text style={{ color: '#dc2626', fontSize: 18 }}>✕</Text>
@@ -607,12 +608,12 @@ export function ChatRoomScreen({ chatId }: Props) {
               ))}
 
               {/* Channels */}
-              <Text style={[manageStyles.sectionTitle, { ...font.semiBold, marginTop: 20 }]}>
+              <AppText weight="semiBold" style={[manageStyles.sectionTitle, { marginTop: 20 }]}>
                 {t('community.channels')} ({channels.length})
-              </Text>
+              </AppText>
               {channels.map((ch) => (
                 <View key={ch.id} style={[manageStyles.channelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <Text style={[manageStyles.channelName, { ...font.regular }]}># {ch.name}</Text>
+                  <AppText weight="regular" style={manageStyles.channelName}># {ch.name}</AppText>
                   {!isGeneralChannel(ch.name) && (
                     <TouchableOpacity onPress={() => handleDeleteChannel(ch.id, ch.name)} style={{ padding: 4 }}>
                       <Text style={{ color: '#dc2626', fontSize: 16 }}>✕</Text>
@@ -636,9 +637,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                 </View>
               ) : (
                 <TouchableOpacity onPress={() => setAddingChannel(true)} style={manageStyles.addChannelTrigger}>
-                  <Text style={[{ color: 'rgba(255,255,255,0.85)', ...font.semiBold, fontSize: 13 }]}>
+                  <AppText weight="semiBold" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
                     {t('community.add_channel')}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               )}
 

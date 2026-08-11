@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useRouter, useSegments } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { Image } from 'expo-image';
+import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
@@ -71,23 +72,23 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header row */}
       <View style={[styles.headerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <Text style={[styles.pageTitle, { ...font.bold, color: colors.text }]}>
+        <AppText weight="bold" style={[styles.pageTitle, { color: colors.text }]}>
           {t('chats_page.tab_communities')}
-        </Text>
+        </AppText>
         <TouchableOpacity style={[styles.plusBtn, { backgroundColor: colors.primary }]} onPress={onRequestCommunity}>
           <Plus size={16} color="#fff" />
-          <Text style={[styles.plusBtnText, { ...font.semiBold }]}>{t('communities.request_create')}</Text>
+          <AppText weight="semiBold" style={styles.plusBtnText}>{t('communities.request_create')}</AppText>
         </TouchableOpacity>
       </View>
 
       {/* My Communities */}
-      <Text style={[styles.sectionLabel, { ...font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.my_communities')}
-      </Text>
+      </AppText>
       {myCommunities.length === 0 ? (
-        <Text style={[styles.empty, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <AppText weight="regular" style={[styles.empty, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
           {t('communities.no_communities')}
-        </Text>
+        </AppText>
       ) : (
         myCommunities.map((c) => (
           <TouchableOpacity
@@ -105,26 +106,26 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                   cachePolicy="memory-disk"
                 />
               ) : null}
-              <Text style={[styles.cardName, { ...font.forText(c.name, 'semiBold'), color: colors.text }]} numberOfLines={1}>
+              <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
                 {c.name}
-              </Text>
-              <Text style={[styles.memberCount, { ...font.regular, color: colors.textMuted }]}>
+              </AppText>
+              <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
                 {c.members.length} {t('communities.members')}
-              </Text>
+              </AppText>
             </View>
             {!!formatLastMessage(c) && (
-              <Text style={[styles.preview, { ...font.forText(formatLastMessage(c), 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+              <AppText weight="regular" style={[styles.preview, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                 {formatLastMessage(c)}
-              </Text>
+              </AppText>
             )}
           </TouchableOpacity>
         ))
       )}
 
       {/* Discover */}
-      <Text style={[styles.sectionLabel, { ...font.semiBold, color: colors.textSec, marginTop: 20, textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textSec, marginTop: 20, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
-      </Text>
+      </AppText>
 
       {/* Category filter chips */}
       <ScrollView
@@ -139,9 +140,9 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
           onPress={() => setFilterCategory(null)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.filterChipText, filterCategory === null && styles.filterChipTextActive, { ...font.semiBold }]}>
+          <AppText weight="semiBold" style={[styles.filterChipText, filterCategory === null && styles.filterChipTextActive]}>
             {t('chats_page.filter_all')}
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         {CATEGORIES.map((cat) => (
@@ -151,17 +152,17 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
             onPress={() => setFilterCategory(filterCategory === cat ? null : cat)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.filterChipText, filterCategory === cat && styles.filterChipTextActive, { ...font.semiBold }]}>
+            <AppText weight="semiBold" style={[styles.filterChipText, filterCategory === cat && styles.filterChipTextActive]}>
               {rtl && CATEGORY_LABEL_KEY[cat] ? t(CATEGORY_LABEL_KEY[cat]) : cat}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
       {filteredDiscover.length === 0 ? (
-        <Text style={[styles.empty, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+        <AppText weight="regular" style={[styles.empty, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
           {t('communities.no_discover')}
-        </Text>
+        </AppText>
       ) : (
         filteredDiscover.map((c) => {
           const status = joinStatuses[c.id];
@@ -176,29 +177,29 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                     cachePolicy="memory-disk"
                   />
                 ) : null}
-                <Text style={[styles.cardName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
+                <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
                   {c.name}
-                </Text>
-                <Text style={[styles.memberCount, { ...font.regular, color: colors.textMuted }]}>
+                </AppText>
+                <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
                   {c.members.length} {t('communities.members')}
-                </Text>
+                </AppText>
               </View>
               {!!c.description && (
-                <Text style={[styles.description, { ...font.forText(c.description as string, 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                <AppText weight="regular" style={[styles.description, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                   {c.description as string}
-                </Text>
+                </AppText>
               )}
               <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {status === 'pending' ? (
                   <View style={styles.pendingBadge}>
-                    <Text style={[styles.pendingText, { ...font.semiBold }]}>{t('communities.pending')}</Text>
+                    <AppText weight="semiBold" style={styles.pendingText}>{t('communities.pending')}</AppText>
                   </View>
                 ) : (
                   <TouchableOpacity
                     style={[styles.joinBtn, { backgroundColor: colors.primary }]}
                     onPress={() => requestToJoin(c.id, user?.displayName ?? '')}
                   >
-                    <Text style={[styles.joinBtnText, { ...font.semiBold }]}>{t('communities.request_join')}</Text>
+                    <AppText weight="semiBold" style={styles.joinBtnText}>{t('communities.request_join')}</AppText>
                   </TouchableOpacity>
                 )}
               </View>

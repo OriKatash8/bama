@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
 import { Users } from 'lucide-react-native';
+import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
@@ -163,7 +164,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
       <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <Text style={[styles.avatarInitial, { ...font.bold }]}>{initial}</Text>
+        <AppText weight="bold" style={styles.avatarInitial}>{initial}</AppText>
       </View>
     );
   }
@@ -172,9 +173,9 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     return (
       <View style={styles.flex}>
         <View style={styles.empty}>
-          <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+          <AppText weight="regular" style={[styles.emptyText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
             {t('chats.no_conversations')}
-          </Text>
+          </AppText>
         </View>
       </View>
     );
@@ -209,20 +210,20 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
         </View>
         <View style={styles.content}>
           <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-            <Text style={[styles.name, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
+            <AppText weight="bold" style={[styles.name, { color: '#004aad', textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
               {chatName}
-            </Text>
+            </AppText>
             {status != null && (
               <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
-                <Text style={[styles.statusBadgeText, { ...font.bold, color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</Text>
+                <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
               </View>
             )}
           </View>
           <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
-            <Text
+            <AppText
+              weight="regular"
               style={[styles.preview, {
                 color: colors.textMuted,
-                ...font.regular,
                 textAlign: rtl ? 'right' : 'left',
                 paddingRight: rtl ? 0 : 4,
                 paddingLeft: rtl ? 4 : 0,
@@ -231,7 +232,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
               ellipsizeMode="tail"
             >
               {item.lastMessage?.text ?? ''}
-            </Text>
+            </AppText>
             {unread > 0 ? (
               <View style={[styles.unreadBadge, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
                 <Text style={[styles.unreadBadgeText, { ...font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
