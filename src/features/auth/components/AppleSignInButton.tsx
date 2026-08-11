@@ -36,14 +36,13 @@ function AppleButton() {
       {isLoading ? (
         <ActivityIndicator size="small" color="#555" />
       ) : (
-        <View style={styles.btnRow}>
-          <View style={styles.logoSlot}>
+        <View style={[styles.btnRow, { flexDirection: rtl ? 'row' : 'row-reverse' }]}>
+          <View style={rtl ? { marginLeft: 12 } : { marginRight: 12 }}>
             <SvgXml xml={APPLE_SVG} width={20} height={24} />
           </View>
-          <AppText weight="semiBold" style={styles.btnLabel}>
+          <AppText weight="semiBold" style={[styles.btnLabel, { textAlign: rtl ? 'right' : 'left' }]}>
             {t('auth.continue_apple')}
           </AppText>
-          <View style={styles.logoSlot} />
         </View>
       )}
     </TouchableOpacity>
@@ -71,7 +70,6 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   buttonDisabled: { opacity: 0.6 },
-  btnRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  logoSlot: { width: 36, alignItems: 'flex-start', justifyContent: 'center' },
-  btnLabel: { flex: 1, fontSize: 15, color: '#333', textAlign: 'center' },
+  btnRow: { alignSelf: 'stretch', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
+  btnLabel: { flex: 1, fontSize: 13, color: '#333' },
 });
