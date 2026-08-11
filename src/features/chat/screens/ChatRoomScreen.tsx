@@ -94,6 +94,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const fetchedIdsRef = useRef<Set<string>>(new Set());
+  const flatListRef = useRef<FlatList>(null);
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
@@ -253,6 +254,12 @@ export function ChatRoomScreen({ chatId }: Props) {
       setUserNames((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
     });
   }, [messages]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }
+  }, [messages.length]);
 
   async function handleApproveRequest(userId: string) {
     await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'approved' });
@@ -440,9 +447,9 @@ export function ChatRoomScreen({ chatId }: Props) {
       {/* Messages */}
       <View style={{ flex: 1, zIndex: 0 }}>
         <FlatList
-          data={[...messages].reverse()}
+          ref={flatListRef}
+          data={messages}
           keyExtractor={(item) => item.id}
-          inverted
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
             const isOwn = item.senderId === currentUserId;
