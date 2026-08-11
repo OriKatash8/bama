@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -117,6 +118,13 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [activeChannelId, setActiveChannelId] = useState<string>('');
   const [newChannelName, setNewChannelName] = useState('');
   const [addingChannel, setAddingChannel] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   // Fetch chat metadata
   useEffect(() => {
@@ -505,7 +513,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       </View>
 
       {/* Input */}
-      <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent' }]}>
+      <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : 90 }]}>
         {mediaActive ? (
           <View style={styles.mediaSendingRow}>
             <ActivityIndicator size="small" color={colors.accent} />
@@ -761,7 +769,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 12,
     paddingTop: 10,
-    paddingBottom: 90,
     gap: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
