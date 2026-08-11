@@ -36,8 +36,10 @@ function AppleButton() {
       {isLoading ? (
         <ActivityIndicator size="small" color="#555" />
       ) : (
-        <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <SvgXml xml={APPLE_SVG} width={20} height={24} />
+        <View style={styles.btnRow}>
+          <View style={rtl ? styles.logoRight : styles.logoLeft}>
+            <SvgXml xml={APPLE_SVG} width={20} height={24} />
+          </View>
           <AppText weight="semiBold" style={styles.btnLabel}>
             {t('auth.continue_apple')}
           </AppText>
@@ -54,7 +56,7 @@ export function AppleSignInButton() {
 
 const styles = StyleSheet.create({
   button: {
-    height: 48,
+    height: 58,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.15)',
@@ -68,6 +70,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   buttonDisabled: { opacity: 0.6 },
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  btnLabel: { fontSize: 15, color: '#333' },
+  btnRow: { width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  logoLeft: { position: 'absolute', left: 16 },
+  logoRight: { position: 'absolute', right: 16 },
+  btnLabel: { fontSize: 15, color: '#333', textAlign: 'center' },
 });

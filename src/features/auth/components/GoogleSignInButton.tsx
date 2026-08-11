@@ -46,8 +46,8 @@ export function GoogleSignInButton() {
         {isLoading ? (
           <ActivityIndicator size="small" color="#555" />
         ) : (
-          <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Image source={GOOGLE_LOGO} style={styles.googleLogo} contentFit="contain" cachePolicy="memory-disk" />
+          <View style={styles.btnRow}>
+            <Image source={GOOGLE_LOGO} style={[styles.googleLogo, rtl ? styles.logoRight : styles.logoLeft]} contentFit="contain" cachePolicy="memory-disk" />
             <AppText weight="semiBold" style={styles.btnLabel}>
               {t('auth.continue_google')}
             </AppText>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   dividerText: { fontSize: 13, color: 'rgba(0,0,0,0.4)' },
 
   button: {
-    height: 48,
+    height: 58,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.15)',
@@ -83,10 +83,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   buttonDisabled: { opacity: 0.6 },
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  googleLogo: {
-    width: 44,
-    height: 44,
-  },
-  btnLabel: { fontSize: 15, color: '#333' },
+  btnRow: { width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  googleLogo: { width: 50, height: 50 },
+  logoLeft: { position: 'absolute', left: 14 },
+  logoRight: { position: 'absolute', right: 14 },
+  btnLabel: { fontSize: 15, color: '#333', textAlign: 'center' },
 });
