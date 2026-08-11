@@ -1,4 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
 import { useAppFont } from '@core/hooks/useAppFont';
 import type { Review } from '@core/types/project';
@@ -48,7 +49,7 @@ export function ProfileHeader({
           />
         ) : (
           <View style={[styles.avatarFallback, { borderRadius: size / 2 }]}>
-            <Text style={[styles.avatarInitials, { fontSize: size * 0.36, ...font.bold }]}>{initials}</Text>
+            <AppText weight="bold" style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials}</AppText>
           </View>
         )}
         {isEditing && (
@@ -66,7 +67,7 @@ export function ProfileHeader({
           autoCapitalize="words"
         />
       ) : (
-        <Text style={[styles.name, { ...font.bold }]}>{name}</Text>
+        <AppText weight="bold" style={styles.name}>{name}</AppText>
       )}
 
       {email && <Text style={[styles.email, { ...font.regular }]}>{email}</Text>}

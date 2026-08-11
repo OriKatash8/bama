@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
@@ -63,20 +64,20 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
   if (!isEditing) {
     return (
       <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}>
-        <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+        <AppText weight="bold" style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
           {t('profile_sections.skills')}
-        </Text>
+        </AppText>
         {selected.length === 0 ? (
-          <Text style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
+          <AppText style={[styles.empty, { textAlign: rtl ? 'right' : 'left' }]}>
             {t('profile_sections.no_skills')}
-          </Text>
+          </AppText>
         ) : (
           <View style={[styles.chipsWrap, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             {selected.map((s) => (
               <View key={s.category} style={styles.chip}>
-                <Text style={styles.chipText}>
+                <AppText style={styles.chipText}>
                   {CATEGORY_EMOJI[s.category] ?? ''} {catLabel(s.category, rtl, t)}
-                </Text>
+                </AppText>
               </View>
             ))}
           </View>
@@ -87,14 +88,14 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
 
   return (
     <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}>
-      <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText weight="bold" style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
         {t('profile_sections.skills')}
-      </Text>
+      </AppText>
       {selected.length > 0 && (
         <View style={[styles.chipsWrap, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {selected.map((s) => (
             <View key={s.category} style={styles.chip}>
-              <Text style={styles.chipText}>{catLabel(s.category, rtl, t)}</Text>
+              <AppText style={styles.chipText}>{catLabel(s.category, rtl, t)}</AppText>
             </View>
           ))}
         </View>
@@ -112,9 +113,9 @@ export function RoleChips({ selected, isEditing, onChange }: RoleChipsProps) {
               <Text style={[styles.tableRowCheck, active && styles.tableRowCheckActive]}>
                 {active ? '✓' : ''}
               </Text>
-              <Text style={[styles.tableRowText, active && styles.tableRowTextActive]}>
+              <AppText style={[styles.tableRowText, active && styles.tableRowTextActive]}>
                 {catLabel(category, rtl, t)}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}

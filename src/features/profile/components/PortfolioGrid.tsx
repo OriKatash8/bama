@@ -3,6 +3,7 @@ import {
   View, Image, TouchableOpacity, Text, StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
@@ -98,9 +99,9 @@ export function PortfolioGrid({
       {videoActive && (
         <View style={styles.processingRow}>
           <ActivityIndicator size="small" color="#cb6ce6" />
-          <Text style={styles.processingText}>
+          <AppText style={styles.processingText}>
             {videoUploading ? 'Uploading...' : t('media.processing_video')}
-          </Text>
+          </AppText>
         </View>
       )}
 
@@ -113,7 +114,7 @@ export function PortfolioGrid({
             activeOpacity={0.8}
           >
             <ImagePlus size={28} color="#cb6ce6" strokeWidth={1.5} />
-            <Text style={styles.addMediaLabel}>{t('profile_sections.add_media')}</Text>
+            <AppText style={styles.addMediaLabel}>{t('profile_sections.add_media')}</AppText>
           </TouchableOpacity>
         )}
 

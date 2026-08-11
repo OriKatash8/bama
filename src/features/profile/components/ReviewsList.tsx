@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import type { Review } from '@core/types/project';
 
@@ -39,9 +40,9 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
         {/* Date (left) + name (middle) + avatar (right) */}
         <View style={styles.nameAvatarRow}>
           <Text style={styles.date}>{date}</Text>
-          <Text style={styles.author}>{review.authorName}</Text>
+          <AppText weight="bold" style={styles.author}>{review.authorName}</AppText>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials(review.authorName)}</Text>
+            <AppText weight="bold" style={styles.avatarText}>{initials(review.authorName)}</AppText>
           </View>
         </View>
 
@@ -49,7 +50,7 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
         <Text style={styles.stars}>{stars}</Text>
 
         {/* Body */}
-        <Text style={styles.body}>{review.body}</Text>
+        <AppText style={styles.body}>{review.body}</AppText>
       </TouchableOpacity>
 
       {/* Navigation row */}

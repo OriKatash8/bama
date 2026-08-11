@@ -12,6 +12,7 @@ import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useUiStore } from '@core/stores/uiStore';
+import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -127,17 +128,17 @@ export default function ProfessionalProfileScreen() {
         {isEditing ? (
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: '#004aad', ...font.regular }]}>{t('profile.cancel')}</Text>
+              <AppText weight="regular" style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.cancel')}</AppText>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
               {isSaving
                 ? <ActivityIndicator size="small" color="#004aad" />
-                : <Text style={[styles.headerBtnText, styles.save, { ...font.bold }]}>{t('profile.save')}</Text>}
+                : <AppText weight="bold" style={[styles.headerBtnText, styles.save]}>{t('profile.save')}</AppText>}
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <Text style={[styles.headerBtnText, { color: '#004aad', ...font.regular }]}>{t('profile.edit')}</Text>
+            <AppText weight="regular" style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.edit')}</AppText>
           </TouchableOpacity>
         )}
       </View>
@@ -161,9 +162,9 @@ export default function ProfessionalProfileScreen() {
       />
 
       <View style={styles.portfolioSection}>
-        <Text style={[styles.portfolioTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+        <AppText weight="bold" style={[styles.portfolioTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
           {t('profile.portfolio')}
-        </Text>
+        </AppText>
         <PortfolioGrid
           assets={assets}
           isEditing={isEditing}

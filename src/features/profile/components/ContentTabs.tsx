@@ -5,6 +5,7 @@ import {
 import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
+import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -118,9 +119,9 @@ export function ContentTabs({
             onPress={() => switchTab(key)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.tabText, { color: active === key ? '#fff' : '#004aad', ...font.semiBold }]}>
+            <AppText weight="semiBold" style={[styles.tabText, { color: active === key ? '#fff' : '#004aad' }]}>
               {sectionLabel(key)}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </View>
@@ -134,9 +135,9 @@ export function ContentTabs({
         {active === 'equipment' && (
           <>
             {equipment.length === 0 && (
-              <Text style={[styles.empty, { ...font.regular }]}>
+              <AppText weight="regular" style={styles.empty}>
                 {t('profile_sections.no_equipment')}
-              </Text>
+              </AppText>
             )}
             {equipment.length > 0 && (
               <View style={styles.list}>
@@ -157,7 +158,7 @@ export function ContentTabs({
                         <Text style={styles.removeBtn}>×</Text>
                       </TouchableOpacity>
                     )}
-                    <Text style={[styles.itemText, { ...font.regular }]}>{item}</Text>
+                    <AppText weight="regular" style={styles.itemText}>{item}</AppText>
                   </View>
                 ))}
               </View>
@@ -208,23 +209,23 @@ export function ContentTabs({
                       <Text style={[styles.tableRowCheck, isSelected && styles.tableRowCheckActive]}>
                         {isSelected ? '✓' : ''}
                       </Text>
-                      <Text style={[styles.tableRowText, isSelected && styles.tableRowTextActive, { ...font.medium }]}>
+                      <AppText weight="medium" style={[styles.tableRowText, isSelected && styles.tableRowTextActive]}>
                         {label}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             ) : (
               (skills ?? []).length === 0 ? (
-                <Text style={[styles.empty, { ...font.regular }]}>{t('profile_sections.no_skills')}</Text>
+                <AppText weight="regular" style={styles.empty}>{t('profile_sections.no_skills')}</AppText>
               ) : (
                 <View style={styles.chipsWrap}>
                   {(skills ?? []).map((s, i) => (
                     <View key={`${s.category}-${i}`} style={styles.chip}>
-                      <Text style={[styles.chipText, { ...font.regular }]}>
+                      <AppText weight="regular" style={styles.chipText}>
                         {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
-                      </Text>
+                      </AppText>
                     </View>
                   ))}
                 </View>

@@ -1,4 +1,5 @@
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput, StyleSheet } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -35,22 +36,22 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
   if (!isEditing) {
     return (
       <View style={{ gap: 6 }}>
-        <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+        <AppText weight="bold" style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
           {t('profile_sections.about')}
-        </Text>
+        </AppText>
         <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <Text style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+          <AppText weight="regular" style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
             {bio || t('profile_sections.no_bio')}
-          </Text>
+          </AppText>
         </View>
       </View>
     );
   }
   return (
     <View style={{ gap: 6 }}>
-      <Text style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText weight="bold" style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
         {t('profile_sections.about')}
-      </Text>
+      </AppText>
       <TextInput
         style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
         value={bio}
