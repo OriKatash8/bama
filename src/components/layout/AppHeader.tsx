@@ -35,6 +35,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { uploadFile } from '@core/firebase/storage';
 import { updateDocument } from '@core/firebase/firestore';
+import { AppText } from '@components/ui/AppText';
 import { ModeSwitcherSheet } from '@features/auth/components/ModeSwitcherSheet';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -130,12 +131,13 @@ export function AppHeader() {
 
         {/* CENTER — greeting only */}
         <View style={styles.center}>
-          <Text
-            style={[styles.greeting, { color: colors.text, ...font.regular }]}
+          <AppText
+            weight="regular"
+            style={[styles.greeting, { color: colors.text }]}
             numberOfLines={1}
           >
             {greeting}
-          </Text>
+          </AppText>
         </View>
 
         {/* RIGHT — settings + mode badge */}
@@ -152,9 +154,9 @@ export function AppHeader() {
             onPress={() => setModeSheetVisible(true)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.modeBadgeText, { ...font.semiBold }]}>
+            <AppText weight="semiBold" style={styles.modeBadgeText}>
               {modeBadgeLabel}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -206,12 +208,13 @@ export function AppHeader() {
                 <Camera size={10} color="#fff" strokeWidth={2} />
               </View>
             </TouchableOpacity>
-            <Text
-              style={[styles.userName, { color: colors.text, ...font.bold }]}
+            <AppText
+              weight="bold"
+              style={[styles.userName, { color: colors.text }]}
               numberOfLines={1}
             >
               {user?.displayName ?? ''}
-            </Text>
+            </AppText>
             <Text
               style={[styles.userEmail, { color: colors.textMuted, ...font.regular }]}
               numberOfLines={1}
@@ -225,9 +228,9 @@ export function AppHeader() {
             {/* Language */}
             <View style={[styles.menuRow, { borderBottomColor: colors.border }]}>
               <Globe size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                 {t('settings.language')}
-              </Text>
+              </AppText>
               <View style={[styles.langToggle, { borderColor: colors.border }]}>
                 {(['he', 'en'] as Lang[]).map((lang) => {
                   const active = language === lang;
@@ -238,9 +241,9 @@ export function AppHeader() {
                       onPress={() => setLanguage(lang)}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted, ...font.semiBold }]}>
+                      <AppText weight="semiBold" style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted }]}>
                         {lang === 'he' ? 'עב' : 'EN'}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   );
                 })}
@@ -252,9 +255,9 @@ export function AppHeader() {
               {isDark
                 ? <Moon size={18} color={colors.textMuted} strokeWidth={1.5} />
                 : <Sun size={18} color={colors.textMuted} strokeWidth={1.5} />}
-              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                 {t('settings.appearance')}
-              </Text>
+              </AppText>
               <TouchableOpacity
                 onPress={toggleTheme}
                 activeOpacity={0.8}
@@ -271,9 +274,9 @@ export function AppHeader() {
               activeOpacity={0.7}
             >
               <Info size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                 {t('settings.information')}
-              </Text>
+              </AppText>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
 
@@ -284,9 +287,9 @@ export function AppHeader() {
               activeOpacity={0.7}
             >
               <Shield size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <Text style={[styles.menuLabel, { color: colors.text, ...font.regular }]}>
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                 {t('settings.privacy')}
-              </Text>
+              </AppText>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
           </View>
@@ -299,9 +302,9 @@ export function AppHeader() {
               activeOpacity={0.7}
             >
               <LogOut size={18} color="#ff4d6d" strokeWidth={1.5} />
-              <Text style={[styles.logoutText, { ...font.semiBold }]}>
+              <AppText weight="semiBold" style={styles.logoutText}>
                 {t('settings.logout')}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
         </Animated.View>

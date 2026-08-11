@@ -1,6 +1,6 @@
 import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { useAppleSignIn } from '../hooks/useAppleSignIn';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -19,7 +19,6 @@ function makeT(translations: Translations) {
 // Inner component holds all hooks — rendered only on iOS, so no conditional hook calls.
 function AppleButton() {
   const { signInWithApple, isLoading } = useAppleSignIn();
-  const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -36,9 +35,9 @@ function AppleButton() {
       ) : (
         <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Text style={styles.appleLogo}></Text>
-          <Text style={[styles.btnLabel, { ...font.semiBold }]}>
+          <AppText weight="semiBold" style={styles.btnLabel}>
             {t('auth.continue_apple')}
-          </Text>
+          </AppText>
         </View>
       )}
     </TouchableOpacity>

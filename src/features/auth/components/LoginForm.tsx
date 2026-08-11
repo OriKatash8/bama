@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
@@ -60,7 +61,7 @@ export function LoginForm() {
       <AuthSettingsButton />
       <Image source={BAMA_LOGO} style={styles.appLogo} contentFit="contain" cachePolicy="memory-disk" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
-        <Text style={[styles.title, { ...font.bold }]}>{t('auth.sign_in')}</Text>
+        <AppText weight="bold" style={styles.title}>{t('auth.sign_in')}</AppText>
         <Input
           placeholder={t('auth.email')}
           placeholderTextColor={colors.placeholder}
@@ -85,9 +86,9 @@ export function LoginForm() {
           style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
         />
         <TouchableOpacity style={{ alignSelf: rtl ? 'flex-start' : 'flex-end' }} onPress={() => router.push('/(auth)/forgot-password')}>
-          <Text style={[styles.link, { color: colors.text, ...font.regular, textAlign }]}>
+          <AppText weight="regular" style={[styles.link, { color: colors.text, textAlign }]}>
             {t('auth.forgot_password')}
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <Button
           label={t('auth.login')}
@@ -98,13 +99,13 @@ export function LoginForm() {
           } as object) : { backgroundColor: '#004aad' }}
         />
         <View style={[styles.footer, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.footerText, { color: colors.text, ...font.regular }]}>
+          <AppText weight="regular" style={[styles.footerText, { color: colors.text }]}>
             {t('auth.no_account')}
-          </Text>
+          </AppText>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text style={[styles.link, { color: colors.text, ...font.semiBold }]}>
+            <AppText weight="semiBold" style={[styles.link, { color: colors.text }]}>
               {t('auth.register_link')}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
 

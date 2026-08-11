@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet,
+  Modal, View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet,
 } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { Settings, Sun, Moon } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -27,7 +28,7 @@ export function AuthSettingsButton() {
               <View style={styles.card}>
 
                 {/* Language row */}
-                <Text style={styles.rowLabel}>שפה / Language</Text>
+                <AppText weight="semiBold" style={styles.rowLabel}>שפה / Language</AppText>
                 <View style={styles.pillRow}>
                   {(['he', 'en'] as Lang[]).map((lang) => (
                     <TouchableOpacity
@@ -36,15 +37,15 @@ export function AuthSettingsButton() {
                       onPress={() => { setLanguage(lang); setOpen(false); }}
                       activeOpacity={0.8}
                     >
-                      <Text style={[styles.pillText, language === lang && styles.pillTextActive]}>
+                      <AppText weight="semiBold" style={[styles.pillText, language === lang && styles.pillTextActive]}>
                         {lang === 'he' ? 'עברית' : 'EN'}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   ))}
                 </View>
 
                 {/* Appearance row */}
-                <Text style={styles.rowLabel}>מראה / Appearance</Text>
+                <AppText weight="semiBold" style={styles.rowLabel}>מראה / Appearance</AppText>
                 <View style={styles.pillRow}>
                   <TouchableOpacity
                     style={[styles.pill, !isDark && styles.pillActive]}
@@ -52,7 +53,7 @@ export function AuthSettingsButton() {
                     activeOpacity={0.8}
                   >
                     <Sun size={15} color={!isDark ? '#fff' : '#004aad'} />
-                    <Text style={[styles.pillText, !isDark && styles.pillTextActive]}>בהיר</Text>
+                    <AppText weight="semiBold" style={[styles.pillText, !isDark && styles.pillTextActive]}>בהיר</AppText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.pill, isDark && styles.pillActive]}
@@ -60,7 +61,7 @@ export function AuthSettingsButton() {
                     activeOpacity={0.8}
                   >
                     <Moon size={15} color={isDark ? '#fff' : '#004aad'} />
-                    <Text style={[styles.pillText, isDark && styles.pillTextActive]}>כהה</Text>
+                    <AppText weight="semiBold" style={[styles.pillText, isDark && styles.pillTextActive]}>כהה</AppText>
                   </TouchableOpacity>
                 </View>
 

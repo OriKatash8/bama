@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ActiveMode } from '@core/types/user';
@@ -45,7 +45,6 @@ export function ModePicker() {
   const { switchMode } = useSwitchMode();
   const [pressed, setPressed] = useState<ActiveMode | null>(null);
   const language = useSettingsStore((s) => s.language);
-  const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
 
   return (
@@ -69,9 +68,9 @@ export function ModePicker() {
               onPressOut={() => setPressed(null)}
               activeOpacity={1}
             >
-              <Text style={[styles.btnText, { ...font.bold, color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>
+              <AppText weight="bold" style={[styles.btnText, { color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>
                 {t(key)}
-              </Text>
+              </AppText>
               {mode === 'client'
                 ? <PersonIcon color={isPressed ? '#ffffff' : '#004aad'} />
                 : <Text style={[styles.btnIcon, { color: isPressed ? '#ffffff' : '#cb6ce6' }]}>✦</Text>}

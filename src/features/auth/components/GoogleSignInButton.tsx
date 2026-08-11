@@ -1,6 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -18,7 +18,6 @@ function makeT(translations: Translations) {
 
 export function GoogleSignInButton() {
   const { signInWithGoogle, isLoading } = useGoogleSignIn();
-  const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -28,9 +27,9 @@ export function GoogleSignInButton() {
       {/* "or" divider */}
       <View style={[styles.divider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <View style={styles.dividerLine} />
-        <Text style={[styles.dividerText, { ...font.regular }]}>
+        <AppText weight="regular" style={styles.dividerText}>
           {t('auth.or')}
-        </Text>
+        </AppText>
         <View style={styles.dividerLine} />
       </View>
 
@@ -46,9 +45,9 @@ export function GoogleSignInButton() {
         ) : (
           <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Text style={styles.googleG}>G</Text>
-            <Text style={[styles.btnLabel, { ...font.semiBold }]}>
+            <AppText weight="semiBold" style={styles.btnLabel}>
               {t('auth.continue_google')}
-            </Text>
+            </AppText>
           </View>
         )}
       </TouchableOpacity>

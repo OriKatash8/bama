@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
@@ -67,7 +68,7 @@ export function RegisterForm() {
       <AuthSettingsButton />
       <Image source={BAMA_LOGO} style={styles.appLogo} contentFit="contain" cachePolicy="memory-disk" />
       <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }, Platform.OS === 'web' && ({ boxShadow: '0 0 40px #7b4fd466, 0 0 80px #004aad33' } as object)]}>
-        <Text style={[styles.title, { ...font.bold }]}>{t('auth.register_title')}</Text>
+        <AppText weight="bold" style={styles.title}>{t('auth.register_title')}</AppText>
         <Input
           placeholder={t('auth.full_name')}
           placeholderTextColor={colors.placeholder}
@@ -112,10 +113,9 @@ export function RegisterForm() {
                 {rule.met
                   ? <CheckCircle size={14} color="#43a047" />
                   : <Circle size={14} color="rgba(0,0,0,0.3)" />}
-                <Text style={[
+                <AppText weight="regular" style={[
                   styles.checkLabel,
                   {
-                    ...font.regular,
                     color: rule.met ? '#43a047' : 'rgba(0,0,0,0.45)',
                     marginLeft: rtl ? 0 : 6,
                     marginRight: rtl ? 6 : 0,
@@ -123,7 +123,7 @@ export function RegisterForm() {
                   },
                 ]}>
                   {t(rule.key)}
-                </Text>
+                </AppText>
               </View>
             ))}
           </View>
@@ -138,13 +138,13 @@ export function RegisterForm() {
           } as object) : { backgroundColor: '#004aad' }}
         />
         <View style={[styles.footer, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.footerText, { color: colors.text, ...font.regular }]}>
+          <AppText weight="regular" style={[styles.footerText, { color: colors.text }]}>
             {t('auth.have_account')}
-          </Text>
+          </AppText>
           <TouchableOpacity onPress={() => router.push('/(auth)')}>
-            <Text style={[styles.link, { color: colors.text, ...font.semiBold }]}>
+            <AppText weight="semiBold" style={[styles.link, { color: colors.text }]}>
               {t('auth.sign_in_link')}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
 

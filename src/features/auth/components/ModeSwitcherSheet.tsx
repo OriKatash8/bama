@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
+import { Modal, View, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { CheckCircle } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
@@ -102,8 +103,8 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
           const isActive = mode === activeMode;
           const isLast   = index === MODES.length - 1;
 
-          // Native fallback: purple for gradient effect
-          const nativeActiveColor = { color: '#cb6ce6' };
+          // Native fallback: dark purple when active
+          const nativeActiveColor = { color: '#7c3aed' };
           const nativeInactiveColor = { color: colors.text };
 
           return (
@@ -114,7 +115,8 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
                 activeOpacity={0.7}
                 disabled={isActive}
               >
-                <Text
+                <AppText
+                  weight="bold"
                   style={[
                     styles.rowLabel,
                     Platform.OS === 'web'
@@ -123,7 +125,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
                   ]}
                 >
                   {modeLabel(mode)}
-                </Text>
+                </AppText>
 
                 {isActive && (
                   <View style={styles.checkWrap}>
