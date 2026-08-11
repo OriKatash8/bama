@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   btnRow: { width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  logoLeft: { position: 'absolute', left: 12 },
+  logoLeft: { position: 'absolute', left: 6 },
   logoRight: { position: 'absolute', right: 16 },
   btnLabel: { fontSize: 15, color: '#333', textAlign: 'center' },
 });
