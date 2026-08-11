@@ -15,7 +15,10 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
 import {
   getDoc, updateDoc, doc, Timestamp,
   collection, onSnapshot, query, where,
@@ -378,10 +381,10 @@ export function ChatRoomScreen({ chatId }: Props) {
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      keyboardVerticalOffset={0}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
         <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats`)} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={[styles.headerBackText, { color: colors.accent, ...font.regular }]}>‹</Text>
         </TouchableOpacity>
@@ -659,13 +662,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 110,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     paddingHorizontal: 8,
   },
   headerBack: {
     width: 48,
-    height: 110,
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
   },
