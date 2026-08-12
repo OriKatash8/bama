@@ -182,10 +182,10 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // Voice recording
   const [isRecording, setIsRecording] = useState(false);
+  const isRecordingRef = useRef(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingRef = useRef<AudioType.Recording | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -543,6 +543,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       recordingRef.current = recording;
+      isRecordingRef.current = true;
       setIsRecording(true);
       setRecordingDuration(0);
       recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
@@ -552,11 +553,12 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   async function stopAndSendRecording() {
-    if (!recordingRef.current || !isRecording) return;
+    if (!recordingRef.current) return;
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     const duration = recordingDuration;
     const rec = recordingRef.current;
     recordingRef.current = null;
+    isRecordingRef.current = false;
     setIsRecording(false);
     setRecordingDuration(0);
     try {
@@ -578,6 +580,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     recordingRef.current?.stopAndUnloadAsync().catch(() => {});
     getAudio().setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
     recordingRef.current = null;
+    isRecordingRef.current = false;
     setIsRecording(false);
     setRecordingDuration(0);
   }
@@ -838,7 +841,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 <Pressable
                   style={[styles.sendButton, { backgroundColor: colors.accent }]}
                   onLongPress={startRecording}
-                  onPressOut={() => { if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; } if (isRecording) stopAndSendRecording(); }}
+                  onPressOut={() => { if (isRecordingRef.current) stopAndSendRecording(); }}
                   delayLongPress={400}
                 >
                   <Mic size={20} color="#fff" strokeWidth={1.5} />
