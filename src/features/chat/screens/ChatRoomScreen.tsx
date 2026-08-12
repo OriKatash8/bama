@@ -539,7 +539,10 @@ export function ChatRoomScreen({ chatId }: Props) {
     try {
       const Audio = getAudio();
       const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') return;
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow microphone access in Settings to record voice messages.');
+        return;
+      }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       recordingRef.current = recording;
@@ -547,7 +550,8 @@ export function ChatRoomScreen({ chatId }: Props) {
       setIsRecording(true);
       setRecordingDuration(0);
       recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
-    } catch {
+    } catch (e) {
+      console.error('[startRecording] failed:', e);
       setIsRecording(false);
     }
   }
@@ -563,7 +567,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     setRecordingDuration(0);
     try {
       await rec.stopAndUnloadAsync();
-      await getAudio().setAudioModeAsync({ allowsRecordingIOS: false });
+      try { await getAudio().setAudioModeAsync({ allowsRecordingIOS: false }); } catch { /* ignore */ }
       const uri = rec.getURI();
       if (!uri || !currentUserId) return;
       const blob = await fetch(uri).then(r => r.blob());
@@ -578,7 +582,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   function cancelRecording() {
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     recordingRef.current?.stopAndUnloadAsync().catch(() => {});
-    getAudio().setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
+    try { getAudio().setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {}); } catch { /* ignore */ }
     recordingRef.current = null;
     isRecordingRef.current = false;
     setIsRecording(false);
