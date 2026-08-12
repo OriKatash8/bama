@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import type { Audio as AudioType } from 'expo-av';
+import { requireOptionalNativeModule } from 'expo-modules-core';
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -541,6 +542,10 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   async function startRecording() {
+    if (!requireOptionalNativeModule('ExponentAV')) {
+      Alert.alert('Rebuild required', 'Voice messages need a full app rebuild.\nRun: npx expo run:ios');
+      return;
+    }
     try {
       const Audio = await loadAudio();
       const { status } = await Audio.requestPermissionsAsync();
@@ -599,6 +604,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       await soundRef.current?.pauseAsync();
       setPlayingId(null);
     } else {
+      if (!requireOptionalNativeModule('ExponentAV')) return;
       try {
         const Audio = await loadAudio();
         await soundRef.current?.stopAsync().catch(() => {});
