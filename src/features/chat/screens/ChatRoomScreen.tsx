@@ -184,13 +184,17 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingRef = useRef<AudioType.Recording | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Cached Audio module — loaded once via dynamic import() so Metro doesn't fatal-error
   const audioModuleRef = useRef<typeof AudioType | null>(null);
   async function loadAudio(): Promise<typeof AudioType> {
     if (audioModuleRef.current) return audioModuleRef.current;
-    const mod = await import('expo-av');
-    audioModuleRef.current = mod.Audio;
-    return mod.Audio;
+    // Native module confirmed present by requireOptionalNativeModule pre-flight,
+    // so require() is safe. Dynamic import() loses .Audio via Metro namespace quirk.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const av = require('expo-av') as { Audio?: typeof AudioType; default?: { Audio?: typeof AudioType } };
+    const Audio = av.Audio ?? av?.default?.Audio;
+    if (!Audio) throw new Error('expo-av Audio not found after native module check');
+    audioModuleRef.current = Audio;
+    return Audio;
   }
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
