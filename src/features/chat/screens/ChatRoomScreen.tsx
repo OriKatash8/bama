@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,7 +30,7 @@ import {
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Paperclip } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Paperclip, Mic, Play, Pause } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -173,6 +175,46 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
   function toggleInvitee(id: string) {
     setNewMeetingInvitedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  // Voice recording
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    if (isRecording) {
+      pulseLoopRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 0.2, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        ])
+      );
+      pulseLoopRef.current.start();
+    } else {
+      pulseLoopRef.current?.stop();
+      pulseAnim.setValue(1);
+    }
+  }, [isRecording]);
+
+  // Playback
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    return () => {
+      soundRef.current?.unloadAsync().catch(() => {});
+    };
+  }, []);
+
+  function formatRecordingTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
   // Fetch chat metadata
@@ -490,6 +532,72 @@ export function ChatRoomScreen({ chatId }: Props) {
     }
   }
 
+  async function startRecording() {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') return;
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      recordingRef.current = recording;
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
+    } catch {
+      setIsRecording(false);
+    }
+  }
+
+  async function stopAndSendRecording() {
+    if (!recordingRef.current || !isRecording) return;
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    const duration = recordingDuration;
+    const rec = recordingRef.current;
+    recordingRef.current = null;
+    setIsRecording(false);
+    setRecordingDuration(0);
+    try {
+      await rec.stopAndUnloadAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      const uri = rec.getURI();
+      if (!uri || !currentUserId) return;
+      const blob = await fetch(uri).then(r => r.blob());
+      const path = `chat-audio/${chatId}/${Date.now()}-${currentUserId}.m4a`;
+      const audioUrl = await uploadFile(path, blob);
+      await sendMessage(chatId, currentUserId, '', { audioUrl, audioDuration: duration });
+    } catch (e) {
+      console.error('[voiceRecord] send failed:', e);
+    }
+  }
+
+  function cancelRecording() {
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    recordingRef.current?.stopAndUnloadAsync().catch(() => {});
+    Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
+    recordingRef.current = null;
+    setIsRecording(false);
+    setRecordingDuration(0);
+  }
+
+  async function togglePlayback(messageId: string, audioUrl: string) {
+    if (playingId === messageId) {
+      await soundRef.current?.pauseAsync();
+      setPlayingId(null);
+    } else {
+      await soundRef.current?.stopAsync().catch(() => {});
+      await soundRef.current?.unloadAsync().catch(() => {});
+      soundRef.current = null;
+      const { sound } = await Audio.Sound.createAsync({ uri: audioUrl }, { shouldPlay: true });
+      soundRef.current = sound;
+      setPlayingId(messageId);
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setPlayingId(null);
+          soundRef.current = null;
+        }
+      });
+    }
+  }
+
   const isGeneralChannel = (name: string) =>
     name === 'כללי' || name === 'General' || name === t('community.default_channel');
 
@@ -600,6 +708,27 @@ export function ChatRoomScreen({ chatId }: Props) {
                       {formatMessageTime(item.timestamp)}
                     </Text>
                   </View>
+                ) : item.audioUrl ? (
+                  <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
+                    {!isOwn && (
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
+                        {userNames[item.senderId] ?? 'Loading...'}
+                      </AppText>
+                    )}
+                    <View style={chatStyles.audioBubble}>
+                      <TouchableOpacity onPress={() => togglePlayback(item.id, item.audioUrl!)} activeOpacity={0.7} style={chatStyles.audioPlayBtn}>
+                        {playingId === item.id
+                          ? <Pause size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />
+                          : <Play size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />}
+                      </TouchableOpacity>
+                      <Text style={[chatStyles.audioDurationText, { color: isOwn ? 'rgba(255,255,255,0.85)' : '#004aad' }]}>
+                        {formatRecordingTime(item.audioDuration ?? 0)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                      {formatMessageTime(item.timestamp)}
+                    </Text>
+                  </View>
                 ) : (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
                     {!isOwn && (
@@ -657,40 +786,64 @@ export function ChatRoomScreen({ chatId }: Props) {
         </Animated.View>
       )}
 
+      {/* Recording bar — shown while recording, replaces input row */}
+      {isRecording && (
+        <View style={[chatStyles.recordingBar, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+          <Animated.View style={[chatStyles.recordingDot, { opacity: pulseAnim }]} />
+          <AppText weight="semiBold" style={chatStyles.recordingTimer}>{formatRecordingTime(recordingDuration)}</AppText>
+          <AppText weight="regular" style={[chatStyles.recordingHint, { color: colors.textMuted }]}>Hold to record, release to send</AppText>
+          <TouchableOpacity onPress={cancelRecording} activeOpacity={0.7} hitSlop={10}>
+            <AppText weight="semiBold" style={chatStyles.recordingCancel}>Cancel</AppText>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Input */}
-      <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : 90 }]}>
-        {mediaActive ? (
-          <View style={styles.mediaSendingRow}>
-            <ActivityIndicator size="small" color={colors.accent} />
-            <AppText weight="regular" style={[styles.mediaSendingText, { color: colors.textMuted }]}>
-              {videoUploading || videoProcessing ? t('media.send_video') : t('chats.sending_image')}
-            </AppText>
-          </View>
-        ) : (
-          <>
-            <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} activeOpacity={0.7}>
-              <Plus size={24} color={menuOpen ? colors.text : colors.accent} strokeWidth={2} />
-            </TouchableOpacity>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, ...font.regular }]}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Message..."
-              placeholderTextColor={colors.placeholder}
-              multiline
-              returnKeyType="default"
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, { backgroundColor: colors.accent }]}
-              onPress={handleSend}
-              disabled={!inputText.trim()}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.sendLabel, { ...font.semiBold }]}>Send</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+      {!isRecording && (
+        <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : 90 }]}>
+          {mediaActive ? (
+            <View style={styles.mediaSendingRow}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <AppText weight="regular" style={[styles.mediaSendingText, { color: colors.textMuted }]}>
+                {videoUploading || videoProcessing ? t('media.send_video') : t('chats.sending_image')}
+              </AppText>
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} activeOpacity={0.7}>
+                <Plus size={24} color={menuOpen ? colors.text : colors.accent} strokeWidth={2} />
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, ...font.regular }]}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Message..."
+                placeholderTextColor={colors.placeholder}
+                multiline
+                returnKeyType="default"
+              />
+              {inputText.trim() ? (
+                <TouchableOpacity
+                  style={[styles.sendButton, { backgroundColor: colors.accent }]}
+                  onPress={handleSend}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sendLabel, { ...font.semiBold }]}>Send</Text>
+                </TouchableOpacity>
+              ) : (
+                <Pressable
+                  style={[styles.sendButton, { backgroundColor: colors.accent }]}
+                  onLongPress={startRecording}
+                  onPressOut={() => { if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; } if (isRecording) stopAndSendRecording(); }}
+                  delayLongPress={400}
+                >
+                  <Mic size={20} color="#fff" strokeWidth={1.5} />
+                </Pressable>
+              )}
+            </>
+          )}
+        </View>
+      )}
     </KeyboardAvoidingView>
 
     {/* Add Mission Modal */}
@@ -1295,4 +1448,36 @@ const chatStyles = StyleSheet.create({
   modalBtnCancelText: { fontSize: 15, fontWeight: '600' },
   modalBtnConfirm: { backgroundColor: '#004aad' },
   modalBtnConfirmText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  // Recording
+  recordingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  recordingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#ef4444',
+    flexShrink: 0,
+  },
+  recordingTimer: { fontSize: 15, color: '#ef4444', minWidth: 36 },
+  recordingHint: { flex: 1, fontSize: 12 },
+  recordingCancel: { fontSize: 13, color: '#ef4444' },
+  // Audio bubble
+  audioBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  audioPlayBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  audioDurationText: { fontSize: 13, fontWeight: '600', minWidth: 32 },
 });

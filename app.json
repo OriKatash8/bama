@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.bamaapp.bama",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "BAMA needs microphone access to record voice messages."
       }
     },
     "android": {
@@ -50,7 +51,13 @@
           "iosUrlScheme": "com.googleusercontent.apps.165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r"
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "BAMA needs microphone access to record voice messages."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

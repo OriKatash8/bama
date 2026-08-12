@@ -180,7 +180,7 @@ export async function sendMessage(
   chatId: string,
   senderId: string,
   text: string,
-  opts?: { videoUrl?: string; imageURL?: string }
+  opts?: { videoUrl?: string; imageURL?: string; audioUrl?: string; audioDuration?: number }
 ): Promise<void> {
   const messagesRef = collection(db, 'chats', chatId, 'messages');
   const chatRef = doc(db, 'chats', chatId);
@@ -193,6 +193,8 @@ export async function sendMessage(
   };
   if (opts?.videoUrl) messageData.videoUrl = opts.videoUrl;
   if (opts?.imageURL) messageData.imageURL = opts.imageURL;
+  if (opts?.audioUrl) messageData.audioUrl = opts.audioUrl;
+  if (opts?.audioDuration !== undefined) messageData.audioDuration = opts.audioDuration;
 
   await addDoc(messagesRef, messageData);
 

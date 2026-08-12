@@ -14,6 +14,8 @@ export interface Message {
   text: string;
   imageURL?: string;
   videoUrl?: string;
+  audioUrl?: string;
+  audioDuration?: number;
   timestamp: Timestamp;
   readBy: string[];
 }
