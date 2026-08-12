@@ -18,9 +18,6 @@ import {
   View,
 } from 'react-native';
 import type { Audio as AudioType } from 'expo-av';
-// expo-av is loaded lazily to avoid crashing when native module isn't yet linked
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-function getAudio(): typeof AudioType { return require('expo-av').Audio; }
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -186,6 +183,14 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingRef = useRef<AudioType.Recording | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Cached Audio module — loaded once via dynamic import() so Metro doesn't fatal-error
+  const audioModuleRef = useRef<typeof AudioType | null>(null);
+  async function loadAudio(): Promise<typeof AudioType> {
+    if (audioModuleRef.current) return audioModuleRef.current;
+    const mod = await import('expo-av');
+    audioModuleRef.current = mod.Audio;
+    return mod.Audio;
+  }
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -537,7 +542,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   async function startRecording() {
     try {
-      const Audio = getAudio();
+      const Audio = await loadAudio();
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Allow microphone access in Settings to record voice messages.');
@@ -567,7 +572,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     setRecordingDuration(0);
     try {
       await rec.stopAndUnloadAsync();
-      try { await getAudio().setAudioModeAsync({ allowsRecordingIOS: false }); } catch { /* ignore */ }
+      audioModuleRef.current?.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
       const uri = rec.getURI();
       if (!uri || !currentUserId) return;
       const blob = await fetch(uri).then(r => r.blob());
@@ -582,7 +587,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   function cancelRecording() {
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     recordingRef.current?.stopAndUnloadAsync().catch(() => {});
-    try { getAudio().setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {}); } catch { /* ignore */ }
+    audioModuleRef.current?.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
     recordingRef.current = null;
     isRecordingRef.current = false;
     setIsRecording(false);
@@ -594,18 +599,23 @@ export function ChatRoomScreen({ chatId }: Props) {
       await soundRef.current?.pauseAsync();
       setPlayingId(null);
     } else {
-      await soundRef.current?.stopAsync().catch(() => {});
-      await soundRef.current?.unloadAsync().catch(() => {});
-      soundRef.current = null;
-      const { sound } = await getAudio().Sound.createAsync({ uri: audioUrl }, { shouldPlay: true });
-      soundRef.current = sound;
-      setPlayingId(messageId);
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          setPlayingId(null);
-          soundRef.current = null;
-        }
-      });
+      try {
+        const Audio = await loadAudio();
+        await soundRef.current?.stopAsync().catch(() => {});
+        await soundRef.current?.unloadAsync().catch(() => {});
+        soundRef.current = null;
+        const { sound } = await Audio.Sound.createAsync({ uri: audioUrl }, { shouldPlay: true });
+        soundRef.current = sound;
+        setPlayingId(messageId);
+        sound.setOnPlaybackStatusUpdate((status: { isLoaded: boolean; didJustFinish?: boolean }) => {
+          if (status.isLoaded && status.didJustFinish) {
+            setPlayingId(null);
+            soundRef.current = null;
+          }
+        });
+      } catch (e) {
+        console.error('[togglePlayback] failed:', e);
+      }
     }
   }
 
