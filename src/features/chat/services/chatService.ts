@@ -28,6 +28,8 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
     text: data.text,
     imageURL: data.imageURL,
     videoUrl: data.videoUrl,
+    audioUrl: data.audioUrl,
+    audioDuration: data.audioDuration,
     timestamp: data.timestamp,
     readBy: data.readBy ?? [],
   };

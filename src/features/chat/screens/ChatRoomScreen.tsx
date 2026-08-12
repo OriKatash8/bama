@@ -17,7 +17,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Audio } from 'expo-av';
+import type { Audio as AudioType } from 'expo-av';
+// expo-av is loaded lazily to avoid crashing when native module isn't yet linked
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+function getAudio(): typeof AudioType { return require('expo-av').Audio; }
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -180,7 +183,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Voice recording
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recordingRef = useRef<AudioType.Recording | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -203,7 +206,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // Playback
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const soundRef = useRef<AudioType.Sound | null>(null);
 
   useEffect(() => {
     return () => {
@@ -534,6 +537,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   async function startRecording() {
     try {
+      const Audio = getAudio();
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') return;
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
@@ -557,7 +561,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     setRecordingDuration(0);
     try {
       await rec.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      await getAudio().setAudioModeAsync({ allowsRecordingIOS: false });
       const uri = rec.getURI();
       if (!uri || !currentUserId) return;
       const blob = await fetch(uri).then(r => r.blob());
@@ -572,7 +576,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   function cancelRecording() {
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     recordingRef.current?.stopAndUnloadAsync().catch(() => {});
-    Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
+    getAudio().setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
     recordingRef.current = null;
     setIsRecording(false);
     setRecordingDuration(0);
@@ -586,7 +590,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       await soundRef.current?.stopAsync().catch(() => {});
       await soundRef.current?.unloadAsync().catch(() => {});
       soundRef.current = null;
-      const { sound } = await Audio.Sound.createAsync({ uri: audioUrl }, { shouldPlay: true });
+      const { sound } = await getAudio().Sound.createAsync({ uri: audioUrl }, { shouldPlay: true });
       soundRef.current = sound;
       setPlayingId(messageId);
       sound.setOnPlaybackStatusUpdate((status) => {
