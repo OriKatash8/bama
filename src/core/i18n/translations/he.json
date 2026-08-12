@@ -110,7 +110,11 @@
     "no_messages": "אין הודעות עדיין",
     "chats_tab": "צ'אטים",
     "courses_tab": "קורסים",
-    "communities_tab": "קהילות"
+    "communities_tab": "קהילות",
+    "add_media": "מדיה",
+    "take_photo": "מצלמה",
+    "add_task": "הוסף משימה",
+    "add_meeting": "הוסף פגישה"
   },
   "project_details": {
     "header": "פרטי פרויקט",

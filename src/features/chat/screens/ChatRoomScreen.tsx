@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Image,
   Keyboard,
@@ -27,7 +28,7 @@ import {
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Paperclip } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Paperclip } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -38,6 +39,9 @@ import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
 import { listenToMessages, sendMessage } from '../services/chatService';
+import { addMission } from '../services/missionService';
+import { addMeeting } from '../services/meetingService';
+import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -125,6 +129,51 @@ export function ChatRoomScreen({ chatId }: Props) {
     const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
     return () => { show.remove(); hide.remove(); };
   }, []);
+
+  // + action menu
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuAnim = useRef(new Animated.Value(0)).current;
+
+  function openMenu() {
+    setMenuOpen(true);
+    Animated.timing(menuAnim, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+  }
+  function closeMenu() {
+    Animated.timing(menuAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => setMenuOpen(false));
+  }
+
+  // Mission form state
+  const [showAddMission, setShowAddMission] = useState(false);
+  const [newMissionTitle, setNewMissionTitle] = useState('');
+  const [newMissionAssignedTo, setNewMissionAssignedTo] = useState<string[]>([]);
+  const [newMissionDueDate, setNewMissionDueDate] = useState('');
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+  const [isAddingMission, setIsAddingMission] = useState(false);
+
+  // Meeting form state
+  const [showAddMeeting, setShowAddMeeting] = useState(false);
+  const [newMeetingTitle, setNewMeetingTitle] = useState('');
+  const [newMeetingDate, setNewMeetingDate] = useState('');
+  const [newMeetingTime, setNewMeetingTime] = useState('');
+  const [newMeetingLocation, setNewMeetingLocation] = useState('');
+  const [newMeetingInvitedIds, setNewMeetingInvitedIds] = useState<string[]>([]);
+  const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
+  const [isAddingMeeting, setIsAddingMeeting] = useState(false);
+
+  const assignableMembers = chatMembers
+    .filter(id => id !== currentUserId)
+    .map(id => ({ id, displayName: memberNames[id] ?? id }));
+
+  function formatDueDate(iso: string, prefix: string): string {
+    const d = new Date(iso);
+    return `${prefix}${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+  function toggleAssignee(id: string) {
+    setNewMissionAssignedTo(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+  function toggleInvitee(id: string) {
+    setNewMeetingInvitedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
 
   // Fetch chat metadata
   useEffect(() => {
@@ -381,6 +430,66 @@ export function ChatRoomScreen({ chatId }: Props) {
     }
   }
 
+  async function handleAttachCamera() {
+    if (!currentUserId) return;
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') return;
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as const, quality: 1 });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setImageUploading(true);
+    try {
+      const blob = await fetch(asset.uri).then(r => r.blob());
+      const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+      const imageURL = await uploadFile(path, blob);
+      if (chatType === 'community' && activeChannelId) {
+        const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
+        await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
+      } else {
+        await sendMessage(chatId, currentUserId, '', { imageURL });
+      }
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
+  async function handleAddMission() {
+    if (!chatProjectId || !newMissionTitle.trim() || newMissionAssignedTo.length === 0) return;
+    setIsAddingMission(true);
+    try {
+      await addMission(chatProjectId, currentUserId, {
+        title: newMissionTitle.trim(),
+        assignedTo: newMissionAssignedTo,
+        dueDate: newMissionDueDate || undefined,
+      });
+      setNewMissionTitle(''); setNewMissionAssignedTo([]); setNewMissionDueDate('');
+      setShowAddMission(false);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert('Error', msg || t('project_details.error_add_mission'));
+    } finally {
+      setIsAddingMission(false);
+    }
+  }
+
+  async function handleAddMeeting() {
+    if (!chatProjectId || !newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0) return;
+    setIsAddingMeeting(true);
+    try {
+      await addMeeting(chatProjectId, currentUserId, {
+        title: newMeetingTitle.trim(), date: newMeetingDate, time: newMeetingTime.trim(),
+        location: newMeetingLocation.trim(), invitedIds: newMeetingInvitedIds,
+      });
+      setNewMeetingTitle(''); setNewMeetingDate(''); setNewMeetingTime('');
+      setNewMeetingLocation(''); setNewMeetingInvitedIds([]);
+      setShowAddMeeting(false);
+    } catch {
+      Alert.alert('Error', t('project_details.error_add_meeting'));
+    } finally {
+      setIsAddingMeeting(false);
+    }
+  }
+
   const isGeneralChannel = (name: string) =>
     name === 'כללי' || name === 'General' || name === t('community.default_channel');
 
@@ -523,8 +632,8 @@ export function ChatRoomScreen({ chatId }: Props) {
           </View>
         ) : (
           <>
-            <TouchableOpacity style={styles.attachBtn} onPress={handleAttachMedia} activeOpacity={0.7}>
-              <Paperclip size={22} color={colors.accent} strokeWidth={1.5} />
+            <TouchableOpacity style={styles.attachBtn} onPress={openMenu} activeOpacity={0.7}>
+              <Plus size={24} color={colors.accent} strokeWidth={2} />
             </TouchableOpacity>
             <TextInput
               style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, ...font.regular }]}
@@ -547,6 +656,227 @@ export function ChatRoomScreen({ chatId }: Props) {
         )}
       </View>
     </KeyboardAvoidingView>
+
+    {/* + Floating action menu */}
+    {menuOpen && (
+      <>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeMenu} />
+        <Animated.View
+          style={[
+            chatStyles.menuSheet,
+            {
+              backgroundColor: colors.card,
+              opacity: menuAnim,
+              transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+            },
+          ]}
+        >
+          <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachMedia(); }} activeOpacity={0.7}>
+            <View style={chatStyles.menuItemIcon}><Paperclip size={20} color="#004aad" strokeWidth={1.5} /></View>
+            <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.add_media')}</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachCamera(); }} activeOpacity={0.7}>
+            <View style={chatStyles.menuItemIcon}><Camera size={20} color="#004aad" strokeWidth={1.5} /></View>
+            <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.take_photo')}</AppText>
+          </TouchableOpacity>
+          {chatProjectId && (
+            <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMission(true); }} activeOpacity={0.7}>
+              <View style={chatStyles.menuItemIcon}><CheckSquare size={20} color="#004aad" strokeWidth={1.5} /></View>
+              <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.add_task')}</AppText>
+            </TouchableOpacity>
+          )}
+          {chatProjectId && (
+            <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMeeting(true); }} activeOpacity={0.7}>
+              <View style={chatStyles.menuItemIcon}><Calendar size={20} color="#004aad" strokeWidth={1.5} /></View>
+              <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.add_meeting')}</AppText>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+      </>
+    )}
+
+    {/* Add Mission Modal */}
+    <Modal visible={showAddMission} transparent animationType="slide" onRequestClose={() => setShowAddMission(false)}>
+      <View style={chatStyles.modalOverlay}>
+        <View style={[chatStyles.modalSheet, { backgroundColor: colors.card }]}>
+          <Text style={[chatStyles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+            {t('project_details.add_mission_title')}
+          </Text>
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.mission_title')}
+          </Text>
+          <TextInput
+            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            value={newMissionTitle}
+            onChangeText={setNewMissionTitle}
+            placeholder={t('project_details.mission_placeholder')}
+            placeholderTextColor={colors.textMuted}
+          />
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.assign_to')}
+          </Text>
+          {assignableMembers.map((m) => {
+            const selected = newMissionAssignedTo.includes(m.id);
+            return (
+              <TouchableOpacity
+                key={m.id}
+                style={[chatStyles.missionAssignRow, { borderColor: selected ? '#004aad' : colors.border }, selected && chatStyles.missionAssignRowSelected]}
+                onPress={() => toggleAssignee(m.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={[chatStyles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>{m.displayName}</Text>
+                <View style={[chatStyles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
+                  {selected && <Text style={[chatStyles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.due_date')}
+          </Text>
+          {newMissionDueDate ? (
+            <View style={[chatStyles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
+              <Calendar size={15} color="#004aad" strokeWidth={2} />
+              <Text style={[chatStyles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                {formatDueDate(newMissionDueDate, t('project_details.due'))}
+              </Text>
+              <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={10} activeOpacity={0.7}>
+                <Text style={[chatStyles.missionDateClear, { ...font.bold }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={[chatStyles.missionDateRow, { borderColor: colors.border }]} onPress={() => setShowDueDatePicker(true)} activeOpacity={0.8}>
+              <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
+              <Text style={[chatStyles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                {t('project_details.add_due_date')}
+              </Text>
+            </TouchableOpacity>
+          )}
+          <View style={chatStyles.modalActions}>
+            <TouchableOpacity style={[chatStyles.modalBtn, chatStyles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setShowAddMission(false)} activeOpacity={0.8}>
+              <Text style={[chatStyles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[chatStyles.modalBtn, chatStyles.modalBtnConfirm, (!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission) && chatStyles.completeBtnDisabled]}
+              onPress={handleAddMission}
+              disabled={!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission}
+              activeOpacity={0.8}
+            >
+              {isAddingMission ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[chatStyles.modalBtnConfirmText, { ...font.bold }]}>{t('project_details.add')}</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    {showDueDatePicker && (
+      <MiniCalendar
+        value={newMissionDueDate}
+        onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
+        onClose={() => setShowDueDatePicker(false)}
+      />
+    )}
+
+    {/* Add Meeting Modal */}
+    <Modal visible={showAddMeeting} transparent animationType="slide" onRequestClose={() => setShowAddMeeting(false)}>
+      <View style={chatStyles.modalOverlay}>
+        <View style={[chatStyles.modalSheet, { backgroundColor: colors.card }]}>
+          <Text style={[chatStyles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+            {t('project_details.add_meeting_title')}
+          </Text>
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.meeting_title_label')}
+          </Text>
+          <TextInput
+            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            value={newMeetingTitle}
+            onChangeText={setNewMeetingTitle}
+            placeholder={t('project_details.meeting_title_placeholder')}
+            placeholderTextColor={colors.textMuted}
+          />
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.meeting_date')}
+          </Text>
+          {newMeetingDate ? (
+            <View style={[chatStyles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
+              <Calendar size={15} color="#004aad" strokeWidth={2} />
+              <Text style={[chatStyles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                {formatDueDate(newMeetingDate, '')}
+              </Text>
+              <TouchableOpacity onPress={() => setNewMeetingDate('')} hitSlop={10} activeOpacity={0.7}>
+                <Text style={[chatStyles.missionDateClear, { ...font.bold }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={[chatStyles.missionDateRow, { borderColor: colors.border }]} onPress={() => setShowMeetingDatePicker(true)} activeOpacity={0.8}>
+              <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
+              <Text style={[chatStyles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                {t('project_details.meeting_date')}
+              </Text>
+            </TouchableOpacity>
+          )}
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.meeting_time')}
+          </Text>
+          <TextInput
+            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            value={newMeetingTime}
+            onChangeText={setNewMeetingTime}
+            placeholder={t('project_details.meeting_time_placeholder')}
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numbers-and-punctuation"
+          />
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.meeting_location')}
+          </Text>
+          <TextInput
+            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            value={newMeetingLocation}
+            onChangeText={setNewMeetingLocation}
+            placeholder={t('project_details.meeting_location_placeholder')}
+            placeholderTextColor={colors.textMuted}
+          />
+          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            {t('project_details.meeting_invitees')}
+          </Text>
+          {assignableMembers.map((m) => {
+            const selected = newMeetingInvitedIds.includes(m.id);
+            return (
+              <TouchableOpacity
+                key={m.id}
+                style={[chatStyles.missionAssignRow, { borderColor: selected ? '#004aad' : colors.border }, selected && chatStyles.missionAssignRowSelected]}
+                onPress={() => toggleInvitee(m.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={[chatStyles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>{m.displayName}</Text>
+                <View style={[chatStyles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
+                  {selected && <Text style={[chatStyles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          <View style={chatStyles.modalActions}>
+            <TouchableOpacity style={[chatStyles.modalBtn, chatStyles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setShowAddMeeting(false)} activeOpacity={0.8}>
+              <Text style={[chatStyles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[chatStyles.modalBtn, chatStyles.modalBtnConfirm, (!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting) && chatStyles.completeBtnDisabled]}
+              onPress={handleAddMeeting}
+              disabled={!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting}
+              activeOpacity={0.8}
+            >
+              {isAddingMeeting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[chatStyles.modalBtnConfirmText, { ...font.bold }]}>{t('project_details.add')}</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    {showMeetingDatePicker && (
+      <MiniCalendar
+        value={newMeetingDate}
+        onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
+        onClose={() => setShowMeetingDatePicker(false)}
+      />
+    )}
 
     {/* Manage modal */}
     <Modal visible={manageVisible} transparent animationType="fade" onRequestClose={() => setManageVisible(false)}>
@@ -897,4 +1227,81 @@ const manageStyles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 8,
   },
+});
+
+const chatStyles = StyleSheet.create({
+  menuSheet: {
+    position: 'absolute',
+    bottom: 140,
+    left: 12,
+    borderRadius: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 8,
+    minWidth: 190,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#e8f0fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuItemLabel: {
+    fontSize: 15,
+    color: '#004aad',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    gap: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
+  missionInputLabel: { fontSize: 13, fontWeight: '600', marginTop: 8, marginBottom: 4 },
+  missionInput: {
+    borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 15,
+  },
+  missionAssignRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6,
+  },
+  missionAssignRowSelected: { backgroundColor: '#004aad18' },
+  missionAssignName: { fontSize: 14, fontWeight: '500', flex: 1 },
+  missionCheckbox: {
+    width: 20, height: 20, borderRadius: 5, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  missionCheckboxTick: { color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14 },
+  missionDateRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  missionDateText: { flex: 1, fontSize: 14, fontWeight: '500' },
+  missionDatePlaceholder: { flex: 1, fontSize: 14 },
+  missionDateClear: { color: '#ef4444', fontSize: 14, fontWeight: '700', paddingHorizontal: 4 },
+  completeBtnDisabled: { opacity: 0.6 },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  modalBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  modalBtnCancel: { borderWidth: 1 },
+  modalBtnCancelText: { fontSize: 15, fontWeight: '600' },
+  modalBtnConfirm: { backgroundColor: '#004aad' },
+  modalBtnConfirmText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

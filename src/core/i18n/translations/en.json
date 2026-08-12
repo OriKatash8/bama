@@ -110,7 +110,11 @@
     "no_messages": "No messages yet",
     "chats_tab": "Chats",
     "courses_tab": "Courses",
-    "communities_tab": "Communities"
+    "communities_tab": "Communities",
+    "add_media": "Media",
+    "take_photo": "Camera",
+    "add_task": "Add Task",
+    "add_meeting": "Add Meeting"
   },
   "project_details": {
     "header": "Project Details",
