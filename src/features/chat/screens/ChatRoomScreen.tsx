@@ -621,6 +621,42 @@ export function ChatRoomScreen({ chatId }: Props) {
         />
       </View>
 
+      {/* + Action bar — inline, above input, moves with keyboard */}
+      {menuOpen && (
+        <Animated.View
+          style={[
+            chatStyles.menuSheet,
+            {
+              borderTopColor: colors.border,
+              backgroundColor: colors.card,
+              opacity: menuAnim,
+              transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+            },
+          ]}
+        >
+          <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachMedia(); }} activeOpacity={0.7}>
+            <View style={chatStyles.menuItemIcon}><Paperclip size={22} color="#004aad" strokeWidth={1.5} /></View>
+            <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_media')}</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachCamera(); }} activeOpacity={0.7}>
+            <View style={chatStyles.menuItemIcon}><Camera size={22} color="#004aad" strokeWidth={1.5} /></View>
+            <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.take_photo')}</AppText>
+          </TouchableOpacity>
+          {chatProjectId && (
+            <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMission(true); }} activeOpacity={0.7}>
+              <View style={chatStyles.menuItemIcon}><CheckSquare size={22} color="#004aad" strokeWidth={1.5} /></View>
+              <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_task')}</AppText>
+            </TouchableOpacity>
+          )}
+          {chatProjectId && (
+            <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMeeting(true); }} activeOpacity={0.7}>
+              <View style={chatStyles.menuItemIcon}><Calendar size={22} color="#004aad" strokeWidth={1.5} /></View>
+              <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_meeting')}</AppText>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+      )}
+
       {/* Input */}
       <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : 90 }]}>
         {mediaActive ? (
@@ -632,8 +668,8 @@ export function ChatRoomScreen({ chatId }: Props) {
           </View>
         ) : (
           <>
-            <TouchableOpacity style={styles.attachBtn} onPress={openMenu} activeOpacity={0.7}>
-              <Plus size={24} color={colors.accent} strokeWidth={2} />
+            <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} activeOpacity={0.7}>
+              <Plus size={24} color={menuOpen ? colors.text : colors.accent} strokeWidth={2} />
             </TouchableOpacity>
             <TextInput
               style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, ...font.regular }]}
@@ -656,44 +692,6 @@ export function ChatRoomScreen({ chatId }: Props) {
         )}
       </View>
     </KeyboardAvoidingView>
-
-    {/* + Floating action menu */}
-    {menuOpen && (
-      <>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeMenu} />
-        <Animated.View
-          style={[
-            chatStyles.menuSheet,
-            {
-              backgroundColor: colors.card,
-              opacity: menuAnim,
-              transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-            },
-          ]}
-        >
-          <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachMedia(); }} activeOpacity={0.7}>
-            <View style={chatStyles.menuItemIcon}><Paperclip size={20} color="#004aad" strokeWidth={1.5} /></View>
-            <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.add_media')}</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachCamera(); }} activeOpacity={0.7}>
-            <View style={chatStyles.menuItemIcon}><Camera size={20} color="#004aad" strokeWidth={1.5} /></View>
-            <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.take_photo')}</AppText>
-          </TouchableOpacity>
-          {chatProjectId && (
-            <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMission(true); }} activeOpacity={0.7}>
-              <View style={chatStyles.menuItemIcon}><CheckSquare size={20} color="#004aad" strokeWidth={1.5} /></View>
-              <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.add_task')}</AppText>
-            </TouchableOpacity>
-          )}
-          {chatProjectId && (
-            <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMeeting(true); }} activeOpacity={0.7}>
-              <View style={chatStyles.menuItemIcon}><Calendar size={20} color="#004aad" strokeWidth={1.5} /></View>
-              <AppText weight="semiBold" style={chatStyles.menuItemLabel}>{t('chats.add_meeting')}</AppText>
-            </TouchableOpacity>
-          )}
-        </Animated.View>
-      </>
-    )}
 
     {/* Add Mission Modal */}
     <Modal visible={showAddMission} transparent animationType="slide" onRequestClose={() => setShowAddMission(false)}>
@@ -1231,35 +1229,28 @@ const manageStyles = StyleSheet.create({
 
 const chatStyles = StyleSheet.create({
   menuSheet: {
-    position: 'absolute',
-    bottom: 140,
-    left: 12,
-    borderRadius: 16,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 8,
-    minWidth: 190,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   menuItem: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 6,
   },
   menuItemIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#e8f0fe',
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuItemLabel: {
-    fontSize: 15,
+    fontSize: 11,
     color: '#004aad',
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
