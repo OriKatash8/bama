@@ -17,8 +17,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { Audio as AudioType } from 'expo-av';
-import { requireOptionalNativeModule } from 'expo-modules-core';
+import {
+  useAudioRecorder,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+} from 'expo-audio';
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -86,6 +92,63 @@ function formatMessageTime(timestamp: Timestamp | number | string | null | undef
     ? new Date(timestamp.seconds * 1000)
     : new Date(timestamp);
   return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function formatRecordingTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+interface VoiceMessageBubbleProps {
+  messageId: string;
+  audioUrl: string;
+  audioDuration: number;
+  isOwn: boolean;
+  playingId: string | null;
+  setPlayingId: (id: string | null) => void;
+}
+
+function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playingId, setPlayingId }: VoiceMessageBubbleProps) {
+  const isActive = playingId === messageId;
+  const player = useAudioPlayer(audioUrl);
+  const status = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    if (!isActive && status.playing) {
+      player.pause();
+    }
+  }, [isActive]);
+
+  useEffect(() => {
+    if (isActive && status.didJustFinish) {
+      setPlayingId(null);
+    }
+  }, [status.didJustFinish]);
+
+  function handlePress() {
+    if (isActive && status.playing) {
+      player.pause();
+      setPlayingId(null);
+    } else {
+      player.seekTo(0);
+      player.play();
+      setPlayingId(messageId);
+    }
+  }
+
+  return (
+    <View style={chatStyles.audioBubble}>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={chatStyles.audioPlayBtn}>
+        {isActive && status.playing
+          ? <Pause size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />
+          : <Play size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />}
+      </TouchableOpacity>
+      <Text style={[chatStyles.audioDurationText, { color: isOwn ? 'rgba(255,255,255,0.85)' : '#004aad' }]}>
+        {formatRecordingTime(audioDuration)}
+      </Text>
+    </View>
+  );
 }
 
 interface Props {
@@ -182,20 +245,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [isRecording, setIsRecording] = useState(false);
   const isRecordingRef = useRef(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const recordingRef = useRef<AudioType.Recording | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioModuleRef = useRef<typeof AudioType | null>(null);
-  async function loadAudio(): Promise<typeof AudioType> {
-    if (audioModuleRef.current) return audioModuleRef.current;
-    // Native module confirmed present by requireOptionalNativeModule pre-flight,
-    // so require() is safe. Dynamic import() loses .Audio via Metro namespace quirk.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const av = require('expo-av') as { Audio?: typeof AudioType; default?: { Audio?: typeof AudioType } };
-    const Audio = av.Audio ?? av?.default?.Audio;
-    if (!Audio) throw new Error('expo-av Audio not found after native module check');
-    audioModuleRef.current = Audio;
-    return Audio;
-  }
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -216,19 +267,6 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // Playback
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const soundRef = useRef<AudioType.Sound | null>(null);
-
-  useEffect(() => {
-    return () => {
-      soundRef.current?.unloadAsync().catch(() => {});
-    };
-  }, []);
-
-  function formatRecordingTime(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  }
 
   // Fetch chat metadata
   useEffect(() => {
@@ -546,20 +584,15 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   async function startRecording() {
-    if (!requireOptionalNativeModule('ExponentAV')) {
-      Alert.alert('Rebuild required', 'Voice messages need a full app rebuild.\nRun: npx expo run:ios');
-      return;
-    }
     try {
-      const Audio = await loadAudio();
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
+      const { granted } = await requestRecordingPermissionsAsync();
+      if (!granted) {
         Alert.alert('Permission needed', 'Allow microphone access in Settings to record voice messages.');
         return;
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      recordingRef.current = recording;
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
       isRecordingRef.current = true;
       setIsRecording(true);
       setRecordingDuration(0);
@@ -571,18 +604,16 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   async function stopAndSendRecording() {
-    if (!recordingRef.current) return;
+    if (!recorder.isRecording) return;
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     const duration = recordingDuration;
-    const rec = recordingRef.current;
-    recordingRef.current = null;
     isRecordingRef.current = false;
     setIsRecording(false);
     setRecordingDuration(0);
     try {
-      await rec.stopAndUnloadAsync();
-      audioModuleRef.current?.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
-      const uri = rec.getURI();
+      await recorder.stop();
+      setAudioModeAsync({ allowsRecording: false }).catch(() => {});
+      const uri = recorder.uri;
       if (!uri || !currentUserId) return;
       const blob = await fetch(uri).then(r => r.blob());
       const path = `chat-audio/${chatId}/${Date.now()}-${currentUserId}.m4a`;
@@ -595,38 +626,11 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   function cancelRecording() {
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
-    recordingRef.current?.stopAndUnloadAsync().catch(() => {});
-    audioModuleRef.current?.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
-    recordingRef.current = null;
+    if (recorder.isRecording) recorder.stop().catch(() => {});
+    setAudioModeAsync({ allowsRecording: false }).catch(() => {});
     isRecordingRef.current = false;
     setIsRecording(false);
     setRecordingDuration(0);
-  }
-
-  async function togglePlayback(messageId: string, audioUrl: string) {
-    if (playingId === messageId) {
-      await soundRef.current?.pauseAsync();
-      setPlayingId(null);
-    } else {
-      if (!requireOptionalNativeModule('ExponentAV')) return;
-      try {
-        const Audio = await loadAudio();
-        await soundRef.current?.stopAsync().catch(() => {});
-        await soundRef.current?.unloadAsync().catch(() => {});
-        soundRef.current = null;
-        const { sound } = await Audio.Sound.createAsync({ uri: audioUrl }, { shouldPlay: true });
-        soundRef.current = sound;
-        setPlayingId(messageId);
-        sound.setOnPlaybackStatusUpdate((status: { isLoaded: boolean; didJustFinish?: boolean }) => {
-          if (status.isLoaded && status.didJustFinish) {
-            setPlayingId(null);
-            soundRef.current = null;
-          }
-        });
-      } catch (e) {
-        console.error('[togglePlayback] failed:', e);
-      }
-    }
   }
 
   const isGeneralChannel = (name: string) =>
@@ -746,16 +750,14 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[item.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
-                    <View style={chatStyles.audioBubble}>
-                      <TouchableOpacity onPress={() => togglePlayback(item.id, item.audioUrl!)} activeOpacity={0.7} style={chatStyles.audioPlayBtn}>
-                        {playingId === item.id
-                          ? <Pause size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />
-                          : <Play size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />}
-                      </TouchableOpacity>
-                      <Text style={[chatStyles.audioDurationText, { color: isOwn ? 'rgba(255,255,255,0.85)' : '#004aad' }]}>
-                        {formatRecordingTime(item.audioDuration ?? 0)}
-                      </Text>
-                    </View>
+                    <VoiceMessageBubble
+                      messageId={item.id}
+                      audioUrl={item.audioUrl}
+                      audioDuration={item.audioDuration ?? 0}
+                      isOwn={isOwn}
+                      playingId={playingId}
+                      setPlayingId={setPlayingId}
+                    />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
                       {formatMessageTime(item.timestamp)}
                     </Text>

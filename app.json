@@ -53,7 +53,7 @@
       ],
       "expo-apple-authentication",
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "BAMA needs microphone access to record voice messages."
         }
