@@ -635,23 +635,23 @@ export default function ProjectDetailsScreen() {
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header — small label + large project title, centered; back button kept */}
-      <View style={[styles.header, { flexDirection: rowDirection }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
-          <Text style={[styles.headerBackText, { ...font.regular }]}>{rtl ? '›' : '‹'}</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter} pointerEvents="none">
-          <Text style={[styles.headerLabel, { ...font.semiBold }]}>
-            {t('project_details.header')}
-          </Text>
-          <Text style={[styles.headerProjectTitle, { ...font.bold }]} numberOfLines={2}>
-            {project.title}
-          </Text>
-        </View>
-        <View style={styles.headerRight} />
-      </View>
-
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
+        <View style={[styles.header, { flexDirection: rowDirection, marginHorizontal: -16, marginTop: -16 }]}>
+          <TouchableOpacity onPress={() => router.push('/(client)/(tabs)/home')} style={styles.headerBack} activeOpacity={0.7}>
+            <Text style={[styles.headerBackText, { ...font.regular }]}>{rtl ? '›' : '‹'}</Text>
+          </TouchableOpacity>
+          <View style={styles.headerCenter} pointerEvents="none">
+            <Text style={[styles.headerLabel, { ...font.semiBold }]}>
+              {t('project_details.header')}
+            </Text>
+            <Text style={[styles.headerProjectTitle, { ...font.bold }]} numberOfLines={2}>
+              {project.title}
+            </Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
 
         {/* Removal banner — shown to the professional who is pending removal */}
         {myRemovalRequest && !isCompleted && (
@@ -1557,18 +1557,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   headerBack: { width: 40, alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
-  headerBackText: { fontSize: 36, color: '#ffffff', lineHeight: 44 },
+  headerBackText: { fontSize: 36, color: '#004aad', lineHeight: 44 },
   headerRight: { width: 40 },
   headerCenter: { flex: 1, alignItems: 'center', gap: 4 },
   headerLabel: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.75)',
+    color: '#004aad',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
   headerProjectTitle: {
     fontSize: 22,
-    color: '#ffffff',
+    color: '#004aad',
     fontWeight: '800',
     textAlign: 'center',
     lineHeight: 28,
@@ -1635,7 +1635,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#004aad',
   },
   addButtonText: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
   emptyNote: { fontSize: 14, fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', textAlign: 'center' },
