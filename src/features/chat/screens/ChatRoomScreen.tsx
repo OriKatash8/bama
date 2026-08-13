@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -243,7 +242,6 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // Voice recording
   const [isRecording, setIsRecording] = useState(false);
-  const isRecordingRef = useRef(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -584,6 +582,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   async function startRecording() {
+    Keyboard.dismiss();
     try {
       const { granted } = await requestRecordingPermissionsAsync();
       if (!granted) {
@@ -593,7 +592,6 @@ export function ChatRoomScreen({ chatId }: Props) {
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
-      isRecordingRef.current = true;
       setIsRecording(true);
       setRecordingDuration(0);
       recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
@@ -607,7 +605,6 @@ export function ChatRoomScreen({ chatId }: Props) {
     if (!recorder.isRecording) return;
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     const duration = recordingDuration;
-    isRecordingRef.current = false;
     setIsRecording(false);
     setRecordingDuration(0);
     try {
@@ -628,7 +625,6 @@ export function ChatRoomScreen({ chatId }: Props) {
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     if (recorder.isRecording) recorder.stop().catch(() => {});
     setAudioModeAsync({ allowsRecording: false }).catch(() => {});
-    isRecordingRef.current = false;
     setIsRecording(false);
     setRecordingDuration(0);
   }
@@ -819,14 +815,26 @@ export function ChatRoomScreen({ chatId }: Props) {
         </Animated.View>
       )}
 
-      {/* Recording bar — shown while recording, replaces input row */}
+      {/* Recording bar — same geometry as input row, no position jump */}
       {isRecording && (
-        <View style={[chatStyles.recordingBar, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+        <View style={[
+          styles.inputRow,
+          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 10 : 90 },
+        ]}>
           <Animated.View style={[chatStyles.recordingDot, { opacity: pulseAnim }]} />
-          <AppText weight="semiBold" style={chatStyles.recordingTimer}>{formatRecordingTime(recordingDuration)}</AppText>
-          <AppText weight="regular" style={[chatStyles.recordingHint, { color: colors.textMuted }]}>Hold to record, release to send</AppText>
+          <AppText weight="semiBold" style={chatStyles.recordingTimer}>
+            {formatRecordingTime(recordingDuration)}
+          </AppText>
+          <View style={{ flex: 1 }} />
           <TouchableOpacity onPress={cancelRecording} activeOpacity={0.7} hitSlop={10}>
-            <AppText weight="semiBold" style={chatStyles.recordingCancel}>Cancel</AppText>
+            <AppText weight="semiBold" style={chatStyles.recordingCancel}>{t('chats.record_cancel')}</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sendButton, { backgroundColor: colors.accent }]}
+            onPress={stopAndSendRecording}
+            activeOpacity={0.7}
+          >
+            <AppText weight="semiBold" style={[styles.sendLabel, { color: '#fff' }]}>{t('chats.record_send')}</AppText>
           </TouchableOpacity>
         </View>
       )}
@@ -864,14 +872,13 @@ export function ChatRoomScreen({ chatId }: Props) {
                   <Text style={[styles.sendLabel, { ...font.semiBold }]}>Send</Text>
                 </TouchableOpacity>
               ) : (
-                <Pressable
+                <TouchableOpacity
                   style={[styles.sendButton, { backgroundColor: colors.accent }]}
-                  onLongPress={startRecording}
-                  onPressOut={() => { if (isRecordingRef.current) stopAndSendRecording(); }}
-                  delayLongPress={400}
+                  onPress={startRecording}
+                  activeOpacity={0.7}
                 >
                   <Mic size={20} color="#fff" strokeWidth={1.5} />
-                </Pressable>
+                </TouchableOpacity>
               )}
             </>
           )}

@@ -114,7 +114,9 @@
     "add_media": "Media",
     "take_photo": "Camera",
     "add_task": "Add Task",
-    "add_meeting": "Add Meeting"
+    "add_meeting": "Add Meeting",
+    "record_cancel": "Cancel",
+    "record_send": "Send"
   },
   "project_details": {
     "header": "Project Details",

@@ -114,7 +114,9 @@
     "add_media": "מדיה",
     "take_photo": "מצלמה",
     "add_task": "הוסף משימה",
-    "add_meeting": "הוסף פגישה"
+    "add_meeting": "הוסף פגישה",
+    "record_cancel": "ביטול",
+    "record_send": "שלח"
   },
   "project_details": {
     "header": "פרטי פרויקט",
