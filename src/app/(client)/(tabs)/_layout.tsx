@@ -124,7 +124,7 @@ export default function ClientTabsLayout() {
               ),
             }}
           />
-          <Tabs.Screen name="chat/project-details" options={{ href: null }} />
+          <Tabs.Screen name="chats/project-details" options={{ href: null }} />
           <Tabs.Screen name="chats/[chatId]" options={{ href: null }} />
           <Tabs.Screen name="switch" options={{ href: null }} />
         </Tabs>
