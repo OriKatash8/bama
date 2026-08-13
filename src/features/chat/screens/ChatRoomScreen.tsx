@@ -648,7 +648,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           {chatType === 'group' && chatProjectId ? (
             <TouchableOpacity
               style={styles.headerNameTouchable}
-              onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}`)}
+              onPress={() => router.push(`/(client)/(tabs)/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
               activeOpacity={0.8}
             >
               <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>

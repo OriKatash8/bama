@@ -91,7 +91,7 @@ const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
 };
 
 export default function ProjectDetailsScreen() {
-  const { projectId } = useLocalSearchParams<{ projectId: string }>();
+  const { projectId, chatId: chatIdParam } = useLocalSearchParams<{ projectId: string; chatId: string }>();
   const router = useRouter();
   const colors = useTheme();
   const font = useAppFont();
@@ -639,7 +639,7 @@ export default function ProjectDetailsScreen() {
 
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View style={[styles.header, { flexDirection: rowDirection, marginHorizontal: -16, marginTop: -16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => chatIdParam ? router.push(`/(client)/(tabs)/chats/${chatIdParam}` as never) : router.back()} style={styles.headerBack} activeOpacity={0.7}>
             <Text style={[styles.headerBackText, { ...font.regular }]}>{rtl ? '›' : '‹'}</Text>
           </TouchableOpacity>
           <View style={styles.headerCenter} pointerEvents="none">
