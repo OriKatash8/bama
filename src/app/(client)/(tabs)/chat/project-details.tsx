@@ -1637,7 +1637,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#004aad',
   },
-  addButtonText: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  addButtonText: { fontSize: 14, fontWeight: '600', color: '#004aad' },
   emptyNote: { fontSize: 14, fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', textAlign: 'center' },
 
   // ── Member cards ──────────────────────────────────────────────────────────────
