@@ -215,17 +215,20 @@ export default function ProjectsPage() {
             </Text>
             {requestsLoading ? (
               <ActivityIndicator color={colors.accent} />
-            ) : requests.length === 0 ? (
-              <View style={styles.emptyWrap}>
-                <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-                  {t('chats_page.no_projects')}
-                </Text>
-              </View>
-            ) : (
-              requests.map((item) => (
-                <ProjectRequestCard key={item.id} request={item} />
-              ))
-            )}
+            ) : (() => {
+              const active = requests.filter((r) => r.status !== 'completed');
+              return active.length === 0 ? (
+                <View style={styles.emptyWrap}>
+                  <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('chats_page.no_projects')}
+                  </Text>
+                </View>
+              ) : (
+                active.map((item) => (
+                  <ProjectRequestCard key={item.id} request={item} />
+                ))
+              );
+            })()}
           </View>
         </View>
       </ScrollView>

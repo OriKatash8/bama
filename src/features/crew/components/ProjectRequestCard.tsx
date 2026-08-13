@@ -24,19 +24,6 @@ function makeT(translations: Translations) {
 
 type Props = { request: ProjectRequest };
 
-const STATUS_CONFIG: Record<ProjectRequest['status'], { bg: string; text: string }> = {
-  open:        { bg: '#dcfce7', text: '#166534' },
-  in_progress: { bg: '#dbeafe', text: '#1e40af' },
-  completed:   { bg: '#f3f4f6', text: '#6b7280' },
-  cancelled:   { bg: '#fee2e2', text: '#dc2626' },
-};
-
-const STATUS_LABEL_KEY: Record<ProjectRequest['status'], string> = {
-  open: 'chats.status_open',
-  in_progress: 'chats.status_in_progress',
-  completed: 'chats.status_completed',
-  cancelled: 'chats.status_cancelled',
-};
 
 function formatDate(iso?: string): string {
   if (!iso) return '';
@@ -104,7 +91,7 @@ export function ProjectRequestCard({ request }: Props) {
 
   return (
     <View style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-      {/* Header: title + inline status badge */}
+      {/* Header: title */}
       <View style={[styles.headerRow, { flexDirection: rowDir }]}>
         <Text
           style={[styles.title, { ...font.forText(request.title, 'bold'), color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}
@@ -112,11 +99,6 @@ export function ProjectRequestCard({ request }: Props) {
         >
           {request.title}
         </Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[request.status].bg }]}>
-          <Text style={[styles.statusBadgeText, { ...font.semiBold, color: STATUS_CONFIG[request.status].text }]}>
-            {t(STATUS_LABEL_KEY[request.status])}
-          </Text>
-        </View>
       </View>
 
       {/* Details: deadline + location, hidden when empty */}
@@ -240,14 +222,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: { fontSize: 18, lineHeight: 24, flex: 1 },
-  statusBadge: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    alignSelf: 'flex-start',
-    flexShrink: 0,
-  },
-  statusBadgeText: { fontSize: 11 },
   detailsRow: {
     flexWrap: 'wrap',
     gap: 12,
