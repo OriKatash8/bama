@@ -832,35 +832,6 @@ export default function ProjectDetailsScreen() {
             const isAssigned = mission.assignedTo.includes(currentUserId);
             return (
               <View key={mission.id} style={[styles.missionRow, { flexDirection: rowDirection }]}>
-                <View style={styles.missionAvatarWrap}>
-                  {firstMemberInfo?.photoURL ? (
-                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
-                  ) : (
-                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
-                      <AppText weight="bold" style={styles.missionAvatarInitial}>
-                        {firstAssigneeName.charAt(0).toUpperCase()}
-                      </AppText>
-                    </View>
-                  )}
-                  {extraCount > 0 && (
-                    <View style={styles.missionAvatarExtra}>
-                      <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
-                    </View>
-                  )}
-                </View>
-                <View style={[styles.missionTitleCard, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-                  <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-                    {mission.title}
-                  </AppText>
-                  {mission.dueDate && (
-                    <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                      <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
-                      <AppText weight="regular" style={styles.missionDue}>
-                        {formatDueDate(mission.dueDate, t('project_details.due'))}
-                      </AppText>
-                    </View>
-                  )}
-                </View>
                 {mission.status === 'done' ? (
                   <TouchableOpacity
                     style={styles.missionDonePill}
@@ -880,6 +851,35 @@ export default function ProjectDetailsScreen() {
                     </AppText>
                   </TouchableOpacity>
                 )}
+                <View style={[styles.missionTitleCard, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+                  <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                    {mission.title}
+                  </AppText>
+                  {mission.dueDate && (
+                    <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                      <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.missionDue}>
+                        {formatDueDate(mission.dueDate, t('project_details.due'))}
+                      </AppText>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.missionAvatarWrap}>
+                  {firstMemberInfo?.photoURL ? (
+                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
+                  ) : (
+                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
+                      <AppText weight="bold" style={styles.missionAvatarInitial}>
+                        {firstAssigneeName.charAt(0).toUpperCase()}
+                      </AppText>
+                    </View>
+                  )}
+                  {extraCount > 0 && (
+                    <View style={styles.missionAvatarExtra}>
+                      <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
+                    </View>
+                  )}
+                </View>
               </View>
             );
           })
