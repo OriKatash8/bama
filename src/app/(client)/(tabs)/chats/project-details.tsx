@@ -828,6 +828,7 @@ export default function ProjectDetailsScreen() {
             const firstAssigneeName = firstAssigneeId ? (allMemberNames[firstAssigneeId] ?? firstAssigneeId) : '';
             const extraCount = mission.assignedTo.length - 1;
             const firstMemberInfo = firstAssigneeId ? memberUsers[firstAssigneeId] : undefined;
+            const isAssigned = mission.assignedTo.includes(currentUserId);
             return (
               <View key={mission.id} style={[styles.missionRow, { flexDirection: rowDirection }]}>
                 <View style={styles.missionAvatarWrap}>
@@ -860,14 +861,18 @@ export default function ProjectDetailsScreen() {
                   )}
                 </View>
                 {mission.status === 'done' ? (
-                  <TouchableOpacity style={styles.missionDonePill} onPress={() => handleCycleMissionStatus(mission)} activeOpacity={0.8}>
+                  <TouchableOpacity
+                    style={styles.missionDonePill}
+                    onPress={isAssigned ? () => handleCycleMissionStatus(mission) : undefined}
+                    activeOpacity={isAssigned ? 0.8 : 1}
+                  >
                     <AppText weight="bold" style={styles.missionDonePillText}>✓ {missionLabel(mission.status)}</AppText>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    style={[styles.missionActivePill, { borderColor: cfg.color }]}
-                    onPress={() => handleCycleMissionStatus(mission)}
-                    activeOpacity={0.8}
+                    style={[styles.missionActivePill, { borderColor: cfg.color, opacity: isAssigned ? 1 : 0.5 }]}
+                    onPress={isAssigned ? () => handleCycleMissionStatus(mission) : undefined}
+                    activeOpacity={isAssigned ? 0.8 : 1}
                   >
                     <AppText weight="bold" style={[styles.missionActivePillText, { color: cfg.color }]}>
                       {missionLabel(mission.status)}
