@@ -306,14 +306,13 @@ const styles = StyleSheet.create({
   // Section headers
   sectionHeader: {
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   sectionTitle: {
-    flex: 1,
     fontSize: 16,
     color: BLUE,
-    textAlign: 'center',
   },
   sectionCount: {
     fontSize: 12,
