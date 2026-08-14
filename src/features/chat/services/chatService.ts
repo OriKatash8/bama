@@ -84,21 +84,6 @@ export async function getOrCreateDM(
   return newChat.id;
 }
 
-export async function createPurchaseChat(
-  buyerId: string,
-  sellerId: string,
-  listingId: string,
-): Promise<string> {
-  const ref = await addDoc(collection(db, 'chats'), {
-    type: 'purchase' as const,
-    members: [buyerId, sellerId],
-    purchaseListingId: listingId,
-    lastMessage: null,
-    createdAt: serverTimestamp(),
-  });
-  return ref.id;
-}
-
 export async function createProjectGroup(
   clientId: string,
   professionalId: string,

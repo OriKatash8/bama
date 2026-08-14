@@ -9,7 +9,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
-import { createPurchaseChat, sendMessage } from '@features/chat/services/chatService';
+import { getOrCreateDM, sendMessage } from '@features/chat/services/chatService';
 import type { MarketplaceListing } from '../types';
 
 export async function confirmPurchase(
@@ -20,7 +20,7 @@ export async function confirmPurchase(
   autoMessage: string,
 ): Promise<string> {
   const platformFee = Math.round(listing.price * 0.03);
-  const chatId = await createPurchaseChat(buyerId, sellerId, listingId);
+  const chatId = await getOrCreateDM(buyerId, sellerId);
 
   const batch = writeBatch(db);
   batch.update(doc(db, 'marketplace_listings', listingId), {
@@ -43,11 +43,8 @@ export async function confirmReceived(
   systemMessage: string,
 ): Promise<void> {
   const batch = writeBatch(db);
-  batch.update(doc(db, 'marketplace_listings', listingId), { status: 'sold' });
-  batch.update(doc(db, 'chats', chatId), {
-    archived: true,
-    archiveReason: 'completed',
-    archivedAt: serverTimestamp(),
+  batch.update(doc(db, 'marketplace_listings', listingId), {
+    status: 'sold',
   });
   await batch.commit();
 
@@ -72,11 +69,6 @@ export async function cancelPurchase(
     purchaseChatId: deleteField(),
     sellerConfirmed: deleteField(),
     platformFee: deleteField(),
-  });
-  batch.update(doc(db, 'chats', chatId), {
-    archived: true,
-    archiveReason: 'cancelled',
-    archivedAt: serverTimestamp(),
   });
   await batch.commit();
 
