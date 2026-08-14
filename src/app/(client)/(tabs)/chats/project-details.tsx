@@ -874,6 +874,20 @@ export default function ProjectDetailsScreen() {
                         </AppText>
                       </View>
                     )}
+                    {mission.createdAt && (() => {
+                      const d = new Date(mission.createdAt.seconds * 1000);
+                      const dd = String(d.getDate()).padStart(2, '0');
+                      const mm = String(d.getMonth() + 1).padStart(2, '0');
+                      const yy = String(d.getFullYear()).slice(2);
+                      return (
+                        <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                          <Calendar size={12} color="#8890b0" strokeWidth={1.5} />
+                          <AppText weight="regular" style={styles.missionDue}>
+                            {t('project_details.mission_uploaded')}{dd}/{mm}/{yy}
+                          </AppText>
+                        </View>
+                      );
+                    })()}
                   </View>
 
                   {/* Status pill — trailing (left in RTL) */}

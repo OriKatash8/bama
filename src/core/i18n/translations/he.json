@@ -142,6 +142,7 @@
     "mission_in_progress": "בתהליך",
     "mission_done": "הושלם",
     "due": "תאריך יעד: ",
+    "mission_uploaded": "הועלה: ",
     "project_not_found": "הפרויקט לא נמצא",
     "error_payment": "לא ניתן לטעון פרטי תשלום. נסה שוב.",
     "success_complete": "הפרויקט סומן כהושלם!",

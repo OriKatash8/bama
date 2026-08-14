@@ -142,6 +142,7 @@
     "mission_in_progress": "In Progress",
     "mission_done": "Done",
     "due": "Due: ",
+    "mission_uploaded": "Uploaded: ",
     "project_not_found": "Project not found",
     "error_payment": "Could not load payment details. Please try again.",
     "success_complete": "Project marked as complete!",
