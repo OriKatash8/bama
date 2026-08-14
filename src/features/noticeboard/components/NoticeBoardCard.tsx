@@ -129,17 +129,18 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
         )}
 
-        {/* Header: [✕ btn] [title+location col flex:1] [avatar] */}
+        {/* Header: [avatar] [title+location col flex:1] [✕ btn] */}
         <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-          {/* ✕ dismiss — leading corner in RTL */}
-          <TouchableOpacity
-            onPress={(e) => { e.stopPropagation?.(); setConfirmingDismiss(true); }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            activeOpacity={0.7}
-            style={styles.dismissInline}
-          >
-            <X size={15} color={colors.textMuted} />
-          </TouchableOpacity>
+          {/* Avatar — leading corner (right in RTL) */}
+          {poster?.photoURL ? (
+            <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <AppText weight="bold" style={styles.avatarInitial}>
+                {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
+              </AppText>
+            </View>
+          )}
 
           {/* Title + location */}
           <View style={[styles.headerContent, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
@@ -160,16 +161,15 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             </View>
           </View>
 
-          {/* Avatar — trailing corner */}
-          {poster?.photoURL ? (
-            <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <AppText weight="bold" style={styles.avatarInitial}>
-                {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
-              </AppText>
-            </View>
-          )}
+          {/* ✕ dismiss — trailing corner (left in RTL) */}
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation?.(); setConfirmingDismiss(true); }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
+            style={styles.dismissInline}
+          >
+            <X size={15} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Description — tinted box */}
