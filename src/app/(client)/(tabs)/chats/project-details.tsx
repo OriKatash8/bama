@@ -561,7 +561,7 @@ export default function ProjectDetailsScreen() {
       (acc, slot) => {
         const role = slot.category;
         const entry = acc[slot.professionalId];
-        if (entry) entry.roles.push(role);
+        if (entry) { if (!entry.roles.includes(role)) entry.roles.push(role); }
         else acc[slot.professionalId] = { professionalId: slot.professionalId, roles: [role] };
         return acc;
       },
@@ -716,24 +716,31 @@ export default function ProjectDetailsScreen() {
         </View>
 
         {/* SECTION 2 — Team Members */}
-        <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
-          <Text style={[styles.sectionTitle, { ...font.bold }]}>
-            {t('project_details.team_members')}
-          </Text>
-          {isClient && !isCompleted && (
-            <TouchableOpacity onPress={() => setShowRolePicker(true)} activeOpacity={0.8}>
-              <Text style={[styles.addButtonText, { ...font.semiBold }]}>
-                {t('project_details.add_professional')}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {(() => {
+          const uniqueProfCount = new Set(filledSlots.map(s => s.professionalId)).size;
+          const memberCount = (clientUser ? 1 : 0) + uniqueProfCount;
+          return (
+            <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+              <View style={[styles.sectionTitleGroup, { flexDirection: rowDirection }]}>
+                <AppText weight="bold" style={styles.sectionTitle}>{t('project_details.team_members')}</AppText>
+                {memberCount > 0 && (
+                  <AppText weight="regular" style={styles.sectionCount}>{memberCount}</AppText>
+                )}
+              </View>
+              {isClient && !isCompleted && (
+                <TouchableOpacity style={styles.addPill} onPress={() => setShowRolePicker(true)} activeOpacity={0.8}>
+                  <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add_professional')}</AppText>
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        })()}
 
         {clientUser && (
           <MemberRow
             displayName={clientUser.displayName}
             photoURL={clientUser.photoURL}
-            role={t('project_details.project_client')}
+            roles={[t('project_details.project_client')]}
             badge={t('project_details.client')}
             rtl={rtl}
           />
@@ -745,7 +752,7 @@ export default function ProjectDetailsScreen() {
               const role = slot.category;
               const entry = acc[slot.professionalId];
               if (entry) {
-                entry.roles.push(role);
+                if (!entry.roles.includes(role)) entry.roles.push(role);
               } else {
                 acc[slot.professionalId] = { professionalId: slot.professionalId, roles: [role] };
               }
@@ -762,7 +769,7 @@ export default function ProjectDetailsScreen() {
               key={professionalId}
               displayName={member?.displayName ?? professionalId}
               photoURL={member?.photoURL ?? null}
-              role={roles.join(' | ')}
+              roles={roles}
               rtl={rtl}
               isPendingRemoval={isClient && isPendingRemoval}
               isRemoving={removingId === professionalId}
@@ -781,9 +788,9 @@ export default function ProjectDetailsScreen() {
         })}
 
         {filledSlots.length === 0 && !clientUser && (
-          <Text style={[styles.emptyNote, { ...font.regular }]}>
+          <AppText weight="regular" style={styles.emptyNote}>
             {t('project_details.no_team_members')}
-          </Text>
+          </AppText>
         )}
 
         {/* SECTION 3 — Missions */}
@@ -1459,7 +1466,7 @@ export default function ProjectDetailsScreen() {
 function MemberRow({
   displayName,
   photoURL,
-  role,
+  roles,
   badge,
   rtl,
   isPendingRemoval = false,
@@ -1470,7 +1477,7 @@ function MemberRow({
 }: {
   displayName: string;
   photoURL: string | null;
-  role: string;
+  roles: string[];
   badge?: string;
   rtl: boolean;
   isPendingRemoval?: boolean;
@@ -1490,32 +1497,38 @@ function MemberRow({
         <Image source={{ uri: photoURL }} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
-          <Text style={[styles.avatarInitial, { ...font.bold }]}>{displayName.charAt(0).toUpperCase()}</Text>
+          <AppText weight="bold" style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</AppText>
         </View>
       )}
       <View style={styles.memberInfo}>
         {/* Line 1: name + client badge */}
         <View style={[styles.memberNameRow, { flexDirection: rowDir }]}>
-          <Text style={[styles.memberName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{displayName}</Text>
+          <AppText weight="semiBold" style={[styles.memberName, { textAlign: rtl ? 'right' : 'left' }]}>{displayName}</AppText>
           {badge !== undefined && (
             <View style={styles.clientBadge}>
-              <Text style={[styles.clientBadgeText, { ...font.bold }]}>{badge}</Text>
+              <AppText weight="bold" style={styles.clientBadgeText}>{badge}</AppText>
             </View>
           )}
         </View>
-        {/* Line 2: roles */}
-        <Text style={[styles.memberRole, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{role}</Text>
-        {/* Line 3: price + Update + Remove (only for professionals, not client row) */}
+        {/* Line 2: role pills */}
+        <View style={[styles.rolePillsRow, { flexDirection: rowDir }]}>
+          {roles.map((r) => (
+            <View key={r} style={styles.rolePill}>
+              <AppText weight="regular" style={styles.rolePillText}>{r}</AppText>
+            </View>
+          ))}
+        </View>
+        {/* Line 3: price + Update + Remove */}
         {showBottomRow && (
           <View style={[styles.memberActionsRow, { flexDirection: rowDir }]}>
             {payment !== undefined && (
               <View style={[styles.memberPriceGroup, { flexDirection: rowDir }]}>
-                <Text style={[styles.memberPrice, { ...font.semiBold }]}>
+                <AppText weight="semiBold" style={styles.memberPrice}>
                   ₪{payment.price.toLocaleString()}
-                </Text>
+                </AppText>
                 {payment.hasBundle && (
                   <View style={styles.bundlePayBadge}>
-                    <Text style={[styles.bundlePayBadgeText, { ...font.bold }]}>{t('offers.bundle_badge')}</Text>
+                    <AppText weight="bold" style={styles.bundlePayBadgeText}>{t('offers.bundle_badge')}</AppText>
                   </View>
                 )}
                 {payment.individualOffer && onUpdate && (
@@ -1524,7 +1537,7 @@ function MemberRow({
                     onPress={() => onUpdate(payment.individualOffer!)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.requestUpdateText, { ...font.semiBold }]}>{t('project_details.update')}</Text>
+                    <AppText weight="semiBold" style={styles.requestUpdateText}>{t('project_details.update')}</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1532,13 +1545,13 @@ function MemberRow({
             <View style={{ flex: 1 }} />
             {isPendingRemoval ? (
               <View style={styles.pendingRemovalChip}>
-                <Text style={[styles.pendingRemovalText, { ...font.semiBold }]}>{t('project_details.pending_removal')}</Text>
+                <AppText weight="semiBold" style={styles.pendingRemovalText}>{t('project_details.pending_removal')}</AppText>
               </View>
             ) : onRemove ? (
               <TouchableOpacity style={styles.removeBtn} onPress={onRemove} disabled={isRemoving} activeOpacity={0.7}>
                 {isRemoving
                   ? <ActivityIndicator size="small" color="#ef4444" />
-                  : <Text style={[styles.removeBtnText, { ...font.semiBold }]}>{t('project_details.remove_member')}</Text>}
+                  : <AppText weight="semiBold" style={styles.removeBtnText}>{t('project_details.remove_member')}</AppText>}
               </TouchableOpacity>
             ) : null}
           </View>
@@ -1650,12 +1663,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#004aad',
+  sectionTitleGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e4fa3' },
+  sectionCount: { fontSize: 13, color: '#8890b0' },
+  addPill: {
+    backgroundColor: 'rgba(30,79,163,0.08)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
-  addButtonText: { fontSize: 14, fontWeight: '600', color: '#004aad' },
+  addPillText: { fontSize: 13, color: '#1e4fa3' },
+  addButtonText: { fontSize: 14, fontWeight: '600', color: '#1e4fa3' },
   emptyNote: { fontSize: 14, fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', textAlign: 'center' },
 
   // ── Member cards ──────────────────────────────────────────────────────────────
@@ -1664,31 +1682,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
   },
   avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
+  avatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  memberInfo: { flex: 1, gap: 2 },
+  memberInfo: { flex: 1, gap: 4 },
   memberNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  memberName: { fontSize: 15, fontWeight: '600' },
-  memberRole: { fontSize: 13, color: '#6b7280' },
+  memberName: { fontSize: 15, fontWeight: '600', color: '#1e4fa3' },
+  memberRole: { fontSize: 13, color: '#8890b0' },
+  rolePillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  rolePill: {
+    backgroundColor: 'rgba(30,79,163,0.07)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  rolePillText: { fontSize: 12, color: '#3a4266' },
   memberActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 6,
+    marginTop: 4,
     flexWrap: 'wrap',
   },
   memberPriceGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   memberPrice: { fontSize: 14, fontWeight: '600', color: '#cb6ce6' },
   clientBadge: {
-    backgroundColor: '#004aad',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: '#1e4fa3',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   clientBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
