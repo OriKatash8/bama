@@ -1575,30 +1575,30 @@ function MemberRow({
             </>
           )}
         </View>
-        {/* Line 2: role pills */}
-        <View style={[styles.rolePillsRow, { flexDirection: rowDir }]}>
+        {/* Line 2: role pills + remove on left */}
+        <View style={[styles.rolePillsRow, { flexDirection: rowDir, alignItems: 'center' }]}>
           {roles.map((r) => (
             <View key={r} style={styles.rolePill}>
               <AppText weight="regular" style={styles.rolePillText}>{r}</AppText>
             </View>
           ))}
+          {showRemoveRow && (
+            <>
+              <View style={{ flex: 1 }} />
+              {isPendingRemoval ? (
+                <View style={styles.pendingRemovalChip}>
+                  <AppText weight="semiBold" style={styles.pendingRemovalText}>{t('project_details.pending_removal')}</AppText>
+                </View>
+              ) : onRemove ? (
+                <TouchableOpacity style={styles.removeBtn} onPress={onRemove} disabled={isRemoving} activeOpacity={0.7}>
+                  {isRemoving
+                    ? <ActivityIndicator size="small" color="#ef4444" />
+                    : <AppText weight="semiBold" style={styles.removeBtnText}>{t('project_details.remove_member')}</AppText>}
+                </TouchableOpacity>
+              ) : null}
+            </>
+          )}
         </View>
-        {/* Line 3: remove */}
-        {showRemoveRow && (
-          <View style={[styles.memberActionsRow, { flexDirection: rowDir, justifyContent: rtl ? 'flex-end' : 'flex-start' }]}>
-            {isPendingRemoval ? (
-              <View style={styles.pendingRemovalChip}>
-                <AppText weight="semiBold" style={styles.pendingRemovalText}>{t('project_details.pending_removal')}</AppText>
-              </View>
-            ) : onRemove ? (
-              <TouchableOpacity style={styles.removeBtn} onPress={onRemove} disabled={isRemoving} activeOpacity={0.7}>
-                {isRemoving
-                  ? <ActivityIndicator size="small" color="#ef4444" />
-                  : <AppText weight="semiBold" style={styles.removeBtnText}>{t('project_details.remove_member')}</AppText>}
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        )}
       </View>
     </View>
   );
