@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type ChatType = 'dm' | 'group' | 'community';
+export type ChatType = 'dm' | 'group' | 'community' | 'purchase';
 
 export interface LastMessage {
   text: string;
@@ -35,4 +35,7 @@ export interface Chat {
   createdAt?: Timestamp;
   unreadCount?: Record<string, number>;
   category?: string;
+  purchaseListingId?: string;
+  archived?: boolean;
+  archiveReason?: 'completed' | 'cancelled';
 }

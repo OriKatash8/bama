@@ -116,7 +116,12 @@
     "add_task": "הוסף משימה",
     "add_meeting": "הוסף פגישה",
     "record_cancel": "ביטול",
-    "record_send": "שלח"
+    "record_send": "שלח",
+    "purchase_completed": "העסקה הושלמה · הצ'אט נסגר לצפייה בלבד",
+    "purchase_cancelled": "העסקה בוטלה · הצ'אט נסגר",
+    "purchase_chat": "רכישה",
+    "badge_completed": "הושלם",
+    "badge_cancelled": "בוטל"
   },
   "project_details": {
     "header": "פרטי פרויקט",

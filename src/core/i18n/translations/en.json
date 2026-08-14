@@ -116,7 +116,12 @@
     "add_task": "Add Task",
     "add_meeting": "Add Meeting",
     "record_cancel": "Cancel",
-    "record_send": "Send"
+    "record_send": "Send",
+    "purchase_completed": "Transaction completed · Chat is read-only",
+    "purchase_cancelled": "Purchase cancelled · Chat closed",
+    "purchase_chat": "Purchase",
+    "badge_completed": "Completed",
+    "badge_cancelled": "Cancelled"
   },
   "project_details": {
     "header": "Project Details",

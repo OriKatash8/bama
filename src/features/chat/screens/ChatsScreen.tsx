@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-nati
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
-import { Users } from 'lucide-react-native';
+import { Users, Package } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
@@ -143,6 +143,13 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
   const avatarMargin = { marginRight: rtl ? 0 : 12, marginLeft: rtl ? 12 : 0 };
 
   function renderAvatar(item: Chat) {
+    if (item.type === 'purchase') {
+      return (
+        <View style={[styles.avatar, { backgroundColor: item.archived ? '#e5e7eb' : '#fff7ed' }]}>
+          <Package size={24} color={item.archived ? '#9ca3af' : '#f59e0b'} strokeWidth={1.8} />
+        </View>
+      );
+    }
     if (item.type === 'community') {
       return (
         <View style={[styles.avatar, { backgroundColor: '#0d9488' }]}>
@@ -181,12 +188,22 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     );
   }
 
-  const cards = chats.map((item) => {
+  const sortedChats = [...chats].sort((a, b) => {
+    const aDown = a.type === 'purchase' && !!a.archived;
+    const bDown = b.type === 'purchase' && !!b.archived;
+    if (aDown && !bDown) return 1;
+    if (!aDown && bDown) return -1;
+    return 0;
+  });
+
+  const cards = sortedChats.map((item) => {
     const currentUserId = user?.id ?? '';
     const chatName = item.type === 'community'
       ? (item.name ?? 'Community')
       : item.type === 'group'
       ? (item.name ?? t('chats.group_chat'))
+      : item.type === 'purchase'
+      ? (item.name ?? t('chats.purchase_chat'))
       : (dmInfo[item.id]?.name ?? t('chats.loading'));
     const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
     const timestamp = formatTimestamp(item.lastMessage?.timestamp);
@@ -216,6 +233,13 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
             {status != null && (
               <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
+              </View>
+            )}
+            {item.type === 'purchase' && item.archived && (
+              <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? '#fee2e2' : '#f0fdf4' }]}>
+                <AppText weight="bold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? '#dc2626' : '#16a34a' }]}>
+                  {item.archiveReason === 'cancelled' ? t('chats.badge_cancelled') : t('chats.badge_completed')}
+                </AppText>
               </View>
             )}
           </View>
