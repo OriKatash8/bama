@@ -37,6 +37,7 @@ import {
   listenToMissions,
   addMission,
   updateMissionStatus,
+  deleteMission,
 } from '@features/chat/services/missionService';
 import {
   listenToMeetings,
@@ -45,7 +46,7 @@ import {
 import { MiniCalendar, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
-import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, MapPin } from 'lucide-react-native';
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, MapPin, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
 type Translations = typeof en;
@@ -549,6 +550,16 @@ export default function ProjectDetailsScreen() {
     }
   }
 
+  async function handleDeleteMission(mission: Mission) {
+    if (!projectId) return;
+    try {
+      await deleteMission(projectId, mission.id);
+      setMissionIndex(i => Math.max(0, i - 1));
+    } catch {
+      Alert.alert('Error', t('project_details.error_update_mission'));
+    }
+  }
+
   const missionLabel = (status: MissionStatus): string => {
     const map: Record<MissionStatus, string> = {
       todo:        t('project_details.mission_todo'),
@@ -898,20 +909,31 @@ export default function ProjectDetailsScreen() {
                     </View>
                   </View>
 
-                  {/* Status pill — trailing (left in RTL) */}
-                  <TouchableOpacity
-                    style={[
-                      styles.carouselStatusPill,
-                      mission.status === 'done' ? styles.carouselStatusDone : { borderColor: cfg.color, borderWidth: 1.5 },
-                      !isAssigned && { opacity: 0.5 },
-                    ]}
-                    onPress={isAssigned ? () => handleCycleMissionStatus(mission) : undefined}
-                    activeOpacity={isAssigned ? 0.8 : 1}
-                  >
-                    <AppText weight="bold" style={[styles.carouselStatusText, { color: mission.status === 'done' ? '#1c9d63' : cfg.color }]}>
-                      {mission.status === 'done' ? `✓ ${missionLabel(mission.status)}` : missionLabel(mission.status)}
-                    </AppText>
-                  </TouchableOpacity>
+                  {/* Status pill + optional trash — trailing (left in RTL) */}
+                  <View style={styles.carouselStatusCol}>
+                    <TouchableOpacity
+                      style={[
+                        styles.carouselStatusPill,
+                        mission.status === 'done' ? styles.carouselStatusDone : { borderColor: cfg.color, borderWidth: 1.5 },
+                        !isAssigned && { opacity: 0.5 },
+                      ]}
+                      onPress={isAssigned ? () => handleCycleMissionStatus(mission) : undefined}
+                      activeOpacity={isAssigned ? 0.8 : 1}
+                    >
+                      <AppText weight="bold" style={[styles.carouselStatusText, { color: mission.status === 'done' ? '#1c9d63' : cfg.color }]}>
+                        {mission.status === 'done' ? `✓ ${missionLabel(mission.status)}` : missionLabel(mission.status)}
+                      </AppText>
+                    </TouchableOpacity>
+                    {mission.status === 'done' && (
+                      <TouchableOpacity
+                        style={styles.missionTrashBtn}
+                        onPress={() => handleDeleteMission(mission)}
+                        activeOpacity={0.7}
+                      >
+                        <Trash2 size={15} color="#e04b4b" strokeWidth={1.8} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               );
             })()}
@@ -1979,6 +2001,19 @@ const styles = StyleSheet.create({
   carouselStatusText: {
     fontSize: 11,
     textAlign: 'center',
+  },
+  carouselStatusCol: {
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  missionTrashBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(224,75,75,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   missionDatesRow: {
     alignSelf: 'stretch',

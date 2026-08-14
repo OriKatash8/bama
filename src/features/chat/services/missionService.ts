@@ -6,6 +6,7 @@ import {
   addDoc,
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   type Unsubscribe,
   type QueryDocumentSnapshot,
@@ -70,4 +71,8 @@ export async function updateMissionStatus(
   status: MissionStatus,
 ): Promise<void> {
   await updateDoc(doc(db, 'projects', projectId, 'missions', missionId), { status });
+}
+
+export async function deleteMission(projectId: string, missionId: string): Promise<void> {
+  await deleteDoc(doc(db, 'projects', projectId, 'missions', missionId));
 }
