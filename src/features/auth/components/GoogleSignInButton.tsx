@@ -19,22 +19,25 @@ function makeT(translations: Translations) {
   };
 }
 
-export function GoogleSignInButton() {
+type Props = { style?: import('react-native').ViewStyle; showDivider?: boolean };
+
+export function GoogleSignInButton({ style, showDivider = true }: Props) {
   const { signInWithGoogle, isLoading } = useGoogleSignIn();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
   return (
-    <View>
-      {/* "or" divider */}
-      <View style={[styles.divider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <View style={styles.dividerLine} />
-        <AppText weight="regular" style={styles.dividerText}>
-          {t('auth.or')}
-        </AppText>
-        <View style={styles.dividerLine} />
-      </View>
+    <View style={style}>
+      {showDivider && (
+        <View style={[styles.divider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={styles.dividerLine} />
+          <AppText weight="regular" style={styles.dividerText}>
+            {t('auth.or')}
+          </AppText>
+          <View style={styles.dividerLine} />
+        </View>
+      )}
 
       {/* Google button */}
       <TouchableOpacity
@@ -84,6 +87,6 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   btnRow: { alignSelf: 'stretch', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
-  googleLogo: { width: 44, height: 44 },
+  googleLogo: { width: 22, height: 22 },
   btnLabel: { flex: 1, fontSize: 13, color: '#333' },
 });

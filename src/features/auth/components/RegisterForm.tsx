@@ -148,8 +148,18 @@ export function RegisterForm() {
           </TouchableOpacity>
         </View>
 
-        <GoogleSignInButton />
-        <AppleSignInButton />
+        {/* "or" divider */}
+        <View style={[styles.orDivider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={styles.dividerLine} />
+          <AppText weight="regular" style={styles.dividerText}>{t('auth.or')}</AppText>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Social buttons row */}
+        <View style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />
+          <AppleSignInButton style={{ flex: 1 }} />
+        </View>
       </View>
     </View>
   );
@@ -176,4 +186,8 @@ const styles = StyleSheet.create({
   link: { fontSize: 14, fontWeight: '500', textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   footerText: { fontSize: 14 },
+  orDivider: { alignItems: 'center', gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.12)' },
+  dividerText: { fontSize: 13, color: 'rgba(0,0,0,0.4)' },
+  socialRow: { gap: 8 },
 });

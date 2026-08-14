@@ -20,7 +20,7 @@ function makeT(translations: Translations) {
 }
 
 // Inner component holds all hooks — rendered only on iOS, so no conditional hook calls.
-function AppleButton() {
+function AppleButton({ style }: { style?: import('react-native').ViewStyle }) {
   const { signInWithApple, isLoading } = useAppleSignIn();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -28,7 +28,7 @@ function AppleButton() {
 
   return (
     <TouchableOpacity
-      style={[styles.button, isLoading && styles.buttonDisabled]}
+      style={[styles.button, isLoading && styles.buttonDisabled, style]}
       onPress={signInWithApple}
       disabled={isLoading}
       activeOpacity={0.8}
@@ -49,9 +49,11 @@ function AppleButton() {
   );
 }
 
-export function AppleSignInButton() {
+type Props = { style?: import('react-native').ViewStyle };
+
+export function AppleSignInButton({ style }: Props) {
   if (Platform.OS !== 'ios') return null;
-  return <AppleButton />;
+  return <AppleButton style={style} />;
 }
 
 const styles = StyleSheet.create({
