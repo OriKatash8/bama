@@ -794,19 +794,26 @@ export default function ProjectDetailsScreen() {
         )}
 
         {/* SECTION 3 — Missions */}
-        <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
-          <Text style={[styles.sectionTitle, { ...font.bold }]}>
-            {t('project_details.missions')}
-          </Text>
-          <TouchableOpacity onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
-            <Text style={[styles.addButtonText, { ...font.semiBold }]}>{t('project_details.add')}</Text>
-          </TouchableOpacity>
-        </View>
+        {(() => (
+          <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+            <View style={[styles.sectionTitleGroup, { flexDirection: rowDirection }]}>
+              <AppText weight="bold" style={styles.sectionTitle}>{t('project_details.missions')}</AppText>
+              {missions.length > 0 && (
+                <AppText weight="regular" style={styles.sectionCount}>{missions.length}</AppText>
+              )}
+            </View>
+            {isClient && !isCompleted && (
+              <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
+                <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))()}
 
         {missions.length === 0 ? (
-          <Text style={[styles.emptyNote, { ...font.regular }]}>
+          <AppText weight="regular" style={styles.emptyNote}>
             {t('project_details.no_missions')}
-          </Text>
+          </AppText>
         ) : (
           missions.map((mission) => {
             const cfg = MISSION_STATUS_CONFIG[mission.status];
@@ -821,40 +828,45 @@ export default function ProjectDetailsScreen() {
                     <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
                   ) : (
                     <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
-                      <Text style={[styles.missionAvatarInitial, { ...font.bold }]}>
+                      <AppText weight="bold" style={styles.missionAvatarInitial}>
                         {firstAssigneeName.charAt(0).toUpperCase()}
-                      </Text>
+                      </AppText>
                     </View>
                   )}
                   {extraCount > 0 && (
                     <View style={styles.missionAvatarExtra}>
-                      <Text style={[styles.missionAvatarExtraText, { ...font.bold }]}>+{extraCount}</Text>
+                      <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
                     </View>
                   )}
                 </View>
-                <TouchableOpacity
-                  style={styles.missionTitleCard}
-                  onPress={() => handleCycleMissionStatus(mission)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.missionTitle, { ...font.semiBold }]} numberOfLines={2}>
+                <View style={styles.missionTitleCard}>
+                  <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                     {mission.title}
-                  </Text>
+                  </AppText>
                   {mission.dueDate && (
-                    <Text style={[styles.missionDue, { ...font.regular }]}>
-                      {formatDueDate(mission.dueDate, t('project_details.due'))}
-                    </Text>
+                    <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                      <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.missionDue}>
+                        {formatDueDate(mission.dueDate, t('project_details.due'))}
+                      </AppText>
+                    </View>
                   )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.missionStatusCard}
-                  onPress={() => handleCycleMissionStatus(mission)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.missionStatusText, { color: cfg.color, ...font.bold }]}>
-                    {missionLabel(mission.status)}
-                  </Text>
-                </TouchableOpacity>
+                </View>
+                {mission.status === 'done' ? (
+                  <TouchableOpacity style={styles.missionDonePill} onPress={() => handleCycleMissionStatus(mission)} activeOpacity={0.8}>
+                    <AppText weight="bold" style={styles.missionDonePillText}>✓ {missionLabel(mission.status)}</AppText>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.missionActivePill, { borderColor: cfg.color }]}
+                    onPress={() => handleCycleMissionStatus(mission)}
+                    activeOpacity={0.8}
+                  >
+                    <AppText weight="bold" style={[styles.missionActivePillText, { color: cfg.color }]}>
+                      {missionLabel(mission.status)}
+                    </AppText>
+                  </TouchableOpacity>
+                )}
               </View>
             );
           })
@@ -1739,7 +1751,7 @@ const styles = StyleSheet.create({
   },
   missionAvatarWrap: { position: 'relative' },
   missionAvatar: { width: 38, height: 38, borderRadius: 19 },
-  missionAvatarFallback: { backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
+  missionAvatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
   missionAvatarInitial: { color: '#fff', fontSize: 15, fontWeight: '700' },
   missionAvatarExtra: {
     position: 'absolute',
@@ -1758,22 +1770,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 14,
     padding: 10,
-    alignItems: 'center',
-    gap: 2,
+    alignItems: 'flex-start',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
   },
-  missionTitle: { fontSize: 14, fontWeight: '600', color: '#004aad', textAlign: 'center', lineHeight: 18 },
-  missionDue: { fontSize: 11, color: '#6b7280', textAlign: 'center' },
-  missionStatusCard: {
+  missionTitle: { fontSize: 14, color: '#1e4fa3', lineHeight: 18 },
+  missionDueRow: { alignItems: 'center', gap: 4 },
+  missionDue: { fontSize: 11, color: '#8890b0' },
+  missionDonePill: {
+    backgroundColor: 'rgba(28,157,99,0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  missionDonePillText: { fontSize: 11, color: '#1c9d63' },
+  missionActivePill: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
     minWidth: 72,
     alignItems: 'center',
+    borderWidth: 1.5,
     ...CARD_SHADOW,
   },
-  missionStatusText: { fontSize: 11, fontWeight: '700' },
+  missionActivePillText: { fontSize: 11 },
 
   // ── Mission modal inputs ───────────────────────────────────────────────────────
   missionInputLabel: {
