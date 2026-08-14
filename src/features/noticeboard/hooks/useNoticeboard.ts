@@ -63,7 +63,7 @@ export function useNoticeboard(
       'projects',
       async (data) => {
         const sorted = [...data].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-        const withVacancy = sorted.filter(r => getVacantSlots(r).length > 0);
+        const withVacancy = sorted.filter(r => getVacantSlots(r).length > 0 && r.clientId !== currentUserId);
 
         // Direct projects addressed to this professional — bypass skill filter, show first
         const directProjects = currentUserId
