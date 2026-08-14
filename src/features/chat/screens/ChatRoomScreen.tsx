@@ -172,6 +172,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const flatListRef = useRef<FlatList>(null);
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
+  const [chatArchived, setChatArchived] = useState(false);
+  const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [manageVisible, setManageVisible] = useState(false);
@@ -274,6 +276,10 @@ export function ChatRoomScreen({ chatId }: Props) {
       if (!snap.exists()) return;
       const data = snap.data() as Omit<Chat, 'id'>;
       setChatType(data.type);
+      if (data.archived) {
+        setChatArchived(true);
+        setChatArchiveReason((data.archiveReason as 'completed' | 'cancelled') ?? null);
+      }
       setChatProjectId(data.projectId);
       if (data.ownerId) setChatOwnerId(data.ownerId);
       if (data.members) setChatMembers(data.members as string[]);
@@ -817,6 +823,22 @@ export function ChatRoomScreen({ chatId }: Props) {
       )}
 
       {/* Recording bar — same geometry as input row, no position jump */}
+      {chatType === 'purchase' && chatArchived ? (
+        <View style={[styles.inputRow, {
+          paddingBottom: insets.bottom || 10,
+          borderTopColor: colors.border,
+          backgroundColor: colors.card,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }]}>
+          <AppText weight="semiBold" style={{ color: '#8890b0', fontSize: 13, textAlign: 'center' }}>
+            {chatArchiveReason === 'cancelled'
+              ? t('chats.purchase_cancelled')
+              : t('chats.purchase_completed')}
+          </AppText>
+        </View>
+      ) : (
+        <>
       {isRecording && (
         <View style={[
           styles.inputRow,
@@ -884,6 +906,8 @@ export function ChatRoomScreen({ chatId }: Props) {
             </>
           )}
         </View>
+      )}
+        </>
       )}
     </KeyboardAvoidingView>
 
