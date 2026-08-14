@@ -614,6 +614,7 @@ export default function ProjectDetailsScreen() {
   const currentUserId = auth.currentUser?.uid ?? '';
   const isClient = currentUserId === project.clientId;
   const isCompleted = project.status === 'completed';
+  const isTeamMember = (project.filledSlots ?? []).some((s) => s.professionalId === currentUserId);
 
   const removalMap = Object.fromEntries(
     removalRequests.map((r) => [r.professionalId, r.status]),
@@ -809,7 +810,7 @@ export default function ProjectDetailsScreen() {
                 <AppText weight="regular" style={styles.sectionCount}>{missions.length}</AppText>
               )}
             </View>
-            {isClient && !isCompleted && (
+            {(isClient || isTeamMember) && !isCompleted && (
               <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
                 <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
               </TouchableOpacity>
@@ -893,7 +894,7 @@ export default function ProjectDetailsScreen() {
                 <AppText weight="regular" style={styles.sectionCount}>{meetings.length}</AppText>
               )}
             </View>
-            {isClient && !isCompleted && (
+            {(isClient || isTeamMember) && !isCompleted && (
               <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMeeting(true)} activeOpacity={0.8}>
                 <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
               </TouchableOpacity>
