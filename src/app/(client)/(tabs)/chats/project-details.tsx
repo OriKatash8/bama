@@ -848,7 +848,7 @@ export default function ProjectDetailsScreen() {
                     </View>
                   )}
                 </View>
-                <View style={styles.missionTitleCard}>
+                <View style={[styles.missionTitleCard, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
                   <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                     {mission.title}
                   </AppText>
@@ -925,7 +925,7 @@ export default function ProjectDetailsScreen() {
                   <AppText weight="semiBold" style={[styles.meetingDateMonth, { color: titleColor }]}>{monthAbbr}</AppText>
                   <AppText weight="bold" style={[styles.meetingDateDay, { color: titleColor }]}>{day}</AppText>
                 </View>
-                <View style={styles.missionTitleCard}>
+                <View style={[styles.missionTitleCard, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
                   <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left', color: titleColor }]} numberOfLines={2}>
                     {meeting.title}
                   </AppText>
@@ -1583,7 +1583,6 @@ function MemberRow({
                 )}
               </View>
             )}
-            <View style={{ flex: 1 }} />
             {isPendingRemoval ? (
               <View style={styles.pendingRemovalChip}>
                 <AppText weight="semiBold" style={styles.pendingRemovalText}>{t('project_details.pending_removal')}</AppText>

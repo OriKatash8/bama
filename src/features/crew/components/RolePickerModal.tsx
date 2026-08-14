@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 32,
     maxHeight: '85%',
+    flex: 1,
   },
   header: {
     alignItems: 'center',
