@@ -45,7 +45,7 @@ import {
 import { MiniCalendar, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
-import { Calendar, CalendarDays, Clapperboard, Clock, MapPin } from 'lucide-react-native';
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, MapPin } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
 type Translations = typeof en;
@@ -137,6 +137,9 @@ export default function ProjectDetailsScreen() {
   const [newMeetingInvitedIds, setNewMeetingInvitedIds] = useState<string[]>([]);
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
+
+  const [missionIndex, setMissionIndex] = useState(0);
+  const [meetingIndex, setMeetingIndex] = useState(0);
 
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
@@ -531,6 +534,11 @@ export default function ProjectDetailsScreen() {
     }
   }
 
+  function prevMission() { setMissionIndex(i => (i - 1 + missions.length) % missions.length); }
+  function nextMission() { setMissionIndex(i => (i + 1) % missions.length); }
+  function prevMeeting() { setMeetingIndex(i => (i - 1 + sortedMeetings.length) % sortedMeetings.length); }
+  function nextMeeting() { setMeetingIndex(i => (i + 1) % sortedMeetings.length); }
+
   async function handleCycleMissionStatus(mission: Mission) {
     if (!projectId) return;
     const next = MISSION_STATUS_CYCLE[mission.status];
@@ -823,66 +831,83 @@ export default function ProjectDetailsScreen() {
             {t('project_details.no_missions')}
           </AppText>
         ) : (
-          missions.map((mission) => {
-            const cfg = MISSION_STATUS_CONFIG[mission.status];
-            const firstAssigneeId = mission.assignedTo[0];
-            const firstAssigneeName = firstAssigneeId ? (allMemberNames[firstAssigneeId] ?? firstAssigneeId) : '';
-            const extraCount = mission.assignedTo.length - 1;
-            const firstMemberInfo = firstAssigneeId ? memberUsers[firstAssigneeId] : undefined;
-            const isAssigned = mission.assignedTo.includes(currentUserId);
-            return (
-              <View key={mission.id} style={[styles.missionRow, { flexDirection: rowDirection }]}>
-                {mission.status === 'done' ? (
+          <>
+            {(() => {
+              const mission = missions[Math.min(missionIndex, missions.length - 1)];
+              const cfg = MISSION_STATUS_CONFIG[mission.status];
+              const firstAssigneeId = mission.assignedTo[0];
+              const firstAssigneeName = firstAssigneeId ? (allMemberNames[firstAssigneeId] ?? firstAssigneeId) : '';
+              const extraCount = mission.assignedTo.length - 1;
+              const firstMemberInfo = firstAssigneeId ? memberUsers[firstAssigneeId] : undefined;
+              const isAssigned = mission.assignedTo.includes(currentUserId);
+              return (
+                <View style={[styles.carouselCard, { flexDirection: rowDirection }]}>
+                  {/* Avatar — leading (right in RTL) */}
+                  <View style={styles.missionAvatarWrap}>
+                    {firstMemberInfo?.photoURL ? (
+                      <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
+                    ) : (
+                      <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
+                        <AppText weight="bold" style={styles.missionAvatarInitial}>
+                          {firstAssigneeName.charAt(0).toUpperCase()}
+                        </AppText>
+                      </View>
+                    )}
+                    {extraCount > 0 && (
+                      <View style={styles.missionAvatarExtra}>
+                        <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Info — middle */}
+                  <View style={[styles.carouselCardInfo, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+                    <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                      {mission.title}
+                    </AppText>
+                    <View style={styles.cardDivider} />
+                    {mission.dueDate && (
+                      <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                        <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
+                        <AppText weight="regular" style={styles.missionDue}>
+                          {formatDueDate(mission.dueDate, t('project_details.due'))}
+                        </AppText>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Status pill — trailing (left in RTL) */}
                   <TouchableOpacity
-                    style={styles.missionDonePill}
+                    style={[
+                      styles.carouselStatusPill,
+                      mission.status === 'done' ? styles.carouselStatusDone : { borderColor: cfg.color, borderWidth: 1.5 },
+                      !isAssigned && { opacity: 0.5 },
+                    ]}
                     onPress={isAssigned ? () => handleCycleMissionStatus(mission) : undefined}
                     activeOpacity={isAssigned ? 0.8 : 1}
                   >
-                    <AppText weight="bold" style={styles.missionDonePillText}>✓ {missionLabel(mission.status)}</AppText>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.missionActivePill, { borderColor: cfg.color, opacity: isAssigned ? 1 : 0.5 }]}
-                    onPress={isAssigned ? () => handleCycleMissionStatus(mission) : undefined}
-                    activeOpacity={isAssigned ? 0.8 : 1}
-                  >
-                    <AppText weight="bold" style={[styles.missionActivePillText, { color: cfg.color }]}>
-                      {missionLabel(mission.status)}
+                    <AppText weight="bold" style={[styles.carouselStatusText, { color: mission.status === 'done' ? '#1c9d63' : cfg.color }]}>
+                      {mission.status === 'done' ? `✓ ${missionLabel(mission.status)}` : missionLabel(mission.status)}
                     </AppText>
                   </TouchableOpacity>
-                )}
-                <View style={[styles.missionTitleCard, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-                  <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-                    {mission.title}
-                  </AppText>
-                  {mission.dueDate && (
-                    <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                      <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
-                      <AppText weight="regular" style={styles.missionDue}>
-                        {formatDueDate(mission.dueDate, t('project_details.due'))}
-                      </AppText>
-                    </View>
-                  )}
                 </View>
-                <View style={styles.missionAvatarWrap}>
-                  {firstMemberInfo?.photoURL ? (
-                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
-                  ) : (
-                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
-                      <AppText weight="bold" style={styles.missionAvatarInitial}>
-                        {firstAssigneeName.charAt(0).toUpperCase()}
-                      </AppText>
-                    </View>
-                  )}
-                  {extraCount > 0 && (
-                    <View style={styles.missionAvatarExtra}>
-                      <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
-                    </View>
-                  )}
-                </View>
+              );
+            })()}
+
+            {missions.length > 1 && (
+              <View style={styles.carouselNavRow}>
+                <TouchableOpacity onPress={rtl ? nextMission : prevMission} style={styles.carouselNavBtn} activeOpacity={0.7}>
+                  <ChevronLeft size={20} color="#1e4fa3" strokeWidth={2.5} />
+                </TouchableOpacity>
+                <AppText weight="semiBold" style={styles.carouselCounter}>
+                  {Math.min(missionIndex, missions.length - 1) + 1} / {missions.length}
+                </AppText>
+                <TouchableOpacity onPress={rtl ? prevMission : nextMission} style={styles.carouselNavBtn} activeOpacity={0.7}>
+                  <ChevronRight size={20} color="#1e4fa3" strokeWidth={2.5} />
+                </TouchableOpacity>
               </View>
-            );
-          })
+            )}
+          </>
         )}
 
         {/* SECTION 4 — Meetings */}
@@ -907,58 +932,81 @@ export default function ProjectDetailsScreen() {
             {t('project_details.no_meetings')}
           </AppText>
         ) : (
-          sortedMeetings.map((meeting) => {
-            const urgency = getMeetingUrgency(meeting.date, meeting.time);
-            const titleColor =
-              urgency === 'past'     ? '#1c9d63' :
-              urgency === 'imminent' ? '#ef4444' :
-              urgency === 'soon'     ? '#f59e0b' :
-              '#1e4fa3';
-            const { monthAbbr, day } = getMeetingDateParts(meeting.date);
-            const firstInviteeId = meeting.invitedIds[0];
-            const firstInviteeName = firstInviteeId ? (allMemberNames[firstInviteeId] ?? firstInviteeId) : '';
-            const extraCount = meeting.invitedIds.length - 1;
-            const firstMemberInfo = firstInviteeId ? memberUsers[firstInviteeId] : undefined;
-            return (
-              <View key={meeting.id} style={[styles.meetingRow, { flexDirection: rowDirection }]}>
-                <View style={[styles.meetingDateBlock, { borderColor: titleColor }]}>
-                  <AppText weight="semiBold" style={[styles.meetingDateMonth, { color: titleColor }]}>{monthAbbr}</AppText>
-                  <AppText weight="bold" style={[styles.meetingDateDay, { color: titleColor }]}>{day}</AppText>
-                </View>
-                <View style={[styles.missionTitleCard, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-                  <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left', color: titleColor }]} numberOfLines={2}>
-                    {meeting.title}
-                  </AppText>
-                  <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                    <Clock size={12} color="#8890b0" strokeWidth={1.5} />
-                    <AppText weight="regular" style={styles.missionDue}>{meeting.time}</AppText>
+          <>
+            {(() => {
+              const meeting = sortedMeetings[Math.min(meetingIndex, sortedMeetings.length - 1)];
+              const urgency = getMeetingUrgency(meeting.date, meeting.time);
+              const titleColor =
+                urgency === 'past'     ? '#1c9d63' :
+                urgency === 'imminent' ? '#ef4444' :
+                urgency === 'soon'     ? '#f59e0b' :
+                '#1e4fa3';
+              const { monthAbbr, day } = getMeetingDateParts(meeting.date);
+              const firstInviteeId = meeting.invitedIds[0];
+              const firstInviteeName = firstInviteeId ? (allMemberNames[firstInviteeId] ?? firstInviteeId) : '';
+              const extraCount = meeting.invitedIds.length - 1;
+              const firstMemberInfo = firstInviteeId ? memberUsers[firstInviteeId] : undefined;
+              return (
+                <View style={[styles.carouselCard, { flexDirection: rowDirection }]}>
+                  {/* Avatar — leading (right in RTL) */}
+                  <View style={styles.missionAvatarWrap}>
+                    {firstMemberInfo?.photoURL ? (
+                      <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
+                    ) : firstInviteeName ? (
+                      <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
+                        <AppText weight="bold" style={styles.missionAvatarInitial}>
+                          {firstInviteeName.charAt(0).toUpperCase()}
+                        </AppText>
+                      </View>
+                    ) : null}
+                    {extraCount > 0 && (
+                      <View style={styles.missionAvatarExtra}>
+                        <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
+                      </View>
+                    )}
                   </View>
-                  {!!meeting.location && (
+
+                  {/* Info — middle */}
+                  <View style={[styles.carouselCardInfo, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+                    <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left', color: titleColor }]} numberOfLines={2}>
+                      {meeting.title}
+                    </AppText>
+                    <View style={styles.cardDivider} />
                     <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                      <MapPin size={12} color="#8890b0" strokeWidth={1.5} />
-                      <AppText weight="regular" style={styles.missionDue} numberOfLines={1}>{meeting.location}</AppText>
+                      <Clock size={12} color="#8890b0" strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.missionDue}>{meeting.time}</AppText>
                     </View>
-                  )}
+                    {!!meeting.location && (
+                      <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                        <MapPin size={12} color="#8890b0" strokeWidth={1.5} />
+                        <AppText weight="regular" style={styles.missionDue} numberOfLines={1}>{meeting.location}</AppText>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Date block — trailing (left in RTL) */}
+                  <View style={[styles.meetingDateBlock, { borderColor: titleColor }]}>
+                    <AppText weight="semiBold" style={[styles.meetingDateMonth, { color: titleColor }]}>{monthAbbr}</AppText>
+                    <AppText weight="bold" style={[styles.meetingDateDay, { color: titleColor }]}>{day}</AppText>
+                  </View>
                 </View>
-                <View style={styles.missionAvatarWrap}>
-                  {firstMemberInfo?.photoURL ? (
-                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
-                  ) : firstInviteeName ? (
-                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
-                      <AppText weight="bold" style={styles.missionAvatarInitial}>
-                        {firstInviteeName.charAt(0).toUpperCase()}
-                      </AppText>
-                    </View>
-                  ) : null}
-                  {extraCount > 0 && (
-                    <View style={styles.missionAvatarExtra}>
-                      <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
-                    </View>
-                  )}
-                </View>
+              );
+            })()}
+
+            {sortedMeetings.length > 1 && (
+              <View style={styles.carouselNavRow}>
+                <TouchableOpacity onPress={rtl ? nextMeeting : prevMeeting} style={styles.carouselNavBtn} activeOpacity={0.7}>
+                  <ChevronLeft size={20} color="#1e4fa3" strokeWidth={2.5} />
+                </TouchableOpacity>
+                <AppText weight="semiBold" style={styles.carouselCounter}>
+                  {Math.min(meetingIndex, sortedMeetings.length - 1) + 1} / {sortedMeetings.length}
+                </AppText>
+                <TouchableOpacity onPress={rtl ? prevMeeting : nextMeeting} style={styles.carouselNavBtn} activeOpacity={0.7}>
+                  <ChevronRight size={20} color="#1e4fa3" strokeWidth={2.5} />
+                </TouchableOpacity>
               </View>
-            );
-          })
+            )}
+          </>
         )}
 
         {/* Pending payment-update requests */}
@@ -1850,6 +1898,66 @@ const styles = StyleSheet.create({
   },
   meetingDateMonth: { fontSize: 10, textTransform: 'uppercase' },
   meetingDateDay: { fontSize: 20, lineHeight: 24 },
+
+  // ── Carousel shared ───────────────────────────────────────────────────────────
+  carouselCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#1e4fa3',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  carouselCardInfo: {
+    flex: 1,
+    gap: 6,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#eef0f6',
+    alignSelf: 'stretch',
+  },
+  carouselNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 6,
+  },
+  carouselNavBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(30,79,163,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  carouselCounter: {
+    fontSize: 13,
+    color: 'rgba(30,79,163,0.5)',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  carouselStatusPill: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 64,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    flexShrink: 0,
+  },
+  carouselStatusDone: {
+    backgroundColor: 'rgba(28,157,99,0.1)',
+  },
+  carouselStatusText: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
 
   // ── Mission modal inputs ───────────────────────────────────────────────────────
   missionInputLabel: {
