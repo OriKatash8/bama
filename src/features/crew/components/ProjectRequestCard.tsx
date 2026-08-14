@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { router, useSegments } from 'expo-router';
 import { MessageCircle, Pencil, Trash2, CalendarDays, MapPin } from 'lucide-react-native';
 import type { ProjectRequest } from '@core/types/project';
@@ -35,6 +35,7 @@ function formatDate(iso?: string): string {
 export function ProjectRequestCard({ request }: Props) {
   const [teamOpen, setTeamOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { team, isLoading: teamLoading, load } = useProjectTeam(request.id);
   const colors = useTheme();
   const font = useAppFont();
@@ -63,17 +64,6 @@ export function ProjectRequestCard({ request }: Props) {
     } finally {
       setIsDeleting(false);
     }
-  }
-
-  function confirmAndDelete() {
-    Alert.alert(
-      t('chats_page.delete_confirm_title'),
-      t('chats_page.delete_confirm_body'),
-      [
-        { text: t('chats_page.delete_confirm_cancel'), style: 'cancel' },
-        { text: t('chats_page.delete_confirm_ok'), style: 'destructive', onPress: handleDelete },
-      ]
-    );
   }
 
   function toggleTeam() {
@@ -166,40 +156,55 @@ export function ProjectRequestCard({ request }: Props) {
 
       <View style={styles.divider} />
 
-      {/* Actions row */}
-      <View style={[styles.actionsRow, { flexDirection: rowDir }]}>
-        <View style={[styles.primaryActions, { flexDirection: rowDir }]}>
-          {!!request.chatId && (
-            <TouchableOpacity
-              style={styles.chatBtn}
-              onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${request.chatId}` as never)}
-              activeOpacity={0.8}
-            >
-              <MessageCircle size={14} color="#ffffff" strokeWidth={2} />
-              <Text style={[styles.chatBtnText, { ...font.semiBold }]}>{t('chats_page.open_chat')}</Text>
+      {confirmingDelete ? (
+        <View style={styles.confirmRow}>
+          <Text style={[styles.confirmText, { ...font.regular, color: colors.textSec }]}>
+            {t('chats_page.delete_confirm_body')}
+          </Text>
+          <View style={styles.confirmBtns}>
+            <TouchableOpacity style={styles.confirmCancel} onPress={() => setConfirmingDelete(false)} activeOpacity={0.7}>
+              <Text style={[styles.confirmCancelText, { ...font.semiBold, color: colors.textMuted }]}>
+                {t('chats_page.delete_confirm_cancel')}
+              </Text>
             </TouchableOpacity>
-          )}
-          {canEdit && (
-            <TouchableOpacity style={styles.editBtn} onPress={handleEdit} activeOpacity={0.8}>
-              <Pencil size={14} color="#004aad" strokeWidth={2} />
-              <Text style={[styles.editBtnText, { ...font.semiBold }]}>{t('chats_page.edit_project')}</Text>
+            <TouchableOpacity style={styles.confirmYes} onPress={() => { setConfirmingDelete(false); handleDelete(); }} activeOpacity={0.7} disabled={isDeleting}>
+              {isDeleting
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={[styles.confirmYesText, { ...font.semiBold }]}>{t('chats_page.delete_confirm_ok')}</Text>
+              }
             </TouchableOpacity>
-          )}
+          </View>
         </View>
-        {canEdit && (
+      ) : (
+        /* Actions row */
+        <View style={[styles.actionsRow, { flexDirection: rowDir }]}>
+          <View style={[styles.primaryActions, { flexDirection: rowDir }]}>
+            {!!request.chatId && (
+              <TouchableOpacity
+                style={styles.chatBtn}
+                onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${request.chatId}` as never)}
+                activeOpacity={0.8}
+              >
+                <MessageCircle size={14} color="#ffffff" strokeWidth={2} />
+                <Text style={[styles.chatBtnText, { ...font.semiBold }]}>{t('chats_page.open_chat')}</Text>
+              </TouchableOpacity>
+            )}
+            {canEdit && (
+              <TouchableOpacity style={styles.editBtn} onPress={handleEdit} activeOpacity={0.8}>
+                <Pencil size={14} color="#004aad" strokeWidth={2} />
+                <Text style={[styles.editBtnText, { ...font.semiBold }]}>{t('chats_page.edit_project')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <TouchableOpacity
             style={styles.deleteBtn}
-            onPress={confirmAndDelete}
+            onPress={() => setConfirmingDelete(true)}
             activeOpacity={0.7}
-            disabled={isDeleting}
           >
-            {isDeleting
-              ? <ActivityIndicator size="small" color="#dc2626" />
-              : <Trash2 size={18} color="#dc2626" strokeWidth={1.5} />
-            }
+            <Trash2 size={18} color="#dc2626" strokeWidth={1.5} />
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -276,5 +281,41 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  confirmRow: {
+    gap: 12,
+    justifyContent: 'center',
+    minHeight: 60,
+  },
+  confirmText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  confirmBtns: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  confirmCancel: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  confirmCancelText: {
+    fontSize: 14,
+  },
+  confirmYes: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#e53935',
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  confirmYesText: {
+    fontSize: 14,
+    color: '#fff',
   },
 });
