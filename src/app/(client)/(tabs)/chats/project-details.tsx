@@ -45,7 +45,8 @@ import {
 import { MiniCalendar, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
-import { Calendar } from 'lucide-react-native';
+import { Calendar, CalendarDays, Clapperboard, MapPin } from 'lucide-react-native';
+import { AppText } from '@components/ui/AppText';
 
 type Translations = typeof en;
 
@@ -84,11 +85,19 @@ function formatDueDate(iso: string, prefix: string): string {
 type MemberInfo = Pick<User, 'displayName' | 'photoURL'>;
 
 const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
-  open: '#22c55e',
+  open: '#1c9d63',
   in_progress: '#3b82f6',
   completed: '#8b5cf6',
   cancelled: '#ef4444',
 };
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(2);
+  return `${dd}/${mm}/${yy}`;
+}
 
 export default function ProjectDetailsScreen() {
   const { projectId, chatId: chatIdParam } = useLocalSearchParams<{ projectId: string; chatId: string }>();
@@ -640,15 +649,15 @@ export default function ProjectDetailsScreen() {
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View style={[styles.header, { flexDirection: rowDirection, marginHorizontal: -16, marginTop: -16 }]}>
           <TouchableOpacity onPress={() => chatIdParam ? router.push(`/(client)/(tabs)/chats/${chatIdParam}` as never) : router.back()} style={styles.headerBack} activeOpacity={0.7}>
-            <Text style={[styles.headerBackText, { ...font.regular }]}>{rtl ? '›' : '‹'}</Text>
+            <AppText weight="regular" style={styles.headerBackText}>{rtl ? '›' : '‹'}</AppText>
           </TouchableOpacity>
           <View style={styles.headerCenter} pointerEvents="none">
-            <Text style={[styles.headerLabel, { ...font.semiBold }]}>
+            <AppText weight="semiBold" style={styles.headerLabel}>
               {t('project_details.header')}
-            </Text>
-            <Text style={[styles.headerProjectTitle, { ...font.bold }]} numberOfLines={2}>
+            </AppText>
+            <AppText weight="bold" style={styles.headerProjectTitle} numberOfLines={2}>
               {project.title}
-            </Text>
+            </AppText>
           </View>
           <View style={styles.headerRight} />
         </View>
@@ -680,25 +689,30 @@ export default function ProjectDetailsScreen() {
         {/* Three meta cards side-by-side */}
         <View style={[styles.metaCardsRow, { flexDirection: rowDirection }]}>
           <View style={styles.metaCard}>
-            <Text style={[styles.metaCardLabel, { ...font.semiBold }]}>{t('project_details.execution')}</Text>
-            <Text style={[styles.metaCardValue, { ...font.bold }]} numberOfLines={2}>{project.exec ?? t('project_details.tbd')}</Text>
+            <Clapperboard size={16} color="#8890b0" strokeWidth={1.5} />
+            <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.execution')}</AppText>
+            <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.exec ?? t('project_details.tbd')}</AppText>
           </View>
           <View style={styles.metaCard}>
-            <Text style={[styles.metaCardLabel, { ...font.semiBold }]}>{t('project_details.deadline')}</Text>
-            <Text style={[styles.metaCardValue, { ...font.bold }]} numberOfLines={2}>{project.deadline}</Text>
+            <CalendarDays size={16} color="#8890b0" strokeWidth={1.5} />
+            <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.deadline')}</AppText>
+            <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>
+              {project.deadline === 'flexible' ? t('builder.flexible') : formatShortDate(project.deadline)}
+            </AppText>
           </View>
           <View style={styles.metaCard}>
-            <Text style={[styles.metaCardLabel, { ...font.semiBold }]}>{t('project_details.location')}</Text>
-            <Text style={[styles.metaCardValue, { ...font.bold }]} numberOfLines={2}>{project.location}</Text>
+            <MapPin size={16} color="#8890b0" strokeWidth={1.5} />
+            <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.location')}</AppText>
+            <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.location}</AppText>
           </View>
         </View>
 
         {/* Description card */}
         <View style={styles.descriptionCard}>
-          <Text style={[styles.metaCardLabel, { ...font.semiBold }]}>{t('project_details.description')}</Text>
-          <Text style={[styles.descriptionText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+          <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.description')}</AppText>
+          <AppText weight="regular" style={[styles.descriptionText, { textAlign: rtl ? 'right' : 'left' }]}>
             {project.description}
-          </Text>
+          </AppText>
         </View>
 
         {/* SECTION 2 — Team Members */}
@@ -1535,10 +1549,10 @@ function MemberRow({
 }
 
 const CARD_SHADOW = {
-  shadowColor: '#000' as const,
-  shadowOpacity: 0.08,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: 4 },
+  shadowColor: '#1e4fa3' as const,
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
   elevation: 3,
 };
 
@@ -1557,21 +1571,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   headerBack: { width: 40, alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
-  headerBackText: { fontSize: 36, color: '#004aad', lineHeight: 44 },
+  headerBackText: { fontSize: 36, color: '#1e4fa3', lineHeight: 44 },
   headerRight: { width: 40 },
   headerCenter: { flex: 1, alignItems: 'center', gap: 4 },
   headerLabel: {
-    fontSize: 12,
-    color: '#004aad',
+    fontSize: 11,
+    color: '#8890b0',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
   headerProjectTitle: {
-    fontSize: 22,
-    color: '#004aad',
+    fontSize: 20,
+    color: '#1e4fa3',
     fontWeight: '800',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 26,
   },
 
   content: { padding: 16, gap: 14, paddingBottom: 100 },
@@ -1595,15 +1609,17 @@ const styles = StyleSheet.create({
   metaCard: {
     flex: 1,
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 12,
     alignItems: 'center',
     gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
   },
   metaCardLabel: {
-    fontSize: 11,
-    color: '#6b7280',
+    fontSize: 10,
+    color: '#8890b0',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     textAlign: 'center',
@@ -1611,19 +1627,21 @@ const styles = StyleSheet.create({
   metaCardValue: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#004aad',
+    color: '#1e4fa3',
     textAlign: 'center',
   },
 
   // ── Description card ─────────────────────────────────────────────────────────
   descriptionCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 14,
     gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
   },
-  descriptionText: { fontSize: 15, lineHeight: 22 },
+  descriptionText: { fontSize: 14, lineHeight: 20, color: '#3a4266' },
 
   // ── Section headers ───────────────────────────────────────────────────────────
   sectionHeaderRow: {
