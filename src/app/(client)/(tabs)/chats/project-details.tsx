@@ -45,7 +45,7 @@ import {
 import { MiniCalendar, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
-import { Calendar, CalendarDays, Clapperboard, MapPin } from 'lucide-react-native';
+import { Calendar, CalendarDays, Clapperboard, Clock, MapPin } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
 type Translations = typeof en;
@@ -456,6 +456,13 @@ export default function ProjectDetailsScreen() {
   function formatMeetingDateTime(date: string, time: string): string {
     const d = new Date(`${date}T${time}`);
     return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`;
+  }
+
+  function getMeetingDateParts(dateStr: string): { monthAbbr: string; day: string } {
+    const d = new Date(dateStr);
+    const locale = language === 'he' ? 'he-IL' : 'en-US';
+    const monthAbbr = d.toLocaleDateString(locale, { month: 'short' }).slice(0, 3);
+    return { monthAbbr, day: String(d.getDate()) };
   }
 
   function toggleInvitee(id: string) {
@@ -873,59 +880,75 @@ export default function ProjectDetailsScreen() {
         )}
 
         {/* SECTION 4 — Meetings */}
-        <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
-          <Text style={[styles.sectionTitle, { ...font.bold }]}>
-            {t('project_details.meetings')}
-          </Text>
-          <TouchableOpacity onPress={() => setShowAddMeeting(true)} activeOpacity={0.8}>
-            <Text style={[styles.addButtonText, { ...font.semiBold }]}>{t('project_details.add')}</Text>
-          </TouchableOpacity>
-        </View>
+        {(() => (
+          <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+            <View style={[styles.sectionTitleGroup, { flexDirection: rowDirection }]}>
+              <AppText weight="bold" style={styles.sectionTitle}>{t('project_details.meetings')}</AppText>
+              {meetings.length > 0 && (
+                <AppText weight="regular" style={styles.sectionCount}>{meetings.length}</AppText>
+              )}
+            </View>
+            {isClient && !isCompleted && (
+              <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMeeting(true)} activeOpacity={0.8}>
+                <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))()}
 
         {meetings.length === 0 ? (
-          <Text style={[styles.emptyNote, { ...font.regular }]}>
+          <AppText weight="regular" style={styles.emptyNote}>
             {t('project_details.no_meetings')}
-          </Text>
+          </AppText>
         ) : (
           sortedMeetings.map((meeting) => {
             const urgency = getMeetingUrgency(meeting.date, meeting.time);
             const titleColor =
-              urgency === 'past'     ? '#22c55e' :
+              urgency === 'past'     ? '#1c9d63' :
               urgency === 'imminent' ? '#ef4444' :
               urgency === 'soon'     ? '#f59e0b' :
-              colors.text;
+              '#1e4fa3';
+            const { monthAbbr, day } = getMeetingDateParts(meeting.date);
             const firstInviteeId = meeting.invitedIds[0];
             const firstInviteeName = firstInviteeId ? (allMemberNames[firstInviteeId] ?? firstInviteeId) : '';
             const extraCount = meeting.invitedIds.length - 1;
             const firstMemberInfo = firstInviteeId ? memberUsers[firstInviteeId] : undefined;
             return (
-              <View key={meeting.id} style={[styles.missionRow, { flexDirection: rowDirection }]}>
-                <View style={styles.missionAvatarWrap}>
-                  {firstMemberInfo?.photoURL ? (
-                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
-                  ) : (
-                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
-                      <Text style={[styles.missionAvatarInitial, { ...font.bold }]}>
-                        {firstInviteeName.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                  {extraCount > 0 && (
-                    <View style={styles.missionAvatarExtra}>
-                      <Text style={[styles.missionAvatarExtraText, { ...font.bold }]}>+{extraCount}</Text>
+              <View key={meeting.id} style={[styles.meetingRow, { flexDirection: rowDirection }]}>
+                <View style={[styles.meetingDateBlock, { borderColor: titleColor }]}>
+                  <AppText weight="semiBold" style={[styles.meetingDateMonth, { color: titleColor }]}>{monthAbbr}</AppText>
+                  <AppText weight="bold" style={[styles.meetingDateDay, { color: titleColor }]}>{day}</AppText>
+                </View>
+                <View style={styles.missionTitleCard}>
+                  <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left', color: titleColor }]} numberOfLines={2}>
+                    {meeting.title}
+                  </AppText>
+                  <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                    <Clock size={12} color="#8890b0" strokeWidth={1.5} />
+                    <AppText weight="regular" style={styles.missionDue}>{meeting.time}</AppText>
+                  </View>
+                  {!!meeting.location && (
+                    <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                      <MapPin size={12} color="#8890b0" strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.missionDue} numberOfLines={1}>{meeting.location}</AppText>
                     </View>
                   )}
                 </View>
-                <View style={styles.missionTitleCard}>
-                  <Text style={[styles.missionTitle, { ...font.semiBold, color: titleColor }]} numberOfLines={2}>
-                    {meeting.title}
-                  </Text>
-                  <Text style={[styles.missionDue, { ...font.regular }]}>
-                    {formatMeetingDateTime(meeting.date, meeting.time)}
-                  </Text>
-                  <Text style={[styles.missionDue, { ...font.regular }]} numberOfLines={1}>
-                    {meeting.location}
-                  </Text>
+                <View style={styles.missionAvatarWrap}>
+                  {firstMemberInfo?.photoURL ? (
+                    <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
+                  ) : firstInviteeName ? (
+                    <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
+                      <AppText weight="bold" style={styles.missionAvatarInitial}>
+                        {firstInviteeName.charAt(0).toUpperCase()}
+                      </AppText>
+                    </View>
+                  ) : null}
+                  {extraCount > 0 && (
+                    <View style={styles.missionAvatarExtra}>
+                      <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
+                    </View>
+                  )}
                 </View>
               </View>
             );
@@ -1799,6 +1822,26 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   missionActivePillText: { fontSize: 11 },
+
+  // ── Meeting rows ──────────────────────────────────────────────────────────────
+  meetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  meetingDateBlock: {
+    width: 44,
+    height: 52,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    backgroundColor: '#ffffff',
+    ...CARD_SHADOW,
+  },
+  meetingDateMonth: { fontSize: 10, textTransform: 'uppercase' },
+  meetingDateDay: { fontSize: 20, lineHeight: 24 },
 
   // ── Mission modal inputs ───────────────────────────────────────────────────────
   missionInputLabel: {
