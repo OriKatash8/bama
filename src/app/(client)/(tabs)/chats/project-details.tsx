@@ -1531,7 +1531,7 @@ function MemberRow({
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
-  const showBottomRow = payment !== undefined || isPendingRemoval || !!onRemove;
+  const showRemoveRow = isPendingRemoval || !!onRemove;
   return (
     <View style={[styles.memberCard, { flexDirection: rowDir }]}>
       {photoURL ? (
@@ -1542,7 +1542,7 @@ function MemberRow({
         </View>
       )}
       <View style={styles.memberInfo}>
-        {/* Line 1: name + client badge */}
+        {/* Line 1: name + badge | price + update */}
         <View style={[styles.memberNameRow, { flexDirection: rowDir }]}>
           <AppText weight="semiBold" style={[styles.memberName, { textAlign: rtl ? 'right' : 'left' }]}>{displayName}</AppText>
           {badge !== undefined && (
@@ -1550,19 +1550,9 @@ function MemberRow({
               <AppText weight="bold" style={styles.clientBadgeText}>{badge}</AppText>
             </View>
           )}
-        </View>
-        {/* Line 2: role pills */}
-        <View style={[styles.rolePillsRow, { flexDirection: rowDir }]}>
-          {roles.map((r) => (
-            <View key={r} style={styles.rolePill}>
-              <AppText weight="regular" style={styles.rolePillText}>{r}</AppText>
-            </View>
-          ))}
-        </View>
-        {/* Line 3: price + Update + Remove */}
-        {showBottomRow && (
-          <View style={[styles.memberActionsRow, { flexDirection: rowDir, justifyContent: rtl ? 'flex-end' : 'flex-start' }]}>
-            {payment !== undefined && (
+          {payment !== undefined && (
+            <>
+              <View style={{ flex: 1 }} />
               <View style={[styles.memberPriceGroup, { flexDirection: rowDir }]}>
                 <AppText weight="semiBold" style={styles.memberPrice}>
                   ₪{payment.price.toLocaleString()}
@@ -1582,7 +1572,20 @@ function MemberRow({
                   </TouchableOpacity>
                 )}
               </View>
-            )}
+            </>
+          )}
+        </View>
+        {/* Line 2: role pills */}
+        <View style={[styles.rolePillsRow, { flexDirection: rowDir }]}>
+          {roles.map((r) => (
+            <View key={r} style={styles.rolePill}>
+              <AppText weight="regular" style={styles.rolePillText}>{r}</AppText>
+            </View>
+          ))}
+        </View>
+        {/* Line 3: remove */}
+        {showRemoveRow && (
+          <View style={[styles.memberActionsRow, { flexDirection: rowDir, justifyContent: rtl ? 'flex-end' : 'flex-start' }]}>
             {isPendingRemoval ? (
               <View style={styles.pendingRemovalChip}>
                 <AppText weight="semiBold" style={styles.pendingRemovalText}>{t('project_details.pending_removal')}</AppText>
