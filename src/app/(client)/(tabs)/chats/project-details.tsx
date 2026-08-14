@@ -846,30 +846,35 @@ export default function ProjectDetailsScreen() {
             {(() => {
               const mission = missions[Math.min(missionIndex, missions.length - 1)];
               const cfg = MISSION_STATUS_CONFIG[mission.status];
-              const firstAssigneeId = mission.assignedTo[0];
-              const firstAssigneeName = firstAssigneeId ? (allMemberNames[firstAssigneeId] ?? firstAssigneeId) : '';
-              const extraCount = mission.assignedTo.length - 1;
-              const firstMemberInfo = firstAssigneeId ? memberUsers[firstAssigneeId] : undefined;
               const isAssigned = mission.assignedTo.includes(currentUserId);
               return (
                 <View style={[styles.carouselCard, { flexDirection: rowDirection }]}>
-                  {/* Avatar — leading (right in RTL) */}
-                  <View style={styles.missionAvatarWrap}>
-                    {firstMemberInfo?.photoURL ? (
-                      <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
-                    ) : (
-                      <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
-                        <AppText weight="bold" style={styles.missionAvatarInitial}>
-                          {firstAssigneeName.charAt(0).toUpperCase()}
-                        </AppText>
+                  {/* Avatar stack — leading (right in RTL) */}
+                  {(() => {
+                    const MAX_STACK = 3;
+                    const ids = mission.assignedTo.slice(0, MAX_STACK);
+                    const overflow = mission.assignedTo.length - MAX_STACK;
+                    return (
+                      <View style={styles.avatarStack}>
+                        {ids.map((id, idx) => {
+                          const info = memberUsers[id];
+                          const name = allMemberNames[id] ?? id;
+                          return info?.photoURL ? (
+                            <Image key={id} source={{ uri: info.photoURL }} style={[styles.stackAvatar, idx > 0 && styles.stackAvatarOverlap]} />
+                          ) : (
+                            <View key={id} style={[styles.stackAvatar, styles.stackAvatarFallback, idx > 0 && styles.stackAvatarOverlap]}>
+                              <AppText weight="bold" style={styles.stackAvatarInitial}>{name.charAt(0).toUpperCase()}</AppText>
+                            </View>
+                          );
+                        })}
+                        {overflow > 0 && (
+                          <View style={[styles.stackAvatar, styles.stackAvatarMore, styles.stackAvatarOverlap]}>
+                            <AppText weight="bold" style={styles.stackAvatarInitial}>+{overflow}</AppText>
+                          </View>
+                        )}
                       </View>
-                    )}
-                    {extraCount > 0 && (
-                      <View style={styles.missionAvatarExtra}>
-                        <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
-                      </View>
-                    )}
-                  </View>
+                    );
+                  })()}
 
                   {/* Info — middle */}
                   <View style={[styles.carouselCardInfo, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
@@ -986,29 +991,34 @@ export default function ProjectDetailsScreen() {
                 urgency === 'soon'     ? '#f59e0b' :
                 '#1e4fa3';
               const { monthAbbr, day } = getMeetingDateParts(meeting.date);
-              const firstInviteeId = meeting.invitedIds[0];
-              const firstInviteeName = firstInviteeId ? (allMemberNames[firstInviteeId] ?? firstInviteeId) : '';
-              const extraCount = meeting.invitedIds.length - 1;
-              const firstMemberInfo = firstInviteeId ? memberUsers[firstInviteeId] : undefined;
               return (
                 <View style={[styles.carouselCard, { flexDirection: rowDirection }]}>
-                  {/* Avatar — leading (right in RTL) */}
-                  <View style={styles.missionAvatarWrap}>
-                    {firstMemberInfo?.photoURL ? (
-                      <Image source={{ uri: firstMemberInfo.photoURL }} style={styles.missionAvatar} />
-                    ) : firstInviteeName ? (
-                      <View style={[styles.missionAvatar, styles.missionAvatarFallback]}>
-                        <AppText weight="bold" style={styles.missionAvatarInitial}>
-                          {firstInviteeName.charAt(0).toUpperCase()}
-                        </AppText>
+                  {/* Avatar stack — leading (right in RTL) */}
+                  {(() => {
+                    const MAX_STACK = 3;
+                    const ids = meeting.invitedIds.slice(0, MAX_STACK);
+                    const overflow = meeting.invitedIds.length - MAX_STACK;
+                    return (
+                      <View style={styles.avatarStack}>
+                        {ids.map((id, idx) => {
+                          const info = memberUsers[id];
+                          const name = allMemberNames[id] ?? id;
+                          return info?.photoURL ? (
+                            <Image key={id} source={{ uri: info.photoURL }} style={[styles.stackAvatar, idx > 0 && styles.stackAvatarOverlap]} />
+                          ) : name ? (
+                            <View key={id} style={[styles.stackAvatar, styles.stackAvatarFallback, idx > 0 && styles.stackAvatarOverlap]}>
+                              <AppText weight="bold" style={styles.stackAvatarInitial}>{name.charAt(0).toUpperCase()}</AppText>
+                            </View>
+                          ) : null;
+                        })}
+                        {overflow > 0 && (
+                          <View style={[styles.stackAvatar, styles.stackAvatarMore, styles.stackAvatarOverlap]}>
+                            <AppText weight="bold" style={styles.stackAvatarInitial}>+{overflow}</AppText>
+                          </View>
+                        )}
                       </View>
-                    ) : null}
-                    {extraCount > 0 && (
-                      <View style={styles.missionAvatarExtra}>
-                        <AppText weight="bold" style={styles.missionAvatarExtraText}>+{extraCount}</AppText>
-                      </View>
-                    )}
-                  </View>
+                    );
+                  })()}
 
                   {/* Info — middle */}
                   <View style={[styles.carouselCardInfo, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
@@ -1872,22 +1882,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  missionAvatarWrap: { position: 'relative' },
-  missionAvatar: { width: 38, height: 38, borderRadius: 19 },
-  missionAvatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
-  missionAvatarInitial: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  missionAvatarExtra: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    backgroundColor: '#cb6ce6',
-    borderRadius: 8,
-    minWidth: 16,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
-    alignItems: 'center',
-  },
-  missionAvatarExtraText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  avatarStack: { flexDirection: 'row', alignItems: 'center' },
+  stackAvatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: '#fff' },
+  stackAvatarOverlap: { marginLeft: -8 },
+  stackAvatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
+  stackAvatarMore: { backgroundColor: '#8890b0', alignItems: 'center', justifyContent: 'center' },
+  stackAvatarInitial: { color: '#fff', fontSize: 9, fontWeight: '700' },
   missionTitleCard: {
     flex: 1,
     backgroundColor: '#ffffff',
