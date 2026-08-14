@@ -227,7 +227,12 @@
     "delete_confirm_cancel": "ביטול",
     "delete_confirm_ok": "מחק",
     "project_deleted": "הפרויקט נמחק",
-    "project_delete_error": "שגיאה במחיקת הפרויקט"
+    "project_delete_error": "שגיאה במחיקת הפרויקט",
+    "team_label": "צוות",
+    "stat_location": "מיקום",
+    "stat_deadline": "תאריך סיום",
+    "stat_execution": "ביצוע",
+    "open_slot": "פתוח"
   },
   "profile": {
     "title": "פרופיל",

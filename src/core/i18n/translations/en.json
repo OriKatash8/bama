@@ -227,7 +227,12 @@
     "delete_confirm_cancel": "Cancel",
     "delete_confirm_ok": "Delete",
     "project_deleted": "Project deleted",
-    "project_delete_error": "Failed to delete project"
+    "project_delete_error": "Failed to delete project",
+    "team_label": "Team",
+    "stat_location": "Location",
+    "stat_deadline": "End Date",
+    "stat_execution": "Execution",
+    "open_slot": "Open"
   },
   "profile": {
     "title": "Profile",
