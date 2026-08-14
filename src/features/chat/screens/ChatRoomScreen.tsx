@@ -25,7 +25,7 @@ import {
   setAudioModeAsync,
 } from 'expo-audio';
 import * as ImagePicker from 'expo-image-picker';
-import { initialWindowMetrics } from 'react-native-safe-area-context';
+import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
@@ -155,6 +155,7 @@ interface Props {
 }
 
 export function ChatRoomScreen({ chatId }: Props) {
+  const insets = useSafeAreaInsets();
   const colors = useTheme();
   const font = useAppFont();
   const router = useRouter();
@@ -819,7 +820,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       {isRecording && (
         <View style={[
           styles.inputRow,
-          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 10 : 90 },
+          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 10 : (insets.bottom || 10) },
         ]}>
           <Animated.View style={[chatStyles.recordingDot, { opacity: pulseAnim }]} />
           <AppText weight="semiBold" style={chatStyles.recordingTimer}>
@@ -841,7 +842,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
       {/* Input */}
       {!isRecording && (
-        <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : 90 }]}>
+        <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : (insets.bottom || 10) }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
               <ActivityIndicator size="small" color={colors.accent} />
