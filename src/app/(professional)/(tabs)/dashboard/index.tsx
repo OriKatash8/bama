@@ -1,11 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
-
-const LOCATION_ICON = require('../../../../../assets/images/location-icon.png');
+import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { Calendar } from 'lucide-react-native';
+import { MapPin, CalendarDays } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
+import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
@@ -41,27 +39,31 @@ type ActiveProject = {
   clientName: string;
 };
 
-function getGreetingKey(): string {
-  const hour = new Date().getHours();
-  if (hour >= 4 && hour < 12) return 'noticeboard.greeting_morning';
-  if (hour >= 12 && hour < 18) return 'noticeboard.greeting_afternoon';
-  if (hour >= 18 && hour < 22) return 'noticeboard.greeting_evening';
-  return 'noticeboard.greeting_night';
+function formatDeadlineShort(deadline?: string, flexibleLabel?: string): string {
+  if (!deadline) return '—';
+  if (deadline === 'flexible') return flexibleLabel ?? '—';
+  const [y, m, d] = deadline.split('-');
+  if (!y || !m || !d) return deadline;
+  return `${d}/${m}`;
 }
 
-function formatDeadline(deadline: string): string {
-  const d = new Date(deadline);
-  if (isNaN(d.getTime())) return deadline;
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-}
+const BLUE = '#1e4fa3';
+const MUTED = '#8890b0';
+const STAT_BG = '#f5f6fb';
+const CARD_SHADOW = {
+  shadowColor: '#1e4fa3',
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 3,
+} as const;
 
 export default function DashboardScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
-  const { user, profile, isLoading: profileLoading } = useProfile();
+  const inProgressCardWidth = Math.round(screenWidth * 0.82);
+
+  const { profile, isLoading: profileLoading } = useProfile();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const router = useRouter();
   const segments = useSegments();
@@ -71,6 +73,7 @@ export default function DashboardScreen() {
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const rowDir = rtl ? 'row-reverse' : ('row' as const);
 
   const categories = useMemo(
     () => profileLoading ? null : [...new Set((profile?.skills ?? []).map(s => s.category))],
@@ -155,18 +158,6 @@ export default function DashboardScreen() {
     dismiss(request.id);
   }
 
-  const gradientText = Platform.OS === 'web' ? ({
-    background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-  } as object) : {};
-
-  const headingStyle = {
-    color: '#004aad',
-    ...font.bold,
-  };
-
   const openProjectsLabel = visible.length === 1
     ? t('noticeboard.open_projects_one', { count: visible.length })
     : t('noticeboard.open_projects_other', { count: visible.length });
@@ -179,45 +170,65 @@ export default function DashboardScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* ── In-progress projects ── */}
         {!activeProjectsLoading && activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
-            <Text style={[styles.heading, headingStyle, { marginBottom: 16, textAlign: 'center' }]}>
-              {t('noticeboard.projects_in_progress')}
-            </Text>
+            {/* Compact section header */}
+            <View style={[styles.sectionHeader, { flexDirection: rowDir }]}>
+              <AppText weight="bold" style={styles.sectionTitle}>
+                {t('noticeboard.projects_in_progress')}
+              </AppText>
+            </View>
+
             <ScrollView
-              horizontal={true}
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.projectsScroll}
             >
               {activeProjects.map(({ chat, project, clientName }) => (
                 <TouchableOpacity
                   key={chat.id}
-                  style={[styles.projectCard, { borderColor: colors.border }]}
+                  style={[styles.projectCard, { width: inProgressCardWidth }]}
                   onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}` as never)}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.projectCardTitle, { ...font.forText(project.title, 'bold'), color: '#004aad', textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-                    {project.title}
-                  </Text>
-                  <Text style={[styles.projectCardMeta, { ...font.forText(clientName, 'regular'), color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-                    {t('noticeboard.client_prefix')}{clientName}
-                  </Text>
-                  <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <Calendar size={12} color={colors.textMuted} strokeWidth={1.5} />
-                    <Text style={[styles.projectCardMeta, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-                      {formatDeadline(project.deadline)}
-                    </Text>
+                  {/* Header: client initial avatar + title/name column */}
+                  <View style={[styles.projectCardHeader, { flexDirection: rowDir }]}>
+                    <View style={styles.projectClientAvatar}>
+                      <AppText weight="bold" style={styles.projectClientInitial}>
+                        {clientName.charAt(0).toUpperCase()}
+                      </AppText>
+                    </View>
+                    <View style={[styles.projectCardNameCol, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+                      <AppText weight="bold" style={[styles.projectCardTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                        {project.title}
+                      </AppText>
+                      <AppText weight="regular" style={[styles.projectCardClient, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                        {t('noticeboard.client_prefix')}{clientName}
+                      </AppText>
+                    </View>
                   </View>
-                  <View style={[styles.projectCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <Image
-                      source={LOCATION_ICON}
-                      style={styles.locationIcon}
-                      contentFit="contain"
-                      cachePolicy="memory-disk"
-                    />
-                    <Text style={[styles.projectCardMeta, { ...font.forText(project.location, 'regular'), color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-                      {project.location}
-                    </Text>
+
+                  {/* Stat squares: location + end date */}
+                  <View style={[styles.projectStatsRow, { flexDirection: rowDir }]}>
+                    <View style={styles.projectStatSquare}>
+                      <MapPin size={12} color={MUTED} strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.projectStatLabel}>
+                        {t('chats_page.stat_location')}
+                      </AppText>
+                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>
+                        {project.location || '—'}
+                      </AppText>
+                    </View>
+                    <View style={styles.projectStatSquare}>
+                      <CalendarDays size={12} color={MUTED} strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.projectStatLabel}>
+                        {t('chats_page.stat_deadline')}
+                      </AppText>
+                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>
+                        {formatDeadlineShort(project.deadline, t('builder.flexible'))}
+                      </AppText>
+                    </View>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -225,14 +236,15 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        <View style={styles.header}>
-          <Text style={[styles.heading, headingStyle]}>
+        {/* ── Notice board ── */}
+        <View style={[styles.sectionHeader, { flexDirection: rowDir, paddingHorizontal: 16 }]}>
+          <AppText weight="bold" style={styles.sectionTitle}>
             {t('noticeboard.notice_board')}
-          </Text>
+          </AppText>
           {!isLoading && (
-            <Text style={[styles.count, { ...font.regular, color: colors.textMuted, textAlign: 'center' }]}>
+            <AppText weight="regular" style={styles.sectionCount}>
               {openProjectsLabel}
-            </Text>
+            </AppText>
           )}
         </View>
 
@@ -288,40 +300,95 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  topBar: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 48,
-  },
-  greetText: { fontSize: 26, fontWeight: '600', textAlign: 'left' },
-  projectsSection: { marginBottom: 8 },
-  projectsScroll: { paddingHorizontal: 16, gap: 12, paddingBottom: 16 },
-  projectCard: {
-    width: 180,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-    gap: 4,
-    backgroundColor: '#ffffff',
-  },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#004aad', marginBottom: 16 },
-  projectCardTitle: { fontSize: 14, fontWeight: '700' },
-  projectCardMeta: { fontSize: 12 },
-  projectCardRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locationIcon: { width: 14, height: 14 },
-  header: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 8,
-  },
-  heading: { fontSize: 36, fontWeight: '800', fontFamily: 'Montserrat-Regular', textAlign: 'center', textTransform: 'uppercase' },
-  count: { fontSize: 13, fontWeight: '500' },
   flex: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
-  gridContent: { paddingVertical: 8, gap: 12, alignItems: 'center' },
+  scrollContent: { paddingBottom: 140 },
+
+  // Section headers
+  sectionHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    color: BLUE,
+  },
+  sectionCount: {
+    fontSize: 12,
+    color: MUTED,
+  },
+
+  // In-progress section
+  projectsSection: { marginBottom: 4 },
+  projectsScroll: { paddingHorizontal: 16, gap: 12, paddingBottom: 12 },
+
+  projectCard: {
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: '#ffffff',
+    gap: 12,
+    ...CARD_SHADOW,
+  },
+  projectCardHeader: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  projectClientAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  projectClientInitial: {
+    fontSize: 15,
+    color: '#ffffff',
+  },
+  projectCardNameCol: {
+    flex: 1,
+    gap: 2,
+  },
+  projectCardTitle: {
+    fontSize: 14,
+    color: BLUE,
+  },
+  projectCardClient: {
+    fontSize: 12,
+    color: MUTED,
+  },
+  projectStatsRow: {
+    gap: 8,
+  },
+  projectStatSquare: {
+    flex: 1,
+    backgroundColor: STAT_BG,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    gap: 3,
+  },
+  projectStatLabel: {
+    fontSize: 10,
+    color: MUTED,
+    textAlign: 'center',
+  },
+  projectStatValue: {
+    fontSize: 12,
+    color: BLUE,
+    textAlign: 'center',
+  },
+
+  // Notice board
+  gridContent: { paddingVertical: 8, gap: 12, paddingBottom: 100 },
+
+  // Empty state
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: 17, fontWeight: '600' },
   emptySubtext: { fontSize: 14 },
+
 });

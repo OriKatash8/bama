@@ -357,7 +357,9 @@
     "dismiss_title": "הסרת מודעה",
     "dismiss_body": "להסיר פרויקט זה מהלוח שלך?",
     "dismiss_cancel": "השאר",
-    "dismiss_confirm": "הסר"
+    "dismiss_confirm": "הסר",
+    "exec_date_label": "תאריך ביצוע",
+    "deadline_short": "דדליין"
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",

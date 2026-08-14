@@ -357,7 +357,9 @@
     "dismiss_title": "Remove Notice",
     "dismiss_body": "Remove this project from your board?",
     "dismiss_cancel": "Keep",
-    "dismiss_confirm": "Remove"
+    "dismiss_confirm": "Remove",
+    "exec_date_label": "Exec. Date",
+    "deadline_short": "Deadline"
   },
   "offers": {
     "bundle_badge": "Bundle deal",

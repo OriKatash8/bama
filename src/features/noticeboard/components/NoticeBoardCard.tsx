@@ -86,6 +86,19 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     const hasMetaRow = hasExec || hasDeadline;
     const locationText = translateCity(request.location, rtl);
 
+    const rowDir = rtl ? 'row-reverse' : ('row' as const);
+    const flexLabel = t('builder.flexible');
+
+    function formatDateCompact(iso?: string): string {
+      if (!iso) return '—';
+      if (iso === 'flexible') return flexLabel;
+      const parts = iso.split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
+      }
+      return iso;
+    }
+
     if (confirmingDismiss) {
       return (
         <View style={[cardStyle, styles.confirmRow]}>
@@ -109,7 +122,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     }
 
     return (
-      <View style={{ position: 'relative' }}>
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDirectInvite && directInviteLabel && (
           <View style={styles.directBadge}>
@@ -117,25 +129,27 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
         )}
 
-        {/* Header: avatar + title + location/time */}
-        <View style={[styles.headerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {poster?.photoURL ? (
-            <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <AppText weight="bold" style={styles.avatarInitial}>
-                {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
-              </AppText>
-            </View>
-          )}
-          <View style={[styles.headerContent, rtl ? { paddingLeft: 36 } : { paddingRight: 36 }]}>
+        {/* Header: [✕ btn] [title+location col flex:1] [avatar] */}
+        <View style={[styles.headerRow, { flexDirection: rowDir }]}>
+          {/* ✕ dismiss — leading corner in RTL */}
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation?.(); setConfirmingDismiss(true); }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
+            style={styles.dismissInline}
+          >
+            <X size={15} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          {/* Title + location */}
+          <View style={[styles.headerContent, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
             <Text
               style={[styles.cardTitle, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={2}
             >
               {request.title}
             </Text>
-            <View style={[styles.locationTimeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.locationTimeRow, { flexDirection: rowDir }]}>
               <MapPin size={11} color={colors.textMuted} strokeWidth={1.5} />
               <Text
                 style={[styles.locationTimeText, { ...font.forText(locationText, 'regular'), color: colors.textMuted }]}
@@ -145,34 +159,53 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               </Text>
             </View>
           </View>
+
+          {/* Avatar — trailing corner */}
+          {poster?.photoURL ? (
+            <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <AppText weight="bold" style={styles.avatarInitial}>
+                {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
+              </AppText>
+            </View>
+          )}
         </View>
 
-        {/* Description snippet — hidden if empty */}
+        {/* Description — tinted box */}
         {hasDesc && (
-          <Text
-            style={[styles.snippetText, { ...font.forText(request.description, 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}
-            numberOfLines={2}
-          >
-            {request.description}
-          </Text>
+          <View style={styles.descBox}>
+            <Text
+              style={[styles.snippetText, { ...font.forText(request.description, 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}
+              numberOfLines={2}
+            >
+              {request.description}
+            </Text>
+          </View>
         )}
 
-        {/* Meta: execution dates + deadline */}
+        {/* Date stat squares */}
         {hasMetaRow && (
-          <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.datesRow, { flexDirection: rowDir }]}>
             {hasExec && (
-              <View style={[styles.metaItem, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={styles.dateSquare}>
                 <Calendar size={11} color={colors.textMuted} strokeWidth={1.5} />
-                <Text style={[styles.metaText, { ...font.forText(request.exec!, 'regular'), color: colors.textMuted }]}>
-                  {request.exec}
-                </Text>
+                <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
+                  {t('noticeboard.exec_date_label')}
+                </AppText>
+                <AppText weight="bold" style={[styles.dateSquareValue, { color: textColor }]}>
+                  {formatDateCompact(request.exec)}
+                </AppText>
               </View>
             )}
             {hasDeadline && (
-              <View style={[styles.metaItem, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={styles.dateSquare}>
                 <Clock size={11} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.metaText, { color: colors.textMuted }]}>
-                  {request.deadline === 'flexible' ? t('builder.flexible') : request.deadline}
+                <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
+                  {t('noticeboard.deadline_short')}
+                </AppText>
+                <AppText weight="bold" style={[styles.dateSquareValue, { color: textColor }]}>
+                  {formatDateCompact(request.deadline)}
                 </AppText>
               </View>
             )}
@@ -182,7 +215,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         <View style={styles.separator} />
 
         {/* Bottom: make-offer button + role pills */}
-        <View style={[styles.bottomRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
           <TouchableOpacity
             style={styles.offerPill}
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
@@ -190,7 +223,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           >
             <AppText weight="bold" style={styles.offerPillText}>{t('noticeboard.make_offer')}</AppText>
           </TouchableOpacity>
-          <View style={[styles.pillsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.pillsRow, { flexDirection: rowDir }]}>
             {visibleRoles.map((role, i) => (
               <View key={i} style={[styles.rolePill, { borderColor: isDirectInvite ? '#cb6ce6' : colors.border }]}>
                 <Text style={[styles.rolePillText, { ...font.forText(role, 'semiBold'), color: textColor }]} numberOfLines={1}>
@@ -206,15 +239,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
         </View>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.dismissAbsolute, rtl ? { left: 14 } : { right: 14 }]}
-        onPress={() => setConfirmingDismiss(true)}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        activeOpacity={0.7}
-      >
-        <X size={16} color={colors.textMuted} />
-      </TouchableOpacity>
-      </View>
     );
   }
 
@@ -315,15 +339,14 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
+    gap: 3,
   },
-  dismissAbsolute: {
-    position: 'absolute',
-    top: 14,
+  dismissInline: {
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
+    flexShrink: 0,
   },
   confirmRow: {
     gap: 12,
@@ -375,25 +398,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // --- Compact card: description + meta ---
+  // --- Compact card: description + dates ---
+  descBox: {
+    backgroundColor: '#f7f8fc',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
   snippetText: {
     fontSize: 13,
     lineHeight: 18,
-    marginBottom: 8,
   },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+  datesRow: {
+    gap: 8,
     marginBottom: 6,
   },
-  metaItem: {
-    flexDirection: 'row',
+  dateSquare: {
+    flex: 1,
+    backgroundColor: '#f5f6fb',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
-  metaText: {
+  dateSquareLabel: {
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  dateSquareValue: {
     fontSize: 12,
+    textAlign: 'center',
   },
 
   // --- Shared separator ---
