@@ -1561,7 +1561,7 @@ function MemberRow({
         </View>
         {/* Line 3: price + Update + Remove */}
         {showBottomRow && (
-          <View style={[styles.memberActionsRow, { flexDirection: rowDir }]}>
+          <View style={[styles.memberActionsRow, { flexDirection: rowDir, justifyContent: rtl ? 'flex-end' : 'flex-start' }]}>
             {payment !== undefined && (
               <View style={[styles.memberPriceGroup, { flexDirection: rowDir }]}>
                 <AppText weight="semiBold" style={styles.memberPrice}>
