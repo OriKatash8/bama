@@ -883,14 +883,18 @@ export default function ProjectDetailsScreen() {
                         );
                       })()}
                       {/* Due date — second in JSX → left in RTL */}
-                      {mission.dueDate && (
-                        <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                          <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
-                          <AppText weight="regular" style={styles.missionDue}>
-                            {formatDueDate(mission.dueDate, t('project_details.due'))}
-                          </AppText>
-                        </View>
-                      )}
+                      {mission.dueDate && (() => {
+                        const parts = mission.dueDate!.split('-');
+                        const dueFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0].slice(2)}` : mission.dueDate!;
+                        return (
+                          <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                            <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
+                            <AppText weight="regular" style={styles.missionDue}>
+                              {t('project_details.due')}{dueFmt}
+                            </AppText>
+                          </View>
+                        );
+                      })()}
                     </View>
                   </View>
 
