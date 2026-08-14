@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { ChevronDown, ChevronUp, X, Check } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Check, User } from 'lucide-react-native';
 import { getDocument } from '@core/firebase/firestore';
 import type { BundleOffer, PriceOffer } from '@core/types/project';
+import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { useAppFont } from '@core/hooks/useAppFont';
-import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
 type Translations = typeof en;
-
 function makeT(translations: Translations) {
   return (key: string): string => {
     const keys = key.split('.');
@@ -20,6 +18,19 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
+
+const CARD_SHADOW = {
+  shadowColor: '#1e4fa3',
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 3,
+} as const;
+
+const BLUE = '#1e4fa3';
+const BORDER_LIGHT = 'rgba(30,79,163,0.12)';
+const REJECT_RED = '#e04b4b';
+const BUNDLE_PURPLE = '#cb6ce6';
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 
@@ -32,17 +43,23 @@ type Props = {
   isAccepting: boolean;
 };
 
-export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, onAccept, onReject, isAccepting }: Props) {
+export function BundleOfferCard({
+  bundle,
+  professionalProfile,
+  onPressProfile,
+  onAccept,
+  onReject,
+  isAccepting,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
   const [offerDetails, setOfferDetails] = useState<PriceOffer[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
-  const font = useAppFont();
-  const colors = useTheme();
   const rtl = language === 'he';
-  const rowDir = rtl ? 'row' : 'row-reverse' as const;
+  const rowDir = rtl ? 'row-reverse' : ('row' as const);
   const displayName = professionalProfile?.displayName ?? '…';
+  const rolesSummary = bundle.slots.map((s) => s.subcategory ?? s.category).join(' · ');
 
   useEffect(() => {
     if (!expanded || offerDetails.length > 0) return;
@@ -56,165 +73,189 @@ export function BundleOfferCard({ bundle, professionalProfile, onPressProfile, o
   }, [expanded, bundle.offerIds, offerDetails.length]);
 
   return (
-    <View style={[styles.container, { flexDirection: rowDir }]}>
-      {/* X button */}
-      <TouchableOpacity onPress={onReject} style={[styles.squareButton, styles.xSquare]} activeOpacity={0.8}>
-        <X size={20} color="#888888" />
-      </TouchableOpacity>
+    <View style={styles.card}>
+      {/* Zone 1 — Bundle badge band */}
+      <View style={{ gap: 8 }}>
+        <View style={[styles.titleBand, { flexDirection: rowDir }]}>
+          <View style={styles.bundleBadge}>
+            <AppText weight="bold" style={styles.bundleBadgeText}>
+              {t('offers.bundle_badge')}
+            </AppText>
+          </View>
+          <AppText weight="regular" style={styles.rolesSummaryLabel} numberOfLines={1}>
+            {rolesSummary}
+          </AppText>
+        </View>
+        <View style={styles.bandDivider} />
+      </View>
 
-      {/* ✓ button */}
-      <TouchableOpacity
-        onPress={onAccept}
-        style={[styles.squareButton, styles.acceptSquare, isAccepting && styles.disabled]}
-        disabled={isAccepting}
-        activeOpacity={0.8}
-      >
-        {isAccepting ? (
-          <ActivityIndicator size="small" color="#ffffff" />
+      {/* Zone 2 — Main row: avatar | name + roles toggle | price square */}
+      <View style={[styles.mainRow, { flexDirection: rowDir }]}>
+        {professionalProfile?.photoURL ? (
+          <Image
+            source={{ uri: professionalProfile.photoURL }}
+            style={styles.avatar}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : (
-          <Check size={20} color="#ffffff" />
-        )}
-      </TouchableOpacity>
-
-      {/* Content card */}
-      <View style={styles.infoSquare}>
-        {/* Bundle badge */}
-        <View style={[styles.badge, { alignSelf: rtl ? 'flex-end' : 'flex-start' }]}>
-          <Text style={[styles.badgeText, { ...font.bold }]}>{t('offers.bundle_badge')}</Text>
-        </View>
-
-        {/* Top: avatar + name + expandable roles */}
-        <View style={[styles.topRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {professionalProfile?.photoURL ? (
-            <Image
-              source={{ uri: professionalProfile.photoURL }}
-              style={styles.avatar}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.avatarInitial, { ...font.bold }]}>
-                {displayName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={[styles.nameCol, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-            <Text style={[styles.name, { ...font.forText(displayName, 'bold') }]} numberOfLines={1}>
-              {displayName}
-            </Text>
-            <TouchableOpacity
-              style={[styles.rolesHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-              onPress={() => setExpanded((v) => !v)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.rolesSummary, { ...font.semiBold }]} numberOfLines={1}>
-                {bundle.slots.map((s) => s.subcategory ?? s.category).join(' · ')}
-              </Text>
-              {expanded ? (
-                <ChevronUp size={14} color="#004aad" />
-              ) : (
-                <ChevronDown size={14} color="#004aad" />
-              )}
-            </TouchableOpacity>
+          <View style={[styles.avatar, styles.avatarFallback]}>
+            <AppText weight="bold" style={styles.avatarInitial}>
+              {displayName.charAt(0).toUpperCase()}
+            </AppText>
           </View>
-        </View>
+        )}
 
-        {/* Per-role breakdown (expanded) */}
-        {expanded && (
-          <View style={styles.breakdown}>
-            {loadingDetails ? (
-              <ActivityIndicator size="small" color="#004aad" />
+        <View style={[styles.nameCol, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+          <AppText weight="bold" style={styles.nameText} numberOfLines={1}>
+            {displayName}
+          </AppText>
+          <TouchableOpacity
+            style={[styles.rolesToggle, { flexDirection: rowDir }]}
+            onPress={() => setExpanded((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <AppText weight="semiBold" style={styles.rolesToggleText} numberOfLines={1}>
+              {rolesSummary}
+            </AppText>
+            {expanded ? (
+              <ChevronUp size={13} color={BLUE} />
             ) : (
-              offerDetails.map((o, i) => (
-                <View key={i} style={[styles.breakdownRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.breakdownRole, { ...font.medium }]}>{o.subcategory ?? o.category}</Text>
-                  <Text style={[styles.breakdownPrice, { ...font.semiBold }]}>₪{o.price.toLocaleString()}</Text>
-                </View>
-              ))
+              <ChevronDown size={13} color={BLUE} />
             )}
-            <View style={styles.breakdownDivider} />
-            <View style={[styles.breakdownRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.breakdownRole, styles.breakdownTotal, { ...font.bold }]}>
-                {t('offers.instead_of')}
-              </Text>
-              <Text style={[styles.breakdownPrice, styles.breakdownTotalPrice, { ...font.bold }]}>
-                ₪{bundle.individualTotal.toLocaleString()}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        <View style={styles.divider} />
-
-        {/* Bottom: bundle price + strikethrough + view profile */}
-        <View style={[styles.bottomRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <View style={[styles.priceGroup, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.bundlePrice, { ...font.bold }]}>
-              ₪{bundle.bundlePrice.toLocaleString()}
-            </Text>
-            <Text style={[styles.strikethrough, { ...font.semiBold }]}>
-              ₪{bundle.individualTotal.toLocaleString()}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={onPressProfile} activeOpacity={0.7}>
-            <Text style={[styles.viewProfileText, { ...font.semiBold }]}>
-              {t('offers.view_profile')}
-            </Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.priceSquare}>
+          <AppText weight="bold" style={styles.priceText}>
+            ₪{bundle.bundlePrice.toLocaleString()}
+          </AppText>
+          <AppText weight="semiBold" style={styles.strikePriceText}>
+            ₪{bundle.individualTotal.toLocaleString()}
+          </AppText>
+        </View>
+      </View>
+
+      {/* Expandable per-role breakdown */}
+      {expanded && (
+        <View style={styles.breakdown}>
+          {loadingDetails ? (
+            <ActivityIndicator size="small" color={BLUE} />
+          ) : (
+            offerDetails.map((o, i) => (
+              <View key={i} style={[styles.breakdownRow, { flexDirection: rowDir }]}>
+                <AppText weight="medium" style={styles.breakdownRole}>
+                  {o.subcategory ?? o.category}
+                </AppText>
+                <AppText weight="semiBold" style={styles.breakdownPrice}>
+                  ₪{o.price.toLocaleString()}
+                </AppText>
+              </View>
+            ))
+          )}
+          <View style={styles.breakdownDivider} />
+          <View style={[styles.breakdownRow, { flexDirection: rowDir }]}>
+            <AppText weight="bold" style={[styles.breakdownRole, styles.breakdownTotalLabel]}>
+              {t('offers.instead_of')}
+            </AppText>
+            <AppText weight="bold" style={[styles.breakdownPrice, styles.breakdownTotalPrice]}>
+              ₪{bundle.individualTotal.toLocaleString()}
+            </AppText>
+          </View>
+        </View>
+      )}
+
+      {/* Zone 3 — Separator */}
+      <View style={styles.separator} />
+
+      {/* Zone 4 — Action row: accept (50%) | view profile (~33%) | divider | reject (~17%) */}
+      <View style={[styles.actionStrip, { flexDirection: rowDir }]}>
+        <TouchableOpacity
+          style={[styles.actionAccept, isAccepting && styles.actionDisabled]}
+          onPress={onAccept}
+          disabled={isAccepting}
+          activeOpacity={0.85}
+        >
+          {isAccepting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <View style={[styles.actionInner, { flexDirection: rowDir }]}>
+              <Check size={15} color="#fff" strokeWidth={2.5} />
+              <AppText weight="semiBold" style={styles.actionAcceptText}>
+                {t('offers.accept')}
+              </AppText>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7}>
+          <View style={[styles.actionInner, { flexDirection: rowDir }]}>
+            <User size={12} color={BLUE} strokeWidth={1.8} />
+            <AppText
+              weight="semiBold"
+              style={styles.actionProfileText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
+              {t('offers.view_profile')}
+            </AppText>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.actionInnerDivider} />
+
+        <TouchableOpacity style={styles.actionReject} onPress={onReject} activeOpacity={0.7}>
+          <AppText weight="semiBold" style={styles.actionRejectText}>
+            {t('offers.deny')}
+          </AppText>
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    width: '100%',
-    marginBottom: 12,
-  },
-  squareButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  xSquare: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#d0d0d0',
-  },
-  acceptSquare: {
-    backgroundColor: '#004aad',
-  },
-  disabled: { opacity: 0.5 },
-  infoSquare: {
-    flex: 1,
-    minWidth: 0,
+  card: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 12,
+    marginBottom: 12,
+    gap: 12,
+    ...CARD_SHADOW,
+  },
+  // Zone 1
+  titleBand: {
+    alignItems: 'center',
     gap: 8,
   },
-  badge: {
-    backgroundColor: '#cb6ce6',
+  bundleBadge: {
+    backgroundColor: BUNDLE_PURPLE,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 3,
+    flexShrink: 0,
   },
-  badgeText: { color: '#ffffff', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  topRow: {
-    flexDirection: 'row',
+  bundleBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  rolesSummaryLabel: {
+    fontSize: 11,
+    color: '#8890b0',
+    flex: 1,
+  },
+  bandDivider: {
+    height: 1,
+    backgroundColor: BORDER_LIGHT,
+  },
+  // Zone 2
+  mainRow: {
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   avatar: {
     width: 44,
@@ -222,63 +263,144 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     flexShrink: 0,
   },
-  avatarFallback: { justifyContent: 'center', alignItems: 'center' },
-  avatarInitial: { color: '#ffffff', fontSize: 17, fontWeight: '700' },
+  avatarFallback: {
+    backgroundColor: BLUE,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    fontSize: 17,
+    color: '#ffffff',
+  },
   nameCol: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
-  name: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#004aad',
+  nameText: {
+    fontSize: 18,
+    color: BLUE,
   },
-  rolesHeader: {
+  rolesToggle: {
     alignItems: 'center',
     gap: 4,
   },
-  rolesSummary: { flex: 1, fontSize: 12, fontWeight: '600', color: '#004aad' },
+  rolesToggleText: {
+    fontSize: 12,
+    color: BLUE,
+    flex: 1,
+  },
+  priceSquare: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: 'rgba(30,79,163,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    flexShrink: 0,
+    gap: 2,
+  },
+  priceText: {
+    fontSize: 17,
+    color: BLUE,
+    textAlign: 'center',
+  },
+  strikePriceText: {
+    fontSize: 11,
+    color: '#8890b0',
+    textAlign: 'center',
+    textDecorationLine: 'line-through',
+  },
+  // Breakdown
   breakdown: {
-    backgroundColor: 'rgba(0,74,173,0.05)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(30,79,163,0.05)',
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 6,
   },
-  breakdownRow: { justifyContent: 'space-between', alignItems: 'center' },
-  breakdownRole: { fontSize: 13, color: '#004aad', fontWeight: '500' },
-  breakdownPrice: { fontSize: 13, color: '#004aad', fontWeight: '600' },
-  breakdownDivider: { height: 1, backgroundColor: 'rgba(0,74,173,0.15)', marginVertical: 2 },
-  breakdownTotal: { fontWeight: '700', opacity: 0.7 },
-  breakdownTotalPrice: { fontWeight: '700', opacity: 0.7, textDecorationLine: 'line-through' },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  breakdownRow: {
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  priceGroup: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
-  bundlePrice: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#004aad',
-  },
-  strikethrough: {
+  breakdownRole: {
     fontSize: 13,
-    color: '#888',
-    fontWeight: '600',
+    color: BLUE,
+  },
+  breakdownPrice: {
+    fontSize: 13,
+    color: BLUE,
+  },
+  breakdownDivider: {
+    height: 1,
+    backgroundColor: BORDER_LIGHT,
+    marginVertical: 2,
+  },
+  breakdownTotalLabel: {
+    opacity: 0.7,
+  },
+  breakdownTotalPrice: {
+    opacity: 0.7,
     textDecorationLine: 'line-through',
   },
-  viewProfileText: {
+  // Zone 3
+  separator: {
+    height: 1,
+    backgroundColor: BORDER_LIGHT,
+    marginVertical: -2,
+  },
+  // Zone 4
+  actionStrip: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: BORDER_LIGHT,
+    height: 44,
+  },
+  actionAccept: {
+    flex: 3,
+    height: 44,
+    backgroundColor: BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionDisabled: {
+    opacity: 0.6,
+  },
+  actionInner: {
+    alignItems: 'center',
+    gap: 5,
+  },
+  actionAcceptText: {
+    fontSize: 13,
+    color: '#ffffff',
+  },
+  actionProfile: {
+    flex: 2,
+    height: 44,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  actionProfileText: {
+    fontSize: 11,
+    color: BLUE,
+  },
+  actionInnerDivider: {
+    width: 1,
+    height: 44,
+    backgroundColor: BORDER_LIGHT,
+  },
+  actionReject: {
+    flex: 1,
+    height: 44,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionRejectText: {
     fontSize: 12,
-    color: '#004aad',
-    textDecorationLine: 'underline',
+    color: REJECT_RED,
   },
 });
