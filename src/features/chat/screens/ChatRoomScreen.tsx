@@ -823,7 +823,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       )}
 
       {/* Recording bar — same geometry as input row, no position jump */}
-      {chatType === 'purchase' && chatArchived ? (
+      {chatType === 'purchase' && chatArchived && (
         <View style={[styles.inputRow, {
           paddingBottom: insets.bottom || 10,
           borderTopColor: colors.border,
@@ -837,9 +837,9 @@ export function ChatRoomScreen({ chatId }: Props) {
               : t('chats.purchase_completed')}
           </AppText>
         </View>
-      ) : (
-        <>
-      {isRecording && (
+      )}
+
+      {!(chatType === 'purchase' && chatArchived) && isRecording && (
         <View style={[
           styles.inputRow,
           { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 10 : (insets.bottom || 10) },
@@ -863,7 +863,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       )}
 
       {/* Input */}
-      {!isRecording && (
+      {!(chatType === 'purchase' && chatArchived) && !isRecording && (
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : (insets.bottom || 10) }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
@@ -906,8 +906,6 @@ export function ChatRoomScreen({ chatId }: Props) {
             </>
           )}
         </View>
-      )}
-        </>
       )}
     </KeyboardAvoidingView>
 
