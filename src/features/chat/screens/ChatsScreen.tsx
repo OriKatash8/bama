@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-nati
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
-import { Users, ShoppingBag } from 'lucide-react-native';
+import { Users, Handbag } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
@@ -160,7 +160,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     if (item.type === 'purchase') {
       return (
         <View style={[styles.avatar, { backgroundColor: item.archived ? '#e5e7eb' : '#fff7ed' }]}>
-          <ShoppingBag size={24} color={item.archived ? '#9ca3af' : '#f59e0b'} strokeWidth={1.8} />
+          <Handbag size={24} color={item.archived ? '#9ca3af' : '#f59e0b'} strokeWidth={1.8} />
         </View>
       );
     }
