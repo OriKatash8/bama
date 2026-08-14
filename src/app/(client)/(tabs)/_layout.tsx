@@ -56,7 +56,7 @@ export default function ClientTabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: getFloatingTabBarStyle(isDark),
+            tabBarStyle: inChatRoom ? { display: 'none' } : getFloatingTabBarStyle(isDark),
             tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['home', 'browse', 'chats', 'projects']} />,
             tabBarActiveTintColor: '#004aad',
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,

@@ -58,7 +58,7 @@ export default function ProfessionalTabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: getFloatingTabBarStyle(isDark),
+            tabBarStyle: inChatRoom ? { display: 'none' } : getFloatingTabBarStyle(isDark),
             tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,
             tabBarActiveTintColor: '#004aad',
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
