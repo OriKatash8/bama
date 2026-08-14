@@ -360,7 +360,8 @@
     "bundle_section": "Bundle Offers",
     "view_profile": "View Profile",
     "for_project": "For: ",
-    "deny": "Deny"
+    "deny": "Deny",
+    "accept": "Accept"
   },
   "marketplace": {
     "category_camera": "Camera",
