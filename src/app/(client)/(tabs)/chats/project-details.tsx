@@ -866,28 +866,32 @@ export default function ProjectDetailsScreen() {
                       {mission.title}
                     </AppText>
                     <View style={styles.cardDivider} />
-                    {mission.dueDate && (
-                      <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                        <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
-                        <AppText weight="regular" style={styles.missionDue}>
-                          {formatDueDate(mission.dueDate, t('project_details.due'))}
-                        </AppText>
-                      </View>
-                    )}
-                    {mission.createdAt && (() => {
-                      const d = new Date(mission.createdAt.seconds * 1000);
-                      const dd = String(d.getDate()).padStart(2, '0');
-                      const mm = String(d.getMonth() + 1).padStart(2, '0');
-                      const yy = String(d.getFullYear()).slice(2);
-                      return (
+                    <View style={[styles.missionDatesRow, { flexDirection: rowDirection }]}>
+                      {/* Upload date — first in JSX → right in RTL */}
+                      {mission.createdAt && (() => {
+                        const d = new Date(mission.createdAt.seconds * 1000);
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const yy = String(d.getFullYear()).slice(2);
+                        return (
+                          <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                            <Calendar size={12} color="#8890b0" strokeWidth={1.5} />
+                            <AppText weight="regular" style={styles.missionDue}>
+                              {t('project_details.mission_uploaded')}{dd}/{mm}/{yy}
+                            </AppText>
+                          </View>
+                        );
+                      })()}
+                      {/* Due date — second in JSX → left in RTL */}
+                      {mission.dueDate && (
                         <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                          <Calendar size={12} color="#8890b0" strokeWidth={1.5} />
+                          <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
                           <AppText weight="regular" style={styles.missionDue}>
-                            {t('project_details.mission_uploaded')}{dd}/{mm}/{yy}
+                            {formatDueDate(mission.dueDate, t('project_details.due'))}
                           </AppText>
                         </View>
-                      );
-                    })()}
+                      )}
+                    </View>
                   </View>
 
                   {/* Status pill — trailing (left in RTL) */}
@@ -1971,6 +1975,11 @@ const styles = StyleSheet.create({
   carouselStatusText: {
     fontSize: 11,
     textAlign: 'center',
+  },
+  missionDatesRow: {
+    alignSelf: 'stretch',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   // ── Mission modal inputs ───────────────────────────────────────────────────────
