@@ -97,7 +97,9 @@ export function listenToListingByChatId(
       callback(null);
       return;
     }
-    const d = snap.docs[0];
-    callback({ id: d.id, ...d.data() } as MarketplaceListing);
+    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as MarketplaceListing));
+    // Prefer the active purchase (reserved) over a completed one (sold)
+    const active = docs.find(d => d.status === 'reserved') ?? docs.find(d => d.status === 'sold') ?? null;
+    callback(active);
   });
 }
