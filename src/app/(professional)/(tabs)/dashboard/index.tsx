@@ -306,7 +306,8 @@ const styles = StyleSheet.create({
   // Section headers
   sectionHeader: {
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   },
 
   // Notice board
-  gridContent: { paddingVertical: 8, gap: 12, paddingBottom: 100 },
+  gridContent: { paddingVertical: 8, gap: 12, paddingBottom: 100, paddingHorizontal: 16 },
 
   // Empty state
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
