@@ -117,7 +117,7 @@ export default function HomeScreen() {
   );
 
   // ── Form state (single source of truth for all steps + summary) ──
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [description, setDescription] = useState('');
   const [exec, setExec] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -166,17 +166,7 @@ export default function HomeScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
   }
 
-  // ── Step 2 → Step 3 ──
-  function handleToStep3() {
-    const errs: Record<string, string> = {};
-    if (totalCount === 0) errs.slots = t('builder.error_role');
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-    setStep(3);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
-  }
-
-  // ── Step 3 → Summary screen ──
+  // ── Step 2 → Summary screen ──
   function handleReview() {
     router.push({
       pathname: '/(client)/(tabs)/home/summary' as never,
@@ -221,10 +211,9 @@ export default function HomeScreen() {
             <Text style={styles.pageTitle}>
               {rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}
             </Text>
-            <Text style={styles.stepLabel}>{rtl ? `שלב 1 מתוך 3` : `Step 1 of 3`}</Text>
+            <Text style={styles.stepLabel}>{rtl ? `שלב 1 מתוך 2` : `Step 1 of 2`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
             </View>
 
@@ -398,11 +387,10 @@ export default function HomeScreen() {
             <Text style={styles.pageTitle}>
               {rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}
             </Text>
-            <Text style={styles.stepLabel}>{rtl ? `שלב 2 מתוך 3` : `Step 2 of 3`}</Text>
+            <Text style={styles.stepLabel}>{rtl ? `שלב 2 מתוך 2` : `Step 2 of 2`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
             </View>
 
             <TouchableOpacity style={styles.backArrow} onPress={() => setStep(1)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -477,84 +465,7 @@ export default function HomeScreen() {
                   styles.submitBtn,
                   Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
                 ]}
-                onPress={handleToStep3}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.submitText}>{t('builder.review')}</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* ══════════════ STEP 3: Role questions ══════════════ */}
-        {step === 3 && (
-          <>
-            <Text style={styles.pageTitle}>
-              {rtl ? 'פרטי הפרויקט' : 'Project Details'}
-            </Text>
-            <Text style={styles.stepLabel}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
-            <View style={styles.progressRow}>
-              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-            </View>
-
-            <TouchableOpacity style={styles.backArrow} onPress={() => setStep(2)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
-              <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
-            </TouchableOpacity>
-
-            <View style={[styles.rolesCard, { marginTop: 16 }]}>
-              {[...new Set(slots.map(s => s.category))].map(category => {
-                const questions = questionsForCategory(category);
-                if (questions.length === 0) return null;
-                const roleKey = CATEGORY_QUESTION_MAP[category];
-                return (
-                  <View key={category} style={{ marginBottom: 24 }}>
-                    <Text style={[styles.sectionTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginBottom: 12, fontSize: 16 }]}>
-                      {roleKey}
-                    </Text>
-                    {questions.map(q => {
-                      const selected = roleAnswers[roleKey]?.[q.id];
-                      return (
-                        <View key={q.id} style={{ marginBottom: 16 }}>
-                          <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginTop: 0, marginBottom: 8, fontSize: 15 }]}>
-                            {questionLabel(q, rtl)}
-                          </Text>
-                          <View style={styles.chipRow}>
-                            {q.options.map(option => {
-                              const isSelected = selected === option;
-                              return (
-                                <TouchableOpacity
-                                  key={option}
-                                  style={[styles.chip, isSelected ? styles.chipSelected : styles.chipUnselected]}
-                                  onPress={() => setRoleAnswers(prev => ({ ...prev, [roleKey]: { ...(prev[roleKey] ?? {}), [q.id]: option } }))}
-                                  activeOpacity={0.8}
-                                >
-                                  <Text style={[isSelected ? styles.chipTextSelected : styles.chipTextUnselected, { ...font.semiBold }]}>
-                                    {option}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                );
-              })}
-            </View>
-
-            <View style={styles.submitWrap}>
-              <TouchableOpacity
-                style={[
-                  styles.submitBtn,
-                  !allAnswered && styles.disabled,
-                  Platform.OS === 'web' && allAnswered && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
-                ]}
                 onPress={handleReview}
-                disabled={!allAnswered}
                 activeOpacity={0.8}
               >
                 <Text style={styles.submitText}>{t('builder.review')}</Text>
@@ -562,6 +473,7 @@ export default function HomeScreen() {
             </View>
           </>
         )}
+
       </ScrollView>
 
 
