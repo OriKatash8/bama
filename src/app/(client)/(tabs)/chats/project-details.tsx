@@ -1267,17 +1267,16 @@ export default function ProjectDetailsScreen() {
               </TouchableOpacity>
             </View>
           </ScrollView>
+          {showDueDatePicker && (
+            <MiniCalendar
+              value={newMissionDueDate}
+              onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
+              onClose={() => setShowDueDatePicker(false)}
+            />
+          )}
           </View>
         </View>
       </Modal>
-
-      {showDueDatePicker && (
-        <MiniCalendar
-          value={newMissionDueDate}
-          onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
-          onClose={() => setShowDueDatePicker(false)}
-        />
-      )}
 
       {/* Add Meeting Modal */}
       <Modal
