@@ -237,8 +237,8 @@ export default function DashboardScreen() {
         )}
 
         {/* ── Notice board ── */}
-        <View style={[styles.sectionHeader, { flexDirection: rowDir, paddingHorizontal: 16 }]}>
-          <AppText weight="bold" style={styles.sectionTitle}>
+        <View style={[styles.sectionHeader, { flexDirection: 'column', alignItems: 'center', paddingHorizontal: 16 }]}>
+          <AppText weight="bold" style={[styles.sectionTitle, { textAlign: 'center' }]}>
             {t('noticeboard.notice_board')}
           </AppText>
           {!isLoading && (
