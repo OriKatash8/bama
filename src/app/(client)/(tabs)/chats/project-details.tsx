@@ -1171,7 +1171,8 @@ export default function ProjectDetailsScreen() {
         onRequestClose={() => setShowAddMission(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
+          <ScrollView automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
             <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.add_mission_title')}
             </Text>
@@ -1264,6 +1265,7 @@ export default function ProjectDetailsScreen() {
                 )}
               </TouchableOpacity>
             </View>
+          </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1284,7 +1286,8 @@ export default function ProjectDetailsScreen() {
         onRequestClose={() => setShowAddMeeting(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
+          <ScrollView automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
             <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.add_meeting_title')}
             </Text>
@@ -1400,6 +1403,7 @@ export default function ProjectDetailsScreen() {
                 )}
               </TouchableOpacity>
             </View>
+          </ScrollView>
           </View>
         </View>
       </Modal>
@@ -2108,7 +2112,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
-    gap: 12,
   },
   modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
   feeRow: {
