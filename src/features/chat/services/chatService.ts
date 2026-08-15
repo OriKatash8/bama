@@ -127,6 +127,7 @@ export async function createCommunityChat(
   name: string,
   description: string,
   ownerId: string,
+  photoURL?: string,
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'chats'), {
     type: 'community' as const,
@@ -136,6 +137,7 @@ export async function createCommunityChat(
     members: [ownerId],
     lastMessage: null,
     createdAt: serverTimestamp(),
+    ...(photoURL ? { photoURL } : {}),
   });
   return ref.id;
 }

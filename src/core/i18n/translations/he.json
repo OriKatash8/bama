@@ -529,7 +529,12 @@
     "reject": "דחה",
     "members": "חברים",
     "no_communities": "אין קהילות עדיין",
-    "no_discover": "אין קהילות לגילוי"
+    "no_discover": "אין קהילות לגילוי",
+    "add_photo": "הוסף תמונה",
+    "change_photo": "שנה תמונה",
+    "no_discover_title": "אין קהילות לגילוי כרגע",
+    "no_discover_subtitle": "הצטרף לקהילה קיימת או צור אחת חדשה",
+    "uploading_photo": "מעלה תמונה..."
   },
   "courses": {
     "browse": "עיין בקורסים",

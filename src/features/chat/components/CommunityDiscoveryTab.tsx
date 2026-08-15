@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { Plus } from 'lucide-react-native';
+import { Plus, Users } from 'lucide-react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -24,21 +25,35 @@ function makeT(translations: Translations) {
   };
 }
 
-const CATEGORY_IMAGE: Record<string, number> = {
-  'Video Photographer': require('../../../../assets/images/categories/videographer-blue.png'),
-  'Still Photographer': require('../../../../assets/images/categories/blue-cam.png'),
-  'Editor':             require('../../../../assets/images/categories/blue-edit.png'),
-  'Graphic Designer':   require('../../../../assets/images/categories/blue-grafic.png'),
-  'Social Media':       require('../../../../assets/images/categories/blue-social.png'),
-  'Studio & Audio':     require('../../../../assets/images/categories/blue-sound.png'),
-  'Lighting Tech':      require('../../../../assets/images/categories/blue-lightning.png'),
-  'Sound Recordist':    require('../../../../assets/images/categories/blue-mic.png'),
-};
-
 const CATEGORIES = Object.keys(CREW_CATEGORIES);
 
 interface Props {
   onRequestCommunity: () => void;
+}
+
+function CommunityAvatar({ community, size = 46 }: { community: Chat; size?: number }) {
+  const radius = Math.round(size * 0.26);
+  const marginStyle = { marginRight: 10 };
+  if (community.photoURL) {
+    return (
+      <Image
+        source={{ uri: community.photoURL }}
+        style={{ width: size, height: size, borderRadius: radius, ...marginStyle }}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+      />
+    );
+  }
+  return (
+    <LinearGradient
+      colors={['#1e4fa3', '#cb6ce6']}
+      style={{ width: size, height: size, borderRadius: radius, alignItems: 'center', justifyContent: 'center', ...marginStyle }}
+    >
+      <AppText weight="bold" style={{ color: '#fff', fontSize: Math.round(size * 0.43) }}>
+        {(community.name ?? '?').charAt(0).toUpperCase()}
+      </AppText>
+    </LinearGradient>
+  );
 }
 
 export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
@@ -68,23 +83,28 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
     return c.lastMessage?.text ?? '';
   }
 
+  const cardShadow = {
+    shadowColor: '#1e4fa3',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  };
+
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header row */}
-      <View style={[styles.headerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <AppText weight="bold" style={[styles.pageTitle, { color: colors.text }]}>
-          {t('chats_page.tab_communities')}
+
+      {/* My Communities — label + create button in one row */}
+      <View style={[styles.sectionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textSec }]}>
+          {t('communities.my_communities')}
         </AppText>
-        <TouchableOpacity style={[styles.plusBtn, { backgroundColor: colors.primary }]} onPress={onRequestCommunity}>
+        <TouchableOpacity style={[styles.plusBtn, { backgroundColor: colors.primary }]} onPress={onRequestCommunity} activeOpacity={0.7}>
           <Plus size={16} color="#fff" />
           <AppText weight="semiBold" style={styles.plusBtnText}>{t('communities.request_create')}</AppText>
         </TouchableOpacity>
       </View>
 
-      {/* My Communities */}
-      <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
-        {t('communities.my_communities')}
-      </AppText>
       {myCommunities.length === 0 ? (
         <AppText weight="regular" style={[styles.empty, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
           {t('communities.no_communities')}
@@ -93,25 +113,23 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
         myCommunities.map((c) => (
           <TouchableOpacity
             key={c.id}
-            style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}
+            style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border, ...cardShadow }]}
             onPress={() => navigateToCommunity(c.id)}
             activeOpacity={0.75}
           >
             <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {c.category && CATEGORY_IMAGE[c.category] ? (
-                <Image
-                  source={CATEGORY_IMAGE[c.category]}
-                  style={{ width: 32, height: 32, borderRadius: 6, marginRight: rtl ? 0 : 8, marginLeft: rtl ? 8 : 0 }}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
-              ) : null}
-              <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
-                {c.name}
-              </AppText>
-              <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
-                {c.members.length} {t('communities.members')}
-              </AppText>
+              <CommunityAvatar community={c} />
+              <View style={{ flex: 1 }}>
+                <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
+                  {c.name}
+                </AppText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                  <Users size={12} color={colors.textMuted} strokeWidth={1.5} />
+                  <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
+                    {c.members.length} {t('communities.members')}
+                  </AppText>
+                </View>
+              </View>
             </View>
             {!!formatLastMessage(c) && (
               <AppText weight="regular" style={[styles.preview, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
@@ -132,9 +150,8 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 8, flexDirection: rtl ? 'row-reverse' : 'row' }}
-        style={{ marginBottom: 12 }}
+        style={{ marginHorizontal: -16, marginBottom: 12 }}
       >
-        {/* "All" chip */}
         <TouchableOpacity
           style={[styles.filterChip, filterCategory === null && styles.filterChipActive]}
           onPress={() => setFilterCategory(null)}
@@ -160,29 +177,38 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       </ScrollView>
 
       {filteredDiscover.length === 0 ? (
-        <AppText weight="regular" style={[styles.empty, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-          {t('communities.no_discover')}
-        </AppText>
+        <View style={styles.emptyState}>
+          <View style={[styles.emptyIconCircle, { backgroundColor: colors.inputBg }]}>
+            <Users size={32} color={colors.primary} strokeWidth={1.5} />
+          </View>
+          <AppText weight="bold" style={[styles.emptyTitle, { color: colors.text }]}>
+            {t('communities.no_discover_title')}
+          </AppText>
+          <AppText weight="regular" style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+            {t('communities.no_discover_subtitle')}
+          </AppText>
+          <TouchableOpacity style={[styles.emptyCta, { backgroundColor: colors.primary }]} onPress={onRequestCommunity} activeOpacity={0.7}>
+            <AppText weight="semiBold" style={{ color: '#fff', fontSize: 14 }}>{t('communities.request_create')}</AppText>
+          </TouchableOpacity>
+        </View>
       ) : (
         filteredDiscover.map((c) => {
           const status = joinStatuses[c.id];
           return (
-            <View key={c.id} style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <View key={c.id} style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border, ...cardShadow }]}>
               <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {c.category && CATEGORY_IMAGE[c.category] ? (
-                  <Image
-                    source={CATEGORY_IMAGE[c.category]}
-                    style={{ width: 32, height: 32, borderRadius: 6, marginRight: rtl ? 0 : 8, marginLeft: rtl ? 8 : 0 }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                ) : null}
-                <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
-                  {c.name}
-                </AppText>
-                <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
-                  {c.members.length} {t('communities.members')}
-                </AppText>
+                <CommunityAvatar community={c} />
+                <View style={{ flex: 1 }}>
+                  <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
+                    {c.name}
+                  </AppText>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <Users size={12} color={colors.textMuted} strokeWidth={1.5} />
+                    <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
+                      {c.members.length} {t('communities.members')}
+                    </AppText>
+                  </View>
+                </View>
               </View>
               {!!c.description && (
                 <AppText weight="regular" style={[styles.description, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
@@ -215,16 +241,15 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
 
 const styles = StyleSheet.create({
   container: { padding: 16, paddingTop: 8 },
-  headerRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  pageTitle: { fontSize: 18, fontWeight: '700' },
+  sectionRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  sectionLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   plusBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
   plusBtnText: { color: '#fff', fontSize: 13 },
-  sectionLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   empty: { fontSize: 14, marginBottom: 8 },
   card: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 10 },
-  cardHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  cardName: { fontSize: 15, fontWeight: '600', flex: 1 },
-  memberCount: { fontSize: 12, flexShrink: 0 },
+  cardHeader: { alignItems: 'center', marginBottom: 4 },
+  cardName: { fontSize: 15, fontWeight: '600' },
+  memberCount: { fontSize: 12 },
   preview: { fontSize: 13 },
   description: { fontSize: 13, marginBottom: 10 },
   cardFooter: { marginTop: 8 },
@@ -243,4 +268,9 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: '#004aad' },
   filterChipText: { fontSize: 12, color: '#004aad' },
   filterChipTextActive: { color: '#ffffff' },
+  emptyState: { alignItems: 'center', paddingVertical: 32, gap: 10 },
+  emptyIconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyTitle: { fontSize: 16, marginTop: 4, textAlign: 'center' },
+  emptySubtitle: { fontSize: 13, maxWidth: 260, textAlign: 'center' },
+  emptyCta: { marginTop: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
 });

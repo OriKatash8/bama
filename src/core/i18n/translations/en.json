@@ -529,7 +529,12 @@
     "reject": "Reject",
     "members": "Members",
     "no_communities": "No communities yet",
-    "no_discover": "No communities to discover"
+    "no_discover": "No communities to discover",
+    "add_photo": "Add Photo",
+    "change_photo": "Change Photo",
+    "no_discover_title": "No communities to discover right now",
+    "no_discover_subtitle": "Join an existing community or create a new one",
+    "uploading_photo": "Uploading photo..."
   },
   "courses": {
     "browse": "Browse Courses",

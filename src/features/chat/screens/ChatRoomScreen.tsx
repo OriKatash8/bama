@@ -176,6 +176,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
+  const [communityPhotoURL, setCommunityPhotoURL] = useState<string | undefined>(undefined);
+  const [communityPhotoUploading, setCommunityPhotoUploading] = useState(false);
   const [manageVisible, setManageVisible] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<{ userId: string; displayName: string }[]>([]);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
@@ -283,6 +285,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       setChatProjectId(data.projectId);
       if (data.ownerId) setChatOwnerId(data.ownerId);
       if (data.members) setChatMembers(data.members as string[]);
+      setCommunityPhotoURL(data.photoURL);
 
       if (!nameResolved) {
         nameResolved = true;
@@ -436,6 +439,25 @@ export function ChatRoomScreen({ chatId }: Props) {
       flatListRef.current?.scrollToEnd({ animated: false });
     }
   }, [messages.length]);
+
+  async function handleChangeCommunityPhoto() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as const,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    setCommunityPhotoUploading(true);
+    try {
+      const blob = await fetch(result.assets[0].uri).then((r) => r.blob());
+      const url = await uploadFile(`community-images/${chatId}.jpg`, blob);
+      await updateDoc(doc(db, 'chats', chatId), { photoURL: url });
+      setCommunityPhotoURL(url);
+    } finally {
+      setCommunityPhotoUploading(false);
+    }
+  }
 
   async function handleApproveRequest(userId: string) {
     await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'approved' });
@@ -1116,6 +1138,56 @@ export function ChatRoomScreen({ chatId }: Props) {
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
+
+              {/* Community avatar — editable by owner */}
+              {chatType === 'community' && (
+                <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                  <TouchableOpacity
+                    onPress={currentUserId === chatOwnerId ? handleChangeCommunityPhoto : undefined}
+                    activeOpacity={currentUserId === chatOwnerId ? 0.8 : 1}
+                    style={{ position: 'relative' }}
+                  >
+                    {communityPhotoURL ? (
+                      <Image
+                        source={{ uri: communityPhotoURL }}
+                        style={{ width: 72, height: 72, borderRadius: 16 }}
+                      />
+                    ) : (
+                      <LinearGradient
+                        colors={['#1e4fa3', '#cb6ce6']}
+                        style={{ width: 72, height: 72, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <AppText weight="bold" style={{ color: '#fff', fontSize: 28 }}>
+                          {(chatName ?? '?').charAt(0).toUpperCase()}
+                        </AppText>
+                      </LinearGradient>
+                    )}
+                    {currentUserId === chatOwnerId && !communityPhotoUploading && (
+                      <View style={{
+                        position: 'absolute', bottom: -4, right: -4,
+                        width: 24, height: 24, borderRadius: 12,
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        alignItems: 'center', justifyContent: 'center',
+                        borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+                      }}>
+                        <Camera size={12} color="#fff" strokeWidth={2} />
+                      </View>
+                    )}
+                    {communityPhotoUploading && (
+                      <View style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                        borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.45)',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <ActivityIndicator size="small" color="#fff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <AppText weight="semiBold" style={{ color: '#fff', marginTop: 8, fontSize: 15 }}>
+                    {chatName}
+                  </AppText>
+                </View>
+              )}
 
               {/* Pending Requests */}
               <AppText weight="semiBold" style={manageStyles.sectionTitle}>

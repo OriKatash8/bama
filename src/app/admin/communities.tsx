@@ -22,6 +22,7 @@ type CommunityRequest = {
   requesterName: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Timestamp | null;
+  photoURL?: string;
 };
 
 type Community = {
@@ -75,7 +76,7 @@ export default function CommunitiesAdmin() {
   }, []);
 
   async function handleApprove(req: CommunityRequest) {
-    await createCommunityChat(req.name, req.description, req.requesterId);
+    await createCommunityChat(req.name, req.description, req.requesterId, req.photoURL);
     await updateDoc(doc(db, 'communityRequests', req.id), { status: 'approved' });
     showToast('Community approved', 'success');
   }

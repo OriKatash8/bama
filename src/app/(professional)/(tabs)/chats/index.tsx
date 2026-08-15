@@ -4,7 +4,10 @@ import {
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Plus } from 'lucide-react-native';
+import { X, Plus, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
+import { uploadFile } from '@core/firebase/storage';
 import {
   collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy,
 } from 'firebase/firestore';
@@ -59,6 +62,8 @@ export default function ProfessionalChatsScreen() {
   const [commModal, setCommModal] = useState(false);
   const [commName, setCommName] = useState('');
   const [commDesc, setCommDesc] = useState('');
+  const [commPhotoUri, setCommPhotoUri] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Courses state
@@ -76,6 +81,16 @@ export default function ProfessionalChatsScreen() {
     });
   }, []);
 
+  async function handlePickCommunityPhoto() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as const,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) setCommPhotoUri(result.assets[0].uri);
+  }
+
   async function handleSubmitCommunityRequest() {
     console.log('[communityRequest] submit tapped — name:', commName, 'desc:', commDesc, 'user:', user?.id);
     if (!commName.trim() || !commDesc.trim()) {
@@ -86,6 +101,19 @@ export default function ProfessionalChatsScreen() {
       console.log('[communityRequest] aborted — no user');
       return;
     }
+    setSubmitting(true);
+    let photoURL: string | undefined;
+    if (commPhotoUri) {
+      setUploadingPhoto(true);
+      try {
+        const blob = await fetch(commPhotoUri).then((r) => r.blob());
+        photoURL = await uploadFile(`community-images/${Date.now()}.jpg`, blob);
+      } catch (e) {
+        console.log('[communityRequest] photo upload error:', e);
+      } finally {
+        setUploadingPhoto(false);
+      }
+    }
     const payload = {
       name: commName.trim(),
       description: commDesc.trim(),
@@ -93,9 +121,8 @@ export default function ProfessionalChatsScreen() {
       requesterName: user.displayName,
       status: 'pending',
       createdAt: serverTimestamp(),
+      ...(photoURL ? { photoURL } : {}),
     };
-    console.log('[communityRequest] writing to communityRequests:', JSON.stringify({ ...payload, createdAt: 'serverTimestamp()' }));
-    setSubmitting(true);
     try {
       const ref = await addDoc(collection(db, 'communityRequests'), payload);
       console.log('[communityRequest] success — docId:', ref.id);
@@ -103,6 +130,7 @@ export default function ProfessionalChatsScreen() {
       setCommModal(false);
       setCommName('');
       setCommDesc('');
+      setCommPhotoUri(null);
     } catch (error) {
       console.log('[communityRequest] error:', error);
       showToast('Failed to submit request', 'error');
@@ -218,17 +246,32 @@ export default function ProfessionalChatsScreen() {
       )}
 
       {/* Community request modal */}
-      <Modal visible={commModal} transparent animationType="fade" onRequestClose={() => setCommModal(false)}>
+      <Modal visible={commModal} transparent animationType="fade" onRequestClose={() => { setCommModal(false); setCommPhotoUri(null); }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setCommModal(false)}>
+          <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setCommModal(false); setCommPhotoUri(null); }}>
             <TouchableOpacity activeOpacity={1}>
               <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modal}>
                 <View style={styles.modalHeader}>
                   <Text style={[styles.modalTitle, { ...font.bold }]}>{t('communities.modal_title')}</Text>
-                  <TouchableOpacity onPress={() => setCommModal(false)}>
+                  <TouchableOpacity onPress={() => { setCommModal(false); setCommPhotoUri(null); }}>
                     <X size={22} color="#fff" />
                   </TouchableOpacity>
                 </View>
+
+                {/* Avatar picker */}
+                <TouchableOpacity style={styles.avatarPicker} onPress={handlePickCommunityPhoto} activeOpacity={0.8}>
+                  {commPhotoUri ? (
+                    <Image source={{ uri: commPhotoUri }} style={{ width: 72, height: 72, borderRadius: 16 }} contentFit="cover" />
+                  ) : (
+                    <LinearGradient colors={['#1e4fa3', '#cb6ce6']} style={{ width: 72, height: 72, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
+                      <Camera size={28} color="#fff" strokeWidth={1.5} />
+                    </LinearGradient>
+                  )}
+                  <View style={styles.cameraBadge}>
+                    <Camera size={12} color="#fff" strokeWidth={2} />
+                  </View>
+                </TouchableOpacity>
+
                 <TextInput
                   placeholder={t('communities.name_placeholder')}
                   placeholderTextColor="rgba(255,255,255,0.5)"
@@ -246,11 +289,11 @@ export default function ProfessionalChatsScreen() {
                   style={[styles.input, { ...font.regular, height: 80, textAlignVertical: 'top', textAlign: rtl ? 'right' : 'left' }]}
                 />
                 <TouchableOpacity
-                  style={[styles.submitBtn, { opacity: submitting ? 0.6 : 1 }]}
+                  style={[styles.submitBtn, { opacity: (submitting || uploadingPhoto) ? 0.6 : 1 }]}
                   onPress={handleSubmitCommunityRequest}
-                  disabled={submitting}
+                  disabled={submitting || uploadingPhoto}
                 >
-                  {submitting
+                  {(submitting || uploadingPhoto)
                     ? <ActivityIndicator color="#004aad" />
                     : <Text style={[styles.submitBtnText, { ...font.bold }]}>{t('communities.submit')}</Text>
                   }
@@ -445,4 +488,18 @@ const styles = StyleSheet.create({
   },
   visitBtn: { marginTop: 6, alignSelf: 'flex-start' },
   visitBtnText: { color: 'rgba(255,255,255,0.9)', fontSize: 13, textDecorationLine: 'underline' },
+  avatarPicker: { alignSelf: 'center', marginBottom: 16, position: 'relative' },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
 });
