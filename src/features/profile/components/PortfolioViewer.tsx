@@ -2,28 +2,25 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, FlatList, Modal, StyleSheet, Platform, Dimensions,
 } from 'react-native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
-  useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS,
+  useSharedValue, useAnimatedStyle, withSpring, runOnJS,
 } from 'react-native-reanimated';
 import type { ViewToken } from 'react-native';
 import type { MediaAsset } from '@core/types/media';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// ── Zoomable image slide ──────────────────────────────────────────────────────
-// Only pinch + pan-when-zoomed + double-tap live here.
-// No pan-dismiss gesture — it would sit in "began" state on horizontal swipes
-// and block the FlatList from registering the page swipe.
-
 type ImageSlideProps = {
   asset: MediaAsset;
   onZoomChange: (zoomed: boolean) => void;
+  onClose: () => void;
 };
 
-function ZoomableImageSlide({ asset, onZoomChange }: ImageSlideProps) {
+function ZoomableImageSlide({ asset, onZoomChange, onClose }: ImageSlideProps) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const tx = useSharedValue(0);
@@ -75,7 +72,18 @@ function ZoomableImageSlide({ asset, onZoomChange }: ImageSlideProps) {
       }
     });
 
-  // Only active when zoomed in — pans the image around within bounds
+  // Single tap closes when not zoomed. requireExternalGestureToFail ensures
+  // it waits for doubleTap to time out before firing (~300ms delay).
+  const singleTap = Gesture.Tap()
+    .maxDuration(500)
+    .onEnd((_e, success) => {
+      if (success && savedScale.value <= 1) {
+        runOnJS(onClose)();
+      }
+    });
+  singleTap.requireExternalGestureToFail(doubleTap);
+
+  // Only active when zoomed — pans the image within bounds
   const panZoomed = Gesture.Pan()
     .enabled(isZoomed)
     .onUpdate((e) => {
@@ -89,12 +97,11 @@ function ZoomableImageSlide({ asset, onZoomChange }: ImageSlideProps) {
       savedTy.value = ty.value;
     });
 
-  // When not zoomed: panZoomed is disabled so it fails immediately, pinch needs
-  // 2 fingers, doubleTap needs 2 taps — none of these block single-finger horizontal
-  // swipes, so FlatList paging works cleanly.
+  // Exclusive: singleTap/doubleTap/panZoomed compete — only one wins per touch.
+  // Simultaneous with pinch so two-finger actions still work.
   const composed = Gesture.Simultaneous(
     pinch,
-    Gesture.Race(doubleTap, panZoomed),
+    Gesture.Exclusive(singleTap, doubleTap, panZoomed),
   );
 
   const imageStyle = useAnimatedStyle(() => ({
@@ -169,15 +176,16 @@ type SlideProps = {
   asset: MediaAsset;
   isActive: boolean;
   onZoomChange: (zoomed: boolean) => void;
+  onClose: () => void;
 };
 
-function Slide({ asset, isActive, onZoomChange }: SlideProps) {
+function Slide({ asset, isActive, onZoomChange, onClose }: SlideProps) {
   if (asset.type === 'video') {
     return Platform.OS === 'web'
       ? <WebVideoSlide asset={asset} isActive={isActive} />
       : <NativeVideoSlide asset={asset} isActive={isActive} />;
   }
-  return <ZoomableImageSlide asset={asset} onZoomChange={onZoomChange} />;
+  return <ZoomableImageSlide asset={asset} onZoomChange={onZoomChange} onClose={onClose} />;
 }
 
 const slide = StyleSheet.create({
@@ -199,8 +207,6 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const flatListRef = useRef<FlatList<MediaAsset>>(null);
-
-  const closeTap = Gesture.Tap().onEnd(() => runOnJS(onClose)());
 
   useEffect(() => {
     if (!visible) return;
@@ -233,9 +239,10 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
         asset={item}
         isActive={index === activeIndex}
         onZoomChange={handleZoomChange}
+        onClose={onClose}
       />
     ),
-    [activeIndex, handleZoomChange],
+    [activeIndex, handleZoomChange, onClose],
   );
 
   return (
@@ -273,11 +280,15 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
             </View>
           )}
 
-          <GestureDetector gesture={closeTap}>
-            <Animated.View style={[styles.closeBtn, { top: insets.top + 8 }]}>
-              <X size={22} color="#fff" strokeWidth={2.5} />
-            </Animated.View>
-          </GestureDetector>
+          {/* RNGH TouchableOpacity — works correctly within GestureHandlerRootView */}
+          <TouchableOpacity
+            style={[styles.closeBtn, { top: Math.max(insets.top, 20) + 8 }]}
+            onPress={onClose}
+            hitSlop={{ top: 20, right: 20, bottom: 20, left: 20 }}
+            activeOpacity={0.7}
+          >
+            <X size={26} color="#fff" strokeWidth={2.5} />
+          </TouchableOpacity>
         </GestureHandlerRootView>
       </View>
     </Modal>
@@ -286,16 +297,17 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
-  container: { flex: 1, backgroundColor: '#000' },
   closeBtn: {
     position: 'absolute',
     right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   dots: {
     position: 'absolute',
