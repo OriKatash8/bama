@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import {
-  View, FlatList, Modal, TouchableOpacity, StyleSheet, Platform, Dimensions,
+  View, FlatList, Modal, StyleSheet, Platform, Dimensions,
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -200,6 +200,8 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const flatListRef = useRef<FlatList<MediaAsset>>(null);
 
+  const closeTap = Gesture.Tap().onEnd(() => runOnJS(onClose)());
+
   useEffect(() => {
     if (!visible) return;
     setActiveIndex(initialIndex);
@@ -271,14 +273,11 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
             </View>
           )}
 
-          <TouchableOpacity
-            style={[styles.closeBtn, { top: insets.top + 8 }]}
-            onPress={onClose}
-            hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
-            activeOpacity={0.7}
-          >
-            <X size={22} color="#fff" strokeWidth={2.5} />
-          </TouchableOpacity>
+          <GestureDetector gesture={closeTap}>
+            <Animated.View style={[styles.closeBtn, { top: insets.top + 8 }]}>
+              <X size={22} color="#fff" strokeWidth={2.5} />
+            </Animated.View>
+          </GestureDetector>
         </GestureHandlerRootView>
       </View>
     </Modal>
