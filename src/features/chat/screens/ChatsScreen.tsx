@@ -3,12 +3,13 @@ import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-nati
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
-import { Users, Package } from 'lucide-react-native';
+import { Users, Package, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
-import { listenToUserChats } from '../services/chatService';
+import { listenToUserChats, removeMemberFromGroup } from '../services/chatService';
+import { confirmDialog } from '@utils/confirmDialog';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
@@ -160,6 +161,15 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     return map[status];
   };
 
+  async function handleLeaveChat(chatId: string) {
+    const confirmed = await confirmDialog(
+      rtl ? 'הסרת צ׳אט' : 'Remove chat',
+      rtl ? 'האם להסיר צ׳אט זה מהרשימה שלך?' : 'Remove this chat from your list?',
+    );
+    if (!confirmed || !user) return;
+    await removeMemberFromGroup(chatId, user.id);
+  }
+
   const avatarMargin = { marginRight: rtl ? 0 : 12, marginLeft: rtl ? 12 : 0 };
 
   function renderAvatar(item: Chat) {
@@ -260,6 +270,16 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
               </View>
             )}
+            {item.type === 'group' && (status === 'completed' || status === 'cancelled') && (
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
+                hitSlop={8}
+                activeOpacity={0.7}
+                style={styles.trashBtn}
+              >
+                <Trash2 size={15} color="#ef4444" strokeWidth={2} />
+              </TouchableOpacity>
+            )}
             {item.type === 'purchase' && item.archived && (
               <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? '#fee2e2' : '#f0fdf4' }]}>
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? '#dc2626' : '#16a34a' }]}>
@@ -348,6 +368,7 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'center', justifyContent: 'space-between' },
   name: { fontSize: 15, fontWeight: '700' },
   statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
+  trashBtn: { padding: 4, marginLeft: 6 },
   statusBadgeText: { fontSize: 11, fontWeight: '700' },
   bottomRow: { alignItems: 'center', justifyContent: 'space-between' },
   preview: { fontSize: 13, flex: 1 },
