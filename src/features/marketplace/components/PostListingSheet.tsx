@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Modal, View, TouchableOpacity, TextInput,
   StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, PanResponder,
-  KeyboardAvoidingView, Platform,
+  Keyboard, Platform,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
@@ -161,6 +161,19 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   const [condition, setCondition]     = useState<ProductCondition | null>(null);
   const [location, setLocation]       = useState('');
   const [price, setPrice]             = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0),
+    );
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const subcategoryOptions  = category ? SUBCATEGORIES[category] : undefined;
   const hasSubcategoryStep  = subcategoryOptions !== undefined;
@@ -218,7 +231,6 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.88 }]}>
 
@@ -245,7 +257,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
           {/* Scrollable form */}
           <ScrollView
-            style={styles.scroll}
+            style={[styles.scroll, { maxHeight: screenHeight * 0.88 - 130 - keyboardHeight }]}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -443,7 +455,6 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
         </LinearGradient>
         </TouchableOpacity>
       </TouchableOpacity>
-      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -492,7 +503,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scroll: { flex: 1 },
+  scroll: {},
   scrollContent: { paddingBottom: 100 },
 
   toggle: { flexDirection: 'row', gap: 8, marginBottom: 16 },
