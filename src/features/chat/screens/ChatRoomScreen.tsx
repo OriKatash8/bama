@@ -292,6 +292,14 @@ export function ChatRoomScreen({ chatId }: Props) {
         } else {
           setChatName('Direct message');
         }
+      } else if (data.type === 'purchase') {
+        const lang = useSettingsStore.getState().language;
+        const productName = data.name as string | undefined;
+        setChatName(
+          productName
+            ? (lang === 'he' ? `קנייה - ${productName}` : `${productName} - Purchase`)
+            : (lang === 'he' ? 'רכישה' : 'Purchase'),
+        );
       } else {
         setChatName(data.name ?? 'Group Chat');
       }
