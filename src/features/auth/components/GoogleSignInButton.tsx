@@ -45,16 +45,12 @@ export function GoogleSignInButton({ style, showDivider = true }: Props) {
         onPress={signInWithGoogle}
         disabled={isLoading}
         activeOpacity={0.8}
+        accessibilityLabel="Sign in with Google"
       >
         {isLoading ? (
           <ActivityIndicator size="small" color="#555" />
         ) : (
-          <View style={[styles.btnRow, { flexDirection: rtl ? 'row' : 'row-reverse' }]}>
-            <Image source={GOOGLE_LOGO} style={styles.googleLogo} contentFit="contain" cachePolicy="memory-disk" />
-            <AppText weight="semiBold" style={[styles.btnLabel, { textAlign: rtl ? 'right' : 'left' }]}>
-              {t('auth.continue_google')}
-            </AppText>
-          </View>
+          <Image source={GOOGLE_LOGO} style={styles.googleLogo} contentFit="contain" cachePolicy="memory-disk" />
         )}
       </TouchableOpacity>
     </View>
@@ -86,7 +82,5 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   buttonDisabled: { opacity: 0.6 },
-  btnRow: { alignSelf: 'stretch', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
-  googleLogo: { width: 22, height: 22 },
-  btnLabel: { flex: 1, fontSize: 13, color: '#333' },
+  googleLogo: { width: 50, height: 50 },
 });
