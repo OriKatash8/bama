@@ -75,8 +75,10 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [dmInfo, setDmInfo] = useState<Record<string, DmInfo>>({});
   const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
+  const [purchaseNames, setPurchaseNames] = useState<Record<string, string>>({});
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
   const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
+  const fetchedPurchaseChatIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) { setChats([]); return; }
@@ -127,6 +129,24 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     ).then((entries) => {
       const valid = entries.filter((e): e is [string, ProjectStatus] => e !== null);
       if (valid.length > 0) setProjectStatuses((prev) => ({ ...prev, ...Object.fromEntries(valid) }));
+    });
+  }, [chats]);
+
+  useEffect(() => {
+    const toFetch = chats.filter(
+      (c) => c.type === 'purchase' && !c.name && c.purchaseListingId != null && !fetchedPurchaseChatIdsRef.current.has(c.id),
+    );
+    if (toFetch.length === 0) return;
+    toFetch.forEach((c) => fetchedPurchaseChatIdsRef.current.add(c.id));
+    Promise.all(
+      toFetch.map(async (c) => {
+        const snap = await getDoc(doc(db, 'marketplace_listings', c.purchaseListingId!));
+        if (!snap.exists()) return null;
+        return [c.id, (snap.data() as { productName: string }).productName] as const;
+      }),
+    ).then((entries) => {
+      const valid = entries.filter((e): e is [string, string] => e !== null);
+      if (valid.length > 0) setPurchaseNames((prev) => ({ ...prev, ...Object.fromEntries(valid) }));
     });
   }, [chats]);
 
@@ -203,9 +223,12 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
       : item.type === 'group'
       ? (item.name ?? t('chats.group_chat'))
       : item.type === 'purchase'
-      ? (item.name
-          ? (rtl ? `קנייה - ${item.name}` : `${item.name} - ${t('chats.purchase_suffix')}`)
-          : t('chats.purchase_chat'))
+      ? (() => {
+          const pName = item.name || purchaseNames[item.id];
+          return pName
+            ? (rtl ? `קנייה - ${pName}` : `${pName} - ${t('chats.purchase_suffix')}`)
+            : t('chats.purchase_chat');
+        })()
       : (dmInfo[item.id]?.name ?? t('chats.loading'));
     const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
     const timestamp = formatTimestamp(item.lastMessage?.timestamp);
