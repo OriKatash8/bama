@@ -245,7 +245,6 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
       statusBarTranslucent
     >
       <View style={styles.root}>
-        {/* RNGH root only wraps the FlatList — keeps close button in the native touch system */}
         <GestureHandlerRootView style={StyleSheet.absoluteFill}>
           <FlatList
             ref={flatListRef}
@@ -263,26 +262,24 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
             maxToRenderPerBatch={3}
             windowSize={3}
           />
+
+          {assets.length > 1 && (
+            <View style={styles.dots} pointerEvents="none">
+              {assets.map((_, i) => (
+                <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
+              ))}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.closeBtn, { top: insets.top + 8 }]}
+            onPress={onClose}
+            hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+            activeOpacity={0.7}
+          >
+            <X size={22} color="#fff" strokeWidth={2.5} />
+          </TouchableOpacity>
         </GestureHandlerRootView>
-
-        {/* Dot indicator — outside GHRTV so RNGH can't intercept */}
-        {assets.length > 1 && (
-          <View style={styles.dots} pointerEvents="none">
-            {assets.map((_, i) => (
-              <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
-            ))}
-          </View>
-        )}
-
-        {/* Close button — outside GHRTV so RNGH can't intercept */}
-        <TouchableOpacity
-          style={[styles.closeBtn, { top: insets.top + 8 }]}
-          onPress={onClose}
-          hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
-          activeOpacity={0.7}
-        >
-          <X size={22} color="#fff" strokeWidth={2.5} />
-        </TouchableOpacity>
       </View>
     </Modal>
   );
