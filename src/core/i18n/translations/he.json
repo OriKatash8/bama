@@ -120,6 +120,7 @@
     "purchase_completed": "העסקה הושלמה · הצ'אט נסגר לצפייה בלבד",
     "purchase_cancelled": "העסקה בוטלה · הצ'אט נסגר",
     "purchase_chat": "רכישה",
+    "purchase_suffix": "קנייה",
     "badge_completed": "הושלם",
     "badge_cancelled": "בוטל"
   },
@@ -445,6 +446,7 @@
     "cancel_purchase": "ביטול רכישה",
     "mark_handed": "מסרתי את המוצר",
     "waiting_buyer": "ממתין לאישור הקונה...",
+    "waiting_seller": "ממתין לאישור המוכר...",
     "confirm_received_title": "אישור קבלה",
     "confirm_received_msg": "לאשר שקיבלת את המוצר? עמלת BAMA של 3% תחויב.",
     "fee_charged": "עמלת BAMA חויבה (אינטגרציית תשלום תגיע בקרוב)",

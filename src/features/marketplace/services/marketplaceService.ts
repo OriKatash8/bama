@@ -20,7 +20,7 @@ export async function confirmPurchase(
   autoMessage: string,
 ): Promise<string> {
   const platformFee = Math.round(listing.price * 0.03);
-  const chatId = await createPurchaseChat(buyerId, sellerId, listingId);
+  const chatId = await createPurchaseChat(buyerId, sellerId, listingId, listing.productName);
 
   const batch = writeBatch(db);
   batch.update(doc(db, 'marketplace_listings', listingId), {
@@ -41,19 +41,29 @@ export async function confirmReceived(
   chatId: string,
   userId: string,
   systemMessage: string,
+  sellerAlreadyConfirmed: boolean,
 ): Promise<void> {
   const batch = writeBatch(db);
-  batch.update(doc(db, 'marketplace_listings', listingId), {
-    status: 'sold',
-  });
-  batch.update(doc(db, 'chats', chatId), {
-    archived: true,
-    archiveReason: 'completed',
-    archivedAt: serverTimestamp(),
-  });
+
+  if (sellerAlreadyConfirmed) {
+    // Both confirmed — complete the transaction
+    batch.update(doc(db, 'marketplace_listings', listingId), { status: 'sold' });
+    batch.update(doc(db, 'chats', chatId), {
+      archived: true,
+      archiveReason: 'completed',
+      archivedAt: serverTimestamp(),
+    });
+  } else {
+    // Seller hasn't confirmed yet — record buyer's confirmation only
+    batch.update(doc(db, 'marketplace_listings', listingId), {
+      buyerConfirmed: true,
+      buyerConfirmedAt: serverTimestamp(),
+    });
+  }
+
   await batch.commit();
 
-  // ── STRIPE CHARGE GOES HERE ──────────────────────────────────────────────
+  // ── STRIPE CHARGE GOES HERE (only when both confirmed) ───────────────────
   // Call your payment backend / Stripe PaymentIntent here.
   // Input: listing.platformFee, listing.posterId (seller), listing.buyerId.
   // ─────────────────────────────────────────────────────────────────────────
@@ -73,6 +83,7 @@ export async function cancelPurchase(
     buyerId: deleteField(),
     purchaseChatId: deleteField(),
     sellerConfirmed: deleteField(),
+    buyerConfirmed: deleteField(),
     platformFee: deleteField(),
   });
   batch.update(doc(db, 'chats', chatId), {
@@ -85,13 +96,39 @@ export async function cancelPurchase(
   await sendMessage(chatId, userId, systemMessage);
 }
 
-export async function markHandedOver(listingId: string): Promise<void> {
+export async function markHandedOver(
+  listingId: string,
+  chatId: string,
+  userId: string,
+  systemMessage: string,
+  buyerAlreadyConfirmed: boolean,
+): Promise<void> {
   const batch = writeBatch(db);
-  batch.update(doc(db, 'marketplace_listings', listingId), {
-    sellerConfirmed: true,
-    sellerConfirmedAt: serverTimestamp(),
-  });
+
+  if (buyerAlreadyConfirmed) {
+    // Both confirmed — complete the transaction
+    batch.update(doc(db, 'marketplace_listings', listingId), {
+      sellerConfirmed: true,
+      sellerConfirmedAt: serverTimestamp(),
+      status: 'sold',
+    });
+    batch.update(doc(db, 'chats', chatId), {
+      archived: true,
+      archiveReason: 'completed',
+      archivedAt: serverTimestamp(),
+    });
+  } else {
+    // Buyer hasn't confirmed yet — record seller's confirmation only
+    batch.update(doc(db, 'marketplace_listings', listingId), {
+      sellerConfirmed: true,
+      sellerConfirmedAt: serverTimestamp(),
+    });
+  }
+
   await batch.commit();
+  if (buyerAlreadyConfirmed) {
+    await sendMessage(chatId, userId, systemMessage);
+  }
 }
 
 export function listenToListingByChatId(

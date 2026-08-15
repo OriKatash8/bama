@@ -203,7 +203,9 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
       : item.type === 'group'
       ? (item.name ?? t('chats.group_chat'))
       : item.type === 'purchase'
-      ? (item.name ?? t('chats.purchase_chat'))
+      ? (item.name
+          ? (rtl ? `קנייה - ${item.name}` : `${item.name} - ${t('chats.purchase_suffix')}`)
+          : t('chats.purchase_chat'))
       : (dmInfo[item.id]?.name ?? t('chats.loading'));
     const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
     const timestamp = formatTimestamp(item.lastMessage?.timestamp);

@@ -91,11 +91,13 @@ export async function createPurchaseChat(
   buyerId: string,
   sellerId: string,
   listingId: string,
+  productName: string,
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'chats'), {
     type: 'purchase' as const,
     members: [buyerId, sellerId],
     purchaseListingId: listingId,
+    name: productName,
     lastMessage: null,
     createdAt: serverTimestamp(),
   });

@@ -120,6 +120,7 @@
     "purchase_completed": "Transaction completed · Chat is read-only",
     "purchase_cancelled": "Purchase cancelled · Chat closed",
     "purchase_chat": "Purchase",
+    "purchase_suffix": "Purchase",
     "badge_completed": "Completed",
     "badge_cancelled": "Cancelled"
   },
@@ -445,6 +446,7 @@
     "cancel_purchase": "Cancel Purchase",
     "mark_handed": "I handed it over",
     "waiting_buyer": "Waiting for buyer to confirm...",
+    "waiting_seller": "Waiting for seller to confirm...",
     "confirm_received_title": "Confirm Receipt",
     "confirm_received_msg": "Confirm you received the product? The 3% BAMA fee will be charged.",
     "fee_charged": "BAMA fee charged (payment integration coming soon)",

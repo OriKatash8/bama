@@ -27,5 +27,6 @@ export type MarketplaceListing = {
   buyerId?: string;
   purchaseChatId?: string;
   sellerConfirmed?: boolean;
+  buyerConfirmed?: boolean;
   platformFee?: number;
 };
