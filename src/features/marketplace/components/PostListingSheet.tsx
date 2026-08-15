@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import {
   Modal, View, TouchableOpacity, TextInput,
   StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, PanResponder,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
@@ -217,6 +218,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.88 }]}>
 
@@ -243,7 +245,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
           {/* Scrollable form */}
           <ScrollView
-            style={[styles.scroll, { maxHeight: screenHeight * 0.88 - 130 }]}
+            style={styles.scroll}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -441,6 +443,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
         </LinearGradient>
         </TouchableOpacity>
       </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -489,7 +492,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scroll: {},
+  scroll: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
 
   toggle: { flexDirection: 'row', gap: 8, marginBottom: 16 },
