@@ -189,10 +189,7 @@ export default function ProfessionalChatsScreen() {
       {/* Courses tab */}
       {active === 'courses' && (
         <View>
-          <View style={[styles.tabContentHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.sectionTitle, { ...font.semiBold, color: colors.text }]}>
-              {t('chats_page.tab_courses')}
-            </Text>
+          <View style={[styles.tabContentHeader, { flexDirection: rtl ? 'row-reverse' : 'row', justifyContent: 'flex-end' }]}>
             <TouchableOpacity
               style={[styles.plusBtn, { backgroundColor: colors.primary }]}
               onPress={() => setSubmitCourseModal(true)}
