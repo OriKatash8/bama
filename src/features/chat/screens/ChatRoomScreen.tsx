@@ -269,46 +269,53 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Playback
   const [playingId, setPlayingId] = useState<string | null>(null);
 
-  // Fetch chat metadata
+  // Fetch chat metadata — real-time so archived state updates instantly
   useEffect(() => {
-    async function fetchChat() {
-      const snap = await getDoc(doc(db, 'chats', chatId));
+    let nameResolved = false;
+
+    const unsub = onSnapshot(doc(db, 'chats', chatId), async (snap) => {
       if (!snap.exists()) return;
       const data = snap.data() as Omit<Chat, 'id'>;
+
       setChatType(data.type);
       setChatArchived(data.archived ?? false);
       setChatArchiveReason(data.archiveReason ?? null);
       setChatProjectId(data.projectId);
       if (data.ownerId) setChatOwnerId(data.ownerId);
       if (data.members) setChatMembers(data.members as string[]);
-      if (data.type === 'dm') {
-        const otherId = data.members.find((id) => id !== currentUserId);
-        if (otherId) {
-          const userSnap = await getDoc(doc(db, 'users', otherId));
-          const displayName = userSnap.exists()
-            ? (userSnap.data() as { displayName: string }).displayName
-            : 'Unknown';
-          setChatName(displayName);
+
+      if (!nameResolved) {
+        nameResolved = true;
+        if (data.type === 'dm') {
+          const otherId = (data.members as string[]).find((id) => id !== currentUserId);
+          if (otherId) {
+            const userSnap = await getDoc(doc(db, 'users', otherId));
+            const displayName = userSnap.exists()
+              ? (userSnap.data() as { displayName: string }).displayName
+              : 'Unknown';
+            setChatName(displayName);
+          } else {
+            setChatName('Direct message');
+          }
+        } else if (data.type === 'purchase') {
+          const lang = useSettingsStore.getState().language;
+          let productName = data.name as string | undefined;
+          if (!productName && data.purchaseListingId) {
+            const listingSnap = await getDoc(doc(db, 'marketplace_listings', data.purchaseListingId as string));
+            if (listingSnap.exists()) productName = (listingSnap.data() as { productName?: string }).productName;
+          }
+          setChatName(
+            productName
+              ? (lang === 'he' ? `קנייה - ${productName}` : `${productName} - Purchase`)
+              : (lang === 'he' ? 'רכישה' : 'Purchase'),
+          );
         } else {
-          setChatName('Direct message');
+          setChatName(data.name ?? 'Group Chat');
         }
-      } else if (data.type === 'purchase') {
-        const lang = useSettingsStore.getState().language;
-        let productName = data.name as string | undefined;
-        if (!productName && data.purchaseListingId) {
-          const listingSnap = await getDoc(doc(db, 'marketplace_listings', data.purchaseListingId as string));
-          if (listingSnap.exists()) productName = (listingSnap.data() as { productName?: string }).productName;
-        }
-        setChatName(
-          productName
-            ? (lang === 'he' ? `קנייה - ${productName}` : `${productName} - Purchase`)
-            : (lang === 'he' ? 'רכישה' : 'Purchase'),
-        );
-      } else {
-        setChatName(data.name ?? 'Group Chat');
       }
-    }
-    fetchChat();
+    });
+
+    return unsub;
   }, [chatId]);
 
   // Clear unread count
