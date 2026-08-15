@@ -874,7 +874,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
       {/* Input */}
       {!isRecording && !(chatType === 'purchase' && chatArchived) && (
-        <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 10 : (insets.bottom || 10) }]}>
+        <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : (insets.bottom || 10) + 8 }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
               <ActivityIndicator size="small" color={colors.accent} />
