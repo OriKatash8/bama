@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   Modal, View, TouchableOpacity, TextInput,
   StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, PanResponder,
-  Keyboard, Platform,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
@@ -161,19 +160,6 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   const [condition, setCondition]     = useState<ProductCondition | null>(null);
   const [location, setLocation]       = useState('');
   const [price, setPrice]             = useState('');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    const show = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => setKeyboardHeight(e.endCoordinates.height),
-    );
-    const hide = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardHeight(0),
-    );
-    return () => { show.remove(); hide.remove(); };
-  }, []);
 
   const subcategoryOptions  = category ? SUBCATEGORIES[category] : undefined;
   const hasSubcategoryStep  = subcategoryOptions !== undefined;
@@ -257,7 +243,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
 
           {/* Scrollable form */}
           <ScrollView
-            style={[styles.scroll, { maxHeight: screenHeight * 0.88 - 130 - keyboardHeight }]}
+            automaticallyAdjustKeyboardInsets
+            style={[styles.scroll, { maxHeight: screenHeight * 0.88 - 130 }]}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
