@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 20,
     color: BLUE,
   },
   sectionCount: {
