@@ -47,8 +47,8 @@ export function SlidingTabBackground({ numTabs, tabNames }: Props) {
 const styles = StyleSheet.create({
   pill: {
     position: 'absolute',
-    top: 4,
-    bottom: 4,
+    top: 0,
+    bottom: 0,
     borderRadius: 20,
     backgroundColor: 'rgba(180, 180, 180, 0.35)',
   },
