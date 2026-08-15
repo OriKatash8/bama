@@ -266,20 +266,8 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
               {chatName}
             </AppText>
             {status != null && (
-              <View style={{ alignItems: 'center', gap: 4 }}>
-                <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
-                  <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
-                </View>
-                {item.type === 'group' && (status === 'completed' || status === 'cancelled') && (
-                  <TouchableOpacity
-                    onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
-                    hitSlop={8}
-                    activeOpacity={0.7}
-                    style={styles.trashBtn}
-                  >
-                    <Trash2 size={15} color="#ef4444" strokeWidth={2} />
-                  </TouchableOpacity>
-                )}
+              <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
+                <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
               </View>
             )}
             {item.type === 'purchase' && item.archived && (
@@ -304,7 +292,16 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
             >
               {item.lastMessage?.text ?? ''}
             </AppText>
-            {unread > 0 ? (
+            {item.type === 'group' && (status === 'completed' || status === 'cancelled') ? (
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
+                hitSlop={8}
+                activeOpacity={0.7}
+                style={[styles.trashBtn, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}
+              >
+                <Trash2 size={15} color="#ef4444" strokeWidth={2} />
+              </TouchableOpacity>
+            ) : unread > 0 ? (
               <View style={[styles.unreadBadge, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
                 <Text style={[styles.unreadBadgeText, { ...font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
               </View>
