@@ -80,7 +80,10 @@ const MISSION_STATUS_CYCLE: Record<MissionStatus, MissionStatus> = {
 
 function formatDueDate(iso: string, prefix: string): string {
   const d = new Date(iso);
-  return `${prefix}${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(2);
+  return `${prefix}${dd}/${mm}/${yy}`;
 }
 
 type MemberInfo = Pick<User, 'displayName' | 'photoURL'>;
