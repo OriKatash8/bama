@@ -1342,7 +1342,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: '#004aad',
     backgroundColor: 'transparent',
   },
   channelPillActive: {
@@ -1351,7 +1351,7 @@ const styles = StyleSheet.create({
   },
   channelPillText: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
+    color: '#004aad',
   },
   channelPillTextActive: {
     color: '#ffffff',
