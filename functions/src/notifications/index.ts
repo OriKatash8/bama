@@ -50,3 +50,5 @@ export const onNotificationCreate = functions.firestore
       }
     }
   });
+
+export * from './triggers';
