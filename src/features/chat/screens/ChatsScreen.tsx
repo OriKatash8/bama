@@ -266,19 +266,21 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
               {chatName}
             </AppText>
             {status != null && (
-              <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
-                <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
+                  <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
+                </View>
+                {item.type === 'group' && (status === 'completed' || status === 'cancelled') && (
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
+                    hitSlop={8}
+                    activeOpacity={0.7}
+                    style={styles.trashBtn}
+                  >
+                    <Trash2 size={15} color="#ef4444" strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
               </View>
-            )}
-            {item.type === 'group' && (status === 'completed' || status === 'cancelled') && (
-              <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
-                hitSlop={8}
-                activeOpacity={0.7}
-                style={styles.trashBtn}
-              >
-                <Trash2 size={15} color="#ef4444" strokeWidth={2} />
-              </TouchableOpacity>
             )}
             {item.type === 'purchase' && item.archived && (
               <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? '#fee2e2' : '#f0fdf4' }]}>
