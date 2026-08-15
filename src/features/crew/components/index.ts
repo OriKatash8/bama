@@ -1,5 +1,6 @@
 export { SubCategoryRow } from './SubCategoryRow';
 export { MiniCalendar } from './MiniCalendar';
+export { MiniTimePicker } from './MiniTimePicker';
 export { ProfessionalCard } from './ProfessionalCard';
 export { CategoryItem } from './CategoryItem';
 export { CategoryAccordion } from './CategoryAccordion';

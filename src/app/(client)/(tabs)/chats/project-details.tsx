@@ -43,7 +43,7 @@ import {
   listenToMeetings,
   addMeeting,
 } from '@features/chat/services/meetingService';
-import { MiniCalendar, RolePickerModal } from '@features/crew/components';
+import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
 import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, MapPin, Trash2 } from 'lucide-react-native';
@@ -140,6 +140,7 @@ export default function ProjectDetailsScreen() {
   const [newMeetingLocation, setNewMeetingLocation] = useState('');
   const [newMeetingInvitedIds, setNewMeetingInvitedIds] = useState<string[]>([]);
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
+  const [showMeetingTimePicker, setShowMeetingTimePicker] = useState(false);
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
 
   const [missionIndex, setMissionIndex] = useState(0);
@@ -1332,14 +1333,28 @@ export default function ProjectDetailsScreen() {
             <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.meeting_time')}
             </Text>
-            <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-              value={newMeetingTime}
-              onChangeText={setNewMeetingTime}
-              placeholder={t('project_details.meeting_time_placeholder')}
-              placeholderTextColor={colors.textMuted}
-              keyboardType="numbers-and-punctuation"
-            />
+            {newMeetingTime ? (
+              <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
+                <Clock size={15} color="#004aad" strokeWidth={2} />
+                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                  {newMeetingTime}
+                </Text>
+                <TouchableOpacity onPress={() => setNewMeetingTime('')} hitSlop={10} activeOpacity={0.7}>
+                  <Text style={[styles.missionDateClear, { ...font.bold }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.missionDateRow, { borderColor: colors.border }]}
+                onPress={() => setShowMeetingTimePicker(true)}
+                activeOpacity={0.8}
+              >
+                <Clock size={15} color={colors.textMuted} strokeWidth={2} />
+                <Text style={[styles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                  {t('project_details.meeting_time_placeholder')}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.meeting_location')}
@@ -1404,17 +1419,23 @@ export default function ProjectDetailsScreen() {
               </TouchableOpacity>
             </View>
           </ScrollView>
+          {showMeetingDatePicker && (
+            <MiniCalendar
+              value={newMeetingDate}
+              onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
+              onClose={() => setShowMeetingDatePicker(false)}
+            />
+          )}
+          {showMeetingTimePicker && (
+            <MiniTimePicker
+              value={newMeetingTime}
+              onSelect={(t) => setNewMeetingTime(t)}
+              onClose={() => setShowMeetingTimePicker(false)}
+            />
+          )}
           </View>
         </View>
       </Modal>
-
-      {showMeetingDatePicker && (
-        <MiniCalendar
-          value={newMeetingDate}
-          onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
-          onClose={() => setShowMeetingDatePicker(false)}
-        />
-      )}
 
       {/* Payment Summary Modal */}
       <Modal
