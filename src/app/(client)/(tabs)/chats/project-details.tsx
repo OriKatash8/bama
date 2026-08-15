@@ -721,7 +721,7 @@ export default function ProjectDetailsScreen() {
           <View style={styles.metaCard}>
             <Clapperboard size={16} color="#8890b0" strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.execution')}</AppText>
-            <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.exec ?? t('project_details.tbd')}</AppText>
+            <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.exec ? formatShortDate(project.exec) : t('project_details.tbd')}</AppText>
           </View>
           <View style={styles.metaCard}>
             <CalendarDays size={16} color="#8890b0" strokeWidth={1.5} />
