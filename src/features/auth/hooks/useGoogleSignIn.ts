@@ -86,13 +86,18 @@ export function useGoogleSignIn(): GoogleSignInState {
       const idToken = signInResult.data?.idToken;
       if (!idToken) throw new Error('No idToken returned from Google Sign-In');
 
+      const googleUser = signInResult.data?.user;
+      const googleName = googleUser?.name ||
+        [googleUser?.givenName, googleUser?.familyName].filter(Boolean).join(' ') ||
+        '';
+
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
 
       await syncUser(result.user.uid, {
-        email: result.user.email ?? '',
-        displayName: result.user.displayName ?? '',
-        photoURL: result.user.photoURL,
+        email: result.user.email || googleUser?.email || '',
+        displayName: result.user.displayName || googleName,
+        photoURL: result.user.photoURL || googleUser?.photo || null,
       }, setUser);
       router.replace('/(auth)/mode-select');
     } catch (error: any) {
