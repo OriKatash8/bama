@@ -294,7 +294,11 @@ export function ChatRoomScreen({ chatId }: Props) {
         }
       } else if (data.type === 'purchase') {
         const lang = useSettingsStore.getState().language;
-        const productName = data.name as string | undefined;
+        let productName = data.name as string | undefined;
+        if (!productName && data.purchaseListingId) {
+          const listingSnap = await getDoc(doc(db, 'marketplace_listings', data.purchaseListingId as string));
+          if (listingSnap.exists()) productName = (listingSnap.data() as { productName?: string }).productName;
+        }
         setChatName(
           productName
             ? (lang === 'he' ? `קנייה - ${productName}` : `${productName} - Purchase`)
