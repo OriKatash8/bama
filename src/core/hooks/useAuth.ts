@@ -42,17 +42,23 @@ export function useAuth() {
 
           // Fire-and-forget: save push token if new or changed — never blocks sign-in
           void (async () => {
-            try {
-              const token = await registerForPushNotifications();
-              const currentToken = (userData as any).expoPushToken as string | undefined;
-              if (token && token !== currentToken) {
+            const token = await registerForPushNotifications();
+            console.log('[push] registerForPushNotifications returned:', token);
+            const currentToken = (userData as any).expoPushToken as string | undefined;
+            console.log('[push] currentToken in doc:', currentToken);
+            if (token && token !== currentToken) {
+              console.log('[push] writing new token to Firestore...');
+              try {
                 await updateDocument(`users/${firebaseUser.uid}`, {
                   expoPushToken: token,
                   pushTokenUpdatedAt: new Date().toISOString(),
                 });
+                console.log('[push] token saved successfully');
+              } catch (e) {
+                console.log('[push] Firestore write error:', e);
               }
-            } catch {
-              // swallow — push token is non-critical
+            } else {
+              console.log('[push] skipping write — token unchanged or null');
             }
           })();
         } else {

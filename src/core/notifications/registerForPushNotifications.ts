@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 export async function registerForPushNotifications(): Promise<string | null> {
+  console.log('[push] isDevice:', Device.isDevice);
   if (!Device.isDevice) return null;
 
   const { status: existing } = await Notifications.getPermissionsAsync();
@@ -12,13 +13,16 @@ export async function registerForPushNotifications(): Promise<string | null> {
       ? existing
       : (await Notifications.requestPermissionsAsync()).status;
 
+  console.log('[push] permission status:', finalStatus);
   if (finalStatus !== 'granted') return null;
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+  console.log('[push] projectId:', projectId);
   if (!projectId) return null;
 
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+    console.log('[push] got token:', token);
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
@@ -30,7 +34,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
     }
 
     return token;
-  } catch {
+  } catch (e) {
+    console.log('[push] token error:', e);
     return null;
   }
 }
