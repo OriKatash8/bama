@@ -1819,7 +1819,7 @@ const styles = StyleSheet.create({
   },
   addPillText: { fontSize: 13, color: '#1e4fa3' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#1e4fa3' },
-  emptyNote: { fontSize: 14, fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', textAlign: 'center' },
+  emptyNote: { fontSize: 14, fontStyle: 'italic', color: '#004aad', textAlign: 'center' },
 
   // ── Member cards ──────────────────────────────────────────────────────────────
   memberCard: {
