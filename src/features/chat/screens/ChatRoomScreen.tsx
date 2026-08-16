@@ -125,11 +125,12 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
     }
   }, [status.didJustFinish]);
 
-  function handlePress() {
+  async function handlePress() {
     if (isActive && status.playing) {
       player.pause();
       setPlayingId(null);
     } else {
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
       player.seekTo(0);
       player.play();
       setPlayingId(messageId);
@@ -655,7 +656,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     setRecordingDuration(0);
     try {
       await recorder.stop();
-      setAudioModeAsync({ allowsRecording: false }).catch(() => {});
+      setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
       const uri = recorder.uri;
       if (!uri || !currentUserId) return;
       const blob = await fetch(uri).then(r => r.blob());
@@ -670,7 +671,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   function cancelRecording() {
     if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
     if (recorder.isRecording) recorder.stop().catch(() => {});
-    setAudioModeAsync({ allowsRecording: false }).catch(() => {});
+    setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
     setIsRecording(false);
     setRecordingDuration(0);
   }
