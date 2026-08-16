@@ -130,7 +130,9 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
       player.pause();
       setPlayingId(null);
     } else {
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch((e) => {
+        console.warn('[AudioMode] handlePress:', e);
+      });
       player.seekTo(0);
       player.play();
       setPlayingId(messageId);

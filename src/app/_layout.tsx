@@ -17,6 +17,7 @@ import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 import { LanguageSync } from '@components/layout/LanguageSync';
 import { I18nextProvider } from 'react-i18next';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { setAudioModeAsync } from 'expo-audio';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -68,6 +69,12 @@ function AppShell() {
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false }).catch((e) => {
+      console.warn('[AudioMode] startup init failed:', e);
+    });
+  }, []);
 
   useEffect(() => {
     (Text as unknown as Record<string, unknown>).defaultProps = {
