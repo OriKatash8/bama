@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { View, Platform } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View, Platform, PanResponder } from 'react-native';
 import { Tabs, usePathname, useRouter } from 'expo-router';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { LayoutDashboard, ShoppingBag, User, MessageCircle } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useTheme } from '@core/hooks/useTheme';
@@ -54,30 +53,40 @@ export default function ProfessionalTabsLayout() {
   const inChatRoom = /\/chats\/.+/.test(pathname);
 
   const router = useRouter();
-  const currentTabIndex = PROF_TABS.findIndex((t) => pathname.includes(`/${t}`));
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  const inChatRoomRef = useRef(inChatRoom);
+  inChatRoomRef.current = inChatRoom;
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
-  const tabSwipeGesture = Gesture.Pan()
-    .activeOffsetX([-50, 50])
-    .failOffsetY([-20, 20])
-    .enabled(!inChatRoom)
-    .runOnJS(true)
-    .onEnd((e) => {
-      if (e.translationX < -80 && currentTabIndex !== -1) {
-        const next = currentTabIndex + 1;
-        if (next < PROF_TABS.length) {
-          router.navigate(`/(professional)/(tabs)/${PROF_TABS[next]}` as never);
+  const tabPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => {
+        if (inChatRoomRef.current) return false;
+        return Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (inChatRoomRef.current) return;
+        const idx = PROF_TABS.findIndex((t) => pathnameRef.current.includes(`/${t}`));
+        if (idx === -1) return;
+        if (gs.dx < -80) {
+          const next = idx + 1;
+          if (next < PROF_TABS.length) {
+            routerRef.current.navigate(`/(professional)/(tabs)/${PROF_TABS[next]}` as never);
+          }
+        } else if (gs.dx > 80) {
+          const prev = idx - 1;
+          if (prev >= 0) {
+            routerRef.current.navigate(`/(professional)/(tabs)/${PROF_TABS[prev]}` as never);
+          }
         }
-      } else if (e.translationX > 80 && currentTabIndex !== -1) {
-        const prev = currentTabIndex - 1;
-        if (prev >= 0) {
-          router.navigate(`/(professional)/(tabs)/${PROF_TABS[prev]}` as never);
-        }
-      }
-    });
+      },
+    })
+  ).current;
 
   return (
-    <GestureDetector gesture={tabSwipeGesture}>
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} {...tabPanResponder.panHandlers}>
       {!inChatRoom && <AppHeader />}
       <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0, bottom: 0 }}>
         <Tabs
@@ -159,6 +168,5 @@ export default function ProfessionalTabsLayout() {
         </Tabs>
       </SafeAreaInsetsContext.Provider>
     </View>
-    </GestureDetector>
   );
 }
