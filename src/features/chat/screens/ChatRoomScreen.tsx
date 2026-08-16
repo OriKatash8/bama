@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -84,6 +84,21 @@ function colorForUser(userId: string): string {
   let hash = 0;
   for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
   return USER_COLORS[hash % USER_COLORS.length];
+}
+
+function formatMessageDate(timestamp: Timestamp | null | undefined, language: string): string {
+  if (!timestamp) return '';
+  const date = typeof timestamp === 'object' && 'seconds' in timestamp
+    ? new Date(timestamp.seconds * 1000)
+    : new Date(timestamp as unknown as string);
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === now.toDateString()) return language === 'he' ? 'היום' : 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return language === 'he' ? 'אתמול' : 'Yesterday';
+  return date.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
 }
 
 function formatMessageTime(timestamp: Timestamp | number | string | null | undefined): string {
@@ -233,6 +248,16 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
   );
 }
 
+type ListItem = Message | { type: 'date-separator'; id: string; label: string };
+
+function DateSeparator({ label }: { label: string }) {
+  return (
+    <View style={styles.dateSepRow}>
+      <AppText weight="regular" style={styles.dateSepLabel}>{label}</AppText>
+    </View>
+  );
+}
+
 interface Props {
   chatId: string;
 }
@@ -249,6 +274,24 @@ export function ChatRoomScreen({ chatId }: Props) {
   const currentUserId = auth.currentUser?.uid ?? '';
 
   const [messages, setMessages] = useState<Message[]>([]);
+
+  const listItems = useMemo((): ListItem[] => {
+    const result: ListItem[] = [];
+    let lastDateStr: string | null = null;
+    for (const msg of messages) {
+      const ts = msg.timestamp;
+      const dateStr = ts && typeof ts === 'object' && 'seconds' in ts
+        ? new Date(ts.seconds * 1000).toDateString()
+        : ts ? new Date(ts as unknown as string).toDateString() : null;
+      if (dateStr && dateStr !== lastDateStr) {
+        result.push({ type: 'date-separator', id: `sep-${dateStr}`, label: formatMessageDate(ts, language) });
+        lastDateStr = dateStr;
+      }
+      result.push(msg);
+    }
+    return result;
+  }, [messages, language]);
+
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const fetchedIdsRef = useRef<Set<string>>(new Set());
@@ -837,68 +880,72 @@ export function ChatRoomScreen({ chatId }: Props) {
       <View style={{ flex: 1, zIndex: 0 }}>
         <FlatList
           ref={flatListRef}
-          data={messages}
+          data={listItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
-            const isOwn = item.senderId === currentUserId;
+            if ('type' in item && item.type === 'date-separator') {
+              return <DateSeparator label={(item as { label: string }).label} />;
+            }
+            const msg = item as Message;
+            const isOwn = msg.senderId === currentUserId;
             return (
               <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
-                {item.videoUrl ? (
+                {msg.videoUrl ? (
                   <View style={styles.mediaBubble}>
                     {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
-                        {userNames[item.senderId] ?? 'Loading...'}
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
+                        {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
-                    <VideoPlayer uri={item.videoUrl} style={styles.mediaMessage} />
+                    <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                      {formatMessageTime(item.timestamp)}
+                      {formatMessageTime(msg.timestamp)}
                     </Text>
                   </View>
-                ) : item.imageURL ? (
+                ) : msg.imageURL ? (
                   <View style={styles.mediaBubble}>
                     {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
-                        {userNames[item.senderId] ?? 'Loading...'}
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
+                        {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
-                    <Image source={{ uri: item.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
+                    <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                      {formatMessageTime(item.timestamp)}
+                      {formatMessageTime(msg.timestamp)}
                     </Text>
                   </View>
-                ) : item.audioUrl ? (
+                ) : msg.audioUrl ? (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
                     {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
-                        {userNames[item.senderId] ?? 'Loading...'}
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
+                        {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
                     <VoiceMessageBubble
-                      messageId={item.id}
-                      audioUrl={item.audioUrl}
-                      audioDuration={item.audioDuration ?? 0}
+                      messageId={msg.id}
+                      audioUrl={msg.audioUrl!}
+                      audioDuration={msg.audioDuration ?? 0}
                       isOwn={isOwn}
                       playingId={playingId}
                       setPlayingId={setPlayingId}
                     />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                      {formatMessageTime(item.timestamp)}
+                      {formatMessageTime(msg.timestamp)}
                     </Text>
                   </View>
                 ) : (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
                     {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(item.senderId) }]}>
-                        {userNames[item.senderId] ?? 'Loading...'}
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
+                        {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
                     <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text }]}>
-                      {item.text}
+                      {msg.text}
                     </AppText>
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                      {formatMessageTime(item.timestamp)}
+                      {formatMessageTime(msg.timestamp)}
                     </Text>
                   </View>
                 )}
@@ -1526,6 +1573,19 @@ const styles = StyleSheet.create({
   },
   mediaSendingText: {
     fontSize: 14,
+  },
+  dateSepRow: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  dateSepLabel: {
+    fontSize: 12,
+    color: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
 });
 
