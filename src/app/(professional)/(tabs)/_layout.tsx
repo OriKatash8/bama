@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Platform } from 'react-native';
-import { Tabs, usePathname } from 'expo-router';
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { LayoutDashboard, ShoppingBag, User, MessageCircle } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useTheme } from '@core/hooks/useTheme';
@@ -29,6 +30,8 @@ function makeT(translations: Translations) {
   };
 }
 
+const PROF_TABS = ['dashboard', 'marketplace', 'chats', 'profile'] as const;
+
 export default function ProfessionalTabsLayout() {
   const [totalUnread, setTotalUnread] = useState(0);
   const insets = useSafeAreaInsets();
@@ -50,7 +53,30 @@ export default function ProfessionalTabsLayout() {
   const pathname = usePathname();
   const inChatRoom = /\/chats\/.+/.test(pathname);
 
+  const router = useRouter();
+  const currentTabIndex = PROF_TABS.findIndex((t) => pathname.includes(`/${t}`));
+
+  const tabSwipeGesture = Gesture.Pan()
+    .activeOffsetX([-50, 50])
+    .failOffsetY([-20, 20])
+    .enabled(!inChatRoom)
+    .runOnJS(true)
+    .onEnd((e) => {
+      if (e.translationX < -80 && currentTabIndex !== -1) {
+        const next = currentTabIndex + 1;
+        if (next < PROF_TABS.length) {
+          router.navigate(`/(professional)/(tabs)/${PROF_TABS[next]}` as never);
+        }
+      } else if (e.translationX > 80 && currentTabIndex !== -1) {
+        const prev = currentTabIndex - 1;
+        if (prev >= 0) {
+          router.navigate(`/(professional)/(tabs)/${PROF_TABS[prev]}` as never);
+        }
+      }
+    });
+
   return (
+    <GestureDetector gesture={tabSwipeGesture}>
     <View style={{ flex: 1 }}>
       {!inChatRoom && <AppHeader />}
       <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0, bottom: 0 }}>
@@ -133,5 +159,6 @@ export default function ProfessionalTabsLayout() {
         </Tabs>
       </SafeAreaInsetsContext.Provider>
     </View>
+    </GestureDetector>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Platform } from 'react-native';
-import { Tabs, usePathname } from 'expo-router';
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Search, Home, MessageCircle, FolderKanban } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useUiStore } from '@core/stores/uiStore';
@@ -28,6 +29,8 @@ function makeT(translations: Translations) {
   };
 }
 
+const CLIENT_TABS = ['home', 'browse', 'chats', 'projects'] as const;
+
 export default function ClientTabsLayout() {
   const [totalUnread, setTotalUnread] = useState(0);
   const insets = useSafeAreaInsets();
@@ -48,7 +51,30 @@ export default function ClientTabsLayout() {
   const pathname = usePathname();
   const inChatRoom = /\/chats\/.+/.test(pathname);
 
+  const router = useRouter();
+  const currentTabIndex = CLIENT_TABS.findIndex((t) => pathname.includes(`/${t}`));
+
+  const tabSwipeGesture = Gesture.Pan()
+    .activeOffsetX([-50, 50])
+    .failOffsetY([-20, 20])
+    .enabled(!inChatRoom)
+    .runOnJS(true)
+    .onEnd((e) => {
+      if (e.translationX < -80 && currentTabIndex !== -1) {
+        const next = currentTabIndex + 1;
+        if (next < CLIENT_TABS.length) {
+          router.navigate(`/(client)/(tabs)/${CLIENT_TABS[next]}` as never);
+        }
+      } else if (e.translationX > 80 && currentTabIndex !== -1) {
+        const prev = currentTabIndex - 1;
+        if (prev >= 0) {
+          router.navigate(`/(client)/(tabs)/${CLIENT_TABS[prev]}` as never);
+        }
+      }
+    });
+
   return (
+    <GestureDetector gesture={tabSwipeGesture}>
     <View style={{ flex: 1 }}>
       {!inChatRoom && <AppHeader />}
       <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0, bottom: 0 }}>
@@ -128,5 +154,6 @@ export default function ClientTabsLayout() {
         </Tabs>
       </SafeAreaInsetsContext.Provider>
     </View>
+    </GestureDetector>
   );
 }
