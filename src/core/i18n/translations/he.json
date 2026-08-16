@@ -122,7 +122,9 @@
     "purchase_chat": "רכישה",
     "purchase_suffix": "קנייה",
     "badge_completed": "הושלם",
-    "badge_cancelled": "בוטל"
+    "badge_cancelled": "בוטל",
+    "click_for_project_info": "(לחץ למידע על הפרויקט)",
+    "change_photo": "שנה תמונה"
   },
   "project_details": {
     "header": "פרטי פרויקט",

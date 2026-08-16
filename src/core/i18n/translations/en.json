@@ -122,7 +122,9 @@
     "purchase_chat": "Purchase",
     "purchase_suffix": "Purchase",
     "badge_completed": "Completed",
-    "badge_cancelled": "Cancelled"
+    "badge_cancelled": "Cancelled",
+    "click_for_project_info": "(click for project information)",
+    "change_photo": "Change photo"
   },
   "project_details": {
     "header": "Project Details",

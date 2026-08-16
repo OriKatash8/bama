@@ -15,6 +15,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import {
@@ -38,7 +39,7 @@ import {
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Paperclip, Mic, Play, Pause } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Paperclip, Mic, Play, Pause, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -304,6 +305,9 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [communityPhotoURL, setCommunityPhotoURL] = useState<string | undefined>(undefined);
   const [communityPhotoUploading, setCommunityPhotoUploading] = useState(false);
+  const [chatPhotoURL, setChatPhotoURL] = useState<string | null>(null);
+  const [chatPhotoModalOpen, setChatPhotoModalOpen] = useState(false);
+  const [chatPhotoUploading, setChatPhotoUploading] = useState(false);
   const [manageVisible, setManageVisible] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<{ userId: string; displayName: string }[]>([]);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
@@ -412,6 +416,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       if (data.ownerId) setChatOwnerId(data.ownerId);
       if (data.members) setChatMembers(data.members as string[]);
       setCommunityPhotoURL(data.photoURL);
+      setChatPhotoURL(data.photoURL ?? null);
 
       if (!nameResolved) {
         nameResolved = true;
@@ -582,6 +587,26 @@ export function ChatRoomScreen({ chatId }: Props) {
       setCommunityPhotoURL(url);
     } finally {
       setCommunityPhotoUploading(false);
+    }
+  }
+
+  async function handleChangeChatPhoto() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as const,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    setChatPhotoUploading(true);
+    try {
+      const blob = await fetch(result.assets[0].uri).then((r) => r.blob());
+      const url = await uploadFile(`chat-images/${chatId}.jpg`, blob);
+      await updateDoc(doc(db, 'chats', chatId), { photoURL: url });
+      setChatPhotoURL(url);
+      setChatPhotoModalOpen(false);
+    } finally {
+      setChatPhotoUploading(false);
     }
   }
 
@@ -826,6 +851,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
+              <AppText style={chatStyles.headerHint}>{t('chats.click_for_project_info')}</AppText>
             </TouchableOpacity>
           ) : (
             <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
@@ -833,14 +859,23 @@ export function ChatRoomScreen({ chatId }: Props) {
             </AppText>
           )}
         </View>
-        <View style={[styles.headerRight, { alignItems: 'center', justifyContent: 'center' }]}>
+        <View style={[styles.headerRight, { alignItems: 'flex-start', justifyContent: 'center' }]}>
           {chatType === 'community' && currentUserId === chatOwnerId && (
-            <TouchableOpacity onPress={() => setManageVisible(true)} style={{ padding: 8 }}>
+            <TouchableOpacity onPress={() => setManageVisible(true)} style={{ padding: 4 }}>
               <AppText weight="semiBold" style={{ color: colors.accent, fontSize: 13 }}>
                 {t('communities.manage')}
               </AppText>
             </TouchableOpacity>
           )}
+          <TouchableOpacity onPress={() => setChatPhotoModalOpen(true)} activeOpacity={0.8} style={chatStyles.headerPhotoBtn}>
+            {chatPhotoURL ? (
+              <Image source={{ uri: chatPhotoURL }} style={chatStyles.headerPhoto} />
+            ) : (
+              <View style={[chatStyles.headerPhoto, chatStyles.headerPhotoFallback]}>
+                <AppText style={chatStyles.headerPhotoFallbackText}>{chatName?.[0] ?? '?'}</AppText>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1074,6 +1109,33 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
       )}
     </KeyboardAvoidingView>
+
+    {/* Chat Photo Modal */}
+    <Modal visible={chatPhotoModalOpen} transparent animationType="fade" onRequestClose={() => setChatPhotoModalOpen(false)}>
+      <View style={chatStyles.photoModalOverlay}>
+        <View style={[chatStyles.photoModalTopBar, { paddingTop: TOP_INSET + 12 }]}>
+          <TouchableOpacity onPress={handleChangeChatPhoto} disabled={chatPhotoUploading} activeOpacity={0.7}>
+            <AppText weight="semiBold" style={chatStyles.photoModalChangeBtn}>
+              {chatPhotoUploading ? '...' : t('chats.change_photo')}
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setChatPhotoModalOpen(false)} activeOpacity={0.7}>
+            <X size={22} color="#fff" strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+        <TouchableWithoutFeedback onPress={() => setChatPhotoModalOpen(false)}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            {chatPhotoURL ? (
+              <Image source={{ uri: chatPhotoURL }} style={chatStyles.photoModalImage} />
+            ) : (
+              <View style={[chatStyles.photoModalImage, chatStyles.headerPhotoFallback]}>
+                <AppText style={{ fontSize: 64, color: '#004aad', fontWeight: '700' }}>{chatName?.[0] ?? '?'}</AppText>
+              </View>
+            )}
+          </View>
+        </TouchableWithoutFeedback>
+      </View>
+    </Modal>
 
     {/* Add Mission Modal */}
     <Modal visible={showAddMission} transparent animationType="slide" onRequestClose={() => setShowAddMission(false)}>
@@ -1790,4 +1852,13 @@ const chatStyles = StyleSheet.create({
     minWidth: 28,
     textAlign: 'center',
   },
+  headerHint: { fontSize: 11, color: '#8890b0', marginTop: 1, textAlign: 'center' },
+  headerPhotoBtn: { marginLeft: 2, alignItems: 'center', justifyContent: 'center' },
+  headerPhoto: { width: 36, height: 36, borderRadius: 18 },
+  headerPhotoFallback: { backgroundColor: '#004aad22', alignItems: 'center', justifyContent: 'center' },
+  headerPhotoFallbackText: { fontSize: 15, color: '#004aad', fontWeight: '700' },
+  photoModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.88)' },
+  photoModalTopBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
+  photoModalChangeBtn: { fontSize: 15, color: '#fff' },
+  photoModalImage: { width: 260, height: 260, borderRadius: 130 },
 });
