@@ -11,9 +11,13 @@ type Props = {
   value: string;
   onSelect: (iso: string) => void;
   onClose: () => void;
+  showFlexible?: boolean;
+  isFlexible?: boolean;
+  onFlexible?: () => void;
+  flexibleLabel?: string;
 };
 
-export function MiniCalendar({ value, onSelect, onClose }: Props) {
+export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexible, onFlexible, flexibleLabel }: Props) {
   const today = new Date();
   const init = value ? new Date(value + 'T00:00:00') : today;
   const [viewYear, setViewYear] = useState(init.getFullYear());
@@ -88,6 +92,18 @@ export function MiniCalendar({ value, onSelect, onClose }: Props) {
                   );
                 })}
               </View>
+
+              {showFlexible && (
+                <TouchableOpacity
+                  style={[styles.flexibleBtn, isFlexible && styles.flexibleBtnActive]}
+                  onPress={onFlexible}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.flexibleBtnText, isFlexible && styles.flexibleBtnTextActive]}>
+                    {flexibleLabel ?? 'Flexible'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -123,4 +139,16 @@ const styles = StyleSheet.create({
   dayNum: { fontSize: 14, fontWeight: '500', color: '#004aad' },
   dayNumSelected: { color: '#ffffff' },
   dayNumEmpty: { color: 'transparent' },
+  flexibleBtn: {
+    marginTop: 10,
+    borderWidth: 1.5,
+    borderColor: '#004aad',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  flexibleBtnActive: { backgroundColor: '#004aad' },
+  flexibleBtnText: { fontSize: 13, fontWeight: '600', color: '#004aad' },
+  flexibleBtnTextActive: { color: '#ffffff' },
 });

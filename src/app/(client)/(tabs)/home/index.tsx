@@ -323,16 +323,7 @@ export default function HomeScreen() {
                       {deadline === 'flexible' ? t('builder.flexible') : (deadline || t('builder.placeholder_deadline'))}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.flexiblePill, deadline === 'flexible' && styles.flexiblePillActive]}
-                    onPress={() => setDeadline(deadline === 'flexible' ? '' : 'flexible')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.flexiblePillText, deadline === 'flexible' && styles.flexiblePillTextActive, { ...font.semiBold }]}>
-                      {t('builder.flexible')}
-                    </Text>
-                  </TouchableOpacity>
-                  {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
+{errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
 
                 {/* Location square */}
@@ -554,6 +545,10 @@ export default function HomeScreen() {
             setCalOpen(null);
           }}
           onClose={() => setCalOpen(null)}
+          showFlexible={calOpen === 'deadline'}
+          isFlexible={deadline === 'flexible'}
+          onFlexible={() => { setDeadline(deadline === 'flexible' ? '' : 'flexible'); setCalOpen(null); }}
+          flexibleLabel={t('builder.flexible')}
         />
       )}
     </Screen>
@@ -736,25 +731,6 @@ function createStyles(
       alignItems: 'center',
       justifyContent: 'center',
     },
-    flexiblePill: {
-      marginTop: 7,
-      paddingHorizontal: 12,
-      paddingVertical: 5,
-      borderRadius: 12,
-      borderWidth: 1.5,
-      borderColor: '#004aad',
-    },
-    flexiblePillActive: {
-      backgroundColor: '#004aad',
-    },
-    flexiblePillText: {
-      fontSize: 12,
-      color: '#004aad',
-    },
-    flexiblePillTextActive: {
-      color: '#ffffff',
-    },
-
     // Summary modal
     summaryCard: { width: '100%', maxHeight: '90%', borderRadius: 24, overflow: 'hidden' },
     summaryGradient: { flex: 1, borderRadius: 24 },
