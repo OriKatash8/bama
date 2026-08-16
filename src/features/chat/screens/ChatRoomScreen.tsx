@@ -1004,15 +1004,19 @@ export function ChatRoomScreen({ chatId }: Props) {
       {isRecording && !(chatType === 'purchase' && chatArchived) && (
         <View style={[
           styles.inputRow,
-          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 },
+          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10, alignItems: 'center' },
         ]}>
           <Animated.View style={[chatStyles.recordingDot, { opacity: pulseAnim }]} />
           <AppText weight="semiBold" style={chatStyles.recordingTimer}>
             {formatRecordingTime(recordingDuration)}
           </AppText>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={cancelRecording} activeOpacity={0.7} hitSlop={10}>
-            <AppText weight="semiBold" style={chatStyles.recordingCancel}>{t('chats.record_cancel')}</AppText>
+          <TouchableOpacity
+            style={[styles.sendButton, { backgroundColor: '#ef4444' }]}
+            onPress={cancelRecording}
+            activeOpacity={0.7}
+          >
+            <AppText weight="semiBold" style={[styles.sendLabel, { color: '#fff' }]}>{t('chats.record_cancel')}</AppText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.sendButton, { backgroundColor: colors.accent }]}
