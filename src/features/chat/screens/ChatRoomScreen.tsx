@@ -1004,7 +1004,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       {isRecording && !(chatType === 'purchase' && chatArchived) && (
         <View style={[
           styles.inputRow,
-          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 10 : (insets.bottom || 10) },
+          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : (insets.bottom || 10) + 8 },
         ]}>
           <Animated.View style={[chatStyles.recordingDot, { opacity: pulseAnim }]} />
           <AppText weight="semiBold" style={chatStyles.recordingTimer}>
