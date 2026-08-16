@@ -678,9 +678,9 @@ export default function ProjectDetailsScreen() {
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
-        <View style={[styles.header, { flexDirection: rowDirection, marginHorizontal: -16, marginTop: -16 }]}>
+        <View style={[styles.header, { marginHorizontal: -16, marginTop: -16 }]}>
           <TouchableOpacity onPress={() => chatIdParam ? router.push(`/(client)/(tabs)/chats/${chatIdParam}` as never) : router.back()} style={styles.headerBack} activeOpacity={0.7}>
-            <AppText weight="regular" style={styles.headerBackText}>{rtl ? '›' : '‹'}</AppText>
+            <AppText weight="regular" style={styles.headerBackText}>{'‹'}</AppText>
           </TouchableOpacity>
           <View style={styles.headerCenter} pointerEvents="none">
             <AppText weight="semiBold" style={styles.headerLabel}>
