@@ -129,7 +129,6 @@ export default function ProfessionalTabsLayout() {
           />
           <Tabs.Screen name="portfolio" options={{ href: null }} />
           <Tabs.Screen name="bookings" options={{ href: null }} />
-          <Tabs.Screen name="chats/[chatId]" options={{ href: null }} />
           <Tabs.Screen name="switch" options={{ href: null }} />
         </Tabs>
       </SafeAreaInsetsContext.Provider>

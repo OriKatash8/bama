@@ -6,7 +6,7 @@ export default function ChatRoomRoute() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: true }} />
       <ChatRoomScreen chatId={chatId} />
     </>
   );

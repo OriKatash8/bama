@@ -428,7 +428,7 @@ export default function ProjectDetailsScreen() {
   if (isLoading) {
     return (
       <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
         <ActivityIndicator size="large" color="#004aad" />
       </LinearGradient>
     );
@@ -437,7 +437,7 @@ export default function ProjectDetailsScreen() {
   if (!project) {
     return (
       <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
         <Text style={[styles.errorText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
           {t('project_details.project_not_found')}
         </Text>
@@ -673,7 +673,7 @@ export default function ProjectDetailsScreen() {
 
   return (
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
 
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
