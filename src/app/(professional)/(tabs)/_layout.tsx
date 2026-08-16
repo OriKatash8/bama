@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Platform, PanResponder } from 'react-native';
+import { View, Platform, PanResponder, Dimensions } from 'react-native';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { LayoutDashboard, ShoppingBag, User, MessageCircle } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
@@ -64,6 +64,10 @@ export default function ProfessionalTabsLayout() {
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => {
         if (inChatRoomRef.current) return false;
+        const screenWidth = Dimensions.get('window').width;
+        const EDGE_ZONE = 40;
+        const fromEdge = gs.x0 < EDGE_ZONE || gs.x0 > screenWidth - EDGE_ZONE;
+        if (!fromEdge) return false;
         return Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
       },
       onPanResponderRelease: (_, gs) => {
