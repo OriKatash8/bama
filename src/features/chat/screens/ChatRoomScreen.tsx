@@ -141,6 +141,8 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
   const totalDurationRef = useRef(audioDuration);
   const rtlRef = useRef(rtl);
   rtlRef.current = rtl;
+  const playerRef = useRef(player);
+  playerRef.current = player;
 
   // ── Derived values ──
   const totalSec = (status.duration > 0 ? status.duration : audioDuration) || audioDuration || 1;
@@ -171,6 +173,7 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (e) => {
         const w = trackWidthRef.current;
         if (!w) return;
@@ -189,7 +192,7 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
         setSeekPct(pct);
       },
       onPanResponderRelease: () => {
-        player.seekTo(seekPctRef.current * totalDurationRef.current);
+        playerRef.current.seekTo(seekPctRef.current * totalDurationRef.current);
         setIsDragging(false);
       },
       onPanResponderTerminate: () => {
@@ -207,7 +210,7 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch((e) => {
         console.warn('[AudioMode] handlePress:', e);
       });
-      player.seekTo(0);
+      if (status.didJustFinish) player.seekTo(0);
       player.play();
       setPlayingId(messageId);
     }
