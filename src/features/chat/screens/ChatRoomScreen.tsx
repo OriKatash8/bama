@@ -8,6 +8,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Modal,
+  PanResponder,
   Platform,
   ScrollView,
   StyleSheet,
@@ -112,7 +113,30 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
   const isActive = playingId === messageId;
   const player = useAudioPlayer(audioUrl);
   const status = useAudioPlayerStatus(player);
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
 
+  // ── Drag-seek state ──
+  const [isDragging, setIsDragging] = useState(false);
+  const [seekPct, setSeekPct] = useState(0);
+  const trackWidthRef = useRef(0);
+  const seekPctRef = useRef(0);
+  const totalDurationRef = useRef(audioDuration);
+  const rtlRef = useRef(rtl);
+  rtlRef.current = rtl;
+
+  // ── Derived values ──
+  const totalSec = (status.duration > 0 ? status.duration : audioDuration) || audioDuration || 1;
+  totalDurationRef.current = totalSec;
+  const rawPct = Math.max(0, Math.min(1, totalSec > 0 ? (status.currentTime || 0) / totalSec : 0));
+  const displayPct = isDragging ? seekPct : rawPct;
+  const displayElapsed = isDragging ? seekPct * totalSec : Math.max(0, status.currentTime || 0);
+
+  // ── Colours ──
+  const accent = isOwn ? 'rgba(255,255,255,0.9)' : '#004aad';
+  const trackBg = isOwn ? 'rgba(255,255,255,0.25)' : 'rgba(0,74,173,0.15)';
+
+  // ── Existing effects (unchanged) ──
   useEffect(() => {
     if (!isActive && status.playing) {
       player.pause();
@@ -125,6 +149,39 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
     }
   }, [status.didJustFinish]);
 
+  // ── PanResponder (created once; reads from refs to avoid stale closures) ──
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => {
+        const w = trackWidthRef.current;
+        if (!w) return;
+        const raw = e.nativeEvent.locationX / w;
+        const pct = Math.max(0, Math.min(1, rtlRef.current ? 1 - raw : raw));
+        seekPctRef.current = pct;
+        setIsDragging(true);
+        setSeekPct(pct);
+      },
+      onPanResponderMove: (e) => {
+        const w = trackWidthRef.current;
+        if (!w) return;
+        const raw = e.nativeEvent.locationX / w;
+        const pct = Math.max(0, Math.min(1, rtlRef.current ? 1 - raw : raw));
+        seekPctRef.current = pct;
+        setSeekPct(pct);
+      },
+      onPanResponderRelease: () => {
+        player.seekTo(seekPctRef.current * totalDurationRef.current);
+        setIsDragging(false);
+      },
+      onPanResponderTerminate: () => {
+        setIsDragging(false);
+      },
+    })
+  ).current;
+
+  // ── handlePress (unchanged logic) ──
   async function handlePress() {
     if (isActive && status.playing) {
       player.pause();
@@ -139,16 +196,39 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
     }
   }
 
+  // ── Flex track helpers (avoids flex:0 edge cases) ──
+  const filledFlex = Math.max(0.001, displayPct);
+  const unfilledFlex = Math.max(0.001, 1 - displayPct);
+
   return (
-    <View style={chatStyles.audioBubble}>
+    <View style={[chatStyles.audioBubble, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+      {/* Play / Pause */}
       <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={chatStyles.audioPlayBtn}>
         {isActive && status.playing
           ? <Pause size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />
           : <Play size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />}
       </TouchableOpacity>
-      <Text style={[chatStyles.audioDurationText, { color: isOwn ? 'rgba(255,255,255,0.85)' : '#004aad' }]}>
-        {formatRecordingTime(audioDuration)}
-      </Text>
+
+      {/* Elapsed */}
+      <AppText weight="semiBold" style={[chatStyles.audioTimeText, { color: accent }]}>
+        {formatRecordingTime(Math.floor(displayElapsed))}
+      </AppText>
+
+      {/* Progress track */}
+      <View
+        style={chatStyles.audioTrackOuter}
+        onLayout={(e) => { trackWidthRef.current = e.nativeEvent.layout.width; }}
+        {...panResponder.panHandlers}
+      >
+        <View style={{ flex: filledFlex, height: 3, backgroundColor: accent, borderRadius: 1.5 }} />
+        <View style={[chatStyles.audioHandleDot, { backgroundColor: accent }]} />
+        <View style={{ flex: unfilledFlex, height: 3, backgroundColor: trackBg, borderRadius: 1.5 }} />
+      </View>
+
+      {/* Total duration */}
+      <AppText weight="semiBold" style={[chatStyles.audioTimeText, { color: accent }]}>
+        {formatRecordingTime(Math.floor(totalSec))}
+      </AppText>
     </View>
   );
 }
@@ -1619,8 +1699,9 @@ const chatStyles = StyleSheet.create({
   audioBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     paddingVertical: 4,
+    minWidth: 210,
   },
   audioPlayBtn: {
     width: 34, height: 34, borderRadius: 17,
@@ -1628,4 +1709,21 @@ const chatStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   audioDurationText: { fontSize: 13, fontWeight: '600', minWidth: 32 },
+  audioTrackOuter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 20,
+  },
+  audioHandleDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    flexShrink: 0,
+  },
+  audioTimeText: {
+    fontSize: 12,
+    minWidth: 28,
+    textAlign: 'center',
+  },
 });
