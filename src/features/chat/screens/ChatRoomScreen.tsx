@@ -26,10 +26,11 @@ import {
   setAudioModeAsync,
 } from 'expo-audio';
 import * as ImagePicker from 'expo-image-picker';
-import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
+const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
 import {
   getDoc, updateDoc, doc, Timestamp,
   collection, onSnapshot, query, where,
@@ -263,7 +264,6 @@ interface Props {
 }
 
 export function ChatRoomScreen({ chatId }: Props) {
-  const insets = useSafeAreaInsets();
   const colors = useTheme();
   const font = useAppFont();
   const router = useRouter();
@@ -993,7 +993,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
       {/* Archived purchase chat — read-only banner replaces input */}
       {chatType === 'purchase' && chatArchived && (
-        <View style={[styles.inputRow, { paddingBottom: insets.bottom || 10, borderTopColor: colors.border, backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center' }]}>
+        <View style={[styles.inputRow, { paddingBottom: BOTTOM_INSET + 10, borderTopColor: colors.border, backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center' }]}>
           <AppText weight="semiBold" style={{ color: '#8890b0', fontSize: 13, textAlign: 'center' }}>
             {chatArchiveReason === 'cancelled' ? t('chats.purchase_cancelled') : t('chats.purchase_completed')}
           </AppText>
@@ -1004,7 +1004,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       {isRecording && !(chatType === 'purchase' && chatArchived) && (
         <View style={[
           styles.inputRow,
-          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : (insets.bottom || 10) + 8 },
+          { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 },
         ]}>
           <Animated.View style={[chatStyles.recordingDot, { opacity: pulseAnim }]} />
           <AppText weight="semiBold" style={chatStyles.recordingTimer}>
@@ -1026,7 +1026,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
       {/* Input */}
       {!isRecording && !(chatType === 'purchase' && chatArchived) && (
-        <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : (insets.bottom || 10) + 8 }]}>
+        <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
               <ActivityIndicator size="small" color={colors.accent} />
