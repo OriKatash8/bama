@@ -64,9 +64,10 @@ export default function ProfessionalTabsLayout() {
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => {
         if (inChatRoomRef.current) return false;
+        const startX = gs.moveX - gs.dx;
         const screenWidth = Dimensions.get('window').width;
-        const EDGE_ZONE = 40;
-        const fromEdge = gs.x0 < EDGE_ZONE || gs.x0 > screenWidth - EDGE_ZONE;
+        const EDGE_ZONE = 50;
+        const fromEdge = startX < EDGE_ZONE || startX > screenWidth - EDGE_ZONE;
         if (!fromEdge) return false;
         return Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
       },
