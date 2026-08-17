@@ -274,7 +274,9 @@
     "failed_photo": "Failed to update photo",
     "reviews_count": "({{count}} reviews)",
     "no_reviews": "No reviews yet",
-    "report": "Report Account"
+    "report": "Report Account",
+    "status_available": "Available",
+    "status_busy": "Busy"
   },
   "report": {
     "title": "Report Account",

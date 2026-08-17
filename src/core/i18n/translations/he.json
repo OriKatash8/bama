@@ -274,7 +274,9 @@
     "failed_photo": "עדכון התמונה נכשל",
     "reviews_count": "({{count}} ביקורות)",
     "no_reviews": "אין ביקורות עדיין",
-    "report": "דווח על חשבון"
+    "report": "דווח על חשבון",
+    "status_available": "זמין",
+    "status_busy": "עסוק"
   },
   "report": {
     "title": "דיווח על חשבון",

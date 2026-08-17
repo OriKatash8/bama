@@ -20,11 +20,6 @@ function makeT(translations: Translations) {
   };
 }
 
-const AVAILABILITY_COLOR: Record<string, string> = {
-  available: '#22c55e',
-  busy: '#f59e0b',
-  unavailable: '#ef4444',
-};
 
 type Props = {
   item: ProfessionalResult;
@@ -51,7 +46,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
     }
   }
 
-  const availColor = AVAILABILITY_COLOR[profile.availability] ?? colors.textMuted;
+  const availColor = profile.availability === 'available' ? '#22c55e' : '#f59e0b';
 
   function skillLabel(category: string): string {
     return rtl && CATEGORY_LABEL_KEY[category] ? t(CATEGORY_LABEL_KEY[category]) : category;

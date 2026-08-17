@@ -99,5 +99,10 @@ export function useProfile() {
     }
   }
 
-  return { user, profile, reviews, isLoading, isSaving, error, save };
+  async function updateAvailability(status: 'available' | 'busy') {
+    if (!user) return;
+    await mergeDocument(`users/${user.id}/profile/data`, { availability: status });
+  }
+
+  return { user, profile, reviews, isLoading, isSaving, error, save, updateAvailability };
 }

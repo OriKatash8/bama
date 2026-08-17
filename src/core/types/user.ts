@@ -28,7 +28,7 @@ export type ProfessionalProfile = {
   roles: MediaRole[];
   skills?: ProfessionalSkill[];
   bio: string;
-  availability: 'available' | 'busy' | 'unavailable';
+  availability: 'available' | 'busy';
   rating: number;
   reviewCount: number;
   equipment: string[];
