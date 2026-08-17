@@ -484,6 +484,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: 2,
+    justifyContent: 'center',
   },
   skillChip: {
     borderWidth: 1.5,
