@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   skillText: { fontSize: 11 },
   moreSkills: { fontSize: 12, alignSelf: 'center' },
   messageBtn: {
-    marginTop: 12,
+    marginTop: 20,
     borderRadius: 10,
     paddingVertical: 9,
     alignItems: 'center',

@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 2,
+    marginTop: 12,
     justifyContent: 'center',
   },
   skillChip: {
