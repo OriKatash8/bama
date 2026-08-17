@@ -248,8 +248,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         {skillsOpen && (
           <View style={styles.skillsSection}>
             {translatedRoles.map((role, i) => (
-              <View key={i} style={[styles.skillRow, { flexDirection: rowDir }]}>
-                <View style={styles.skillDot} />
+              <View key={i} style={styles.skillChip}>
                 <AppText weight="semiBold" style={[styles.skillName, { textAlign: rtl ? 'right' : 'left' }]}>
                   {role}
                 </AppText>
@@ -481,27 +480,20 @@ const styles = StyleSheet.create({
     color: '#004aad',
   },
   skillsSection: {
-    gap: 8,
-    backgroundColor: 'rgba(0,74,173,0.04)',
-    borderRadius: 10,
-    padding: 8,
+    gap: 6,
     marginTop: 2,
   },
-  skillRow: {
-    alignItems: 'center',
-    gap: 10,
-  },
-  skillDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#004aad',
-    flexShrink: 0,
+  skillChip: {
+    borderWidth: 1.5,
+    borderColor: '#004aad',
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   skillName: {
     fontSize: 12,
     color: '#004aad',
-    flex: 1,
   },
 
   // --- Shared: direct invite badge ---

@@ -232,31 +232,28 @@ export function ProjectRequestCard({ request }: Props) {
                 (m) => m.professionalId === filled?.professionalId && m.category === slot.category,
               );
               return (
-                <View key={i} style={[styles.teamRow, { flexDirection: rowDir }]}>
-                  <View style={styles.teamDot} />
-                  <View style={styles.teamInfo}>
+                <View key={i} style={styles.teamChip}>
+                  <AppText
+                    weight="semiBold"
+                    style={[styles.teamRole, { textAlign: rtl ? 'right' : 'left' }]}
+                  >
+                    {slot.category}
+                  </AppText>
+                  {member ? (
+                    <AppText
+                      weight="regular"
+                      style={[styles.teamName, { textAlign: rtl ? 'right' : 'left' }]}
+                    >
+                      {member.displayName} · ₪{member.price.toLocaleString()}
+                    </AppText>
+                  ) : (
                     <AppText
                       weight="semiBold"
-                      style={[styles.teamRole, { textAlign: rtl ? 'right' : 'left' }]}
+                      style={[styles.teamOpen, { textAlign: rtl ? 'right' : 'left' }]}
                     >
-                      {slot.category}
+                      — {t('chats_page.open_slot')}
                     </AppText>
-                    {member ? (
-                      <AppText
-                        weight="regular"
-                        style={[styles.teamName, { textAlign: rtl ? 'right' : 'left' }]}
-                      >
-                        {member.displayName} · ₪{member.price.toLocaleString()}
-                      </AppText>
-                    ) : (
-                      <AppText
-                        weight="semiBold"
-                        style={[styles.teamOpen, { textAlign: rtl ? 'right' : 'left' }]}
-                      >
-                        — {t('chats_page.open_slot')}
-                      </AppText>
-                    )}
-                  </View>
+                  )}
                 </View>
               );
             })
@@ -431,25 +428,19 @@ const styles = StyleSheet.create({
   },
   // Team expansion
   teamSection: {
-    gap: 8,
-    backgroundColor: 'rgba(30,79,163,0.03)',
-    borderRadius: 10,
-    padding: 8,
+    gap: 6,
   },
-  teamRow: {
-    alignItems: 'center',
-    gap: 10,
+  teamChip: {
+    borderWidth: 1.5,
+    borderColor: BLUE,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  teamDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: PURPLE,
-  },
-  teamInfo: { flex: 1 },
   teamRole: { fontSize: 13, color: BLUE },
-  teamName: { fontSize: 12, color: MUTED, marginTop: 1 },
-  teamOpen: { fontSize: 12, color: BLUE, marginTop: 1 },
+  teamName: { fontSize: 12, color: MUTED, marginTop: 2 },
+  teamOpen: { fontSize: 12, color: BLUE, marginTop: 2 },
   // Delete confirmation
   confirmRow: {
     gap: 12,
