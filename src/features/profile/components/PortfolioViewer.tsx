@@ -136,7 +136,8 @@ function NativeVideoSlide({ asset, isActive, onClose }: { asset: MediaAsset; isA
   const translateY = useSharedValue(0);
 
   const pan = Gesture.Pan()
-    .minDistance(8)
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-10, 10])
     .onUpdate((e) => {
       translateY.value = e.translationY;
     })
