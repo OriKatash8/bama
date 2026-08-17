@@ -480,6 +480,8 @@ const styles = StyleSheet.create({
     color: '#004aad',
   },
   skillsSection: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
     marginTop: 2,
   },

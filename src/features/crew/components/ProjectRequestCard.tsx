@@ -428,6 +428,8 @@ const styles = StyleSheet.create({
   },
   // Team expansion
   teamSection: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   teamChip: {
