@@ -63,6 +63,7 @@ export default function ProjectsPage() {
 
   const [projectTitles, setProjectTitles] = useState<Record<string, string>>({});
   const fetchedProjectIds = useRef<Set<string>>(new Set());
+  const [projectIndex, setProjectIndex] = useState(0);
 
   useEffect(() => {
     const ids = new Set<string>();
@@ -211,37 +212,51 @@ export default function ProjectsPage() {
             </View>
           )}
 
-          <View style={[styles.section, { marginTop: 24 }]}>
-            <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
-              {t('chats_page.my_projects')}
-            </Text>
-            {requestsLoading ? (
-              <ActivityIndicator color={colors.accent} />
-            ) : (() => {
-              const active = requests.filter((r) => r.status !== 'completed');
-              return active.length === 0 ? (
-                <View style={styles.emptyWrap}>
-                  <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-                    {t('chats_page.no_projects')}
+          {(() => {
+            const active = requests.filter((r) => r.status !== 'completed');
+            return (
+              <View style={[styles.section, { marginTop: 24 }]}>
+                <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
+                    {t('chats_page.my_projects')}
                   </Text>
+                  {!requestsLoading && active.length > 0 && (
+                    <Text style={[styles.projectCounter, { ...font.regular }]}>
+                      {projectIndex + 1}/{active.length}
+                    </Text>
+                  )}
                 </View>
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.projectsScroll}
-                  snapToInterval={CARD_W + 12}
-                  decelerationRate="fast"
-                >
-                  {active.map((item) => (
-                    <View key={item.id} style={{ width: CARD_W }}>
-                      <ProjectRequestCard request={item} />
-                    </View>
-                  ))}
-                </ScrollView>
-              );
-            })()}
-          </View>
+                {requestsLoading ? (
+                  <ActivityIndicator color={colors.accent} />
+                ) : active.length === 0 ? (
+                  <View style={styles.emptyWrap}>
+                    <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                      {t('chats_page.no_projects')}
+                    </Text>
+                  </View>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.projectsScroll}
+                    snapToInterval={CARD_W + 12}
+                    decelerationRate="fast"
+                    scrollEventThrottle={16}
+                    onScroll={(e) => {
+                      const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + 12));
+                      setProjectIndex(Math.max(0, Math.min(idx, active.length - 1)));
+                    }}
+                  >
+                    {active.map((item) => (
+                      <View key={item.id} style={{ width: CARD_W }}>
+                        <ProjectRequestCard request={item} />
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            );
+          })()}
         </View>
       </ScrollView>
     </Screen>
@@ -272,6 +287,8 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 20 },
   section: { gap: 10 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },
+  sectionTitleRow: { alignItems: 'center', gap: 8, marginBottom: 8 },
+  projectCounter: { fontSize: 13, color: '#8890b0' },
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: 15 },
 });
