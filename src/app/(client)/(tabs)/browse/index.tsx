@@ -350,12 +350,13 @@ const styles = StyleSheet.create({
   modalSheetWrapper: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '85%',
+    height: '85%',
     overflow: 'hidden',
   },
   modalSheet: {
     paddingTop: 20,
     paddingHorizontal: 16,
+    flex: 1,
   },
   modalHeader: {
     alignItems: 'center',
