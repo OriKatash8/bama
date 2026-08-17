@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -19,6 +19,8 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
+
+const CARD_W = Dimensions.get('window').width - 56;
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 
@@ -224,9 +226,19 @@ export default function ProjectsPage() {
                   </Text>
                 </View>
               ) : (
-                active.map((item) => (
-                  <ProjectRequestCard key={item.id} request={item} />
-                ))
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.projectsScroll}
+                  snapToInterval={CARD_W + 12}
+                  decelerationRate="fast"
+                >
+                  {active.map((item) => (
+                    <View key={item.id} style={{ width: CARD_W }}>
+                      <ProjectRequestCard request={item} />
+                    </View>
+                  ))}
+                </ScrollView>
               );
             })()}
           </View>
@@ -239,6 +251,7 @@ export default function ProjectsPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
+  projectsScroll: { paddingHorizontal: 4, paddingVertical: 4, gap: 12 },
   headerWrap: {
     alignSelf: 'stretch',
     marginHorizontal: -16,
