@@ -402,7 +402,7 @@ export default function HomeScreen() {
                 maxToRenderPerBatch={8}
                 windowSize={3}
                 columnWrapperStyle={{ gap: 8, justifyContent: 'center' }}
-                ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
+                ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                 renderItem={({ item: cat }) => {
                   const catSlot = slots.find(s => s.category === cat.key);
                   const catTotal = catSlot?.quantity ?? 0;
@@ -563,18 +563,18 @@ function createStyles(
 ) {
   return StyleSheet.create({
     scroll: { flex: 1 },
-    scrollContent: { paddingBottom: 100 },
-    pageTitle: { fontSize: 36, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textTransform: 'uppercase', marginTop: 20 },
+    scrollContent: { paddingBottom: 24 },
+    pageTitle: { fontSize: 26, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textTransform: 'uppercase', marginTop: 10 },
     stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, textAlign: 'center', marginTop: 2, marginBottom: 2 },
 
-    progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 6, marginBottom: 4 },
+    progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },
 
-    backArrow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4, alignSelf: 'flex-start' },
+    backArrow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, alignSelf: 'flex-start' },
     backArrowText: { color: '#004aad', fontSize: 15, fontWeight: '600', fontFamily: ffSemiBold },
 
     card: { margin: 16, marginTop: 10, padding: 20 },
-    rolesCard: { marginHorizontal: 16, marginTop: 8, padding: 16 },
+    rolesCard: { marginHorizontal: 16, marginTop: 4, padding: 10 },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
     input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: ff },
@@ -582,7 +582,7 @@ function createStyles(
     error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     tile: { borderRadius: 12, overflow: 'hidden', position: 'relative', alignItems: 'center' },
-    tileImage: { width: '100%', height: 100 },
+    tileImage: { width: '100%', height: 80 },
     tileOverlay: { width: '100%', paddingTop: 0, paddingBottom: 2, paddingHorizontal: 5 },
     tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center', lineHeight: 17, includeFontPadding: false },
     tileControls: { width: '100%', height: 28, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)' },
@@ -590,8 +590,8 @@ function createStyles(
     tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
     tileControlText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 16 },
     tileCountText: { color: '#004aad', fontSize: 14, fontWeight: '800', fontFamily: ffBold, minWidth: 14, textAlign: 'center' },
-    submitWrap: { padding: 16, paddingBottom: 32 },
-    submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginTop: 8 },
+    submitWrap: { paddingTop: 6, paddingHorizontal: 16, paddingBottom: 12 },
+    submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginTop: 4 },
     disabled: { backgroundColor: '#555' },
     submitText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: ffBold },
     cancelBtn: { alignItems: 'center', paddingVertical: 12 },
