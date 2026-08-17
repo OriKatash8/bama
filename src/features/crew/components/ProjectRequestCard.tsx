@@ -232,24 +232,24 @@ export function ProjectRequestCard({ request }: Props) {
                 (m) => m.professionalId === filled?.professionalId && m.category === slot.category,
               );
               return (
-                <View key={i} style={styles.teamChip}>
+                <View key={i} style={[styles.teamChip, member ? styles.teamChipFilled : styles.teamChipOpen]}>
                   <AppText
                     weight="semiBold"
-                    style={[styles.teamRole, { textAlign: rtl ? 'right' : 'left' }]}
+                    style={[styles.teamRole, { textAlign: rtl ? 'right' : 'left', color: member ? '#ffffff' : BLUE }]}
                   >
                     {slot.category}
                   </AppText>
                   {member ? (
                     <AppText
                       weight="regular"
-                      style={[styles.teamName, { textAlign: rtl ? 'right' : 'left' }]}
+                      style={[styles.teamName, { textAlign: rtl ? 'right' : 'left', color: 'rgba(255,255,255,0.8)' }]}
                     >
                       {member.displayName} · ₪{member.price.toLocaleString()}
                     </AppText>
                   ) : (
                     <AppText
                       weight="semiBold"
-                      style={[styles.teamOpen, { textAlign: rtl ? 'right' : 'left' }]}
+                      style={[styles.teamOpen, { textAlign: rtl ? 'right' : 'left', color: BLUE }]}
                     >
                       — {t('chats_page.open_slot')}
                     </AppText>
@@ -437,13 +437,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: BLUE,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  teamRole: { fontSize: 12, color: BLUE },
-  teamName: { fontSize: 11, color: MUTED, marginTop: 1 },
-  teamOpen: { fontSize: 11, color: BLUE, marginTop: 1 },
+  teamChipFilled: { backgroundColor: BLUE },
+  teamChipOpen: { backgroundColor: '#ffffff' },
+  teamRole: { fontSize: 12 },
+  teamName: { fontSize: 11, marginTop: 1 },
+  teamOpen: { fontSize: 11, marginTop: 1 },
   // Delete confirmation
   confirmRow: {
     gap: 12,
