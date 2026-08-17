@@ -271,8 +271,8 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
               </View>
             )}
             {item.type === 'purchase' && item.archived && (
-              <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? '#fee2e2' : '#f0fdf4' }]}>
-                <AppText weight="bold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? '#dc2626' : '#16a34a' }]}>
+              <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? '#fee2e2' : '#ecf9c1' }]}>
+                <AppText weight="bold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? '#dc2626' : '#2d6a2d' }]}>
                   {item.archiveReason === 'cancelled' ? t('chats.badge_cancelled') : t('chats.badge_completed')}
                 </AppText>
               </View>
@@ -292,7 +292,7 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
             >
               {item.lastMessage?.text ?? ''}
             </AppText>
-            {item.type === 'group' && (status === 'completed' || status === 'cancelled') ? (
+            {(item.type === 'group' && (status === 'completed' || status === 'cancelled')) || (item.type === 'purchase' && !!item.archived) ? (
               <TouchableOpacity
                 onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
                 hitSlop={8}
