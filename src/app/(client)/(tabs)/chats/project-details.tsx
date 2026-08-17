@@ -14,12 +14,13 @@ import {
 import { confirmDialog } from '@utils/confirmDialog';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { auth } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -46,7 +47,7 @@ import {
 import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
-import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, MapPin, Trash2 } from 'lucide-react-native';
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
 type Translations = typeof en;
@@ -109,6 +110,7 @@ export default function ProjectDetailsScreen() {
   const colors = useTheme();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
+  const { showToast } = useUiStore();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDirection: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
@@ -157,6 +159,13 @@ export default function ProjectDetailsScreen() {
   // Feature A: removal requests
   const [removalRequests, setRemovalRequests] = useState<RemovalRequest[]>([]);
   const [removingId, setRemovingId] = useState<string | null>(null);
+
+  // Report user
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportedUserId, setReportedUserId] = useState('');
+  const [reportedUserName, setReportedUserName] = useState('');
 
   // Feature B: add professional
   const [showRolePicker, setShowRolePicker] = useState(false);
@@ -381,6 +390,33 @@ export default function ProjectDetailsScreen() {
       Alert.alert('Error', t('project_details.error_remove'));
     } finally {
       setRemovingId(null);
+    }
+  }
+
+  function closeReport() {
+    setReportVisible(false);
+    setReportReason('');
+  }
+
+  async function submitReport() {
+    if (reportReason.trim().length < 20 || !currentUserId || !reportedUserId) return;
+    setReportSubmitting(true);
+    try {
+      await addDoc(collection(db, 'reports'), {
+        reporterId: currentUserId,
+        reportedUserId,
+        reportedUserName,
+        reason: reportReason.trim(),
+        evidenceURLs: [],
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+      closeReport();
+      showToast(t('report.success'), 'success');
+    } catch {
+      Alert.alert('Error', 'Failed to submit report. Please try again.');
+    } finally {
+      setReportSubmitting(false);
     }
   }
 
@@ -805,6 +841,7 @@ export default function ProjectDetailsScreen() {
               isPendingRemoval={isClient && isPendingRemoval}
               isRemoving={removingId === professionalId}
               onRemove={isClient && !isCompleted ? () => handleRequestRemoval(professionalId) : undefined}
+              onReport={() => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? professionalId); setReportVisible(true); }}
               payment={isClient ? payment : undefined}
               onUpdate={isClient && !isCompleted && payment?.individualOffer
                 ? (offer) => {
@@ -1628,6 +1665,49 @@ export default function ProjectDetailsScreen() {
         professionals={reviewProfessionals}
         onComplete={handleReviewsComplete}
       />
+
+      <Modal visible={reportVisible} transparent animationType="slide" onRequestClose={closeReport}>
+        <View style={styles.reportBackdrop}>
+          <LinearGradient colors={['#1a237e', '#004aad']} style={styles.reportSheet}>
+            <View style={[styles.reportHeader, { flexDirection: rowDirection }]}>
+              <AppText weight="bold" style={styles.reportTitle}>{t('report.title')}</AppText>
+              <TouchableOpacity onPress={closeReport} hitSlop={8} activeOpacity={0.7}>
+                <AppText weight="regular" style={{ color: '#fff', fontSize: 20 }}>✕</AppText>
+              </TouchableOpacity>
+            </View>
+            <AppText weight="regular" style={[styles.reportSubtitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('report.reporting', { name: reportedUserName })}
+            </AppText>
+            <AppText weight="semiBold" style={[styles.reportLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('report.reason_label')}
+            </AppText>
+            <TextInput
+              style={[styles.reportInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
+              multiline
+              value={reportReason}
+              onChangeText={setReportReason}
+              placeholder={t('report.reason_placeholder')}
+              placeholderTextColor="rgba(255,255,255,0.45)"
+              textAlignVertical="top"
+            />
+            {reportReason.length > 0 && reportReason.length < 20 && (
+              <AppText weight="regular" style={[styles.reportHint, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('report.min_chars')}
+              </AppText>
+            )}
+            <TouchableOpacity
+              style={[styles.reportSubmitBtn, { opacity: reportReason.trim().length >= 20 && !reportSubmitting ? 1 : 0.45 }]}
+              onPress={submitReport}
+              disabled={reportReason.trim().length < 20 || reportSubmitting}
+              activeOpacity={0.8}
+            >
+              {reportSubmitting
+                ? <ActivityIndicator size="small" color="#004aad" />
+                : <AppText weight="bold" style={styles.reportSubmitText}>{t('report.submit')}</AppText>}
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -1642,6 +1722,7 @@ function MemberRow({
   isPendingRemoval = false,
   isRemoving = false,
   onRemove,
+  onReport,
   payment,
   onUpdate,
 }: {
@@ -1653,6 +1734,7 @@ function MemberRow({
   isPendingRemoval?: boolean;
   isRemoving?: boolean;
   onRemove?: () => void;
+  onReport?: () => void;
   payment?: { price: number; hasBundle: boolean; individualOffer: PriceOffer | null };
   onUpdate?: (offer: PriceOffer) => void;
 }) {
@@ -1660,7 +1742,7 @@ function MemberRow({
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
-  const showRemoveRow = isPendingRemoval || !!onRemove;
+  const showActions = isPendingRemoval || !!onRemove || !!onReport;
   return (
     <View style={[styles.memberCard, { flexDirection: rowDir }]}>
       {photoURL ? (
@@ -1711,7 +1793,7 @@ function MemberRow({
               <AppText weight="regular" style={styles.rolePillText}>{r}</AppText>
             </View>
           ))}
-          {showRemoveRow && (
+          {showActions && (
             <>
               <View style={{ flex: 1 }} />
               {isPendingRemoval ? (
@@ -1725,6 +1807,11 @@ function MemberRow({
                     : <AppText weight="semiBold" style={styles.removeBtnText}>{t('project_details.remove_member')}</AppText>}
                 </TouchableOpacity>
               ) : null}
+              {onReport && (
+                <TouchableOpacity onPress={onReport} hitSlop={8} activeOpacity={0.7} style={styles.reportBtn}>
+                  <Flag size={14} color="#9ca3af" strokeWidth={1.8} />
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -2248,4 +2335,17 @@ const styles = StyleSheet.create({
   pendingBadgeText: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
 
   bottomPad: { height: 32 },
+
+  // ── Report modal ──────────────────────────────────────────────────────────────
+  reportBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  reportSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 12 },
+  reportHeader: { alignItems: 'center', justifyContent: 'space-between' },
+  reportTitle: { color: '#fff', fontSize: 20 },
+  reportSubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
+  reportLabel: { color: '#fff', fontSize: 14 },
+  reportInput: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 12, color: '#fff', height: 120, textAlignVertical: 'top' },
+  reportHint: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
+  reportSubmitBtn: { backgroundColor: '#fff', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+  reportSubmitText: { color: '#004aad', fontSize: 15 },
+  reportBtn: { padding: 6, marginLeft: 6 },
 });
