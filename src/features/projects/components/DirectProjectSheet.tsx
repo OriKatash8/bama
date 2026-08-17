@@ -202,7 +202,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             {/* Dates */}
             <View style={styles.dateRow}>
               <View style={styles.dateCol}>
-                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('builder.execution')} <Text style={{ fontWeight: '400', color: '#7b2fa899' }}>({t('builder.optional')})</Text>
                 </Text>
                 <TouchableOpacity
@@ -218,7 +218,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               </View>
 
               <View style={styles.dateCol}>
-                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, textAlign: rtl ? 'right' : 'left' }]}>
+                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
                   {t('builder.deadline')}
                 </Text>
                 <TouchableOpacity
