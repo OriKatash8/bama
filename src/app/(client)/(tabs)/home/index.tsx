@@ -583,7 +583,7 @@ function createStyles(
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     tile: { borderRadius: 12, overflow: 'hidden', position: 'relative', alignItems: 'center' },
     tileImage: { width: '100%', height: 100 },
-    tileOverlay: { width: '100%', paddingTop: 2, paddingBottom: 2, paddingHorizontal: 5 },
+    tileOverlay: { width: '100%', paddingTop: 0, paddingBottom: 2, paddingHorizontal: 5 },
     tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center' },
     tileControls: { width: '100%', height: 28, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)' },
     tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
