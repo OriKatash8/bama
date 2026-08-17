@@ -127,11 +127,31 @@ function ZoomableImageSlide({ asset, onZoomChange, onClose }: ImageSlideProps) {
 
 // ── Video slides ──────────────────────────────────────────────────────────────
 
-function NativeVideoSlide({ asset, isActive }: { asset: MediaAsset; isActive: boolean }) {
+function NativeVideoSlide({ asset, isActive, onClose }: { asset: MediaAsset; isActive: boolean; onClose: () => void }) {
   const { VideoView, useVideoPlayer } = require('expo-video') as typeof import('expo-video');
   const player = useVideoPlayer(asset.url, (p: import('expo-video').VideoPlayer) => {
     p.loop = true;
   });
+
+  const translateY = useSharedValue(0);
+
+  const pan = Gesture.Pan()
+    .minDistance(8)
+    .onUpdate((e) => {
+      translateY.value = e.translationY;
+    })
+    .onEnd((e) => {
+      const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX) * 1.5;
+      if (Math.abs(e.translationY) > 80 && isVertical) {
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withSpring(0);
+      }
+    });
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   useEffect(() => {
     if (isActive) player.play();
@@ -139,9 +159,11 @@ function NativeVideoSlide({ asset, isActive }: { asset: MediaAsset; isActive: bo
   }, [isActive, player]);
 
   return (
-    <View style={slide.container}>
-      <VideoView player={player} style={slide.fill} contentFit="contain" nativeControls />
-    </View>
+    <GestureDetector gesture={pan}>
+      <Animated.View style={[slide.container, animStyle]}>
+        <VideoView player={player} style={slide.fill} contentFit="contain" nativeControls />
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
@@ -183,7 +205,7 @@ function Slide({ asset, isActive, onZoomChange, onClose }: SlideProps) {
   if (asset.type === 'video') {
     return Platform.OS === 'web'
       ? <WebVideoSlide asset={asset} isActive={isActive} />
-      : <NativeVideoSlide asset={asset} isActive={isActive} />;
+      : <NativeVideoSlide asset={asset} isActive={isActive} onClose={onClose} />;
   }
   return <ZoomableImageSlide asset={asset} onZoomChange={onZoomChange} onClose={onClose} />;
 }
