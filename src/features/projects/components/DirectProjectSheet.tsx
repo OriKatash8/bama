@@ -385,6 +385,7 @@ const styles = StyleSheet.create({
     maxWidth: 560,
     borderRadius: 24,
     maxHeight: '90%',
+    flex: 1,
     overflow: 'hidden',
     padding: 24,
   },
