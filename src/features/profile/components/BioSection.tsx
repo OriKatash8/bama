@@ -1,4 +1,4 @@
-import { View, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useUiStore } from '@core/stores/uiStore';
@@ -40,9 +40,9 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
           {t('profile_sections.about')}
         </AppText>
         <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <AppText weight="regular" style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
+          <Text style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {bio || t('profile_sections.no_bio')}
-          </AppText>
+          </Text>
         </View>
       </View>
     );
