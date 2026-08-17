@@ -258,7 +258,7 @@ export default function SearchScreen() {
                   >
                     <ProfessionalCard
                       item={item}
-                      onDirectProject={() => openDirectSheet(item.user.id, item.user.displayName)}
+                      onDirectProject={() => { closeModal(); setTimeout(() => openDirectSheet(item.user.id, item.user.displayName), 350); }}
                     />
                   </TouchableOpacity>
                 )}

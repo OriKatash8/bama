@@ -90,7 +90,7 @@
     "no_professionals_subtext": "Professionals in this category will appear here once they set up their profile.",
     "back": "← Back",
     "heading": "Search Professionals",
-    "placeholder": "Search by role, skill, or name…",
+    "placeholder": "Search by skill or name…",
     "no_results_title": "No professionals found",
     "no_results_subtext": "No results for \"{{query}}\"",
     "no_categories_match": "No categories match \"{{query}}\"",

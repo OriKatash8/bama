@@ -90,7 +90,7 @@
     "no_professionals_subtext": "אנשי מקצוע בקטגוריה זו יופיעו כאן לאחר שיגדירו את הפרופיל שלהם.",
     "back": "← חזרה",
     "heading": "חיפוש אנשי מקצוע",
-    "placeholder": "חיפוש לפי תפקיד, מיומנות או שם…",
+    "placeholder": "חיפוש לפי מיומנות או שם…",
     "no_results_title": "לא נמצאו אנשי מקצוע",
     "no_results_subtext": "אין תוצאות עבור \"{{query}}\"",
     "no_categories_match": "אין קטגוריות התואמות \"{{query}}\"",
