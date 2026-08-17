@@ -176,22 +176,8 @@ export function ProjectRequestCard({ request }: Props) {
       {/* Divider */}
       <View style={styles.divider} />
 
-      {/* Zone 3 — Bottom row: team indicator (leading) + action buttons (trailing) */}
+      {/* Zone 3 — Bottom row: action buttons (leading) + team indicator (trailing) */}
       <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
-        <TouchableOpacity
-          style={[styles.teamBtn, { flexDirection: rowDir }]}
-          onPress={toggleTeam}
-          activeOpacity={0.7}
-        >
-          <Users size={13} color={teamColor} strokeWidth={1.8} />
-          <AppText weight="semiBold" style={[styles.teamBtnText, { color: teamColor }]}>
-            {t('chats_page.team_label')} ({filledCount}/{totalSlots})
-          </AppText>
-          {teamOpen
-            ? <ChevronUp size={13} color={teamColor} />
-            : <ChevronDown size={13} color={teamColor} />}
-        </TouchableOpacity>
-
         <View style={[styles.actions, { flexDirection: rowDir }]}>
           {!!request.chatId && (
             <TouchableOpacity
@@ -218,6 +204,20 @@ export function ProjectRequestCard({ request }: Props) {
             </TouchableOpacity>
           )}
         </View>
+
+        <TouchableOpacity
+          style={[styles.teamBtn, { flexDirection: rowDir }]}
+          onPress={toggleTeam}
+          activeOpacity={0.7}
+        >
+          <Users size={13} color={teamColor} strokeWidth={1.8} />
+          <AppText weight="semiBold" style={[styles.teamBtnText, { color: teamColor }]}>
+            {t('chats_page.team_label')} ({filledCount}/{totalSlots})
+          </AppText>
+          {teamOpen
+            ? <ChevronUp size={13} color={teamColor} />
+            : <ChevronDown size={13} color={teamColor} />}
+        </TouchableOpacity>
       </View>
 
       {/* Team expanded section */}

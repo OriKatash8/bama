@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { Image } from 'expo-image';
-import { MapPin, Calendar, Clock, X } from 'lucide-react-native';
+import { MapPin, Calendar, Clock, X, ChevronDown, ChevronUp } from 'lucide-react-native';
 
 import type { ProjectRequest } from '@core/types/project';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
@@ -75,16 +75,16 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   ];
 
   const [confirmingDismiss, setConfirmingDismiss] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(false);
 
   if (compact) {
     const timeAgo = formatTimeAgo(request.createdAt, t);
-    const visibleRoles = translatedRoles.slice(0, 3);
-    const extraRoles = translatedRoles.length - 3;
     const hasDesc = !!(request.description?.trim());
     const hasExec = !!(request.exec?.trim());
     const hasDeadline = !!(request.deadline?.trim());
-    const hasMetaRow = hasExec || hasDeadline;
     const locationText = translateCity(request.location, rtl);
+    const hasLocation = !!(locationText?.trim());
+    const hasMetaRow = hasExec || hasDeadline || hasLocation;
 
     const rowDir = rtl ? 'row-reverse' : ('row' as const);
     const flexLabel = t('builder.flexible');
@@ -142,7 +142,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             </View>
           )}
 
-          {/* Title + location */}
+          {/* Title + time ago */}
           <View style={[styles.headerContent, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
             <Text
               style={[styles.cardTitle, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
@@ -150,15 +150,11 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             >
               {request.title}
             </Text>
-            <View style={[styles.locationTimeRow, { flexDirection: rowDir }]}>
-              <MapPin size={11} color={colors.textMuted} strokeWidth={1.5} />
-              <Text
-                style={[styles.locationTimeText, { ...font.forText(locationText, 'regular'), color: colors.textMuted }]}
-                numberOfLines={1}
-              >
-                {locationText}{timeAgo ? ` · ${timeAgo}` : ''}
-              </Text>
-            </View>
+            {!!timeAgo && (
+              <AppText weight="regular" style={[styles.timeAgoText, { color: colors.textMuted }]}>
+                {timeAgo}
+              </AppText>
+            )}
           </View>
 
           {/* ✕ dismiss — trailing corner (left in RTL) */}
@@ -187,6 +183,17 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         {/* Date stat squares */}
         {hasMetaRow && (
           <View style={[styles.datesRow, { flexDirection: rowDir }]}>
+            {hasLocation && (
+              <View style={styles.dateSquare}>
+                <MapPin size={11} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
+                  {t('noticeboard.location_label')}
+                </AppText>
+                <AppText weight="bold" style={[styles.dateSquareValue, { color: textColor }]} numberOfLines={1}>
+                  {locationText}
+                </AppText>
+              </View>
+            )}
             {hasExec && (
               <View style={styles.dateSquare}>
                 <Calendar size={11} color={colors.textMuted} strokeWidth={1.5} />
@@ -214,7 +221,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
 
         <View style={styles.separator} />
 
-        {/* Bottom: make-offer button + role pills */}
+        {/* Bottom: make-offer button + skills toggle */}
         <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
           <TouchableOpacity
             style={styles.offerPill}
@@ -223,21 +230,33 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           >
             <AppText weight="bold" style={styles.offerPillText}>{t('noticeboard.make_offer')}</AppText>
           </TouchableOpacity>
-          <View style={[styles.pillsRow, { flexDirection: rowDir }]}>
-            {visibleRoles.map((role, i) => (
-              <View key={i} style={[styles.rolePill, { borderColor: isDirectInvite ? '#cb6ce6' : colors.border }]}>
-                <Text style={[styles.rolePillText, { ...font.forText(role, 'semiBold'), color: textColor }]} numberOfLines={1}>
+          <TouchableOpacity
+            style={[styles.skillsBtn, { flexDirection: rowDir }]}
+            onPress={(e) => { e.stopPropagation?.(); setSkillsOpen((v) => !v); }}
+            activeOpacity={0.7}
+          >
+            <AppText weight="semiBold" style={styles.skillsBtnText}>
+              {t('noticeboard.role_plural')} ({translatedRoles.length})
+            </AppText>
+            {skillsOpen
+              ? <ChevronUp size={13} color="#004aad" strokeWidth={2} />
+              : <ChevronDown size={13} color="#004aad" strokeWidth={2} />}
+          </TouchableOpacity>
+        </View>
+
+        {/* Skills expanded list */}
+        {skillsOpen && (
+          <View style={styles.skillsSection}>
+            {translatedRoles.map((role, i) => (
+              <View key={i} style={[styles.skillRow, { flexDirection: rowDir }]}>
+                <View style={styles.skillDot} />
+                <AppText weight="semiBold" style={[styles.skillName, { textAlign: rtl ? 'right' : 'left' }]}>
                   {role}
-                </Text>
+                </AppText>
               </View>
             ))}
-            {extraRoles > 0 && (
-              <View style={[styles.rolePill, { borderColor: isDirectInvite ? '#cb6ce6' : colors.border }]}>
-                <Text style={[styles.rolePillText, { ...font.semiBold, color: textColor }]}>+{extraRoles}</Text>
-              </View>
-            )}
           </View>
-        </View>
+        )}
       </TouchableOpacity>
     );
   }
@@ -388,14 +407,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 3,
   },
-  locationTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  locationTimeText: {
-    fontSize: 12,
-    flex: 1,
+  timeAgoText: {
+    fontSize: 11,
+    marginTop: 1,
   },
 
   // --- Compact card: description + dates ---
@@ -458,22 +472,36 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
   },
-  pillsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+  skillsBtn: {
+    alignItems: 'center',
+    gap: 5,
+  },
+  skillsBtnText: {
+    fontSize: 13,
+    color: '#004aad',
+  },
+  skillsSection: {
+    gap: 8,
+    backgroundColor: 'rgba(0,74,173,0.04)',
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 2,
+  },
+  skillRow: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  skillDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#004aad',
+    flexShrink: 0,
+  },
+  skillName: {
+    fontSize: 12,
+    color: '#004aad',
     flex: 1,
-    justifyContent: 'flex-end',
-  },
-  rolePill: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    backgroundColor: 'rgba(0,74,173,0.06)',
-  },
-  rolePillText: {
-    fontSize: 11,
   },
 
   // --- Shared: direct invite badge ---
