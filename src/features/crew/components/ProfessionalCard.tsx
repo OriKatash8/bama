@@ -85,7 +85,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
             <View style={[styles.availBadge, { backgroundColor: availColor + '22', borderColor: availColor }]}>
               <View style={[styles.availDot, { backgroundColor: availColor }]} />
               <Text style={[styles.availText, { color: availColor, ...font.medium }]}>
-                {profile.availability}
+                {profile.availability === 'available' ? t('profile.status_available') : t('profile.status_busy')}
               </Text>
             </View>
             {profile.rating > 0 && (
