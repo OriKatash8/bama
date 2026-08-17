@@ -564,7 +564,7 @@ function createStyles(
   return StyleSheet.create({
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 24 },
-    pageTitle: { fontSize: 30, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textTransform: 'uppercase', marginTop: 10 },
+    pageTitle: { fontSize: 34, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textTransform: 'uppercase', marginTop: 10 },
     stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, textAlign: 'center', marginTop: 2, marginBottom: 2 },
 
     progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
