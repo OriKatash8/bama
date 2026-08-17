@@ -153,11 +153,11 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
             ? t('marketplace.sale_completed_label')
             : t('marketplace.purchase_active_label')}
         </Text>
-        <View style={[styles.statusBadge, isCompleted ? styles.badgeSold : styles.badgeReserved]}>
-          <Text style={[styles.statusText, { ...font.semiBold }]}>
-            {isCompleted ? '✓' : '⏳'}
-          </Text>
-        </View>
+        {!isCompleted && (
+          <View style={[styles.statusBadge, styles.badgeReserved]}>
+            <Text style={[styles.statusText, { ...font.semiBold }]}>⏳</Text>
+          </View>
+        )}
         {isCompleted && onDismiss && (
           <TouchableOpacity onPress={onDismiss} hitSlop={8} activeOpacity={0.7} style={styles.dismissBtn}>
             <X size={16} color="#004aad99" strokeWidth={2.5} />
