@@ -433,14 +433,14 @@ const styles = StyleSheet.create({
   teamChip: {
     borderWidth: 1.5,
     borderColor: BLUE,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  teamRole: { fontSize: 13, color: BLUE },
-  teamName: { fontSize: 12, color: MUTED, marginTop: 2 },
-  teamOpen: { fontSize: 12, color: BLUE, marginTop: 2 },
+  teamRole: { fontSize: 12, color: BLUE },
+  teamName: { fontSize: 11, color: MUTED, marginTop: 1 },
+  teamOpen: { fontSize: 11, color: BLUE, marginTop: 1 },
   // Delete confirmation
   confirmRow: {
     gap: 12,

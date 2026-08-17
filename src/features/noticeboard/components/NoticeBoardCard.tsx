@@ -486,10 +486,10 @@ const styles = StyleSheet.create({
   skillChip: {
     borderWidth: 1.5,
     borderColor: '#004aad',
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   skillName: {
     fontSize: 12,
