@@ -110,7 +110,7 @@ export default function SearchScreen() {
   return (
     <Screen keyboardShouldPersistTaps="handled" style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { justifyContent: rtl ? 'flex-end' : 'flex-start' }]}>
         <Text style={[styles.heading, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{t('search.heading')}</Text>
       </View>
 
