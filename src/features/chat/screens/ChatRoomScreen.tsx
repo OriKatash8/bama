@@ -318,6 +318,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const [imageUploading, setImageUploading] = useState(false);
   const mediaActive = videoUploading || videoProcessing || imageUploading;
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Channel state
@@ -948,7 +949,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
-                    <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
+                    <TouchableOpacity onPress={() => setViewingImage(msg.imageURL!)} activeOpacity={0.9}>
+                      <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
+                    </TouchableOpacity>
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
                       {formatMessageTime(msg.timestamp)}
                     </Text>
@@ -1138,6 +1141,20 @@ export function ChatRoomScreen({ chatId }: Props) {
           </View>
         </TouchableWithoutFeedback>
       </View>
+    </Modal>
+
+    {/* Fullscreen image viewer */}
+    <Modal visible={viewingImage !== null} transparent animationType="fade" onRequestClose={() => setViewingImage(null)}>
+      <TouchableWithoutFeedback onPress={() => setViewingImage(null)}>
+        <View style={chatStyles.imageViewerOverlay}>
+          <TouchableOpacity style={chatStyles.imageViewerClose} onPress={() => setViewingImage(null)} activeOpacity={0.7} hitSlop={16}>
+            <X size={24} color="#fff" strokeWidth={2} />
+          </TouchableOpacity>
+          {viewingImage && (
+            <Image source={{ uri: viewingImage }} style={chatStyles.imageViewerImg} resizeMode="contain" />
+          )}
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
 
     {/* Add Mission Modal */}
@@ -1864,4 +1881,7 @@ const chatStyles = StyleSheet.create({
   photoModalTopBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
   photoModalChangeBtn: { fontSize: 15, color: '#fff' },
   photoModalImage: { width: 260, height: 260, borderRadius: 130 },
+  imageViewerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
+  imageViewerClose: { position: 'absolute', top: 52, right: 20, zIndex: 10 },
+  imageViewerImg: { width: '100%', height: '80%' },
 });
