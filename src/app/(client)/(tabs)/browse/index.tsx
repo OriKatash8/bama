@@ -307,14 +307,13 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
-  listContent: { alignItems: 'center' },
+  listContent: { paddingBottom: 16 },
 
   categoryCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    marginHorizontal: 16,
+    marginHorizontal: 24,
     marginBottom: 10,
-    width: '100%',
     maxWidth: 600,
     shadowColor: '#000',
     shadowOpacity: 0.06,
@@ -329,9 +328,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   categoryLabel: {
     flex: 1,

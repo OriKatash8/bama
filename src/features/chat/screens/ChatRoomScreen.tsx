@@ -409,7 +409,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     let nameResolved = false;
 
     const unsub = onSnapshot(doc(db, 'chats', chatId), async (snap) => {
-      if (!snap.exists()) return;
+      if (!snap.exists()) { router.back(); return; }
       const data = snap.data() as Omit<Chat, 'id'>;
 
       setChatType(data.type);

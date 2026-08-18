@@ -95,6 +95,9 @@ export function ProjectRequestCard({ request }: Props) {
     setIsDeleting(true);
     try {
       await deleteDocument(`projects/${request.id}`);
+      if (request.chatId) {
+        await deleteDocument(`chats/${request.chatId}`);
+      }
       showToast(t('chats_page.project_deleted'), 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : t('chats_page.project_delete_error'), 'error');
@@ -389,6 +392,7 @@ const styles = StyleSheet.create({
   bottomRow: {
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 20,
   },
   teamBtn: {
     alignItems: 'center',
