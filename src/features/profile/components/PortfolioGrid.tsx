@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View, Image, TouchableOpacity, Text, StyleSheet,
   ActivityIndicator,
@@ -6,7 +6,7 @@ import {
 import { AppText } from '@components/ui/AppText';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
-import { getThumbnailAsync } from 'expo-video-thumbnails';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { PortfolioViewer } from './PortfolioViewer';
 import { useAuthStore } from '@core/stores/authStore';
@@ -25,7 +25,26 @@ function makeT(translations: Translations) {
   };
 }
 
-const thumbCache = new Map<string, string>();
+function VideoThumbTile({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.muted = true;
+    p.pause();
+  });
+  const [ready, setReady] = useState(false);
+
+  return (
+    <>
+      {!ready && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0a0a1a' }]} />}
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        nativeControls={false}
+        onFirstFrameRender={() => setReady(true)}
+      />
+    </>
+  );
+}
 
 type PortfolioGridProps = {
   assets: MediaAsset[];
@@ -45,24 +64,6 @@ export function PortfolioGrid({
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [tileSize, setTileSize] = useState(0);
-  const [thumbs, setThumbs] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    assets.forEach(async (asset) => {
-      if (asset.type !== 'video') return;
-      if (thumbCache.has(asset.url)) {
-        setThumbs(prev => ({ ...prev, [asset.url]: thumbCache.get(asset.url)! }));
-        return;
-      }
-      try {
-        const { uri } = await getThumbnailAsync(asset.url, { time: 0 });
-        thumbCache.set(asset.url, uri);
-        setThumbs(prev => ({ ...prev, [asset.url]: uri }));
-      } catch {
-        // falls back to dark overlay silently
-      }
-    });
-  }, [assets]);
 
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const videoActive = videoUploading || videoProcessing;
@@ -148,11 +149,7 @@ export function PortfolioGrid({
           >
             {asset.type === 'video' ? (
               <>
-                {thumbs[asset.url] ? (
-                  <Image source={{ uri: thumbs[asset.url] }} style={styles.image} />
-                ) : (
-                  <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0a0a1a' }]} />
-                )}
+                <VideoThumbTile uri={asset.url} />
                 <View style={[StyleSheet.absoluteFill, styles.videoThumb]}>
                   <Play size={28} color="#fff" fill="#fff" />
                 </View>
