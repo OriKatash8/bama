@@ -386,9 +386,12 @@
     "sort_stars": "הכי הרבה כוכבים",
     "sort_date": "החדשים ביותר",
     "sort_none": "ברירת מחדל",
-    "filter": "מיון",
+    "filter": "מיון וסינון",
     "apply": "החל",
-    "clear": "נקה"
+    "clear": "נקה",
+    "show_label": "הצג",
+    "show_all": "כל ההצעות",
+    "show_bundle_only": "חבילות בלבד"
   },
   "marketplace": {
     "category_camera": "מצלמה",

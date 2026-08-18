@@ -386,9 +386,12 @@
     "sort_stars": "Most Stars First",
     "sort_date": "Newest First",
     "sort_none": "Default",
-    "filter": "Sort",
+    "filter": "Sort & Filter",
     "apply": "Apply",
-    "clear": "Clear"
+    "clear": "Clear",
+    "show_label": "Show",
+    "show_all": "All Offers",
+    "show_bundle_only": "Bundle Only"
   },
   "marketplace": {
     "category_camera": "Camera",

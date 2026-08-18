@@ -27,6 +27,11 @@ const CARD_W = Dimensions.get('window').width - 104;
 const CARD_GAP = 40;
 
 type OfferSort = 'price_asc' | 'price_desc' | 'stars' | 'date' | null;
+type ShowOnly = 'all' | 'bundle';
+
+type CombinedOffer =
+  | { kind: 'bundle'; data: BundleOffer }
+  | { kind: 'price'; data: PriceOffer };
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string; rating?: number };
 
@@ -73,12 +78,14 @@ export default function ProjectsPage() {
   const projectScrollRef = useRef<ScrollView>(null);
 
   const [offerSort, setOfferSort] = useState<OfferSort>(null);
+  const [showOnly, setShowOnly] = useState<ShowOnly>('all');
   const [draftSort, setDraftSort] = useState<OfferSort>(null);
+  const [draftShowOnly, setDraftShowOnly] = useState<ShowOnly>('all');
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
-  function openSortModal() { setDraftSort(offerSort); setSortModalVisible(true); }
-  function applySort() { setOfferSort(draftSort); setSortModalVisible(false); }
-  function clearSort() { setDraftSort(null); setOfferSort(null); setSortModalVisible(false); }
+  function openSortModal() { setDraftSort(offerSort); setDraftShowOnly(showOnly); setSortModalVisible(true); }
+  function applySort() { setOfferSort(draftSort); setShowOnly(draftShowOnly); setSortModalVisible(false); }
+  function clearSort() { setDraftSort(null); setDraftShowOnly('all'); setOfferSort(null); setShowOnly('all'); setSortModalVisible(false); }
 
   function scrollToProject(index: number) {
     projectScrollRef.current?.scrollTo({ x: index * (CARD_W + CARD_GAP), animated: true });
@@ -172,15 +179,32 @@ export default function ProjectsPage() {
     }
   }
 
-  const sortedOffers = useMemo(() => {
-    if (!offerSort) return offers;
-    const copy = [...offers];
-    if (offerSort === 'price_asc') return copy.sort((a, b) => a.price - b.price);
-    if (offerSort === 'price_desc') return copy.sort((a, b) => b.price - a.price);
-    if (offerSort === 'stars') return copy.sort((a, b) => (professionalProfiles[b.professionalId]?.rating ?? 0) - (professionalProfiles[a.professionalId]?.rating ?? 0));
-    if (offerSort === 'date') return copy.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-    return copy;
-  }, [offers, offerSort, professionalProfiles]);
+  const combinedOffers = useMemo((): CombinedOffer[] => {
+    const getPrice = (item: CombinedOffer) => item.kind === 'bundle' ? item.data.bundlePrice : item.data.price;
+    const getRating = (item: CombinedOffer) => professionalProfiles[item.data.professionalId]?.rating ?? 0;
+    const getDate = (item: CombinedOffer) => item.data.createdAt.seconds;
+
+    const bundleItems: CombinedOffer[] = bundles.map((b) => ({ kind: 'bundle', data: b }));
+    const priceItems: CombinedOffer[] = offers.map((o) => ({ kind: 'price', data: o }));
+
+    let combined: CombinedOffer[];
+    if (showOnly === 'bundle') {
+      combined = bundleItems;
+    } else if (!offerSort) {
+      // Default: bundles first, then price offers, each in arrival order
+      combined = [...bundleItems, ...priceItems];
+    } else {
+      combined = [...bundleItems, ...priceItems];
+    }
+
+    if (offerSort === 'price_asc')  return [...combined].sort((a, b) => getPrice(a) - getPrice(b));
+    if (offerSort === 'price_desc') return [...combined].sort((a, b) => getPrice(b) - getPrice(a));
+    if (offerSort === 'stars')      return [...combined].sort((a, b) => getRating(b) - getRating(a));
+    if (offerSort === 'date')       return [...combined].sort((a, b) => getDate(b) - getDate(a));
+    return combined;
+  }, [offers, bundles, offerSort, showOnly, professionalProfiles]);
+
+  const filterActive = offerSort !== null || showOnly !== 'all';
 
   const SORT_OPTIONS: { value: OfferSort; label: string }[] = [
     { value: null,          label: t('offers.sort_none') },
@@ -188,6 +212,11 @@ export default function ProjectsPage() {
     { value: 'price_desc', label: t('offers.sort_price_high') },
     { value: 'stars',      label: t('offers.sort_stars') },
     { value: 'date',       label: t('offers.sort_date') },
+  ];
+
+  const SHOW_OPTIONS: { value: ShowOnly; label: string }[] = [
+    { value: 'all',    label: t('offers.show_all') },
+    { value: 'bundle', label: t('offers.show_bundle_only') },
   ];
 
   return (
@@ -207,33 +236,10 @@ export default function ProjectsPage() {
         </View>
 
         <View style={styles.content}>
-          {bundles.length > 0 && (
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('offers.bundle_section')}
-              </Text>
-              {bundlesLoading ? (
-                <ActivityIndicator color={colors.accent} />
-              ) : (
-                bundles.map((bundle) => (
-                  <BundleOfferCard
-                    key={bundle.id}
-                    bundle={bundle}
-                    professionalProfile={professionalProfiles[bundle.professionalId]}
-                    onPressProfile={() => goToProfessionalProfile(bundle.professionalId)}
-                    onAccept={() => handleAcceptBundle(bundle)}
-                    onReject={() => handleRejectBundle(bundle.id)}
-                    isAccepting={isBundleAccepting === bundle.id}
-                  />
-                ))
-              )}
-            </View>
-          )}
-
           {(() => {
             const active = requests.filter((r) => r.status !== 'completed');
             return (
-              <View style={[styles.section, bundles.length > 0 && { marginTop: 24 }]}>
+              <View style={styles.section}>
                 <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
                     {t('chats_page.my_projects')}
@@ -301,38 +307,50 @@ export default function ProjectsPage() {
             );
           })()}
 
-          {offers.length > 0 && (
+          {(offers.length > 0 || bundles.length > 0) && (
             <View style={[styles.section, { marginTop: 24 }]}>
               <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
                   {t('chats_page.price_offers')}
                 </Text>
                 <TouchableOpacity
-                  style={[styles.sortBtn, offerSort && styles.sortBtnActive]}
+                  style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
                   onPress={openSortModal}
                   activeOpacity={0.8}
                 >
-                  <SlidersHorizontal size={14} color={offerSort ? '#fff' : '#004aad'} strokeWidth={2} />
-                  <AppText weight="semiBold" style={[styles.sortBtnText, { color: offerSort ? '#fff' : '#004aad' }]}>
+                  <SlidersHorizontal size={14} color={filterActive ? '#fff' : '#004aad'} strokeWidth={2} />
+                  <AppText weight="semiBold" style={[styles.sortBtnText, { color: filterActive ? '#fff' : '#004aad' }]}>
                     {t('offers.filter')}
                   </AppText>
                 </TouchableOpacity>
               </View>
-              {offersLoading ? (
+              {(offersLoading || bundlesLoading) ? (
                 <ActivityIndicator color={colors.accent} />
               ) : (
-                sortedOffers.map((offer) => (
-                  <PriceOfferCard
-                    key={offer.id}
-                    offer={offer}
-                    professionalProfile={professionalProfiles[offer.professionalId]}
-                    projectTitle={projectTitles[offer.projectId]}
-                    onPressProfile={() => goToProfessionalProfile(offer.professionalId)}
-                    onAccept={() => handleAccept(offer)}
-                    onReject={() => handleReject(offer.id)}
-                    isAccepting={isAccepting === offer.id}
-                  />
-                ))
+                combinedOffers.map((item) =>
+                  item.kind === 'bundle' ? (
+                    <BundleOfferCard
+                      key={`bundle-${item.data.id}`}
+                      bundle={item.data}
+                      professionalProfile={professionalProfiles[item.data.professionalId]}
+                      onPressProfile={() => goToProfessionalProfile(item.data.professionalId)}
+                      onAccept={() => handleAcceptBundle(item.data)}
+                      onReject={() => handleRejectBundle(item.data.id)}
+                      isAccepting={isBundleAccepting === item.data.id}
+                    />
+                  ) : (
+                    <PriceOfferCard
+                      key={`price-${item.data.id}`}
+                      offer={item.data}
+                      professionalProfile={professionalProfiles[item.data.professionalId]}
+                      projectTitle={projectTitles[item.data.projectId]}
+                      onPressProfile={() => goToProfessionalProfile(item.data.professionalId)}
+                      onAccept={() => handleAccept(item.data)}
+                      onReject={() => handleReject(item.data.id)}
+                      isAccepting={isAccepting === item.data.id}
+                    />
+                  )
+                )
               )}
             </View>
           )}
@@ -346,26 +364,48 @@ export default function ProjectsPage() {
           <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalCard}>
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <AppText weight="bold" style={[styles.modalTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('offers.sort_title')}
+                {t('offers.filter')}
               </AppText>
               <TouchableOpacity onPress={() => setSortModalVisible(false)} style={styles.modalClose} activeOpacity={0.7}>
                 <X size={20} color="#004aad" />
               </TouchableOpacity>
             </View>
-            <View style={styles.sortOptions}>
-              {SORT_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={String(opt.value)}
-                  style={[styles.sortOption, draftSort === opt.value && styles.sortOptionActive]}
-                  onPress={() => setDraftSort(opt.value)}
-                  activeOpacity={0.8}
-                >
-                  <AppText weight="semiBold" style={[styles.sortOptionText, draftSort === opt.value && styles.sortOptionTextActive]}>
-                    {opt.label}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+              <AppText weight="bold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('offers.sort_title')}
+              </AppText>
+              <View style={styles.sortOptions}>
+                {SORT_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={String(opt.value)}
+                    style={[styles.sortOption, draftSort === opt.value && styles.sortOptionActive]}
+                    onPress={() => setDraftSort(opt.value)}
+                    activeOpacity={0.8}
+                  >
+                    <AppText weight="semiBold" style={[styles.sortOptionText, draftSort === opt.value && styles.sortOptionTextActive]}>
+                      {opt.label}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <AppText weight="bold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('offers.show_label')}
+              </AppText>
+              <View style={styles.showOptions}>
+                {SHOW_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.sortOption, styles.showOption, draftShowOnly === opt.value && styles.sortOptionActive]}
+                    onPress={() => setDraftShowOnly(opt.value)}
+                    activeOpacity={0.8}
+                  >
+                    <AppText weight="semiBold" style={[styles.sortOptionText, draftShowOnly === opt.value && styles.sortOptionTextActive]}>
+                      {opt.label}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.clearBtn} onPress={clearSort} activeOpacity={0.8}>
                 <AppText weight="bold" style={styles.clearBtnText}>{t('offers.clear')}</AppText>
@@ -445,7 +485,11 @@ const styles = StyleSheet.create({
   modalHeader: { alignItems: 'center', marginBottom: 20 },
   modalTitle: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#004aad' },
   modalClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  sortOptions: { gap: 10, marginBottom: 20 },
+  modalScroll: { flexShrink: 1, marginBottom: 4 },
+  modalSectionLabel: { fontSize: 13, fontWeight: '700', color: '#004aad', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 4 },
+  sortOptions: { gap: 8, marginBottom: 16 },
+  showOptions: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  showOption: { flex: 1 },
   sortOption: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,74,173,0.15)', backgroundColor: '#fff' },
   sortOptionActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
   sortOptionText: { fontSize: 14, color: 'rgba(0,0,0,0.55)' },
