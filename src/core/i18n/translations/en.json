@@ -379,7 +379,16 @@
     "view_profile": "View Profile",
     "for_project": "For: ",
     "deny": "Deny",
-    "accept": "Accept"
+    "accept": "Accept",
+    "sort_title": "Sort By",
+    "sort_price_low": "Price: Low to High",
+    "sort_price_high": "Price: High to Low",
+    "sort_stars": "Most Stars First",
+    "sort_date": "Newest First",
+    "sort_none": "Default",
+    "filter": "Sort",
+    "apply": "Apply",
+    "clear": "Clear"
   },
   "marketplace": {
     "category_camera": "Camera",

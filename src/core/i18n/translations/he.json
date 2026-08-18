@@ -379,7 +379,16 @@
     "view_profile": "צפה בפרופיל",
     "for_project": "עבור: ",
     "deny": "דחה",
-    "accept": "אישור"
+    "accept": "אישור",
+    "sort_title": "מיין לפי",
+    "sort_price_low": "מחיר: נמוך לגבוה",
+    "sort_price_high": "מחיר: גבוה לנמוך",
+    "sort_stars": "הכי הרבה כוכבים",
+    "sort_date": "החדשים ביותר",
+    "sort_none": "ברירת מחדל",
+    "filter": "מיון",
+    "apply": "החל",
+    "clear": "נקה"
   },
   "marketplace": {
     "category_camera": "מצלמה",
