@@ -99,11 +99,11 @@ export function ContentTabs({
             style={[
               styles.slidingPill,
               {
-                width: pillWidth,
+                width: pillWidth - 8,
                 transform: [{
                   translateX: slideAnim.interpolate({
                     inputRange: [0, 1, 2],
-                    outputRange: [0, pillWidth, pillWidth * 2],
+                    outputRange: [4, pillWidth + 4, pillWidth * 2 + 4],
                   }),
                 }],
               },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     bottom: 4,
-    borderRadius: 16,
+    borderRadius: 100,
     backgroundColor: '#004aad',
   },
   /* Content */

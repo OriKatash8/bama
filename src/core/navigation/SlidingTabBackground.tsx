@@ -29,11 +29,11 @@ export function SlidingTabBackground({ numTabs, tabNames }: Props) {
           style={[
             styles.pill,
             {
-              width: pillWidth,
+              width: pillWidth - 8,
               transform: [{
                 translateX: slideAnim.interpolate({
                   inputRange:  Array.from({ length: numTabs }, (_, i) => i),
-                  outputRange: Array.from({ length: numTabs }, (_, i) => i * pillWidth),
+                  outputRange: Array.from({ length: numTabs }, (_, i) => i * pillWidth + 4),
                 }),
               }],
             },
@@ -47,9 +47,9 @@ export function SlidingTabBackground({ numTabs, tabNames }: Props) {
 const styles = StyleSheet.create({
   pill: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    borderRadius: 20,
+    top: 4,
+    bottom: 4,
+    borderRadius: 100,
     backgroundColor: 'rgba(180, 180, 180, 0.35)',
   },
 });
