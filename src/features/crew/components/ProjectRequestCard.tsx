@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   teamBtnText: {
-    fontSize: 13,
+    fontSize: 11,
   },
   actions: {
     alignItems: 'center',
@@ -430,21 +430,21 @@ const styles = StyleSheet.create({
   teamSection: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 4,
     justifyContent: 'center',
   },
   teamChip: {
     borderWidth: 1.5,
     borderColor: BLUE,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
   teamChipFilled: { backgroundColor: BLUE },
   teamChipOpen: { backgroundColor: '#ffffff' },
-  teamRole: { fontSize: 12 },
-  teamName: { fontSize: 11, marginTop: 1 },
-  teamOpen: { fontSize: 11, marginTop: 1 },
+  teamRole: { fontSize: 10 },
+  teamName: { fontSize: 9, marginTop: 1 },
+  teamOpen: { fontSize: 9, marginTop: 1 },
   // Delete confirmation
   confirmRow: {
     gap: 12,
