@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   btnIcon: {
     color: '#ffffff',
-    fontSize: 22,
+    fontSize: 28,
   },
   iconRight: {
     position: 'absolute',
