@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 20 },
   section: { gap: 10 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },
-  sectionTitleRow: { alignItems: 'center', gap: 8, marginBottom: 8 },
+  sectionTitleRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   projectCounter: { fontSize: 13, color: '#8890b0' },
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: 15 },
