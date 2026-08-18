@@ -149,18 +149,13 @@ export default function SearchScreen() {
             </View>
           ) : (
             unifiedResults.map((item) => (
-              <TouchableOpacity
-                key={item.user.id}
-                style={styles.resultItem}
-                onPress={() => router.push(`/browse/profile/${item.user.id}` as never)}
-                activeOpacity={0.95}
-              >
+              <View key={item.user.id} style={styles.resultItem}>
                 <ProfessionalCard
                   item={item}
                   onViewProfile={() => router.push(`/browse/profile/${item.user.id}` as never)}
                   onDirectProject={() => openDirectSheet(item.user.id, item.user.displayName)}
                 />
-              </TouchableOpacity>
+              </View>
             ))
           )}
         </View>
@@ -252,17 +247,13 @@ export default function SearchScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 32 }}
                 renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.resultItem}
-                    onPress={() => { closeModal(); router.push(`/browse/profile/${item.user.id}` as never); }}
-                    activeOpacity={0.95}
-                  >
+                  <View style={styles.resultItem}>
                     <ProfessionalCard
                       item={item}
                       onViewProfile={() => { closeModal(); router.push(`/browse/profile/${item.user.id}` as never); }}
                       onDirectProject={() => { closeModal(); setTimeout(() => openDirectSheet(item.user.id, item.user.displayName), 350); }}
                     />
-                  </TouchableOpacity>
+                  </View>
                 )}
               />
             )}
