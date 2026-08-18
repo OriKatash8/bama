@@ -127,10 +127,10 @@ export function BundleOfferCard({
         </View>
 
         <View style={styles.priceSquare}>
-          <AppText weight="bold" style={styles.priceText}>
+          <AppText weight="bold" style={styles.priceText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
             ₪{bundle.bundlePrice.toLocaleString()}
           </AppText>
-          <AppText weight="semiBold" style={styles.strikePriceText}>
+          <AppText weight="semiBold" style={styles.strikePriceText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
             ₪{bundle.individualTotal.toLocaleString()}
           </AppText>
         </View>

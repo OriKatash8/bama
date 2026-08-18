@@ -106,7 +106,7 @@ export function PriceOfferCard({
         </View>
 
         <View style={styles.priceSquare}>
-          <AppText weight="bold" style={styles.priceText}>
+          <AppText weight="bold" style={styles.priceText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
             ₪{offer.price.toLocaleString()}
           </AppText>
         </View>
