@@ -576,7 +576,19 @@
     "pending_requests": "Pending Course Requests",
     "approve": "Add to Courses",
     "reject": "Reject",
-    "no_requests": "No pending requests"
+    "no_requests": "No pending requests",
+    "my_courses": "My Courses",
+    "instructor_badge": "Instructor",
+    "hours": "hours",
+    "lessons": "lessons",
+    "cover_image_label": "Cover Image (optional)",
+    "add_cover_image": "Add Cover Image",
+    "duration_label": "Duration (hours)",
+    "lessons_label": "Lessons Count",
+    "level_label": "Level",
+    "level_beginner": "Beginner",
+    "level_intermediate": "Intermediate",
+    "level_advanced": "Advanced"
   },
   "review": {
     "title": "Rate your crew",

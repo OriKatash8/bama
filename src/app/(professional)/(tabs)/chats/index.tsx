@@ -4,7 +4,7 @@ import {
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Plus, Camera, Search } from 'lucide-react-native';
+import { X, Plus, Camera, Search, Play, Clock, BookOpen, BarChart2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -45,6 +45,11 @@ type Course = {
   price: number;
   instructorName: string;
   courseUrl?: string;
+  category?: string;
+  coverImageUrl?: string;
+  durationHours?: number;
+  lessonsCount?: number;
+  level?: string;
 };
 
 export default function ProfessionalChatsScreen() {
@@ -213,7 +218,10 @@ export default function ProfessionalChatsScreen() {
       {/* Courses tab */}
       {active === 'courses' && (
         <View>
-          <View style={[styles.tabContentHeader, { flexDirection: rtl ? 'row-reverse' : 'row', justifyContent: 'flex-end' }]}>
+          <View style={[styles.tabContentHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.myCoursesTitle, { ...font.bold, color: colors.text }]}>
+              {t('courses.my_courses')}
+            </Text>
             <TouchableOpacity
               style={[styles.plusBtn, { backgroundColor: colors.primary }]}
               onPress={() => setSubmitCourseModal(true)}
@@ -236,29 +244,94 @@ export default function ProfessionalChatsScreen() {
               data={courses}
               keyExtractor={(c) => c.id}
               scrollEnabled={false}
-              contentContainerStyle={{ padding: 16, paddingTop: 8 }}
-              ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+              contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, gap: 12 }}
               renderItem={({ item }) => (
-                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={[styles.cardTitle, { ...font.semiBold, color: colors.text }]}>{item.title}</Text>
-                    <Text style={[styles.coursePrice, { ...font.bold, color: colors.primary }]}>₪{item.price}</Text>
+                <View style={styles.courseCard}>
+                  {/* Cover */}
+                  <View style={styles.coverArea}>
+                    {item.coverImageUrl ? (
+                      <Image source={{ uri: item.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                    ) : (
+                      <LinearGradient colors={['#534AB7', '#cb6ce6']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                        <View style={styles.coverCenter}>
+                          <Play size={32} color="rgba(255,255,255,0.9)" fill="rgba(255,255,255,0.9)" />
+                        </View>
+                      </LinearGradient>
+                    )}
+                    {item.category ? (
+                      <View style={[styles.categoryTag, { [rtl ? 'right' : 'left']: 10 }]}>
+                        <Text style={[styles.categoryTagText, { ...font.semiBold }]}>{item.category}</Text>
+                      </View>
+                    ) : null}
                   </View>
-                  <Text style={[styles.courseInstructor, { ...font.regular, color: colors.textSec }]}>
-                    {item.instructorName}
-                  </Text>
-                  <Text style={[styles.cardDesc, { ...font.regular, color: colors.textSec }]} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                  {item.courseUrl ? (
-                    <TouchableOpacity
-                      onPress={() => Linking.openURL(item.courseUrl!)}
-                      activeOpacity={0.8}
-                      style={styles.visitBtn}
-                    >
-                      <Text style={[styles.visitBtnText, { ...font.semiBold }]}>{t('courses.visit_course')}</Text>
-                    </TouchableOpacity>
-                  ) : null}
+
+                  {/* Body */}
+                  <View style={styles.cardBody}>
+                    {/* Title + price */}
+                    <View style={[styles.titlePriceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                      <Text style={[styles.cardTitle, { ...font.bold, color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={[styles.coursePrice, { ...font.bold, color: colors.primary }]}>
+                        ₪{item.price.toLocaleString()}
+                      </Text>
+                    </View>
+
+                    {/* Description */}
+                    {!!item.description && (
+                      <Text style={[styles.cardDesc, { ...font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    )}
+
+                    {/* Metadata row */}
+                    {!!(item.durationHours || item.lessonsCount || item.level) && (
+                      <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                        {!!item.durationHours && (
+                          <View style={styles.metaChip}>
+                            <Clock size={12} color={colors.textMuted} strokeWidth={1.8} />
+                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.durationHours} {t('courses.hours')}</Text>
+                          </View>
+                        )}
+                        {!!item.lessonsCount && (
+                          <View style={styles.metaChip}>
+                            <BookOpen size={12} color={colors.textMuted} strokeWidth={1.8} />
+                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.lessonsCount} {t('courses.lessons')}</Text>
+                          </View>
+                        )}
+                        {!!item.level && (
+                          <View style={styles.metaChip}>
+                            <BarChart2 size={12} color={colors.textMuted} strokeWidth={1.8} />
+                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.level}</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Footer: instructor + visit */}
+                    <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                      <View style={[styles.instructorRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                        <View style={styles.instructorAvatar}>
+                          <Text style={[styles.instructorInitial, { ...font.bold }]}>
+                            {item.instructorName.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: rtl ? 'flex-end' : 'flex-start' }}>
+                          <Text style={[styles.instructorName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
+                            {item.instructorName}
+                          </Text>
+                          <Text style={[styles.instructorBadge, { ...font.regular, color: colors.textMuted }]}>
+                            {t('courses.instructor_badge')}
+                          </Text>
+                        </View>
+                      </View>
+                      {!!item.courseUrl && (
+                        <TouchableOpacity onPress={() => Linking.openURL(item.courseUrl!)} activeOpacity={0.8} style={styles.visitBtn}>
+                          <Text style={[styles.visitBtnText, { ...font.semiBold }]}>{t('courses.visit_course')}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
                 </View>
               )}
             />
@@ -401,6 +474,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
+  myCoursesTitle: { fontSize: 18 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -425,37 +499,53 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
   },
-  card: {
+  courseCard: {
+    backgroundColor: '#fff',
     borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    marginHorizontal: 16,
   },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    flex: 1,
+  coverArea: {
+    height: 120,
+    backgroundColor: '#1a1a2e',
+    overflow: 'hidden',
   },
-  cardDesc: {
-    fontSize: 13,
-    marginTop: 4,
-  },
-  statusBadge: {
+  coverCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  categoryTag: {
+    position: 'absolute',
+    top: 8,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
   },
-  statusText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
+  categoryTagText: { fontSize: 11, color: '#fff' },
+  cardBody: { padding: 14, gap: 8 },
+  titlePriceRow: { alignItems: 'flex-start', gap: 8 },
+  cardTitle: { fontSize: 15, flex: 1 },
+  coursePrice: { fontSize: 16 },
+  cardDesc: { fontSize: 13, lineHeight: 18 },
+  metaRow: { flexWrap: 'wrap', gap: 8 },
+  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 11 },
+  cardFooter: { alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  instructorRow: { alignItems: 'center', gap: 8, flex: 1 },
+  instructorAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#004aad',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  coursePrice: {
-    fontSize: 15,
-  },
-  courseInstructor: {
-    fontSize: 12,
-    marginTop: 2,
-  },
+  instructorInitial: { color: '#fff', fontSize: 14 },
+  instructorName: { fontSize: 13 },
+  instructorBadge: { fontSize: 11 },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -517,8 +607,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
   },
-  visitBtn: { marginTop: 6, alignSelf: 'flex-start' },
-  visitBtnText: { color: 'rgba(255,255,255,0.9)', fontSize: 13, textDecorationLine: 'underline' },
+  visitBtn: {
+    backgroundColor: '#004aad',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  visitBtnText: { color: '#fff', fontSize: 13 },
   avatarPicker: { alignSelf: 'center', marginBottom: 16, position: 'relative' },
   cameraBadge: {
     position: 'absolute',

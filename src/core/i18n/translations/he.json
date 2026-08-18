@@ -576,7 +576,19 @@
     "pending_requests": "בקשות קורסים ממתינות",
     "approve": "הוסף לקורסים",
     "reject": "דחה",
-    "no_requests": "אין בקשות ממתינות"
+    "no_requests": "אין בקשות ממתינות",
+    "my_courses": "הקורסים שלי",
+    "instructor_badge": "מדריך",
+    "hours": "שעות",
+    "lessons": "שיעורים",
+    "cover_image_label": "תמונת כיסוי (אופציונלי)",
+    "add_cover_image": "הוסף תמונת כיסוי",
+    "duration_label": "משך הקורס (שעות)",
+    "lessons_label": "מספר שיעורים",
+    "level_label": "רמה",
+    "level_beginner": "מתחילים",
+    "level_intermediate": "בינוני",
+    "level_advanced": "מתקדם"
   },
   "review": {
     "title": "דרג את הצוות שלך",

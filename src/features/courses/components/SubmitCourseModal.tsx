@@ -5,8 +5,11 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
+import { uploadFile } from '@core/firebase/storage';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
@@ -55,11 +58,33 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [coverImageUri, setCoverImageUri] = useState<string | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [durationHours, setDurationHours] = useState('');
+  const [lessonsCount, setLessonsCount] = useState('');
+  const [level, setLevel] = useState('');
+
+  async function handlePickCover() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'] as const,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled) setCoverImageUri(result.assets[0].uri);
+  }
 
   async function handleSubmit() {
     if (!title.trim() || !category || !courseUrl.trim() || !instructorName.trim()) return;
     setIsSubmitting(true);
     try {
+      let coverImageUrl: string | undefined;
+      if (coverImageUri) {
+        setIsUploadingCover(true);
+        const blob = await fetch(coverImageUri).then((r) => r.blob());
+        coverImageUrl = await uploadFile(`course-images/${Date.now()}.jpg`, blob);
+        setIsUploadingCover(false);
+      }
       await addDoc(collection(db, 'courseRequests'), {
         title: title.trim(),
         category,
@@ -70,12 +95,18 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
         submittedBy: user?.id ?? '',
         submittedByName: user?.displayName ?? '',
         createdAt: serverTimestamp(),
+        ...(coverImageUrl ? { coverImageUrl } : {}),
+        ...(durationHours.trim() ? { durationHours: Number(durationHours) } : {}),
+        ...(lessonsCount.trim() ? { lessonsCount: Number(lessonsCount) } : {}),
+        ...(level ? { level } : {}),
       });
       setTitle(''); setCategory(''); setCourseUrl('');
       setInstructorName(''); setPrice(''); setDescription('');
+      setCoverImageUri(null); setDurationHours(''); setLessonsCount(''); setLevel('');
       onSubmitted();
     } finally {
       setIsSubmitting(false);
+      setIsUploadingCover(false);
     }
   }
 
@@ -181,11 +212,68 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 numberOfLines={3}
               />
 
+              {/* Cover image */}
+              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.cover_image_label')}</Text>
+              <TouchableOpacity style={styles.coverPickerBtn} onPress={handlePickCover} activeOpacity={0.8}>
+                {coverImageUri ? (
+                  <Image source={{ uri: coverImageUri }} style={styles.coverPreview} contentFit="cover" />
+                ) : (
+                  <Text style={[styles.coverPickerText, { ...font.regular }]}>{t('courses.add_cover_image')}</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Duration + lessons */}
+              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.duration_label')}</Text>
+                  <TextInput
+                    style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+                    value={durationHours}
+                    onChangeText={setDurationHours}
+                    placeholder="0"
+                    placeholderTextColor="rgba(0,74,173,0.4)"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.lessons_label')}</Text>
+                  <TextInput
+                    style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+                    value={lessonsCount}
+                    onChangeText={setLessonsCount}
+                    placeholder="0"
+                    placeholderTextColor="rgba(0,74,173,0.4)"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              {/* Level */}
+              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.level_label')}</Text>
+              <View style={[styles.levelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                {(['level_beginner', 'level_intermediate', 'level_advanced'] as const).map((key) => {
+                  const val = t(`courses.${key}`);
+                  const active = level === val;
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.levelBtn, active && styles.levelBtnActive]}
+                      onPress={() => setLevel(active ? '' : val)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.levelBtnText, { ...font.semiBold }, active && styles.levelBtnTextActive]}>
+                        {val}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
               {/* Submit */}
               <TouchableOpacity
-                style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
+                style={[styles.submitBtn, (!canSubmit || isUploadingCover) && styles.submitBtnDisabled]}
                 onPress={handleSubmit}
-                disabled={!canSubmit}
+                disabled={!canSubmit || isUploadingCover}
                 activeOpacity={0.8}
               >
                 {isSubmitting
@@ -239,4 +327,30 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.5 },
   submitBtnText: { color: '#ffffff', fontSize: 15 },
+  coverPickerBtn: {
+    height: 90,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,74,173,0.3)',
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  coverPreview: { width: '100%', height: '100%' },
+  coverPickerText: { color: 'rgba(0,74,173,0.5)', fontSize: 13 },
+  levelRow: { gap: 8 },
+  levelBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.3)',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  levelBtnActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  levelBtnText: { fontSize: 12, color: '#004aad' },
+  levelBtnTextActive: { color: '#fff' },
 });

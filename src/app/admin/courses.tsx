@@ -40,6 +40,11 @@ type Course = {
   published: boolean;
   createdAt: Timestamp | null;
   courseUrl?: string;
+  category?: string;
+  coverImageUrl?: string;
+  durationHours?: number;
+  lessonsCount?: number;
+  level?: string;
 };
 
 type CourseForm = Omit<Course, 'id' | 'createdAt'>;
@@ -55,6 +60,10 @@ type CourseRequest = {
   submittedBy: string;
   submittedByName: string;
   createdAt: Timestamp | null;
+  coverImageUrl?: string;
+  durationHours?: number;
+  lessonsCount?: number;
+  level?: string;
 };
 
 const EMPTY_FORM: CourseForm = {
@@ -168,6 +177,11 @@ export default function CoursesAdmin() {
       videoUrl: '',
       published: true,
       createdAt: serverTimestamp(),
+      ...(req.category ? { category: req.category } : {}),
+      ...(req.coverImageUrl ? { coverImageUrl: req.coverImageUrl } : {}),
+      ...(req.durationHours ? { durationHours: req.durationHours } : {}),
+      ...(req.lessonsCount ? { lessonsCount: req.lessonsCount } : {}),
+      ...(req.level ? { level: req.level } : {}),
     });
     await deleteDoc(doc(db, 'courseRequests', req.id));
   }
