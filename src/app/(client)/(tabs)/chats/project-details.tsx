@@ -1496,7 +1496,7 @@ export default function ProjectDetailsScreen() {
                   <View key={slot.professionalId} style={styles.feeRow}>
                     <Text style={[styles.feeName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{slot.displayName}</Text>
                     <Text style={[styles.feeAmount, { color: '#004aad', ...font.medium }]}>
-                      ${slot.amount.toLocaleString()}
+                      ₪{slot.amount.toLocaleString()}
                     </Text>
                   </View>
                 ))}
@@ -1506,7 +1506,7 @@ export default function ProjectDetailsScreen() {
                     {t('project_details.subtotal')}
                   </Text>
                   <Text style={[styles.feeAmountBold, { color: '#004aad', ...font.bold }]}>
-                    ${feeData.subtotal.toLocaleString()}
+                    ₪{feeData.subtotal.toLocaleString()}
                   </Text>
                 </View>
 
@@ -1521,7 +1521,7 @@ export default function ProjectDetailsScreen() {
                     {t('project_details.fee_percent')}
                   </Text>
                   <Text style={[styles.feeAmountBold, { color: '#004aad', ...font.bold }]}>
-                    ${feeData.platformFee.toLocaleString()}
+                    ₪{feeData.platformFee.toLocaleString()}
                   </Text>
                 </View>
                 <Text style={[styles.feePlatformNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
