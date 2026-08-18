@@ -135,7 +135,8 @@ export function RegisterForm() {
           disabled={isLoading || !pwValid}
           style={Platform.OS === 'web' ? ({
             background: 'linear-gradient(to right, #004aad, #cb6ce6)',
-          } as object) : { backgroundColor: '#004aad' }}
+          } as object) : undefined}
+          gradientColors={['#004aad', '#cb6ce6']}
         />
         <View style={[styles.footer, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <AppText weight="regular" style={[styles.footerText, { color: colors.text }]}>
@@ -172,11 +173,11 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 10,
+    shadowColor: '#7b4fd4',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 32,
+    elevation: 12,
   },
   appLogo: { width: '80%', height: 130, resizeMode: 'contain', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 28, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },
