@@ -1,8 +1,235 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ─── helpers ────────────────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return isAuth() && request.auth.token.role == 'admin';
+    }
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // Fetches members[] of the parent chat document (for subcollection guards)
+    function chatMembers(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+    }
+
+    // Fetches the parent project document data
+    function projectDoc(projectId) {
+      return get(/databases/$(database)/documents/projects/$(projectId)).data;
+    }
+
+    // True if the user is the project's client OR is in the project's group chat.
+    // Professionals are added to the group chat's members[] when their offer is accepted.
+    function isProjectParticipant(projectId) {
+      let proj = projectDoc(projectId);
+      return proj.clientId == request.auth.uid || (
+        'chatId' in proj &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/chats/$(proj.chatId)).data.members
+      );
+    }
+
+    // ─── users ──────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if false;
+
+      match /profile/data {
+        allow read: if isAuth();
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // ─── chats ──────────────────────────────────────────────────────
+    match /chats/{chatId} {
+      allow read: if isAuth() && (
+        request.auth.uid in resource.data.members ||
+        resource.data.type == 'community'  // all authed users can see community metadata for discovery
+      );
+      allow create: if isAuth() && (
+        request.resource.data.type != 'community' || isAdmin()
+      );
+      allow update: if isAuth() && request.auth.uid in resource.data.members;
+      allow delete: if false;
+
+      // direct messages
+      match /messages/{messageId} {
+        allow read, create: if isAuth() && request.auth.uid in chatMembers(chatId);
+        allow update, delete: if false;
+      }
+
+      // community sub-channels
+      match /channels/{channelId} {
+        allow read, create, update: if isAuth() && request.auth.uid in chatMembers(chatId);
+        allow delete: if false;
+
+        match /messages/{messageId} {
+          allow read, create: if isAuth() && request.auth.uid in chatMembers(chatId);
+          allow update, delete: if false;
+        }
+      }
+
+      // community join requests
+      match /joinRequests/{requestId} {
+        allow create: if isAuth();
+        allow read, update: if isAuth() && (
+          get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
+          || isAdmin()
+        );
+        allow delete: if false;
+      }
+    }
+
+    // ─── communityRequests ──────────────────────────────────────────
+    match /communityRequests/{requestId} {
+      allow create: if isAuth();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ─── courses ────────────────────────────────────────────────────
+    match /courses/{courseId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ─── courseRequests ─────────────────────────────────────────────
+    match /courseRequests/{requestId} {
+      allow create: if isAuth();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ─── projects ───────────────────────────────────────────────────
+    match /projects/{projectId} {
+      allow read: if isAuth();    // professionals browse the noticeboard
+      allow create: if isAuth();  // clients create projects
+      allow update: if isAuth() && (
+        resource.data.clientId == request.auth.uid ||
+        // Professionals may update ONLY filledSlots (e.g. acceptRemoval removes their slot)
+        (
+          isProjectParticipant(projectId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['filledSlots'])
+        )
+      );
+      allow delete: if isAuth() && resource.data.clientId == request.auth.uid;
+
+      match /meetings/{meetingId} {
+        allow read, create, update, delete: if isAuth() && isProjectParticipant(projectId);
+      }
+
+      match /missions/{missionId} {
+        allow read, create, update, delete: if isAuth() && isProjectParticipant(projectId);
+      }
+
+      // Payment renegotiation — only the two parties involved
+      match /paymentRequests/{paymentRequestId} {
+        allow create: if isAuth() && request.resource.data.fromUserId == request.auth.uid;
+        allow read: if isAuth() && (
+          resource.data.fromUserId == request.auth.uid ||
+          resource.data.toUserId == request.auth.uid
+        );
+        allow update: if isAuth() && resource.data.toUserId == request.auth.uid;
+        allow delete: if false;
+      }
+
+      // Removal requests — document ID is the professionalId being removed
+      match /removalRequests/{professionalId} {
+        allow create: if isAuth() && projectDoc(projectId).clientId == request.auth.uid;
+        allow read: if isAuth() && (
+          professionalId == request.auth.uid ||
+          projectDoc(projectId).clientId == request.auth.uid
+        );
+        allow update: if isAuth() && professionalId == request.auth.uid;
+        allow delete: if false;
+      }
+    }
+
+    // ─── priceOffers ────────────────────────────────────────────────
+    match /priceOffers/{offerId} {
+      allow create: if isAuth() && request.resource.data.professionalId == request.auth.uid;
+      allow read: if isAuth() && (
+        resource.data.professionalId == request.auth.uid ||
+        projectDoc(resource.data.projectId).clientId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.professionalId == request.auth.uid ||
+        // Client accepts/rejects, including batch-rejecting competing offers
+        projectDoc(resource.data.projectId).clientId == request.auth.uid
+      );
+      allow delete: if false;
+    }
+
+    // ─── bundleOffers ───────────────────────────────────────────────
+    match /bundleOffers/{offerId} {
+      allow create: if isAuth() && request.resource.data.professionalId == request.auth.uid;
+      allow read: if isAuth() && (
+        resource.data.professionalId == request.auth.uid ||
+        projectDoc(resource.data.projectId).clientId == request.auth.uid
+      );
+      allow update: if isAuth() && (
+        resource.data.professionalId == request.auth.uid ||
+        projectDoc(resource.data.projectId).clientId == request.auth.uid
+      );
+      allow delete: if false;
+    }
+
+    // ─── marketplace_listings ────────────────────────────────────────
+    match /marketplace_listings/{listingId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.posterId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.posterId == request.auth.uid ||       // seller: markHandedOver, cancel
+        resource.data.buyerId == request.auth.uid ||        // buyer: confirmReceived, cancel
+        // New buyer initiating purchase on an available listing (confirmPurchase)
+        (resource.data.status == 'available' &&
+         request.resource.data.buyerId == request.auth.uid)
+      );
+      allow delete: if isAuth() && resource.data.posterId == request.auth.uid;
+    }
+
+    // ─── reviews ────────────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.reviewerId == request.auth.uid;
+      allow update, delete: if false;  // reviews are immutable
+    }
+
+    // ─── reports ────────────────────────────────────────────────────
+    match /reports/{reportId} {
+      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
+      allow read: if isAdmin();
+      allow update: if isAdmin() || (
+        // Reporter may add evidence images after initial submission
+        isAuth() &&
+        resource.data.reporterId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['evidenceURLs'])
+      );
+      allow delete: if false;
+    }
+
+    // ─── notifications ───────────────────────────────────────────────
+    // Written exclusively by Cloud Functions (Admin SDK bypasses rules).
+    match /notifications/{notificationId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    // ─── projectApplications ─────────────────────────────────────────
+    // Written client-side but not queried client-side (possible future admin view).
+    match /projectApplications/{applicationId} {
+      allow create: if isAuth();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ─── deny everything not explicitly listed ────────────────────────
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }
