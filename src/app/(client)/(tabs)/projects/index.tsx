@@ -22,6 +22,7 @@ import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/projec
 import type { User } from '@core/types/user';
 
 const CARD_W = Dimensions.get('window').width - 104;
+const CARD_GAP = 40;
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 
@@ -68,7 +69,7 @@ export default function ProjectsPage() {
   const projectScrollRef = useRef<ScrollView>(null);
 
   function scrollToProject(index: number) {
-    projectScrollRef.current?.scrollTo({ x: index * (CARD_W + 12), animated: true });
+    projectScrollRef.current?.scrollTo({ x: index * (CARD_W + CARD_GAP), animated: true });
   }
 
   useEffect(() => {
@@ -247,11 +248,11 @@ export default function ProjectsPage() {
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.projectsScroll}
-                      snapToInterval={CARD_W + 12}
+                      snapToInterval={CARD_W + CARD_GAP}
                       decelerationRate="fast"
                       scrollEventThrottle={16}
                       onScroll={(e) => {
-                        const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + 12));
+                        const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + CARD_GAP));
                         setProjectIndex(Math.max(0, Math.min(idx, active.length - 1)));
                       }}
                     >
@@ -297,7 +298,7 @@ export default function ProjectsPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  projectsScroll: { paddingHorizontal: 36, paddingVertical: 4, gap: 12 },
+  projectsScroll: { paddingHorizontal: 36, paddingVertical: 4, gap: CARD_GAP },
   headerWrap: {
     alignSelf: 'stretch',
     marginHorizontal: -16,
