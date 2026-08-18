@@ -310,6 +310,9 @@ export default function ProjectsPage() {
           {(offers.length > 0 || bundles.length > 0) && (
             <View style={[styles.section, { marginTop: 24 }]}>
               <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
+                  {t('chats_page.price_offers')}
+                </Text>
                 <TouchableOpacity
                   style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
                   onPress={openSortModal}
@@ -320,9 +323,6 @@ export default function ProjectsPage() {
                     {t('offers.filter')}
                   </AppText>
                 </TouchableOpacity>
-                <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
-                  {t('chats_page.price_offers')}
-                </Text>
               </View>
               {(offersLoading || bundlesLoading) ? (
                 <ActivityIndicator color={colors.accent} />
