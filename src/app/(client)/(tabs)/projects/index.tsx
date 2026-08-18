@@ -310,19 +310,19 @@ export default function ProjectsPage() {
           {(offers.length > 0 || bundles.length > 0) && (
             <View style={[styles.section, { marginTop: 24 }]}>
               <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
-                  {t('chats_page.price_offers')}
-                </Text>
                 <TouchableOpacity
                   style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
                   onPress={openSortModal}
                   activeOpacity={0.8}
                 >
-                  <SlidersHorizontal size={14} color={filterActive ? '#fff' : '#004aad'} strokeWidth={2} />
-                  <AppText weight="semiBold" style={[styles.sortBtnText, { color: filterActive ? '#fff' : '#004aad' }]}>
+                  <SlidersHorizontal size={14} color='#1e4fa3' strokeWidth={2} />
+                  <AppText weight="semiBold" style={styles.sortBtnText}>
                     {t('offers.filter')}
                   </AppText>
                 </TouchableOpacity>
+                <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
+                  {t('chats_page.price_offers')}
+                </Text>
               </View>
               {(offersLoading || bundlesLoading) ? (
                 <ActivityIndicator color={colors.accent} />
@@ -474,12 +474,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: '#004aad',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(30,79,163,0.10)',
   },
-  sortBtnActive: { backgroundColor: '#004aad' },
-  sortBtnText: { fontSize: 13 },
+  sortBtnActive: { backgroundColor: 'rgba(30,79,163,0.22)' },
+  sortBtnText: { fontSize: 13, color: '#1e4fa3' },
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalCard: { width: '88%', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 20 },
   modalHeader: { alignItems: 'center', marginBottom: 20 },
