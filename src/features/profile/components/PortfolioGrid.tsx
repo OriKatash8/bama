@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Image, TouchableOpacity, Text, StyleSheet,
   ActivityIndicator,
@@ -6,6 +6,7 @@ import {
 import { AppText } from '@components/ui/AppText';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
+import { getThumbnailAsync } from 'expo-video-thumbnails';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { PortfolioViewer } from './PortfolioViewer';
 import { useAuthStore } from '@core/stores/authStore';
@@ -23,6 +24,8 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
+
+const thumbCache = new Map<string, string>();
 
 type PortfolioGridProps = {
   assets: MediaAsset[];
@@ -42,6 +45,24 @@ export function PortfolioGrid({
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [tileSize, setTileSize] = useState(0);
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    assets.forEach(async (asset) => {
+      if (asset.type !== 'video') return;
+      if (thumbCache.has(asset.url)) {
+        setThumbs(prev => ({ ...prev, [asset.url]: thumbCache.get(asset.url)! }));
+        return;
+      }
+      try {
+        const { uri } = await getThumbnailAsync(asset.url, { time: 0 });
+        thumbCache.set(asset.url, uri);
+        setThumbs(prev => ({ ...prev, [asset.url]: uri }));
+      } catch {
+        // falls back to dark overlay silently
+      }
+    });
+  }, [assets]);
 
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const videoActive = videoUploading || videoProcessing;
@@ -126,9 +147,16 @@ export function PortfolioGrid({
             activeOpacity={isEditing ? 1 : 0.9}
           >
             {asset.type === 'video' ? (
-              <View style={[StyleSheet.absoluteFill, styles.videoThumb]}>
-                <Play size={28} color="#fff" fill="#fff" />
-              </View>
+              <>
+                {thumbs[asset.url] ? (
+                  <Image source={{ uri: thumbs[asset.url] }} style={styles.image} />
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0a0a1a' }]} />
+                )}
+                <View style={[StyleSheet.absoluteFill, styles.videoThumb]}>
+                  <Play size={28} color="#fff" fill="#fff" />
+                </View>
+              </>
             ) : (
               <Image source={{ uri: asset.url }} style={styles.image} />
             )}
@@ -175,7 +203,7 @@ const styles = StyleSheet.create({
   videoThumb: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0a0a1a',
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   deleteOverlay: {
     position: 'absolute',
