@@ -544,7 +544,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // Member display names
   useEffect(() => {
-    if (chatType !== 'community' || chatMembers.length === 0) return;
+    if (chatMembers.length === 0) return;
     const missing = chatMembers.filter((uid) => !memberNames[uid]);
     if (missing.length === 0) return;
     Promise.all(
