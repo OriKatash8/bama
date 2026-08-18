@@ -4,7 +4,6 @@ import { Image } from 'expo-image';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProfessionalResult } from '../hooks/useSearchProfessionals';
@@ -25,9 +24,10 @@ type Props = {
   item: ProfessionalResult;
   onMessage?: () => Promise<void>;
   onDirectProject?: () => void;
+  onViewProfile?: () => void;
 };
 
-export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
+export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfile }: Props) {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -46,10 +46,6 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
     }
   }
 
-
-  function skillLabel(category: string): string {
-    return rtl && CATEGORY_LABEL_KEY[category] ? t(CATEGORY_LABEL_KEY[category]) : category;
-  }
 
   return (
     <View style={[styles.card, { borderColor: colors.border }]}>
@@ -90,43 +86,39 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
         </View>
       </View>
 
-      {profile.skills && profile.skills.length > 0 && (
-        <View style={[styles.skillsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {profile.skills.slice(0, 4).map((s, i) => (
-            <View key={i} style={[styles.skillChip, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '44' }]}>
-              <Text style={[styles.skillText, { color: colors.accent, ...font.semiBold }]} numberOfLines={1}>
-                {skillLabel(s.category)}
-              </Text>
-            </View>
-          ))}
-          {profile.skills.length > 4 && (
-            <Text style={[styles.moreSkills, { color: colors.textMuted }]}>+{profile.skills.length - 4}</Text>
-          )}
-        </View>
-      )}
-
-      {onDirectProject && (
-        <TouchableOpacity
-          style={[styles.messageBtn, { backgroundColor: '#004aad' }]}
-          onPress={onDirectProject}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.messageBtnText, { ...font.bold }]}>{t('search.tell_us_about_project')}</Text>
-        </TouchableOpacity>
-      )}
-      {onMessage && !onDirectProject && (
-        <TouchableOpacity
-          style={[styles.messageBtn, { backgroundColor: colors.accent }]}
-          onPress={handleMessagePress}
-          disabled={isMessaging}
-          activeOpacity={0.8}
-        >
-          {isMessaging
-            ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={[styles.messageBtnText, { ...font.bold }]}>{t('search.message')}</Text>
-          }
-        </TouchableOpacity>
-      )}
+      <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        {onViewProfile && (
+          <TouchableOpacity
+            style={[styles.btn, styles.btnOutline]}
+            onPress={onViewProfile}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.btnOutlineText, { ...font.bold }]}>{t('search.view_profile')}</Text>
+          </TouchableOpacity>
+        )}
+        {onDirectProject && (
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: '#004aad' }]}
+            onPress={onDirectProject}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.btnFilledText, { ...font.bold }]}>{t('search.tell_us_about_project')}</Text>
+          </TouchableOpacity>
+        )}
+        {onMessage && !onDirectProject && (
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: colors.accent }]}
+            onPress={handleMessagePress}
+            disabled={isMessaging}
+            activeOpacity={0.8}
+          >
+            {isMessaging
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={[styles.btnFilledText, { ...font.bold }]}>{t('search.message')}</Text>
+            }
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -148,22 +140,20 @@ const styles = StyleSheet.create({
   bio: { fontSize: 13, lineHeight: 18, marginBottom: 6 },
   badgeRow: { alignItems: 'center', gap: 10 },
   rating: { fontSize: 12 },
-  skillsRow: { flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  skillChip: {
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  skillText: { fontSize: 11 },
-  moreSkills: { fontSize: 12, alignSelf: 'center' },
-  messageBtn: {
-    marginTop: 20,
+  btnRow: { marginTop: 12, gap: 8 },
+  btn: {
+    flex: 1,
     borderRadius: 10,
     paddingVertical: 9,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 38,
   },
-  messageBtnText: { color: '#fff', fontSize: 14 },
+  btnOutline: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#004aad',
+  },
+  btnOutlineText: { color: '#004aad', fontSize: 14 },
+  btnFilledText: { color: '#fff', fontSize: 14 },
 });

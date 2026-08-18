@@ -157,6 +157,7 @@ export default function SearchScreen() {
               >
                 <ProfessionalCard
                   item={item}
+                  onViewProfile={() => router.push(`/browse/profile/${item.user.id}` as never)}
                   onDirectProject={() => openDirectSheet(item.user.id, item.user.displayName)}
                 />
               </TouchableOpacity>
@@ -258,6 +259,7 @@ export default function SearchScreen() {
                   >
                     <ProfessionalCard
                       item={item}
+                      onViewProfile={() => { closeModal(); router.push(`/browse/profile/${item.user.id}` as never); }}
                       onDirectProject={() => { closeModal(); setTimeout(() => openDirectSheet(item.user.id, item.user.displayName), 350); }}
                     />
                   </TouchableOpacity>

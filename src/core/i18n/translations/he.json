@@ -95,7 +95,8 @@
     "no_results_subtext": "אין תוצאות עבור \"{{query}}\"",
     "no_categories_match": "אין קטגוריות התואמות \"{{query}}\"",
     "tell_us_about_project": "ספר לי על הפרויקט שלך",
-    "message": "הודעה"
+    "message": "הודעה",
+    "view_profile": "צפה בפרופיל"
   },
   "chats": {
     "status_open": "פתוח",
