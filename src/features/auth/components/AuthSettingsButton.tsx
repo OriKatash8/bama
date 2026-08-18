@@ -3,18 +3,14 @@ import {
   Modal, View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
-import { Settings, Sun, Moon } from 'lucide-react-native';
+import { Settings } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { useUiStore } from '@core/stores/uiStore';
 import type { Lang } from '@core/stores/settingsStore';
 
 export function AuthSettingsButton() {
   const [open, setOpen] = useState(false);
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
-  const isDark = useUiStore((s) => s.isDark);
-  const toggleTheme = useUiStore((s) => s.toggleTheme);
-
   return (
     <>
       <TouchableOpacity style={styles.trigger} onPress={() => setOpen(true)} activeOpacity={0.7}>
@@ -42,27 +38,6 @@ export function AuthSettingsButton() {
                       </AppText>
                     </TouchableOpacity>
                   ))}
-                </View>
-
-                {/* Appearance row */}
-                <AppText weight="semiBold" style={styles.rowLabel}>מראה / Appearance</AppText>
-                <View style={styles.pillRow}>
-                  <TouchableOpacity
-                    style={[styles.pill, !isDark && styles.pillActive]}
-                    onPress={() => { if (isDark) toggleTheme(); setOpen(false); }}
-                    activeOpacity={0.8}
-                  >
-                    <Sun size={15} color={!isDark ? '#fff' : '#004aad'} />
-                    <AppText weight="semiBold" style={[styles.pillText, !isDark && styles.pillTextActive]}>בהיר</AppText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.pill, isDark && styles.pillActive]}
-                    onPress={() => { if (!isDark) toggleTheme(); setOpen(false); }}
-                    activeOpacity={0.8}
-                  >
-                    <Moon size={15} color={isDark ? '#fff' : '#004aad'} />
-                    <AppText weight="semiBold" style={[styles.pillText, isDark && styles.pillTextActive]}>כהה</AppText>
-                  </TouchableOpacity>
                 </View>
 
               </View>

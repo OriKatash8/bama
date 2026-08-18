@@ -58,10 +58,8 @@ export const LIGHT: AppColors = {
 export const ThemeContext = createContext<AppColors>(DARK);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const isDark = useUiStore((s) => s.isDark);
-  const colors = isDark ? DARK : LIGHT;
   return (
-    <ThemeContext.Provider value={colors}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={LIGHT}>{children}</ThemeContext.Provider>
   );
 }
 
