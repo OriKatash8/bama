@@ -164,11 +164,14 @@ export default function ProfessionalChatsScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
-                    <Text style={[
-                      styles.tabText,
-                      { color: colors.textSec, ...(isActive ? font.bold : font.regular), textAlign: rtl ? 'right' : 'left' },
-                      isActive && styles.tabTextActive,
-                    ]}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.tabText,
+                        { color: colors.textSec, ...(isActive ? font.bold : font.regular), textAlign: rtl ? 'right' : 'left' },
+                        isActive && styles.tabTextActive,
+                      ]}
+                    >
                       {TAB_LABELS[key]}
                     </Text>
                   </View>
@@ -378,14 +381,14 @@ const styles = StyleSheet.create({
   },
   tabPill: {
     paddingVertical: 5,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     borderRadius: 20,
   },
   tabPillActive: {
     backgroundColor: 'rgba(0,74,173,0.12)',
   },
   tabText: {
-    fontSize: 15,
+    fontSize: 13,
   },
   tabTextActive: {
     color: '#004aad',
