@@ -126,10 +126,12 @@ export function AppHeader() {
     <>
       {/* ── Top bar ── */}
       <View style={[styles.header, { paddingTop: insets.top + 8, paddingBottom: 10 }]}>
-        {/* LEFT — logo */}
-        <Image source={BAMA_LOGO} style={styles.logo} contentFit="contain" cachePolicy="memory-disk" />
+        {/* LEFT — logo, wrapped so both sides share equal flex */}
+        <View style={styles.leftGroup}>
+          <Image source={BAMA_LOGO} style={styles.logo} contentFit="contain" cachePolicy="memory-disk" />
+        </View>
 
-        {/* CENTER — greeting only */}
+        {/* CENTER — greeting */}
         <View style={styles.center}>
           <AppText
             weight="regular"
@@ -154,7 +156,7 @@ export function AppHeader() {
             onPress={() => setModeSheetVisible(true)}
             activeOpacity={0.8}
           >
-            <AppText weight="semiBold" style={styles.modeBadgeText}>
+            <AppText weight="semiBold" style={styles.modeBadgeText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {modeBadgeLabel}
             </AppText>
           </TouchableOpacity>
@@ -327,15 +329,14 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   logo: { width: 72, height: 72, marginVertical: -20 },
-  center: {
-    flex: 1,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-  },
+  leftGroup: { flex: 1 },
+  center: { flex: 2, alignItems: 'center' },
   greeting: { fontSize: 13, textAlign: 'center' },
   rightGroup: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 8,
   },
   modeBadge: {
