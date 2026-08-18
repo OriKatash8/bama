@@ -208,10 +208,10 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 1: Project details ══════════════ */}
         {step === 1 && (
           <>
-            <Text style={styles.pageTitle}>
+            <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}
             </Text>
-            <Text style={styles.stepLabel}>{rtl ? `שלב 1 מתוך 2` : `Step 1 of 2`}</Text>
+            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 1 מתוך 2` : `Step 1 of 2`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
@@ -375,10 +375,10 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 2: Select roles ══════════════ */}
         {step === 2 && (
           <>
-            <Text style={styles.pageTitle}>
+            <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}
             </Text>
-            <Text style={styles.stepLabel}>{rtl ? `שלב 2 מתוך 2` : `Step 2 of 2`}</Text>
+            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 2 מתוך 2` : `Step 2 of 2`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -564,8 +564,8 @@ function createStyles(
   return StyleSheet.create({
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 24 },
-    pageTitle: { fontSize: 34, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textAlign: 'center', textTransform: 'uppercase', marginTop: 10 },
-    stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, textAlign: 'center', marginTop: 2, marginBottom: 2 },
+    pageTitle: { fontSize: 28, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textTransform: 'uppercase', marginTop: 10, paddingHorizontal: 16 },
+    stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
 
     progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },
