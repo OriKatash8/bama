@@ -113,7 +113,7 @@ export function PortfolioGrid({
             disabled={videoActive}
             activeOpacity={0.8}
           >
-            <ImagePlus size={28} color="#cb6ce6" strokeWidth={1.5} />
+            <ImagePlus size={28} color="#004aad" strokeWidth={1.5} />
             <AppText style={styles.addMediaLabel}>{t('profile_sections.add_media')}</AppText>
           </TouchableOpacity>
         )}
@@ -165,11 +165,12 @@ const styles = StyleSheet.create({
   addTile: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ffffff33',
+    borderWidth: 1.5,
+    borderColor: '#004aad',
     borderStyle: 'dashed',
+    backgroundColor: '#fff',
   },
-  addMediaLabel: { fontSize: 11, color: '#cb6ce6', fontWeight: '600', marginTop: 6 },
+  addMediaLabel: { fontSize: 11, color: '#004aad', fontWeight: '600', marginTop: 6 },
   image: { width: '100%', height: '100%' },
   videoThumb: {
     alignItems: 'center',
