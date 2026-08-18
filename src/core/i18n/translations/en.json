@@ -124,7 +124,10 @@
     "badge_completed": "Completed",
     "badge_cancelled": "Cancelled",
     "click_for_project_info": "(click for project information)",
-    "change_photo": "Change photo"
+    "change_photo": "Change photo",
+    "error": "Error",
+    "video_send_failed": "Could not send video. Please try again.",
+    "media_load_failed": "Could not load this media. The video may be in iCloud or an unsupported format."
   },
   "project_details": {
     "header": "Project Details",

@@ -680,47 +680,60 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   async function handleAttachMedia() {
     if (!currentUserId) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'] as const,
-      allowsEditing: false,
-      quality: 1,
-    });
-    if (result.canceled) return;
-    const asset = result.assets[0];
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'] as const,
+        allowsEditing: false,
+        quality: 1,
+        preferredAssetRepresentationMode:
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+        shouldDownloadFromNetwork: true,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
 
-    if (chatType === 'community' && activeChannelId) {
-      const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
-      if (asset.type === 'video') {
-        const url = await uploadVideo('chat-videos', currentUserId, asset);
-        if (url) {
-          await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], videoUrl: url });
+      if (chatType === 'community' && activeChannelId) {
+        const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
+        if (asset.type === 'video') {
+          const url = await uploadVideo('chat-videos', currentUserId, asset);
+          if (url) {
+            await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], videoUrl: url });
+          } else {
+            Alert.alert(t('chats.error'), t('chats.video_send_failed'));
+          }
+        } else {
+          setImageUploading(true);
+          try {
+            const blob = await fetch(asset.uri).then((r) => r.blob());
+            const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+            const imageURL = await uploadFile(path, blob);
+            await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
+          } finally {
+            setImageUploading(false);
+          }
         }
       } else {
-        setImageUploading(true);
-        try {
-          const blob = await fetch(asset.uri).then((r) => r.blob());
-          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-          const imageURL = await uploadFile(path, blob);
-          await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
-        } finally {
-          setImageUploading(false);
+        if (asset.type === 'video') {
+          const url = await uploadVideo('chat-videos', currentUserId, asset);
+          if (url) {
+            await sendMessage(chatId, currentUserId, '', { videoUrl: url });
+          } else {
+            Alert.alert(t('chats.error'), t('chats.video_send_failed'));
+          }
+        } else {
+          setImageUploading(true);
+          try {
+            const blob = await fetch(asset.uri).then((r) => r.blob());
+            const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+            const imageURL = await uploadFile(path, blob);
+            await sendMessage(chatId, currentUserId, '', { imageURL });
+          } finally {
+            setImageUploading(false);
+          }
         }
       }
-    } else {
-      if (asset.type === 'video') {
-        const url = await uploadVideo('chat-videos', currentUserId, asset);
-        if (url) await sendMessage(chatId, currentUserId, '', { videoUrl: url });
-      } else {
-        setImageUploading(true);
-        try {
-          const blob = await fetch(asset.uri).then((r) => r.blob());
-          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-          const imageURL = await uploadFile(path, blob);
-          await sendMessage(chatId, currentUserId, '', { imageURL });
-        } finally {
-          setImageUploading(false);
-        }
-      }
+    } catch {
+      Alert.alert(t('chats.error'), t('chats.media_load_failed'));
     }
   }
 

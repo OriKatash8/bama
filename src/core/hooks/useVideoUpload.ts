@@ -68,7 +68,7 @@ export function useVideoUpload(): UseVideoUploadResult {
     setUploading(true);
     try {
       const blob = await fetch(uri).then((r) => r.blob());
-      await uploadFile(filePath, blob);
+      await uploadFile(filePath, blob, undefined, { contentType: 'video/mp4' });
     } catch (err) {
       setUploading(false);
       const msg = err instanceof Error ? err.message : 'Upload failed';

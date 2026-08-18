@@ -10,11 +10,12 @@ export type UploadProgress = {
 export function uploadFile(
   path: string,
   blob: Blob,
-  onProgress?: (progress: UploadProgress) => void
+  onProgress?: (progress: UploadProgress) => void,
+  metadata?: { contentType?: string }
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const storageRef = ref(storage, path);
-    const task = uploadBytesResumable(storageRef, blob);
+    const task = uploadBytesResumable(storageRef, blob, metadata);
 
     task.on(
       'state_changed',
