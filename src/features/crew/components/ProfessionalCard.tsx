@@ -46,7 +46,6 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
     }
   }
 
-  const availColor = profile.availability === 'available' ? '#22c55e' : '#f59e0b';
 
   function skillLabel(category: string): string {
     return rtl && CATEGORY_LABEL_KEY[category] ? t(CATEGORY_LABEL_KEY[category]) : category;
@@ -82,12 +81,6 @@ export function ProfessionalCard({ item, onMessage, onDirectProject }: Props) {
             </Text>
           ) : null}
           <View style={[styles.badgeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <View style={[styles.availBadge, { backgroundColor: availColor + '22', borderColor: availColor }]}>
-              <View style={[styles.availDot, { backgroundColor: availColor }]} />
-              <Text style={[styles.availText, { color: availColor, ...font.medium }]}>
-                {profile.availability === 'available' ? t('profile.status_available') : t('profile.status_busy')}
-              </Text>
-            </View>
             {profile.rating > 0 && (
               <Text style={[styles.rating, { color: colors.textMuted, ...font.medium }]}>
                 ★ {profile.rating.toFixed(1)} ({profile.reviewCount})
@@ -154,17 +147,6 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, marginBottom: 2 },
   bio: { fontSize: 13, lineHeight: 18, marginBottom: 6 },
   badgeRow: { alignItems: 'center', gap: 10 },
-  availBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  availDot: { width: 6, height: 6, borderRadius: 3 },
-  availText: { fontSize: 11, textTransform: 'capitalize' },
   rating: { fontSize: 12 },
   skillsRow: { flexWrap: 'wrap', gap: 6, marginTop: 10 },
   skillChip: {

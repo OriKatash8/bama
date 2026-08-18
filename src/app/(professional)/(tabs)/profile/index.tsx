@@ -124,25 +124,6 @@ export default function ProfessionalProfileScreen() {
   return (
     <Screen style={styles.content} scrollable>
       <View style={styles.titleRow}>
-        <TouchableOpacity
-          style={[styles.statusBadge, {
-            backgroundColor: profile?.availability === 'available' ? '#22c55e18' : '#f59e0b18',
-          }]}
-          onPress={() => {
-            const next = profile?.availability === 'available' ? 'busy' : 'available';
-            updateAvailability(next);
-          }}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.statusDot, {
-            backgroundColor: profile?.availability === 'available' ? '#22c55e' : '#f59e0b',
-          }]} />
-          <AppText weight="semiBold" style={[styles.statusText, {
-            color: profile?.availability === 'available' ? '#22c55e' : '#f59e0b',
-          }]}>
-            {profile?.availability === 'available' ? t('profile.status_available') : t('profile.status_busy')}
-          </AppText>
-        </TouchableOpacity>
         <View style={{ flex: 1 }} />
         {isEditing ? (
           <View style={styles.headerBtns}>
@@ -216,10 +197,4 @@ const styles = StyleSheet.create({
   portfolioSection: { gap: 12 },
   portfolioTitle: { fontSize: 18, fontWeight: '700' },
 
-  statusBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
-  },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 13 },
 });
