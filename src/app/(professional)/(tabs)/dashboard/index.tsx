@@ -174,8 +174,8 @@ export default function DashboardScreen() {
         {!activeProjectsLoading && activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
             {/* Compact section header */}
-            <View style={[styles.sectionHeader, { flexDirection: rowDir }]}>
-              <AppText weight="bold" style={styles.sectionTitle}>
+            <View style={[styles.sectionHeader, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
+              <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('noticeboard.projects_in_progress')}
               </AppText>
             </View>
@@ -237,12 +237,12 @@ export default function DashboardScreen() {
         )}
 
         {/* ── Notice board ── */}
-        <View style={[styles.sectionHeader, { flexDirection: 'column', alignItems: 'center', paddingHorizontal: 16 }]}>
-          <AppText weight="bold" style={[styles.sectionTitle, { textAlign: 'center' }]}>
+        <View style={[styles.sectionHeader, { flexDirection: 'column', alignItems: rtl ? 'flex-end' : 'flex-start', paddingHorizontal: 16 }]}>
+          <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
             {t('noticeboard.notice_board')}
           </AppText>
           {!isLoading && (
-            <AppText weight="regular" style={styles.sectionCount}>
+            <AppText weight="regular" style={[styles.sectionCount, { textAlign: rtl ? 'right' : 'left' }]}>
               {openProjectsLabel}
             </AppText>
           )}

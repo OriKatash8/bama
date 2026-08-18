@@ -154,7 +154,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
         <View style={[styles.card, { maxHeight: screenHeight * 0.85 }]}>
           {/* Header */}
           <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <AppText weight="bold" style={styles.headerTitle} numberOfLines={2}>
+            <AppText weight="bold" style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
               {view === 'details'
                 ? request.title
                 : view === 'bid'
