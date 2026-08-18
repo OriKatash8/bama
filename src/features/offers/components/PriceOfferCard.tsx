@@ -119,7 +119,7 @@ export function PriceOfferCard({
       <View style={[styles.actionStrip, { flexDirection: rowDir }]}>
         <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7}>
           <View style={[styles.actionInner, { flexDirection: rowDir }]}>
-            <User size={12} color={BLUE} strokeWidth={1.8} />
+            <User size={12} color="#ffffff" strokeWidth={1.8} />
             <AppText
               weight="semiBold"
               style={styles.actionProfileText}
@@ -139,10 +139,10 @@ export function PriceOfferCard({
           activeOpacity={0.85}
         >
           {isAccepting ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={BLUE} />
           ) : (
             <View style={[styles.actionInner, { flexDirection: rowDir }]}>
-              <Check size={15} color="#fff" strokeWidth={2.5} />
+              <Check size={15} color={BLUE} strokeWidth={2.5} />
               <AppText weight="semiBold" style={styles.actionAcceptText}>
                 {t('offers.accept')}
               </AppText>
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   actionAccept: {
     flex: 2,
     height: 44,
-    backgroundColor: BLUE,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -273,19 +273,19 @@ const styles = StyleSheet.create({
   },
   actionAcceptText: {
     fontSize: 13,
-    color: '#ffffff',
+    color: BLUE,
   },
   actionProfile: {
     flex: 3,
     height: 44,
-    backgroundColor: '#ffffff',
+    backgroundColor: BLUE,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
   actionProfileText: {
     fontSize: 11,
-    color: BLUE,
+    color: '#ffffff',
   },
   actionInnerDivider: {
     width: 1,
