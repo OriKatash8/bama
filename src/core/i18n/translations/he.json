@@ -555,7 +555,9 @@
     "change_photo": "שנה תמונה",
     "no_discover_title": "אין קהילות לגילוי כרגע",
     "no_discover_subtitle": "הצטרף לקהילה קיימת או צור אחת חדשה",
-    "uploading_photo": "מעלה תמונה..."
+    "uploading_photo": "מעלה תמונה...",
+    "category_label": "קטגוריה",
+    "select_category": "בחר קטגוריה"
   },
   "courses": {
     "browse": "עיין בקורסים",

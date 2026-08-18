@@ -33,7 +33,7 @@ interface Props {
 
 function CommunityAvatar({ community, size = 46 }: { community: Chat; size?: number }) {
   const radius = Math.round(size * 0.26);
-  const marginStyle = { marginRight: 10 };
+  const marginStyle = {};
   if (community.photoURL) {
     return (
       <Image
@@ -120,10 +120,10 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
             <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <CommunityAvatar community={c} />
               <View style={{ flex: 1 }}>
-                <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
+                <AppText weight="semiBold" style={[styles.cardName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                   {c.name}
                 </AppText>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                   <Users size={12} color={colors.textMuted} strokeWidth={1.5} />
                   <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
                     {c.members.length} {t('communities.members')}
@@ -199,10 +199,10 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
               <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <CommunityAvatar community={c} />
                 <View style={{ flex: 1 }}>
-                  <AppText weight="semiBold" style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
+                  <AppText weight="semiBold" style={[styles.cardName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {c.name}
                   </AppText>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                     <Users size={12} color={colors.textMuted} strokeWidth={1.5} />
                     <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
                       {c.members.length} {t('communities.members')}
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   plusBtnText: { color: '#fff', fontSize: 13 },
   empty: { fontSize: 14, marginBottom: 8 },
   card: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 10 },
-  cardHeader: { alignItems: 'center', marginBottom: 4 },
+  cardHeader: { alignItems: 'center', marginBottom: 4, gap: 14 },
   cardName: { fontSize: 15, fontWeight: '600' },
   memberCount: { fontSize: 12 },
   preview: { fontSize: 13 },

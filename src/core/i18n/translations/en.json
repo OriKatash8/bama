@@ -555,7 +555,9 @@
     "change_photo": "Change Photo",
     "no_discover_title": "No communities to discover right now",
     "no_discover_subtitle": "Join an existing community or create a new one",
-    "uploading_photo": "Uploading photo..."
+    "uploading_photo": "Uploading photo...",
+    "category_label": "Category",
+    "select_category": "Select category"
   },
   "courses": {
     "browse": "Browse Courses",

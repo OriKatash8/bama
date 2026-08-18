@@ -21,6 +21,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { db } from '@core/firebase/config';
+import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -68,6 +69,8 @@ export default function ProfessionalChatsScreen() {
   const [commModal, setCommModal] = useState(false);
   const [commName, setCommName] = useState('');
   const [commDesc, setCommDesc] = useState('');
+  const [commCategory, setCommCategory] = useState('');
+  const [commShowCategoryPicker, setCommShowCategoryPicker] = useState(false);
   const [commPhotoUri, setCommPhotoUri] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -127,6 +130,7 @@ export default function ProfessionalChatsScreen() {
       requesterName: user.displayName,
       status: 'pending',
       createdAt: serverTimestamp(),
+      ...(commCategory ? { category: commCategory } : {}),
       ...(photoURL ? { photoURL } : {}),
     };
     try {
@@ -136,6 +140,7 @@ export default function ProfessionalChatsScreen() {
       setCommModal(false);
       setCommName('');
       setCommDesc('');
+      setCommCategory('');
       setCommPhotoUri(null);
     } catch (error) {
       console.log('[communityRequest] error:', error);
@@ -155,9 +160,6 @@ export default function ProfessionalChatsScreen() {
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={[styles.gradient, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-          <Text style={[styles.headerTitle, { ...font.bold }]}>
-            {t('chats_page.title')}
-          </Text>
           <View style={styles.tabBar}>
             {TAB_KEYS.map((key) => {
               const isActive = active === key;
@@ -340,14 +342,14 @@ export default function ProfessionalChatsScreen() {
       )}
 
       {/* Community request modal */}
-      <Modal visible={commModal} transparent animationType="fade" onRequestClose={() => { setCommModal(false); setCommPhotoUri(null); }}>
+      <Modal visible={commModal} transparent animationType="fade" onRequestClose={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setCommModal(false); setCommPhotoUri(null); }}>
+          <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
             <TouchableOpacity activeOpacity={1}>
               <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modal}>
                 <View style={styles.modalHeader}>
                   <Text style={[styles.modalTitle, { ...font.bold }]}>{t('communities.modal_title')}</Text>
-                  <TouchableOpacity onPress={() => { setCommModal(false); setCommPhotoUri(null); }}>
+                  <TouchableOpacity onPress={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
                     <X size={22} color="#fff" />
                   </TouchableOpacity>
                 </View>
@@ -373,6 +375,34 @@ export default function ProfessionalChatsScreen() {
                   onChangeText={setCommName}
                   style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 />
+
+                {/* Category picker */}
+                <TouchableOpacity
+                  style={[styles.input, { justifyContent: 'center' }]}
+                  onPress={() => setCommShowCategoryPicker(!commShowCategoryPicker)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[{ ...font.regular, color: commCategory ? '#fff' : 'rgba(255,255,255,0.5)', textAlign: rtl ? 'right' : 'left' }]}>
+                    {commCategory || t('communities.select_category')}
+                  </Text>
+                </TouchableOpacity>
+                {commShowCategoryPicker && (
+                  <View style={styles.commCategoryPicker}>
+                    <ScrollView style={{ maxHeight: 160 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                      {Object.keys(CREW_CATEGORIES).map((cat) => (
+                        <TouchableOpacity
+                          key={cat}
+                          style={styles.commCategoryItem}
+                          onPress={() => { setCommCategory(cat); setCommShowCategoryPicker(false); }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.commCategoryItemText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>{cat}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
                 <TextInput
                   placeholder={t('communities.description_placeholder')}
                   placeholderTextColor="rgba(255,255,255,0.5)"
@@ -450,18 +480,18 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   tabPill: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
     borderRadius: 20,
   },
   tabPillActive: {
     backgroundColor: 'rgba(0,74,173,0.12)',
   },
   tabText: {
-    fontSize: 13,
+    fontSize: 15,
   },
   tabTextActive: {
     color: '#004aad',
@@ -614,6 +644,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   visitBtnText: { color: '#fff', fontSize: 13 },
+  commCategoryPicker: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 10,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  commCategoryItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  commCategoryItemText: { color: '#fff', fontSize: 14 },
   avatarPicker: { alignSelf: 'center', marginBottom: 16, position: 'relative' },
   cameraBadge: {
     position: 'absolute',
