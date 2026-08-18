@@ -4,7 +4,7 @@ import {
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Plus, Camera } from 'lucide-react-native';
+import { X, Plus, Camera, Search } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -57,6 +57,7 @@ export default function ProfessionalChatsScreen() {
   const { showToast } = useUiStore();
 
   const [active, setActive] = useState<TabKey>('chats');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Communities state
   const [commModal, setCommModal] = useState(false);
@@ -148,7 +149,7 @@ export default function ProfessionalChatsScreen() {
     <Screen style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
       <View style={styles.headerWrap}>
-        <View style={styles.gradient}>
+        <View style={[styles.gradient, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
           <Text style={[styles.headerTitle, { ...font.bold }]}>
             {t('chats_page.title')}
           </Text>
@@ -159,7 +160,7 @@ export default function ProfessionalChatsScreen() {
                 <TouchableOpacity
                   key={key}
                   style={styles.tab}
-                  onPress={() => setActive(key)}
+                  onPress={() => { setActive(key); setSearchQuery(''); }}
                   activeOpacity={0.7}
                 >
                   <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
@@ -179,7 +180,27 @@ export default function ProfessionalChatsScreen() {
       </View>
 
       {/* Chats tab */}
-      {active === 'chats' && <ChatsList scrollable={false} />}
+      {active === 'chats' && (
+        <>
+          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={t('search.placeholder')}
+              placeholderTextColor={colors.placeholder}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
+                <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <ChatsList scrollable={false} searchQuery={searchQuery} />
+        </>
+      )}
 
       {/* Communities tab */}
       {active === 'communities' && (
@@ -320,9 +341,8 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   gradient: {
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 20,
+    paddingHorizontal: 20,
     gap: 16,
   },
   headerTitle: {
@@ -332,9 +352,20 @@ const styles = StyleSheet.create({
     textShadowColor: 'transparent',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
-    textAlign: 'center',
     textTransform: 'uppercase',
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 24,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 15 },
   tabBar: {
     flexDirection: 'row',
     width: '100%',

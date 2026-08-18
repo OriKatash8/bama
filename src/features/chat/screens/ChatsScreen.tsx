@@ -62,7 +62,7 @@ function formatTimestamp(ts: { toDate(): Date } | null | undefined): string {
 
 type DmInfo = { name: string; photoURL: string | null };
 
-export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
+export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollable?: boolean; searchQuery?: string }) {
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
@@ -226,7 +226,18 @@ export function ChatsScreen({ scrollable = true }: { scrollable?: boolean }) {
     return 0;
   });
 
-  const cards = sortedChats.map((item) => {
+  const visibleChats = searchQuery.trim()
+    ? sortedChats.filter((item) => {
+        const name =
+          item.type === 'community' ? (item.name ?? 'Community')
+          : item.type === 'group' ? (item.name ?? t('chats.group_chat'))
+          : item.type === 'purchase' ? (item.name || purchaseNames[item.id] || t('chats.purchase_chat'))
+          : (dmInfo[item.id]?.name ?? '');
+        return name.toLowerCase().includes(searchQuery.toLowerCase());
+      })
+    : sortedChats;
+
+  const cards = visibleChats.map((item) => {
     const currentUserId = user?.id ?? '';
     const chatName = item.type === 'community'
       ? (item.name ?? 'Community')
