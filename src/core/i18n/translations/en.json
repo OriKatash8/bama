@@ -127,7 +127,8 @@
     "change_photo": "Change photo",
     "error": "Error",
     "video_send_failed": "Could not send video. Please try again.",
-    "media_load_failed": "Could not load this media. The video may be in iCloud or an unsupported format."
+    "media_load_failed": "Could not load this media. The video may be in iCloud or an unsupported format.",
+    "caption_placeholder": "Add a caption..."
   },
   "project_details": {
     "header": "Project Details",

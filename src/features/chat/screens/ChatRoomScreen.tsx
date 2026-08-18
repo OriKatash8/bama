@@ -321,6 +321,12 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [imageUploading, setImageUploading] = useState(false);
   const mediaActive = videoUploading || videoProcessing || imageUploading;
   const [viewingMedia, setViewingMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
+  const [pendingMedia, setPendingMedia] = useState<{
+    uri: string;
+    type: 'image' | 'video';
+    asset: ImagePicker.ImagePickerAsset;
+  } | null>(null);
+  const [pendingCaption, setPendingCaption] = useState('');
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Channel state
@@ -691,49 +697,58 @@ export function ChatRoomScreen({ chatId }: Props) {
       });
       if (result.canceled) return;
       const asset = result.assets[0];
-
-      if (chatType === 'community' && activeChannelId) {
-        const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
-        if (asset.type === 'video') {
-          const url = await uploadVideo('chat-videos', currentUserId, asset);
-          if (url) {
-            await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], videoUrl: url });
-          } else {
-            Alert.alert(t('chats.error'), t('chats.video_send_failed'));
-          }
-        } else {
-          setImageUploading(true);
-          try {
-            const blob = await fetch(asset.uri).then((r) => r.blob());
-            const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-            const imageURL = await uploadFile(path, blob);
-            await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
-          } finally {
-            setImageUploading(false);
-          }
-        }
-      } else {
-        if (asset.type === 'video') {
-          const url = await uploadVideo('chat-videos', currentUserId, asset);
-          if (url) {
-            await sendMessage(chatId, currentUserId, '', { videoUrl: url });
-          } else {
-            Alert.alert(t('chats.error'), t('chats.video_send_failed'));
-          }
-        } else {
-          setImageUploading(true);
-          try {
-            const blob = await fetch(asset.uri).then((r) => r.blob());
-            const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-            const imageURL = await uploadFile(path, blob);
-            await sendMessage(chatId, currentUserId, '', { imageURL });
-          } finally {
-            setImageUploading(false);
-          }
-        }
-      }
+      setPendingMedia({ uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image', asset });
     } catch {
       Alert.alert(t('chats.error'), t('chats.media_load_failed'));
+    }
+  }
+
+  async function handleSendPendingMedia() {
+    if (!pendingMedia || !currentUserId) return;
+    const { asset, type } = pendingMedia;
+    const caption = pendingCaption.trim();
+    setPendingMedia(null);
+    setPendingCaption('');
+
+    if (chatType === 'community' && activeChannelId) {
+      const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
+      if (type === 'video') {
+        const url = await uploadVideo('chat-videos', currentUserId, asset);
+        if (url) {
+          await addDoc(msgRef, { senderId: currentUserId, text: caption, timestamp: serverTimestamp(), readBy: [currentUserId], videoUrl: url });
+        } else {
+          Alert.alert(t('chats.error'), t('chats.video_send_failed'));
+        }
+      } else {
+        setImageUploading(true);
+        try {
+          const blob = await fetch(asset.uri).then((r) => r.blob());
+          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+          const imageURL = await uploadFile(path, blob);
+          await addDoc(msgRef, { senderId: currentUserId, text: caption, timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
+        } finally {
+          setImageUploading(false);
+        }
+      }
+    } else {
+      if (type === 'video') {
+        const url = await uploadVideo('chat-videos', currentUserId, asset);
+        if (url) {
+          await sendMessage(chatId, currentUserId, caption, { videoUrl: url });
+        } else {
+          Alert.alert(t('chats.error'), t('chats.video_send_failed'));
+        }
+      } else {
+        setImageUploading(true);
+        try {
+          const blob = await fetch(asset.uri).then((r) => r.blob());
+          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
+          const imageURL = await uploadFile(path, blob);
+          await sendMessage(chatId, currentUserId, caption, { imageURL });
+        } finally {
+          setImageUploading(false);
+        }
+      }
     }
   }
 
@@ -744,20 +759,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as const, quality: 1 });
     if (result.canceled) return;
     const asset = result.assets[0];
-    setImageUploading(true);
-    try {
-      const blob = await fetch(asset.uri).then(r => r.blob());
-      const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-      const imageURL = await uploadFile(path, blob);
-      if (chatType === 'community' && activeChannelId) {
-        const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
-        await addDoc(msgRef, { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
-      } else {
-        await sendMessage(chatId, currentUserId, '', { imageURL });
-      }
-    } finally {
-      setImageUploading(false);
-    }
+    setPendingMedia({ uri: asset.uri, type: 'image', asset });
   }
 
   async function handleAddMission() {
@@ -946,30 +948,40 @@ export function ChatRoomScreen({ chatId }: Props) {
             return (
               <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
                 {msg.videoUrl ? (
-                  <View style={styles.mediaBubble}>
+                  <View style={[styles.mediaBubble, { backgroundColor: isOwn ? colors.accent : '#ffffff' }]}>
                     {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId), paddingHorizontal: 10, paddingTop: 6 }]}>
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.videoUrl!, type: 'video' })} activeOpacity={0.9}>
-                      <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} />
+                      <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} thumbnailOnly />
                     </TouchableOpacity>
-                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                    {!!msg.text && (
+                      <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, paddingHorizontal: 10, paddingTop: 6, textAlign: rtl ? 'right' : 'left' }]}>
+                        {msg.text}
+                      </AppText>
+                    )}
+                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', paddingHorizontal: 10, paddingBottom: 6 }]}>
                       {formatMessageTime(msg.timestamp)}
                     </Text>
                   </View>
                 ) : msg.imageURL ? (
-                  <View style={styles.mediaBubble}>
+                  <View style={[styles.mediaBubble, { backgroundColor: isOwn ? colors.accent : '#ffffff' }]}>
                     {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
+                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId), paddingHorizontal: 10, paddingTop: 6 }]}>
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.imageURL!, type: 'image' })} activeOpacity={0.9}>
                       <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
                     </TouchableOpacity>
-                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
+                    {!!msg.text && (
+                      <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, paddingHorizontal: 10, paddingTop: 6, textAlign: rtl ? 'right' : 'left' }]}>
+                        {msg.text}
+                      </AppText>
+                    )}
+                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', paddingHorizontal: 10, paddingBottom: 6 }]}>
                       {formatMessageTime(msg.timestamp)}
                     </Text>
                   </View>
@@ -1158,6 +1170,46 @@ export function ChatRoomScreen({ chatId }: Props) {
           </View>
         </TouchableWithoutFeedback>
       </View>
+    </Modal>
+
+    {/* Media preview modal — confirm before sending */}
+    <Modal
+      visible={pendingMedia !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={() => { setPendingMedia(null); setPendingCaption(''); }}
+    >
+      <KeyboardAvoidingView
+        style={previewStyles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[previewStyles.topBar, { paddingTop: TOP_INSET + 12 }]}>
+          <TouchableOpacity onPress={() => { setPendingMedia(null); setPendingCaption(''); }} activeOpacity={0.7}>
+            <X size={26} color="#fff" strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+        <View style={previewStyles.previewArea}>
+          {pendingMedia?.type === 'video' ? (
+            <VideoPlayer uri={pendingMedia.uri} style={previewStyles.previewMedia} />
+          ) : (
+            <Image source={{ uri: pendingMedia?.uri }} style={previewStyles.previewMedia} resizeMode="contain" />
+          )}
+        </View>
+        <View style={[previewStyles.bottomBar, { paddingBottom: BOTTOM_INSET + 12 }]}>
+          <TextInput
+            style={[previewStyles.captionInput, { ...font.regular }]}
+            value={pendingCaption}
+            onChangeText={setPendingCaption}
+            placeholder={t('chats.caption_placeholder')}
+            placeholderTextColor="rgba(255,255,255,0.5)"
+            multiline
+            returnKeyType="default"
+          />
+          <TouchableOpacity style={previewStyles.sendBtn} onPress={handleSendPendingMedia} activeOpacity={0.8}>
+            <AppText weight="bold" style={previewStyles.sendBtnText}>{t('chats.record_send')}</AppText>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
 
     {/* Fullscreen media viewer (image: pinch-zoom + double-tap; video: native controls) */}
@@ -1658,12 +1710,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mediaBubble: {
-    maxWidth: '75%',
+    width: '75%',
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   mediaMessage: {
-    width: 240,
-    height: 135,
-    borderRadius: 12,
+    width: '100%',
+    aspectRatio: 16 / 9,
+    minHeight: 0,
     overflow: 'hidden',
   },
   mediaSendingRow: {
@@ -1898,4 +1952,52 @@ const chatStyles = StyleSheet.create({
   photoModalTopBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
   photoModalChangeBtn: { fontSize: 15, color: '#fff' },
   photoModalImage: { width: 260, height: 260, borderRadius: 130 },
+});
+
+const previewStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'space-between',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  previewArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  previewMedia: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 8,
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+  },
+  captionInput: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 15,
+    maxHeight: 80,
+    paddingVertical: 4,
+  },
+  sendBtn: {
+    backgroundColor: '#004aad',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  sendBtnText: { color: '#fff', fontSize: 15 },
 });
