@@ -317,7 +317,7 @@ export default function ProfessionalChatsScreen() {
                           </Text>
                         </View>
                         <View style={{ alignItems: rtl ? 'flex-end' : 'flex-start' }}>
-                          <Text style={[styles.instructorName, { ...font.semiBold, color: colors.text }]} numberOfLines={1}>
+                          <Text style={[styles.instructorName, { ...font.semiBold, color: colors.text }]} numberOfLines={2}>
                             {item.instructorName}
                           </Text>
                           <Text style={[styles.instructorBadge, { ...font.regular, color: colors.textMuted }]}>
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   categoryTagText: { fontSize: 11, color: '#fff' },
   cardBody: { padding: 14, gap: 8 },
   titlePriceRow: { alignItems: 'flex-start', gap: 8 },
-  cardTitle: { fontSize: 15, flex: 1 },
+  cardTitle: { fontSize: 18, flex: 1 },
   coursePrice: { fontSize: 16 },
   cardDesc: { fontSize: 13, lineHeight: 18 },
   metaRow: { flexWrap: 'wrap', gap: 8 },
