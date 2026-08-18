@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     gap: 14,
   },
   btnText: {
