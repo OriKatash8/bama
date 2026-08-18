@@ -71,9 +71,11 @@ export function ModePicker() {
               <AppText weight="bold" style={[styles.btnText, { color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>
                 {t(key)}
               </AppText>
-              {mode === 'client'
-                ? <PersonIcon color={isPressed ? '#ffffff' : '#004aad'} />
-                : <Text style={[styles.btnIcon, { color: isPressed ? '#ffffff' : '#cb6ce6' }]}>✦</Text>}
+              <View style={styles.iconRight}>
+                {mode === 'client'
+                  ? <PersonIcon color={isPressed ? '#ffffff' : '#004aad'} />
+                  : <Text style={[styles.btnIcon, { color: isPressed ? '#ffffff' : '#cb6ce6' }]}>✦</Text>}
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 14,
   },
   btnText: {
@@ -119,5 +121,9 @@ const styles = StyleSheet.create({
   btnIcon: {
     color: '#ffffff',
     fontSize: 22,
+  },
+  iconRight: {
+    position: 'absolute',
+    right: 28,
   },
 });
