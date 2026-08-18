@@ -115,8 +115,23 @@ export function PriceOfferCard({
       {/* Zone 3 — Separator */}
       <View style={styles.separator} />
 
-      {/* Zone 4 — Action row: accept (50%) | view profile (~33%) | divider | reject (~17%) */}
+      {/* Zone 4 — Action row: view profile (50%) | accept (~33%) | divider | reject (~17%) */}
       <View style={[styles.actionStrip, { flexDirection: rowDir }]}>
+        <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7}>
+          <View style={[styles.actionInner, { flexDirection: rowDir }]}>
+            <User size={12} color={BLUE} strokeWidth={1.8} />
+            <AppText
+              weight="semiBold"
+              style={styles.actionProfileText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
+              {t('offers.view_profile')}
+            </AppText>
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.actionAccept, isAccepting && styles.actionDisabled]}
           onPress={onAccept}
@@ -133,21 +148,6 @@ export function PriceOfferCard({
               </AppText>
             </View>
           )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7}>
-          <View style={[styles.actionInner, { flexDirection: rowDir }]}>
-            <User size={12} color={BLUE} strokeWidth={1.8} />
-            <AppText
-              weight="semiBold"
-              style={styles.actionProfileText}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-            >
-              {t('offers.view_profile')}
-            </AppText>
-          </View>
         </TouchableOpacity>
 
         <View style={styles.actionInnerDivider} />
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     height: 44,
   },
   actionAccept: {
-    flex: 3,
+    flex: 2,
     height: 44,
     backgroundColor: BLUE,
     alignItems: 'center',
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   actionProfile: {
-    flex: 2,
+    flex: 3,
     height: 44,
     backgroundColor: '#ffffff',
     alignItems: 'center',
