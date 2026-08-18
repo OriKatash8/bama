@@ -57,6 +57,8 @@ import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner'
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Chat, Message } from '../types';
+import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
+import type { MediaAsset } from '@core/types/media';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -318,7 +320,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const [imageUploading, setImageUploading] = useState(false);
   const mediaActive = videoUploading || videoProcessing || imageUploading;
-  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [viewingMedia, setViewingMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Channel state
@@ -937,7 +939,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
-                    <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} />
+                    <TouchableOpacity onPress={() => setViewingMedia({ url: msg.videoUrl!, type: 'video' })} activeOpacity={0.9}>
+                      <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} />
+                    </TouchableOpacity>
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
                       {formatMessageTime(msg.timestamp)}
                     </Text>
@@ -949,7 +953,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
-                    <TouchableOpacity onPress={() => setViewingImage(msg.imageURL!)} activeOpacity={0.9}>
+                    <TouchableOpacity onPress={() => setViewingMedia({ url: msg.imageURL!, type: 'image' })} activeOpacity={0.9}>
                       <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
                     </TouchableOpacity>
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
@@ -1143,19 +1147,19 @@ export function ChatRoomScreen({ chatId }: Props) {
       </View>
     </Modal>
 
-    {/* Fullscreen image viewer */}
-    <Modal visible={viewingImage !== null} transparent animationType="fade" onRequestClose={() => setViewingImage(null)}>
-      <TouchableWithoutFeedback onPress={() => setViewingImage(null)}>
-        <View style={chatStyles.imageViewerOverlay}>
-          <TouchableOpacity style={chatStyles.imageViewerClose} onPress={() => setViewingImage(null)} activeOpacity={0.7} hitSlop={16}>
-            <X size={24} color="#fff" strokeWidth={2} />
-          </TouchableOpacity>
-          {viewingImage && (
-            <Image source={{ uri: viewingImage }} style={chatStyles.imageViewerImg} resizeMode="contain" />
-          )}
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
+    {/* Fullscreen media viewer (image: pinch-zoom + double-tap; video: native controls) */}
+    <PortfolioViewer
+      assets={viewingMedia ? [{
+        id: 'chat-media',
+        url: viewingMedia.url,
+        type: viewingMedia.type,
+        thumbnailUrl: null,
+        uploadedAt: { seconds: 0, nanoseconds: 0 },
+      } as MediaAsset] : []}
+      initialIndex={0}
+      visible={viewingMedia !== null}
+      onClose={() => setViewingMedia(null)}
+    />
 
     {/* Add Mission Modal */}
     <Modal visible={showAddMission} transparent animationType="slide" onRequestClose={() => setShowAddMission(false)}>
@@ -1881,7 +1885,4 @@ const chatStyles = StyleSheet.create({
   photoModalTopBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
   photoModalChangeBtn: { fontSize: 15, color: '#fff' },
   photoModalImage: { width: 260, height: 260, borderRadius: 130 },
-  imageViewerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
-  imageViewerClose: { position: 'absolute', top: 52, right: 20, zIndex: 10 },
-  imageViewerImg: { width: '100%', height: '80%' },
 });
