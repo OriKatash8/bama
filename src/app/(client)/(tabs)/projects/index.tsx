@@ -21,7 +21,7 @@ import he from '@core/i18n/translations/he.json';
 import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
 
-const CARD_W = Dimensions.get('window').width - 56;
+const CARD_W = Dimensions.get('window').width - 104;
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 
@@ -297,7 +297,7 @@ export default function ProjectsPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  projectsScroll: { paddingHorizontal: 4, paddingVertical: 4, gap: 12 },
+  projectsScroll: { paddingHorizontal: 36, paddingVertical: 4, gap: 12 },
   headerWrap: {
     alignSelf: 'stretch',
     marginHorizontal: -16,
