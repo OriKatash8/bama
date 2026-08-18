@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Platform, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Platform, Dimensions } from 'react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -64,6 +65,11 @@ export default function ProjectsPage() {
   const [projectTitles, setProjectTitles] = useState<Record<string, string>>({});
   const fetchedProjectIds = useRef<Set<string>>(new Set());
   const [projectIndex, setProjectIndex] = useState(0);
+  const projectScrollRef = useRef<ScrollView>(null);
+
+  function scrollToProject(index: number) {
+    projectScrollRef.current?.scrollTo({ x: index * (CARD_W + 12), animated: true });
+  }
 
   useEffect(() => {
     const ids = new Set<string>();
@@ -235,24 +241,49 @@ export default function ProjectsPage() {
                     </Text>
                   </View>
                 ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.projectsScroll}
-                    snapToInterval={CARD_W + 12}
-                    decelerationRate="fast"
-                    scrollEventThrottle={16}
-                    onScroll={(e) => {
-                      const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + 12));
-                      setProjectIndex(Math.max(0, Math.min(idx, active.length - 1)));
-                    }}
-                  >
-                    {active.map((item) => (
-                      <View key={item.id} style={{ width: CARD_W }}>
-                        <ProjectRequestCard request={item} />
-                      </View>
-                    ))}
-                  </ScrollView>
+                  <View style={styles.carouselWrap}>
+                    <ScrollView
+                      ref={projectScrollRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.projectsScroll}
+                      snapToInterval={CARD_W + 12}
+                      decelerationRate="fast"
+                      scrollEventThrottle={16}
+                      onScroll={(e) => {
+                        const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + 12));
+                        setProjectIndex(Math.max(0, Math.min(idx, active.length - 1)));
+                      }}
+                    >
+                      {active.map((item) => (
+                        <View key={item.id} style={{ width: CARD_W }}>
+                          <ProjectRequestCard request={item} />
+                        </View>
+                      ))}
+                    </ScrollView>
+                    {projectIndex > 0 && (
+                      <TouchableOpacity
+                        style={[styles.arrowBtn, { left: 0 }]}
+                        onPress={() => scrollToProject(projectIndex - 1)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.arrowCircle}>
+                          <ChevronLeft size={18} color="#004aad" strokeWidth={2.5} />
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                    {projectIndex < active.length - 1 && (
+                      <TouchableOpacity
+                        style={[styles.arrowBtn, { right: 0 }]}
+                        onPress={() => scrollToProject(projectIndex + 1)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.arrowCircle}>
+                          <ChevronRight size={18} color="#004aad" strokeWidth={2.5} />
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </View>
             );
@@ -291,4 +322,22 @@ const styles = StyleSheet.create({
   projectCounter: { fontSize: 13, color: '#8890b0' },
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: 15 },
+  carouselWrap: { position: 'relative' },
+  arrowBtn: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 36,
+    zIndex: 10,
+  },
+  arrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,74,173,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
