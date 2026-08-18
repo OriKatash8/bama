@@ -195,34 +195,10 @@ export default function ProjectsPage() {
             </View>
           )}
 
-          {offers.length > 0 && (
-            <View style={[styles.section, bundles.length > 0 && { marginTop: 24 }]}>
-              <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('chats_page.price_offers')}
-              </Text>
-              {offersLoading ? (
-                <ActivityIndicator color={colors.accent} />
-              ) : (
-                offers.map((offer) => (
-                  <PriceOfferCard
-                    key={offer.id}
-                    offer={offer}
-                    professionalProfile={professionalProfiles[offer.professionalId]}
-                    projectTitle={projectTitles[offer.projectId]}
-                    onPressProfile={() => goToProfessionalProfile(offer.professionalId)}
-                    onAccept={() => handleAccept(offer)}
-                    onReject={() => handleReject(offer.id)}
-                    isAccepting={isAccepting === offer.id}
-                  />
-                ))
-              )}
-            </View>
-          )}
-
           {(() => {
             const active = requests.filter((r) => r.status !== 'completed');
             return (
-              <View style={[styles.section, { marginTop: 24 }]}>
+              <View style={[styles.section, bundles.length > 0 && { marginTop: 24 }]}>
                 <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
                     {t('chats_page.my_projects')}
@@ -289,6 +265,30 @@ export default function ProjectsPage() {
               </View>
             );
           })()}
+
+          {offers.length > 0 && (
+            <View style={[styles.section, { marginTop: 24 }]}>
+              <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('chats_page.price_offers')}
+              </Text>
+              {offersLoading ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : (
+                offers.map((offer) => (
+                  <PriceOfferCard
+                    key={offer.id}
+                    offer={offer}
+                    professionalProfile={professionalProfiles[offer.professionalId]}
+                    projectTitle={projectTitles[offer.projectId]}
+                    onPressProfile={() => goToProfessionalProfile(offer.professionalId)}
+                    onAccept={() => handleAccept(offer)}
+                    onReject={() => handleReject(offer.id)}
+                    isAccepting={isAccepting === offer.id}
+                  />
+                ))
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </Screen>
