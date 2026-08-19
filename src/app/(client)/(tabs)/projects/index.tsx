@@ -227,13 +227,7 @@ export default function ProjectsPage() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerWrap}>
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { ...font.bold }]}>
-              {t('chats_page.title_projects')}
-            </Text>
-          </View>
-        </View>
+        <View style={styles.headerWrap} />
 
         <View style={styles.content}>
           {(() => {

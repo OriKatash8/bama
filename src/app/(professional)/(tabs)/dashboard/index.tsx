@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { MapPin, CalendarDays } from 'lucide-react-native';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
@@ -61,7 +61,8 @@ const CARD_SHADOW = {
 export default function DashboardScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
-  const inProgressCardWidth = Math.round(screenWidth * 0.82);
+  const inProgressCardWidth = screenWidth - 104;
+  const inProgressCardGap = 40;
 
   const { profile, isLoading: profileLoading } = useProfile();
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -90,6 +91,12 @@ export default function DashboardScreen() {
 
   const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
   const [activeProjectsLoading, setActiveProjectsLoading] = useState(true);
+  const [inProgressIndex, setInProgressIndex] = useState(0);
+  const inProgressScrollRef = useRef<ScrollView>(null);
+
+  function scrollToInProgress(index: number) {
+    inProgressScrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
+  }
 
   useEffect(() => {
     if (!currentUserId) {
@@ -174,33 +181,37 @@ export default function DashboardScreen() {
         {!activeProjectsLoading && activeProjects.length > 0 && (
           <View style={styles.projectsSection}>
             {/* Compact section header */}
-            <View style={[styles.sectionHeader, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
+            <View style={[styles.sectionHeader, { flexDirection: rowDir, justifyContent: 'flex-start', gap: 8 }]}>
               <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('noticeboard.projects_in_progress')}
               </AppText>
+              <AppText weight="regular" style={styles.inProgressCounter}>
+                {inProgressIndex + 1}/{activeProjects.length}
+              </AppText>
             </View>
 
+            <View style={styles.carouselWrap}>
             <ScrollView
+              ref={inProgressScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.projectsScroll}
+              pagingEnabled
+              scrollEventThrottle={16}
+              onScroll={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                setInProgressIndex(Math.max(0, Math.min(idx, activeProjects.length - 1)));
+              }}
             >
               {activeProjects.map(({ chat, project, clientName }) => (
-                <TouchableOpacity
-                  key={chat.id}
+                <View key={chat.id} style={{ width: screenWidth, alignItems: 'center' }}>
+                <View
                   style={[styles.projectCard, { width: inProgressCardWidth }]}
-                  onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}` as never)}
-                  activeOpacity={0.75}
                 >
-                  {/* Header: client initial avatar + title/name column */}
+                  {/* Zone 1: title + client name */}
                   <View style={[styles.projectCardHeader, { flexDirection: rowDir }]}>
-                    <View style={styles.projectClientAvatar}>
-                      <AppText weight="bold" style={styles.projectClientInitial}>
-                        {clientName.charAt(0).toUpperCase()}
-                      </AppText>
-                    </View>
                     <View style={[styles.projectCardNameCol, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-                      <AppText weight="bold" style={[styles.projectCardTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                      <AppText weight="bold" style={[styles.projectCardTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                         {project.title}
                       </AppText>
                       <AppText weight="regular" style={[styles.projectCardClient, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
@@ -209,30 +220,66 @@ export default function DashboardScreen() {
                     </View>
                   </View>
 
-                  {/* Stat squares: location + end date */}
+                  {/* Zone 2: 3 stat squares */}
                   <View style={[styles.projectStatsRow, { flexDirection: rowDir }]}>
                     <View style={styles.projectStatSquare}>
-                      <MapPin size={12} color={MUTED} strokeWidth={1.5} />
-                      <AppText weight="regular" style={styles.projectStatLabel}>
-                        {t('chats_page.stat_location')}
-                      </AppText>
-                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>
-                        {project.location || '—'}
-                      </AppText>
+                      <MapPin size={14} color={MUTED} strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.projectStatLabel}>{t('chats_page.stat_location')}</AppText>
+                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{project.location || '—'}</AppText>
                     </View>
                     <View style={styles.projectStatSquare}>
-                      <CalendarDays size={12} color={MUTED} strokeWidth={1.5} />
-                      <AppText weight="regular" style={styles.projectStatLabel}>
-                        {t('chats_page.stat_deadline')}
-                      </AppText>
-                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>
-                        {formatDeadlineShort(project.deadline, t('builder.flexible'))}
-                      </AppText>
+                      <CalendarDays size={14} color={MUTED} strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.projectStatLabel}>{t('chats_page.stat_deadline')}</AppText>
+                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{formatDeadlineShort(project.deadline, t('builder.flexible'))}</AppText>
+                    </View>
+                    <View style={styles.projectStatSquare}>
+                      <CalendarCheck size={14} color={MUTED} strokeWidth={1.5} />
+                      <AppText weight="regular" style={styles.projectStatLabel}>{t('chats_page.stat_execution')}</AppText>
+                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{formatDeadlineShort(project.exec, t('builder.flexible'))}</AppText>
                     </View>
                   </View>
-                </TouchableOpacity>
+
+                  {/* Divider */}
+                  <View style={styles.projectDivider} />
+
+                  {/* Zone 3: open chat button */}
+                  <View style={[styles.projectBottomRow, { flexDirection: rowDir }]}>
+                    <TouchableOpacity
+                      style={[styles.projectChatBtn, { flexDirection: rowDir }]}
+                      onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}` as never)}
+                      activeOpacity={0.8}
+                    >
+                      <MessageCircle size={13} color="#ffffff" strokeWidth={2} />
+                      <AppText weight="semiBold" style={styles.projectChatBtnText}>{t('chats_page.open_chat')}</AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                </View>
               ))}
             </ScrollView>
+              {inProgressIndex > 0 && (
+                <TouchableOpacity
+                  style={[styles.arrowBtn, { left: 0 }]}
+                  onPress={() => scrollToInProgress(inProgressIndex - 1)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.arrowCircle}>
+                    <ChevronLeft size={18} color="#004aad" strokeWidth={2.5} />
+                  </View>
+                </TouchableOpacity>
+              )}
+              {inProgressIndex < activeProjects.length - 1 && (
+                <TouchableOpacity
+                  style={[styles.arrowBtn, { right: 0 }]}
+                  onPress={() => scrollToInProgress(inProgressIndex + 1)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.arrowCircle}>
+                    <ChevronRight size={18} color="#004aad" strokeWidth={2.5} />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
 
@@ -322,10 +369,29 @@ const styles = StyleSheet.create({
 
   // In-progress section
   projectsSection: { marginBottom: 4 },
-  projectsScroll: { paddingHorizontal: 16, gap: 12, paddingBottom: 12 },
+  projectsScroll: { paddingBottom: 12 },
+  inProgressCounter: { fontSize: 13, color: '#8890b0' },
+  carouselWrap: { position: 'relative' },
+  arrowBtn: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 36,
+    zIndex: 10,
+  },
+  arrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,74,173,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   projectCard: {
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     backgroundColor: '#ffffff',
     gap: 12,
@@ -333,28 +399,15 @@ const styles = StyleSheet.create({
   },
   projectCardHeader: {
     alignItems: 'center',
-    gap: 10,
-  },
-  projectClientAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: BLUE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  projectClientInitial: {
-    fontSize: 15,
-    color: '#ffffff',
   },
   projectCardNameCol: {
     flex: 1,
     gap: 2,
   },
   projectCardTitle: {
-    fontSize: 14,
+    fontSize: 17,
     color: BLUE,
+    lineHeight: 23,
   },
   projectCardClient: {
     fontSize: 12,
@@ -366,11 +419,11 @@ const styles = StyleSheet.create({
   projectStatSquare: {
     flex: 1,
     backgroundColor: STAT_BG,
-    borderRadius: 10,
-    paddingVertical: 8,
+    borderRadius: 12,
+    paddingVertical: 10,
     paddingHorizontal: 6,
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   projectStatLabel: {
     fontSize: 10,
@@ -381,6 +434,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: BLUE,
     textAlign: 'center',
+  },
+  projectDivider: {
+    height: 1,
+    backgroundColor: 'rgba(30,79,163,0.12)',
+  },
+  projectBottomRow: {
+    alignItems: 'center',
+  },
+  projectChatBtn: {
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: BLUE,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  projectChatBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
   },
 
   // Notice board

@@ -58,10 +58,11 @@ export default function ChatsPage() {
 const styles = StyleSheet.create({
   headerWrap: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 36,
+    fontSize: 26,
     fontWeight: '800',
     textTransform: 'uppercase',
     color: '#004aad',

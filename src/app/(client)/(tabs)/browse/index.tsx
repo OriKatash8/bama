@@ -282,9 +282,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 8,
   },
-  heading: { fontSize: 36, fontWeight: '800', color: '#004aad', textAlign: 'center', textTransform: 'uppercase' },
+  heading: { fontSize: 26, fontWeight: '800', color: '#004aad', textAlign: 'center', textTransform: 'uppercase' },
 
   searchRow: {
     flexDirection: 'row',
