@@ -12,6 +12,7 @@ import {
   confirmReceived,
   cancelPurchase,
   markHandedOver,
+  acceptDeal,
 } from '../services/marketplaceService';
 import type { MarketplaceListing } from '../types';
 import en from '@core/i18n/translations/en.json';
@@ -48,7 +49,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
     return listenToListingByChatId(chatId, setListing);
   }, [chatId]);
 
-  if (!listing || (listing.status !== 'reserved' && listing.status !== 'sold')) return null;
+  if (!listing || (listing.status !== 'negotiating' && listing.status !== 'reserved' && listing.status !== 'sold')) return null;
 
   // Capture listing here so async callbacks below have a stable, non-null reference
   const snap = listing;
@@ -63,6 +64,31 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
 
   console.log('[PurchaseBanner] render', { isBuyer, isSeller, isCompleted, currentUserId, buyerId: snap.buyerId, posterId: snap.posterId });
+
+  // ── Seller: "Accept deal" ─────────────────────────────────────────────────
+  async function handleAcceptDeal() {
+    setSellerLoading(true);
+    try {
+      await acceptDeal(snap.id, chatId, currentUserId, t('marketplace.deal_accepted_msg'));
+    } finally {
+      setSellerLoading(false);
+    }
+  }
+
+  // ── Seller: "Decline" / Buyer: "Cancel" (negotiating phase) ──────────────
+  async function handleCancelNegotiation() {
+    const confirmed = await confirmDialog(
+      t('marketplace.confirm_cancel_title'),
+      t('marketplace.confirm_cancel_msg'),
+    );
+    if (!confirmed) return;
+    setBuyerLoading(true);
+    try {
+      await cancelPurchase(snap.id, chatId, currentUserId, t('marketplace.purchase_cancelled'));
+    } finally {
+      setBuyerLoading(false);
+    }
+  }
 
   // ── Buyer: "I received it — Done" ────────────────────────────────────────
   async function handleMarkReceived() {
@@ -151,6 +177,8 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         <Text style={[styles.bannerTitle, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
           {isCompleted
             ? t('marketplace.sale_completed_label')
+            : snap.status === 'negotiating'
+            ? t('marketplace.negotiating_label')
             : t('marketplace.purchase_active_label')}
         </Text>
         {!isCompleted && (
@@ -182,8 +210,51 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         </View>
       </View>
 
+      {/* ── NEGOTIATING phase ─────────────────────────────────────────────── */}
+      {snap.status === 'negotiating' && isBuyer && (
+        <View style={[styles.btnRow, { flexDirection: rowDir }]}>
+          <TouchableOpacity
+            style={[styles.secondaryBtn, { flex: 1 }, buyerLoading && styles.disabledBtn]}
+            onPress={handleCancelNegotiation}
+            disabled={buyerLoading}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
+              {t('marketplace.cancel_purchase')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {snap.status === 'negotiating' && isSeller && (
+        <View style={[styles.btnRow, { flexDirection: rowDir }]}>
+          <TouchableOpacity
+            style={[styles.primaryBtn, { flex: 2 }, sellerLoading && styles.disabledBtn]}
+            onPress={handleAcceptDeal}
+            disabled={sellerLoading}
+            activeOpacity={0.8}
+          >
+            {sellerLoading
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={[styles.primaryBtnText, { ...font.bold }]}>
+                  {t('marketplace.accept_deal')}
+                </Text>}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryBtn, { flex: 1 }, sellerLoading && styles.disabledBtn]}
+            onPress={handleCancelNegotiation}
+            disabled={sellerLoading}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
+              {t('marketplace.decline_deal')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* ── BUYER buttons — gated: only renders when currentUserId === listing.buyerId ── */}
-      {!isCompleted && isBuyer && (
+      {!isCompleted && snap.status !== 'negotiating' && isBuyer && (
         snap.buyerConfirmed && !snap.sellerConfirmed ? (
           <View style={styles.sellerRow}>
             <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
@@ -220,7 +291,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
       )}
 
       {/* ── SELLER button — gated: only renders when currentUserId === listing.posterId ── */}
-      {!isCompleted && isSeller && (
+      {!isCompleted && snap.status !== 'negotiating' && isSeller && (
         <View style={styles.sellerRow}>
           {snap.sellerConfirmed ? (
             <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>

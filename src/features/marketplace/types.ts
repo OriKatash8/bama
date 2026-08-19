@@ -4,7 +4,7 @@ export type MarketplaceListingType = 'secondhand' | 'rental';
 
 export type ProductCondition = 'new' | 'like_new' | 'good' | 'fair';
 
-export type ListingStatus = 'available' | 'reserved' | 'sold';
+export type ListingStatus = 'available' | 'negotiating' | 'reserved' | 'sold';
 
 export type MarketplaceListing = {
   id: string;

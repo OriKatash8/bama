@@ -14,7 +14,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { confirmPurchase } from '../services/marketplaceService';
+import { startNegotiation } from '../services/marketplaceService';
 
 const CONDITION_COLOR: Record<string, string> = {
   new: '#43a047',
@@ -22,7 +22,6 @@ const CONDITION_COLOR: Record<string, string> = {
   good: '#fb8c00',
   fair: '#e53935',
 };
-import { CheckoutModal } from './CheckoutModal';
 import type { MarketplaceListing } from '../types';
 import { useState } from 'react';
 
@@ -54,7 +53,6 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const segments = useSegments();
   const modeSegment = segments[0];
 
-  const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
   const { height: screenHeight } = useWindowDimensions();
 
@@ -64,27 +62,22 @@ export function ListingDetailModal({ listing, onClose }: Props) {
     ? `₪${listing.price.toLocaleString()}${t('marketplace.per_day')}`
     : `₪${listing.price.toLocaleString()}`;
 
-  const fee = Math.round(listing.price * 0.03);
   const isOwnListing = currentUserId === listing.posterId;
-  const isUnavailable = listing.status === 'reserved' || listing.status === 'sold';
+  const isUnavailable = listing.status === 'negotiating' || listing.status === 'reserved' || listing.status === 'sold';
 
-  async function handleConfirmPurchase() {
+  async function handleTalkWithSeller() {
     if (!currentUserId || !listing) return;
     const snap = listing;
     setIsBuying(true);
     try {
-      const autoMessage = t('marketplace.buy_message', {
-        title: snap.productName,
-        price: snap.price,
-      });
-      const chatId = await confirmPurchase(
+      const autoMessage = t('marketplace.talk_message', { title: snap.productName });
+      const chatId = await startNegotiation(
         snap.id,
         currentUserId,
         snap.posterId,
-        { productName: snap.productName, price: snap.price },
+        { productName: snap.productName },
         autoMessage,
       );
-      setCheckoutVisible(false);
       onClose();
       router.push(`/${modeSegment}/(tabs)/chats/${chatId}` as never);
     } catch {
@@ -192,36 +185,27 @@ export function ListingDetailModal({ listing, onClose }: Props) {
             </View>
           </ScrollView>
 
-          {/* Buy / Reserved — pinned outside ScrollView */}
+          {/* Talk / In Discussion — pinned outside ScrollView */}
           {!isOwnListing && (
             isUnavailable ? (
               <View style={styles.reservedBtn}>
                 <AppText weight="bold" style={styles.reservedText}>
-                  {t('marketplace.reserved')}
+                  {t('marketplace.in_discussion')}
                 </AppText>
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.buyBtn}
-                onPress={() => setCheckoutVisible(true)}
+                style={[styles.buyBtn, isBuying && styles.buyBtnDisabled]}
+                onPress={handleTalkWithSeller}
                 activeOpacity={0.8}
+                disabled={isBuying}
               >
-                <AppText weight="bold" style={styles.buyText}>{t('marketplace.buy_button')}</AppText>
+                <AppText weight="bold" style={styles.buyText}>{t('marketplace.talk_with_seller')}</AppText>
               </TouchableOpacity>
             )
           )}
         </LinearGradient>
       </View>
-
-      <CheckoutModal
-        visible={checkoutVisible}
-        productName={listing.productName}
-        price={listing.price}
-        platformFee={fee}
-        isLoading={isBuying}
-        onConfirm={handleConfirmPurchase}
-        onCancel={() => setCheckoutVisible(false)}
-      />
     </Modal>
   );
 }

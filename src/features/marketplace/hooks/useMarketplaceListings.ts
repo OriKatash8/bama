@@ -12,7 +12,7 @@ export function useMarketplaceListings(type: MarketplaceListingType) {
       'marketplace_listings',
       (data) => {
         const available = data.filter(
-          (l) => l.status !== 'reserved' && l.status !== 'sold'
+          (l) => l.status !== 'negotiating' && l.status !== 'reserved' && l.status !== 'sold'
         );
         const sorted = [...available].sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
         setListings(sorted);

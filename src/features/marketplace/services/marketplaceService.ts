@@ -12,21 +12,19 @@ import { db } from '@core/firebase/config';
 import { createPurchaseChat, sendMessage } from '@features/chat/services/chatService';
 import type { MarketplaceListing } from '../types';
 
-export async function confirmPurchase(
+export async function startNegotiation(
   listingId: string,
   buyerId: string,
   sellerId: string,
-  listing: { productName: string; price: number },
+  listing: { productName: string },
   autoMessage: string,
 ): Promise<string> {
-  const platformFee = Math.round(listing.price * 0.03);
   const chatId = await createPurchaseChat(buyerId, sellerId, listingId, listing.productName);
 
   const batch = writeBatch(db);
   batch.update(doc(db, 'marketplace_listings', listingId), {
-    status: 'reserved',
+    status: 'negotiating',
     buyerId,
-    platformFee,
     purchaseChatId: chatId,
   });
   await batch.commit();
@@ -34,6 +32,20 @@ export async function confirmPurchase(
   await sendMessage(chatId, buyerId, autoMessage);
 
   return chatId;
+}
+
+export async function acceptDeal(
+  listingId: string,
+  chatId: string,
+  userId: string,
+  systemMessage: string,
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'marketplace_listings', listingId), {
+    status: 'reserved',
+  });
+  await batch.commit();
+  await sendMessage(chatId, userId, systemMessage);
 }
 
 export async function confirmReceived(
@@ -145,8 +157,11 @@ export function listenToListingByChatId(
       return;
     }
     const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as MarketplaceListing));
-    // Prefer the active purchase (reserved) over a completed one (sold)
-    const active = docs.find(d => d.status === 'reserved') ?? docs.find(d => d.status === 'sold') ?? null;
+    const active =
+      docs.find(d => d.status === 'negotiating') ??
+      docs.find(d => d.status === 'reserved') ??
+      docs.find(d => d.status === 'sold') ??
+      null;
     callback(active);
   });
 }
