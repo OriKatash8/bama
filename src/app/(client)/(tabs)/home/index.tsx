@@ -146,6 +146,9 @@ export default function HomeScreen() {
     return locationList.filter((c) => c.toLowerCase().includes(q));
   }, [locationSearch, locationList]);
 
+  const showLocationAdd = locationSearch.trim().length > 0 &&
+    !locations.some((c) => c.toLowerCase() === locationSearch.trim().toLowerCase());
+
   useEffect(() => {
     if (!projectId) return;
     setIsLoadingProject(true);
@@ -523,6 +526,22 @@ export default function HomeScreen() {
                   windowSize={3}
                   style={styles.locationList}
                   ItemSeparatorComponent={() => <View style={styles.locationSeparator} />}
+                  ListFooterComponent={showLocationAdd ? (
+                    <TouchableOpacity
+                      style={[styles.locationRow, styles.locationAddRow]}
+                      onPress={() => {
+                        setLocation(locationSearch.trim());
+                        setLocationModalOpen(false);
+                        setLocationSearch('');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <MapPin size={14} color="#004aad" strokeWidth={1.8} />
+                      <Text style={[styles.locationAddText, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+                        {rtl ? `+ הוסף "${locationSearch.trim()}"` : `+ Add "${locationSearch.trim()}"`}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={styles.locationRow}
@@ -842,6 +861,17 @@ function createStyles(
       height: 1,
       backgroundColor: '#004aad',
       opacity: 0.15,
+    },
+    locationAddRow: {
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(0,74,173,0.15)',
+      marginTop: 4,
+      paddingTop: 10,
+    },
+    locationAddText: {
+      fontSize: 14,
+      flex: 1,
+      color: '#004aad',
     },
 
     // Vibe modal
