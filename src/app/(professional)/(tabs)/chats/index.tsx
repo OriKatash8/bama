@@ -222,7 +222,7 @@ export default function ProfessionalChatsScreen() {
       {active === 'courses' && (
         <View>
           <View style={styles.tabContentHeader}>
-            <Text style={[styles.myCoursesTitle, { ...font.bold, color: colors.text }]}>
+            <Text style={[styles.myCoursesTitle, { ...font.bold, color: '#004aad' }]}>
               {t('courses.my_courses')}
             </Text>
           </View>
