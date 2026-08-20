@@ -150,7 +150,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                     </View>
                   )}
                 </View>
-                <AppText weight="regular" style={styles.stripTitle} numberOfLines={1}>
+                <AppText weight="regular" style={styles.stripTitle} numberOfLines={2}>
                   {c.name ?? ''}
                 </AppText>
               </TouchableOpacity>
