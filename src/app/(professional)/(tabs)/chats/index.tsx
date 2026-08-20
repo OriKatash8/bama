@@ -222,7 +222,7 @@ export default function ProfessionalChatsScreen() {
       {active === 'courses' && (
         <View>
           <View style={styles.tabContentHeader}>
-            <Text style={[styles.myCoursesTitle, { ...font.bold, color: '#004aad' }]}>
+            <Text style={[styles.myCoursesTitle, { ...font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
               {t('courses.my_courses')}
             </Text>
           </View>
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tabContentHeader: {
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 16,
