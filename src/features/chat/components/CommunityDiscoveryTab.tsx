@@ -128,22 +128,22 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.stripScroll, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-          style={styles.stripOuter}
+          contentContainerStyle={styles.stripScroll}
+          style={[styles.stripOuter, rtl && { transform: [{ scaleX: -1 }] }]}
         >
           {myCommunities.map((c) => {
             const unread = c.unreadCount?.[user?.id ?? ''] ?? 0;
             return (
               <TouchableOpacity
                 key={c.id}
-                style={styles.stripItem}
+                style={[styles.stripItem, rtl && { transform: [{ scaleX: -1 }] }]}
                 onPress={() => navigateToCommunity(c.id)}
                 activeOpacity={0.75}
               >
                 <View style={styles.stripIconWrap}>
                   <CommunityAvatar community={c} size={60} />
                   {unread > 0 && (
-                    <View style={[styles.stripBadge, rtl ? styles.stripBadgeLeft : styles.stripBadgeRight]}>
+                    <View style={[styles.stripBadge, styles.stripBadgeRight]}>
                       <AppText weight="bold" style={styles.stripBadgeText}>
                         {unread > 99 ? '99+' : String(unread)}
                       </AppText>
