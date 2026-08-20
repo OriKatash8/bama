@@ -156,6 +156,7 @@ export default function ProfessionalChatsScreen() {
   };
 
   return (
+    <View style={{ flex: 1 }}>
     <Screen style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
       <View style={styles.headerWrap}>
@@ -332,20 +333,6 @@ export default function ProfessionalChatsScreen() {
         </View>
       )}
 
-      {/* FAB — communities tab */}
-      {active === 'communities' && (
-        <TouchableOpacity style={styles.fab} onPress={() => setCommModal(true)} activeOpacity={0.8}>
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* FAB — courses tab */}
-      {active === 'courses' && (
-        <TouchableOpacity style={styles.fab} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.8}>
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
-      )}
-
       {/* Community request modal */}
       <Modal visible={commModal} transparent animationType="fade" onRequestClose={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -444,6 +431,21 @@ export default function ProfessionalChatsScreen() {
       />
 
     </Screen>
+
+    {/* FAB — communities tab: sibling of Screen so position:absolute anchors to viewport */}
+    {active === 'communities' && (
+      <TouchableOpacity style={styles.fab} onPress={() => setCommModal(true)} activeOpacity={0.8}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+    )}
+
+    {/* FAB — courses tab */}
+    {active === 'courses' && (
+      <TouchableOpacity style={styles.fab} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.8}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+    )}
+    </View>
   );
 }
 
