@@ -71,18 +71,17 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
           <Text style={[styles.name, { color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={1}>
             {user.displayName}
           </Text>
-          {profile.bio ? (
-            <Text style={[styles.bio, { color: colors.textSec, textAlign: rtl ? 'right' : 'left', ...font.regular }]} numberOfLines={2}>
-              {profile.bio}
-            </Text>
-          ) : null}
-          <View style={[styles.badgeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            {profile.rating > 0 && (
-              <Text style={[styles.rating, { color: colors.textMuted, ...font.medium }]}>
-                ★ {profile.rating.toFixed(1)} ({profile.reviewCount})
+          {profile.rating > 0 ? (
+            <View style={[styles.ratingBlock, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Text style={styles.ratingStar}>★</Text>
+              <Text style={[styles.ratingNum, { color: colors.text, ...font.bold }]}>
+                {profile.rating.toFixed(1)}
               </Text>
-            )}
-          </View>
+              <Text style={[styles.ratingCount, { color: colors.textMuted, ...font.regular }]}>
+                · {profile.reviewCount} {rtl ? 'דירוגים' : 'ratings'}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -136,10 +135,11 @@ const styles = StyleSheet.create({
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { fontSize: 22, fontWeight: '700' },
   info: { flex: 1 },
-  name: { fontSize: 16, marginBottom: 2 },
-  bio: { fontSize: 13, lineHeight: 18, marginBottom: 6 },
-  badgeRow: { alignItems: 'center', gap: 10 },
-  rating: { fontSize: 12 },
+  name: { fontSize: 16, marginBottom: 4 },
+  ratingBlock: { alignItems: 'center', gap: 5, marginBottom: 2 },
+  ratingStar: { fontSize: 15, color: '#f59e0b' },
+  ratingNum: { fontSize: 14 },
+  ratingCount: { fontSize: 12 },
   btnRow: { marginTop: 12, gap: 8 },
   btn: {
     flex: 1,
