@@ -234,7 +234,7 @@ export default function ProjectsPage() {
             const active = requests.filter((r) => r.status !== 'completed');
             return (
               <View style={styles.section}>
-                <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <View style={[styles.projectTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
                     {t('chats_page.my_projects')}
                   </Text>
@@ -440,6 +440,7 @@ const styles = StyleSheet.create({
   section: { gap: 10 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },
   sectionTitleRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  projectTitleRow: { alignItems: 'center', justifyContent: 'flex-start', gap: 8, marginBottom: 8 },
   projectCounter: { fontSize: 13, color: '#8890b0' },
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: 15 },
