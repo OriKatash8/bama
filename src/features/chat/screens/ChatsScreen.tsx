@@ -42,22 +42,23 @@ const STATUS_CONFIG: Record<ProjectStatus, { bg: string; text: string }> = {
   cancelled:   { bg: '#ef4444', text: '#fff' },
 };
 
-function formatTimestamp(ts: { toDate(): Date } | null | undefined): string {
+function formatTimestamp(ts: { toDate(): Date } | null | undefined, language: string): string {
   if (!ts) return '';
   const date = ts.toDate();
   const now = new Date();
+  const locale = language === 'he' ? 'he-IL' : 'en-US';
   const isToday =
     date.getDate() === now.getDate() &&
     date.getMonth() === now.getMonth() &&
     date.getFullYear() === now.getFullYear();
   if (isToday) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   }
   const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
   if (daysDiff < 7) {
-    return date.toLocaleDateString([], { weekday: 'short' });
+    return date.toLocaleDateString(locale, { weekday: 'short' });
   }
-  return date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+  return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
 }
 
 type DmInfo = { name: string; photoURL: string | null };
@@ -252,7 +253,7 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
         })()
       : (dmInfo[item.id]?.name ?? t('chats.loading'));
     const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
-    const timestamp = formatTimestamp(item.lastMessage?.timestamp);
+    const timestamp = formatTimestamp(item.lastMessage?.timestamp, language);
     const unread = item.unreadCount?.[currentUserId] ?? 0;
     return (
       <TouchableOpacity
