@@ -4,7 +4,7 @@ import {
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Plus, Camera, Search, Play, Clock, BookOpen, BarChart2 } from 'lucide-react-native';
+import { X, Camera, Search, Play, Clock, BookOpen, BarChart2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -220,19 +220,10 @@ export default function ProfessionalChatsScreen() {
       {/* Courses tab */}
       {active === 'courses' && (
         <View>
-          <View style={[styles.tabContentHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={styles.tabContentHeader}>
             <Text style={[styles.myCoursesTitle, { ...font.bold, color: colors.text }]}>
               {t('courses.my_courses')}
             </Text>
-            <TouchableOpacity
-              style={[styles.plusBtn, { backgroundColor: colors.primary }]}
-              onPress={() => setSubmitCourseModal(true)}
-            >
-              <Plus size={16} color="#fff" />
-              <Text style={[styles.plusBtnText, { ...font.semiBold }]}>
-                {t('courses.add_your_course')}
-              </Text>
-            </TouchableOpacity>
           </View>
 
           {courses.length === 0 ? (
@@ -339,6 +330,20 @@ export default function ProfessionalChatsScreen() {
             />
           )}
         </View>
+      )}
+
+      {/* FAB — communities tab */}
+      {active === 'communities' && (
+        <TouchableOpacity style={styles.fab} onPress={() => setCommModal(true)} activeOpacity={0.8}>
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* FAB — courses tab */}
+      {active === 'courses' && (
+        <TouchableOpacity style={styles.fab} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.8}>
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
       )}
 
       {/* Community request modal */}
@@ -509,18 +514,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  plusBtn: {
-    flexDirection: 'row',
+  fab: {
+    position: 'absolute',
+    bottom: 110,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#004aad',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
+    justifyContent: 'center',
+    shadowColor: '#004aad',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  plusBtnText: {
-    color: '#fff',
-    fontSize: 13,
-  },
+  fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
   emptyState: {
     flex: 1,
     alignItems: 'center',

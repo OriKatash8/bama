@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { Plus, Users } from 'lucide-react-native';
+import { Users } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '@components/ui/AppText';
@@ -109,15 +109,11 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-      {/* My Communities — label + create button in one row */}
+      {/* My Communities — label */}
       <View style={[styles.sectionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textSec }]}>
           {t('communities.my_communities')}
         </AppText>
-        <TouchableOpacity style={[styles.plusBtn, { backgroundColor: colors.primary }]} onPress={onRequestCommunity} activeOpacity={0.7}>
-          <Plus size={16} color="#fff" />
-          <AppText weight="semiBold" style={styles.plusBtnText}>{t('communities.request_create')}</AppText>
-        </TouchableOpacity>
       </View>
 
       {myCommunities.length === 0 ? (
@@ -262,8 +258,6 @@ const styles = StyleSheet.create({
   container: { padding: 16, paddingTop: 8 },
   sectionRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   sectionLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  plusBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
-  plusBtnText: { color: '#fff', fontSize: 13 },
   empty: { fontSize: 14, marginBottom: 8 },
   card: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 10 },
   cardHeader: { alignItems: 'center', marginBottom: 4, gap: 14 },
