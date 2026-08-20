@@ -20,10 +20,8 @@ import {
   Globe,
   Info,
   LogOut,
-  Moon,
   Settings,
   Shield,
-  Sun,
   User,
   X,
 } from 'lucide-react-native';
@@ -67,7 +65,6 @@ export function AppHeader() {
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const isDark = useUiStore((s) => s.isDark);
-  const toggleTheme = useUiStore((s) => s.toggleTheme);
   const colors = useTheme();
   const font = useAppFont();
   const { logout } = useLogout();
@@ -252,23 +249,6 @@ export function AppHeader() {
               </View>
             </View>
 
-            {/* Appearance */}
-            <View style={[styles.menuRow, { borderBottomColor: colors.border }]}>
-              {isDark
-                ? <Moon size={18} color={colors.textMuted} strokeWidth={1.5} />
-                : <Sun size={18} color={colors.textMuted} strokeWidth={1.5} />}
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.appearance')}
-              </AppText>
-              <TouchableOpacity
-                onPress={toggleTheme}
-                activeOpacity={0.8}
-                style={[styles.themeTrack, { backgroundColor: isDark ? '#004aad' : '#e0e0e0' }]}
-              >
-                <Animated.View style={[styles.themeThumb, { transform: [{ translateX: isDark ? 16 : 0 }] }]} />
-              </TouchableOpacity>
-            </View>
-
             {/* Information */}
             <TouchableOpacity
               style={[styles.menuRow, { borderBottomColor: colors.border }]}
@@ -435,20 +415,6 @@ const styles = StyleSheet.create({
   },
   langBtnActive: { backgroundColor: '#004aad' },
   langBtnText: { fontSize: 12 },
-
-  themeTrack: {
-    width: 36,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    padding: 2,
-  },
-  themeThumb: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-  },
 
   logoutSection: {
     paddingHorizontal: 16,
