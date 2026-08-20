@@ -230,7 +230,10 @@ export default function ProjectDetailsScreen() {
       setIsLoading(false);
     }
 
-    fetchAll();
+    fetchAll().catch((err) => {
+      console.error('[ProjectDetails] fetchAll error:', err);
+      setIsLoading(false);
+    });
   }, [projectId]);
 
   useEffect(() => {
@@ -450,7 +453,7 @@ export default function ProjectDetailsScreen() {
       await updateDoc(doc(db, 'projects', projectId), updates);
       setProject((prev) =>
         prev
-          ? { ...prev, crewSlots: [...prev.crewSlots, ...newSlots], status: 'open' }
+          ? { ...prev, crewSlots: [...(prev.crewSlots ?? []), ...newSlots], status: 'open' }
           : prev,
       );
       setShowRolePicker(false);
@@ -886,7 +889,7 @@ export default function ProjectDetailsScreen() {
           <>
             {(() => {
               const mission = missions[Math.min(missionIndex, missions.length - 1)];
-              const cfg = MISSION_STATUS_CONFIG[mission.status];
+              const cfg = MISSION_STATUS_CONFIG[mission.status] ?? { color: '#6b7280' };
               const isAssigned = mission.assignedTo.includes(currentUserId);
               return (
                 <View style={[styles.carouselCard, { flexDirection: rowDirection }]}>
