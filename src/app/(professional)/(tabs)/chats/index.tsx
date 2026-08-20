@@ -21,7 +21,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { db } from '@core/firebase/config';
-import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -254,7 +254,9 @@ export default function ProfessionalChatsScreen() {
                     )}
                     {item.category ? (
                       <View style={[styles.categoryTag, { [rtl ? 'right' : 'left']: 10 }]}>
-                        <Text style={[styles.categoryTagText, { ...font.semiBold }]}>{item.category}</Text>
+                        <Text style={[styles.categoryTagText, { ...font.semiBold }]}>
+                          {rtl && item.category && CATEGORY_LABEL_KEY[item.category] ? t(CATEGORY_LABEL_KEY[item.category]) : item.category}
+                        </Text>
                       </View>
                     ) : null}
                   </View>
