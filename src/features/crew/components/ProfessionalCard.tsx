@@ -73,7 +73,9 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
           </Text>
           {profile.rating > 0 ? (
             <View style={[styles.ratingBlock, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={styles.ratingStar}>★</Text>
+              <Text style={styles.ratingStars}>
+                {[1, 2, 3, 4, 5].map((i) => (profile.rating >= i - 0.5 ? '★' : '☆')).join('')}
+              </Text>
               <Text style={[styles.ratingNum, { color: colors.text, ...font.bold }]}>
                 {profile.rating.toFixed(1)}
               </Text>
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   name: { fontSize: 16, marginBottom: 4 },
   ratingBlock: { alignItems: 'center', gap: 5, marginBottom: 2 },
-  ratingStar: { fontSize: 15, color: '#f59e0b' },
+  ratingStars: { fontSize: 15, color: '#cb6ce6', letterSpacing: 1 },
   ratingNum: { fontSize: 14 },
   ratingCount: { fontSize: 12 },
   btnRow: { marginTop: 12, gap: 8 },
