@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { Star } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -19,6 +20,34 @@ function makeT(translations: Translations) {
   };
 }
 
+
+const STAR_COLOR = '#cb6ce6';
+const STAR_EMPTY = '#d1d5db';
+
+function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((i) => {
+        const filled = rating >= i;
+        const half = !filled && rating >= i - 0.5;
+        if (filled) {
+          return <Star key={i} size={size} color={STAR_COLOR} fill={STAR_COLOR} />;
+        }
+        if (half) {
+          return (
+            <View key={i} style={{ width: size, height: size }}>
+              <Star size={size} color={STAR_EMPTY} fill={STAR_EMPTY} />
+              <View style={{ position: 'absolute', left: 0, top: 0, width: size / 2, height: size, overflow: 'hidden' }}>
+                <Star size={size} color={STAR_COLOR} fill={STAR_COLOR} />
+              </View>
+            </View>
+          );
+        }
+        return <Star key={i} size={size} color={STAR_EMPTY} fill={STAR_EMPTY} />;
+      })}
+    </View>
+  );
+}
 
 type Props = {
   item: ProfessionalResult;
@@ -73,9 +102,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
           </Text>
           {profile.rating > 0 ? (
             <View style={[styles.ratingBlock, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={styles.ratingStars}>
-                {[1, 2, 3, 4, 5].map((i) => (profile.rating >= i - 0.5 ? '★' : '☆')).join('')}
-              </Text>
+              <StarRow rating={profile.rating} size={14} />
               <Text style={[styles.ratingNum, { color: colors.text, ...font.bold }]}>
                 {profile.rating.toFixed(1)}
               </Text>
@@ -139,7 +166,6 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   name: { fontSize: 16, marginBottom: 4 },
   ratingBlock: { alignItems: 'center', gap: 5, marginBottom: 2 },
-  ratingStars: { fontSize: 15, color: '#cb6ce6', letterSpacing: 1 },
   ratingNum: { fontSize: 14 },
   ratingCount: { fontSize: 12 },
   btnRow: { marginTop: 12, gap: 8 },
