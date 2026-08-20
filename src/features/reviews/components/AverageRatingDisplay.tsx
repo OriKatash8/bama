@@ -47,15 +47,21 @@ export function AverageRatingDisplay({ reviews, showEmptyState = false }: Props)
   return (
     <View style={styles.container}>
       <View style={styles.starsRow}>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Star
-            key={i}
-            size={16}
-            color={rounded >= i ? '#cb6ce6' : '#cccccc'}
-            fill={rounded >= i ? '#cb6ce6' : '#cccccc'}
-          />
-        ))}
-        <Text style={styles.averageText}>{average.toFixed(1)} ★</Text>
+        {[1, 2, 3, 4, 5].map((i) => {
+          const filled = rounded >= i;
+          const half = !filled && rounded >= i - 0.5;
+          if (filled) return <Star key={i} size={16} color="#cb6ce6" fill="#cb6ce6" />;
+          if (half) return (
+            <View key={i} style={{ width: 16, height: 16 }}>
+              <Star size={16} color="#d1d5db" fill="#d1d5db" />
+              <View style={{ position: 'absolute', left: 0, top: 0, width: 8, height: 16, overflow: 'hidden' }}>
+                <Star size={16} color="#cb6ce6" fill="#cb6ce6" />
+              </View>
+            </View>
+          );
+          return <Star key={i} size={16} color="#d1d5db" fill="#d1d5db" />;
+        })}
+        <Text style={styles.averageText}>{average.toFixed(1)}</Text>
       </View>
       <Text style={styles.countText}>{t('profile.reviews_count', { count: String(count) })}</Text>
     </View>
