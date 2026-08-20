@@ -45,6 +45,11 @@ service cloud.firestore {
         allow read: if isAuth();
         allow write: if isOwner(userId);
       }
+
+      match /portfolio/{assetId} {
+        allow read: if isAuth();
+        allow write: if isOwner(userId);
+      }
     }
 
     // ─── chats ──────────────────────────────────────────────────────
