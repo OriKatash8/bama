@@ -184,16 +184,33 @@ export default function ProjectDetailsScreen() {
       const fullProject: ProjectRequest = { ...projectData, id: projectId };
       setProject(fullProject);
 
-      const [client, offers] = await Promise.all([
+      // Fetch member names first — always succeeds (public user docs)
+      const uniqueProfessionalIds = [
+        ...new Set((projectData.filledSlots ?? []).map((s) => s.professionalId)),
+      ];
+      const [client, ...memberResults] = await Promise.all([
         getDocument<MemberInfo>(`users/${projectData.clientId}`),
-        queryDocuments<PriceOffer>(
-          'priceOffers',
-          where('projectId', '==', projectId),
-          where('status', '==', 'accepted')
+        ...uniqueProfessionalIds.map((id) =>
+          getDocument<MemberInfo>(`users/${id}`).then((u) => [id, u] as const)
         ),
       ]);
 
-      if (client) setClientUser(client);
+      if (client) setClientUser(client as MemberInfo);
+      setMemberUsers(
+        Object.fromEntries(
+          (memberResults as [string, MemberInfo | null][]).filter(
+            (e): e is [string, MemberInfo] => e[1] !== null
+          )
+        )
+      );
+
+      // Fetch accepted offers — may fail for non-clients; default to empty
+      const offers = await queryDocuments<PriceOffer>(
+        'priceOffers',
+        where('projectId', '==', projectId),
+        where('status', '==', 'accepted')
+      ).catch(() => [] as PriceOffer[]);
+
       setAcceptedOffers(offers);
 
       // Fetch bundle offer docs for any bundled price offers
@@ -208,23 +225,6 @@ export default function ProjectDetailsScreen() {
           if (b) map.set(id, b);
         });
         setBundleMap(map);
-      }
-
-      const uniqueProfessionalIds = [
-        ...new Set((projectData.filledSlots ?? []).map((s) => s.professionalId)),
-      ];
-      if (uniqueProfessionalIds.length > 0) {
-        const entries = await Promise.all(
-          uniqueProfessionalIds.map(async (id) => {
-            const user = await getDocument<MemberInfo>(`users/${id}`);
-            return [id, user] as const;
-          })
-        );
-        setMemberUsers(
-          Object.fromEntries(
-            entries.filter((e): e is [string, MemberInfo] => e[1] !== null)
-          )
-        );
       }
 
       setIsLoading(false);
