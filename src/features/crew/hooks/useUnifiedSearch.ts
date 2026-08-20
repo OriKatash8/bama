@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { queryDocuments, getDocument } from '@core/firebase/firestore';
+import { queryDocuments, getDocument, queryByField } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 import type { ProfessionalProfile } from '@core/types/user';
+import type { Review } from '@core/types/project';
 import type { ProfessionalResult } from './useSearchProfessionals';
+import { computeAverageRating } from '@features/reviews/utils/rating';
 
 type MatchPriority = 0 | 1; // 0=name, 1=category
 
@@ -44,8 +46,10 @@ export function useUnifiedSearch(query: string): { results: ProfessionalResult[]
 
               if (!nameMatch && !categoryMatch) return;
 
+              const reviews = await queryByField<Review>('reviews', 'professionalId', user.id).catch(() => [] as Review[]);
+              const { average, count } = computeAverageRating(reviews);
               const priority: MatchPriority = nameMatch ? 0 : 1;
-              ranked.push({ user, profile, priority });
+              ranked.push({ user, profile: { ...profile, rating: average, reviewCount: count }, priority });
             })
           );
 

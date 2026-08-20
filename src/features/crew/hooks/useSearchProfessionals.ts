@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { queryDocuments, getDocument } from '@core/firebase/firestore';
+import { queryDocuments, getDocument, queryByField } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 import type { ProfessionalProfile } from '@core/types/user';
+import type { Review } from '@core/types/project';
+import { computeAverageRating } from '@features/reviews/utils/rating';
 
 export type ProfessionalResult = {
   user: User;
@@ -36,7 +38,10 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
           );
           if (!profile?.skills) return;
           const hasSkill = profile.skills.some(s => s.category === category);
-          if (hasSkill) matches.push({ user, profile });
+          if (!hasSkill) return;
+          const reviews = await queryByField<Review>('reviews', 'professionalId', user.id).catch(() => [] as Review[]);
+          const { average, count } = computeAverageRating(reviews);
+          matches.push({ user, profile: { ...profile, rating: average, reviewCount: count } });
         })
       );
 
