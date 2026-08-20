@@ -129,6 +129,16 @@ export default function HomeScreen() {
   const [locationSearch, setLocationSearch] = useState('');
   const [roleAnswers, setRoleAnswers] = useState<Record<string, Record<string, string>>>({});
 
+  const todayISO = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+  const tomorrowISO = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+
   const locationList = language === 'he' ? ISRAEL_LOCATIONS_HE : ISRAEL_LOCATIONS_EN;
   const locations = useMemo(() => {
     const q = locationSearch.trim().toLowerCase();
@@ -549,6 +559,8 @@ export default function HomeScreen() {
           isFlexible={deadline === 'flexible'}
           onFlexible={() => { setDeadline(deadline === 'flexible' ? '' : 'flexible'); setCalOpen(null); }}
           flexibleLabel={t('builder.flexible')}
+          minDate={calOpen === 'exec' ? tomorrowISO : (exec || todayISO)}
+          maxDate={calOpen === 'exec' && deadline && deadline !== 'flexible' ? deadline : undefined}
         />
       )}
     </Screen>

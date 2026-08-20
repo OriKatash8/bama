@@ -15,11 +15,17 @@ type Props = {
   isFlexible?: boolean;
   onFlexible?: () => void;
   flexibleLabel?: string;
+  minDate?: string;
+  maxDate?: string;
 };
 
-export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexible, onFlexible, flexibleLabel }: Props) {
+export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexible, onFlexible, flexibleLabel, minDate, maxDate }: Props) {
   const today = new Date();
-  const init = value ? new Date(value + 'T00:00:00') : today;
+  const init = value
+    ? new Date(value + 'T00:00:00')
+    : minDate
+      ? new Date(minDate + 'T00:00:00')
+      : today;
   const [viewYear, setViewYear] = useState(init.getFullYear());
   const [viewMonth, setViewMonth] = useState(init.getMonth());
 
@@ -34,17 +40,34 @@ export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexibl
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
+  function dayISO(day: number) {
+    return `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  function isDisabled(day: number) {
+    const iso = dayISO(day);
+    if (minDate && iso < minDate) return true;
+    if (maxDate && iso > maxDate) return true;
+    return false;
+  }
+
+  const canGoPrev = !minDate || viewYear > Number(minDate.slice(0, 4)) ||
+    (viewYear === Number(minDate.slice(0, 4)) && viewMonth > Number(minDate.slice(5, 7)) - 1);
+  const canGoNext = !maxDate || viewYear < Number(maxDate.slice(0, 4)) ||
+    (viewYear === Number(maxDate.slice(0, 4)) && viewMonth < Number(maxDate.slice(5, 7)) - 1);
+
   function prevMonth() {
+    if (!canGoPrev) return;
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
     else setViewMonth(m => m - 1);
   }
   function nextMonth() {
+    if (!canGoNext) return;
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
     else setViewMonth(m => m + 1);
   }
   function pickDay(day: number) {
-    const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    onSelect(iso);
+    if (isDisabled(day)) return;
+    onSelect(dayISO(day));
     onClose();
   }
 
@@ -55,14 +78,14 @@ export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexibl
           <TouchableWithoutFeedback>
             <View style={styles.box}>
               <View style={styles.nav}>
-                <TouchableOpacity onPress={prevMonth} hitSlop={12} activeOpacity={0.7}>
-                  <Text style={styles.navArrow}>‹</Text>
+                <TouchableOpacity onPress={prevMonth} hitSlop={12} activeOpacity={0.7} disabled={!canGoPrev}>
+                  <Text style={[styles.navArrow, !canGoPrev && styles.navArrowDisabled]}>‹</Text>
                 </TouchableOpacity>
                 <Text style={styles.navTitle}>
                   {MONTH_NAMES[viewMonth]} {viewYear}
                 </Text>
-                <TouchableOpacity onPress={nextMonth} hitSlop={12} activeOpacity={0.7}>
-                  <Text style={styles.navArrow}>›</Text>
+                <TouchableOpacity onPress={nextMonth} hitSlop={12} activeOpacity={0.7} disabled={!canGoNext}>
+                  <Text style={[styles.navArrow, !canGoNext && styles.navArrowDisabled]}>›</Text>
                 </TouchableOpacity>
               </View>
 
@@ -77,15 +100,16 @@ export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexibl
               <View style={styles.grid}>
                 {cells.map((day, i) => {
                   const isSelected = day !== null && day === selDay && viewMonth === selMonth && viewYear === selYear;
+                  const disabled = !day || (day !== null && isDisabled(day));
                   return (
                     <TouchableOpacity
                       key={i}
                       style={[styles.cell, isSelected && styles.cellSelected]}
-                      onPress={day ? () => pickDay(day) : undefined}
-                      disabled={!day}
+                      onPress={day && !disabled ? () => pickDay(day) : undefined}
+                      disabled={disabled}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.dayNum, isSelected && styles.dayNumSelected, !day && styles.dayNumEmpty]}>
+                      <Text style={[styles.dayNum, isSelected && styles.dayNumSelected, !day && styles.dayNumEmpty, (day !== null && isDisabled(day)) && styles.dayNumDisabled]}>
                         {day ?? '.'}
                       </Text>
                     </TouchableOpacity>
@@ -130,6 +154,7 @@ const styles = StyleSheet.create({
   },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   navArrow: { fontSize: 24, fontWeight: '600', paddingHorizontal: 8, color: '#004aad' },
+  navArrowDisabled: { opacity: 0.2 },
   navTitle: { fontSize: 16, fontWeight: '700', color: '#004aad' },
   weekRow: { flexDirection: 'row', marginBottom: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -139,6 +164,7 @@ const styles = StyleSheet.create({
   dayNum: { fontSize: 14, fontWeight: '500', color: '#004aad' },
   dayNumSelected: { color: '#ffffff' },
   dayNumEmpty: { color: 'transparent' },
+  dayNumDisabled: { opacity: 0.2 },
   flexibleBtn: {
     marginTop: 10,
     borderWidth: 1.5,
