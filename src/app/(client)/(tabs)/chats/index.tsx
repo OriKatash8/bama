@@ -36,7 +36,7 @@ export default function ChatsPage() {
       <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
         <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
         <TextInput
-          style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+          style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
           placeholder={t(tr, 'search.placeholder')}
           placeholderTextColor={colors.placeholder}
           value={searchQuery}

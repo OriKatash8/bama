@@ -118,7 +118,7 @@ export default function SearchScreen() {
       <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
         <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
         <TextInput
-          style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+          style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
           placeholder={t('search.placeholder')}
           placeholderTextColor={colors.placeholder}
           value={query}
@@ -214,7 +214,7 @@ export default function SearchScreen() {
             <View style={[styles.modalSearchRow, { backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(0,74,173,0.2)' }]}>
               <Search size={16} color="rgba(0,74,173,0.6)" strokeWidth={2.5} />
               <TextInput
-                style={[styles.modalSearchInput, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.modalSearchInput, { ...font.regular, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={t('search.placeholder')}
                 placeholderTextColor="rgba(0,74,173,0.4)"
                 value={modalQuery}
