@@ -51,9 +51,13 @@ export function useCommunityDiscovery(userId: string | undefined) {
     const toCheck = discoverCommunities.filter((c) => !myIds.has(c.id));
     Promise.all(
       toCheck.map(async (c) => {
-        const snap = await getDoc(doc(db, 'chats', c.id, 'joinRequests', userId));
-        const status: JoinStatus = snap.exists() ? (snap.data().status as JoinStatus) : null;
-        return [c.id, status] as const;
+        try {
+          const snap = await getDoc(doc(db, 'chats', c.id, 'joinRequests', userId));
+          const status: JoinStatus = snap.exists() ? (snap.data().status as JoinStatus) : null;
+          return [c.id, status] as const;
+        } catch {
+          return [c.id, null] as const;
+        }
       }),
     ).then((entries) => {
       setJoinStatuses((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
