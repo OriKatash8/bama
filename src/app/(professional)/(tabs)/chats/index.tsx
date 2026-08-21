@@ -555,7 +555,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   coverArea: {
-    height: 120,
+    width: '100%',
+    aspectRatio: 16 / 9,
     backgroundColor: '#1a1a2e',
     overflow: 'hidden',
   },

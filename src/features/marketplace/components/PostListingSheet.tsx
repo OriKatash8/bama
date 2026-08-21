@@ -175,6 +175,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as const,
       allowsEditing: true,
+      aspect: [1, 1],
       quality: 0.8,
     });
     if (!result.canceled) setImageUri(result.assets[0].uri);

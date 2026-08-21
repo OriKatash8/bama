@@ -328,7 +328,8 @@ const styles = StyleSheet.create({
   submitBtnDisabled: { opacity: 0.5 },
   submitBtnText: { color: '#ffffff', fontSize: 15 },
   coverPickerBtn: {
-    height: 90,
+    width: '100%',
+    aspectRatio: 16 / 9,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: 'rgba(0,74,173,0.3)',
