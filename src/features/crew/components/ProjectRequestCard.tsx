@@ -213,13 +213,13 @@ export function ProjectRequestCard({ request }: Props) {
           onPress={toggleTeam}
           activeOpacity={0.7}
         >
-          <Users size={13} color={teamColor} strokeWidth={1.8} />
+          <Users size={11} color={teamColor} strokeWidth={1.8} />
           <AppText weight="semiBold" style={[styles.teamBtnText, { color: teamColor }]}>
             {t('chats_page.team_label')} ({filledCount}/{totalSlots})
           </AppText>
           {teamOpen
-            ? <ChevronUp size={13} color={teamColor} />
-            : <ChevronDown size={13} color={teamColor} />}
+            ? <ChevronUp size={11} color={teamColor} />
+            : <ChevronDown size={11} color={teamColor} />}
         </TouchableOpacity>
       </View>
 
@@ -391,15 +391,15 @@ const styles = StyleSheet.create({
   // Zone 3
   bottomRow: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 20,
+    justifyContent: 'flex-start',
+    gap: 12,
   },
   teamBtn: {
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   teamBtnText: {
-    fontSize: 11,
+    fontSize: 10,
   },
   actions: {
     alignItems: 'center',
