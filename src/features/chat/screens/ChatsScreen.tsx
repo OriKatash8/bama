@@ -78,6 +78,7 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
   const [dmInfo, setDmInfo] = useState<Record<string, DmInfo>>({});
   const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
   const [purchaseNames, setPurchaseNames] = useState<Record<string, string>>({});
+  const [purchaseImages, setPurchaseImages] = useState<Record<string, string>>({});
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
   const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
   const fetchedPurchaseChatIdsRef = useRef<Set<string>>(new Set());
@@ -135,20 +136,30 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
   }, [chats]);
 
   useEffect(() => {
+    // Fetch each purchase chat's listing once to get its product name (fallback)
+    // and product image (shown as the chat avatar when available).
     const toFetch = chats.filter(
-      (c) => c.type === 'purchase' && !c.name && c.purchaseListingId != null && !fetchedPurchaseChatIdsRef.current.has(c.id),
+      (c) => c.type === 'purchase' && c.purchaseListingId != null && !fetchedPurchaseChatIdsRef.current.has(c.id),
     );
     if (toFetch.length === 0) return;
     toFetch.forEach((c) => fetchedPurchaseChatIdsRef.current.add(c.id));
     Promise.all(
       toFetch.map(async (c) => {
-        const snap = await getDoc(doc(db, 'marketplace_listings', c.purchaseListingId!));
-        if (!snap.exists()) return null;
-        return [c.id, (snap.data() as { productName: string }).productName] as const;
+        try {
+          const snap = await getDoc(doc(db, 'marketplace_listings', c.purchaseListingId!));
+          if (!snap.exists()) return null;
+          const data = snap.data() as { productName?: string; imageUrl?: string | null };
+          return [c.id, data.productName ?? null, data.imageUrl ?? null] as const;
+        } catch {
+          return null;
+        }
       }),
     ).then((entries) => {
-      const valid = entries.filter((e): e is [string, string] => e !== null);
-      if (valid.length > 0) setPurchaseNames((prev) => ({ ...prev, ...Object.fromEntries(valid) }));
+      const valid = entries.filter((e): e is readonly [string, string | null, string | null] => e !== null);
+      const names = valid.filter((e) => e[1]).map((e) => [e[0], e[1] as string] as const);
+      const images = valid.filter((e) => e[2]).map((e) => [e[0], e[2] as string] as const);
+      if (names.length > 0) setPurchaseNames((prev) => ({ ...prev, ...Object.fromEntries(names) }));
+      if (images.length > 0) setPurchaseImages((prev) => ({ ...prev, ...Object.fromEntries(images) }));
     });
   }, [chats]);
 
@@ -175,6 +186,10 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
 
   function renderAvatar(item: Chat) {
     if (item.type === 'purchase') {
+      const productImage = purchaseImages[item.id];
+      if (productImage) {
+        return <Image source={{ uri: productImage }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
+      }
       return (
         <View style={[styles.avatar, { backgroundColor: item.archived ? '#e5e7eb' : '#fff7ed' }]}>
           <Package size={24} color={item.archived ? '#9ca3af' : '#f59e0b'} strokeWidth={1.8} />
