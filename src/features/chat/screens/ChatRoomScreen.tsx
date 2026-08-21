@@ -308,6 +308,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatArchived, setChatArchived] = useState(false);
   const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | 'superseded' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
+  const [projectDeadline, setProjectDeadline] = useState<string | undefined>(undefined);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [communityPhotoURL, setCommunityPhotoURL] = useState<string | undefined>(undefined);
   const [communityPhotoUploading, setCommunityPhotoUploading] = useState(false);
@@ -556,6 +557,26 @@ export function ChatRoomScreen({ chatId }: Props) {
       })));
     });
   }, [chatId, chatType, chatOwnerId, currentUserId]);
+
+  // Load the linked project's end date so mission/meeting dates can be
+  // constrained to the project window (today → project end).
+  useEffect(() => {
+    if (!chatProjectId) { setProjectDeadline(undefined); return; }
+    let cancelled = false;
+    getDoc(doc(db, 'projects', chatProjectId))
+      .then((snap) => {
+        if (cancelled) return;
+        const dl = snap.exists() ? (snap.data() as { deadline?: string }).deadline : undefined;
+        setProjectDeadline(dl && dl !== 'flexible' ? dl : undefined);
+      })
+      .catch(() => { if (!cancelled) setProjectDeadline(undefined); });
+    return () => { cancelled = true; };
+  }, [chatProjectId]);
+
+  const todayISO = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
 
   // Member display names
   useEffect(() => {
@@ -1343,6 +1364,8 @@ export function ChatRoomScreen({ chatId }: Props) {
         value={newMissionDueDate}
         onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
         onClose={() => setShowDueDatePicker(false)}
+        minDate={todayISO}
+        maxDate={projectDeadline}
       />
     )}
 
@@ -1445,6 +1468,8 @@ export function ChatRoomScreen({ chatId }: Props) {
         value={newMeetingDate}
         onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
         onClose={() => setShowMeetingDatePicker(false)}
+        minDate={todayISO}
+        maxDate={projectDeadline}
       />
     )}
 

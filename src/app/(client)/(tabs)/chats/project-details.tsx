@@ -47,7 +47,7 @@ import {
 import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/components';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
-import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Trash2 } from 'lucide-react-native';
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
 type Translations = typeof en;
@@ -144,9 +144,32 @@ export default function ProjectDetailsScreen() {
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
   const [showMeetingTimePicker, setShowMeetingTimePicker] = useState(false);
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
+  const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
 
   const [missionIndex, setMissionIndex] = useState(0);
   const [meetingIndex, setMeetingIndex] = useState(0);
+
+  // Missions/meetings must fall within the project window: today → project end.
+  const todayISO = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+  const projectEndDate = project?.deadline && project.deadline !== 'flexible' ? project.deadline : undefined;
+
+  // Only the project owner (client) may edit the deadline.
+  const isProjectClient = !!project && project.clientId === auth.currentUser?.uid;
+  // A new deadline can't be before today or before the execution date (if set).
+  const deadlineMinDate = project?.exec && project.exec > todayISO ? project.exec : todayISO;
+
+  async function handleEditDeadline(iso: string) {
+    setShowDeadlinePicker(false);
+    try {
+      await updateDoc(doc(db, 'projects', projectId), { deadline: iso });
+      setProject((prev) => (prev ? { ...prev, deadline: iso } : prev));
+    } catch (err) {
+      console.error('[ProjectDetails] edit deadline failed:', err);
+    }
+  }
 
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
@@ -763,13 +786,23 @@ export default function ProjectDetailsScreen() {
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.execution')}</AppText>
             <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.exec ? formatShortDate(project.exec) : t('project_details.tbd')}</AppText>
           </View>
-          <View style={styles.metaCard}>
+          <TouchableOpacity
+            style={styles.metaCard}
+            activeOpacity={isProjectClient ? 0.7 : 1}
+            onPress={isProjectClient ? () => setShowDeadlinePicker(true) : undefined}
+            disabled={!isProjectClient}
+          >
             <CalendarDays size={16} color="#8890b0" strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.deadline')}</AppText>
             <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>
               {project.deadline === 'flexible' ? t('builder.flexible') : formatShortDate(project.deadline)}
             </AppText>
-          </View>
+            {isProjectClient && (
+              <View style={styles.editDeadlineBadge}>
+                <Pencil size={10} color="#004aad" strokeWidth={2} />
+              </View>
+            )}
+          </TouchableOpacity>
           <View style={styles.metaCard}>
             <MapPin size={16} color="#8890b0" strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.location')}</AppText>
@@ -1312,6 +1345,8 @@ export default function ProjectDetailsScreen() {
               value={newMissionDueDate}
               onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
               onClose={() => setShowDueDatePicker(false)}
+              minDate={todayISO}
+              maxDate={projectEndDate}
             />
           )}
           </View>
@@ -1463,6 +1498,8 @@ export default function ProjectDetailsScreen() {
               value={newMeetingDate}
               onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
               onClose={() => setShowMeetingDatePicker(false)}
+              minDate={todayISO}
+              maxDate={projectEndDate}
             />
           )}
           {showMeetingTimePicker && (
@@ -1475,6 +1512,20 @@ export default function ProjectDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Edit project deadline (client only) */}
+      {showDeadlinePicker && (
+        <MiniCalendar
+          value={project.deadline === 'flexible' ? '' : project.deadline}
+          onSelect={handleEditDeadline}
+          onClose={() => setShowDeadlinePicker(false)}
+          minDate={deadlineMinDate}
+          showFlexible
+          isFlexible={project.deadline === 'flexible'}
+          onFlexible={() => handleEditDeadline('flexible')}
+          flexibleLabel={t('builder.flexible')}
+        />
+      )}
 
       {/* Payment Summary Modal */}
       <Modal
@@ -1891,6 +1942,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
+  },
+  editDeadlineBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(0,74,173,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metaCardLabel: {
     fontSize: 10,
