@@ -219,13 +219,16 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
     );
   }
 
-  const sortedChats = [...chats].sort((a, b) => {
-    const aDown = a.type === 'purchase' && !!a.archived;
-    const bDown = b.type === 'purchase' && !!b.archived;
-    if (aDown && !bDown) return 1;
-    if (!aDown && bDown) return -1;
-    return 0;
-  });
+  const sortedChats = [...chats]
+    // Communities live in their own tab — keep them out of the chats list.
+    .filter((c) => c.type !== 'community')
+    .sort((a, b) => {
+      const aDown = a.type === 'purchase' && !!a.archived;
+      const bDown = b.type === 'purchase' && !!b.archived;
+      if (aDown && !bDown) return 1;
+      if (!aDown && bDown) return -1;
+      return 0;
+    });
 
   const visibleChats = searchQuery.trim()
     ? sortedChats.filter((item) => {
