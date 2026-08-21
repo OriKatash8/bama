@@ -639,6 +639,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   async function handleChangeChatPhoto() {
+    // Only the community owner may change a community's photo.
+    if (chatType === 'community' && currentUserId !== chatOwnerId) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as const,
       allowsEditing: true,
@@ -1209,11 +1211,15 @@ export function ChatRoomScreen({ chatId }: Props) {
     <Modal visible={chatPhotoModalOpen} transparent animationType="fade" onRequestClose={() => setChatPhotoModalOpen(false)}>
       <View style={chatStyles.photoModalOverlay}>
         <View style={[chatStyles.photoModalTopBar, { paddingTop: TOP_INSET + 12 }]}>
-          <TouchableOpacity onPress={handleChangeChatPhoto} disabled={chatPhotoUploading} activeOpacity={0.7}>
-            <AppText weight="semiBold" style={chatStyles.photoModalChangeBtn}>
-              {chatPhotoUploading ? '...' : t('chats.change_photo')}
-            </AppText>
-          </TouchableOpacity>
+          {(chatType !== 'community' || currentUserId === chatOwnerId) ? (
+            <TouchableOpacity onPress={handleChangeChatPhoto} disabled={chatPhotoUploading} activeOpacity={0.7}>
+              <AppText weight="semiBold" style={chatStyles.photoModalChangeBtn}>
+                {chatPhotoUploading ? '...' : t('chats.change_photo')}
+              </AppText>
+            </TouchableOpacity>
+          ) : (
+            <View />
+          )}
           <TouchableOpacity onPress={() => setChatPhotoModalOpen(false)} activeOpacity={0.7}>
             <X size={22} color="#fff" strokeWidth={2} />
           </TouchableOpacity>
