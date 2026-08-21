@@ -12,6 +12,7 @@ import {
   confirmReceived,
   cancelPurchase,
   markHandedOver,
+  agreeToDeal,
   acceptDeal,
 } from '../services/marketplaceService';
 import type { MarketplaceListing } from '../types';
@@ -80,14 +81,32 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
   const isPending = !chat.archived && snap.status === 'available';
   const isAccepted = !chat.archived && snap.status === 'reserved' && isAcceptedChat;
 
+  // Mutual agreement (pending phase): the item leaves the market only once BOTH
+  // sides have agreed. Tracked per-chat so multiple buyers can negotiate at once.
+  const iAgreed = isSeller ? (chat.sellerAgreed ?? false) : (chat.buyerAgreed ?? false);
+  const otherAgreed = isSeller ? (chat.buyerAgreed ?? false) : (chat.sellerAgreed ?? false);
+
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
 
-  // ── Seller: "Accept deal" ─────────────────────────────────────────────────
-  async function handleAcceptDeal() {
+  // ── Agree to the deal (symmetric for seller & buyer) ──────────────────────
+  async function handleAgree() {
+    setBuyerLoading(true);
     setSellerLoading(true);
     try {
-      await acceptDeal(snap.id, chatId, buyerId, currentUserId, t('marketplace.deal_accepted_msg'));
+      if (otherAgreed) {
+        // Second agreement — finalize: reserve the item and supersede other chats.
+        await acceptDeal(snap.id, chatId, buyerId, currentUserId, t('marketplace.deal_accepted_msg'));
+      } else {
+        // First agreement — record my flag; item stays on the market.
+        await agreeToDeal(
+          chatId,
+          isSeller ? 'sellerAgreed' : 'buyerAgreed',
+          currentUserId,
+          t(isSeller ? 'marketplace.seller_agreed_msg' : 'marketplace.buyer_agreed_msg'),
+        );
+      }
     } finally {
+      setBuyerLoading(false);
       setSellerLoading(false);
     }
   }
@@ -174,96 +193,68 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
 
   return (
     <View style={styles.banner}>
-      {/* Status header */}
-      <View style={[styles.bannerHeader, { flexDirection: rowDir }]}>
-        <Text style={[styles.bannerTitle, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
-          {isCompleted
-            ? t('marketplace.sale_completed_label')
-            : isReservedAnother
-            ? t('marketplace.reserved_another_label')
-            : isPending
-            ? t('marketplace.negotiating_label')
-            : t('marketplace.purchase_active_label')}
-        </Text>
-        {!isCompleted && !isReservedAnother && (
-          <View style={[styles.statusBadge, styles.badgeReserved]}>
-            <Text style={[styles.statusText, { ...font.semiBold }]}>⏳</Text>
-          </View>
-        )}
-        {(isCompleted || isReservedAnother) && onDismiss && (
-          <TouchableOpacity onPress={onDismiss} hitSlop={8} activeOpacity={0.7} style={styles.dismissBtn}>
-            <X size={16} color="#004aad99" strokeWidth={2.5} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Product + price */}
-      <View style={{ gap: 2 }}>
-        <Text style={[styles.productName, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-          {snap.productName}
-        </Text>
-        <View style={[styles.priceRow, { flexDirection: rowDir }]}>
-          <Text style={[styles.priceLabel, { ...font.regular }]}>
-            ₪{snap.price.toLocaleString()}
+      {/* Status header — only the button-less terminal states keep a short label */}
+      {(isCompleted || isReservedAnother) && (
+        <View style={[styles.bannerHeader, { flexDirection: rowDir }]}>
+          <Text style={[styles.bannerTitle, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
+            {isCompleted
+              ? t('marketplace.sale_completed_label')
+              : t('marketplace.reserved_another_label')}
           </Text>
-          {snap.platformFee != null && (
-            <Text style={[styles.feeLabel, { ...font.regular }]}>
-              {' · '}{t('marketplace.platform_fee')}: ₪{snap.platformFee}
-            </Text>
+          {onDismiss && (
+            <TouchableOpacity onPress={onDismiss} hitSlop={8} activeOpacity={0.7} style={styles.dismissBtn}>
+              <X size={16} color="#004aad99" strokeWidth={2.5} />
+            </TouchableOpacity>
           )}
         </View>
-      </View>
-
-      {/* ── RESERVED FOR ANOTHER BUYER ─────────────────────────────────────── */}
-      {isReservedAnother && (
-        <View style={styles.sellerRow}>
-          <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-            {t('marketplace.reserved_another_msg')}
-          </Text>
-        </View>
       )}
 
-      {/* ── PENDING phase ──────────────────────────────────────────────────── */}
-      {isPending && isBuyer && (
-        <View style={[styles.btnRow, { flexDirection: rowDir }]}>
-          <TouchableOpacity
-            style={[styles.secondaryBtn, { flex: 1 }, buyerLoading && styles.disabledBtn]}
-            onPress={handleCancelNegotiation}
-            disabled={buyerLoading}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
-              {t('marketplace.cancel_purchase')}
+      {/* ── PENDING phase — mutual agreement (symmetric for both sides) ─────── */}
+      {isPending && (isBuyer || isSeller) && (
+        iAgreed ? (
+          <View style={styles.sellerRow}>
+            <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left', marginBottom: 8 }]}>
+              {t('marketplace.waiting_agreement')}
             </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {isPending && isSeller && (
-        <View style={[styles.btnRow, { flexDirection: rowDir }]}>
-          <TouchableOpacity
-            style={[styles.primaryBtn, { flex: 2 }, sellerLoading && styles.disabledBtn]}
-            onPress={handleAcceptDeal}
-            disabled={sellerLoading}
-            activeOpacity={0.8}
-          >
-            {sellerLoading
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={[styles.primaryBtnText, { ...font.bold }]}>
-                  {t('marketplace.accept_deal')}
-                </Text>}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryBtn, { flex: 1 }, sellerLoading && styles.disabledBtn]}
-            onPress={handleCancelNegotiation}
-            disabled={sellerLoading}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
-              {t('marketplace.decline_deal')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <View style={[styles.btnRow, { flexDirection: rowDir }]}>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, { flex: 1 }, (buyerLoading || sellerLoading) && styles.disabledBtn]}
+                onPress={handleCancelNegotiation}
+                disabled={buyerLoading || sellerLoading}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
+                  {t('marketplace.cancel_purchase')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.btnRow, { flexDirection: rowDir }]}>
+            <TouchableOpacity
+              style={[styles.primaryBtn, { flex: 2 }, (buyerLoading || sellerLoading) && styles.disabledBtn]}
+              onPress={handleAgree}
+              disabled={buyerLoading || sellerLoading}
+              activeOpacity={0.8}
+            >
+              {(buyerLoading || sellerLoading)
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={[styles.primaryBtnText, { ...font.bold }]}>
+                    {t('marketplace.agree_deal')}
+                  </Text>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryBtn, { flex: 1 }, (buyerLoading || sellerLoading) && styles.disabledBtn]}
+              onPress={handleCancelNegotiation}
+              disabled={buyerLoading || sellerLoading}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
+                {isSeller ? t('marketplace.decline_deal') : t('marketplace.cancel_purchase')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )
       )}
 
       {/* ── ACCEPTED phase — BUYER buttons ─────────────────────────────────── */}

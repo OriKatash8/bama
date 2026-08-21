@@ -37,6 +37,8 @@ export interface Chat {
   category?: string;
   purchaseListingId?: string;
   buyerName?: string;
+  sellerAgreed?: boolean;
+  buyerAgreed?: boolean;
   archived?: boolean;
   archiveReason?: 'completed' | 'cancelled' | 'superseded';
   hiddenFor?: string[];

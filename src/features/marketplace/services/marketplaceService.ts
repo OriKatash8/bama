@@ -5,6 +5,7 @@ import {
   where,
   getDocs,
   onSnapshot,
+  updateDoc,
   writeBatch,
   deleteField,
   serverTimestamp,
@@ -49,8 +50,25 @@ export async function startNegotiation(
 }
 
 /**
- * Seller accepts one buyer's deal. This is what pulls the item off the market:
- * the listing becomes `reserved` and is bound to this chat's buyer.
+ * One party (seller or buyer) agrees to the deal. Records their agreement flag
+ * on the chat and posts a system message. Does NOT touch the listing — the item
+ * stays on the market until BOTH sides have agreed (then the caller finalizes
+ * via acceptDeal).
+ */
+export async function agreeToDeal(
+  chatId: string,
+  field: 'sellerAgreed' | 'buyerAgreed',
+  userId: string,
+  systemMessage: string,
+): Promise<void> {
+  await updateDoc(doc(db, 'chats', chatId), { [field]: true });
+  await sendMessage(chatId, userId, systemMessage);
+}
+
+/**
+ * Finalizer — runs only once BOTH sides have agreed. Pulls the item off the
+ * market: the listing becomes `reserved` and is bound to this chat's buyer, and
+ * the seller's other open chats for the same listing are superseded.
  */
 export async function acceptDeal(
   listingId: string,
@@ -77,6 +95,11 @@ export async function acceptDeal(
     status: 'reserved',
     buyerId,
     purchaseChatId: chatId,
+  });
+  // Both sides have agreed by this point — record it on the accepted chat.
+  batch.update(doc(db, 'chats', chatId), {
+    sellerAgreed: true,
+    buyerAgreed: true,
   });
   for (const d of superseded) {
     batch.update(doc(db, 'chats', d.id), {
