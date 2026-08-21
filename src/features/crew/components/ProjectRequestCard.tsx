@@ -179,8 +179,22 @@ export function ProjectRequestCard({ request }: Props) {
       {/* Divider */}
       <View style={styles.divider} />
 
-      {/* Zone 3 — Bottom row: action buttons (leading) + team indicator (trailing) */}
+      {/* Zone 3 — Bottom row: team indicator (leading) + action buttons (trailing) */}
       <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
+        <TouchableOpacity
+          style={[styles.teamBtn, { flexDirection: rowDir }]}
+          onPress={toggleTeam}
+          activeOpacity={0.7}
+        >
+          <Users size={11} color={teamColor} strokeWidth={1.8} />
+          <AppText weight="semiBold" style={[styles.teamBtnText, { color: teamColor }]}>
+            {t('chats_page.team_label')} ({filledCount}/{totalSlots})
+          </AppText>
+          {teamOpen
+            ? <ChevronUp size={11} color={teamColor} />
+            : <ChevronDown size={11} color={teamColor} />}
+        </TouchableOpacity>
+
         <View style={[styles.actions, { flexDirection: rowDir }]}>
           {!!request.chatId && (
             <TouchableOpacity
@@ -207,20 +221,6 @@ export function ProjectRequestCard({ request }: Props) {
             </TouchableOpacity>
           )}
         </View>
-
-        <TouchableOpacity
-          style={[styles.teamBtn, { flexDirection: rowDir }]}
-          onPress={toggleTeam}
-          activeOpacity={0.7}
-        >
-          <Users size={11} color={teamColor} strokeWidth={1.8} />
-          <AppText weight="semiBold" style={[styles.teamBtnText, { color: teamColor }]}>
-            {t('chats_page.team_label')} ({filledCount}/{totalSlots})
-          </AppText>
-          {teamOpen
-            ? <ChevronUp size={11} color={teamColor} />
-            : <ChevronDown size={11} color={teamColor} />}
-        </TouchableOpacity>
       </View>
 
       {/* Team expanded section */}
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   // Zone 3
   bottomRow: {
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     gap: 12,
   },
   teamBtn: {
