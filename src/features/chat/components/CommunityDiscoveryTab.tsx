@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Users } from 'lucide-react-native';
@@ -13,7 +13,7 @@ import type { Chat } from '../types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -25,7 +25,6 @@ function makeT(translations: Translations) {
   };
 }
 
-const CATEGORIES = Object.keys(CREW_CATEGORIES);
 
 const GRADIENTS: [string, string][] = [
   ['#1e4fa3', '#cb6ce6'],
@@ -85,6 +84,14 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
 
   const { myCommunities, discover, joinStatuses, requestToJoin } = useCommunityDiscovery(user?.id);
+
+  const memberIds = useMemo(() => new Set(myCommunities.map((c) => c.id)), [myCommunities]);
+
+  // Filter chips reflect the categories that actually exist among the communities.
+  const availableCategories = useMemo(
+    () => [...new Set(discover.map((c) => c.category).filter((cat): cat is string => !!cat))],
+    [discover],
+  );
 
   const filteredDiscover = filterCategory
     ? discover.filter((c) => c.category === filterCategory)
@@ -164,11 +171,11 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, flexDirection: rtl ? 'row-reverse' : 'row' }}
-        style={{ marginHorizontal: -16, marginBottom: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+        style={[{ marginHorizontal: -16, marginBottom: 12 }, rtl && { transform: [{ scaleX: -1 }] }]}
       >
         <TouchableOpacity
-          style={[styles.filterChip, filterCategory === null && styles.filterChipActive]}
+          style={[styles.filterChip, filterCategory === null && styles.filterChipActive, rtl && { transform: [{ scaleX: -1 }] }]}
           onPress={() => setFilterCategory(null)}
           activeOpacity={0.7}
         >
@@ -177,10 +184,10 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
           </AppText>
         </TouchableOpacity>
 
-        {CATEGORIES.map((cat) => (
+        {availableCategories.map((cat) => (
           <TouchableOpacity
             key={cat}
-            style={[styles.filterChip, filterCategory === cat && styles.filterChipActive]}
+            style={[styles.filterChip, filterCategory === cat && styles.filterChipActive, rtl && { transform: [{ scaleX: -1 }] }]}
             onPress={() => setFilterCategory(filterCategory === cat ? null : cat)}
             activeOpacity={0.7}
           >
@@ -230,8 +237,18 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                   {c.description as string}
                 </AppText>
               )}
-              <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {status === 'pending' ? (
+              <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                {memberIds.has(c.id) ? (
+                  <>
+                    <AppText weight="semiBold" style={styles.memberLabel}>{t('communities.member')}</AppText>
+                    <TouchableOpacity
+                      style={[styles.joinBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => navigateToCommunity(c.id)}
+                    >
+                      <AppText weight="semiBold" style={styles.joinBtnText}>{t('communities.open_chat')}</AppText>
+                    </TouchableOpacity>
+                  </>
+                ) : status === 'pending' ? (
                   <View style={styles.pendingBadge}>
                     <AppText weight="semiBold" style={styles.pendingText}>{t('communities.pending')}</AppText>
                   </View>
@@ -268,6 +285,7 @@ const styles = StyleSheet.create({
   cardFooter: { marginTop: 8 },
   joinBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
   joinBtnText: { color: '#fff', fontSize: 13 },
+  memberLabel: { color: '#10b981', fontSize: 13 },
   pendingBadge: { backgroundColor: '#9ca3af', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   pendingText: { color: '#fff', fontSize: 13 },
   filterChip: {

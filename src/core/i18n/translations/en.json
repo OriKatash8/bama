@@ -561,6 +561,8 @@
     "discover": "Discover Communities",
     "request_join": "Request to Join",
     "pending": "Pending",
+    "member": "Member",
+    "open_chat": "Open Chat",
     "manage": "Manage",
     "pending_requests": "Pending Requests",
     "approve": "Approve",

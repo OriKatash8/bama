@@ -75,8 +75,9 @@ export function useCommunityDiscovery(userId: string | undefined) {
     setJoinStatuses((prev) => ({ ...prev, [communityId]: 'pending' }));
   }
 
-  const myIds = new Set(myCommunities.map((c) => c.id));
-  const discover = discoverCommunities.filter((c) => !myIds.has(c.id));
+  // Include joined communities in Explore too — the UI marks them as "Member"
+  // and offers "Open Chat" instead of "Request to Join".
+  const discover = discoverCommunities;
 
   return { myCommunities, discover, joinStatuses, requestToJoin };
 }
