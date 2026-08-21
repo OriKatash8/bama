@@ -49,7 +49,8 @@ import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
-import { listenToMessages, sendMessage } from '../services/chatService';
+import { listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
+import { confirmDialog } from '@utils/confirmDialog';
 import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
 import { MiniCalendar } from '@features/crew/components';
@@ -305,7 +306,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatArchived, setChatArchived] = useState(false);
-  const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | null>(null);
+  const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | 'superseded' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [communityPhotoURL, setCommunityPhotoURL] = useState<string | undefined>(undefined);
@@ -450,9 +451,23 @@ export function ChatRoomScreen({ chatId }: Props) {
             const listingSnap = await getDoc(doc(db, 'marketplace_listings', data.purchaseListingId as string));
             if (listingSnap.exists()) productName = (listingSnap.data() as { productName?: string }).productName;
           }
+          // Prefer the buyer's name in the title so the seller can tell buyers
+          // apart. Fall back to the buyer member's displayName, then to a suffix.
+          let buyerName = (data as { buyerName?: string }).buyerName;
+          if (!buyerName) {
+            const sellerId = (data as { posterId?: string }).posterId;
+            const buyerId = (data.members as string[]).find((id) => id !== sellerId && id !== currentUserId)
+              ?? (data.members as string[]).find((id) => id !== currentUserId);
+            if (buyerId) {
+              const buyerSnap = await getDoc(doc(db, 'users', buyerId));
+              if (buyerSnap.exists()) buyerName = (buyerSnap.data() as { displayName?: string }).displayName;
+            }
+          }
           setChatName(
             productName
-              ? (lang === 'he' ? `קנייה - ${productName}` : `${productName} - Purchase`)
+              ? (buyerName
+                  ? `${productName} - ${buyerName}`
+                  : (lang === 'he' ? `קנייה - ${productName}` : `${productName} - Purchase`))
               : (lang === 'he' ? 'רכישה' : 'Purchase'),
           );
         } else {
@@ -665,6 +680,17 @@ export function ChatRoomScreen({ chatId }: Props) {
         },
       },
     ]);
+  }
+
+  async function handleDeleteChat() {
+    if (!currentUserId) return;
+    const confirmed = await confirmDialog(
+      t('chats.delete_chat_title'),
+      t('chats.delete_chat_msg'),
+    );
+    if (!confirmed) return;
+    await hideChatForUser(chatId, currentUserId);
+    router.back();
   }
 
   async function handleSend() {
@@ -1063,10 +1089,23 @@ export function ChatRoomScreen({ chatId }: Props) {
 
       {/* Archived purchase chat — read-only banner replaces input */}
       {chatType === 'purchase' && chatArchived && (
-        <View style={[styles.inputRow, { paddingBottom: BOTTOM_INSET + 10, borderTopColor: colors.border, backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center' }]}>
+        <View style={[styles.inputRow, { paddingBottom: BOTTOM_INSET + 10, borderTopColor: colors.border, backgroundColor: colors.card, flexDirection: 'column', gap: 8, alignItems: 'center' }]}>
           <AppText weight="semiBold" style={{ color: '#8890b0', fontSize: 13, textAlign: 'center' }}>
-            {chatArchiveReason === 'cancelled' ? t('chats.purchase_cancelled') : t('chats.purchase_completed')}
+            {chatArchiveReason === 'cancelled'
+              ? t('chats.purchase_cancelled')
+              : chatArchiveReason === 'superseded'
+              ? t('chats.purchase_not_relevant')
+              : t('chats.purchase_completed')}
           </AppText>
+          <TouchableOpacity
+            onPress={handleDeleteChat}
+            activeOpacity={0.7}
+            style={{ borderWidth: 1.5, borderColor: '#ef4444', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 20 }}
+          >
+            <AppText weight="semiBold" style={{ color: '#ef4444', fontSize: 13 }}>
+              {t('chats.delete_chat')}
+            </AppText>
+          </TouchableOpacity>
         </View>
       )}
 

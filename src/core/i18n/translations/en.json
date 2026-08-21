@@ -120,6 +120,10 @@
     "record_send": "Send",
     "purchase_completed": "Transaction completed · Chat is read-only",
     "purchase_cancelled": "Purchase cancelled · Chat closed",
+    "purchase_not_relevant": "No longer relevant · Chat is read-only",
+    "delete_chat": "Delete Chat",
+    "delete_chat_title": "Delete Chat",
+    "delete_chat_msg": "Remove this chat from your list?",
     "purchase_chat": "Purchase",
     "purchase_suffix": "Purchase",
     "badge_completed": "Completed",
@@ -484,6 +488,8 @@
     "purchase_cancelled": "Purchase cancelled",
     "sale_completed_label": "Sale completed",
     "purchase_active_label": "Active purchase",
+    "reserved_another_label": "Not relevant",
+    "reserved_another_msg": "The seller accepted another buyer for this item.",
     "seller_price_note": "Paid directly to seller (outside the app)"
   },
   "auth": {

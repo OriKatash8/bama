@@ -36,6 +36,8 @@ export interface Chat {
   unreadCount?: Record<string, number>;
   category?: string;
   purchaseListingId?: string;
+  buyerName?: string;
   archived?: boolean;
-  archiveReason?: 'completed' | 'cancelled';
+  archiveReason?: 'completed' | 'cancelled' | 'superseded';
+  hiddenFor?: string[];
 }

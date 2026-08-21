@@ -46,6 +46,7 @@ type Props = {
 export function ListingDetailModal({ listing, onClose }: Props) {
   const { showToast } = useUiStore();
   const currentUserId = useAuthStore((s) => s.user?.id);
+  const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -63,7 +64,8 @@ export function ListingDetailModal({ listing, onClose }: Props) {
     : `₪${listing.price.toLocaleString()}`;
 
   const isOwnListing = currentUserId === listing.posterId;
-  const isUnavailable = listing.status === 'negotiating' || listing.status === 'reserved' || listing.status === 'sold';
+  // Item stays on the market during discussion; only reserved/sold are unavailable.
+  const isUnavailable = listing.status === 'reserved' || listing.status === 'sold';
 
   async function handleTalkWithSeller() {
     if (!currentUserId || !listing) return;
@@ -74,8 +76,9 @@ export function ListingDetailModal({ listing, onClose }: Props) {
       const chatId = await startNegotiation(
         snap.id,
         currentUserId,
+        currentUserName,
         snap.posterId,
-        { productName: snap.productName },
+        snap.productName,
         autoMessage,
       );
       onClose();

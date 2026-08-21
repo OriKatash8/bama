@@ -120,6 +120,10 @@
     "record_send": "שלח",
     "purchase_completed": "העסקה הושלמה · הצ'אט נסגר לצפייה בלבד",
     "purchase_cancelled": "העסקה בוטלה · הצ'אט נסגר",
+    "purchase_not_relevant": "לא רלוונטי יותר · הצ'אט לקריאה בלבד",
+    "delete_chat": "מחק צ'אט",
+    "delete_chat_title": "מחיקת צ'אט",
+    "delete_chat_msg": "להסיר את הצ'אט מהרשימה שלך?",
     "purchase_chat": "רכישה",
     "purchase_suffix": "קנייה",
     "badge_completed": "הושלם",
@@ -484,6 +488,8 @@
     "purchase_cancelled": "הרכישה בוטלה",
     "sale_completed_label": "המכירה הושלמה",
     "purchase_active_label": "רכישה פעילה",
+    "reserved_another_label": "לא רלוונטי",
+    "reserved_another_msg": "המוכר קיבל קונה אחר עבור הפריט הזה.",
     "seller_price_note": "משולם ישירות למוכר (מחוץ לאפליקציה)"
   },
   "auth": {

@@ -3,6 +3,7 @@ import {
   doc,
   query,
   where,
+  getDocs,
   onSnapshot,
   writeBatch,
   deleteField,
@@ -10,40 +11,80 @@ import {
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { createPurchaseChat, sendMessage } from '@features/chat/services/chatService';
+import type { Chat } from '@features/chat/types';
 import type { MarketplaceListing } from '../types';
 
+/**
+ * Buyer taps "Talk with the Seller". This does NOT remove the listing from the
+ * market — the item stays `available` and multiple buyers may open their own
+ * discussion chats. The seller later accepts one of them (acceptDeal).
+ *
+ * Idempotent per buyer+listing: if this buyer already has an open purchase chat
+ * for this listing, we reopen it instead of creating a duplicate.
+ */
 export async function startNegotiation(
   listingId: string,
   buyerId: string,
+  buyerName: string,
   sellerId: string,
-  listing: { productName: string },
+  productName: string,
   autoMessage: string,
 ): Promise<string> {
-  const chatId = await createPurchaseChat(buyerId, sellerId, listingId, listing.productName);
+  // Mirror getOrCreateDM's query pattern (equality + array-contains) so no new
+  // composite index is required; filter the rest in JS.
+  const q = query(
+    collection(db, 'chats'),
+    where('type', '==', 'purchase'),
+    where('members', 'array-contains', buyerId),
+  );
+  const snap = await getDocs(q);
+  const existing = snap.docs.find(
+    (d) => d.data().purchaseListingId === listingId && !d.data().archived,
+  );
+  if (existing) return existing.id;
 
-  const batch = writeBatch(db);
-  batch.update(doc(db, 'marketplace_listings', listingId), {
-    status: 'negotiating',
-    buyerId,
-    purchaseChatId: chatId,
-  });
-  await batch.commit();
-
+  const chatId = await createPurchaseChat(buyerId, sellerId, listingId, productName, buyerName);
   await sendMessage(chatId, buyerId, autoMessage);
-
   return chatId;
 }
 
+/**
+ * Seller accepts one buyer's deal. This is what pulls the item off the market:
+ * the listing becomes `reserved` and is bound to this chat's buyer.
+ */
 export async function acceptDeal(
   listingId: string,
   chatId: string,
+  buyerId: string,
   userId: string,
   systemMessage: string,
 ): Promise<void> {
+  // Find the seller's OTHER open purchase chats for this listing so we can mark
+  // them "not relevant" (superseded) — they become read-only for those buyers.
+  // userId is the seller (a member of every purchase chat for their listing).
+  const q = query(
+    collection(db, 'chats'),
+    where('type', '==', 'purchase'),
+    where('members', 'array-contains', userId),
+  );
+  const snap = await getDocs(q);
+  const superseded = snap.docs.filter(
+    (d) => d.data().purchaseListingId === listingId && d.id !== chatId && !d.data().archived,
+  );
+
   const batch = writeBatch(db);
   batch.update(doc(db, 'marketplace_listings', listingId), {
     status: 'reserved',
+    buyerId,
+    purchaseChatId: chatId,
   });
+  for (const d of superseded) {
+    batch.update(doc(db, 'chats', d.id), {
+      archived: true,
+      archiveReason: 'superseded',
+      archivedAt: serverTimestamp(),
+    });
+  }
   await batch.commit();
   await sendMessage(chatId, userId, systemMessage);
 }
@@ -83,21 +124,31 @@ export async function confirmReceived(
   await sendMessage(chatId, userId, systemMessage);
 }
 
+/**
+ * Cancel/decline a purchase chat.
+ * - Always archives the chat (cancelled) and posts a system message.
+ * - Only resets the listing back to `available` when THIS chat is the accepted
+ *   one (isAcceptedChat). A pending-chat cancel must not touch the listing —
+ *   otherwise it would wipe another buyer's accepted deal.
+ */
 export async function cancelPurchase(
   listingId: string,
   chatId: string,
   userId: string,
   systemMessage: string,
+  isAcceptedChat: boolean,
 ): Promise<void> {
   const batch = writeBatch(db);
-  batch.update(doc(db, 'marketplace_listings', listingId), {
-    status: 'available',
-    buyerId: deleteField(),
-    purchaseChatId: deleteField(),
-    sellerConfirmed: deleteField(),
-    buyerConfirmed: deleteField(),
-    platformFee: deleteField(),
-  });
+  if (isAcceptedChat) {
+    batch.update(doc(db, 'marketplace_listings', listingId), {
+      status: 'available',
+      buyerId: deleteField(),
+      purchaseChatId: deleteField(),
+      sellerConfirmed: deleteField(),
+      buyerConfirmed: deleteField(),
+      platformFee: deleteField(),
+    });
+  }
   batch.update(doc(db, 'chats', chatId), {
     archived: true,
     archiveReason: 'cancelled',
@@ -143,25 +194,47 @@ export async function markHandedOver(
   }
 }
 
-export function listenToListingByChatId(
+/**
+ * Subscribe to a purchase chat AND its linked listing together. Needed because
+ * the pending phase has no `purchaseChatId` on the listing yet (only set on
+ * accept), so we resolve chat → listing via the chat's `purchaseListingId`.
+ */
+export function listenToPurchaseContext(
   chatId: string,
-  callback: (listing: MarketplaceListing | null) => void,
+  callback: (ctx: { chat: Chat | null; listing: MarketplaceListing | null }) => void,
 ): () => void {
-  const q = query(
-    collection(db, 'marketplace_listings'),
-    where('purchaseChatId', '==', chatId),
-  );
-  return onSnapshot(q, (snap) => {
-    if (snap.empty) {
-      callback(null);
+  let listingUnsub: (() => void) | null = null;
+  let currentListingId: string | null = null;
+  let latestChat: Chat | null = null;
+  let latestListing: MarketplaceListing | null = null;
+
+  const chatUnsub = onSnapshot(doc(db, 'chats', chatId), (chatSnap) => {
+    if (!chatSnap.exists()) {
+      if (listingUnsub) { listingUnsub(); listingUnsub = null; currentListingId = null; }
+      callback({ chat: null, listing: null });
       return;
     }
-    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as MarketplaceListing));
-    const active =
-      docs.find(d => d.status === 'negotiating') ??
-      docs.find(d => d.status === 'reserved') ??
-      docs.find(d => d.status === 'sold') ??
-      null;
-    callback(active);
+    latestChat = { id: chatSnap.id, ...chatSnap.data() } as Chat;
+    const listingId = latestChat.purchaseListingId ?? null;
+
+    if (listingId !== currentListingId) {
+      if (listingUnsub) { listingUnsub(); listingUnsub = null; }
+      currentListingId = listingId;
+      latestListing = null;
+      if (listingId) {
+        listingUnsub = onSnapshot(doc(db, 'marketplace_listings', listingId), (lSnap) => {
+          latestListing = lSnap.exists()
+            ? ({ id: lSnap.id, ...lSnap.data() } as MarketplaceListing)
+            : null;
+          callback({ chat: latestChat, listing: latestListing });
+        });
+      }
+    }
+    callback({ chat: latestChat, listing: latestListing });
   });
+
+  return () => {
+    chatUnsub();
+    if (listingUnsub) listingUnsub();
+  };
 }

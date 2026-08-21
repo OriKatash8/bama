@@ -51,9 +51,18 @@ function docToChat(doc: QueryDocumentSnapshot<DocumentData>): Chat {
     createdAt: data.createdAt,
     unreadCount: data.unreadCount,
     purchaseListingId: data.purchaseListingId,
+    buyerName: data.buyerName,
     archived: data.archived ?? false,
     archiveReason: data.archiveReason ?? null,
+    hiddenFor: data.hiddenFor,
   };
+}
+
+/** Soft-delete: hide a chat from one user's list without removing it for others. */
+export async function hideChatForUser(chatId: string, userId: string): Promise<void> {
+  await updateDoc(doc(db, 'chats', chatId), {
+    hiddenFor: arrayUnion(userId),
+  });
 }
 
 export async function getOrCreateDM(
@@ -92,12 +101,14 @@ export async function createPurchaseChat(
   sellerId: string,
   listingId: string,
   productName: string,
+  buyerName: string,
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'chats'), {
     type: 'purchase' as const,
     members: [buyerId, sellerId],
     purchaseListingId: listingId,
     name: productName,
+    buyerName,
     lastMessage: null,
     createdAt: serverTimestamp(),
   });
@@ -168,7 +179,9 @@ export function listenToUserChats(
   console.log('[listenToUserChats] subscribing for userId:', userId);
   return onSnapshot(q, (snapshot) => {
     console.log('[listenToUserChats] snapshot received — size:', snapshot.size, 'empty:', snapshot.empty);
-    const chats = snapshot.docs.map(docToChat);
+    const chats = snapshot.docs
+      .map(docToChat)
+      .filter((c) => !(c.hiddenFor ?? []).includes(userId));
     chats.sort((a, b) => {
       const aTime = a.lastMessage?.timestamp?.seconds ?? a.createdAt?.seconds ?? 0;
       const bTime = b.lastMessage?.timestamp?.seconds ?? b.createdAt?.seconds ?? 0;

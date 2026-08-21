@@ -8,13 +8,14 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import {
-  listenToListingByChatId,
+  listenToPurchaseContext,
   confirmReceived,
   cancelPurchase,
   markHandedOver,
   acceptDeal,
 } from '../services/marketplaceService';
 import type { MarketplaceListing } from '../types';
+import type { Chat } from '@features/chat/types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -34,6 +35,7 @@ function makeT(translations: Translations) {
 type Props = { chatId: string; onDismiss?: () => void };
 
 export function PurchaseBanner({ chatId, onDismiss }: Props) {
+  const [chat, setChat] = useState<Chat | null>(null);
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   // Separate loading states so seller action can't disable buyer buttons and vice-versa
   const [buyerLoading, setBuyerLoading] = useState(false);
@@ -46,36 +48,51 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
   const font = useAppFont();
 
   useEffect(() => {
-    return listenToListingByChatId(chatId, setListing);
+    return listenToPurchaseContext(chatId, ({ chat, listing }) => {
+      setChat(chat);
+      setListing(listing);
+    });
   }, [chatId]);
 
-  if (!listing || (listing.status !== 'negotiating' && listing.status !== 'reserved' && listing.status !== 'sold')) return null;
+  // Only render inside a purchase chat that has a linked listing
+  if (!chat || chat.type !== 'purchase' || !listing) return null;
+  // A cancelled chat shows no banner
+  if (chat.archived && chat.archiveReason === 'cancelled') return null;
 
-  // Capture listing here so async callbacks below have a stable, non-null reference
+  // Capture non-null references for async callbacks
   const snap = listing;
 
-  // Gate: buyer = the user who purchased (listing.buyerId), NOT the poster
-  const isBuyer = snap.buyerId === currentUserId;
-  // Gate: seller = the original poster
-  const isSeller = snap.posterId === currentUserId;
-  // isBuyer and isSeller are mutually exclusive (self-purchase is blocked at checkout)
+  // Seller is always the poster; buyer is the other chat member (works even
+  // during the pending phase, before listing.buyerId is set).
+  const seller = snap.posterId;
+  const buyerId = chat.members.find((m) => m !== seller) ?? '';
+  const isSeller = currentUserId === seller;
+  const isBuyer = currentUserId === buyerId;
 
-  const isCompleted = snap.status === 'sold';
+  const isAcceptedChat = snap.purchaseChatId === chatId;
+  const isSuperseded = chat.archived === true && chat.archiveReason === 'superseded';
+
+  // ── Derived phases (archived state wins over live listing status) ──────────
+  const isCompleted = (snap.status === 'sold' && isAcceptedChat) ||
+    (chat.archived === true && chat.archiveReason === 'completed');
+  // "Not relevant": seller accepted another buyer for this item.
+  const isReservedAnother = isSuperseded || (!isCompleted && snap.status !== 'available' && !isAcceptedChat);
+  const isPending = !chat.archived && snap.status === 'available';
+  const isAccepted = !chat.archived && snap.status === 'reserved' && isAcceptedChat;
+
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
-
-  console.log('[PurchaseBanner] render', { isBuyer, isSeller, isCompleted, currentUserId, buyerId: snap.buyerId, posterId: snap.posterId });
 
   // ── Seller: "Accept deal" ─────────────────────────────────────────────────
   async function handleAcceptDeal() {
     setSellerLoading(true);
     try {
-      await acceptDeal(snap.id, chatId, currentUserId, t('marketplace.deal_accepted_msg'));
+      await acceptDeal(snap.id, chatId, buyerId, currentUserId, t('marketplace.deal_accepted_msg'));
     } finally {
       setSellerLoading(false);
     }
   }
 
-  // ── Seller: "Decline" / Buyer: "Cancel" (negotiating phase) ──────────────
+  // ── Pending: seller "Decline" / buyer "Cancel" (does NOT touch listing) ───
   async function handleCancelNegotiation() {
     const confirmed = await confirmDialog(
       t('marketplace.confirm_cancel_title'),
@@ -83,28 +100,22 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
     );
     if (!confirmed) return;
     setBuyerLoading(true);
+    setSellerLoading(true);
     try {
-      await cancelPurchase(snap.id, chatId, currentUserId, t('marketplace.purchase_cancelled'));
+      await cancelPurchase(snap.id, chatId, currentUserId, t('marketplace.purchase_cancelled'), false);
     } finally {
       setBuyerLoading(false);
+      setSellerLoading(false);
     }
   }
 
   // ── Buyer: "I received it — Done" ────────────────────────────────────────
   async function handleMarkReceived() {
-    console.log('[PurchaseBanner] markReceived tapped', {
-      currentUserId,
-      buyerId: snap.buyerId,
-      status: snap.status,
-      listingId: snap.id,
-      isBuyer,
-    });
     const confirmed = await confirmDialog(
       t('marketplace.confirm_received_title'),
       t('marketplace.confirm_received_msg'),
     );
     if (!confirmed) return;
-    console.log('[PurchaseBanner] markReceived confirmed — calling confirmReceived');
     setBuyerLoading(true);
     try {
       await confirmReceived(
@@ -114,7 +125,6 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         t('marketplace.sale_complete'),
         snap.sellerConfirmed ?? false,
       );
-      console.log('[PurchaseBanner] confirmReceived success');
       Alert.alert(t('marketplace.fee_charged'));
     } catch (err) {
       console.error('[PurchaseBanner] confirmReceived error:', err);
@@ -123,21 +133,13 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
     }
   }
 
-  // ── Buyer: "Cancel purchase" ──────────────────────────────────────────────
+  // ── Buyer: "Cancel purchase" (accepted phase — returns item to market) ────
   async function handleCancelPurchase() {
-    console.log('[PurchaseBanner] cancelPurchase tapped', {
-      currentUserId,
-      buyerId: snap.buyerId,
-      status: snap.status,
-      listingId: snap.id,
-      isBuyer,
-    });
     const confirmed = await confirmDialog(
       t('marketplace.confirm_cancel_title'),
       t('marketplace.confirm_cancel_msg'),
     );
     if (!confirmed) return;
-    console.log('[PurchaseBanner] cancelPurchase confirmed — calling cancelPurchase service');
     setBuyerLoading(true);
     try {
       await cancelPurchase(
@@ -145,8 +147,8 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         chatId,
         currentUserId,
         t('marketplace.purchase_cancelled'),
+        isAcceptedChat,
       );
-      console.log('[PurchaseBanner] cancelPurchase success');
     } catch (err) {
       console.error('[PurchaseBanner] cancelPurchase error:', err);
     } finally {
@@ -177,16 +179,18 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         <Text style={[styles.bannerTitle, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
           {isCompleted
             ? t('marketplace.sale_completed_label')
-            : snap.status === 'negotiating'
+            : isReservedAnother
+            ? t('marketplace.reserved_another_label')
+            : isPending
             ? t('marketplace.negotiating_label')
             : t('marketplace.purchase_active_label')}
         </Text>
-        {!isCompleted && (
+        {!isCompleted && !isReservedAnother && (
           <View style={[styles.statusBadge, styles.badgeReserved]}>
             <Text style={[styles.statusText, { ...font.semiBold }]}>⏳</Text>
           </View>
         )}
-        {isCompleted && onDismiss && (
+        {(isCompleted || isReservedAnother) && onDismiss && (
           <TouchableOpacity onPress={onDismiss} hitSlop={8} activeOpacity={0.7} style={styles.dismissBtn}>
             <X size={16} color="#004aad99" strokeWidth={2.5} />
           </TouchableOpacity>
@@ -210,8 +214,17 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         </View>
       </View>
 
-      {/* ── NEGOTIATING phase ─────────────────────────────────────────────── */}
-      {snap.status === 'negotiating' && isBuyer && (
+      {/* ── RESERVED FOR ANOTHER BUYER ─────────────────────────────────────── */}
+      {isReservedAnother && (
+        <View style={styles.sellerRow}>
+          <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('marketplace.reserved_another_msg')}
+          </Text>
+        </View>
+      )}
+
+      {/* ── PENDING phase ──────────────────────────────────────────────────── */}
+      {isPending && isBuyer && (
         <View style={[styles.btnRow, { flexDirection: rowDir }]}>
           <TouchableOpacity
             style={[styles.secondaryBtn, { flex: 1 }, buyerLoading && styles.disabledBtn]}
@@ -226,7 +239,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         </View>
       )}
 
-      {snap.status === 'negotiating' && isSeller && (
+      {isPending && isSeller && (
         <View style={[styles.btnRow, { flexDirection: rowDir }]}>
           <TouchableOpacity
             style={[styles.primaryBtn, { flex: 2 }, sellerLoading && styles.disabledBtn]}
@@ -253,8 +266,8 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         </View>
       )}
 
-      {/* ── BUYER buttons — gated: only renders when currentUserId === listing.buyerId ── */}
-      {!isCompleted && snap.status !== 'negotiating' && isBuyer && (
+      {/* ── ACCEPTED phase — BUYER buttons ─────────────────────────────────── */}
+      {isAccepted && isBuyer && (
         snap.buyerConfirmed && !snap.sellerConfirmed ? (
           <View style={styles.sellerRow}>
             <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
@@ -290,8 +303,8 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         )
       )}
 
-      {/* ── SELLER button — gated: only renders when currentUserId === listing.posterId ── */}
-      {!isCompleted && snap.status !== 'negotiating' && isSeller && (
+      {/* ── ACCEPTED phase — SELLER button ─────────────────────────────────── */}
+      {isAccepted && isSeller && (
         <View style={styles.sellerRow}>
           {snap.sellerConfirmed ? (
             <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>

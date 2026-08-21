@@ -247,9 +247,12 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
       : item.type === 'purchase'
       ? (() => {
           const pName = item.name || purchaseNames[item.id];
-          return pName
-            ? (rtl ? `קנייה - ${pName}` : `${pName} - ${t('chats.purchase_suffix')}`)
-            : t('chats.purchase_chat');
+          if (!pName) return t('chats.purchase_chat');
+          // Title distinguishes buyers: "Product - BuyerName". Legacy chats
+          // without buyerName fall back to the old "Purchase" suffix.
+          return item.buyerName
+            ? `${pName} - ${item.buyerName}`
+            : (rtl ? `קנייה - ${pName}` : `${pName} - ${t('chats.purchase_suffix')}`);
         })()
       : (dmInfo[item.id]?.name ?? t('chats.loading'));
     const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
