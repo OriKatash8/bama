@@ -13,11 +13,13 @@ type UiState = {
   toasts: Toast[];
   isNewProfessional: boolean;
   isDark: boolean;
+  projectSubmittedNonce: number;
   setLoading: (loading: boolean) => void;
   showToast: (message: string, type?: ToastType) => void;
   dismissToast: (id: string) => void;
   setNewProfessional: (val: boolean) => void;
   toggleTheme: () => void;
+  notifyProjectSubmitted: () => void;
 };
 
 export const useUiStore = create<UiState>((set) => ({
@@ -25,6 +27,7 @@ export const useUiStore = create<UiState>((set) => ({
   toasts: [],
   isNewProfessional: false,
   isDark: false,
+  projectSubmittedNonce: 0,
   setLoading: (isLoading) => set({ isLoading }),
   showToast: (message, type = 'info') =>
     set((state) => ({
@@ -39,4 +42,6 @@ export const useUiStore = create<UiState>((set) => ({
     })),
   setNewProfessional: (isNewProfessional) => set({ isNewProfessional }),
   toggleTheme: () => set((state) => ({ isDark: !state.isDark })),
+  notifyProjectSubmitted: () =>
+    set((state) => ({ projectSubmittedNonce: state.projectSubmittedNonce + 1 })),
 }));

@@ -48,7 +48,7 @@ export default function SummaryScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const { submit, updateProject } = useProjectRequests();
-  const { showToast } = useUiStore();
+  const { showToast, notifyProjectSubmitted } = useUiStore();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -101,6 +101,7 @@ export default function SummaryScreen() {
       router.back();
     } else {
       resetSlots();
+      notifyProjectSubmitted(); // tell the Home builder to clear its form
       showToast(t('builder.submitted'), 'success');
       router.navigate('/(client)/(tabs)/chats' as never);
     }

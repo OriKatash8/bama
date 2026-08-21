@@ -14,6 +14,7 @@ import { CREW_CATEGORIES } from '@features/crew/data/categories';
 import { getDocument } from '@core/firebase/firestore';
 import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -128,6 +129,26 @@ export default function HomeScreen() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
   const [roleAnswers, setRoleAnswers] = useState<Record<string, Record<string, string>>>({});
+
+  // After a new project is submitted (from the summary screen), wipe this form.
+  const projectSubmittedNonce = useUiStore((s) => s.projectSubmittedNonce);
+  const seenSubmitNonce = useRef(projectSubmittedNonce);
+  useEffect(() => {
+    if (projectSubmittedNonce === seenSubmitNonce.current) return;
+    seenSubmitNonce.current = projectSubmittedNonce;
+    setStep(1);
+    setTitle('');
+    setDescription('');
+    setExec('');
+    setDeadline('');
+    setLocation('');
+    setRoleAnswers({});
+    setErrors({});
+    setCalOpen(null);
+    setLocationModalOpen(false);
+    setLocationSearch('');
+    loadSlots([]);
+  }, [projectSubmittedNonce, loadSlots]);
 
   const todayISO = useMemo(() => {
     const d = new Date();
