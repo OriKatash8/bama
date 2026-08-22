@@ -19,22 +19,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceEntry } from '@core/types/project';
-import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID } from '@features/crew/data/categories';
-
-/** Seed roleSkills from legacy skills[] (reverse map) so existing pros aren't wiped on save. */
-function seedRoleSkills(
-  roleSkills: RoleSkill[] | undefined,
-  skills: { category: string }[] | undefined,
-): RoleSkill[] {
-  if (roleSkills && roleSkills.length > 0) return roleSkills;
-  const legacyToRole = Object.fromEntries(
-    Object.entries(ROLE_TO_LEGACY_CATEGORY).map(([role, cat]) => [cat, role]),
-  );
-  return (skills ?? [])
-    .map((s) => legacyToRole[s.category] ?? s.category)
-    .filter((role) => !!ROLE_BY_ID[role])
-    .map((role) => ({ role, specializations: ['general'], genres: [] }));
-}
+import { seedRoleSkills } from '@features/profile/utils/roleSkills';
 
 type Translations = typeof en;
 

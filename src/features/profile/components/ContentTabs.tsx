@@ -3,7 +3,6 @@ import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
 import { ROLES, getSpecializations, getGenres, labelOf, type Labeled } from '@features/crew/data/categories';
-import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -33,13 +32,9 @@ export type RoleSkill = { role: string; specializations: string[]; genres: strin
 type ContentTabsProps = {
   equipment: string[];
   reviews: Review[];
-  /** @deprecated kept for prop compat; the skills tab now uses roleSkills. */
-  skills?: ProfessionalSkill[];
   roleSkills?: RoleSkill[];
   isEditing: boolean;
   onEquipmentChange?: (items: string[]) => void;
-  /** @deprecated kept for prop compat. */
-  onSkillsChange?: (skills: ProfessionalSkill[]) => void;
   onRoleSkillsChange?: (next: RoleSkill[]) => void;
 };
 
