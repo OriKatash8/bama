@@ -120,6 +120,36 @@ function formatRecordingTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+// ── System messages (new mission/meeting) ──────────────────────────────────
+const HE_MONTHS_ABBR = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+
+/** Turn a "…{title} · YYYY-MM-DD HH:MM" system text into a nice Hebrew detail line. */
+function formatHebMeetingDetail(text: string): string {
+  const m = text.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}:\d{2})/);
+  const formattedDate = m
+    ? `${parseInt(m[3], 10)} ב${HE_MONTHS_ABBR[parseInt(m[2], 10) - 1] ?? ''}, ${m[4]}`
+    : '';
+  const title = text.replace(/^📅\s*פגישה חדשה:\s*/, '').split(' · ')[0]?.trim();
+  if (title && formattedDate) return `${title} · ${formattedDate}`;
+  return formattedDate || title || '';
+}
+
+type SystemVariant = 'meeting' | 'mission' | 'neutral';
+
+function parseSystemMessage(text: string): { variant: SystemVariant; headline: string; detail: string } {
+  if (text.startsWith('📅')) {
+    return { variant: 'meeting', headline: 'פגישה חדשה נקבעה', detail: formatHebMeetingDetail(text) };
+  }
+  if (text.startsWith('📋')) {
+    return {
+      variant: 'mission',
+      headline: 'משימה חדשה נוספה',
+      detail: text.replace(/^📋\s*משימה חדשה:\s*/, '').trim(),
+    };
+  }
+  return { variant: 'neutral', headline: text, detail: '' };
+}
+
 interface VoiceMessageBubbleProps {
   messageId: string;
   audioUrl: string;
@@ -993,11 +1023,27 @@ export function ChatRoomScreen({ chatId }: Props) {
               return <DateSeparator label={(item as { label: string }).label} />;
             }
             const msg = item as Message;
-            if (msg.system) {
+            if (msg.system || msg.senderId === 'system') {
+              const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
+              const accent = variant === 'mission' ? '#a23bc4' : '#1e4fa3';
               return (
                 <View style={styles.systemWrapper}>
-                  <View style={styles.systemPill}>
-                    <AppText weight="regular" style={styles.systemText}>{msg.text}</AppText>
+                  <View style={[
+                    styles.systemPill,
+                    variant === 'mission' ? styles.systemPillMission : styles.systemPillMeeting,
+                    { flexDirection: rtl ? 'row-reverse' : 'row' },
+                  ]}>
+                    {variant === 'mission'
+                      ? <CheckSquare size={16} color={accent} strokeWidth={2} />
+                      : <Calendar size={16} color={accent} strokeWidth={2} />}
+                    <View style={{ flexShrink: 1 }}>
+                      <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
+                        {headline}
+                      </AppText>
+                      {!!detail && (
+                        <AppText weight="regular" style={styles.systemDetail}>{detail}</AppText>
+                      )}
+                    </View>
                   </View>
                 </View>
               );
@@ -1737,16 +1783,23 @@ const styles = StyleSheet.create({
   systemWrapper: {
     width: '100%',
     alignItems: 'center',
-    marginVertical: 6,
+    marginVertical: 8,
   },
   systemPill: {
-    maxWidth: '85%',
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    maxWidth: '88%',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
-  systemText: {
+  systemPillMeeting: { backgroundColor: 'rgba(30,79,163,0.08)' },
+  systemPillMission: { backgroundColor: 'rgba(203,108,230,0.10)' },
+  systemHeadline: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  systemDetail: {
     fontSize: 12,
     color: '#6b7280',
     textAlign: 'center',

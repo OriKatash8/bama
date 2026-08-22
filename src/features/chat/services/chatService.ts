@@ -32,6 +32,7 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
     audioDuration: data.audioDuration,
     timestamp: data.timestamp,
     readBy: data.readBy ?? [],
+    system: data.system ?? false,
   };
 }
 
