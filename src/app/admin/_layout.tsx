@@ -1,10 +1,12 @@
-import { View } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
-import { Home, BookOpen, Users, Flag } from 'lucide-react-native';
+import { Home, BookOpen, Users, Flag, Settings } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useIsAdmin } from '@core/hooks/useIsAdmin';
+import { useLogout } from '@features/auth/hooks/useLogout';
+import { confirmDialog } from '@utils/confirmDialog';
 import {
   getFloatingTabBarStyle,
   FLOATING_TAB_BAR_ACTIVE_COLOR,
@@ -16,6 +18,12 @@ export default function AdminTabsLayout() {
   const insets = useSafeAreaInsets();
   const isDark = useUiStore((s) => s.isDark);
   const font = useAppFont();
+  const { logout } = useLogout();
+
+  async function handleLogout() {
+    const ok = await confirmDialog('Log out', 'Log out of the admin account?');
+    if (ok) logout();
+  }
 
   if (!loading && !isAdmin) return <Redirect href="/" />;
 
@@ -78,6 +86,31 @@ export default function AdminTabsLayout() {
           />
         </Tabs>
       </SafeAreaInsetsContext.Provider>
+
+      {/* Settings / log out — shown on every admin page */}
+      <TouchableOpacity
+        onPress={handleLogout}
+        activeOpacity={0.8}
+        style={{
+          position: 'absolute',
+          top: insets.top + 10,
+          right: 16,
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: 'rgba(0,74,173,0.92)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          elevation: 6,
+          shadowColor: '#000',
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+        }}
+      >
+        <Settings size={20} color="#fff" strokeWidth={2} />
+      </TouchableOpacity>
     </View>
   );
 }
