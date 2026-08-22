@@ -1,3 +1,164 @@
+// src/features/crew/data/categories.ts  (Phase 1 — roles → genres + specializations)
+
+export type Labeled = {
+  id: string;   // stable, internal — used for matching. never shown.
+  he: string;   // Hebrew display label
+  en: string;   // English display label
+};
+
+export type RoleDef = {
+  id: string;
+  he: string;
+  en: string;
+  genres: Labeled[];
+  specializations: Labeled[]; // first is always 'general'
+};
+
+export const ROLES: RoleDef[] = [
+  {
+    id: 'videographer',
+    he: 'צלם וידאו',
+    en: 'Videographer',
+    genres: [
+      { id: 'events',        he: 'אירועים',              en: 'Events' },
+      { id: 'ads_brands',    he: 'פרסומות ומותגים',      en: 'Ads & Brands' },
+      { id: 'music_video',   he: 'קליפים',                en: 'Music Video' },
+      { id: 'social_reels',  he: 'רשתות חברתיות / רילס',  en: 'Social / Reels' },
+      { id: 'documentary',   he: 'דוקומנטרי וראיונות',    en: 'Documentary & Interviews' },
+      { id: 'real_estate',   he: 'נדל״ן',                 en: 'Real Estate' },
+    ],
+    specializations: [
+      { id: 'general', he: 'צילום וידאו כללי', en: 'General Videography' },
+      { id: 'drone',   he: 'צילום מהאוויר / רחפן', en: 'Aerial / Drone' },
+    ],
+  },
+  {
+    id: 'photographer',
+    he: 'צלם תמונות',
+    en: 'Stills Photographer',
+    genres: [
+      { id: 'events_parties', he: 'אירועים ומסיבות',        en: 'Events & Parties' },
+      { id: 'product_food',   he: 'מוצר ואוכל',              en: 'Product & Food' },
+      { id: 'corporate',      he: 'תדמית, עסקי וכנסים',      en: 'Corporate & Conferences' },
+      { id: 'portrait',       he: 'פורטרטים ובוק אישי',      en: 'Portrait & Personal' },
+      { id: 'fashion',        he: 'אופנה ופרסום',            en: 'Fashion & Advertising' },
+      { id: 'real_estate',    he: 'נדל״ן ואדריכלות',         en: 'Real Estate & Architecture' },
+    ],
+    specializations: [
+      { id: 'general', he: 'צילום סטילס כללי', en: 'General Photography' },
+      { id: 'magnet',  he: 'צילום מגנטים',      en: 'Magnet Photos' },
+    ],
+  },
+  {
+    id: 'editor',
+    he: 'עורך',
+    en: 'Editor',
+    genres: [
+      { id: 'video_general', he: 'עריכת וידאו כללית', en: 'General Video Editing' },
+      { id: 'photo',         he: 'עריכת תמונות',       en: 'Photo Editing' },
+      { id: 'social',        he: 'עריכת תוכן לרשתות',  en: 'Social Content Editing' },
+      { id: 'podcast',       he: 'עריכת פודקאסט',      en: 'Podcast Editing' },
+    ],
+    specializations: [
+      { id: 'general',    he: 'עריכה כללית',            en: 'General Editing' },
+      { id: 'colorist',   he: 'עריכת צבע (Colorist)',   en: 'Colorist' },
+      { id: 'motion',     he: 'אנימציה ומושן גרפיקס',   en: 'Animation & Motion Graphics' },
+      { id: 'vfx',        he: 'אפקטים מיוחדים (VFX/CGI)', en: 'VFX / CGI' },
+      { id: 'ai_editing', he: 'עריכת AI',               en: 'AI Editing' },
+    ],
+  },
+  {
+    id: 'graphic_designer',
+    he: 'גרפיקאי',
+    en: 'Graphic Designer',
+    genres: [
+      { id: 'branding',       he: 'מיתוג לעסקים',              en: 'Brand Identity' },
+      { id: 'ui_ux',          he: 'עיצוב דיגיטלי (UI/UX)',     en: 'Digital (UI/UX)' },
+      { id: 'social_banners', he: 'רשתות חברתיות ובאנרים',     en: 'Social & Banners' },
+      { id: 'landing_decks',  he: 'דפי נחיתה ומצגות',          en: 'Landing Pages & Decks' },
+      { id: 'print',          he: 'דפוס ושילוט',               en: 'Print & Signage' },
+    ],
+    specializations: [
+      { id: 'general', he: 'עיצוב גרפי כללי', en: 'General Graphic Design' },
+    ],
+  },
+  {
+    id: 'social_media',
+    he: 'סושיאל',
+    en: 'Social Media',
+    genres: [],
+    specializations: [
+      { id: 'general',         he: 'ניהול סושיאל כללי',              en: 'General Social' },
+      { id: 'manager',         he: 'מנהל סושיאל (אסטרטגיה וניהול)',   en: 'Social Manager' },
+      { id: 'content_creator', he: 'יוצר תוכן ויזואלי',              en: 'Content Creator' },
+      { id: 'ppc',             he: 'מנהל קמפיינים ממומנים (PPC)',    en: 'PPC / Paid Campaigns' },
+    ],
+  },
+  {
+    id: 'studio_audio',
+    he: 'אולפן הקלטות',
+    en: 'Studio & Audio',
+    genres: [
+      { id: 'music_producer', he: 'מפיק מוזיקלי',      en: 'Music Producer' },
+      { id: 'media_music',    he: 'יוצר מוזיקה למדיה',  en: 'Music for Media' },
+      { id: 'voiceover',      he: 'קריינות / דיבוב',    en: 'Voiceover / Dubbing' },
+    ],
+    specializations: [
+      { id: 'general',    he: 'אולפן כללי',      en: 'General Studio' },
+      { id: 'mix_master', he: 'מיקס ומאסטרינג',  en: 'Mixing & Mastering' },
+    ],
+  },
+  {
+    id: 'sound',
+    he: 'סאונדמן',
+    en: 'Sound',
+    genres: [],
+    specializations: [
+      { id: 'general',        he: 'סאונד כללי',                 en: 'General Sound' },
+      { id: 'location_sound', he: 'מקליט שטח (Location Sound)',  en: 'Location Sound' },
+      { id: 'sound_designer', he: 'מעצב פסקול',                 en: 'Sound Designer' },
+      { id: 'boom',           he: 'איש בום',                    en: 'Boom Operator' },
+      { id: 'live_pa',        he: 'הגברה וסאונד לאירועים',       en: 'Live Event PA' },
+    ],
+  },
+  {
+    id: 'lighting',
+    he: 'תאורן',
+    en: 'Lighting',
+    genres: [],
+    specializations: [
+      { id: 'general',     he: 'תאורה כללית',                    en: 'General Lighting' },
+      { id: 'gaffer_grip', he: 'שטח וצילומים (Gaffer & Grip)',   en: 'Gaffer & Grip' },
+      { id: 'stage_event', he: 'אירועים ובמה',                   en: 'Stage & Event' },
+      { id: 'studio',      he: 'סטודיו ופנים',                   en: 'Studio & Interior' },
+    ],
+  },
+];
+
+export const ROLE_BY_ID: Record<string, RoleDef> =
+  Object.fromEntries(ROLES.map((r) => [r.id, r]));
+
+export function getRole(roleId: string): RoleDef | undefined {
+  return ROLE_BY_ID[roleId];
+}
+
+export function getSpecializations(roleId: string): Labeled[] {
+  return ROLE_BY_ID[roleId]?.specializations ?? [];
+}
+
+export function getGenres(roleId: string): Labeled[] {
+  return ROLE_BY_ID[roleId]?.genres ?? [];
+}
+
+export function labelOf(item: Labeled, lang: 'he' | 'en'): string {
+  return lang === 'he' ? item.he : item.en;
+}
+
+// ── Phase 1 back-compat (DEPRECATED) ─────────────────────────────────────────
+// TODO Phase 2/3: migrate the CREW_CATEGORIES (11) + CATEGORY_LABEL_KEY (8) call
+// sites to the ROLES model above, then delete this block. Preserved verbatim from
+// the previous data file so existing Firestore data + all screens render identically.
+/** @deprecated Phase 1 compat — use ROLES / getSpecializations(). */
 export const CREW_CATEGORIES: Record<string, string[]> = {
   'Video Photographer': [
     'Music Video', 'Event', 'Fashion', 'Food', 'Product', 'Sports',
@@ -36,6 +197,7 @@ export const CREW_CATEGORIES: Record<string, string[]> = {
   ],
 };
 
+/** @deprecated Phase 1 compat — use ROLES + labelOf(). */
 export const CATEGORY_LABEL_KEY: Record<string, string> = {
   'Video Photographer': 'builder.category_videographer',
   'Still Photographer': 'builder.category_photographer',

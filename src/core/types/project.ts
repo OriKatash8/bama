@@ -55,8 +55,10 @@ export type Review = {
 };
 
 export type CrewRequestSlot = {
-  category: string;
+  category: string;  // holds the role (RoleDef id) for now
   quantity: number;
+  /** Required specialization id (e.g. 'drone'); undefined = general capability. */
+  requiredCapability?: string;
 };
 
 export type FilledSlot = {
