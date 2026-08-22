@@ -269,13 +269,13 @@ export default function HomeScreen() {
               <TextInput
                 style={[
                   styles.input,
-                  { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left', minHeight: 80, textAlignVertical: 'top' },
+                  { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left', minHeight: 80, textAlignVertical: 'top', fontSize: 13 },
                   Platform.OS === 'web' && webInputShadow,
                   errors.description ? { borderWidth: 1.5, borderColor: '#fc8181' } : null,
                 ]}
                 value={description}
                 onChangeText={setDescription}
-                placeholder={rtl ? 'תאר מה אתה יוצר ומה חשוב לך' : 'Describe what you\'re making and what matters to you'}
+                placeholder={t('builder.tell_us_placeholder')}
                 placeholderTextColor="#004aad99"
                 multiline
                 numberOfLines={3}

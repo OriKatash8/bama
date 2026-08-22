@@ -11,6 +11,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
 import { MiniCalendar } from '@features/crew/components';
+import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { addDocument, getDocument } from '@core/firebase/firestore';
 import type { ProfessionalSkill } from '@core/types/user';
 import type { CrewRequestSlot } from '@core/types/project';
@@ -188,7 +189,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               {t('builder.tell_us')}
             </Text>
             <TextInput
-              style={[styles.input, styles.multiline, { color: '#1a1a2e', textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow]}
+              style={[styles.input, styles.multiline, { color: '#1a1a2e', textAlign: rtl ? 'right' : 'left', fontSize: 13 }, Platform.OS === 'web' && webInputShadow]}
               value={description}
               onChangeText={setDescription}
               placeholder={t('builder.tell_us_placeholder')}
@@ -202,9 +203,12 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             {/* Dates */}
             <View style={styles.dateRow}>
               <View style={styles.dateCol}>
-                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
-                  {t('builder.execution')} <Text style={{ fontWeight: '400', color: '#7b2fa899' }}>({t('builder.optional')})</Text>
-                </Text>
+                <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('builder.execution')} <Text style={{ fontWeight: '400', color: '#7b2fa899' }}>({t('builder.optional')})</Text>
+                  </Text>
+                  <HelpTooltip text={t('builder.help_execution')} />
+                </View>
                 <TouchableOpacity
                   style={[styles.dateBtn, Platform.OS === 'web' && webInputShadow]}
                   onPress={() => setCalOpen('exec')}
@@ -218,9 +222,12 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               </View>
 
               <View style={styles.dateCol}>
-                <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
-                  {t('builder.deadline')}
-                </Text>
+                <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('builder.deadline')}
+                  </Text>
+                  <HelpTooltip text={t('builder.help_deadline')} />
+                </View>
                 <TouchableOpacity
                   style={[styles.dateBtn, errors.deadline && { borderWidth: 1, borderColor: '#fc8181' }, Platform.OS === 'web' && webInputShadow]}
                   onPress={() => setCalOpen('deadline')}
@@ -236,9 +243,12 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             </View>
 
             {/* Location */}
-            <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', textAlign: rtl ? 'right' : 'left' }]}>
-              {t('builder.location')}
-            </Text>
+            <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 6 }}>
+              <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 0, textAlign: rtl ? 'right' : 'left' }]}>
+                {t('builder.location')}
+              </Text>
+              <HelpTooltip text={t('builder.help_location')} />
+            </View>
             <TextInput
               style={[styles.input, { color: '#1a1a2e', textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow]}
               value={location}
