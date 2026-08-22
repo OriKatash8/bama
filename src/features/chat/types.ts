@@ -18,6 +18,8 @@ export interface Message {
   audioDuration?: number;
   timestamp: Timestamp;
   readBy: string[];
+  /** Server-generated system notice (e.g. new mission/meeting). Rendered as a centered pill. */
+  system?: boolean;
 }
 
 export interface Chat {

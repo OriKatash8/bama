@@ -596,7 +596,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   useEffect(() => {
     const senderIds = [...new Set(messages.map((m) => m.senderId))];
     const missing = senderIds.filter(
-      (id) => id !== currentUserId && !fetchedIdsRef.current.has(id)
+      (id) => id !== currentUserId && id !== 'system' && !fetchedIdsRef.current.has(id)
     );
     if (missing.length === 0) return;
     missing.forEach((id) => fetchedIdsRef.current.add(id));
@@ -993,6 +993,15 @@ export function ChatRoomScreen({ chatId }: Props) {
               return <DateSeparator label={(item as { label: string }).label} />;
             }
             const msg = item as Message;
+            if (msg.system) {
+              return (
+                <View style={styles.systemWrapper}>
+                  <View style={styles.systemPill}>
+                    <AppText weight="regular" style={styles.systemText}>{msg.text}</AppText>
+                  </View>
+                </View>
+              );
+            }
             const isOwn = msg.senderId === currentUserId;
             return (
               <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
@@ -1724,6 +1733,23 @@ const styles = StyleSheet.create({
   },
   wrapperPeer: {
     justifyContent: 'flex-start',
+  },
+  systemWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  systemPill: {
+    maxWidth: '85%',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  systemText: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
   },
   bubble: {
     maxWidth: '75%',

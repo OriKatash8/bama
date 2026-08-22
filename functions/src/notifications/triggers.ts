@@ -28,9 +28,12 @@ export const onNewChatMessage = functions.firestore
       imageURL?: string;
       audioUrl?: string;
       videoUrl?: string;
+      system?: boolean;
     };
 
     if (!message.senderId) return;
+    // System messages (new mission/meeting) are notified via their own triggers.
+    if (message.system || message.senderId === 'system') return;
 
     const { chatId } = context.params;
     const db = admin.firestore();
@@ -152,5 +155,111 @@ export const onMarketplacePurchase = functions.firestore
       title: 'רכישה חדשה',
       message: `מישהו רכש את ${productName} שלך`,
       data: { type: 'purchase', listingId: context.params.listingId },
+    });
+  });
+
+/**
+ * Posts a system message into a project's group chat and notifies every member
+ * except the creator. Mirrors chatService.sendMessage's lastMessage/unreadCount
+ * shape so the notice shows in the chat-list preview.
+ */
+async function announceProjectEvent(
+  db: admin.firestore.Firestore,
+  params: {
+    projectId: string;
+    createdBy?: string;
+    systemText: string;
+    notifTitle: string;
+    buildMessage: (projectTitle: string) => string;
+    notifData: (chatId: string) => Record<string, string>;
+  }
+): Promise<void> {
+  const projectDoc = await db.collection('projects').doc(params.projectId).get();
+  if (!projectDoc.exists) return;
+
+  const chatId = projectDoc.data()?.chatId as string | undefined;
+  const projectTitle: string = (projectDoc.data()?.title as string | undefined) ?? '';
+  if (!chatId) return;
+
+  const chatDoc = await db.collection('chats').doc(chatId).get();
+  if (!chatDoc.exists) return;
+
+  const members: string[] = (chatDoc.data()?.members as string[] | undefined) ?? [];
+  if (members.length === 0) return;
+
+  const notRecipient = (uid: string) => !!params.createdBy && uid === params.createdBy;
+
+  // 1) System message in the thread
+  await db.collection('chats').doc(chatId).collection('messages').add({
+    senderId: 'system',
+    system: true,
+    text: params.systemText,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    readBy: [],
+  });
+
+  // 2) Chat metadata — lastMessage preview + unread bump for everyone but the creator
+  const chatUpdate: Record<string, unknown> = {
+    lastMessage: {
+      text: params.systemText,
+      senderId: 'system',
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    },
+  };
+  for (const uid of members) {
+    if (!notRecipient(uid)) {
+      chatUpdate[`unreadCount.${uid}`] = admin.firestore.FieldValue.increment(1);
+    }
+  }
+  await db.collection('chats').doc(chatId).update(chatUpdate);
+
+  // 3) Push notifications to everyone but the creator
+  const recipients = members.filter((uid) => !notRecipient(uid));
+  await Promise.all(
+    recipients.map((userId) =>
+      createNotification(db, {
+        userId,
+        title: params.notifTitle,
+        message: params.buildMessage(projectTitle),
+        data: params.notifData(chatId),
+      })
+    )
+  );
+}
+
+export const onMissionCreate = functions.firestore
+  .document('projects/{projectId}/missions/{missionId}')
+  .onCreate(async (snap, context) => {
+    const mission = snap.data() as { title?: string; createdBy?: string };
+    const { projectId } = context.params;
+
+    await announceProjectEvent(admin.firestore(), {
+      projectId,
+      createdBy: mission.createdBy,
+      systemText: `📋 משימה חדשה: ${mission.title ?? ''}`,
+      notifTitle: 'משימה חדשה',
+      buildMessage: (projectTitle) => `נוספה משימה חדשה בפרויקט ${projectTitle}`,
+      notifData: (chatId) => ({ type: 'mission', projectId, chatId }),
+    });
+  });
+
+export const onMeetingCreate = functions.firestore
+  .document('projects/{projectId}/meetings/{meetingId}')
+  .onCreate(async (snap, context) => {
+    const meeting = snap.data() as {
+      title?: string;
+      date?: string;
+      time?: string;
+      createdBy?: string;
+    };
+    const { projectId } = context.params;
+
+    await announceProjectEvent(admin.firestore(), {
+      projectId,
+      createdBy: meeting.createdBy,
+      systemText: `📅 פגישה חדשה: ${meeting.title ?? ''} · ${meeting.date ?? ''} ${meeting.time ?? ''}`,
+      notifTitle: 'פגישה חדשה',
+      buildMessage: (projectTitle) => `נקבעה פגישה חדשה בפרויקט ${projectTitle}`,
+      notifData: (chatId) => ({ type: 'meeting', projectId, chatId }),
     });
   });
