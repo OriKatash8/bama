@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { Image } from 'expo-image';
-import { MapPin, Calendar, Clock, X, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MapPin, Calendar, Clock, X, ChevronDown, ChevronUp, Send } from 'lucide-react-native';
 
 import type { ProjectRequest } from '@core/types/project';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
@@ -64,13 +65,26 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const translatedRoles = allRoles.map(r =>
     rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
   );
-  const cardBg = isDirectInvite ? '#004aad' : '#ffffff';
-  const textColor = isDirectInvite ? '#cb6ce6' : '#004aad';
+  // Direct-invite variant: white base with a refined purple accent treatment.
+  const isDI = !!isDirectInvite;
+  const cardBg = isDI ? '#faf7fe' : '#ffffff';
+  const textColor = isDI ? '#a23bc4' : '#004aad';
+  const statValueColor = isDI ? '#7a3b9c' : '#004aad';
+  const descBg = isDI ? '#f4ecfb' : '#f7f8fc';
+  const descColor = isDI ? '#4a4266' : colors.textSec;
+  const statBg = isDI ? '#f8f3fc' : '#f5f6fb';
+  const sepColor = isDI ? '#ecdcf7' : '#e0e0e0';
+  const offerBg = isDI ? '#cb6ce6' : '#004aad';
+  const skillsAccent = isDI ? '#a23bc4' : '#004aad';
+  const timeColor = isDI ? '#9b7fb0' : colors.textMuted;
+  const metaIconColor = isDI ? '#a07bb5' : colors.textMuted;
+  const avatarFallbackBg = isDI ? '#cb6ce6' : '#004aad';
 
   const cardStyle = [
     styles.card,
     compact && styles.cardCompact,
-    { backgroundColor: cardBg, borderColor: isDirectInvite ? '#cb6ce6' : colors.border },
+    { backgroundColor: cardBg, borderColor: isDI ? '#ecdcf7' : colors.border },
+    isDI && { shadowColor: '#cb6ce6', shadowOpacity: 0.14 },
     cardWidth !== undefined && { width: cardWidth },
   ];
 
@@ -123,8 +137,17 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
 
     return (
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
+        {isDI && (
+          <LinearGradient
+            colors={['#cb6ce6', '#8b4fd4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[styles.ribbon, rtl ? { right: 0 } : { left: 0 }]}
+          />
+        )}
         {isDirectInvite && directInviteLabel && (
-          <View style={styles.directBadge}>
+          <View style={[styles.directBadge, { flexDirection: rowDir }]}>
+            <Send size={11} color="#fff" strokeWidth={2.2} />
             <AppText weight="bold" style={styles.directBadgeText}>{directInviteLabel}</AppText>
           </View>
         )}
@@ -135,7 +158,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           {poster?.photoURL ? (
             <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
+            <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: avatarFallbackBg }]}>
               <AppText weight="bold" style={styles.avatarInitial}>
                 {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
               </AppText>
@@ -151,7 +174,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               {request.title}
             </Text>
             {!!timeAgo && (
-              <AppText weight="regular" style={[styles.timeAgoText, { color: colors.textMuted }]}>
+              <AppText weight="regular" style={[styles.timeAgoText, { color: timeColor }]}>
                 {timeAgo}
               </AppText>
             )}
@@ -170,9 +193,9 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
 
         {/* Description — tinted box */}
         {hasDesc && (
-          <View style={styles.descBox}>
+          <View style={[styles.descBox, { backgroundColor: descBg }]}>
             <Text
-              style={[styles.snippetText, { ...font.forText(request.description, 'regular'), color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.snippetText, { ...font.forText(request.description, 'regular'), color: descColor, textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={2}
             >
               {request.description}
@@ -184,34 +207,34 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         {hasMetaRow && (
           <View style={[styles.datesRow, { flexDirection: rowDir }]}>
             {hasLocation && (
-              <View style={styles.dateSquare}>
-                <MapPin size={11} color={colors.textMuted} strokeWidth={1.5} />
+              <View style={[styles.dateSquare, { backgroundColor: statBg }]}>
+                <MapPin size={11} color={metaIconColor} strokeWidth={1.5} />
                 <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
                   {t('noticeboard.location_label')}
                 </AppText>
-                <AppText weight="bold" style={[styles.dateSquareValue, { color: textColor }]} numberOfLines={1}>
+                <AppText weight="bold" style={[styles.dateSquareValue, { color: statValueColor }]} numberOfLines={1}>
                   {locationText}
                 </AppText>
               </View>
             )}
             {hasExec && (
-              <View style={styles.dateSquare}>
-                <Calendar size={11} color={colors.textMuted} strokeWidth={1.5} />
+              <View style={[styles.dateSquare, { backgroundColor: statBg }]}>
+                <Calendar size={11} color={metaIconColor} strokeWidth={1.5} />
                 <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
                   {t('noticeboard.exec_date_label')}
                 </AppText>
-                <AppText weight="bold" style={[styles.dateSquareValue, { color: textColor }]}>
+                <AppText weight="bold" style={[styles.dateSquareValue, { color: statValueColor }]}>
                   {formatDateCompact(request.exec)}
                 </AppText>
               </View>
             )}
             {hasDeadline && (
-              <View style={styles.dateSquare}>
-                <Clock size={11} color={colors.textMuted} strokeWidth={1.5} />
+              <View style={[styles.dateSquare, { backgroundColor: statBg }]}>
+                <Clock size={11} color={metaIconColor} strokeWidth={1.5} />
                 <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
                   {t('noticeboard.deadline_short')}
                 </AppText>
-                <AppText weight="bold" style={[styles.dateSquareValue, { color: textColor }]}>
+                <AppText weight="bold" style={[styles.dateSquareValue, { color: statValueColor }]}>
                   {formatDateCompact(request.deadline)}
                 </AppText>
               </View>
@@ -219,12 +242,12 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
         )}
 
-        <View style={styles.separator} />
+        <View style={[styles.separator, { backgroundColor: sepColor }]} />
 
         {/* Bottom: make-offer button + skills toggle */}
         <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
           <TouchableOpacity
-            style={styles.offerPill}
+            style={[styles.offerPill, { backgroundColor: offerBg }]}
             onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
             activeOpacity={0.8}
           >
@@ -235,12 +258,12 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             onPress={(e) => { e.stopPropagation?.(); setSkillsOpen((v) => !v); }}
             activeOpacity={0.7}
           >
-            <AppText weight="semiBold" style={styles.skillsBtnText}>
+            <AppText weight="semiBold" style={[styles.skillsBtnText, { color: skillsAccent }]}>
               {t('noticeboard.role_plural')} ({translatedRoles.length})
             </AppText>
             {skillsOpen
-              ? <ChevronUp size={13} color="#004aad" strokeWidth={2} />
-              : <ChevronDown size={13} color="#004aad" strokeWidth={2} />}
+              ? <ChevronUp size={13} color={skillsAccent} strokeWidth={2} />
+              : <ChevronDown size={13} color={skillsAccent} strokeWidth={2} />}
           </TouchableOpacity>
         </View>
 
@@ -248,8 +271,8 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         {skillsOpen && (
           <View style={styles.skillsSection}>
             {translatedRoles.map((role, i) => (
-              <View key={i} style={styles.skillChip}>
-                <AppText weight="semiBold" style={[styles.skillName, { textAlign: rtl ? 'right' : 'left' }]}>
+              <View key={i} style={[styles.skillChip, isDI && { borderColor: '#cb6ce6' }]}>
+                <AppText weight="semiBold" style={[styles.skillName, { color: skillsAccent, textAlign: rtl ? 'right' : 'left' }]}>
                   {role}
                 </AppText>
               </View>
@@ -499,9 +522,20 @@ const styles = StyleSheet.create({
     color: '#004aad',
   },
 
+  // --- Direct invite: leading-edge accent ribbon ---
+  ribbon: {
+    position: 'absolute',
+    top: 12,
+    bottom: 12,
+    width: 4,
+    borderRadius: 3,
+  },
+
   // --- Shared: direct invite badge ---
   directBadge: {
     alignSelf: 'flex-start',
+    alignItems: 'center',
+    gap: 5,
     backgroundColor: '#cb6ce6',
     borderRadius: 20,
     paddingHorizontal: 10,
@@ -509,7 +543,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   directBadgeText: {
-    color: '#004aad',
+    color: '#ffffff',
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
