@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
-import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { ROLES, getSpecializations, getGenres, labelOf, type Labeled } from '@features/crew/data/categories';
 import type { ProfessionalSkill } from '@core/types/user';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
@@ -28,28 +28,58 @@ type SectionKey = 'equipment' | 'reviews' | 'skills';
 
 const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews', 'skills'];
 
+export type RoleSkill = { role: string; specializations: string[]; genres: string[] };
+
 type ContentTabsProps = {
   equipment: string[];
   reviews: Review[];
+  /** @deprecated kept for prop compat; the skills tab now uses roleSkills. */
   skills?: ProfessionalSkill[];
+  roleSkills?: RoleSkill[];
   isEditing: boolean;
   onEquipmentChange?: (items: string[]) => void;
+  /** @deprecated kept for prop compat. */
   onSkillsChange?: (skills: ProfessionalSkill[]) => void;
+  onRoleSkillsChange?: (next: RoleSkill[]) => void;
 };
 
 export function ContentTabs({
   equipment,
   reviews,
-  skills,
+  roleSkills,
   isEditing,
   onEquipmentChange,
-  onSkillsChange,
+  onRoleSkillsChange,
 }: ContentTabsProps) {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   const font = useAppFont();
+
+  const rs: RoleSkill[] = roleSkills ?? [];
+  const rowDir = rtl ? 'row-reverse' : ('row' as const);
+
+  function labelById(items: Labeled[], id: string): string {
+    const found = items.find((x) => x.id === id);
+    return found ? labelOf(found, lang) : id;
+  }
+  function toggleRole(roleId: string) {
+    const exists = rs.some((e) => e.role === roleId);
+    const next = exists
+      ? rs.filter((e) => e.role !== roleId)
+      : [...rs, { role: roleId, specializations: ['general'], genres: [] }];
+    onRoleSkillsChange?.(next);
+  }
+  function toggleInEntry(roleId: string, field: 'specializations' | 'genres', id: string) {
+    const next = rs.map((e) => {
+      if (e.role !== roleId) return e;
+      const has = e[field].includes(id);
+      return { ...e, [field]: has ? e[field].filter((x) => x !== id) : [...e[field], id] };
+    });
+    onRoleSkillsChange?.(next);
+  }
 
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');
@@ -185,49 +215,122 @@ export function ContentTabs({
         {/* Reviews */}
         {active === 'reviews' && <ReviewsList reviews={reviews} />}
 
-        {/* Skills */}
+        {/* Skills (roles → specializations + optional genres) */}
         {active === 'skills' && (
           <>
             {isEditing ? (
-              <View style={styles.tableList}>
-                {Object.keys(CREW_CATEGORIES).map((category) => {
-                  const isSelected = (skills ?? []).some(s => s.category === category);
-                  const label = rtl && CATEGORY_LABEL_KEY[category] ? t(CATEGORY_LABEL_KEY[category]) : category;
+              <View style={{ gap: 14 }}>
+                {/* Level 1 — role checklist */}
+                <View style={styles.tableList}>
+                  {ROLES.map((role) => {
+                    const isSelected = rs.some((e) => e.role === role.id);
+                    return (
+                      <TouchableOpacity
+                        key={role.id}
+                        style={[styles.tableRow, isSelected && styles.tableRowActive]}
+                        onPress={() => toggleRole(role.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.tableRowCheck, isSelected && styles.tableRowCheckActive]}>
+                          {isSelected ? '✓' : ''}
+                        </Text>
+                        <AppText weight="medium" style={[styles.tableRowText, isSelected && styles.tableRowTextActive]}>
+                          {labelOf(role, lang)}
+                        </AppText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Level 2 — per selected role: specializations + optional genres */}
+                {ROLES.filter((role) => rs.some((e) => e.role === role.id)).map((role) => {
+                  const entry = rs.find((e) => e.role === role.id)!;
+                  const specs = getSpecializations(role.id);
+                  const genres = getGenres(role.id);
                   return (
-                    <TouchableOpacity
-                      key={category}
-                      style={[styles.tableRow, isSelected && styles.tableRowActive]}
-                      onPress={() => {
-                        const current = skills ?? [];
-                        const next = isSelected
-                          ? current.filter(s => s.category !== category)
-                          : [...current, { category }];
-                        onSkillsChange?.(next);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.tableRowCheck, isSelected && styles.tableRowCheckActive]}>
-                        {isSelected ? '✓' : ''}
-                      </Text>
-                      <AppText weight="medium" style={[styles.tableRowText, isSelected && styles.tableRowTextActive]}>
-                        {label}
+                    <View key={`blk-${role.id}`} style={styles.roleBlock}>
+                      <AppText weight="bold" style={[styles.roleBlockTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+                        {labelOf(role, lang)}
                       </AppText>
-                    </TouchableOpacity>
+
+                      <AppText weight="semiBold" style={[styles.subLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                        {t('profile_sections.specializations')}
+                      </AppText>
+                      <View style={[styles.pillsWrap, { flexDirection: rowDir }]}>
+                        {specs.map((sp) => {
+                          const on = entry.specializations.includes(sp.id);
+                          return (
+                            <TouchableOpacity
+                              key={sp.id}
+                              style={[styles.pill, on && styles.pillActive]}
+                              onPress={() => toggleInEntry(role.id, 'specializations', sp.id)}
+                              activeOpacity={0.7}
+                            >
+                              <AppText weight="semiBold" style={[styles.pillText, on && styles.pillTextActive]}>
+                                {labelOf(sp, lang)}
+                              </AppText>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+
+                      {genres.length > 0 && (
+                        <>
+                          <AppText weight="semiBold" style={[styles.subLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                            {t('profile_sections.genres')} ({t('profile_sections.optional')})
+                          </AppText>
+                          <View style={[styles.pillsWrap, { flexDirection: rowDir }]}>
+                            {genres.map((g) => {
+                              const on = entry.genres.includes(g.id);
+                              return (
+                                <TouchableOpacity
+                                  key={g.id}
+                                  style={[styles.pill, on && styles.pillActive]}
+                                  onPress={() => toggleInEntry(role.id, 'genres', g.id)}
+                                  activeOpacity={0.7}
+                                >
+                                  <AppText weight="semiBold" style={[styles.pillText, on && styles.pillTextActive]}>
+                                    {labelOf(g, lang)}
+                                  </AppText>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        </>
+                      )}
+                    </View>
                   );
                 })}
               </View>
             ) : (
-              (skills ?? []).length === 0 ? (
+              rs.length === 0 ? (
                 <AppText weight="regular" style={styles.empty}>{t('profile_sections.no_skills')}</AppText>
               ) : (
-                <View style={styles.chipsWrap}>
-                  {(skills ?? []).map((s, i) => (
-                    <View key={`${s.category}-${i}`} style={styles.chip}>
-                      <AppText weight="regular" style={styles.chipText}>
-                        {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
-                      </AppText>
-                    </View>
-                  ))}
+                <View style={{ gap: 12 }}>
+                  {ROLES.filter((role) => rs.some((e) => e.role === role.id)).map((role) => {
+                    const entry = rs.find((e) => e.role === role.id)!;
+                    const specs = getSpecializations(role.id);
+                    const genres = getGenres(role.id);
+                    return (
+                      <View key={`ro-${role.id}`} style={styles.roleBlock}>
+                        <AppText weight="bold" style={[styles.roleBlockTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+                          {labelOf(role, lang)}
+                        </AppText>
+                        <View style={[styles.chipsWrap, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
+                          {entry.specializations.map((id) => (
+                            <View key={`sp-${id}`} style={styles.chip}>
+                              <AppText weight="regular" style={styles.chipText}>{labelById(specs, id)}</AppText>
+                            </View>
+                          ))}
+                          {entry.genres.map((id) => (
+                            <View key={`ge-${id}`} style={[styles.chip, styles.chipGenre]}>
+                              <AppText weight="regular" style={[styles.chipText, styles.chipGenreText]}>{labelById(genres, id)}</AppText>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               )
             )}
@@ -390,4 +493,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#004aad',
   },
   chipText: { fontSize: 12, color: '#ffffff' },
+  chipGenre: { backgroundColor: 'rgba(0,74,173,0.10)' },
+  chipGenreText: { color: '#004aad' },
+
+  /* Roles → specializations/genres */
+  roleBlock: {
+    backgroundColor: 'rgba(0,74,173,0.04)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.1)',
+    padding: 12,
+    gap: 8,
+  },
+  roleBlockTitle: { fontSize: 14, color: '#004aad' },
+  subLabel: { fontSize: 12, color: 'rgba(0,74,173,0.6)' },
+  pillsWrap: { flexWrap: 'wrap', gap: 6 },
+  pill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#004aad',
+    backgroundColor: '#ffffff',
+  },
+  pillActive: { backgroundColor: '#004aad' },
+  pillText: { fontSize: 12, color: '#004aad' },
+  pillTextActive: { color: '#ffffff' },
 });

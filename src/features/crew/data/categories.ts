@@ -197,6 +197,23 @@ export const CREW_CATEGORIES: Record<string, string[]> = {
   ],
 };
 
+/**
+ * @deprecated Phase 2 compat — role id → legacy CREW_CATEGORIES key. Used to keep the
+ * synced `ProfessionalProfile.skills` (legacy `{category}`) in step with `roleSkills`,
+ * so read-only readers (dashboard noticeboard filter, browse-profile) keep working.
+ * TODO Phase 3: migrate those readers to `roleSkills`, then delete.
+ */
+export const ROLE_TO_LEGACY_CATEGORY: Record<string, string> = {
+  videographer:     'Video Photographer',
+  photographer:     'Still Photographer',
+  editor:           'Editor',
+  graphic_designer: 'Graphic Designer',
+  social_media:     'Social Media',
+  studio_audio:     'Studio & Audio',
+  sound:            'Sound Recordist',
+  lighting:         'Lighting Tech',
+};
+
 /** @deprecated Phase 1 compat — use ROLES + labelOf(). */
 export const CATEGORY_LABEL_KEY: Record<string, string> = {
   'Video Photographer': 'builder.category_videographer',

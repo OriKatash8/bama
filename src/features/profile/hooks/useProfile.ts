@@ -9,11 +9,14 @@ import {
 import { uploadFile } from '@core/firebase/storage';
 import type { ProfessionalProfile, ProfessionalSkill } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
+import { ROLE_TO_LEGACY_CATEGORY } from '@features/crew/data/categories';
+
+type RoleSkill = { role: string; specializations: string[]; genres: string[] };
 
 type SaveFields = {
   name: string;
   photoUri: string | null;
-  skills: ProfessionalSkill[];
+  roleSkills: RoleSkill[];
   bio: string;
   equipment: string[];
   priceList: PriceEntry[];
@@ -53,7 +56,7 @@ export function useProfile() {
     return unsub;
   }, [user?.id]);
 
-  async function save({ name, photoUri, skills, bio, equipment, priceList }: SaveFields) {
+  async function save({ name, photoUri, roleSkills, bio, equipment, priceList }: SaveFields) {
     if (!user) return;
     setError(null);
     setIsSaving(true);
@@ -81,8 +84,14 @@ export function useProfile() {
       }
       console.log('[useProfile] writing users/${user.id}:', { displayName: name, photoURL });
       await updateDocument(`users/${user.id}`, { displayName: name, photoURL });
-      console.log('[useProfile] writing users/${user.id}/profile/data:', { skills, bio, equipment, priceList });
+      // Keep the deprecated skills[] in sync (legacy category strings) so read-only
+      // readers (dashboard noticeboard filter, browse-profile) keep working.
+      const skills: ProfessionalSkill[] = roleSkills.map((r) => ({
+        category: ROLE_TO_LEGACY_CATEGORY[r.role] ?? r.role,
+      }));
+      console.log('[useProfile] writing users/${user.id}/profile/data:', { roleSkills, skills, bio, equipment, priceList });
       await mergeDocument(`users/${user.id}/profile/data`, {
+        roleSkills,
         skills,
         bio,
         equipment,

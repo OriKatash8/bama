@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
-import { ContentTabs } from '@features/profile/components/ContentTabs';
+import { ContentTabs, type RoleSkill } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
@@ -18,8 +18,23 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { ProfessionalSkill } from '@core/types/user';
 import type { PriceEntry } from '@core/types/project';
+import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID } from '@features/crew/data/categories';
+
+/** Seed roleSkills from legacy skills[] (reverse map) so existing pros aren't wiped on save. */
+function seedRoleSkills(
+  roleSkills: RoleSkill[] | undefined,
+  skills: { category: string }[] | undefined,
+): RoleSkill[] {
+  if (roleSkills && roleSkills.length > 0) return roleSkills;
+  const legacyToRole = Object.fromEntries(
+    Object.entries(ROLE_TO_LEGACY_CATEGORY).map(([role, cat]) => [cat, role]),
+  );
+  return (skills ?? [])
+    .map((s) => legacyToRole[s.category] ?? s.category)
+    .filter((role) => !!ROLE_BY_ID[role])
+    .map((role) => ({ role, specializations: ['general'], genres: [] }));
+}
 
 type Translations = typeof en;
 
@@ -51,7 +66,7 @@ export default function ProfessionalProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [skills, setSkills] = useState<ProfessionalSkill[]>([]);
+  const [roleSkills, setRoleSkills] = useState<RoleSkill[]>([]);
   const [bio, setBio] = useState('');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
@@ -67,7 +82,7 @@ export default function ProfessionalProfileScreen() {
   useEffect(() => {
     if (profile && !initialised.current) {
       initialised.current = true;
-      setSkills(profile.skills ?? []);
+      setRoleSkills(seedRoleSkills(profile.roleSkills, profile.skills));
       setBio(profile.bio ?? '');
       setEquipment(profile.equipment ?? []);
       setPriceList(profile.priceList ?? []);
@@ -89,7 +104,7 @@ export default function ProfessionalProfileScreen() {
 
   async function handleSave() {
     try {
-      await save({ name, photoUri, skills, bio, equipment, priceList });
+      await save({ name, photoUri, roleSkills, bio, equipment, priceList });
       setIsEditing(false);
       setPhotoUri(null);
       showToast(t('profile.saved'), 'success');
@@ -102,7 +117,7 @@ export default function ProfessionalProfileScreen() {
   function handleCancel() {
     if (user) setName(user.displayName);
     if (profile) {
-      setSkills(profile.skills ?? []);
+      setRoleSkills(seedRoleSkills(profile.roleSkills, profile.skills));
       setBio(profile.bio ?? '');
       setEquipment(profile.equipment ?? []);
       setPriceList(profile.priceList ?? []);
@@ -155,10 +170,10 @@ export default function ProfessionalProfileScreen() {
       <ContentTabs
         equipment={equipment}
         reviews={reviews}
-        skills={skills}
+        roleSkills={roleSkills}
         isEditing={isEditing}
         onEquipmentChange={setEquipment}
-        onSkillsChange={setSkills}
+        onRoleSkillsChange={setRoleSkills}
       />
 
       <View style={styles.portfolioSection}>
