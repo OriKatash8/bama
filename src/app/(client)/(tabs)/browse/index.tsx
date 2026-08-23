@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal, FlatList,
-  StyleSheet, ActivityIndicator,
+  StyleSheet, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,8 @@ import { Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { PageTitle } from '@components/ui/PageTitle';
 import { useTheme } from '@core/hooks/useTheme';
-import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
+import { ROLE_CATEGORIES, categoryLabel, getSpecializations, labelOf } from '@features/crew/data/categories';
+import { roleIdForCategory } from '@features/noticeboard/matching';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { useUnifiedSearch } from '@features/crew/hooks/useUnifiedSearch';
 import { ProfessionalCard } from '@features/crew/components';
@@ -64,6 +65,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [modalQuery, setModalQuery] = useState('');
+  const [selectedSub, setSelectedSub] = useState<string | null>(null);
 
   const [sheetProfessionalId, setSheetProfessionalId] = useState<string | null>(null);
   const [sheetProfessionalName, setSheetProfessionalName] = useState('');
@@ -89,6 +91,12 @@ export default function SearchScreen() {
   function closeModal() {
     setSelectedCategory(null);
     setModalQuery('');
+    setSelectedSub(null);
+  }
+
+  function openCategory(key: string) {
+    setSelectedSub(null);
+    setSelectedCategory(key);
   }
 
   const { results: unifiedResults, isLoading: unifiedLoading } = useUnifiedSearch(query);
@@ -96,11 +104,20 @@ export default function SearchScreen() {
     selectedCategory ?? ''
   );
 
-  const filteredModalResults: ProfessionalResult[] = modalQuery.trim()
-    ? modalResults.filter((r) =>
-        r.user.displayName.toLowerCase().includes(modalQuery.toLowerCase())
-      )
-    : modalResults;
+  const roleId = selectedCategory ? roleIdForCategory(selectedCategory) : '';
+  const subskills = selectedCategory ? getSpecializations(roleId) : []; // general first
+  const showSubFilter = subskills.some((s) => s.id !== 'general');
+
+  const filteredModalResults: ProfessionalResult[] = modalResults.filter((r) => {
+    const nameOk =
+      !modalQuery.trim() || r.user.displayName.toLowerCase().includes(modalQuery.toLowerCase());
+    const subOk =
+      !selectedSub ||
+      (r.profile.roleSkills ?? []).some(
+        (rs) => rs.role === roleId && rs.specializations.includes(selectedSub),
+      );
+    return nameOk && subOk;
+  });
 
   const filteredCategories = query.trim()
     ? CATEGORIES.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()))
@@ -165,7 +182,7 @@ export default function SearchScreen() {
             <View key={cat.key} style={styles.categoryCard}>
               <TouchableOpacity
                 style={[styles.categoryCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-                onPress={() => setSelectedCategory(cat.key)}
+                onPress={() => openCategory(cat.key)}
                 activeOpacity={0.7}
               >
                 {cat.image && (
@@ -210,7 +227,7 @@ export default function SearchScreen() {
             </View>
 
             {/* Pill search bar */}
-            <View style={[styles.modalSearchRow, { backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(0,74,173,0.2)' }]}>
+            <View style={[styles.modalSearchRow, { backgroundColor: '#ffffff', borderColor: 'rgba(0,74,173,0.2)' }]}>
               <Search size={16} color="rgba(0,74,173,0.6)" strokeWidth={2.5} />
               <TextInput
                 style={[styles.modalSearchInput, { ...font.regular, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}
@@ -225,6 +242,32 @@ export default function SearchScreen() {
                 </TouchableOpacity>
               )}
             </View>
+
+            {/* Subskill filter */}
+            {showSubFilter && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.subFilterScroll}
+                style={[{ flexGrow: 0, marginBottom: 26 }, rtl && { transform: [{ scaleX: -1 }] }]}
+              >
+                {subskills.map((sp) => {
+                  const on = selectedSub === sp.id;
+                  return (
+                    <TouchableOpacity
+                      key={sp.id}
+                      style={[styles.subChip, on && styles.subChipActive, rtl && { transform: [{ scaleX: -1 }] }]}
+                      onPress={() => setSelectedSub(on ? null : sp.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.subChipText, { ...font.semiBold }, on && styles.subChipTextActive]}>
+                        {labelOf(sp, rtl ? 'he' : 'en')}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
 
             {/* Results */}
             {modalLoading ? (
@@ -361,13 +404,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 24,
-    marginBottom: 16,
+    marginBottom: 10,
     paddingHorizontal: 14,
     height: 44,
     borderWidth: 1,
     gap: 8,
   },
   modalSearchInput: { flex: 1, fontSize: 15 },
+
+  subFilterScroll: { gap: 8, paddingHorizontal: 2, alignItems: 'center' },
+  subChip: {
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#004aad',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    backgroundColor: '#ffffff',
+  },
+  subChipActive: { backgroundColor: '#004aad' },
+  subChipText: { fontSize: 12, color: '#004aad' },
+  subChipTextActive: { color: '#ffffff' },
 
   emptyResults: {
     alignItems: 'center',
