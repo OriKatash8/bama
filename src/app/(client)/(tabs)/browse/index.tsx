@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
+import { PageTitle } from '@components/ui/PageTitle';
 import { useTheme } from '@core/hooks/useTheme';
 import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
@@ -110,9 +111,7 @@ export default function SearchScreen() {
   return (
     <Screen keyboardShouldPersistTaps="handled" style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
-      <View style={[styles.header, { justifyContent: rtl ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.heading, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{t('search.heading')}</Text>
-      </View>
+      <PageTitle>{t('search.heading')}</PageTitle>
 
       {/* Top search bar */}
       <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
@@ -277,14 +276,6 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  heading: { fontSize: 26, fontWeight: '800', color: '#004aad', textAlign: 'center', textTransform: 'uppercase' },
 
   searchRow: {
     flexDirection: 'row',

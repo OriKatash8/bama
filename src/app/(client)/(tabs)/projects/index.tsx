@@ -424,18 +424,6 @@ const styles = StyleSheet.create({
     marginHorizontal: -16,
     marginTop: -16,
   },
-  header: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  headerTitle: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#004aad',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
   content: { padding: 16, gap: 20 },
   section: { gap: 10 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },

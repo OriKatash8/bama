@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import { Search } from 'lucide-react-native';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { Screen } from '@components/layout/Screen';
+import { PageTitle } from '@components/ui/PageTitle';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
@@ -27,11 +28,7 @@ export default function ChatsPage() {
 
   return (
     <Screen style={{ padding: 0, paddingBottom: 100 }}>
-      <View style={[styles.headerWrap, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.headerTitle, { ...font.bold }]}>
-          {t(tr, 'chats_page.title')}
-        </Text>
-      </View>
+      <PageTitle>{t(tr, 'chats_page.title')}</PageTitle>
 
       <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
         <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
@@ -56,17 +53,6 @@ export default function ChatsPage() {
 }
 
 const styles = StyleSheet.create({
-  headerWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 8,
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    color: '#004aad',
-  },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',

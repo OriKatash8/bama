@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
+import { PageTitle } from '@components/ui/PageTitle';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { useCrewBuilder } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
@@ -247,9 +248,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 1: Project details ══════════════ */}
         {step === 1 && (
           <>
-            <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-              {rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}
-            </Text>
+            <PageTitle>{rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 1 מתוך 3` : `Step 1 of 3`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -415,9 +414,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 2: Roles + quantity ══════════════ */}
         {step === 2 && (
           <>
-            <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-              {rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}
-            </Text>
+            <PageTitle>{rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 2 מתוך 3` : `Step 2 of 3`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -507,9 +504,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 3: Per-slot subskill ══════════════ */}
         {step === 3 && (
           <>
-            <Text style={[styles.pageTitle, { textAlign: 'center' }]}>
-              {rtl ? 'התאמת התמחויות' : 'Match subskills'}
-            </Text>
+            <PageTitle>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: 'center' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
             <View style={[styles.progressRow, { justifyContent: 'center' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#6c5ce0' }]} />
@@ -720,7 +715,6 @@ function createStyles(
   return StyleSheet.create({
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 24 },
-    pageTitle: { fontSize: 28, fontWeight: '800', fontFamily: ffBold, color: '#004aad', textTransform: 'uppercase', marginTop: 10, paddingHorizontal: 16 },
     stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
 
     progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
