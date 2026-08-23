@@ -4,8 +4,10 @@ import {
   useWindowDimensions, ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
+import { AppText } from '@components/ui/AppText';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { useCrewBuilder } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
@@ -515,76 +517,97 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 3: Per-slot subskill ══════════════ */}
         {step === 3 && (
           <>
-            <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-              {rtl ? 'בחר התמחות לכל משבצת' : 'Pick a subskill per slot'}
+            <Text style={[styles.pageTitle, { textAlign: 'center' }]}>
+              {rtl ? 'התאמת התמחויות' : 'Match subskills'}
             </Text>
-            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
-            <View style={styles.progressRow}>
-              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+            <Text style={[styles.stepLabel, { textAlign: 'center' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
+            <View style={[styles.progressRow, { justifyContent: 'center' }]}>
+              <View style={[styles.progressBar, { backgroundColor: '#6c5ce0' }]} />
+              <View style={[styles.progressBar, { backgroundColor: '#6c5ce0' }]} />
+              <View style={[styles.progressBar, { backgroundColor: '#6c5ce0' }]} />
             </View>
 
             <TouchableOpacity style={styles.backArrow} onPress={() => setStep(2)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
-              <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
+              <ChevronLeft size={20} color="#6c5ce0" strokeWidth={2.5} />
+              <Text style={[styles.backArrowText, { color: '#6c5ce0' }]}>{t('search.back').replace('← ', '')}</Text>
             </TouchableOpacity>
 
-            <View style={styles.rolesCard}>
-              <Text style={[styles.capHint, { textAlign: rtl ? 'right' : 'left', marginBottom: 4 }]}>
-                {rtl ? 'ברירת מחדל: כללי. אפשר לדלג.' : 'Default is General. You can skip this.'}
-              </Text>
-              {[...new Set(slots.map((s) => s.category))].map((category) => {
-                const roleId = roleIdForCategory(category);
-                const subskills = getSpecializations(roleId); // general first
-                const catDef = CATEGORIES.find((c) => c.key === category);
-                const roleLabel = catDef ? getCategoryLabel(catDef.labelKey) : category;
-                const caps = slotCaps(category);
-                return (
-                  <View key={category} style={styles.slotRoleBlock}>
-                    <Text style={[styles.capRoleLabel, { textAlign: rtl ? 'right' : 'left' }]}>{roleLabel}</Text>
-                    {caps.map((current, i) => {
-                      const selectedId = current ?? 'general';
-                      return (
-                        <View key={i} style={styles.slotRow}>
-                          <Text style={[styles.slotIndex, { textAlign: rtl ? 'right' : 'left' }]}>
-                            {rtl ? `משבצת ${i + 1}` : `Slot ${i + 1}`}
-                          </Text>
-                          <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            {subskills.map((sp) => {
-                              const on = selectedId === sp.id;
-                              return (
-                                <TouchableOpacity
-                                  key={sp.id}
-                                  style={[styles.chip, on ? styles.chipSelected : styles.chipUnselected]}
-                                  onPress={() => setSlotCapability(category, i, sp.id === 'general' ? undefined : sp.id)}
-                                  activeOpacity={0.7}
-                                >
-                                  <Text style={on ? styles.chipTextSelected : styles.chipTextUnselected}>
-                                    {labelOf(sp, lang)}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        </View>
-                      );
-                    })}
+            {[...new Set(slots.map((s) => s.category))].map((category) => {
+              const roleId = roleIdForCategory(category);
+              const subskills = getSpecializations(roleId); // general first
+              const catDef = CATEGORIES.find((c) => c.key === category);
+              const roleLabel = catDef ? getCategoryLabel(catDef.labelKey) : category;
+              const caps = slotCaps(category);
+              return (
+                <View key={category} style={styles.s3Card}>
+                  {/* Role header */}
+                  <View style={[styles.s3Header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                    {catDef?.image ? (
+                      <Image source={catDef.image} style={styles.s3Avatar} contentFit="contain" cachePolicy="memory-disk" />
+                    ) : null}
+                    <View style={{ flex: 1 }}>
+                      <AppText weight="bold" style={[styles.s3RoleName, { textAlign: rtl ? 'right' : 'left' }]}>{roleLabel}</AppText>
+                      <AppText weight="regular" style={[styles.s3RoleNeed, { textAlign: rtl ? 'right' : 'left' }]}>
+                        {rtl ? `${caps.length} דרושים` : `${caps.length} needed`}
+                      </AppText>
+                    </View>
                   </View>
-                );
-              })}
-            </View>
+
+                  {/* Slots */}
+                  {caps.map((current, i) => {
+                    const selectedId = current ?? 'general';
+                    const selectedLabel = labelOf(subskills.find((s) => s.id === selectedId) ?? subskills[0], lang);
+                    const multiple = caps.length > 1;
+                    return (
+                      <View key={i} style={styles.s3Slot}>
+                        <View style={[styles.s3SlotHead, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                          {multiple && (
+                            <>
+                              <View style={styles.s3Num}>
+                                <AppText weight="bold" style={styles.s3NumText}>{i + 1}</AppText>
+                              </View>
+                              <AppText weight="regular" style={styles.s3SlotLabel}>{`${roleLabel} ${i + 1}`}</AppText>
+                            </>
+                          )}
+                          <View style={{ flex: 1 }} />
+                          <AppText weight="semiBold" style={styles.s3SelLabel}>{selectedLabel}</AppText>
+                        </View>
+                        <View style={[styles.s3PillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                          {subskills.map((sp) => {
+                            const on = selectedId === sp.id;
+                            return (
+                              <TouchableOpacity
+                                key={sp.id}
+                                style={[styles.s3Pill, on ? styles.s3PillSel : styles.s3PillUnsel]}
+                                onPress={() => setSlotCapability(category, i, sp.id === 'general' ? undefined : sp.id)}
+                                activeOpacity={0.7}
+                              >
+                                <AppText weight="semiBold" style={on ? styles.s3PillTextSel : styles.s3PillTextUnsel}>
+                                  {labelOf(sp, lang)}
+                                </AppText>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
 
             <View style={styles.submitWrap}>
-              <TouchableOpacity
-                style={[
-                  styles.submitBtn,
-                  Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
-                ]}
-                onPress={handleReview}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.submitText}>{t('builder.review')}</Text>
+              <TouchableOpacity onPress={handleReview} activeOpacity={0.85}>
+                <LinearGradient
+                  colors={['#6c5ce0', '#8a72ec']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.s3Footer}
+                >
+                  <AppText weight="bold" style={styles.s3FooterText}>
+                    {rtl ? 'המשך לסקירה' : 'Continue to review'}
+                  </AppText>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </>
@@ -1055,8 +1078,35 @@ function createStyles(
     chipTextUnselected: { color: '#004aad', fontSize: 14 },
     capHint: { fontSize: 13, fontWeight: '700', fontFamily: ffSemiBold, color: '#004aad' },
     capRoleLabel: { fontSize: 13, fontWeight: '600', fontFamily: ffSemiBold, color: '#7b2fa8' },
-    slotRoleBlock: { gap: 8, marginBottom: 14 },
-    slotRow: { gap: 6, marginTop: 4 },
-    slotIndex: { fontSize: 12, color: '#666' },
+    // ── Step 3: per-slot subskill cards (soft profile-editor aesthetic) ──
+    s3Card: {
+      backgroundColor: '#ffffff',
+      borderRadius: 18,
+      padding: 15,
+      marginTop: 14,
+      shadowColor: '#6c5ce0',
+      shadowOpacity: 0.07,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 2,
+    },
+    s3Header: { alignItems: 'center', gap: 12, marginBottom: 4 },
+    s3Avatar: { width: 40, height: 40 },
+    s3RoleName: { fontSize: 16, color: '#2a2f5a' },
+    s3RoleNeed: { fontSize: 12, color: '#9aa0b8', marginTop: 1 },
+    s3Slot: { backgroundColor: '#faf9fe', borderRadius: 13, padding: 11, marginTop: 10, gap: 8 },
+    s3SlotHead: { alignItems: 'center', gap: 8 },
+    s3Num: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#ece9fb', alignItems: 'center', justifyContent: 'center' },
+    s3NumText: { fontSize: 12, color: '#6c5ce0' },
+    s3SlotLabel: { fontSize: 12, color: '#9aa0b8' },
+    s3SelLabel: { fontSize: 13, color: '#6c5ce0' },
+    s3PillRow: { flexWrap: 'wrap', gap: 8 },
+    s3Pill: { borderRadius: 16, paddingHorizontal: 13, paddingVertical: 7 },
+    s3PillSel: { backgroundColor: '#6c5ce0' },
+    s3PillUnsel: { backgroundColor: '#f0f0f7' },
+    s3PillTextSel: { color: '#ffffff', fontSize: 13 },
+    s3PillTextUnsel: { color: '#5c6180', fontSize: 13 },
+    s3Footer: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
+    s3FooterText: { color: '#ffffff', fontSize: 16 },
   });
 }
