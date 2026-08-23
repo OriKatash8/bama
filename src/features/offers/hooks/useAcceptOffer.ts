@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { queryDocuments, getDocument, runBatchUpdates, updateDocument, arrayUnion, where } from '@core/firebase/firestore';
 import type { PriceOffer, BundleOffer, CrewRequestSlot, FilledSlot } from '@core/types/project';
-import { seedRoleSkills, type RoleSkillEntry } from '@features/profile/utils/roleSkills';
-import { assignFilledCapability } from '@features/noticeboard/matching';
+import { assignFilledCapability, type RoleSkillEntry } from '@features/noticeboard/matching';
 import { createProjectGroup, addMemberToGroup } from '../../chat/services/chatService';
 
 /** Read the project + the pro's roleSkills and decide which capability slot the fill consumes. */
@@ -13,11 +12,11 @@ async function attributeFilledCapability(
 ): Promise<string | undefined> {
   const [proj, prof] = await Promise.all([
     getDocument<{ crewSlots?: CrewRequestSlot[]; filledSlots?: FilledSlot[] }>(`projects/${projectId}`),
-    getDocument<{ roleSkills?: RoleSkillEntry[]; skills?: { category: string }[] }>(
+    getDocument<{ roleSkills?: RoleSkillEntry[] }>(
       `users/${professionalId}/profile/data`,
     ),
   ]);
-  const roleSkills = seedRoleSkills(prof?.roleSkills, prof?.skills);
+  const roleSkills = prof?.roleSkills ?? [];
   return assignFilledCapability(proj?.crewSlots ?? [], proj?.filledSlots ?? [], roleSkills, category);
 }
 

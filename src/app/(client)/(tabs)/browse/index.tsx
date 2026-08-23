@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
-import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import { useUnifiedSearch } from '@features/crew/hooks/useUnifiedSearch';
 import { ProfessionalCard } from '@features/crew/components';
@@ -38,8 +38,8 @@ function makeT(translations: Translations) {
   };
 }
 
-function catLabel(key: string, rtl: boolean, t: (k: string) => string): string {
-  return rtl && CATEGORY_LABEL_KEY[key] ? t(CATEGORY_LABEL_KEY[key]) : key;
+function catLabel(key: string, rtl: boolean): string {
+  return categoryLabel(key, rtl ? 'he' : 'en');
 }
 
 const CATEGORY_IMAGE: Record<string, number> = {
@@ -53,7 +53,7 @@ const CATEGORY_IMAGE: Record<string, number> = {
   'Sound Recordist':    require('../../../../../assets/images/categories/blue-mic.png'),
 };
 
-const CATEGORIES = Object.keys(CREW_CATEGORIES).map((key) => ({
+const CATEGORIES = ROLE_CATEGORIES.map((key) => ({
   key,
   label: key,
   image: CATEGORY_IMAGE[key],
@@ -179,7 +179,7 @@ export default function SearchScreen() {
                   />
                 )}
                 <Text style={[styles.categoryLabel, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
-                  {catLabel(cat.key, rtl, t)}
+                  {catLabel(cat.key, rtl)}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -204,7 +204,7 @@ export default function SearchScreen() {
           <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalSheet}>
             {/* Modal header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.modalTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{catLabel(selectedCategory ?? '', rtl, t)}</Text>
+              <Text style={[styles.modalTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{catLabel(selectedCategory ?? '', rtl)}</Text>
               <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>

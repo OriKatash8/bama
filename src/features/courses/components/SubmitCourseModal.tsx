@@ -13,7 +13,7 @@ import { uploadFile } from '@core/firebase/storage';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
-import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -27,7 +27,7 @@ function makeT(translations: Translations) {
   };
 }
 
-const CATEGORIES = Object.keys(CREW_CATEGORIES);
+const CATEGORIES = ROLE_CATEGORIES;
 
 type Props = {
   visible: boolean;
@@ -161,7 +161,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                       onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.pickerItemText, { ...font.regular }]}>{cat}</Text>
+                      <Text style={[styles.pickerItemText, { ...font.regular }]}>{categoryLabel(cat, rtl ? 'he' : 'en')}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>

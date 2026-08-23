@@ -136,54 +136,10 @@ export function labelOf(item: Labeled, lang: 'he' | 'en'): string {
   return lang === 'he' ? item.he : item.en;
 }
 
-// ── Phase 1 back-compat (DEPRECATED) ─────────────────────────────────────────
-// TODO Phase 2/3: migrate the CREW_CATEGORIES (11) + CATEGORY_LABEL_KEY (8) call
-// sites to the ROLES model above, then delete this block. Preserved verbatim from
-// the previous data file so existing Firestore data + all screens render identically.
-/** @deprecated Phase 1 compat — use ROLES / getSpecializations(). */
-export const CREW_CATEGORIES: Record<string, string[]> = {
-  'Video Photographer': [
-    'Music Video', 'Event', 'Fashion', 'Food', 'Product', 'Sports',
-    'Concert', 'Documentary', 'Drone', 'Social Media', 'Other',
-  ],
-  'Still Photographer': [
-    'Fashion', 'Product', 'Food', 'Portrait', 'Corporate Headshot',
-    'Event', 'Concert', 'Party', 'Sports', 'Real Estate', 'Nature',
-    'Journalism', 'Other',
-  ],
-  'Editor': [
-    'Video Editor', 'Photo Editor', 'Colorist', 'Sound Editor', 'Animator',
-    'VFX Artist', 'CGI Specialist', 'Effects Designer', 'Subtitle Creator',
-    'TikTok/Reels Editor', 'YouTube Editor',
-  ],
-  'Graphic Designer': [
-    'Graphic Designer', 'Cover Art', 'Logo Designer', 'Poster Designer',
-    'Illustrator', 'UI/UX Designer', 'Presentation Designer',
-    'Branding Specialist', 'Animator', 'Motion Graphics',
-  ],
-  'Social Media': [
-    'Social Media Manager', 'Content Creator', 'Campaign Manager',
-    'TikToker', 'Reels Creator', 'Instagram Manager', 'YouTube Expert',
-    'SEO Specialist', 'Copywriter', 'Digital Marketer',
-  ],
-  'Studio & Audio': [
-    'Recording Studio', 'Music Producer', 'Songwriter', 'Composer',
-    'Backup Singer', 'Rapper', 'DJ', 'Guitarist', 'Pianist', 'Drummer',
-    'Violinist', 'Saxophonist', 'Voiceover Artist', 'Dubbing Artist',
-    'Beatmaker', 'Studio Technician',
-  ],
-  'Lighting Tech': ['Studio/Commercial', 'Event', 'Stage/Concert', 'Gaffer', 'Other'],
-  'Sound Recordist': [
-    'Field Recordist (Film/TV)', 'Live Event Sound Tech',
-    'Post-Production Mixer', 'Podcast/Interview Tech', 'Other',
-  ],
-};
-
 /**
- * @deprecated Phase 2 compat — role id → legacy CREW_CATEGORIES key. Used to keep the
- * synced `ProfessionalProfile.skills` (legacy `{category}`) in step with `roleSkills`,
- * so read-only readers (dashboard noticeboard filter, browse-profile) keep working.
- * TODO Phase 3: migrate those readers to `roleSkills`, then delete.
+ * Role id → legacy category string. Retained as the normalization layer: `crewSlot.category`
+ * is persisted as these legacy strings (on projects, offers, filledSlots, CATEGORY_QUESTION_MAP),
+ * so builders emit them and `roleIdForCategory`/`categoryLabel` map back to the role.
  */
 export const ROLE_TO_LEGACY_CATEGORY: Record<string, string> = {
   videographer:     'Video Photographer',
@@ -196,14 +152,17 @@ export const ROLE_TO_LEGACY_CATEGORY: Record<string, string> = {
   lighting:         'Lighting Tech',
 };
 
-/** @deprecated Phase 1 compat — use ROLES + labelOf(). */
-export const CATEGORY_LABEL_KEY: Record<string, string> = {
-  'Video Photographer': 'builder.category_videographer',
-  'Still Photographer': 'builder.category_photographer',
-  'Editor':             'builder.category_editor',
-  'Graphic Designer':   'builder.category_graphic_designer',
-  'Social Media':       'builder.category_social',
-  'Studio & Audio':     'builder.category_studios',
-  'Lighting Tech':      'builder.category_lighting',
-  'Sound Recordist':    'builder.category_sound',
-};
+// ── Normalization + display helpers (roles → labels) ─────────────────────────
+// Reverse of ROLE_TO_LEGACY_CATEGORY: legacy stored category string → RoleDef id.
+const LEGACY_CATEGORY_TO_ROLE: Record<string, string> = Object.fromEntries(
+  Object.entries(ROLE_TO_LEGACY_CATEGORY).map(([role, cat]) => [cat, role]),
+);
+
+/** Display label for a stored category (legacy string OR role id); falls back to the input. */
+export function categoryLabel(category: string, lang: 'he' | 'en'): string {
+  const role = ROLE_BY_ID[LEGACY_CATEGORY_TO_ROLE[category] ?? category];
+  return role ? labelOf(role, lang) : category;
+}
+
+/** Ordered legacy category strings for role pickers/filters (one per role, in ROLES order). */
+export const ROLE_CATEGORIES: string[] = ROLES.map((r) => ROLE_TO_LEGACY_CATEGORY[r.id]).filter(Boolean);

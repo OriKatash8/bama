@@ -5,6 +5,7 @@ import { SubCategoryRow } from './SubCategoryRow';
 
 type Props = {
   category: string;
+  label: string;
   subcategories: string[];
   expanded: boolean;
   onToggle: () => void;
@@ -15,6 +16,7 @@ type Props = {
 
 export function CategoryItem({
   category,
+  label,
   subcategories,
   expanded,
   onToggle,
@@ -30,7 +32,7 @@ export function CategoryItem({
         onPress={onToggle}
         activeOpacity={0.8}
       >
-        <Text style={[styles.title, { color: colors.text }]}>{category}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{label}</Text>
         <Text style={[styles.chevron, { color: colors.textMuted }]}>{expanded ? '▲' : '▼'}</Text>
       </TouchableOpacity>
       {expanded &&

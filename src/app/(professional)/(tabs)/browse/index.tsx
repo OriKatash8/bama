@@ -10,16 +10,13 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { auth } from '@core/firebase/config';
-import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
 import { useSearchProfessionals } from '@features/crew/hooks';
 import type { ProfessionalResult } from '@features/crew/hooks/useSearchProfessionals';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
 
-const CATEGORIES = Object.keys(CREW_CATEGORIES).map((key) => ({
-  key,
-  label: key,
-}));
+const CATEGORIES = ROLE_CATEGORIES.map((key) => ({ key }));
 
 export default function BrowseScreen() {
   const [query, setQuery] = useState('');
@@ -59,7 +56,7 @@ export default function BrowseScreen() {
   ).filter((r) => r.user.id !== currentUid);
 
   const filteredCategories = query.trim()
-    ? CATEGORIES.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()))
+    ? CATEGORIES.filter((c) => categoryLabel(c.key, rtl ? 'he' : 'en').toLowerCase().includes(query.toLowerCase()))
     : CATEGORIES;
 
   return (
@@ -103,7 +100,7 @@ export default function BrowseScreen() {
               onPress={() => setSelectedCategory(cat.key)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.categoryLabel, { ...font.bold }]}>{cat.label}</Text>
+              <Text style={[styles.categoryLabel, { ...font.bold }]}>{categoryLabel(cat.key, rtl ? 'he' : 'en')}</Text>
             </TouchableOpacity>
           )}
           ListEmptyComponent={

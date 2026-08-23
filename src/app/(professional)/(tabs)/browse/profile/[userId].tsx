@@ -12,7 +12,6 @@ import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
-import { seedRoleSkills } from '@features/profile/utils/roleSkills';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
 import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
@@ -179,7 +178,7 @@ export default function PublicProfileScreen() {
     );
   }
 
-  const roleSkills = seedRoleSkills(profile.roleSkills, profile.skills);
+  const roleSkills = profile.roleSkills ?? [];
   const canSubmit = reportReason.trim().length >= 20;
 
   return (

@@ -19,16 +19,9 @@ export type ClientProfile = {
   projectCount: number;
 };
 
-/** @deprecated Phase 1 — replaced by ProfessionalProfile.roleSkills (kept until call sites migrate). */
-export type ProfessionalSkill = {
-  category: string;
-};
-
 export type ProfessionalProfile = {
   userId: ID;
   roles: MediaRole[];
-  /** @deprecated Phase 1 — use roleSkills for matching (kept until call sites migrate). */
-  skills?: ProfessionalSkill[];
   /**
    * Source of truth for role/subskill matching.
    * `role` = a RoleDef id (e.g. 'videographer'); `specializations` = subskill

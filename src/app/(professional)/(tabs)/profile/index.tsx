@@ -19,7 +19,6 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceEntry } from '@core/types/project';
-import { seedRoleSkills } from '@features/profile/utils/roleSkills';
 
 type Translations = typeof en;
 
@@ -67,7 +66,7 @@ export default function ProfessionalProfileScreen() {
   useEffect(() => {
     if (profile && !initialised.current) {
       initialised.current = true;
-      setRoleSkills(seedRoleSkills(profile.roleSkills, profile.skills));
+      setRoleSkills(profile.roleSkills ?? []);
       setBio(profile.bio ?? '');
       setEquipment(profile.equipment ?? []);
       setPriceList(profile.priceList ?? []);
@@ -102,7 +101,7 @@ export default function ProfessionalProfileScreen() {
   function handleCancel() {
     if (user) setName(user.displayName);
     if (profile) {
-      setRoleSkills(seedRoleSkills(profile.roleSkills, profile.skills));
+      setRoleSkills(profile.roleSkills ?? []);
       setBio(profile.bio ?? '');
       setEquipment(profile.equipment ?? []);
       setPriceList(profile.priceList ?? []);

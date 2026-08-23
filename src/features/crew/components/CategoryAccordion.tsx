@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { CREW_CATEGORIES } from '../data/categories';
+import { ROLE_CATEGORIES, getSpecializations, labelOf, categoryLabel } from '../data/categories';
+import { roleIdForCategory } from '@features/noticeboard/matching';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { CategoryItem } from './CategoryItem';
 import type { CrewRequestSlot } from '@core/types/project';
 
@@ -11,6 +13,7 @@ type Props = {
 
 export function CategoryAccordion({ slots, onSelectSubcategory, onRemoveSubcategory }: Props) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const lang: 'he' | 'en' = useSettingsStore((s) => s.language) === 'he' ? 'he' : 'en';
 
   function handleToggle(category: string) {
     setExpandedCategory((prev) => (prev === category ? null : category));
@@ -18,11 +21,12 @@ export function CategoryAccordion({ slots, onSelectSubcategory, onRemoveSubcateg
 
   return (
     <>
-      {Object.entries(CREW_CATEGORIES).map(([category, subcategories]) => (
+      {ROLE_CATEGORIES.map((category) => (
         <CategoryItem
           key={category}
           category={category}
-          subcategories={subcategories}
+          label={categoryLabel(category, lang)}
+          subcategories={getSpecializations(roleIdForCategory(category)).map((sp) => labelOf(sp, lang))}
           expanded={expandedCategory === category}
           onToggle={() => handleToggle(category)}
           slots={slots}

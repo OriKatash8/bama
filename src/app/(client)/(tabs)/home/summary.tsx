@@ -8,8 +8,7 @@ import { Screen } from '@components/layout/Screen';
 import { MiniCalendar } from '@features/crew/components';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
 import { queryDocuments, getDocument } from '@core/firebase/firestore';
-import { seedRoleSkills, type RoleSkillEntry } from '@features/profile/utils/roleSkills';
-import { roleIdForCategory, professionalMatchesSlot, capabilityLabel } from '@features/noticeboard/matching';
+import { roleIdForCategory, professionalMatchesSlot, capabilityLabel, type RoleSkillEntry } from '@features/noticeboard/matching';
 import { ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useUiStore } from '@core/stores/uiStore';
@@ -87,14 +86,14 @@ export default function SummaryScreen() {
         const users = await queryDocuments<{ id: string }>('users');
         const profiles = await Promise.all(
           users.map((u) =>
-            getDocument<{ roleSkills?: RoleSkillEntry[]; skills?: { category: string }[] }>(
+            getDocument<{ roleSkills?: RoleSkillEntry[] }>(
               `users/${u.id}/profile/data`,
             ),
           ),
         );
         const proRoleSkills = profiles
           .filter((p): p is NonNullable<typeof p> => !!p)
-          .map((p) => seedRoleSkills(p.roleSkills, p.skills));
+          .map((p) => p.roleSkills ?? []);
         const scarce = specialized.filter(
           (slot) => proRoleSkills.filter((rsk) => professionalMatchesSlot(rsk, slot)).length < 3,
         );

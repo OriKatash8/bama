@@ -13,7 +13,7 @@ import type { Chat } from '../types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { categoryLabel } from '@features/crew/data/categories';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -192,7 +192,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
             activeOpacity={0.7}
           >
             <AppText weight="semiBold" style={[styles.filterChipText, filterCategory === cat && styles.filterChipTextActive]}>
-              {rtl && CATEGORY_LABEL_KEY[cat] ? t(CATEGORY_LABEL_KEY[cat]) : cat}
+              {categoryLabel(cat, rtl ? 'he' : 'en')}
             </AppText>
           </TouchableOpacity>
         ))}

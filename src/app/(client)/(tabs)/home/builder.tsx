@@ -15,7 +15,8 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuth } from '@core/hooks/useAuth';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { ROLE_CATEGORIES, getSpecializations } from '@features/crew/data/categories';
+import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
 import { Calendar } from 'lucide-react-native';
 import en from '@core/i18n/translations/en.json';
@@ -33,12 +34,12 @@ const CATEGORY_META: Record<string, { labelKey: string; image: ReturnType<typeof
   'Sound Recordist':    { labelKey: 'builder.category_sound',         image: require('../../../../../assets/images/categories/sound.png') },
 };
 
-const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
+const CATEGORIES = ROLE_CATEGORIES.map((key) => ({
   key,
   labelKey: CATEGORY_META[key]?.labelKey ?? key,
   image: CATEGORY_META[key]?.image,
   contain: CATEGORY_META[key]?.contain,
-  subcategories: subs,
+  subcategories: getSpecializations(roleIdForCategory(key)).map((sp) => sp.id),
 }));
 
 const gradientStyle = {

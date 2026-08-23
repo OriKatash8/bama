@@ -7,9 +7,8 @@ import {
   queryByField,
 } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
-import type { ProfessionalProfile, ProfessionalSkill } from '@core/types/user';
+import type { ProfessionalProfile } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
-import { ROLE_TO_LEGACY_CATEGORY } from '@features/crew/data/categories';
 
 type RoleSkill = { role: string; specializations: string[] };
 
@@ -38,14 +37,6 @@ export function useProfile() {
       (data) => {
         setProfile(data);
         setIsLoading(false);
-        const rawSkills = (data?.skills ?? []) as Array<Record<string, unknown>>;
-        const needsMigration = rawSkills.some(s => 'subcategory' in s || s['category'] === 'AI');
-        if (needsMigration) {
-          const cleaned: ProfessionalSkill[] = rawSkills
-            .filter(s => s['category'] !== 'AI')
-            .map(s => ({ category: s['category'] as string }));
-          mergeDocument(`users/${user.id}/profile/data`, { skills: cleaned }).catch(() => {});
-        }
       }
     );
     // One-shot fetch intentional: review submission is out of scope, so cards won't change
@@ -84,15 +75,8 @@ export function useProfile() {
       }
       console.log('[useProfile] writing users/${user.id}:', { displayName: name, photoURL });
       await updateDocument(`users/${user.id}`, { displayName: name, photoURL });
-      // Keep the deprecated skills[] in sync (legacy category strings) so read-only
-      // readers (dashboard noticeboard filter, browse-profile) keep working.
-      const skills: ProfessionalSkill[] = roleSkills.map((r) => ({
-        category: ROLE_TO_LEGACY_CATEGORY[r.role] ?? r.role,
-      }));
-      console.log('[useProfile] writing users/${user.id}/profile/data:', { roleSkills, skills, bio, equipment, priceList });
       await mergeDocument(`users/${user.id}/profile/data`, {
         roleSkills,
-        skills,
         bio,
         equipment,
         priceList,

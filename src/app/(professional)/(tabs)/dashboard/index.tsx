@@ -7,7 +7,6 @@ import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
-import { seedRoleSkills } from '@features/profile/utils/roleSkills';
 import { ROLE_TO_LEGACY_CATEGORY } from '@features/crew/data/categories';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
@@ -79,8 +78,8 @@ export default function DashboardScreen() {
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
 
   const roleSkills = useMemo(
-    () => profileLoading ? null : seedRoleSkills(profile?.roleSkills, profile?.skills),
-    [profile?.roleSkills, profile?.skills, profileLoading]
+    () => profileLoading ? null : (profile?.roleSkills ?? []),
+    [profile?.roleSkills, profileLoading]
   );
 
   const { requests: visible, posters, isLoading, dismiss: hookDismiss } = useNoticeboard(roleSkills, currentUserId);

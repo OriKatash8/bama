@@ -5,6 +5,7 @@ import type { ProfessionalProfile } from '@core/types/user';
 import type { Review } from '@core/types/project';
 import type { ProfessionalResult } from './useSearchProfessionals';
 import { computeAverageRating } from '@features/reviews/utils/rating';
+import { ROLE_BY_ID } from '@features/crew/data/categories';
 
 type MatchPriority = 0 | 1; // 0=name, 1=category
 
@@ -37,12 +38,13 @@ export function useUnifiedSearch(query: string): { results: ProfessionalResult[]
               const profile = await getDocument<ProfessionalProfile>(
                 `users/${user.id}/profile/data`
               );
-              if (!profile?.skills?.length) return;
+              if (!profile?.roleSkills?.length) return;
 
               const nameMatch = (user.displayName ?? '').toLowerCase().includes(trimmed);
-              const categoryMatch = profile.skills.some((s) =>
-                s.category.toLowerCase().includes(trimmed)
-              );
+              const categoryMatch = profile.roleSkills.some((r) => {
+                const role = ROLE_BY_ID[r.role];
+                return !!role && (role.he.includes(trimmed) || role.en.toLowerCase().includes(trimmed));
+              });
 
               if (!nameMatch && !categoryMatch) return;
 

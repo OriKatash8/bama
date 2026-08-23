@@ -12,7 +12,7 @@ import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { useCrewBuilder } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
 import { useTheme } from '@core/hooks/useTheme';
-import { CREW_CATEGORIES, getSpecializations, labelOf } from '@features/crew/data/categories';
+import { ROLES, ROLE_BY_ID, ROLE_TO_LEGACY_CATEGORY, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
 import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
@@ -24,33 +24,24 @@ import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest } from '@core/types/project';
 import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@features/projects/constants/roleQuestions';
 
-const categoryImages = {
-  videographer:    require('../../../../../assets/images/categories/videographer-wide.png'),
-  photographer:    require('../../../../../assets/images/categories/photographer-wide.png'),
-  editor:          require('../../../../../assets/images/categories/editor-wide.png'),
-  graphicDesigner: require('../../../../../assets/images/categories/graphic-designer-wide.png'),
-  social:          require('../../../../../assets/images/categories/social-wide.png'),
-  studios:         require('../../../../../assets/images/categories/studio-wide.png'),
-  lighting:        require('../../../../../assets/images/categories/lighting-wide.png'),
-  sound:           require('../../../../../assets/images/categories/sound-wide.png'),
+// Role tile images, keyed by RoleDef id.
+const ROLE_IMAGES: Record<string, ReturnType<typeof require>> = {
+  videographer:     require('../../../../../assets/images/categories/videographer-wide.png'),
+  photographer:     require('../../../../../assets/images/categories/photographer-wide.png'),
+  editor:           require('../../../../../assets/images/categories/editor-wide.png'),
+  graphic_designer: require('../../../../../assets/images/categories/graphic-designer-wide.png'),
+  social_media:     require('../../../../../assets/images/categories/social-wide.png'),
+  studio_audio:     require('../../../../../assets/images/categories/studio-wide.png'),
+  lighting:         require('../../../../../assets/images/categories/lighting-wide.png'),
+  sound:            require('../../../../../assets/images/categories/sound-wide.png'),
 };
 
-const CATEGORY_META: Record<string, { labelKey: string; image: ReturnType<typeof require> }> = {
-  'Video Photographer': { labelKey: 'builder.category_videographer', image: categoryImages.videographer },
-  'Still Photographer': { labelKey: 'builder.category_photographer', image: categoryImages.photographer },
-  'Editor':             { labelKey: 'builder.category_editor',        image: categoryImages.editor },
-  'Graphic Designer':   { labelKey: 'builder.category_graphic_designer', image: categoryImages.graphicDesigner },
-  'Social Media':       { labelKey: 'builder.category_social',        image: categoryImages.social },
-  'Studio & Audio':     { labelKey: 'builder.category_studios',       image: categoryImages.studios },
-  'Lighting Tech':      { labelKey: 'builder.category_lighting',      image: categoryImages.lighting },
-  'Sound Recordist':    { labelKey: 'builder.category_sound',         image: categoryImages.sound },
-};
-
-const CATEGORIES = Object.entries(CREW_CATEGORIES).map(([key, subs]) => ({
-  key,
-  labelKey: CATEGORY_META[key]?.labelKey ?? key,
-  image: CATEGORY_META[key]?.image,
-  subcategories: subs,
+// Builder role tiles: sourced from ROLES; `key` is the legacy category string that
+// gets stored on crewSlot.category (matching + questions still key on it).
+const CATEGORIES = ROLES.map((r) => ({
+  key: ROLE_TO_LEGACY_CATEGORY[r.id],
+  roleId: r.id,
+  image: ROLE_IMAGES[r.id],
 }));
 
 const ISRAEL_LOCATIONS_HE = [
@@ -110,7 +101,6 @@ export default function HomeScreen() {
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
     return typeof result === 'string' ? result : key;
   };
-  const getCategoryLabel = (labelKey: string) => labelKey === 'AI' ? 'AI' : t(labelKey);
   const rtl = language === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
@@ -470,7 +460,7 @@ export default function HomeScreen() {
                         <Image source={cat.image} style={styles.tileImage} contentFit="cover" cachePolicy="memory-disk" />
                       ) : null}
                       <View style={styles.tileOverlay}>
-                        <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
+                        <Text style={styles.tileLabel} numberOfLines={1}>{labelOf(ROLE_BY_ID[cat.roleId], lang)}</Text>
                       </View>
                       {q > 0 && (
                         <View style={styles.tileControls}>
@@ -536,7 +526,7 @@ export default function HomeScreen() {
               const roleId = roleIdForCategory(category);
               const subskills = getSpecializations(roleId); // general first
               const catDef = CATEGORIES.find((c) => c.key === category);
-              const roleLabel = catDef ? getCategoryLabel(catDef.labelKey) : category;
+              const roleLabel = catDef ? labelOf(ROLE_BY_ID[catDef.roleId], lang) : category;
               const caps = slotCaps(category);
               return (
                 <View key={category} style={styles.s3Card}>

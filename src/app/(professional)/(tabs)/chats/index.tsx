@@ -21,7 +21,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { db } from '@core/firebase/config';
-import { CREW_CATEGORIES, CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -255,7 +255,7 @@ export default function ProfessionalChatsScreen() {
                     {item.category ? (
                       <View style={[styles.categoryTag, { [rtl ? 'right' : 'left']: 10 }]}>
                         <Text style={[styles.categoryTagText, { ...font.semiBold }]}>
-                          {rtl && item.category && CATEGORY_LABEL_KEY[item.category] ? t(CATEGORY_LABEL_KEY[item.category]) : item.category}
+                          {item.category ? categoryLabel(item.category, rtl ? 'he' : 'en') : item.category}
                         </Text>
                       </View>
                     ) : null}
@@ -383,14 +383,14 @@ export default function ProfessionalChatsScreen() {
                 {commShowCategoryPicker && (
                   <View style={styles.commCategoryPicker}>
                     <ScrollView style={{ maxHeight: 160 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                      {Object.keys(CREW_CATEGORIES).map((cat) => (
+                      {ROLE_CATEGORIES.map((cat) => (
                         <TouchableOpacity
                           key={cat}
                           style={styles.commCategoryItem}
                           onPress={() => { setCommCategory(cat); setCommShowCategoryPicker(false); }}
                           activeOpacity={0.7}
                         >
-                          <Text style={[styles.commCategoryItemText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>{cat}</Text>
+                          <Text style={[styles.commCategoryItemText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>{categoryLabel(cat, rtl ? 'he' : 'en')}</Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>

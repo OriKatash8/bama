@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CREW_CATEGORIES } from '../data/categories';
+import { ROLE_CATEGORIES } from '../data/categories';
 import { callClaudeAI } from '@core/services/aiService';
 import type { CrewRequestSlot } from '@core/types/project';
 
@@ -25,7 +25,7 @@ export type UseAiCrewRecommendationReturn = {
   clear: () => void;
 };
 
-const CATEGORIES_LIST = Object.keys(CREW_CATEGORIES).join('\n');
+const CATEGORIES_LIST = ROLE_CATEGORIES.join('\n');
 
 const SYSTEM_PROMPT = `You are a film and media production expert helping clients assemble the right crew for their project.
 
@@ -79,7 +79,7 @@ export function useAiCrewRecommendation(): UseAiCrewRecommendationReturn {
       }
 
       const validSlots: CrewRequestSlot[] = parsed.slots.filter((s: Record<string, unknown>) => {
-        return typeof s.category === 'string' && s.category in CREW_CATEGORIES && typeof s.quantity === 'number' && s.quantity > 0;
+        return typeof s.category === 'string' && ROLE_CATEGORIES.includes(s.category) && typeof s.quantity === 'number' && s.quantity > 0;
       });
 
       setResult({ explanation: parsed.explanation, slots: validSlots });

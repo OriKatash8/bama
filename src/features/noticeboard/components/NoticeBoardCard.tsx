@@ -13,7 +13,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { categoryLabel } from '@features/crew/data/categories';
 import { capabilityLabel } from '@features/noticeboard/matching';
 import { translateCity } from '@core/utils/cityTranslations';
 
@@ -64,9 +64,6 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
-  const translatedRoles = allRoles.map(r =>
-    rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
-  );
   // Role labels with an optional required-capability suffix — one chip per distinct
   // (category, requiredCapability) so a drone slot and a general slot both show.
   const roleChips = [
@@ -74,7 +71,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       request.crewSlots.map((s) => [`${s.category}-${s.requiredCapability ?? 'general'}`, s]),
     ).values(),
   ].map((s) => {
-    const base = rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category;
+    const base = categoryLabel(s.category, lang);
     const cap = capabilityLabel(s.category, s.requiredCapability, lang);
     return cap ? `${base} · ${cap}` : base;
   });
@@ -272,7 +269,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             activeOpacity={0.7}
           >
             <AppText weight="semiBold" style={[styles.skillsBtnText, { color: skillsAccent }]}>
-              {t('noticeboard.role_plural')} ({translatedRoles.length})
+              {t('noticeboard.role_plural')} ({allRoles.length})
             </AppText>
             {skillsOpen
               ? <ChevronUp size={13} color={skillsAccent} strokeWidth={2} />

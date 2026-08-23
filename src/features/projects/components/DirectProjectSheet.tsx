@@ -13,7 +13,7 @@ import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
 import { MiniCalendar } from '@features/crew/components';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { addDocument, getDocument } from '@core/firebase/firestore';
-import type { ProfessionalSkill } from '@core/types/user';
+import { ROLE_TO_LEGACY_CATEGORY, categoryLabel } from '@features/crew/data/categories';
 import type { CrewRequestSlot } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -49,7 +49,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
 
   const { generateTitle, isGenerating } = useGenerateTitle();
 
-  const [skills, setSkills] = useState<ProfessionalSkill[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(false);
 
   const [description, setDescription] = useState('');
@@ -69,9 +69,13 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
   useEffect(() => {
     if (!visible || !professionalId) return;
     setSkillsLoading(true);
-    getDocument<{ skills?: ProfessionalSkill[] }>(`users/${professionalId}/profile/data`)
-      .then((profile) => setSkills(profile?.skills ?? []))
-      .catch(() => setSkills([]))
+    getDocument<{ roleSkills?: { role: string }[] }>(`users/${professionalId}/profile/data`)
+      .then((profile) =>
+        setCategories([
+          ...new Set((profile?.roleSkills ?? []).map((r) => ROLE_TO_LEGACY_CATEGORY[r.role]).filter(Boolean)),
+        ]),
+      )
+      .catch(() => setCategories([]))
       .finally(() => setSkillsLoading(false));
   }, [visible, professionalId]);
 
@@ -92,26 +96,21 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
     onClose();
   }
 
-  function skillKey(s: ProfessionalSkill) {
-    return s.category;
-  }
-
-  function setQty(s: ProfessionalSkill, delta: number) {
-    const key = skillKey(s);
+  function setQty(category: string, delta: number) {
     setQuantities((prev) => {
-      const next = Math.max(0, (prev[key] ?? 0) + delta);
-      return { ...prev, [key]: next };
+      const next = Math.max(0, (prev[category] ?? 0) + delta);
+      return { ...prev, [category]: next };
     });
   }
 
-  function getQty(s: ProfessionalSkill) {
-    return quantities[skillKey(s)] ?? 0;
+  function getQty(category: string) {
+    return quantities[category] ?? 0;
   }
 
   function buildSlots(): CrewRequestSlot[] {
-    return skills
-      .filter((s) => getQty(s) > 0)
-      .map((s) => ({ category: s.category, quantity: getQty(s) }));
+    return categories
+      .filter((c) => getQty(c) > 0)
+      .map((c) => ({ category: c, quantity: getQty(c) }));
   }
 
   function validate(): boolean {
@@ -264,22 +263,22 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             </Text>
             {skillsLoading ? (
               <ActivityIndicator color="#cb6ce6" style={{ marginVertical: 12 }} />
-            ) : skills.length === 0 ? (
+            ) : categories.length === 0 ? (
               <Text style={[styles.emptySkills, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                 No skills listed for this professional.
               </Text>
             ) : (
               <View style={styles.skillsGrid}>
-                {skills.map((s) => {
-                  const qty = getQty(s);
+                {categories.map((c) => {
+                  const qty = getQty(c);
                   return (
-                    <View key={skillKey(s)} style={[styles.skillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                    <View key={c} style={[styles.skillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                       <Text style={[styles.skillLabel, { ...font.medium, color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
-                        {s.category}
+                        {categoryLabel(c, rtl ? 'he' : 'en')}
                       </Text>
                       <View style={[styles.qtyControls, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                         {qty > 0 && (
-                          <TouchableOpacity style={styles.qtyBtn} onPress={() => setQty(s, -1)} hitSlop={8} activeOpacity={0.7}>
+                          <TouchableOpacity style={styles.qtyBtn} onPress={() => setQty(c, -1)} hitSlop={8} activeOpacity={0.7}>
                             <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
                           </TouchableOpacity>
                         )}
@@ -288,7 +287,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                             <Text style={styles.qtyBadgeText}>{qty}</Text>
                           </View>
                         )}
-                        <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => setQty(s, 1)} hitSlop={8} activeOpacity={0.7}>
+                        <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => setQty(c, 1)} hitSlop={8} activeOpacity={0.7}>
                           <Text style={[styles.qtyBtnText, { color: '#004aad' }]}>+</Text>
                         </TouchableOpacity>
                       </View>

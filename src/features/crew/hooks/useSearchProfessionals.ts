@@ -4,6 +4,7 @@ import type { User } from '@core/types/user';
 import type { ProfessionalProfile } from '@core/types/user';
 import type { Review } from '@core/types/project';
 import { computeAverageRating } from '@features/reviews/utils/rating';
+import { roleIdForCategory } from '@features/noticeboard/matching';
 
 export type ProfessionalResult = {
   user: User;
@@ -36,8 +37,9 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
           const profile = await getDocument<ProfessionalProfile>(
             `users/${user.id}/profile/data`
           );
-          if (!profile?.skills) return;
-          const hasSkill = profile.skills.some(s => s.category === category);
+          if (!profile?.roleSkills) return;
+          const roleId = roleIdForCategory(category);
+          const hasSkill = profile.roleSkills.some((r) => r.role === roleId);
           if (!hasSkill) return;
           const reviews = await queryByField<Review>('reviews', 'professionalId', user.id).catch(() => [] as Review[]);
           const { average, count } = computeAverageRating(reviews);

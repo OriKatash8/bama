@@ -15,7 +15,7 @@ import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { categoryLabel } from '@features/crew/data/categories';
 import { capabilityLabel } from '@features/noticeboard/matching';
 import { translateCity } from '@core/utils/cityTranslations';
 import en from '@core/i18n/translations/en.json';
@@ -227,7 +227,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                   <Text style={styles.slotQty}>{s.quantity}×</Text>
                   <View>
                     <AppText weight="semiBold" style={styles.slotSub}>
-                      {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
+                      {categoryLabel(s.category, rtl ? 'he' : 'en')}
                     </AppText>
                     {s.requiredCapability ? (
                       <AppText weight="regular" style={styles.slotCap}>
@@ -270,7 +270,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                   />
                   <View style={styles.bidInfo}>
                     <AppText weight="semiBold" style={styles.bidSub}>
-                      {rtl && CATEGORY_LABEL_KEY[b.category] ? t(CATEGORY_LABEL_KEY[b.category]) : b.category}
+                      {categoryLabel(b.category, rtl ? 'he' : 'en')}
                     </AppText>
                     <AppText style={[styles.bidCat, { color: colors.textMuted }]}>
                       {b.quantity} {t('noticeboard.needed')}
@@ -340,7 +340,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               <View style={styles.bundleRoles}>
                 {validBids.map((b, i) => (
                   <AppText key={i} style={[styles.bundleRoleItem, { color: colors.textSec }]}>
-                    · {rtl && CATEGORY_LABEL_KEY[b.category] ? t(CATEGORY_LABEL_KEY[b.category]) : b.category} — ₪{Number(b.price).toLocaleString()}
+                    · {categoryLabel(b.category, rtl ? 'he' : 'en')} — ₪{Number(b.price).toLocaleString()}
                   </AppText>
                 ))}
               </View>

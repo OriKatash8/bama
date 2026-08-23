@@ -11,8 +11,7 @@ import {
 import { db } from '@core/firebase/config';
 import { getDocument, updateDocument } from '@core/firebase/firestore';
 import type { BundleOffer, PriceOffer, CrewRequestSlot, FilledSlot } from '@core/types/project';
-import { seedRoleSkills, type RoleSkillEntry } from '@features/profile/utils/roleSkills';
-import { assignFilledCapability } from '@features/noticeboard/matching';
+import { assignFilledCapability, type RoleSkillEntry } from '@features/noticeboard/matching';
 import { createProjectGroup, addMemberToGroup } from '../../chat/services/chatService';
 
 export function useAcceptBundleOffer() {
@@ -82,11 +81,11 @@ export function useAcceptBundleOffer() {
       try {
         const [proj, prof] = await Promise.all([
           getDocument<{ crewSlots?: CrewRequestSlot[]; filledSlots?: FilledSlot[] }>(`projects/${bundle.projectId}`),
-          getDocument<{ roleSkills?: RoleSkillEntry[]; skills?: { category: string }[] }>(
+          getDocument<{ roleSkills?: RoleSkillEntry[] }>(
             `users/${bundle.professionalId}/profile/data`,
           ),
         ]);
-        const roleSkills = seedRoleSkills(prof?.roleSkills, prof?.skills);
+        const roleSkills = prof?.roleSkills ?? [];
         const running: FilledSlot[] = [...(proj?.filledSlots ?? [])];
         filledEntries = bundle.slots.map((s) => {
           const cap = assignFilledCapability(proj?.crewSlots ?? [], running, roleSkills, s.category);

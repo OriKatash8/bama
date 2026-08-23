@@ -1,5 +1,4 @@
 export { ProfileHeader } from './ProfileHeader';
-export { RoleChips } from './RoleChips';
 export { BioSection } from './BioSection';
 export { StarRating } from './StarRating';
 export { EquipmentList } from './EquipmentList';
