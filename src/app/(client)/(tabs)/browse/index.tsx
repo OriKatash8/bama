@@ -204,7 +204,7 @@ export default function SearchScreen() {
           <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalSheet}>
             {/* Modal header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.modalTitle, { ...font.bold }]}>{catLabel(selectedCategory ?? '', rtl, t)}</Text>
+              <Text style={[styles.modalTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{catLabel(selectedCategory ?? '', rtl, t)}</Text>
               <TouchableOpacity onPress={closeModal} hitSlop={12} activeOpacity={0.7}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
