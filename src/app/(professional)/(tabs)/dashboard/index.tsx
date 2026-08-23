@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
-import { ROLE_TO_LEGACY_CATEGORY } from '@features/crew/data/categories';
+import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
+import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
@@ -83,6 +84,52 @@ export default function DashboardScreen() {
   );
 
   const { requests: visible, posters, isLoading, dismiss: hookDismiss } = useNoticeboard(roleSkills, currentUserId);
+
+  const lang: 'he' | 'en' = rtl ? 'he' : 'en';
+
+  // ── Sort & filter (client-side over the already-matched list) ──
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [draftSort, setDraftSort] = useState<'newest' | 'oldest'>('newest');
+  const [draftRole, setDraftRole] = useState<string | null>(null);
+
+  const proRoles = useMemo(
+    () => (roleSkills ?? []).map((rs) => ({ id: rs.role, label: labelOf(ROLE_BY_ID[rs.role], lang) })).filter((r) => !!ROLE_BY_ID[r.id]),
+    [roleSkills, lang],
+  );
+  const showRoleFilter = proRoles.length > 1;
+  const filterActive = sortBy !== 'newest' || roleFilter !== null;
+
+  function openSortModal() {
+    setDraftSort(sortBy);
+    setDraftRole(roleFilter);
+    setSortModalVisible(true);
+  }
+  function applySort() {
+    setSortBy(draftSort);
+    setRoleFilter(draftRole);
+    setSortModalVisible(false);
+  }
+  function clearSort() {
+    setDraftSort('newest');
+    setDraftRole(null);
+    setSortBy('newest');
+    setRoleFilter(null);
+    setSortModalVisible(false);
+  }
+
+  const displayed = useMemo(() => {
+    let list = visible;
+    if (roleFilter) {
+      list = list.filter((r) => getVacantSlots(r).some((s) => roleIdForCategory(s.category) === roleFilter));
+    }
+    return [...list].sort((a, b) =>
+      sortBy === 'oldest'
+        ? a.createdAt.seconds - b.createdAt.seconds
+        : b.createdAt.seconds - a.createdAt.seconds,
+    );
+  }, [visible, roleFilter, sortBy]);
 
   // Legacy category strings (for ProjectDetailModal's role-Q&A display, which is keyed by them).
   const categories = useMemo(
@@ -172,9 +219,9 @@ export default function DashboardScreen() {
     dismiss(request.id);
   }
 
-  const openProjectsLabel = visible.length === 1
-    ? t('noticeboard.open_projects_one', { count: visible.length })
-    : t('noticeboard.open_projects_other', { count: visible.length });
+  const openProjectsLabel = displayed.length === 1
+    ? t('noticeboard.open_projects_one', { count: displayed.length })
+    : t('noticeboard.open_projects_other', { count: displayed.length });
 
   return (
     <Screen scrollable={false}>
@@ -291,20 +338,34 @@ export default function DashboardScreen() {
         )}
 
         {/* ── Notice board ── */}
-        <View style={[styles.sectionHeader, { flexDirection: 'column', alignItems: rtl ? 'flex-end' : 'flex-start', paddingHorizontal: 16 }]}>
-          <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-            {t('noticeboard.notice_board')}
-          </AppText>
-          {!isLoading && (
-            <AppText weight="regular" style={[styles.sectionCount, { textAlign: rtl ? 'right' : 'left' }]}>
-              {openProjectsLabel}
+        <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={{ flex: 1 }}>
+            <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('noticeboard.notice_board')}
             </AppText>
+            {!isLoading && (
+              <AppText weight="regular" style={[styles.sectionCount, { textAlign: rtl ? 'right' : 'left' }]}>
+                {openProjectsLabel}
+              </AppText>
+            )}
+          </View>
+          {!isLoading && visible.length > 0 && (
+            <TouchableOpacity
+              style={[styles.sortBtn, filterActive && styles.sortBtnActive, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={openSortModal}
+              activeOpacity={0.8}
+            >
+              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
+              <AppText weight="semiBold" style={[styles.sortBtnText, filterActive && styles.sortBtnTextActive]}>
+                {t('noticeboard.sort_filter')}
+              </AppText>
+            </TouchableOpacity>
           )}
         </View>
 
         {isLoading ? (
           <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
-        ) : visible.length === 0 ? (
+        ) : displayed.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emptyIcon}>📋</Text>
             <Text style={[styles.emptyText, { ...font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
@@ -316,7 +377,7 @@ export default function DashboardScreen() {
           </View>
         ) : (
           <FlatList
-            data={visible}
+            data={displayed}
             keyExtractor={(item) => item.id}
             numColumns={1}
             scrollEnabled={false}
@@ -349,6 +410,72 @@ export default function DashboardScreen() {
         initialView={selectedView}
         professionalCategories={categories}
       />
+
+      {/* Sort & filter modal */}
+      <Modal visible={sortModalVisible} transparent animationType="fade" onRequestClose={() => setSortModalVisible(false)}>
+        <View style={styles.sortOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setSortModalVisible(false)} />
+          <View style={styles.sortCard}>
+            <AppText weight="bold" style={[styles.sortSectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('noticeboard.sort_title')}
+            </AppText>
+            <View style={styles.sortOptions}>
+              {(['newest', 'oldest'] as const).map((opt) => (
+                <TouchableOpacity
+                  key={opt}
+                  style={[styles.sortOption, draftSort === opt && styles.sortOptionActive]}
+                  onPress={() => setDraftSort(opt)}
+                  activeOpacity={0.8}
+                >
+                  <AppText weight="semiBold" style={[styles.sortOptionText, draftSort === opt && styles.sortOptionTextActive]}>
+                    {t(opt === 'newest' ? 'noticeboard.sort_newest' : 'noticeboard.sort_oldest')}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {showRoleFilter && (
+              <>
+                <AppText weight="bold" style={[styles.sortSectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 16 }]}>
+                  {t('noticeboard.filter_role_title')}
+                </AppText>
+                <View style={styles.sortOptions}>
+                  <TouchableOpacity
+                    style={[styles.sortOption, draftRole === null && styles.sortOptionActive]}
+                    onPress={() => setDraftRole(null)}
+                    activeOpacity={0.8}
+                  >
+                    <AppText weight="semiBold" style={[styles.sortOptionText, draftRole === null && styles.sortOptionTextActive]}>
+                      {t('noticeboard.filter_role_all')}
+                    </AppText>
+                  </TouchableOpacity>
+                  {proRoles.map((r) => (
+                    <TouchableOpacity
+                      key={r.id}
+                      style={[styles.sortOption, draftRole === r.id && styles.sortOptionActive]}
+                      onPress={() => setDraftRole(r.id)}
+                      activeOpacity={0.8}
+                    >
+                      <AppText weight="semiBold" style={[styles.sortOptionText, draftRole === r.id && styles.sortOptionTextActive]}>
+                        {r.label}
+                      </AppText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <View style={[styles.sortFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <TouchableOpacity style={styles.sortClearBtn} onPress={clearSort} activeOpacity={0.8}>
+                <AppText weight="semiBold" style={styles.sortClearText}>{t('noticeboard.clear')}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.sortApplyBtn} onPress={applySort} activeOpacity={0.85}>
+                <AppText weight="semiBold" style={styles.sortApplyText}>{t('noticeboard.apply')}</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -373,6 +500,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: MUTED,
   },
+
+  // Notice board header + sort/filter
+  noticeHeaderRow: {
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  sortBtn: {
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: BLUE,
+    backgroundColor: '#ffffff',
+  },
+  sortBtnActive: { backgroundColor: BLUE },
+  sortBtnText: { fontSize: 13, color: BLUE },
+  sortBtnTextActive: { color: '#ffffff' },
+  sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', paddingHorizontal: 28 },
+  sortCard: { backgroundColor: '#ffffff', borderRadius: 18, padding: 18 },
+  sortSectionTitle: { fontSize: 15, color: '#2a2f5a', marginBottom: 10 },
+  sortOptions: { gap: 8 },
+  sortOption: {
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.15)',
+    backgroundColor: '#fff',
+  },
+  sortOptionActive: { backgroundColor: '#eef0fa', borderColor: BLUE },
+  sortOptionText: { fontSize: 14, color: '#5c6180', textAlign: 'center' },
+  sortOptionTextActive: { color: BLUE },
+  sortFooter: { marginTop: 18, gap: 10 },
+  sortClearBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', alignItems: 'center' },
+  sortClearText: { fontSize: 14, color: '#5c6180' },
+  sortApplyBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: BLUE, alignItems: 'center' },
+  sortApplyText: { fontSize: 14, color: '#ffffff' },
 
   // In-progress section
   projectsSection: { marginBottom: 4 },
