@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
+import { Plus, X } from 'lucide-react-native';
 import { ROLES, getSpecializations, labelOf, type Labeled } from '@features/crew/data/categories';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
@@ -100,6 +101,11 @@ export function ContentTabs({
     }).start();
   }
 
+  const equipInputRef = useRef<TextInput>(null);
+  function focusAddInput() {
+    equipInputRef.current?.focus();
+  }
+
   function addEquipment() {
     const trimmed = newEquipment.trim();
     if (!trimmed || !onEquipmentChange) return;
@@ -159,41 +165,50 @@ export function ContentTabs({
         {/* Equipment */}
         {active === 'equipment' && (
           <>
-            {equipment.length === 0 && (
+            {equipment.length === 0 && !isEditing ? (
               <AppText weight="regular" style={styles.empty}>
                 {t('profile_sections.no_equipment')}
               </AppText>
-            )}
-            {equipment.length > 0 && (
-              <View style={styles.list}>
+            ) : (
+              <View style={[styles.eqGrid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {equipment.map((item, index) => (
-                  <View
-                    key={`eq-${index}`}
-                    style={[
-                      styles.itemRow,
-                      index < equipment.length - 1 && styles.itemRowDivider,
-                    ]}
-                  >
+                  <View key={`eq-${index}`} style={styles.eqTile}>
                     {isEditing && (
                       <TouchableOpacity
+                        style={[styles.eqRemove, rtl ? { left: 8 } : { right: 8 }]}
                         onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
-                        hitSlop={8}
+                        hitSlop={6}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.removeBtn}>×</Text>
+                        <X size={12} color="#e05656" strokeWidth={2.5} />
                       </TouchableOpacity>
                     )}
-                    <AppText weight="regular" style={styles.itemText}>{item}</AppText>
+                    <AppText weight="bold" numberOfLines={2} ellipsizeMode="tail" style={styles.eqTileName}>
+                      {item}
+                    </AppText>
                   </View>
                 ))}
+
+                {isEditing && (
+                  <TouchableOpacity style={[styles.eqTile, styles.eqAddTile]} onPress={focusAddInput} activeOpacity={0.8}>
+                    <View style={[styles.eqIconTile, styles.eqAddIconTile]}>
+                      <Plus size={20} color="#004aad" strokeWidth={2.5} />
+                    </View>
+                    <AppText weight="semiBold" style={styles.eqAddLabel}>
+                      {rtl ? 'הוסף פריט' : 'Add'}
+                    </AppText>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
+
             {isEditing && (
-              <View style={styles.addRow}>
+              <View style={[styles.addRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <TouchableOpacity style={styles.addBtn} onPress={addEquipment} activeOpacity={0.8}>
                   <Text style={styles.addBtnText}>+</Text>
                 </TouchableOpacity>
                 <TextInput
+                  ref={equipInputRef}
                   style={[styles.addInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
                   value={newEquipment}
                   onChangeText={setNewEquipment}
@@ -357,39 +372,46 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  /* Equipment list */
-  list: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.08)',
-    overflow: 'hidden',
-  },
-  itemRow: {
-    flexDirection: 'row',
+  /* Equipment grid */
+  eqGrid: { flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
+  eqTile: {
+    width: '48%',
+    minHeight: 118,
+    backgroundColor: '#faf9fe',
+    borderRadius: 14,
+    padding: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-    backgroundColor: 'rgba(0,74,173,0.05)',
+    position: 'relative',
   },
-  itemRowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,74,173,0.08)',
+  eqIconTile: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#eef0fa',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  itemText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#004aad',
-    textAlign: 'center',
+  eqTileName: { fontSize: 13.5, color: '#2a2f5a', textAlign: 'center', marginTop: 8 },
+  eqRemove: {
+    position: 'absolute',
+    top: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 8,
+    backgroundColor: '#fdecec',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
-  removeBtn: {
-    fontSize: 20,
-    color: '#e53935',
-    fontWeight: '700',
-    lineHeight: 22,
-    paddingHorizontal: 2,
+  eqAddTile: {
+    backgroundColor: '#eaf0fb',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#b6c6e6',
   },
+  eqAddIconTile: { backgroundColor: '#dbe7fb' },
+  eqAddLabel: { fontSize: 13.5, color: '#004aad', textAlign: 'center', marginTop: 8 },
 
   /* Add row */
   addRow: {
