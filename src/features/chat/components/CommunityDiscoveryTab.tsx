@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { Users } from 'lucide-react-native';
+import { Users, Search } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '@components/ui/AppText';
@@ -82,6 +82,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   const rtl = language === 'he';
 
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const { myCommunities, discover, joinStatuses, requestToJoin } = useCommunityDiscovery(user?.id);
 
@@ -93,9 +94,15 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
     [discover],
   );
 
-  const filteredDiscover = filterCategory
-    ? discover.filter((c) => c.category === filterCategory)
-    : discover;
+  const q = search.trim().toLowerCase();
+  const filteredDiscover = discover.filter((c) => {
+    const matchCat = !filterCategory || c.category === filterCategory;
+    const matchText =
+      !q ||
+      (c.name ?? '').toLowerCase().includes(q) ||
+      (typeof c.description === 'string' && c.description.toLowerCase().includes(q));
+    return matchCat && matchText;
+  });
 
   function navigateToCommunity(communityId: string) {
     router.push(`/${modeSegment}/(tabs)/chats/${communityId}` as never);
@@ -106,10 +113,10 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   }
 
   const cardShadow = {
-    shadowColor: '#1e4fa3',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#534ab7',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   };
 
@@ -118,7 +125,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
 
       {/* My Communities — label */}
       <View style={[styles.sectionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textSec }]}>
+        <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad' }]}>
           {t('communities.my_communities')}
         </AppText>
       </View>
@@ -163,9 +170,27 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       )}
 
       {/* Discover */}
-      <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textSec, marginTop: 20, textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad', marginTop: 20, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
       </AppText>
+
+      {/* Search bar (above the category filter) */}
+      <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+          placeholder={rtl ? 'חיפוש קהילות…' : 'Search communities…'}
+          placeholderTextColor={colors.placeholder}
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+            <AppText weight="regular" style={[styles.clearBtn, { color: colors.textMuted }]}>✕</AppText>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Category filter chips */}
       <ScrollView
@@ -216,48 +241,47 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       ) : (
         filteredDiscover.map((c) => {
           const status = joinStatuses[c.id];
+          const isMember = memberIds.has(c.id);
+          const isPending = !isMember && status === 'pending';
           return (
-            <View key={c.id} style={[styles.card, { backgroundColor: '#ffffff', borderColor: colors.border, ...cardShadow }]}>
-              <View style={[styles.cardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <CommunityAvatar community={c} />
-                <View style={{ flex: 1 }}>
-                  <AppText weight="semiBold" style={[styles.cardName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-                    {c.name}
-                  </AppText>
-                  <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                    <Users size={12} color={colors.textMuted} strokeWidth={1.5} />
-                    <AppText weight="regular" style={[styles.memberCount, { color: colors.textMuted }]}>
+            <View key={c.id} style={[styles.card, { ...cardShadow }]}>
+              <View style={[styles.cardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <CommunityAvatar community={c} size={52} />
+
+                <View style={styles.textGroup}>
+                  <View style={[styles.nameRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                    <AppText weight="bold" numberOfLines={1} style={[styles.cardName, { color: colors.text, textAlign: rtl ? 'right' : 'left', flexShrink: 1 }]}>
+                      {c.name}
+                    </AppText>
+                    {isMember ? (
+                      <View style={[styles.statusBadge, { backgroundColor: '#e4f7f0' }]}>
+                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#1c9d78' }]}>{rtl ? 'חבר' : 'Member'}</AppText>
+                      </View>
+                    ) : isPending ? (
+                      <View style={[styles.statusBadge, { backgroundColor: '#fbeccb' }]}>
+                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#b7791f' }]}>{rtl ? 'ממתין' : 'Pending'}</AppText>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                    <Users size={12} color="#9aa0b8" strokeWidth={1.5} />
+                    <AppText weight="regular" style={styles.memberCount}>
                       {c.members.length} {t('communities.members')}
                     </AppText>
                   </View>
                 </View>
-              </View>
-              {!!c.description && (
-                <AppText weight="regular" style={[styles.description, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-                  {c.description as string}
-                </AppText>
-              )}
-              <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
-                {memberIds.has(c.id) ? (
-                  <>
-                    <AppText weight="semiBold" style={styles.memberLabel}>{t('communities.member')}</AppText>
-                    <TouchableOpacity
-                      style={[styles.joinBtn, { backgroundColor: colors.primary }]}
-                      onPress={() => navigateToCommunity(c.id)}
-                    >
-                      <AppText weight="semiBold" style={styles.joinBtnText}>{t('communities.open_chat')}</AppText>
-                    </TouchableOpacity>
-                  </>
-                ) : status === 'pending' ? (
-                  <View style={styles.pendingBadge}>
-                    <AppText weight="semiBold" style={styles.pendingText}>{t('communities.pending')}</AppText>
+
+                {isMember ? (
+                  <TouchableOpacity style={styles.btnSolid} onPress={() => navigateToCommunity(c.id)} activeOpacity={0.8}>
+                    <AppText weight="semiBold" style={styles.btnTextLight}>{rtl ? 'פתח צ׳אט' : 'Open chat'}</AppText>
+                  </TouchableOpacity>
+                ) : isPending ? (
+                  <View style={styles.btnMuted}>
+                    <AppText weight="semiBold" style={styles.btnTextMuted}>{rtl ? 'בקשה נשלחה' : 'Requested'}</AppText>
                   </View>
                 ) : (
-                  <TouchableOpacity
-                    style={[styles.joinBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => requestToJoin(c.id, user?.displayName ?? '')}
-                  >
-                    <AppText weight="semiBold" style={styles.joinBtnText}>{t('communities.request_join')}</AppText>
+                  <TouchableOpacity style={styles.btnSoft} onPress={() => requestToJoin(c.id, user?.displayName ?? '')} activeOpacity={0.8}>
+                    <AppText weight="semiBold" style={styles.btnTextBlue}>{rtl ? 'הצטרף' : 'Join'}</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -276,25 +300,39 @@ const styles = StyleSheet.create({
   sectionRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   sectionLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   empty: { fontSize: 14, marginBottom: 8 },
-  card: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 10 },
-  cardHeader: { alignItems: 'center', marginBottom: 4, gap: 14 },
-  cardName: { fontSize: 15, fontWeight: '600' },
-  memberCount: { fontSize: 12 },
-  preview: { fontSize: 13 },
-  description: { fontSize: 13, marginBottom: 10 },
-  cardFooter: { marginTop: 8 },
-  joinBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
-  joinBtnText: { color: '#fff', fontSize: 13 },
-  memberLabel: { color: '#10b981', fontSize: 13 },
-  pendingBadge: { backgroundColor: '#9ca3af', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
-  pendingText: { color: '#fff', fontSize: 13 },
+  card: { backgroundColor: '#ffffff', borderRadius: 16, padding: 13, marginBottom: 12 },
+  cardRow: { alignItems: 'center', gap: 12 },
+  textGroup: { flex: 1 },
+  nameRow: { alignItems: 'center', gap: 6 },
+  metaRow: { alignItems: 'center', gap: 4, marginTop: 2 },
+  cardName: { fontSize: 15.5 },
+  memberCount: { fontSize: 12, color: '#9aa0b8' },
+  statusBadge: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
+  statusBadgeText: { fontSize: 11 },
+  btnSolid: { backgroundColor: '#004aad', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
+  btnSoft: { backgroundColor: '#e8f0fd', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
+  btnMuted: { backgroundColor: '#eceef3', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
+  btnTextLight: { color: '#ffffff', fontSize: 13 },
+  btnTextBlue: { color: '#004aad', fontSize: 13 },
+  btnTextMuted: { color: '#9aa0b8', fontSize: 13 },
+  searchRow: {
+    alignItems: 'center',
+    borderRadius: 24,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 15 },
+  clearBtn: { fontSize: 14, paddingHorizontal: 4 },
   filterChip: {
     borderWidth: 1,
     borderColor: '#004aad',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    backgroundColor: 'transparent',
+    backgroundColor: '#ffffff',
   },
   filterChipActive: { backgroundColor: '#004aad' },
   filterChipText: { fontSize: 12, color: '#004aad' },
