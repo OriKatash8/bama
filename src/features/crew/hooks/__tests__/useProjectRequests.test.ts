@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useProjectRequests } from '../useProjectRequests';
-import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument } from '@core/firebase/firestore';
+import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument, queryDocuments } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 
 jest.mock('@core/firebase/firestore', () => ({
@@ -9,6 +9,7 @@ jest.mock('@core/firebase/firestore', () => ({
   where: jest.fn(() => ({ type: 'where-constraint' })),
   updateDocument: jest.fn(),
   deleteDocument: jest.fn(),
+  queryDocuments: jest.fn(() => Promise.resolve([])),
 }));
 
 const mockAddDocument = addDocument as jest.MockedFunction<typeof addDocument>;
@@ -128,6 +129,23 @@ describe('useProjectRequests', () => {
       await result.current.deleteProject('proj-1');
     });
     expect(mockDeleteDocument).toHaveBeenCalledWith('projects/proj-1');
+  });
+
+  it('deleteProject also removes the project\'s orphaned priceOffers and bundleOffers', async () => {
+    (queryDocuments as jest.Mock)
+      .mockResolvedValueOnce([{ id: 'off-1' }, { id: 'off-2' }]) // priceOffers
+      .mockResolvedValueOnce([{ id: 'bun-1' }]); // bundleOffers
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      await result.current.deleteProject('proj-1', 'chat-1');
+    });
+    expect(queryDocuments).toHaveBeenCalledWith('priceOffers', expect.anything());
+    expect(queryDocuments).toHaveBeenCalledWith('bundleOffers', expect.anything());
+    expect(mockDeleteDocument).toHaveBeenCalledWith('priceOffers/off-1');
+    expect(mockDeleteDocument).toHaveBeenCalledWith('priceOffers/off-2');
+    expect(mockDeleteDocument).toHaveBeenCalledWith('bundleOffers/bun-1');
+    expect(mockDeleteDocument).toHaveBeenCalledWith('projects/proj-1');
+    expect(mockDeleteDocument).toHaveBeenCalledWith('chats/chat-1');
   });
 
   it('deleteProject sets error and rethrows on failure', async () => {

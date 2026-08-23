@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
-import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument } from '@core/firebase/firestore';
+import { addDocument, subscribeToCollection, where, updateDocument } from '@core/firebase/firestore';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
+import { deleteProjectAndOffers } from '@features/crew/services/projectDeletion';
 
 type SubmitDetails = {
   title?: string;
@@ -71,10 +72,10 @@ export function useProjectRequests() {
     }
   }
 
-  async function deleteProject(id: string): Promise<void> {
+  async function deleteProject(id: string, chatId?: string): Promise<void> {
     setError(null);
     try {
-      await deleteDocument(`projects/${id}`);
+      await deleteProjectAndOffers(id, chatId);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to delete project';
       setError(message);
