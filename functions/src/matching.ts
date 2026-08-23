@@ -3,9 +3,10 @@
 // Pure, dependency-free so onProjectCreate notifies exactly the pros the
 // in-app noticeboard shows ("notified == visible").
 
-export type RoleSkillEntry = { role: string; specializations: string[]; genres?: string[] };
+export type RoleSkillEntry = { role: string; specializations: string[] };
 export type Slot = { category: string; quantity: number; requiredCapability?: string };
-export type ProjectLike = { crewSlots?: Slot[]; filledSlots?: { category: string }[] };
+export type FilledLike = { category: string; requiredCapability?: string };
+export type ProjectLike = { crewSlots?: Slot[]; filledSlots?: FilledLike[] };
 
 const ROLE_TO_LEGACY_CATEGORY: Record<string, string> = {
   videographer: 'Video Photographer',
@@ -33,7 +34,12 @@ export function seedRoleSkills(
   return (skills ?? [])
     .map((s) => LEGACY_CATEGORY_TO_ROLE[s.category] ?? s.category)
     .filter((role) => role in ROLE_TO_LEGACY_CATEGORY)
-    .map((role) => ({ role, specializations: ['general'], genres: [] }));
+    .map((role) => ({ role, specializations: ['general'] }));
+}
+
+/** Two slots are the "same kind" iff same category AND same required capability. */
+function sameSlotKind(a: FilledLike, b: FilledLike): boolean {
+  return a.category === b.category && (a.requiredCapability ?? undefined) === (b.requiredCapability ?? undefined);
 }
 
 export function getVacantSlots(project: ProjectLike): Slot[] {
@@ -42,7 +48,7 @@ export function getVacantSlots(project: ProjectLike): Slot[] {
   return crewSlots
     .map((slot) => ({
       ...slot,
-      quantity: slot.quantity - filled.filter((f) => f.category === slot.category).length,
+      quantity: slot.quantity - filled.filter((f) => sameSlotKind(f, slot)).length,
     }))
     .filter((slot) => slot.quantity > 0);
 }

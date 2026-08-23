@@ -67,8 +67,13 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const translatedRoles = allRoles.map(r =>
     rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
   );
-  // Role labels with an optional required-capability suffix (one entry per role/category).
-  const roleChips = [...new Map(request.crewSlots.map((s) => [s.category, s])).values()].map((s) => {
+  // Role labels with an optional required-capability suffix — one chip per distinct
+  // (category, requiredCapability) so a drone slot and a general slot both show.
+  const roleChips = [
+    ...new Map(
+      request.crewSlots.map((s) => [`${s.category}-${s.requiredCapability ?? 'general'}`, s]),
+    ).values(),
+  ].map((s) => {
     const base = rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category;
     const cap = capabilityLabel(s.category, s.requiredCapability, lang);
     return cap ? `${base} · ${cap}` : base;

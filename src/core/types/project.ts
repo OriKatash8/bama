@@ -64,6 +64,8 @@ export type CrewRequestSlot = {
 export type FilledSlot = {
   category: string;
   professionalId: string;
+  /** The capability slot this fill consumed (undefined = a general slot). Set at accept time. */
+  requiredCapability?: string;
 };
 
 export type ProjectApplication = {

@@ -230,7 +230,11 @@ export function ProjectRequestCard({ request }: Props) {
             <ActivityIndicator size="small" color={PURPLE} />
           ) : (
             request.crewSlots.map((slot, i) => {
-              const filled = request.filledSlots?.find((f) => f.category === slot.category);
+              const filled = request.filledSlots?.find(
+                (f) =>
+                  f.category === slot.category &&
+                  (f.requiredCapability ?? undefined) === (slot.requiredCapability ?? undefined),
+              );
               const member = team.find(
                 (m) => m.professionalId === filled?.professionalId && m.category === slot.category,
               );

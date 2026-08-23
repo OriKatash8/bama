@@ -247,7 +247,7 @@ export const onProjectCreate = functions.firestore
       clientId?: string;
       title?: string;
       crewSlots?: Array<{ category: string; quantity: number; requiredCapability?: string }>;
-      filledSlots?: Array<{ category: string }>;
+      filledSlots?: Array<{ category: string; requiredCapability?: string }>;
     };
 
     if (project.status !== 'open') return;

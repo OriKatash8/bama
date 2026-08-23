@@ -30,11 +30,11 @@ export type ProfessionalProfile = {
   /** @deprecated Phase 1 — use roleSkills for matching (kept until call sites migrate). */
   skills?: ProfessionalSkill[];
   /**
-   * Source of truth for role/specialization matching.
-   * `role` = a RoleDef id (e.g. 'videographer'); `specializations` = specialization
-   * ids (e.g. ['general','drone']); `genres` = optional genre ids for that role.
+   * Source of truth for role/subskill matching.
+   * `role` = a RoleDef id (e.g. 'videographer'); `specializations` = subskill
+   * ids (e.g. ['general','drone']).
    */
-  roleSkills: Array<{ role: string; specializations: string[]; genres: string[] }>;
+  roleSkills: Array<{ role: string; specializations: string[] }>;
   bio: string;
   availability: 'available' | 'busy';
   rating: number;

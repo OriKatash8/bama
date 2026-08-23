@@ -10,7 +10,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { getDocument, updateDocument } from '@core/firebase/firestore';
-import type { BundleOffer, PriceOffer } from '@core/types/project';
+import type { BundleOffer, PriceOffer, CrewRequestSlot, FilledSlot } from '@core/types/project';
+import { seedRoleSkills, type RoleSkillEntry } from '@features/profile/utils/roleSkills';
+import { assignFilledCapability } from '@features/noticeboard/matching';
 import { createProjectGroup, addMemberToGroup } from '../../chat/services/chatService';
 
 export function useAcceptBundleOffer() {
@@ -74,11 +76,35 @@ export function useAcceptBundleOffer() {
         batch.update(doc(db, 'bundleOffers', bundleId), { status: 'rejected' });
       }
 
-      // Add all slots to project.filledSlots in one arrayUnion call
-      const filledEntries = bundle.slots.map((s) => ({
-        category: s.category,
-        professionalId: bundle.professionalId,
-      }));
+      // Attribute a capability slot per bundle slot (accumulating so two same-category
+      // slots don't both claim the same specialized slot), then add them to filledSlots.
+      let filledEntries: FilledSlot[];
+      try {
+        const [proj, prof] = await Promise.all([
+          getDocument<{ crewSlots?: CrewRequestSlot[]; filledSlots?: FilledSlot[] }>(`projects/${bundle.projectId}`),
+          getDocument<{ roleSkills?: RoleSkillEntry[]; skills?: { category: string }[] }>(
+            `users/${bundle.professionalId}/profile/data`,
+          ),
+        ]);
+        const roleSkills = seedRoleSkills(prof?.roleSkills, prof?.skills);
+        const running: FilledSlot[] = [...(proj?.filledSlots ?? [])];
+        filledEntries = bundle.slots.map((s) => {
+          const cap = assignFilledCapability(proj?.crewSlots ?? [], running, roleSkills, s.category);
+          const entry: FilledSlot = {
+            category: s.category,
+            professionalId: bundle.professionalId,
+            ...(cap ? { requiredCapability: cap } : {}),
+          };
+          running.push(entry);
+          return entry;
+        });
+      } catch (e) {
+        console.error('[useAcceptBundleOffer] capability attribution failed (defaulting to general)', e);
+        filledEntries = bundle.slots.map((s) => ({
+          category: s.category,
+          professionalId: bundle.professionalId,
+        }));
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       batch.update(doc(db, 'projects', bundle.projectId), {
         filledSlots: arrayUnion(...filledEntries),

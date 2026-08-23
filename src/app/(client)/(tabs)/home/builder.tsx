@@ -49,7 +49,7 @@ const gradientStyle = {
 } as object;
 
 export default function BuilderScreen() {
-  const { slots, totalCount, addSlot, removeSlot, loadSlots } = useCrewBuilder();
+  const { slots, totalCount, totalForCategory, addUnit, removeUnit, loadSlots } = useCrewBuilder();
   const { submit, updateProject } = useProjectRequests();
   const { showToast } = useUiStore();
   const colors = useTheme();
@@ -131,7 +131,7 @@ export default function BuilderScreen() {
   }
 
   function getQty(_sub: string) {
-    return slots.find(s => s.category === selectedCategory?.key)?.quantity ?? 0;
+    return selectedCategory ? totalForCategory(selectedCategory.key) : 0;
   }
 
   function validate(): boolean {
@@ -277,9 +277,7 @@ export default function BuilderScreen() {
 
           <View style={styles.grid}>
             {CATEGORIES.map((cat) => {
-              const catTotal = slots
-                .filter(s => s.category === cat.key)
-                .reduce((sum, s) => sum + s.quantity, 0);
+              const catTotal = totalForCategory(cat.key);
               return (
                 <TouchableOpacity
                   key={cat.key}
@@ -377,7 +375,7 @@ export default function BuilderScreen() {
                         <Text style={[styles.roleCellLabel, { color: colors.text }]} numberOfLines={2}>{sub}</Text>
                         <View style={styles.qtyControls}>
                           {qty > 0 && (
-                            <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.inputBorder }]} onPress={() => removeSlot(selectedCategory!.key)} hitSlop={8} activeOpacity={0.7}>
+                            <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.inputBorder }]} onPress={() => removeUnit(selectedCategory!.key)} hitSlop={8} activeOpacity={0.7}>
                               <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
                             </TouchableOpacity>
                           )}
@@ -386,7 +384,7 @@ export default function BuilderScreen() {
                               <Text style={styles.qtyBadgeText}>{qty}</Text>
                             </View>
                           )}
-                          <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]} onPress={() => addSlot(selectedCategory!.key)} hitSlop={8} activeOpacity={0.7}>
+                          <TouchableOpacity style={[styles.qtyBtn, { borderColor: colors.accent, backgroundColor: colors.accent + '22' }]} onPress={() => addUnit(selectedCategory!.key)} hitSlop={8} activeOpacity={0.7}>
                             <Text style={[styles.qtyBtnText, { color: colors.accent }]}>+</Text>
                           </TouchableOpacity>
                         </View>

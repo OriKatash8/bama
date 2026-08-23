@@ -11,7 +11,7 @@ import type { ProfessionalProfile, ProfessionalSkill } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
 import { ROLE_TO_LEGACY_CATEGORY } from '@features/crew/data/categories';
 
-type RoleSkill = { role: string; specializations: string[]; genres: string[] };
+type RoleSkill = { role: string; specializations: string[] };
 
 type SaveFields = {
   name: string;

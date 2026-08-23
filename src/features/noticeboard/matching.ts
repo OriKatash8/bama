@@ -1,5 +1,5 @@
 import { ROLE_TO_LEGACY_CATEGORY, getSpecializations, labelOf } from '@features/crew/data/categories';
-import type { CrewRequestSlot, ProjectRequest } from '@core/types/project';
+import type { CrewRequestSlot, FilledSlot, ProjectRequest } from '@core/types/project';
 
 /**
  * Canonical capability-aware matching used by the noticeboard filter AND the
@@ -7,7 +7,7 @@ import type { CrewRequestSlot, ProjectRequest } from '@core/types/project';
  * A pure mirror lives in functions/src/matching.ts for onProjectCreate — keep in sync.
  */
 
-export type RoleSkillEntry = { role: string; specializations: string[]; genres?: string[] };
+export type RoleSkillEntry = { role: string; specializations: string[] };
 
 const LEGACY_CATEGORY_TO_ROLE: Record<string, string> = Object.fromEntries(
   Object.entries(ROLE_TO_LEGACY_CATEGORY).map(([role, cat]) => [cat, role]),
@@ -18,11 +18,26 @@ export function roleIdForCategory(category: string): string {
   return LEGACY_CATEGORY_TO_ROLE[category] ?? category;
 }
 
-/** Vacant slots = requested minus filled (by category); preserves requiredCapability. */
-export function getVacantSlots(request: ProjectRequest): CrewRequestSlot[] {
+/** Two slots are the "same kind" iff same category AND same required capability. */
+function sameSlotKind(
+  a: { category: string; requiredCapability?: string },
+  b: { category: string; requiredCapability?: string },
+): boolean {
+  return a.category === b.category && (a.requiredCapability ?? undefined) === (b.requiredCapability ?? undefined);
+}
+
+/**
+ * Vacant slots = requested minus filled, matched by (category + requiredCapability).
+ * A drone slot is only consumed by a drone-attributed fill; a general fill only
+ * consumes a general slot. Preserves requiredCapability on the returned slots.
+ */
+export function getVacantSlots(request: {
+  crewSlots: CrewRequestSlot[];
+  filledSlots?: FilledSlot[];
+}): CrewRequestSlot[] {
   return request.crewSlots
     .map((slot) => {
-      const filled = (request.filledSlots ?? []).filter((f) => f.category === slot.category).length;
+      const filled = (request.filledSlots ?? []).filter((f) => sameSlotKind(f, slot)).length;
       return { ...slot, quantity: slot.quantity - filled };
     })
     .filter((slot) => slot.quantity > 0);
@@ -51,6 +66,25 @@ export function professionalMatchesProject(
   request: ProjectRequest,
 ): boolean {
   return getVacantSlots(request).some((slot) => professionalMatchesSlot(roleSkills, slot));
+}
+
+/**
+ * When a pro is accepted for `category`, which capability slot do they fill?
+ * Among still-vacant (category, cap) slots, pick the most SPECIFIC one the pro
+ * matches (specialized before general) so a drone pro consumes the drone slot,
+ * not the general one. Returns its requiredCapability (undefined = general).
+ */
+export function assignFilledCapability(
+  crewSlots: CrewRequestSlot[],
+  filledSlots: FilledSlot[],
+  roleSkills: RoleSkillEntry[],
+  category: string,
+): string | undefined {
+  const vacant = getVacantSlots({ crewSlots, filledSlots })
+    .filter((s) => s.category === category)
+    .sort((a, b) => (b.requiredCapability ? 1 : 0) - (a.requiredCapability ? 1 : 0));
+  const match = vacant.find((s) => professionalMatchesSlot(roleSkills, s));
+  return match?.requiredCapability;
 }
 
 /** Display label for a slot's required capability ('' if none / unknown). */

@@ -1,7 +1,25 @@
 import { useState } from 'react';
 import { queryDocuments, getDocument, runBatchUpdates, updateDocument, arrayUnion, where } from '@core/firebase/firestore';
-import type { PriceOffer, BundleOffer } from '@core/types/project';
+import type { PriceOffer, BundleOffer, CrewRequestSlot, FilledSlot } from '@core/types/project';
+import { seedRoleSkills, type RoleSkillEntry } from '@features/profile/utils/roleSkills';
+import { assignFilledCapability } from '@features/noticeboard/matching';
 import { createProjectGroup, addMemberToGroup } from '../../chat/services/chatService';
+
+/** Read the project + the pro's roleSkills and decide which capability slot the fill consumes. */
+async function attributeFilledCapability(
+  projectId: string,
+  category: string,
+  professionalId: string,
+): Promise<string | undefined> {
+  const [proj, prof] = await Promise.all([
+    getDocument<{ crewSlots?: CrewRequestSlot[]; filledSlots?: FilledSlot[] }>(`projects/${projectId}`),
+    getDocument<{ roleSkills?: RoleSkillEntry[]; skills?: { category: string }[] }>(
+      `users/${professionalId}/profile/data`,
+    ),
+  ]);
+  const roleSkills = seedRoleSkills(prof?.roleSkills, prof?.skills);
+  return assignFilledCapability(proj?.crewSlots ?? [], proj?.filledSlots ?? [], roleSkills, category);
+}
 
 export function useAcceptOffer() {
   const [isAccepting, setIsAccepting] = useState<string | null>(null);
@@ -58,13 +76,23 @@ export function useAcceptOffer() {
         // Non-fatal: don't throw — the individual offer is already accepted
       }
 
-      // Step 3: add professional to project filledSlots
+      // Step 3: add professional to project filledSlots (with the capability slot they fill)
       try {
+        let requiredCapability: string | undefined;
+        try {
+          requiredCapability = await attributeFilledCapability(
+            offer.projectId, offer.category, offer.professionalId,
+          );
+        } catch (e: unknown) {
+          console.error('[useAcceptOffer] capability attribution failed (defaulting to general)', e);
+        }
+        const filled: FilledSlot = {
+          category: offer.category,
+          professionalId: offer.professionalId,
+          ...(requiredCapability ? { requiredCapability } : {}),
+        };
         await updateDocument(`projects/${offer.projectId}`, {
-          filledSlots: arrayUnion({
-            category: offer.category,
-            professionalId: offer.professionalId,
-          }) as unknown,
+          filledSlots: arrayUnion(filled) as unknown,
         });
         console.log('[useAcceptOffer] step 3 ok — filledSlots updated on project', offer.projectId);
       } catch (e: unknown) {

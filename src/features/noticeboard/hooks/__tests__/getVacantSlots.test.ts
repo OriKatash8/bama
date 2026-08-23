@@ -8,8 +8,8 @@ import { professionalMatchesProject } from '@features/noticeboard/matching';
 import type { ProjectRequest } from '@core/types/project';
 
 function makeRequest(
-  crewSlots: { category: string; subcategory: string; quantity: number }[],
-  filledSlots: { category: string; subcategory: string; professionalId: string }[]
+  crewSlots: { category: string; quantity: number; requiredCapability?: string }[],
+  filledSlots: { category: string; professionalId: string; requiredCapability?: string }[]
 ): ProjectRequest {
   return {
     id: 'proj1',
@@ -27,61 +27,51 @@ function makeRequest(
 
 describe('getVacantSlots', () => {
   it('returns all slots when none are filled', () => {
-    const req = makeRequest(
-      [{ category: 'Video', subcategory: 'DP', quantity: 2 }],
-      []
-    );
-    expect(getVacantSlots(req)).toEqual([
-      { category: 'Video', subcategory: 'DP', quantity: 2 },
-    ]);
+    const req = makeRequest([{ category: 'Editor', quantity: 2 }], []);
+    expect(getVacantSlots(req)).toEqual([{ category: 'Editor', quantity: 2 }]);
   });
 
   it('reduces quantity by the number of filled entries for that slot', () => {
     const req = makeRequest(
-      [{ category: 'Video', subcategory: 'DP', quantity: 3 }],
+      [{ category: 'Editor', quantity: 3 }],
       [
-        { category: 'Video', subcategory: 'DP', professionalId: 'pro1' },
-        { category: 'Video', subcategory: 'DP', professionalId: 'pro2' },
+        { category: 'Editor', professionalId: 'pro1' },
+        { category: 'Editor', professionalId: 'pro2' },
       ]
     );
-    expect(getVacantSlots(req)).toEqual([
-      { category: 'Video', subcategory: 'DP', quantity: 1 },
-    ]);
+    expect(getVacantSlots(req)).toEqual([{ category: 'Editor', quantity: 1 }]);
   });
 
   it('excludes a slot when it is fully filled', () => {
     const req = makeRequest(
-      [{ category: 'Video', subcategory: 'DP', quantity: 1 }],
-      [{ category: 'Video', subcategory: 'DP', professionalId: 'pro1' }]
+      [{ category: 'Editor', quantity: 1 }],
+      [{ category: 'Editor', professionalId: 'pro1' }]
     );
     expect(getVacantSlots(req)).toEqual([]);
   });
 
-  it('only counts filledSlots that match both category and subcategory', () => {
+  it('mixing: a general fill only consumes the general slot, leaving the drone slot vacant', () => {
     const req = makeRequest(
       [
-        { category: 'Video', subcategory: 'DP', quantity: 1 },
-        { category: 'Audio', subcategory: 'Mixer', quantity: 1 },
+        { category: 'Video Photographer', quantity: 1, requiredCapability: 'drone' },
+        { category: 'Video Photographer', quantity: 1 },
       ],
-      [{ category: 'Video', subcategory: 'DP', professionalId: 'pro1' }]
+      [{ category: 'Video Photographer', professionalId: 'pro1' }] // general fill
     );
     expect(getVacantSlots(req)).toEqual([
-      { category: 'Audio', subcategory: 'Mixer', quantity: 1 },
+      { category: 'Video Photographer', quantity: 1, requiredCapability: 'drone' },
     ]);
   });
 
-  it('returns empty array when every slot is fully filled', () => {
+  it('mixing: a drone fill only consumes the drone slot, leaving the general slot vacant', () => {
     const req = makeRequest(
       [
-        { category: 'Video', subcategory: 'DP', quantity: 1 },
-        { category: 'Audio', subcategory: 'Mixer', quantity: 1 },
+        { category: 'Video Photographer', quantity: 1, requiredCapability: 'drone' },
+        { category: 'Video Photographer', quantity: 1 },
       ],
-      [
-        { category: 'Video', subcategory: 'DP', professionalId: 'pro1' },
-        { category: 'Audio', subcategory: 'Mixer', professionalId: 'pro2' },
-      ]
+      [{ category: 'Video Photographer', professionalId: 'pro1', requiredCapability: 'drone' }]
     );
-    expect(getVacantSlots(req)).toEqual([]);
+    expect(getVacantSlots(req)).toEqual([{ category: 'Video Photographer', quantity: 1 }]);
   });
 });
 
@@ -103,6 +93,16 @@ describe('professionalMatchesProject (capability-aware)', () => {
     const p = proj([{ category: 'Editor', quantity: 1, requiredCapability: 'colorist' }]);
     expect(professionalMatchesProject([{ role: 'editor', specializations: ['general'] }], p)).toBe(false);
     expect(professionalMatchesProject([{ role: 'editor', specializations: ['general', 'colorist'] }], p)).toBe(true);
+  });
+
+  it('mixed project: a general-only pro matches the general slot but not the drone slot', () => {
+    const p = proj([
+      { category: 'Video Photographer', quantity: 1, requiredCapability: 'drone' },
+      { category: 'Video Photographer', quantity: 1 },
+    ]);
+    expect(professionalMatchesProject([{ role: 'videographer', specializations: ['general'] }], p)).toBe(true);
+    // drone-only pro (no general) matches the drone slot but not the general one — still a match overall
+    expect(professionalMatchesProject([{ role: 'videographer', specializations: ['drone'] }], p)).toBe(true);
   });
 
   it('ignores fully-booked slots', () => {

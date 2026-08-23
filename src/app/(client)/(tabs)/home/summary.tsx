@@ -18,7 +18,6 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { CalendarDays, ChevronLeft, X } from 'lucide-react-native';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { CrewRequestSlot } from '@core/types/project';
 import { ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
 
 type Translations = typeof en;
@@ -44,7 +43,7 @@ export default function SummaryScreen() {
     roleAnswers: string;
   }>();
 
-  const { slots, addSlot, removeSlot, reset: resetSlots, loadSlots } = useCrewBuilder();
+  const { slots, removeCategory, reset: resetSlots, loadSlots } = useCrewBuilder();
 
   useEffect(() => {
     if (params.slots) {
@@ -151,9 +150,8 @@ export default function SummaryScreen() {
     }
   }
 
-  function removeSlotEntirely(slot: CrewRequestSlot) {
-    loadSlots(slots.filter(s => s.category !== slot.category));
-  }
+  /** "General" label for a slot with no requiredCapability. */
+  const generalLabel = rtl ? 'כללי' : 'General';
 
   return (
     <Screen scrollable={false}>
@@ -288,47 +286,34 @@ export default function SummaryScreen() {
           <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
             {t('builder.select_roles')}
           </Text>
-          {slots.map((slot) => (
-            <View key={slot.category} style={styles.slotRow}>
-              <View style={styles.slotInfo}>
-                <Text style={[styles.slotSub, { ...font.semiBold }]}>{slot.category}</Text>
-                {slot.requiredCapability ? (
+          {[...new Set(slots.map((s) => s.category))].map((category) => {
+            const role = ROLE_BY_ID[roleIdForCategory(category)];
+            const roleLabel = role ? labelOf(role, lang) : category;
+            const breakdown = slots
+              .filter((s) => s.category === category)
+              .map((s) =>
+                `${s.quantity} ${s.requiredCapability ? capabilityLabel(s.category, s.requiredCapability, lang) : generalLabel}`,
+              )
+              .join(' · ');
+            return (
+              <View key={category} style={styles.slotRow}>
+                <View style={styles.slotInfo}>
+                  <Text style={[styles.slotSub, { ...font.semiBold }]}>{roleLabel}</Text>
                   <Text style={[styles.slotCap, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-                    {capabilityLabel(slot.category, slot.requiredCapability, lang)}
+                    {breakdown}
                   </Text>
-                ) : null}
-              </View>
-              <View style={styles.qtyControls}>
-                <TouchableOpacity
-                  style={styles.qtyBtn}
-                  onPress={() => removeSlot(slot.category)}
-                  hitSlop={8}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.qtyBtnText, { ...font.bold }]}>−</Text>
-                </TouchableOpacity>
-                <View style={styles.qtyBadge}>
-                  <Text style={[styles.qtyBadgeText, { ...font.bold }]}>{slot.quantity}</Text>
                 </View>
                 <TouchableOpacity
-                  style={[styles.qtyBtn, styles.qtyBtnAdd]}
-                  onPress={() => addSlot(slot.category)}
-                  hitSlop={8}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.qtyBtnText, styles.qtyBtnAddText, { ...font.bold }]}>+</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
                   style={styles.removeBtn}
-                  onPress={() => removeSlotEntirely(slot)}
+                  onPress={() => removeCategory(category)}
                   hitSlop={8}
                   activeOpacity={0.7}
                 >
                   <X size={14} color="#e53935" strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
-            </View>
-          ))}
+            );
+          })}
           {slots.length === 0 && (
             <Text style={[styles.hint, { ...font.regular, color: '#e53935', textAlign: rtl ? 'right' : 'left' }]}>
               {t('builder.error_role')}

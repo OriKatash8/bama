@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
-import { ROLES, getSpecializations, getGenres, labelOf, type Labeled } from '@features/crew/data/categories';
+import { ROLES, getSpecializations, labelOf, type Labeled } from '@features/crew/data/categories';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -27,7 +27,7 @@ type SectionKey = 'equipment' | 'reviews' | 'skills';
 
 const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews', 'skills'];
 
-export type RoleSkill = { role: string; specializations: string[]; genres: string[] };
+export type RoleSkill = { role: string; specializations: string[] };
 
 type ContentTabsProps = {
   equipment: string[];
@@ -64,10 +64,10 @@ export function ContentTabs({
     const exists = rs.some((e) => e.role === roleId);
     const next = exists
       ? rs.filter((e) => e.role !== roleId)
-      : [...rs, { role: roleId, specializations: ['general'], genres: [] }];
+      : [...rs, { role: roleId, specializations: ['general'] }];
     onRoleSkillsChange?.(next);
   }
-  function toggleInEntry(roleId: string, field: 'specializations' | 'genres', id: string) {
+  function toggleInEntry(roleId: string, field: 'specializations', id: string) {
     const next = rs.map((e) => {
       if (e.role !== roleId) return e;
       const has = e[field].includes(id);
@@ -210,7 +210,7 @@ export function ContentTabs({
         {/* Reviews */}
         {active === 'reviews' && <ReviewsList reviews={reviews} />}
 
-        {/* Skills (roles → specializations + optional genres) */}
+        {/* Skills (roles → subskills/specializations) */}
         {active === 'skills' && (
           <>
             {isEditing ? (
@@ -237,11 +237,10 @@ export function ContentTabs({
                   })}
                 </View>
 
-                {/* Level 2 — per selected role: specializations + optional genres */}
+                {/* Level 2 — per selected role: subskills/specializations */}
                 {ROLES.filter((role) => rs.some((e) => e.role === role.id)).map((role) => {
                   const entry = rs.find((e) => e.role === role.id)!;
                   const specs = getSpecializations(role.id);
-                  const genres = getGenres(role.id);
                   return (
                     <View key={`blk-${role.id}`} style={styles.roleBlock}>
                       <AppText weight="bold" style={[styles.roleBlockTitle, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -268,31 +267,6 @@ export function ContentTabs({
                           );
                         })}
                       </View>
-
-                      {genres.length > 0 && (
-                        <>
-                          <AppText weight="semiBold" style={[styles.subLabel, { textAlign: rtl ? 'right' : 'left' }]}>
-                            {t('profile_sections.genres')} ({t('profile_sections.optional')})
-                          </AppText>
-                          <View style={[styles.pillsWrap, { flexDirection: rowDir }]}>
-                            {genres.map((g) => {
-                              const on = entry.genres.includes(g.id);
-                              return (
-                                <TouchableOpacity
-                                  key={g.id}
-                                  style={[styles.pill, on && styles.pillActive]}
-                                  onPress={() => toggleInEntry(role.id, 'genres', g.id)}
-                                  activeOpacity={0.7}
-                                >
-                                  <AppText weight="semiBold" style={[styles.pillText, on && styles.pillTextActive]}>
-                                    {labelOf(g, lang)}
-                                  </AppText>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        </>
-                      )}
                     </View>
                   );
                 })}
@@ -305,7 +279,6 @@ export function ContentTabs({
                   {ROLES.filter((role) => rs.some((e) => e.role === role.id)).map((role) => {
                     const entry = rs.find((e) => e.role === role.id)!;
                     const specs = getSpecializations(role.id);
-                    const genres = getGenres(role.id);
                     return (
                       <View key={`ro-${role.id}`} style={styles.roleBlock}>
                         <AppText weight="bold" style={[styles.roleBlockTitle, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -315,11 +288,6 @@ export function ContentTabs({
                           {entry.specializations.map((id) => (
                             <View key={`sp-${id}`} style={styles.chip}>
                               <AppText weight="regular" style={styles.chipText}>{labelById(specs, id)}</AppText>
-                            </View>
-                          ))}
-                          {entry.genres.map((id) => (
-                            <View key={`ge-${id}`} style={[styles.chip, styles.chipGenre]}>
-                              <AppText weight="regular" style={[styles.chipText, styles.chipGenreText]}>{labelById(genres, id)}</AppText>
                             </View>
                           ))}
                         </View>
@@ -488,10 +456,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#004aad',
   },
   chipText: { fontSize: 12, color: '#ffffff' },
-  chipGenre: { backgroundColor: 'rgba(0,74,173,0.10)' },
-  chipGenreText: { color: '#004aad' },
 
-  /* Roles → specializations/genres */
+  /* Roles → subskills/specializations */
   roleBlock: {
     backgroundColor: 'rgba(0,74,173,0.04)',
     borderRadius: 12,

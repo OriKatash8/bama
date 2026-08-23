@@ -1,6 +1,6 @@
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID } from '@features/crew/data/categories';
 
-export type RoleSkillEntry = { role: string; specializations: string[]; genres: string[] };
+export type RoleSkillEntry = { role: string; specializations: string[] };
 
 /**
  * Seed roleSkills from the deprecated legacy skills[] (reverse map) so existing pros
@@ -19,5 +19,5 @@ export function seedRoleSkills(
   return (skills ?? [])
     .map((s) => legacyToRole[s.category] ?? s.category)
     .filter((role) => !!ROLE_BY_ID[role])
-    .map((role) => ({ role, specializations: ['general'], genres: [] }));
+    .map((role) => ({ role, specializations: ['general'] }));
 }

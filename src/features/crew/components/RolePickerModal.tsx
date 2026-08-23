@@ -31,7 +31,7 @@ export function RolePickerModal({ visible, onDismiss, onPost, isPosting = false 
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
-  const { slots, addSlot, removeSlot, reset } = useCrewBuilder();
+  const { slots, addUnit, removeUnit, reset } = useCrewBuilder();
 
   function handleDismiss() {
     reset();
@@ -62,8 +62,8 @@ export function RolePickerModal({ visible, onDismiss, onPost, isPosting = false 
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             <CategoryAccordion
               slots={slots}
-              onSelectSubcategory={(cat, _sub) => addSlot(cat)}
-              onRemoveSubcategory={(cat, _sub) => removeSlot(cat)}
+              onSelectSubcategory={(cat, _sub) => addUnit(cat)}
+              onRemoveSubcategory={(cat, _sub) => removeUnit(cat)}
             />
             <View style={{ height: 24 }} />
           </ScrollView>

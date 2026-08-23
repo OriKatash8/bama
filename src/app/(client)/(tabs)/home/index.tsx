@@ -92,7 +92,7 @@ const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } a
 
 
 export default function HomeScreen() {
-  const { slots, totalCount, addSlot, removeSlot, setRequiredCapability, loadSlots } = useCrewBuilder();
+  const { slots, totalCount, roleQuantity, setQuantity, slotCaps, setSlotCapability, removeCategory, loadSlots } = useCrewBuilder();
   const colors = useTheme();
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const isEditMode = !!projectId;
@@ -120,7 +120,7 @@ export default function HomeScreen() {
   );
 
   // ── Form state (single source of truth for all steps + summary) ──
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [description, setDescription] = useState('');
   const [exec, setExec] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -202,7 +202,18 @@ export default function HomeScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
   }
 
-  // ── Step 2 → Summary screen ──
+  // ── Step 2 (roles + quantity) → Step 3 (per-slot subskill) ──
+  function handleGoStep3() {
+    if (totalCount === 0) {
+      setErrors({ slots: t('builder.error_role') });
+      return;
+    }
+    setErrors({});
+    setStep(3);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
+  }
+
+  // ── Step 3 → Summary screen ──
   function handleReview() {
     router.push({
       pathname: '/(client)/(tabs)/home/summary' as never,
@@ -247,9 +258,10 @@ export default function HomeScreen() {
             <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}
             </Text>
-            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 1 מתוך 2` : `Step 1 of 2`}</Text>
+            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 1 מתוך 3` : `Step 1 of 3`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+              <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
             </View>
 
@@ -408,16 +420,17 @@ export default function HomeScreen() {
           </>
         )}
 
-        {/* ══════════════ STEP 2: Select roles ══════════════ */}
+        {/* ══════════════ STEP 2: Roles + quantity ══════════════ */}
         {step === 2 && (
           <>
             <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}
             </Text>
-            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 2 מתוך 2` : `Step 2 of 2`}</Text>
+            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 2 מתוך 3` : `Step 2 of 3`}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+              <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
             </View>
 
             <TouchableOpacity style={styles.backArrow} onPress={() => setStep(1)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -440,16 +453,15 @@ export default function HomeScreen() {
                 columnWrapperStyle={{ gap: 8, justifyContent: 'center' }}
                 ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                 renderItem={({ item: cat }) => {
-                  const catSlot = slots.find(s => s.category === cat.key);
-                  const catTotal = catSlot?.quantity ?? 0;
+                  const q = roleQuantity(cat.key);
                   return (
                     <TouchableOpacity
                       style={[
                         styles.tile,
                         { width: tileSize },
-                        catTotal > 0 && { borderWidth: 2, borderColor: colors.accent },
+                        q > 0 && { borderWidth: 2, borderColor: colors.accent },
                       ]}
-                      onPress={() => { if (catTotal === 0) addSlot(cat.key); }}
+                      onPress={() => { if (q === 0) setQuantity(cat.key, 1); }}
                       activeOpacity={0.85}
                     >
                       {cat.image ? (
@@ -458,20 +470,20 @@ export default function HomeScreen() {
                       <View style={styles.tileOverlay}>
                         <Text style={styles.tileLabel} numberOfLines={1}>{getCategoryLabel(cat.labelKey)}</Text>
                       </View>
-                      {catTotal > 0 && (
+                      {q > 0 && (
                         <View style={styles.tileControls}>
                           <TouchableOpacity
                             style={styles.tileControlBtnRemove}
-                            onPress={(e) => { e.stopPropagation?.(); removeSlot(cat.key); }}
+                            onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q - 1); }}
                             hitSlop={6}
                             activeOpacity={0.7}
                           >
                             <Text style={styles.tileControlText}>−</Text>
                           </TouchableOpacity>
-                          <Text style={styles.tileCountText}>{catTotal}</Text>
+                          <Text style={styles.tileCountText}>{q}</Text>
                           <TouchableOpacity
                             style={styles.tileControlBtnAdd}
-                            onPress={(e) => { e.stopPropagation?.(); addSlot(cat.key); }}
+                            onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q + 1); }}
                             hitSlop={6}
                             activeOpacity={0.7}
                           >
@@ -483,45 +495,84 @@ export default function HomeScreen() {
                   );
                 }}
               />
+            </View>
 
-              {/* Optional required specialization per selected role */}
-              {slots.some((s) => getSpecializations(roleIdForCategory(s.category)).some((sp) => sp.id !== 'general')) && (
-                <View style={styles.capSection}>
-                  <Text style={[styles.capHint, { textAlign: rtl ? 'right' : 'left' }]}>
-                    {t('builder.require_specialization')}
-                  </Text>
-                  {slots.map((slot) => {
-                    const roleId = roleIdForCategory(slot.category);
-                    const specs = getSpecializations(roleId).filter((sp) => sp.id !== 'general');
-                    if (specs.length === 0) return null;
-                    const catDef = CATEGORIES.find((c) => c.key === slot.category);
-                    const roleLabel = catDef ? getCategoryLabel(catDef.labelKey) : slot.category;
-                    return (
-                      <View key={slot.category} style={styles.capRow}>
-                        <Text style={[styles.capRoleLabel, { textAlign: rtl ? 'right' : 'left' }]}>{roleLabel}</Text>
-                        <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                          {specs.map((sp) => {
-                            const on = slot.requiredCapability === sp.id;
-                            return (
-                              <TouchableOpacity
-                                key={sp.id}
-                                style={[styles.chip, on ? styles.chipSelected : styles.chipUnselected]}
-                                onPress={() => setRequiredCapability(slot.category, on ? undefined : sp.id)}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={on ? styles.chipTextSelected : styles.chipTextUnselected}>
-                                  {labelOf(sp, lang)}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
+            <View style={styles.submitWrap}>
+              <TouchableOpacity
+                style={[
+                  styles.submitBtn,
+                  Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
+                ]}
+                onPress={handleGoStep3}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.submitText}>{t('builder.next_step')}</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* ══════════════ STEP 3: Per-slot subskill ══════════════ */}
+        {step === 3 && (
+          <>
+            <Text style={[styles.pageTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {rtl ? 'בחר התמחות לכל משבצת' : 'Pick a subskill per slot'}
+            </Text>
+            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
+            <View style={styles.progressRow}>
+              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+            </View>
+
+            <TouchableOpacity style={styles.backArrow} onPress={() => setStep(2)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+              <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.rolesCard}>
+              <Text style={[styles.capHint, { textAlign: rtl ? 'right' : 'left', marginBottom: 4 }]}>
+                {rtl ? 'ברירת מחדל: כללי. אפשר לדלג.' : 'Default is General. You can skip this.'}
+              </Text>
+              {[...new Set(slots.map((s) => s.category))].map((category) => {
+                const roleId = roleIdForCategory(category);
+                const subskills = getSpecializations(roleId); // general first
+                const catDef = CATEGORIES.find((c) => c.key === category);
+                const roleLabel = catDef ? getCategoryLabel(catDef.labelKey) : category;
+                const caps = slotCaps(category);
+                return (
+                  <View key={category} style={styles.slotRoleBlock}>
+                    <Text style={[styles.capRoleLabel, { textAlign: rtl ? 'right' : 'left' }]}>{roleLabel}</Text>
+                    {caps.map((current, i) => {
+                      const selectedId = current ?? 'general';
+                      return (
+                        <View key={i} style={styles.slotRow}>
+                          <Text style={[styles.slotIndex, { textAlign: rtl ? 'right' : 'left' }]}>
+                            {rtl ? `משבצת ${i + 1}` : `Slot ${i + 1}`}
+                          </Text>
+                          <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                            {subskills.map((sp) => {
+                              const on = selectedId === sp.id;
+                              return (
+                                <TouchableOpacity
+                                  key={sp.id}
+                                  style={[styles.chip, on ? styles.chipSelected : styles.chipUnselected]}
+                                  onPress={() => setSlotCapability(category, i, sp.id === 'general' ? undefined : sp.id)}
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={on ? styles.chipTextSelected : styles.chipTextUnselected}>
+                                    {labelOf(sp, lang)}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
                         </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-
+                      );
+                    })}
+                  </View>
+                );
+              })}
             </View>
 
             <View style={styles.submitWrap}>
@@ -1002,9 +1053,10 @@ function createStyles(
     chipUnselected: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#004aad' },
     chipTextSelected: { color: '#fff', fontSize: 14 },
     chipTextUnselected: { color: '#004aad', fontSize: 14 },
-    capSection: { marginTop: 14, gap: 10 },
     capHint: { fontSize: 13, fontWeight: '700', fontFamily: ffSemiBold, color: '#004aad' },
-    capRow: { gap: 6 },
     capRoleLabel: { fontSize: 13, fontWeight: '600', fontFamily: ffSemiBold, color: '#7b2fa8' },
+    slotRoleBlock: { gap: 8, marginBottom: 14 },
+    slotRow: { gap: 6, marginTop: 4 },
+    slotIndex: { fontSize: 12, color: '#666' },
   });
 }
