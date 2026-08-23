@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { Users, Search } from 'lucide-react-native';
+import { Users, Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '@components/ui/AppText';
@@ -84,6 +84,21 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
+  // ── My-communities strip scroll (arrows) ──
+  const stripRef = useRef<ScrollView>(null);
+  const [stripX, setStripX] = useState(0);
+  const [stripContentW, setStripContentW] = useState(0);
+  const [stripViewW, setStripViewW] = useState(0);
+  const maxStripX = Math.max(0, stripContentW - stripViewW);
+  const canScrollLeft = rtl ? stripX < maxStripX - 4 : stripX > 4;
+  const canScrollRight = rtl ? stripX > 4 : stripX < maxStripX - 4;
+  function scrollStrip(dir: 'left' | 'right') {
+    // The strip is mirrored in RTL, so visual-left corresponds to a larger offset.
+    const delta = 200 * (dir === 'left' ? (rtl ? 1 : -1) : (rtl ? -1 : 1));
+    const next = Math.max(0, Math.min(maxStripX, stripX + delta));
+    stripRef.current?.scrollTo({ x: next, animated: true });
+  }
+
   const { myCommunities, discover, joinStatuses, requestToJoin } = useCommunityDiscovery(user?.id);
 
   const memberIds = useMemo(() => new Set(myCommunities.map((c) => c.id)), [myCommunities]);
@@ -135,9 +150,15 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
           {t('communities.no_communities')}
         </AppText>
       ) : (
+        <View style={styles.stripWrap}>
         <ScrollView
+          ref={stripRef}
           horizontal
           showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => setStripX(e.nativeEvent.contentOffset.x)}
+          onLayout={(e) => setStripViewW(e.nativeEvent.layout.width)}
+          onContentSizeChange={(w) => setStripContentW(w)}
           contentContainerStyle={styles.stripScroll}
           style={[styles.stripOuter, rtl && { transform: [{ scaleX: -1 }] }]}
         >
@@ -167,6 +188,18 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
             );
           })}
         </ScrollView>
+
+        {canScrollLeft && (
+          <TouchableOpacity style={[styles.stripArrow, styles.stripArrowLeft]} onPress={() => scrollStrip('left')} activeOpacity={0.8}>
+            <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
+        {canScrollRight && (
+          <TouchableOpacity style={[styles.stripArrow, styles.stripArrowRight]} onPress={() => scrollStrip('right')} activeOpacity={0.8}>
+            <ChevronRight size={20} color="#004aad" strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
+        </View>
       )}
 
       {/* Discover */}
@@ -343,9 +376,28 @@ const styles = StyleSheet.create({
   emptySubtitle: { fontSize: 13, maxWidth: 260, textAlign: 'center' },
   emptyCta: { marginTop: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
 
+  stripWrap: { position: 'relative' },
   stripOuter: { marginHorizontal: -16, marginBottom: 8 },
   stripScroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 12 },
   stripItem: { alignItems: 'center', width: 68 },
+  stripArrow: {
+    position: 'absolute',
+    top: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    shadowColor: '#1e4fa3',
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  stripArrowLeft: { left: 0 },
+  stripArrowRight: { right: 0 },
   stripIconWrap: { position: 'relative', marginBottom: 6 },
   stripTitle: { fontSize: 11, color: '#004aad', textAlign: 'center', maxWidth: 64 },
   stripBadge: {
