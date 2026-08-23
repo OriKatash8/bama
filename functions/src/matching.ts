@@ -1,0 +1,67 @@
+// MIRROR of src/features/noticeboard/matching.ts (+ seedRoleSkills from
+// src/features/profile/utils/roleSkills.ts) — KEEP IN SYNC.
+// Pure, dependency-free so onProjectCreate notifies exactly the pros the
+// in-app noticeboard shows ("notified == visible").
+
+export type RoleSkillEntry = { role: string; specializations: string[]; genres?: string[] };
+export type Slot = { category: string; quantity: number; requiredCapability?: string };
+export type ProjectLike = { crewSlots?: Slot[]; filledSlots?: { category: string }[] };
+
+const ROLE_TO_LEGACY_CATEGORY: Record<string, string> = {
+  videographer: 'Video Photographer',
+  photographer: 'Still Photographer',
+  editor: 'Editor',
+  graphic_designer: 'Graphic Designer',
+  social_media: 'Social Media',
+  studio_audio: 'Studio & Audio',
+  sound: 'Sound Recordist',
+  lighting: 'Lighting Tech',
+};
+const LEGACY_CATEGORY_TO_ROLE: Record<string, string> = Object.fromEntries(
+  Object.entries(ROLE_TO_LEGACY_CATEGORY).map(([role, cat]) => [cat, role]),
+);
+
+export function roleIdForCategory(category: string): string {
+  return LEGACY_CATEGORY_TO_ROLE[category] ?? category;
+}
+
+export function seedRoleSkills(
+  roleSkills: RoleSkillEntry[] | undefined,
+  skills: { category: string }[] | undefined,
+): RoleSkillEntry[] {
+  if (roleSkills && roleSkills.length > 0) return roleSkills;
+  return (skills ?? [])
+    .map((s) => LEGACY_CATEGORY_TO_ROLE[s.category] ?? s.category)
+    .filter((role) => role in ROLE_TO_LEGACY_CATEGORY)
+    .map((role) => ({ role, specializations: ['general'], genres: [] }));
+}
+
+export function getVacantSlots(project: ProjectLike): Slot[] {
+  const crewSlots = project.crewSlots ?? [];
+  const filled = project.filledSlots ?? [];
+  return crewSlots
+    .map((slot) => ({
+      ...slot,
+      quantity: slot.quantity - filled.filter((f) => f.category === slot.category).length,
+    }))
+    .filter((slot) => slot.quantity > 0);
+}
+
+export function professionalMatchesSlot(
+  roleSkills: RoleSkillEntry[],
+  slot: { category: string; requiredCapability?: string },
+): boolean {
+  const roleId = roleIdForCategory(slot.category);
+  const entry = roleSkills.find((e) => e.role === roleId);
+  if (!entry) return false;
+  return slot.requiredCapability
+    ? entry.specializations.includes(slot.requiredCapability)
+    : entry.specializations.includes('general');
+}
+
+export function professionalMatchesAnyVacantSlot(
+  roleSkills: RoleSkillEntry[],
+  vacantSlots: { category: string; requiredCapability?: string }[],
+): boolean {
+  return vacantSlots.some((slot) => professionalMatchesSlot(roleSkills, slot));
+}

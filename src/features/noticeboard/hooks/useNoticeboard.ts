@@ -1,33 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { subscribeToCollection, getDocument, updateDocument, arrayUnion, where } from '@core/firebase/firestore';
-import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
+import type { ProjectRequest } from '@core/types/project';
 import type { User } from '@core/types/user';
+import {
+  getVacantSlots,
+  professionalMatchesProject,
+  type RoleSkillEntry,
+} from '@features/noticeboard/matching';
 
 export type PosterInfo = { displayName: string; photoURL: string | null };
 
-export function getVacantSlots(request: ProjectRequest): CrewRequestSlot[] {
-  return request.crewSlots
-    .map(slot => {
-      const filled = (request.filledSlots ?? []).filter(
-        f => f.category === slot.category
-      ).length;
-      return { ...slot, quantity: slot.quantity - filled };
-    })
-    .filter(slot => slot.quantity > 0);
-}
-
-export function filterByProfessionalCategories(
-  requests: ProjectRequest[],
-  categories: string[]
-): ProjectRequest[] {
-  if (categories.length === 0) return [];
-  return requests.filter(r =>
-    getVacantSlots(r).some(slot => categories.includes(slot.category))
-  );
-}
+// Re-exported for existing consumers (e.g. ProjectDetailModal, tests).
+export { getVacantSlots } from '@features/noticeboard/matching';
 
 export function useNoticeboard(
-  professionalCategories: string[] | null,
+  professionalRoleSkills: RoleSkillEntry[] | null,
   currentUserId: string | undefined,
 ) {
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
@@ -35,7 +22,7 @@ export function useNoticeboard(
   const [isLoading, setIsLoading] = useState(true);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const posterCacheRef = useRef<Map<string, PosterInfo>>(new Map());
-  const categoriesKey = professionalCategories === null ? null : professionalCategories.join(',');
+  const roleSkillsKey = professionalRoleSkills === null ? null : JSON.stringify(professionalRoleSkills);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -57,7 +44,8 @@ export function useNoticeboard(
   }
 
   useEffect(() => {
-    if (professionalCategories === null) return;
+    if (professionalRoleSkills === null) return;
+    const roleSkills = professionalRoleSkills;
 
     return subscribeToCollection<ProjectRequest>(
       'projects',
@@ -70,9 +58,9 @@ export function useNoticeboard(
           ? withVacancy.filter(r => r.targetProfessionalId != null && r.targetProfessionalId === currentUserId)
           : [];
 
-        // Regular projects (no targetProfessionalId) — apply skill filter
+        // Regular projects (no targetProfessionalId) — capability-aware skill filter
         const regularOpen = withVacancy.filter(r => r.targetProfessionalId == null);
-        const regularFiltered = filterByProfessionalCategories(regularOpen, professionalCategories);
+        const regularFiltered = regularOpen.filter(r => professionalMatchesProject(roleSkills, r));
 
         const filtered = [...directProjects, ...regularFiltered];
         setRequests(filtered);
@@ -103,7 +91,7 @@ export function useNoticeboard(
       },
       where('status', '==', 'open')
     );
-  }, [categoriesKey, currentUserId]);
+  }, [roleSkillsKey, currentUserId]);
 
   const visible = requests.filter((r) => !dismissed.has(r.id));
 

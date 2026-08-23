@@ -1,5 +1,11 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+import {
+  seedRoleSkills,
+  getVacantSlots,
+  professionalMatchesAnyVacantSlot,
+  type RoleSkillEntry,
+} from '../matching';
 
 async function createNotification(
   db: admin.firestore.Firestore,
@@ -226,6 +232,60 @@ async function announceProjectEvent(
     )
   );
 }
+
+/**
+ * New open (non-direct) project → notify every professional who matches ANY vacant
+ * slot (capability-aware, via the shared matching mirror). Direct-invite projects
+ * (targetProfessionalId) are handled separately.
+ */
+export const onProjectCreate = functions.firestore
+  .document('projects/{projectId}')
+  .onCreate(async (snap, context) => {
+    const project = snap.data() as {
+      status?: string;
+      targetProfessionalId?: string | null;
+      clientId?: string;
+      title?: string;
+      crewSlots?: Array<{ category: string; quantity: number; requiredCapability?: string }>;
+      filledSlots?: Array<{ category: string }>;
+    };
+
+    if (project.status !== 'open') return;
+    if (project.targetProfessionalId) return; // direct-invite handled separately
+
+    const { projectId } = context.params;
+    const db = admin.firestore();
+
+    const vacant = getVacantSlots(project);
+    if (vacant.length === 0) return;
+
+    const clientId = project.clientId;
+    const title = project.title ?? '';
+    const usersSnap = await db.collection('users').get();
+
+    await Promise.all(
+      usersSnap.docs.map(async (userDoc) => {
+        const uid = userDoc.id;
+        if (uid === clientId) return;
+        const profileDoc = await db
+          .collection('users').doc(uid)
+          .collection('profile').doc('data').get();
+        if (!profileDoc.exists) return;
+        const p = profileDoc.data() as {
+          roleSkills?: RoleSkillEntry[];
+          skills?: { category: string }[];
+        };
+        const roleSkills = seedRoleSkills(p.roleSkills, p.skills);
+        if (!professionalMatchesAnyVacantSlot(roleSkills, vacant)) return;
+        await createNotification(db, {
+          userId: uid,
+          title: 'פרויקט חדש',
+          message: `פרויקט חדש שמתאים לך: ${title}`,
+          data: { type: 'project', projectId },
+        });
+      }),
+    );
+  });
 
 export const onMissionCreate = functions.firestore
   .document('projects/{projectId}/missions/{missionId}')

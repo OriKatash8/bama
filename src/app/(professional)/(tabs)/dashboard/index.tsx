@@ -7,6 +7,8 @@ import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
+import { seedRoleSkills } from '@features/profile/utils/roleSkills';
+import { ROLE_TO_LEGACY_CATEGORY } from '@features/crew/data/categories';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
@@ -76,12 +78,18 @@ export default function DashboardScreen() {
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
 
-  const categories = useMemo(
-    () => profileLoading ? null : [...new Set((profile?.skills ?? []).map(s => s.category))],
-    [profile?.skills, profileLoading]
+  const roleSkills = useMemo(
+    () => profileLoading ? null : seedRoleSkills(profile?.roleSkills, profile?.skills),
+    [profile?.roleSkills, profile?.skills, profileLoading]
   );
 
-  const { requests: visible, posters, isLoading, dismiss: hookDismiss } = useNoticeboard(categories, currentUserId);
+  const { requests: visible, posters, isLoading, dismiss: hookDismiss } = useNoticeboard(roleSkills, currentUserId);
+
+  // Legacy category strings (for ProjectDetailModal's role-Q&A display, which is keyed by them).
+  const categories = useMemo(
+    () => (roleSkills ?? []).map((rs) => ROLE_TO_LEGACY_CATEGORY[rs.role]).filter(Boolean),
+    [roleSkills],
+  );
 
   const { showToast } = useUiStore();
   const colors = useTheme();
@@ -340,7 +348,7 @@ export default function DashboardScreen() {
         onDismiss={() => selected && dismiss(selected.id)}
         isApplying={false}
         initialView={selectedView}
-        professionalCategories={categories ?? []}
+        professionalCategories={categories}
       />
     </Screen>
   );

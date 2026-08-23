@@ -10,7 +10,8 @@ import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { useCrewBuilder } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
 import { useTheme } from '@core/hooks/useTheme';
-import { CREW_CATEGORIES } from '@features/crew/data/categories';
+import { CREW_CATEGORIES, getSpecializations, labelOf } from '@features/crew/data/categories';
+import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
 import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -91,7 +92,7 @@ const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } a
 
 
 export default function HomeScreen() {
-  const { slots, totalCount, addSlot, removeSlot, loadSlots } = useCrewBuilder();
+  const { slots, totalCount, addSlot, removeSlot, setRequiredCapability, loadSlots } = useCrewBuilder();
   const colors = useTheme();
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const isEditMode = !!projectId;
@@ -109,6 +110,7 @@ export default function HomeScreen() {
   };
   const getCategoryLabel = (labelKey: string) => labelKey === 'AI' ? 'AI' : t(labelKey);
   const rtl = language === 'he';
+  const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
   const scrollRef = useRef<ScrollView>(null);
   const font = useAppFont();
@@ -481,6 +483,44 @@ export default function HomeScreen() {
                   );
                 }}
               />
+
+              {/* Optional required specialization per selected role */}
+              {slots.some((s) => getSpecializations(roleIdForCategory(s.category)).some((sp) => sp.id !== 'general')) && (
+                <View style={styles.capSection}>
+                  <Text style={[styles.capHint, { textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('builder.require_specialization')}
+                  </Text>
+                  {slots.map((slot) => {
+                    const roleId = roleIdForCategory(slot.category);
+                    const specs = getSpecializations(roleId).filter((sp) => sp.id !== 'general');
+                    if (specs.length === 0) return null;
+                    const catDef = CATEGORIES.find((c) => c.key === slot.category);
+                    const roleLabel = catDef ? getCategoryLabel(catDef.labelKey) : slot.category;
+                    return (
+                      <View key={slot.category} style={styles.capRow}>
+                        <Text style={[styles.capRoleLabel, { textAlign: rtl ? 'right' : 'left' }]}>{roleLabel}</Text>
+                        <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                          {specs.map((sp) => {
+                            const on = slot.requiredCapability === sp.id;
+                            return (
+                              <TouchableOpacity
+                                key={sp.id}
+                                style={[styles.chip, on ? styles.chipSelected : styles.chipUnselected]}
+                                onPress={() => setRequiredCapability(slot.category, on ? undefined : sp.id)}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={on ? styles.chipTextSelected : styles.chipTextUnselected}>
+                                  {labelOf(sp, lang)}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
 
             </View>
 
@@ -962,5 +1002,9 @@ function createStyles(
     chipUnselected: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#004aad' },
     chipTextSelected: { color: '#fff', fontSize: 14 },
     chipTextUnselected: { color: '#004aad', fontSize: 14 },
+    capSection: { marginTop: 14, gap: 10 },
+    capHint: { fontSize: 13, fontWeight: '700', fontFamily: ffSemiBold, color: '#004aad' },
+    capRow: { gap: 6 },
+    capRoleLabel: { fontSize: 13, fontWeight: '600', fontFamily: ffSemiBold, color: '#7b2fa8' },
   });
 }

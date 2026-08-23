@@ -3,7 +3,8 @@ jest.mock('@core/firebase/firestore', () => ({
   where: jest.fn(),
 }));
 
-import { getVacantSlots, filterByProfessionalCategories } from '../useNoticeboard';
+import { getVacantSlots } from '../useNoticeboard';
+import { professionalMatchesProject } from '@features/noticeboard/matching';
 import type { ProjectRequest } from '@core/types/project';
 
 function makeRequest(
@@ -84,44 +85,28 @@ describe('getVacantSlots', () => {
   });
 });
 
-describe('filterByProfessionalCategories', () => {
-  function makeProject(categories: string[]): ProjectRequest {
-    return makeRequest(
-      categories.map(cat => ({ category: cat, subcategory: 'Any', quantity: 1 })),
-      []
-    );
-  }
+describe('professionalMatchesProject (capability-aware)', () => {
+  const proj = (crewSlots: unknown[], filledSlots: unknown[] = []): ProjectRequest =>
+    ({ ...makeRequest([], []), crewSlots, filledSlots } as unknown as ProjectRequest);
 
-  it('returns empty array when categories is empty', () => {
-    const projects = [makeProject(['Video Editor'])];
-    expect(filterByProfessionalCategories(projects, [])).toEqual([]);
+  it('general slot matches a pro who has that role (general)', () => {
+    const p = proj([{ category: 'Editor', quantity: 1 }]);
+    expect(professionalMatchesProject([{ role: 'editor', specializations: ['general'] }], p)).toBe(true);
   });
 
-  it('shows project when professional matches the only required category', () => {
-    const projects = [makeProject(['Video Editor'])];
-    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual(projects);
+  it('does not match a pro with a different role', () => {
+    const p = proj([{ category: 'Editor', quantity: 1 }]);
+    expect(professionalMatchesProject([{ role: 'videographer', specializations: ['general'] }], p)).toBe(false);
   });
 
-  it('hides project when professional does not match any required category', () => {
-    const projects = [makeProject(['Photographer'])];
-    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual([]);
+  it('specialized slot matches only a pro who has that capability', () => {
+    const p = proj([{ category: 'Editor', quantity: 1, requiredCapability: 'colorist' }]);
+    expect(professionalMatchesProject([{ role: 'editor', specializations: ['general'] }], p)).toBe(false);
+    expect(professionalMatchesProject([{ role: 'editor', specializations: ['general', 'colorist'] }], p)).toBe(true);
   });
 
-  it('shows project when professional matches any one of multiple required categories', () => {
-    const projects = [makeProject(['Photographer', 'Video Editor'])];
-    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual(projects);
-  });
-
-  it('hides project when professional matches none of multiple required categories', () => {
-    const projects = [makeProject(['Photographer', 'Director'])];
-    expect(filterByProfessionalCategories(projects, ['Video Editor'])).toEqual([]);
-  });
-
-  it('hides project whose only matching category slot is already fully booked', () => {
-    const proj = makeRequest(
-      [{ category: 'Video Editor', subcategory: 'Music', quantity: 1 }],
-      [{ category: 'Video Editor', subcategory: 'Music', professionalId: 'pro1' }]
-    );
-    expect(filterByProfessionalCategories([proj], ['Video Editor'])).toEqual([]);
+  it('ignores fully-booked slots', () => {
+    const p = proj([{ category: 'Editor', quantity: 1 }], [{ category: 'Editor' }]);
+    expect(professionalMatchesProject([{ role: 'editor', specializations: ['general'] }], p)).toBe(false);
   });
 });

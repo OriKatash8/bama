@@ -14,6 +14,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { capabilityLabel } from '@features/noticeboard/matching';
 import { translateCity } from '@core/utils/cityTranslations';
 
 type Translations = typeof en;
@@ -62,9 +63,16 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   const translatedRoles = allRoles.map(r =>
     rtl && CATEGORY_LABEL_KEY[r] ? t(CATEGORY_LABEL_KEY[r]) : r
   );
+  // Role labels with an optional required-capability suffix (one entry per role/category).
+  const roleChips = [...new Map(request.crewSlots.map((s) => [s.category, s])).values()].map((s) => {
+    const base = rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category;
+    const cap = capabilityLabel(s.category, s.requiredCapability, lang);
+    return cap ? `${base} · ${cap}` : base;
+  });
   // Direct-invite variant: white base with a refined purple accent treatment.
   const isDI = !!isDirectInvite;
   const cardBg = isDI ? '#faf7fe' : '#ffffff';
@@ -270,7 +278,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         {/* Skills expanded list */}
         {skillsOpen && (
           <View style={styles.skillsSection}>
-            {translatedRoles.map((role, i) => (
+            {roleChips.map((role, i) => (
               <View key={i} style={[styles.skillChip, isDI && { borderColor: '#cb6ce6' }]}>
                 <AppText weight="semiBold" style={[styles.skillName, { color: skillsAccent, textAlign: rtl ? 'right' : 'left' }]}>
                   {role}
@@ -318,7 +326,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             </Text>
           )}
           <AppText weight="semiBold" style={[styles.roles, { color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-            {translatedRoles.join(' | ')}
+            {roleChips.join(' | ')}
           </AppText>
         </View>
         <View style={styles.actions}>

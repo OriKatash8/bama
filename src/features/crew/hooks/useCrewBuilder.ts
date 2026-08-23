@@ -25,6 +25,12 @@ export function useCrewBuilder() {
     });
   }
 
+  function setRequiredCapability(category: string, capability: string | undefined) {
+    setSlots((prev) =>
+      prev.map((s) => (s.category === category ? { ...s, requiredCapability: capability } : s)),
+    );
+  }
+
   function reset() {
     setSlots([]);
   }
@@ -33,5 +39,5 @@ export function useCrewBuilder() {
     setSlots(newSlots);
   }, []);
 
-  return { slots, totalCount, addSlot, removeSlot, reset, loadSlots };
+  return { slots, totalCount, addSlot, removeSlot, setRequiredCapability, reset, loadSlots };
 }

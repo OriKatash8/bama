@@ -16,6 +16,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { CATEGORY_LABEL_KEY } from '@features/crew/data/categories';
+import { capabilityLabel } from '@features/noticeboard/matching';
 import { translateCity } from '@core/utils/cityTranslations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -228,6 +229,11 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                     <AppText weight="semiBold" style={styles.slotSub}>
                       {rtl && CATEGORY_LABEL_KEY[s.category] ? t(CATEGORY_LABEL_KEY[s.category]) : s.category}
                     </AppText>
+                    {s.requiredCapability ? (
+                      <AppText weight="regular" style={styles.slotCap}>
+                        {capabilityLabel(s.category, s.requiredCapability, rtl ? 'he' : 'en')}
+                      </AppText>
+                    ) : null}
                   </View>
                 </View>
               ))}
@@ -410,6 +416,7 @@ const styles = StyleSheet.create({
   slotRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(0,74,173,0.08)' },
   slotQty: { fontSize: 18, fontWeight: '800', color: '#cb6ce6', width: 32 },
   slotSub: { fontSize: 15, fontWeight: '600', color: '#004aad' },
+  slotCap: { fontSize: 12, color: '#7b2fa8', marginTop: 1 },
   slotCat: { fontSize: 12, marginTop: 1 },
   actions: { marginTop: 20, gap: 10 },
   applyBtn: { backgroundColor: '#004aad', borderRadius: 12, paddingVertical: 15, alignItems: 'center' },

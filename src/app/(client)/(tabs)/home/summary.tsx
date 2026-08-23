@@ -7,6 +7,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@components/layout/Screen';
 import { MiniCalendar } from '@features/crew/components';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
+import { queryDocuments, getDocument } from '@core/firebase/firestore';
+import { seedRoleSkills, type RoleSkillEntry } from '@features/profile/utils/roleSkills';
+import { roleIdForCategory, professionalMatchesSlot, capabilityLabel } from '@features/noticeboard/matching';
+import { ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
+import { confirmDialog } from '@utils/confirmDialog';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -52,6 +57,7 @@ export default function SummaryScreen() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   const font = useAppFont();
 
   const isEditMode = !!params.projectId;
@@ -74,6 +80,44 @@ export default function SummaryScreen() {
   async function handleConfirm() {
     if (!canConfirm) return;
     setIsSubmitting(true);
+
+    // Non-blocking warning when a required capability has few (<3) matching pros.
+    const specialized = slots.filter((s) => s.requiredCapability);
+    if (specialized.length > 0) {
+      try {
+        const users = await queryDocuments<{ id: string }>('users');
+        const profiles = await Promise.all(
+          users.map((u) =>
+            getDocument<{ roleSkills?: RoleSkillEntry[]; skills?: { category: string }[] }>(
+              `users/${u.id}/profile/data`,
+            ),
+          ),
+        );
+        const proRoleSkills = profiles
+          .filter((p): p is NonNullable<typeof p> => !!p)
+          .map((p) => seedRoleSkills(p.roleSkills, p.skills));
+        const scarce = specialized.filter(
+          (slot) => proRoleSkills.filter((rsk) => professionalMatchesSlot(rsk, slot)).length < 3,
+        );
+        if (scarce.length > 0) {
+          const list = scarce
+            .map((s) => {
+              const role = ROLE_BY_ID[roleIdForCategory(s.category)];
+              const roleLabel = role ? labelOf(role, lang) : s.category;
+              return `${roleLabel} · ${capabilityLabel(s.category, s.requiredCapability, lang)}`;
+            })
+            .join(', ');
+          const ok = await confirmDialog(
+            t('builder.few_matches_title'),
+            t('builder.few_matches_msg').replace('{{list}}', list),
+          );
+          if (!ok) { setIsSubmitting(false); return; }
+        }
+      } catch {
+        // A scan failure must not block posting.
+      }
+    }
+
     const details = {
       title,
       description: description || undefined,
@@ -248,6 +292,11 @@ export default function SummaryScreen() {
             <View key={slot.category} style={styles.slotRow}>
               <View style={styles.slotInfo}>
                 <Text style={[styles.slotSub, { ...font.semiBold }]}>{slot.category}</Text>
+                {slot.requiredCapability ? (
+                  <Text style={[styles.slotCap, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+                    {capabilityLabel(slot.category, slot.requiredCapability, lang)}
+                  </Text>
+                ) : null}
               </View>
               <View style={styles.qtyControls}>
                 <TouchableOpacity
@@ -379,6 +428,7 @@ const styles = StyleSheet.create({
   },
   slotInfo: { flex: 1 },
   slotSub: { fontSize: 14, fontWeight: '600', color: '#004aad' },
+  slotCap: { fontSize: 12, color: '#7b2fa8', marginTop: 2 },
   slotCat: { fontSize: 12, color: '#004aad', marginTop: 1 },
   qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   qtyBtn: {
