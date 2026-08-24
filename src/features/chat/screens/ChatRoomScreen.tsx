@@ -1916,8 +1916,9 @@ const styles = StyleSheet.create({
   },
   channelBar: {
     flexGrow: 0,
+    backgroundColor: '#ffffff',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.15)',
+    borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   channelBarContent: {
     paddingHorizontal: 12,
