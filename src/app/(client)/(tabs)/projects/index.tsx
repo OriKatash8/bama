@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
+import { PageTitle } from '@components/ui/PageTitle';
 import { useTheme } from '@core/hooks/useTheme';
 import { ProjectRequestCard } from '@features/crew/components';
 import { useProjectRequests } from '@features/crew/hooks';
@@ -227,23 +228,20 @@ export default function ProjectsPage() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerWrap} />
+        <PageTitle>{t('chats_page.my_projects')}</PageTitle>
 
         <View style={styles.content}>
           {(() => {
             const active = requests.filter((r) => r.status !== 'completed');
             return (
               <View style={styles.section}>
-                <View style={[styles.projectTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
-                    {t('chats_page.my_projects')}
-                  </Text>
-                  {!requestsLoading && active.length > 0 && (
+                {!requestsLoading && active.length > 0 && (
+                  <View style={[styles.projectTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row', justifyContent: 'flex-end' }]}>
                     <Text style={[styles.projectCounter, { ...font.regular }]}>
                       {projectIndex + 1}/{active.length}
                     </Text>
-                  )}
-                </View>
+                  </View>
+                )}
                 {requestsLoading ? (
                   <ActivityIndicator color={colors.accent} />
                 ) : active.length === 0 ? (
