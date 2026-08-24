@@ -596,6 +596,14 @@ export function ChatRoomScreen({ chatId }: Props) {
           readBy: (data.readBy as string[]) ?? [],
           imageURL: data.imageURL as string | undefined,
           videoUrl: data.videoUrl as string | undefined,
+          // Shared marketplace listing (Part B/C)
+          type: data.type as 'listing' | undefined,
+          listingId: data.listingId as string | undefined,
+          title: data.title as string | undefined,
+          price: data.price as number | undefined,
+          imageUrl: data.imageUrl as string | null | undefined,
+          posterId: data.posterId as string | undefined,
+          posterName: data.posterName as string | undefined,
         } satisfies Message;
       }));
     });
@@ -1066,6 +1074,40 @@ export function ChatRoomScreen({ chatId }: Props) {
                       {!!detail && (
                         <AppText weight="regular" style={styles.systemDetail}>{detail}</AppText>
                       )}
+                    </View>
+                  </View>
+                </View>
+              );
+            }
+            if (msg.type === 'listing') {
+              const ownListing = msg.senderId === currentUserId;
+              return (
+                <View style={[styles.bubbleWrapper, ownListing ? styles.wrapperOwn : styles.wrapperPeer]}>
+                  <View style={styles.listingCard}>
+                    {msg.imageUrl ? (
+                      <Image source={{ uri: msg.imageUrl }} style={styles.listingImage} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.listingImage, styles.listingImagePlaceholder]} />
+                    )}
+                    <View style={styles.listingBody}>
+                      <AppText weight="bold" numberOfLines={2} style={[styles.listingTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+                        {msg.title ?? ''}
+                      </AppText>
+                      <AppText weight="bold" style={[styles.listingPrice, { textAlign: rtl ? 'right' : 'left' }]}>
+                        ₪{(msg.price ?? 0).toLocaleString()}
+                      </AppText>
+                      {!!msg.posterName && (
+                        <AppText weight="regular" style={[styles.listingPoster, { textAlign: rtl ? 'right' : 'left' }]}>
+                          {(rtl ? 'מאת ' : 'By ') + msg.posterName}
+                        </AppText>
+                      )}
+                      <TouchableOpacity
+                        style={styles.listingBtn}
+                        onPress={() => router.push(`/(professional)/(tabs)/marketplace?listingId=${msg.listingId}` as never)}
+                        activeOpacity={0.85}
+                      >
+                        <AppText weight="bold" style={styles.listingBtnText}>{t('marketplace.view_listing')}</AppText>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </View>
@@ -1803,6 +1845,31 @@ const styles = StyleSheet.create({
   wrapperPeer: {
     justifyContent: 'flex-start',
   },
+  listingCard: {
+    maxWidth: '78%',
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    overflow: 'hidden',
+    shadowColor: '#1e4fa3',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  listingImage: { width: '100%', height: 140, backgroundColor: '#eef0fa' },
+  listingImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  listingBody: { padding: 12, gap: 3 },
+  listingTitle: { fontSize: 15, color: '#2a2f5a' },
+  listingPrice: { fontSize: 16, color: '#7d5fd0' },
+  listingPoster: { fontSize: 12, color: '#9aa0b8' },
+  listingBtn: {
+    marginTop: 8,
+    backgroundColor: '#004aad',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  listingBtnText: { color: '#ffffff', fontSize: 14 },
   systemWrapper: {
     width: '100%',
     alignItems: 'center',

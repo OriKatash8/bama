@@ -25,7 +25,7 @@ const CONDITION_COLOR: Record<string, string> = {
   fair: '#e53935',
 };
 import type { MarketplaceListing } from '../types';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 type Translations = typeof en;
 
@@ -66,6 +66,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sharing, setSharing] = useState(false);
   const [justShared, setJustShared] = useState<string[]>([]);
+  const isSharingRef = useRef(false);
 
   if (!listing) return null;
 
@@ -110,6 +111,8 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   async function handleShare() {
     const ids = [...selected];
     if (ids.length === 0 || !currentUserId || !listing) return;
+    if (isSharingRef.current) return; // synchronous guard against a double-fire
+    isSharingRef.current = true;
     setSharing(true);
     try {
       await shareListingToCommunities(listing, ids, { id: currentUserId, name: currentUserName });
@@ -121,6 +124,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
       showToast(t('marketplace.share_error'), 'error');
     } finally {
       setSharing(false);
+      isSharingRef.current = false;
     }
   }
 

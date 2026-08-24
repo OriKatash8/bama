@@ -494,6 +494,8 @@
     "share_success": "שותף ל-{{count}} קהילות",
     "share_no_communities": "אינך חבר באף קהילה",
     "share_error": "השיתוף נכשל. נסה שוב.",
+    "view_listing": "צפה במודעה",
+    "listing_unavailable": "המודעה לא זמינה",
     "checkout_title": "תשלום",
     "platform_fee": "עמלת BAMA (3%)",
     "fee_note": "תחויב בעמלת BAMA רק לאחר שתאשר שקיבלת את המוצר.",

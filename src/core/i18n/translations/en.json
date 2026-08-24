@@ -494,6 +494,8 @@
     "share_success": "Shared to {{count}} communities",
     "share_no_communities": "You're not a member of any community",
     "share_error": "Could not share. Please try again.",
+    "view_listing": "View listing",
+    "listing_unavailable": "Listing unavailable",
     "checkout_title": "Checkout",
     "platform_fee": "BAMA Fee (3%)",
     "fee_note": "You'll only be charged the BAMA fee after you confirm you received the product.",

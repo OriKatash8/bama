@@ -14,6 +14,9 @@ import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { getDocument } from '@core/firebase/firestore';
+import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -156,6 +159,23 @@ export default function MarketplaceScreen() {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const { listings, isLoading } = useMarketplaceListings(activeTab);
+
+  // Deep-link: open a specific listing when arriving with ?listingId= (e.g. from a שוק card).
+  const params = useLocalSearchParams<{ listingId?: string }>();
+  const router = useRouter();
+  const { showToast } = useUiStore();
+  const handledListingRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = typeof params.listingId === 'string' ? params.listingId : '';
+    if (!id || handledListingRef.current === id) return;
+    handledListingRef.current = id;
+    getDocument<MarketplaceListing>(`marketplace_listings/${id}`).then((data) => {
+      if (data) setSelectedListing({ ...data, id });
+      else showToast(t('marketplace.listing_unavailable'), 'error');
+      router.setParams({ listingId: '' }); // clear so a later tab visit won't re-open
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.listingId]);
 
   const filtered = useMemo(() => {
     let result = listings.filter((l) =>

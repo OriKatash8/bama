@@ -20,6 +20,14 @@ export interface Message {
   readBy: string[];
   /** Server-generated system notice (e.g. new mission/meeting). Rendered as a centered pill. */
   system?: boolean;
+  /** Shared marketplace listing — rendered as an actionable card. */
+  type?: 'listing';
+  listingId?: string;
+  title?: string;
+  price?: number;
+  imageUrl?: string | null;
+  posterId?: string;
+  posterName?: string;
 }
 
 export interface Chat {
