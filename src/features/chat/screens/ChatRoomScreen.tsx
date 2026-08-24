@@ -35,7 +35,7 @@ const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
 import {
   getDoc, updateDoc, doc, Timestamp,
   collection, onSnapshot, query, where,
-  arrayUnion, arrayRemove, addDoc, serverTimestamp,
+  arrayUnion, arrayRemove, addDoc, setDoc, serverTimestamp,
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
@@ -77,6 +77,8 @@ type Channel = {
   createdAt: Timestamp | null;
   createdBy: string;
   lastMessage: { text: string; senderId: string; timestamp: Timestamp } | null;
+  /** Stable identity for special channels. Absent = legacy/normal channel. */
+  kind?: 'general' | 'market';
 };
 
 const USER_COLORS = [
@@ -332,6 +334,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const fetchedIdsRef = useRef<Set<string>>(new Set());
+  const creatingGeneralRef = useRef(false);
+  const creatingMarketRef = useRef(false);
   const flatListRef = useRef<FlatList>(null);
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
@@ -524,28 +528,52 @@ export function ChatRoomScreen({ chatId }: Props) {
     return listenToMessages(chatId, setMessages);
   }, [chatId, chatType]);
 
-  // Community: listen to channels subcollection, create General if empty
+  // Community: listen to channels subcollection; ensure General + Market exist.
   useEffect(() => {
     if (chatType !== 'community') return;
-    const q = query(
-      collection(db, 'chats', chatId, 'channels'),
-      orderBy('createdAt', 'asc'),
-    );
+    // Re-arm the create guards whenever the community changes.
+    creatingGeneralRef.current = false;
+    creatingMarketRef.current = false;
+    const channelsRef = collection(db, 'chats', chatId, 'channels');
+    const q = query(channelsRef, orderBy('createdAt', 'asc'));
     return onSnapshot(q, (snap) => {
-      if (snap.empty && currentUserId) {
-        addDoc(collection(db, 'chats', chatId, 'channels'), {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Channel));
+
+      // Ensure the General channel (empty subcollection = brand-new community).
+      if (snap.empty && currentUserId && !creatingGeneralRef.current) {
+        creatingGeneralRef.current = true;
+        addDoc(channelsRef, {
           name: t('community.default_channel'),
+          kind: 'general',
           createdAt: serverTimestamp(),
           createdBy: currentUserId,
           lastMessage: null,
         });
-        return;
+        return; // wait for the next snapshot
       }
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Channel));
-      setChannels(list);
+
+      // Ensure the Market channel — fixed doc id so concurrent creates hit the SAME doc.
+      const hasMarket = list.some((c) => c.kind === 'market' || c.name === t('community.market_channel'));
+      if (!snap.empty && !hasMarket && currentUserId && !creatingMarketRef.current) {
+        creatingMarketRef.current = true;
+        setDoc(doc(db, 'chats', chatId, 'channels', 'market'), {
+          name: t('community.market_channel'),
+          kind: 'market',
+          createdAt: serverTimestamp(),
+          createdBy: currentUserId,
+          lastMessage: null,
+        });
+      }
+
+      // Order: General, שוק, then legacy channels (by createdAt) — timestamp-independent.
+      const rank = (c: Channel) => (c.kind === 'general' ? 0 : c.kind === 'market' ? 1 : 2);
+      const sorted = [...list].sort(
+        (a, b) => rank(a) - rank(b) || (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0),
+      );
+      setChannels(sorted);
       setActiveChannelId((prev) => {
-        if (prev && list.some((c) => c.id === prev)) return prev;
-        return list[0]?.id ?? '';
+        if (prev && sorted.some((c) => c.id === prev)) return prev;
+        return sorted[0]?.id ?? '';
       });
     });
   }, [chatId, chatType]);
@@ -718,21 +746,14 @@ export function ChatRoomScreen({ chatId }: Props) {
     setAddingChannel(false);
   }
 
-  function handleDeleteChannel(channelId: string, channelName: string) {
-    Alert.alert(t('community.delete_channel'), channelName, [
-      { text: t('communities.reject'), style: 'cancel' },
-      {
-        text: '✕',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteDoc(doc(db, 'chats', chatId, 'channels', channelId));
-          if (activeChannelId === channelId) {
-            const remaining = channels.filter((c) => c.id !== channelId);
-            setActiveChannelId(remaining[0]?.id ?? '');
-          }
-        },
-      },
-    ]);
+  async function handleDeleteChannel(channelId: string, channelName: string) {
+    const confirmed = await confirmDialog(t('community.delete_channel'), channelName);
+    if (!confirmed) return;
+    await deleteDoc(doc(db, 'chats', chatId, 'channels', channelId));
+    if (activeChannelId === channelId) {
+      const remaining = channels.filter((c) => c.id !== channelId);
+      setActiveChannelId(remaining[0]?.id ?? '');
+    }
   }
 
   async function handleDeleteChat() {
@@ -928,6 +949,8 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   const isGeneralChannel = (name: string) =>
     name === 'כללי' || name === 'General' || name === t('community.default_channel');
+  const isMarketChannel = (ch: Channel) =>
+    ch.kind === 'market' || ch.name === t('community.market_channel');
 
   return (
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
@@ -1661,7 +1684,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               {channels.map((ch) => (
                 <View key={ch.id} style={[manageStyles.channelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <AppText weight="regular" style={manageStyles.channelName}># {ch.name}</AppText>
-                  {!isGeneralChannel(ch.name) && (
+                  {currentUserId === chatOwnerId && !isGeneralChannel(ch.name) && !isMarketChannel(ch) && (
                     <TouchableOpacity onPress={() => handleDeleteChannel(ch.id, ch.name)} style={{ padding: 4 }}>
                       <Text style={{ color: '#dc2626', fontSize: 16 }}>✕</Text>
                     </TouchableOpacity>

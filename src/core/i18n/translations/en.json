@@ -9,7 +9,8 @@
     "channel_name": "Channel name",
     "delete_channel": "Delete channel",
     "general": "General",
-    "default_channel": "General"
+    "default_channel": "General",
+    "market_channel": "Market"
   },
   "builder": {
     "greeting_morning": "Good morning",

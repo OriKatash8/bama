@@ -73,7 +73,13 @@ service cloud.firestore {
       // community sub-channels
       match /channels/{channelId} {
         allow read, create, update: if isAuth() && request.auth.uid in chatMembers(chatId);
-        allow delete: if false;
+        // Only the community owner may delete, and never the General/Market channels.
+        // resource.data.get('kind','') returns '' when absent → legacy/normal channels
+        // (no kind) stay deletable by the owner; General/Market (kind set) are blocked.
+        allow delete: if isAuth()
+          && get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
+          && resource.data.get('kind', '') != 'general'
+          && resource.data.get('kind', '') != 'market';
 
         match /messages/{messageId} {
           allow read, create: if isAuth() && request.auth.uid in chatMembers(chatId);

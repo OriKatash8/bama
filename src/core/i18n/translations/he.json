@@ -9,7 +9,8 @@
     "channel_name": "שם הערוץ",
     "delete_channel": "מחק ערוץ",
     "general": "כללי",
-    "default_channel": "כללי"
+    "default_channel": "כללי",
+    "market_channel": "שוק"
   },
   "builder": {
     "greeting_morning": "בוקר טוב",
