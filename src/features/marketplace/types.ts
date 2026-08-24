@@ -29,4 +29,6 @@ export type MarketplaceListing = {
   sellerConfirmed?: boolean;
   buyerConfirmed?: boolean;
   platformFee?: number;
+  /** Community ids this listing has been shared to (market channels). */
+  sharedTo?: string[];
 };

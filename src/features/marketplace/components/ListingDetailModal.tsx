@@ -1,6 +1,6 @@
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, useWindowDimensions,
+  ScrollView, Alert, ActivityIndicator, useWindowDimensions,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
@@ -14,7 +14,9 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { startNegotiation } from '../services/marketplaceService';
+import { startNegotiation, shareListingToCommunities } from '../services/marketplaceService';
+import { queryDocuments, where } from '@core/firebase/firestore';
+import type { Chat } from '@features/chat/types';
 
 const CONDITION_COLOR: Record<string, string> = {
   new: '#43a047',
@@ -57,6 +59,14 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const [isBuying, setIsBuying] = useState(false);
   const { height: screenHeight } = useWindowDimensions();
 
+  // Share-to-communities picker
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [communities, setCommunities] = useState<Chat[]>([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sharing, setSharing] = useState(false);
+  const [justShared, setJustShared] = useState<string[]>([]);
+
   if (!listing) return null;
 
   const priceLabel = listing.type === 'rental'
@@ -66,6 +76,53 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const isOwnListing = currentUserId === listing.posterId;
   // Item stays on the market during discussion; only reserved/sold are unavailable.
   const isUnavailable = listing.status === 'reserved' || listing.status === 'sold';
+
+  const alreadyShared = new Set([...(listing.sharedTo ?? []), ...justShared]);
+
+  async function openPicker() {
+    if (!currentUserId) return;
+    setPickerOpen(true);
+    setSelected(new Set());
+    setLoadingCommunities(true);
+    try {
+      const list = await queryDocuments<Chat>(
+        'chats',
+        where('type', '==', 'community'),
+        where('members', 'array-contains', currentUserId),
+      );
+      setCommunities(list);
+    } catch {
+      setCommunities([]);
+    } finally {
+      setLoadingCommunities(false);
+    }
+  }
+
+  function toggleCommunity(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleShare() {
+    const ids = [...selected];
+    if (ids.length === 0 || !currentUserId || !listing) return;
+    setSharing(true);
+    try {
+      await shareListingToCommunities(listing, ids, { id: currentUserId, name: currentUserName });
+      setJustShared((prev) => [...prev, ...ids]);
+      setSelected(new Set());
+      showToast(t('marketplace.share_success', { count: ids.length }), 'success');
+      setPickerOpen(false);
+    } catch {
+      showToast(t('marketplace.share_error'), 'error');
+    } finally {
+      setSharing(false);
+    }
+  }
 
   async function handleTalkWithSeller() {
     if (!currentUserId || !listing) return;
@@ -93,6 +150,7 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
 
   return (
+    <>
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
@@ -188,6 +246,13 @@ export function ListingDetailModal({ listing, onClose }: Props) {
             </View>
           </ScrollView>
 
+          {/* Share to my communities — owner only */}
+          {isOwnListing && (
+            <TouchableOpacity style={styles.buyBtn} onPress={openPicker} activeOpacity={0.85}>
+              <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_to_communities')}</AppText>
+            </TouchableOpacity>
+          )}
+
           {/* Talk / In Discussion — pinned outside ScrollView */}
           {!isOwnListing && (
             isUnavailable ? (
@@ -210,10 +275,103 @@ export function ListingDetailModal({ listing, onClose }: Props) {
         </LinearGradient>
       </View>
     </Modal>
+
+    {/* Community picker */}
+    <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
+      <View style={styles.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setPickerOpen(false)} />
+        <View style={styles.pickerCard}>
+          <View style={[styles.pickerHeader, { flexDirection: rowDir }]}>
+            <AppText weight="bold" style={styles.pickerTitle}>{t('marketplace.share_picker_title')}</AppText>
+            <TouchableOpacity onPress={() => setPickerOpen(false)} hitSlop={10} activeOpacity={0.7}>
+              <X size={20} color="#004aad" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+
+          {loadingCommunities ? (
+            <ActivityIndicator color="#004aad" style={{ marginVertical: 28 }} />
+          ) : communities.length === 0 ? (
+            <AppText weight="regular" style={[styles.pickerEmpty, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('marketplace.share_no_communities')}
+            </AppText>
+          ) : (
+            <ScrollView style={{ maxHeight: screenHeight * 0.45 }} showsVerticalScrollIndicator={false}>
+              {communities.map((c) => {
+                const shared = alreadyShared.has(c.id);
+                const on = selected.has(c.id);
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[styles.commRow, { flexDirection: rowDir }, shared && { opacity: 0.5 }]}
+                    onPress={() => !shared && toggleCommunity(c.id)}
+                    disabled={shared}
+                    activeOpacity={0.75}
+                  >
+                    {c.photoURL ? (
+                      <Image source={{ uri: c.photoURL }} style={styles.commAvatar} contentFit="cover" cachePolicy="memory-disk" />
+                    ) : (
+                      <View style={[styles.commAvatar, styles.commAvatarFallback]}>
+                        <AppText weight="bold" style={styles.commAvatarInitial}>{(c.name ?? '?').charAt(0).toUpperCase()}</AppText>
+                      </View>
+                    )}
+                    <AppText weight="semiBold" numberOfLines={1} style={[styles.commName, { textAlign: rtl ? 'right' : 'left' }]}>{c.name}</AppText>
+                    {shared ? (
+                      <AppText weight="semiBold" style={styles.commShared}>{t('marketplace.already_shared')}</AppText>
+                    ) : (
+                      <View style={[styles.commCheckbox, on && styles.commCheckboxOn]}>
+                        {on && <Text style={styles.commCheckMark}>✓</Text>}
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          <TouchableOpacity
+            style={[styles.shareSubmitBtn, (selected.size === 0 || sharing) && styles.buyBtnDisabled]}
+            onPress={handleShare}
+            disabled={selected.size === 0 || sharing}
+            activeOpacity={0.85}
+          >
+            {sharing
+              ? <ActivityIndicator color="#fff" />
+              : <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_submit', { count: selected.size })}</AppText>}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  pickerCard: {
+    width: '88%',
+    maxWidth: 420,
+    borderRadius: 22,
+    padding: 18,
+    backgroundColor: '#ffffff',
+  },
+  pickerHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  pickerTitle: { fontSize: 17, color: '#004aad' },
+  pickerEmpty: { fontSize: 14, color: '#9aa0b8', marginVertical: 24 },
+  commRow: { alignItems: 'center', gap: 12, paddingVertical: 9 },
+  commAvatar: { width: 42, height: 42, borderRadius: 12 },
+  commAvatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
+  commAvatarInitial: { color: '#fff', fontSize: 17 },
+  commName: { flex: 1, fontSize: 15, color: '#2a2f5a' },
+  commShared: { fontSize: 12, color: '#9aa0b8' },
+  commCheckbox: { width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: '#b6c6e6', alignItems: 'center', justifyContent: 'center' },
+  commCheckboxOn: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  commCheckMark: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  shareSubmitBtn: {
+    marginTop: 16,
+    backgroundColor: '#004aad',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
   overlay: {
     flex: 1,
     justifyContent: 'center',

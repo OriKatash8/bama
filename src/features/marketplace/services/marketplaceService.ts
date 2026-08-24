@@ -9,6 +9,8 @@ import {
   writeBatch,
   deleteField,
   serverTimestamp,
+  addDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { createPurchaseChat, sendMessage } from '@features/chat/services/chatService';
@@ -260,4 +262,44 @@ export function listenToPurchaseContext(
     chatUnsub();
     if (listingUnsub) listingUnsub();
   };
+}
+
+/**
+ * Share a listing into each community's market channel (Part A: fixed id 'market').
+ * Writes a channel message that renders today (has `text`) and carries structured
+ * listing fields for Part C's card, updates each channel's lastMessage, and records
+ * the community ids on the listing (`sharedTo`) to dedupe future shares.
+ */
+export async function shareListingToCommunities(
+  listing: MarketplaceListing,
+  communityIds: string[],
+  sender: { id: string; name: string },
+): Promise<void> {
+  if (communityIds.length === 0) return;
+  const text = `${listing.productName} · ₪${listing.price.toLocaleString()}`;
+  await Promise.all(
+    communityIds.map(async (cid) => {
+      await addDoc(collection(db, 'chats', cid, 'channels', 'market', 'messages'), {
+        senderId: sender.id,
+        text,
+        timestamp: serverTimestamp(),
+        readBy: [sender.id],
+        // Structured listing payload (consumed by Part C's card renderer):
+        type: 'listing',
+        listingId: listing.id,
+        title: listing.productName,
+        price: listing.price,
+        imageUrl: listing.imageUrl ?? null,
+        posterId: listing.posterId,
+        posterName: sender.name,
+        createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, 'chats', cid, 'channels', 'market'), {
+        lastMessage: { text, senderId: sender.id, timestamp: serverTimestamp() },
+      });
+    }),
+  );
+  await updateDoc(doc(db, 'marketplace_listings', listing.id), {
+    sharedTo: arrayUnion(...communityIds),
+  });
 }
