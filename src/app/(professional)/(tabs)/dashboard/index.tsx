@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react-native';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
@@ -90,6 +90,7 @@ export default function DashboardScreen() {
   // ── Sort & filter (client-side over the already-matched list) ──
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [draftSort, setDraftSort] = useState<'newest' | 'oldest'>('newest');
   const [draftRole, setDraftRole] = useState<string | null>(null);
@@ -124,12 +125,20 @@ export default function DashboardScreen() {
     if (roleFilter) {
       list = list.filter((r) => getVacantSlots(r).some((s) => roleIdForCategory(s.category) === roleFilter));
     }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((r) =>
+        (r.title ?? '').toLowerCase().includes(q) ||
+        (r.description ?? '').toLowerCase().includes(q) ||
+        (r.location ?? '').toLowerCase().includes(q),
+      );
+    }
     return [...list].sort((a, b) =>
       sortBy === 'oldest'
         ? a.createdAt.seconds - b.createdAt.seconds
         : b.createdAt.seconds - a.createdAt.seconds,
     );
-  }, [visible, roleFilter, sortBy]);
+  }, [visible, roleFilter, sortBy, search]);
 
   // Legacy category strings (for ProjectDetailModal's role-Q&A display, which is keyed by them).
   const categories = useMemo(
@@ -363,6 +372,25 @@ export default function DashboardScreen() {
           )}
         </View>
 
+        {!isLoading && visible.length > 0 && (
+          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={rtl ? 'חיפוש בלוח המודעות…' : 'Search the notice board…'}
+              placeholderTextColor={colors.placeholder}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+                <AppText weight="regular" style={[styles.clearBtn, { color: colors.textMuted }]}>✕</AppText>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {isLoading ? (
           <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
         ) : displayed.length === 0 ? (
@@ -508,6 +536,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
+  searchRow: {
+    alignItems: 'center',
+    borderRadius: 24,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 15 },
+  clearBtn: { fontSize: 14, paddingHorizontal: 4 },
   sortBtn: {
     alignItems: 'center',
     gap: 6,
