@@ -565,7 +565,8 @@
     "processing_video": "מעבד וידאו...",
     "add_video": "הוסף וידאו",
     "send_video": "שולח וידאו...",
-    "video_error": "עיבוד הוידאו נכשל"
+    "video_error": "עיבוד הוידאו נכשל",
+    "video_pick_error": "לא ניתן לקרוא את הסרטון שנבחר. ודאו שהוא הורד מ-iCloud (לא שמור רק בענן) ונסו שוב."
   },
   "header": {
     "client_mode": "לקוח/ה",

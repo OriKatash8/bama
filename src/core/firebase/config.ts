@@ -1,7 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { initializeAuth, GoogleAuthProvider } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
 import { getFunctions } from 'firebase/functions';
@@ -36,7 +36,7 @@ function createAuth() {
 
 export const auth = createAuth();
 export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 export const storage = getStorage(app);
 export const rtdb = firebaseConfig.databaseURL ? getDatabase(app) : null;
 export const functions = getFunctions(app);

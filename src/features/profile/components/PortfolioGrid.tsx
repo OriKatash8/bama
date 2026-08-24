@@ -89,11 +89,24 @@ export function PortfolioGrid({
     if (!user) return;
     console.log('[PortfolioGrid] Add Media pressed — userId:', user.id);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'] as const,
-      allowsEditing: false,
-      quality: 1,
-    });
+    let result: ImagePicker.ImagePickerResult;
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'] as const,
+        allowsEditing: false,
+        quality: 1,
+        // A non-passthrough preset skips PHPicker's writeData fast-path (which streams the huge
+        // full-size iCloud original and stalls the upload) and instead loads + transcodes to 720p.
+        // loadVideoRepresentation auto-downloads iCloud-offloaded videos → also fixes PHPhotos 3164.
+        videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+      });
+    } catch (e: unknown) {
+      // iOS can throw here (e.g. PHPhotosErrorDomain 3164) when it can't export the
+      // selected video — typically an iCloud-only video that isn't downloaded locally.
+      console.warn('[PortfolioGrid] image picker failed:', e);
+      onError?.((e instanceof Error ? e.message : null) ?? t('media.video_pick_error'));
+      return;
+    }
     if (result.canceled) return;
 
     const asset = result.assets[0];

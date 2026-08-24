@@ -58,6 +58,10 @@ export function useVideoUpload(): UseVideoUploadResult {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['videos'] as const,
         quality: 1,
+        // A non-passthrough preset skips PHPicker's writeData fast-path (which streams the huge
+        // full-size iCloud original and stalls the upload) and instead loads + transcodes to 720p.
+        // loadVideoRepresentation auto-downloads iCloud-offloaded videos → also fixes PHPhotos 3164.
+        videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
       });
       if (result.canceled) return null;
       uri = result.assets[0].uri;

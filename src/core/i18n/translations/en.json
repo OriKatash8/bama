@@ -565,7 +565,8 @@
     "processing_video": "Processing video...",
     "add_video": "Add Video",
     "send_video": "Sending video...",
-    "video_error": "Video processing failed"
+    "video_error": "Video processing failed",
+    "video_pick_error": "Couldn't read the selected video. Make sure it's downloaded from iCloud (not stored in the cloud only) and try again."
   },
   "header": {
     "client_mode": "Client",
