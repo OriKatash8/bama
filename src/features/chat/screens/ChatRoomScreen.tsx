@@ -1930,7 +1930,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#004aad',
-    backgroundColor: 'transparent',
+    backgroundColor: '#ffffff',
   },
   channelPillActive: {
     backgroundColor: '#004aad',
