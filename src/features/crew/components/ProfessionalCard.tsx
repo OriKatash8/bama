@@ -110,7 +110,14 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
                 · {profile.reviewCount} {rtl ? 'דירוגים' : 'ratings'}
               </Text>
             </View>
-          ) : null}
+          ) : (
+            <View style={[styles.ratingBlock, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <StarRow rating={0} size={14} />
+              <Text style={[styles.ratingCount, { color: colors.textMuted, ...font.regular }]}>
+                (0)
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
