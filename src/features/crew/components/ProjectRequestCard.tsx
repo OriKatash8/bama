@@ -338,8 +338,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 14,
-    marginVertical: 6,
-    marginHorizontal: 12,
     gap: 12,
     ...CARD_SHADOW,
   },
