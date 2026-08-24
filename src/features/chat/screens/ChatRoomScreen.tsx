@@ -39,12 +39,13 @@ import {
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Paperclip, Mic, Play, Pause, X } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { useUiStore } from '@core/stores/uiStore';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { uploadFile } from '@core/firebase/storage';
@@ -55,6 +56,10 @@ import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
+import { ListingCard } from '@features/marketplace/components/ListingCard';
+import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
+import { shareListingToCommunities } from '@features/marketplace/services/marketplaceService';
+import type { MarketplaceListing } from '@features/marketplace/types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Chat, Message } from '../types';
@@ -371,6 +376,38 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [newChannelName, setNewChannelName] = useState('');
   const [addingChannel, setAddingChannel] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // ── Market channel: post one of my own listings ──
+  const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
+  const { showToast } = useUiStore();
+  const { listings: shListings } = useMarketplaceListings('secondhand');
+  const { listings: rtListings } = useMarketplaceListings('rental');
+  const myListings = useMemo(
+    () => [...shListings, ...rtListings].filter((l) => l.posterId === currentUserId),
+    [shListings, rtListings, currentUserId],
+  );
+  const [listingPickerOpen, setListingPickerOpen] = useState(false);
+  const [postingListing, setPostingListing] = useState(false);
+  const postingRef = useRef(false);
+  const activeChannel = channels.find((c) => c.id === activeChannelId);
+  const isMarketActive =
+    chatType === 'community' && (activeChannelId === 'market' || activeChannel?.kind === 'market');
+
+  async function handlePostListing(listing: MarketplaceListing) {
+    if (postingRef.current || !currentUserId) return;
+    postingRef.current = true;
+    setPostingListing(true);
+    try {
+      await shareListingToCommunities(listing, [chatId], { id: currentUserId, name: currentUserName });
+      showToast(t('marketplace.posted_to_market'), 'success');
+      setListingPickerOpen(false);
+    } catch {
+      showToast(t('marketplace.share_error'), 'error');
+    } finally {
+      setPostingListing(false);
+      postingRef.current = false;
+    }
+  }
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
@@ -1080,37 +1117,68 @@ export function ChatRoomScreen({ chatId }: Props) {
               );
             }
             if (msg.type === 'listing') {
-              const ownListing = msg.senderId === currentUserId;
+              const posterName = msg.posterName ?? '';
+              const initial = (posterName || '?').charAt(0).toUpperCase();
               return (
-                <View style={[styles.bubbleWrapper, ownListing ? styles.wrapperOwn : styles.wrapperPeer]}>
-                  <View style={styles.listingCard}>
-                    {msg.imageUrl ? (
-                      <Image source={{ uri: msg.imageUrl }} style={styles.listingImage} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.listingImage, styles.listingImagePlaceholder]} />
-                    )}
-                    <View style={styles.listingBody}>
-                      <AppText weight="bold" numberOfLines={2} style={[styles.listingTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-                        {msg.title ?? ''}
+                <>
+                  {/* Attention intro — styled like a system event pill */}
+                  <View style={styles.systemWrapper}>
+                    <View style={[styles.listingAnnouncePill, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                      <AppText weight="semiBold" style={styles.listingAnnounceText}>
+                        {`🛒 ${posterName} ${t('marketplace.posted_a_listing')}`}
                       </AppText>
-                      <AppText weight="bold" style={[styles.listingPrice, { textAlign: rtl ? 'right' : 'left' }]}>
-                        ₪{(msg.price ?? 0).toLocaleString()}
-                      </AppText>
-                      {!!msg.posterName && (
-                        <AppText weight="regular" style={[styles.listingPoster, { textAlign: rtl ? 'right' : 'left' }]}>
-                          {(rtl ? 'מאת ' : 'By ') + msg.posterName}
-                        </AppText>
-                      )}
-                      <TouchableOpacity
-                        style={styles.listingBtn}
-                        onPress={() => router.push(`/(professional)/(tabs)/marketplace?listingId=${msg.listingId}` as never)}
-                        activeOpacity={0.85}
-                      >
-                        <AppText weight="bold" style={styles.listingBtnText}>{t('marketplace.view_listing')}</AppText>
-                      </TouchableOpacity>
                     </View>
                   </View>
-                </View>
+
+                  {/* Listing card */}
+                  <View style={styles.listingWrapper}>
+                    <View style={styles.listingCard}>
+                      <View>
+                        {msg.imageUrl ? (
+                          <Image source={{ uri: msg.imageUrl }} style={styles.listingImage} resizeMode="cover" />
+                        ) : (
+                          <View style={[styles.listingImage, styles.listingImagePlaceholder]} />
+                        )}
+                        <View style={[styles.listingRibbon, rtl ? { right: 10 } : { left: 10 }]}>
+                          <AppText weight="bold" style={styles.listingRibbonText}>{rtl ? 'למכירה' : 'For sale'}</AppText>
+                        </View>
+                      </View>
+                      <View style={styles.listingBody}>
+                        <AppText weight="bold" numberOfLines={2} style={[styles.listingTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+                          {msg.title ?? ''}
+                        </AppText>
+                        <AppText weight="bold" style={[styles.listingPrice, { textAlign: rtl ? 'right' : 'left' }]}>
+                          ₪{(msg.price ?? 0).toLocaleString()}
+                        </AppText>
+                        {!!posterName && (
+                          <View style={[styles.listingSellerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                            <View style={styles.listingAvatar}>
+                              <AppText weight="bold" style={styles.listingAvatarText}>{initial}</AppText>
+                            </View>
+                            <AppText weight="regular" style={styles.listingPoster}>
+                              {(rtl ? 'מאת ' : 'By ') + posterName}
+                            </AppText>
+                          </View>
+                        )}
+                        <TouchableOpacity
+                          onPress={() => router.push(`/(professional)/(tabs)/marketplace?listingId=${msg.listingId}` as never)}
+                          activeOpacity={0.85}
+                          style={{ marginTop: 10 }}
+                        >
+                          <LinearGradient
+                            colors={['#1e4fa3', '#3d6fc9']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={[styles.listingCta, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+                          >
+                            <Eye size={16} color="#ffffff" strokeWidth={2.4} />
+                            <AppText weight="bold" style={styles.listingCtaText}>{t('marketplace.view_listing')}</AppText>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </>
               );
             }
             const isOwn = msg.senderId === currentUserId;
@@ -1215,6 +1283,12 @@ export function ChatRoomScreen({ chatId }: Props) {
             <View style={chatStyles.menuItemIcon}><Camera size={22} color="#004aad" strokeWidth={1.5} /></View>
             <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.take_photo')}</AppText>
           </TouchableOpacity>
+          {isMarketActive && (
+            <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setListingPickerOpen(true); }} activeOpacity={0.7}>
+              <View style={chatStyles.menuItemIcon}><ShoppingBag size={22} color="#004aad" strokeWidth={1.5} /></View>
+              <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('marketplace.share_to_market')}</AppText>
+            </TouchableOpacity>
+          )}
           {chatProjectId && (
             <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMission(true); }} activeOpacity={0.7}>
               <View style={chatStyles.menuItemIcon}><CheckSquare size={22} color="#004aad" strokeWidth={1.5} /></View>
@@ -1326,6 +1400,44 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
       )}
     </KeyboardAvoidingView>
+
+    {/* My-listings picker (post into the market channel) */}
+    <Modal visible={listingPickerOpen} transparent animationType="fade" onRequestClose={() => setListingPickerOpen(false)}>
+      <View style={styles.listingPickerOverlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setListingPickerOpen(false)} />
+        <View style={styles.listingPickerCard}>
+          <View style={[styles.listingPickerHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <AppText weight="bold" style={styles.listingPickerTitle}>{t('marketplace.pick_listing_title')}</AppText>
+            <TouchableOpacity onPress={() => setListingPickerOpen(false)} hitSlop={10} activeOpacity={0.7}>
+              <X size={20} color="#004aad" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+
+          {myListings.length === 0 ? (
+            <View style={{ paddingVertical: 28, alignItems: 'center', gap: 6 }}>
+              <AppText weight="semiBold" style={[styles.listingPickerEmpty, { textAlign: rtl ? 'right' : 'left' }]}>
+                {t('marketplace.no_listings_to_share')}
+              </AppText>
+              <AppText weight="regular" style={[styles.listingPickerHint, { textAlign: 'center' }]}>
+                {t('marketplace.no_listings_hint')}
+              </AppText>
+            </View>
+          ) : (
+            <ScrollView style={{ maxHeight: 440 }} showsVerticalScrollIndicator={false}>
+              {myListings.map((l) => (
+                <ListingCard key={l.id} listing={l} onPress={() => handlePostListing(l)} />
+              ))}
+            </ScrollView>
+          )}
+
+          {postingListing && (
+            <View style={styles.listingPickerBusy}>
+              <ActivityIndicator color="#004aad" />
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
 
     {/* Chat Photo Modal */}
     <Modal visible={chatPhotoModalOpen} transparent animationType="fade" onRequestClose={() => setChatPhotoModalOpen(false)}>
@@ -1845,31 +1957,76 @@ const styles = StyleSheet.create({
   wrapperPeer: {
     justifyContent: 'flex-start',
   },
-  listingCard: {
-    maxWidth: '78%',
+  listingAnnouncePill: {
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fdeceb',
     borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    maxWidth: '90%',
+  },
+  listingAnnounceText: { fontSize: 12.5, color: '#c0392b', textAlign: 'center' },
+  listingWrapper: { width: '100%', alignItems: 'center', marginTop: 6 },
+  listingCard: {
+    width: '82%',
+    borderRadius: 18,
     backgroundColor: '#ffffff',
     overflow: 'hidden',
     shadowColor: '#1e4fa3',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  listingImage: { width: '100%', height: 140, backgroundColor: '#eef0fa' },
+  listingImage: { width: '100%', height: 150, backgroundColor: '#eef0fa' },
   listingImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  listingBody: { padding: 12, gap: 3 },
-  listingTitle: { fontSize: 15, color: '#2a2f5a' },
-  listingPrice: { fontSize: 16, color: '#7d5fd0' },
-  listingPoster: { fontSize: 12, color: '#9aa0b8' },
-  listingBtn: {
-    marginTop: 8,
-    backgroundColor: '#004aad',
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
+  listingRibbon: {
+    position: 'absolute',
+    top: 10,
+    backgroundColor: '#e0483d',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
-  listingBtnText: { color: '#ffffff', fontSize: 14 },
+  listingRibbonText: { fontSize: 12, color: '#ffffff' },
+  listingBody: { padding: 14, gap: 5 },
+  listingTitle: { fontSize: 17, color: '#2a2f5a' },
+  listingPrice: { fontSize: 21, color: '#6c5ce0' },
+  listingSellerRow: { alignItems: 'center', gap: 7, marginTop: 2 },
+  listingAvatar: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#6c5ce0', alignItems: 'center', justifyContent: 'center' },
+  listingAvatarText: { fontSize: 11, color: '#ffffff' },
+  listingPoster: { fontSize: 12.5, color: '#8890b0' },
+  listingCta: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 13,
+    paddingVertical: 12,
+  },
+  listingCtaText: { color: '#ffffff', fontSize: 14.5 },
+  listingPickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 20 },
+  listingPickerCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 16 },
+  listingPickerHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  listingPickerTitle: { fontSize: 17, color: '#004aad' },
+  listingPickerEmpty: { fontSize: 15, color: '#2a2f5a' },
+  listingPickerHint: { fontSize: 13, color: '#9aa0b8', maxWidth: 240 },
+  listingPickerBusy: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   systemWrapper: {
     width: '100%',
     alignItems: 'center',
