@@ -236,6 +236,14 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ─── videoJobs ───────────────────────────────────────────────────
+    // Written exclusively by the transcoding Cloud Function (Admin SDK bypasses rules).
+    // Clients read via onSnapshot to await job completion during video upload.
+    match /videoJobs/{jobId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+
     // ─── projectApplications ─────────────────────────────────────────
     // Written client-side but not queried client-side (possible future admin view).
     match /projectApplications/{applicationId} {
