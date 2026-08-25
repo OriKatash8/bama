@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams } from 'expo-router';
 import { X, Camera, Search, Play, Clock, BookOpen, BarChart2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -65,6 +66,15 @@ export default function ProfessionalChatsScreen() {
   const [active, setActive] = useState<TabKey>('chats');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Honor a ?tab= param (e.g. the back button inside a community returns here
+  // with ?tab=communities so the user lands back on the communities tab).
+  const params = useLocalSearchParams<{ tab?: string }>();
+  useEffect(() => {
+    if (params.tab && TAB_KEYS.includes(params.tab as TabKey)) {
+      setActive(params.tab as TabKey);
+    }
+  }, [params.tab]);
+
   // Communities state
   const [commModal, setCommModal] = useState(false);
   const [commName, setCommName] = useState('');
@@ -78,6 +88,31 @@ export default function ProfessionalChatsScreen() {
   // Courses state
   const [courses, setCourses] = useState<Course[]>([]);
   const [submitCourseModal, setSubmitCourseModal] = useState(false);
+  const [courseSearch, setCourseSearch] = useState('');
+  const [courseCategory, setCourseCategory] = useState<string>('all');
+  const [coursePriceSort, setCoursePriceSort] = useState<'asc' | 'desc' | null>(null);
+
+  // Only the categories that actually have courses.
+  const courseCategories = useMemo(
+    () => Array.from(new Set(courses.map((c) => c.category).filter((c): c is string => !!c))),
+    [courses],
+  );
+
+  const filteredCourses = useMemo(() => {
+    const q = courseSearch.trim().toLowerCase();
+    let list = courses.filter((c) => {
+      if (courseCategory !== 'all' && c.category !== courseCategory) return false;
+      if (q && !(
+        (c.title ?? '').toLowerCase().includes(q) ||
+        (c.instructorName ?? '').toLowerCase().includes(q) ||
+        (c.description ?? '').toLowerCase().includes(q)
+      )) return false;
+      return true;
+    });
+    if (coursePriceSort === 'asc') list = [...list].sort((a, b) => a.price - b.price);
+    if (coursePriceSort === 'desc') list = [...list].sort((a, b) => b.price - a.price);
+    return list;
+  }, [courses, courseSearch, courseCategory, coursePriceSort]);
 
   useEffect(() => {
     const q = query(
@@ -223,21 +258,78 @@ export default function ProfessionalChatsScreen() {
       {/* Courses tab */}
       {active === 'courses' && (
         <View>
-          <View style={styles.tabContentHeader}>
-            <Text style={[styles.myCoursesTitle, { ...font.bold, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
-              {t('courses.my_courses')}
-            </Text>
+          {/* Search */}
+          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={t('courses.search_placeholder')}
+              placeholderTextColor={colors.placeholder}
+              value={courseSearch}
+              onChangeText={setCourseSearch}
+              returnKeyType="search"
+            />
+            {courseSearch.length > 0 && (
+              <TouchableOpacity onPress={() => setCourseSearch('')} activeOpacity={0.7}>
+                <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {courses.length === 0 ? (
+          {/* Category chips + price sort */}
+          <View style={[styles.courseFilterRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.courseChipsRow}
+              style={{ flex: 1 }}
+            >
+              <TouchableOpacity
+                style={[styles.courseChip, courseCategory === 'all' && styles.courseChipActive]}
+                onPress={() => setCourseCategory('all')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.courseChipText, courseCategory === 'all' && styles.courseChipTextActive, { ...font.semiBold }]}>
+                  {t('courses.filter_all')}
+                </Text>
+              </TouchableOpacity>
+              {courseCategories.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.courseChip, courseCategory === cat && styles.courseChipActive]}
+                  onPress={() => setCourseCategory(cat)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.courseChipText, courseCategory === cat && styles.courseChipTextActive, { ...font.semiBold }]}>
+                    {categoryLabel(cat, rtl ? 'he' : 'en')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.priceSortBtn, coursePriceSort && styles.priceSortBtnActive]}
+              onPress={() => setCoursePriceSort((p) => (p === 'asc' ? 'desc' : p === 'desc' ? null : 'asc'))}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.priceSortText, { ...font.semiBold }]}>
+                {coursePriceSort === 'asc'
+                  ? t('courses.price_low_high')
+                  : coursePriceSort === 'desc'
+                    ? t('courses.price_high_low')
+                    : t('courses.price_sort')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {filteredCourses.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={[styles.emptyText, { ...font.regular, color: colors.textMuted }]}>
-                {t('courses.empty')}
+                {courses.length === 0 ? t('courses.empty') : t('courses.no_results')}
               </Text>
             </View>
           ) : (
             <FlatList
-              data={courses}
+              data={filteredCourses}
               keyExtractor={(c) => c.id}
               scrollEnabled={false}
               contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, gap: 12 }}
@@ -516,6 +608,29 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   myCoursesTitle: { fontSize: 18 },
+  courseFilterRow: { alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  courseChipsRow: { gap: 8, alignItems: 'center', paddingRight: 4 },
+  courseChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#ffffff',
+  },
+  courseChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  courseChipText: { fontSize: 13, color: '#004aad' },
+  courseChipTextActive: { color: '#ffffff' },
+  priceSortBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#ffffff',
+  },
+  priceSortBtnActive: { backgroundColor: 'rgba(0,74,173,0.12)', borderColor: '#004aad' },
+  priceSortText: { fontSize: 13, color: '#004aad' },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
