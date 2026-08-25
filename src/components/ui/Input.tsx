@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, type TextInputProps } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
+import { useSettingsStore } from '@core/stores/settingsStore';
 import { AppText } from './AppText';
 
 type InputProps = TextInputProps & {
@@ -12,20 +13,21 @@ type InputProps = TextInputProps & {
 export function Input({ label, error, style, labelStyle, secureTextEntry, ...props }: InputProps) {
   const isPassword = !!secureTextEntry;
   const [visible, setVisible] = useState(false);
+  const rtl = useSettingsStore((s) => s.language) === 'he';
 
   return (
     <View style={styles.container}>
       {label && <AppText weight="medium" style={[styles.label, labelStyle]}>{label}</AppText>}
       <View style={styles.inputWrap}>
         <TextInput
-          style={[styles.input, isPassword && styles.inputWithIcon, error && styles.inputError, style]}
+          style={[styles.input, isPassword && (rtl ? styles.inputWithIconRtl : styles.inputWithIcon), error && styles.inputError, style]}
           placeholderTextColor="#999"
           secureTextEntry={isPassword && !visible}
           {...props}
         />
         {isPassword && (
           <TouchableOpacity
-            style={styles.eyeBtn}
+            style={[styles.eyeBtn, rtl ? styles.eyeBtnRtl : styles.eyeBtnLtr]}
             onPress={() => setVisible((v) => !v)}
             hitSlop={8}
             activeOpacity={0.7}
@@ -47,7 +49,10 @@ const styles = StyleSheet.create({
   inputWrap: { position: 'relative', justifyContent: 'center' },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, fontSize: 16, color: '#000' },
   inputWithIcon: { paddingRight: 44 },
+  inputWithIconRtl: { paddingLeft: 44 },
   inputError: { borderColor: '#e00' },
-  eyeBtn: { position: 'absolute', right: 8, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  eyeBtn: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  eyeBtnLtr: { right: 8 },
+  eyeBtnRtl: { left: 8 },
   error: { fontSize: 12, color: '#e00' },
 });
