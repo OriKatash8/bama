@@ -1006,7 +1006,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
-        <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats`)} style={styles.headerBack} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats${chatType === 'community' ? '?tab=communities' : ''}`)} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={[styles.headerBackText, { color: colors.accent, ...font.regular }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
