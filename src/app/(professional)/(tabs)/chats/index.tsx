@@ -276,8 +276,8 @@ export default function ProfessionalChatsScreen() {
             )}
           </View>
 
-          {/* Category chips + price sort */}
-          <View style={[styles.courseFilterRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          {/* Category chips + price sort (price stays on the trailing/right edge in both LTR and RTL) */}
+          <View style={[styles.courseFilterRow, { flexDirection: 'row' }]}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
