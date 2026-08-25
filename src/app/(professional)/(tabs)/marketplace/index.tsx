@@ -141,6 +141,7 @@ export default function MarketplaceScreen() {
   const [searchQuery, setSearchQuery]           = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedListing, setSelectedListing]   = useState<MarketplaceListing | null>(null);
+  const [editListing, setEditListing]           = useState<MarketplaceListing | null>(null);
   const [postSheetVisible, setPostSheetVisible] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
@@ -490,12 +491,24 @@ export default function MarketplaceScreen() {
         </View>
       </Modal>
 
-      <ListingDetailModal listing={selectedListing} onClose={() => setSelectedListing(null)} />
+      <ListingDetailModal
+        listing={selectedListing}
+        onClose={() => setSelectedListing(null)}
+        onEdit={(l) => { setSelectedListing(null); setEditListing(l); }}
+      />
       <PostListingSheet
         visible={postSheetVisible}
         initialType={activeTab}
         lockedType
         onClose={() => setPostSheetVisible(false)}
+      />
+      <PostListingSheet
+        key={editListing?.id ?? 'edit'}
+        visible={!!editListing}
+        initialType={editListing?.type ?? activeTab}
+        lockedType
+        editListing={editListing ?? undefined}
+        onClose={() => setEditListing(null)}
       />
     </Screen>
   );

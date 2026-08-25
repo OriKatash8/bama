@@ -11,11 +11,29 @@ import {
   serverTimestamp,
   addDoc,
   arrayUnion,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
+import { deleteFile } from '@core/firebase/storage';
 import { createPurchaseChat, sendMessage } from '@features/chat/services/chatService';
 import type { Chat } from '@features/chat/types';
 import type { MarketplaceListing } from '../types';
+
+/**
+ * Delete a listing the current user owns. Best-effort removes the listing's
+ * image from Storage (never blocks the doc deletion), then deletes the document.
+ * The public feed is a live onSnapshot, so the card disappears immediately.
+ */
+export async function deleteListing(listingId: string, imageUrl?: string | null): Promise<void> {
+  if (imageUrl) {
+    try {
+      await deleteFile(imageUrl);
+    } catch {
+      // orphaned image is harmless — don't block the delete
+    }
+  }
+  await deleteDoc(doc(db, 'marketplace_listings', listingId));
+}
 
 /**
  * Buyer taps "Talk with the Seller". This does NOT remove the listing from the

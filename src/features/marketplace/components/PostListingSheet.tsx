@@ -11,11 +11,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useCreateListing } from '../hooks/useCreateListing';
+import { useUpdateListing } from '../hooks/useUpdateListing';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { MarketplaceListingType, ProductCondition } from '../types';
+import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '../types';
 
 type Translations = typeof en;
 
@@ -133,12 +134,16 @@ type Props = {
   visible: boolean;
   initialType: MarketplaceListingType;
   lockedType?: boolean;
+  editListing?: MarketplaceListing;
   onClose: () => void;
 };
 
-export function PostListingSheet({ visible, initialType, lockedType = false, onClose }: Props) {
+export function PostListingSheet({ visible, initialType, lockedType = false, editListing, onClose }: Props) {
   const { height: screenHeight } = useWindowDimensions();
-  const { create, isSubmitting } = useCreateListing();
+  const { create, isSubmitting: isCreating } = useCreateListing();
+  const { update, isSubmitting: isUpdating } = useUpdateListing();
+  const isEditing = !!editListing;
+  const isSubmitting = isCreating || isUpdating;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -150,16 +155,16 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const [type, setType]               = useState<MarketplaceListingType>(initialType);
-  const [imageUri, setImageUri]       = useState<string | null>(null);
-  const [productName, setProductName] = useState('');
-  const [category, setCategory]       = useState('');
-  const [subcategory, setSubcategory] = useState('');
-  const [brand, setBrand]             = useState('');
+  const [type, setType]               = useState<MarketplaceListingType>(editListing?.type ?? initialType);
+  const [imageUri, setImageUri]       = useState<string | null>(editListing?.imageUrl ?? null);
+  const [productName, setProductName] = useState(editListing?.productName ?? '');
+  const [category, setCategory]       = useState(editListing?.category ?? '');
+  const [subcategory, setSubcategory] = useState(editListing?.subcategory ?? '');
+  const [brand, setBrand]             = useState(editListing?.brand ?? '');
   const [customBrand, setCustomBrand] = useState('');
-  const [condition, setCondition]     = useState<ProductCondition | null>(null);
-  const [location, setLocation]       = useState('');
-  const [price, setPrice]             = useState('');
+  const [condition, setCondition]     = useState<ProductCondition | null>(editListing?.condition ?? null);
+  const [location, setLocation]       = useState(editListing?.location ?? '');
+  const [price, setPrice]             = useState(editListing ? String(editListing.price) : '');
 
   const subcategoryOptions  = category ? SUBCATEGORIES[category] : undefined;
   const hasSubcategoryStep  = subcategoryOptions !== undefined;
@@ -196,23 +201,29 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
   }
 
   async function handleSubmit() {
+    const input = {
+      type,
+      productName: productName.trim(),
+      location: location.trim(),
+      price: Number(price),
+      imageUri,
+      condition,
+      category,
+      subcategory,
+      brand: brand === 'Other' ? customBrand.trim() : brand,
+    };
     try {
-      await create({
-        type,
-        productName: productName.trim(),
-        location: location.trim(),
-        price: Number(price),
-        imageUri,
-        condition,
-        category,
-        subcategory,
-        brand: brand === 'Other' ? customBrand.trim() : brand,
-      });
-      showToast(t('marketplace.listing_posted'), 'success');
-      reset();
+      if (isEditing && editListing) {
+        await update(editListing.id, editListing, input);
+        showToast(t('marketplace.listing_updated'), 'success');
+      } else {
+        await create(input);
+        showToast(t('marketplace.listing_posted'), 'success');
+        reset();
+      }
       onClose();
     } catch {
-      showToast(t('marketplace.failed_post'), 'error');
+      showToast(t(isEditing ? 'marketplace.failed_update' : 'marketplace.failed_post'), 'error');
     }
   }
 
@@ -235,7 +246,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
           {/* Header */}
           <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <AppText weight="bold" style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
-              {t('marketplace.post_listing')}
+              {t(isEditing ? 'marketplace.edit_listing_title' : 'marketplace.post_listing')}
             </AppText>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
               <X size={20} color="#004aad" />
@@ -437,7 +448,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, onC
             >
               {isSubmitting
                 ? <ActivityIndicator color="#fff" />
-                : <AppText weight="bold" style={styles.submitText}>{t('marketplace.post_listing_btn')}</AppText>}
+                : <AppText weight="bold" style={styles.submitText}>{t(isEditing ? 'marketplace.save_changes' : 'marketplace.post_listing_btn')}</AppText>}
             </TouchableOpacity>
           </ScrollView>
         </LinearGradient>

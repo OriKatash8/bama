@@ -14,8 +14,9 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { startNegotiation, shareListingToCommunities } from '../services/marketplaceService';
+import { startNegotiation, shareListingToCommunities, deleteListing } from '../services/marketplaceService';
 import { queryDocuments, where } from '@core/firebase/firestore';
+import { confirmDialog } from '@utils/confirmDialog';
 import type { Chat } from '@features/chat/types';
 
 const CONDITION_COLOR: Record<string, string> = {
@@ -43,9 +44,10 @@ function makeT(translations: Translations) {
 type Props = {
   listing: MarketplaceListing | null;
   onClose: () => void;
+  onEdit?: (listing: MarketplaceListing) => void;
 };
 
-export function ListingDetailModal({ listing, onClose }: Props) {
+export function ListingDetailModal({ listing, onClose, onEdit }: Props) {
   const { showToast } = useUiStore();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
@@ -67,6 +69,25 @@ export function ListingDetailModal({ listing, onClose }: Props) {
   const [sharing, setSharing] = useState(false);
   const [justShared, setJustShared] = useState<string[]>([]);
   const isSharingRef = useRef(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDelete(target: MarketplaceListing) {
+    const ok = await confirmDialog(
+      t('marketplace.delete_confirm_title'),
+      t('marketplace.delete_confirm_body'),
+    );
+    if (!ok) return;
+    setIsDeleting(true);
+    try {
+      await deleteListing(target.id, target.imageUrl);
+      showToast(t('marketplace.listing_deleted'), 'success');
+      onClose();
+    } catch {
+      showToast(t('marketplace.failed_delete'), 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   if (!listing) return null;
 
@@ -250,11 +271,35 @@ export function ListingDetailModal({ listing, onClose }: Props) {
             </View>
           </ScrollView>
 
-          {/* Share to my communities — owner only */}
+          {/* Owner actions: share + edit + delete */}
           {isOwnListing && (
-            <TouchableOpacity style={styles.buyBtn} onPress={openPicker} activeOpacity={0.85}>
-              <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_to_communities')}</AppText>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity style={styles.buyBtn} onPress={openPicker} activeOpacity={0.85}>
+                <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_to_communities')}</AppText>
+              </TouchableOpacity>
+              {!isUnavailable && (
+                <View style={[styles.ownerActionsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <TouchableOpacity
+                    style={[styles.ownerActionBtn, styles.editBtn]}
+                    onPress={() => onEdit?.(listing)}
+                    activeOpacity={0.85}
+                    disabled={isDeleting}
+                  >
+                    <AppText weight="bold" style={styles.editBtnText}>{t('marketplace.edit_listing')}</AppText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.ownerActionBtn, styles.deleteBtn]}
+                    onPress={() => handleDelete(listing)}
+                    activeOpacity={0.85}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting
+                      ? <ActivityIndicator size="small" color="#e53935" />
+                      : <AppText weight="bold" style={styles.deleteBtnText}>{t('marketplace.delete_listing')}</AppText>}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
 
           {/* Talk / In Discussion — pinned outside ScrollView */}
@@ -497,6 +542,20 @@ const styles = StyleSheet.create({
   },
   buyBtnDisabled: { opacity: 0.6 },
   buyText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  ownerActionsRow: { gap: 10, marginTop: 8 },
+  ownerActionBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
+  editBtn: { backgroundColor: '#fff', borderColor: '#004aad' },
+  editBtnText: { color: '#004aad', fontSize: 15, fontWeight: '700' },
+  deleteBtn: { backgroundColor: '#fff', borderColor: '#e53935' },
+  deleteBtnText: { color: '#e53935', fontSize: 15, fontWeight: '700' },
 
   reservedBtn: {
     backgroundColor: 'rgba(0,0,0,0.08)',

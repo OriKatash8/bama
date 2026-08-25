@@ -4,7 +4,7 @@ import { uploadFile } from '@core/firebase/storage';
 import { useAuthStore } from '@core/stores/authStore';
 import type { MarketplaceListingType, ProductCondition } from '../types';
 
-type CreateListingInput = {
+export type CreateListingInput = {
   type: MarketplaceListingType;
   productName: string;
   location: string;
