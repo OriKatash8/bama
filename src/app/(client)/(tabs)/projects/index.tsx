@@ -232,7 +232,7 @@ export default function ProjectsPage() {
 
         <View style={styles.content}>
           {(() => {
-            const active = requests.filter((r) => r.status !== 'completed');
+            const active = requests.filter((r) => r.status !== 'completed' && r.status !== 'cancelled');
             return (
               <View style={styles.section}>
                 {!requestsLoading && active.length > 0 && (

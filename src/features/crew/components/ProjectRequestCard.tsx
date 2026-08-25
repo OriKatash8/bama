@@ -17,7 +17,7 @@ import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { deleteProjectAndOffers } from '@features/crew/services/projectDeletion';
+import { cancelProject } from '@features/crew/services/projectCancellation';
 import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -94,7 +94,7 @@ export function ProjectRequestCard({ request }: Props) {
   async function handleDelete() {
     setIsDeleting(true);
     try {
-      await deleteProjectAndOffers(request.id, request.chatId);
+      await cancelProject(request.id, request.chatId);
       showToast(t('chats_page.project_deleted'), 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : t('chats_page.project_delete_error'), 'error');

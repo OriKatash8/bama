@@ -721,6 +721,10 @@ export default function ProjectDetailsScreen() {
   const currentUserId = auth.currentUser?.uid ?? '';
   const isClient = currentUserId === project.clientId;
   const isCompleted = project.status === 'completed';
+  const isCancelled = project.status === 'cancelled';
+  // A cancelled or completed project is read-only: no adding/editing missions,
+  // meetings, team members or price requests.
+  const isReadOnly = isCompleted || isCancelled;
   const isTeamMember = (project.filledSlots ?? []).some((s) => s.professionalId === currentUserId);
 
   const removalMap = Object.fromEntries(
@@ -778,7 +782,7 @@ export default function ProjectDetailsScreen() {
         </View>
 
         {/* Removal banner — shown to the professional who is pending removal */}
-        {myRemovalRequest && !isCompleted && (
+        {myRemovalRequest && !isReadOnly && (
           <View style={[styles.removalBanner, { flexDirection: rowDirection }]}>
             <Text style={[styles.removalBannerText, { ...font.regular, flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
               {t('project_details.removal_pending')}
@@ -852,7 +856,7 @@ export default function ProjectDetailsScreen() {
                   <AppText weight="regular" style={styles.sectionCount}>{memberCount}</AppText>
                 )}
               </View>
-              {isClient && !isCompleted && (
+              {isClient && !isReadOnly && (
                 <TouchableOpacity style={styles.addPill} onPress={() => setShowRolePicker(true)} activeOpacity={0.8}>
                   <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add_professional')}</AppText>
                 </TouchableOpacity>
@@ -899,10 +903,10 @@ export default function ProjectDetailsScreen() {
               rtl={rtl}
               isPendingRemoval={isClient && isPendingRemoval}
               isRemoving={removingId === professionalId}
-              onRemove={isClient && !isCompleted ? () => handleRequestRemoval(professionalId) : undefined}
+              onRemove={isClient && !isReadOnly ? () => handleRequestRemoval(professionalId) : undefined}
               onReport={professionalId !== currentUserId ? () => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? professionalId); setReportVisible(true); } : undefined}
               payment={(isClient || professionalId === currentUserId) ? payment : undefined}
-              onUpdate={(isClient || professionalId === currentUserId) && !isCompleted && payment?.individualOffer
+              onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly && payment?.individualOffer
                 ? (offer) => {
                     setSelectedOffer(offer);
                     setProposedAmount('');
@@ -929,7 +933,7 @@ export default function ProjectDetailsScreen() {
                 <AppText weight="regular" style={styles.sectionCount}>{missions.length}</AppText>
               )}
             </View>
-            {(isClient || isTeamMember) && !isCompleted && (
+            {(isClient || isTeamMember) && !isReadOnly && (
               <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
                 <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
               </TouchableOpacity>
@@ -1073,7 +1077,7 @@ export default function ProjectDetailsScreen() {
                 <AppText weight="regular" style={styles.sectionCount}>{meetings.length}</AppText>
               )}
             </View>
-            {(isClient || isTeamMember) && !isCompleted && (
+            {(isClient || isTeamMember) && !isReadOnly && (
               <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMeeting(true)} activeOpacity={0.8}>
                 <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
               </TouchableOpacity>
@@ -1247,7 +1251,7 @@ export default function ProjectDetailsScreen() {
       </ScrollView>
 
       {/* Mark as Complete / Completed badge */}
-      {isClient && (
+      {isClient && !isCancelled && (
         <View style={styles.completeBar}>
           {isCompleted ? (
             <View style={styles.completedBadge}>

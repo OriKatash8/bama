@@ -1289,13 +1289,13 @@ export function ChatRoomScreen({ chatId }: Props) {
               <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('marketplace.share_to_market')}</AppText>
             </TouchableOpacity>
           )}
-          {chatProjectId && (
+          {chatProjectId && !chatArchived && (
             <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMission(true); }} activeOpacity={0.7}>
               <View style={chatStyles.menuItemIcon}><CheckSquare size={22} color="#004aad" strokeWidth={1.5} /></View>
               <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_task')}</AppText>
             </TouchableOpacity>
           )}
-          {chatProjectId && (
+          {chatProjectId && !chatArchived && (
             <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMeeting(true); }} activeOpacity={0.7}>
               <View style={chatStyles.menuItemIcon}><Calendar size={22} color="#004aad" strokeWidth={1.5} /></View>
               <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_meeting')}</AppText>
@@ -1326,8 +1326,17 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
       )}
 
+      {/* Cancelled group (project) chat — read-only banner replaces input */}
+      {chatType === 'group' && chatArchived && (
+        <View style={[styles.inputRow, { paddingBottom: BOTTOM_INSET + 10, borderTopColor: colors.border, backgroundColor: colors.card, flexDirection: 'column', gap: 8, alignItems: 'center' }]}>
+          <AppText weight="semiBold" style={{ color: '#8890b0', fontSize: 13, textAlign: 'center' }}>
+            {t('chats.project_cancelled')}
+          </AppText>
+        </View>
+      )}
+
       {/* Recording bar — same geometry as input row, no position jump */}
-      {isRecording && !(chatType === 'purchase' && chatArchived) && (
+      {isRecording && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
         <View style={[
           styles.inputRow,
           { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10, alignItems: 'center' },
@@ -1355,7 +1364,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       )}
 
       {/* Input */}
-      {!isRecording && !(chatType === 'purchase' && chatArchived) && (
+      {!isRecording && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
