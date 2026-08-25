@@ -50,6 +50,7 @@ import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/co
 import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
+import { sendMessage } from '@features/chat/services/chatService';
 import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
@@ -380,6 +381,10 @@ export default function ProjectDetailsScreen() {
     try {
       const isClient = project?.clientId === currentUserId;
       const toUserId = isClient ? selectedOffer.professionalId : (project?.clientId ?? '');
+      // Name of the party who needs to accept the price change (the recipient).
+      const toName = (isClient
+        ? memberUsers[selectedOffer.professionalId]?.displayName
+        : clientUser?.displayName) ?? '';
       await createPaymentRequest(projectId, {
         fromUserId: currentUserId,
         toUserId,
@@ -388,6 +393,13 @@ export default function ProjectDetailsScreen() {
         proposedAmount: parsed,
         note: requestNote.trim() || undefined,
       });
+      // Post a chat notice (like a new mission/meeting) — no amounts, just a heads-up.
+      if (project?.chatId) {
+        try {
+          const noticeText = toName ? `💰 בקשת שינוי מחיר: ${toName}` : '💰 בקשת שינוי מחיר';
+          await sendMessage(project.chatId, currentUserId, noticeText, { system: true });
+        } catch { /* notice is non-critical; the request was already created */ }
+      }
       setShowPaymentRequestModal(false);
       setSelectedOffer(null);
       setProposedAmount('');

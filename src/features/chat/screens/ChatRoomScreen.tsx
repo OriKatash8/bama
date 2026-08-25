@@ -39,7 +39,7 @@ import {
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -141,7 +141,7 @@ function formatHebMeetingDetail(text: string): string {
   return formattedDate || title || '';
 }
 
-type SystemVariant = 'meeting' | 'mission' | 'neutral';
+type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'neutral';
 
 function parseSystemMessage(text: string): { variant: SystemVariant; headline: string; detail: string } {
   if (text.startsWith('📅')) {
@@ -152,6 +152,16 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
       variant: 'mission',
       headline: 'משימה חדשה נוספה',
       detail: text.replace(/^📋\s*משימה חדשה:\s*/, '').trim(),
+    };
+  }
+  // Match by the Hebrew phrase (not only the emoji) so the amber price pill renders
+  // identically on web and native, regardless of emoji encoding differences.
+  if (text.startsWith('💰') || text.includes('בקשת שינוי מחיר')) {
+    const name = text.replace(/^(?:💰\s*)?בקשת שינוי מחיר:?\s*/, '').trim();
+    return {
+      variant: 'price_change',
+      headline: 'בקשה לשינוי מחיר',
+      detail: name ? `ממתין לאישור ${name}` : '',
     };
   }
   return { variant: 'neutral', headline: text, detail: '' };
@@ -1093,17 +1103,19 @@ export function ChatRoomScreen({ chatId }: Props) {
             const msg = item as Message;
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
-              const accent = variant === 'mission' ? '#a23bc4' : '#1e4fa3';
+              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' ? '#f59e0b' : '#1e4fa3';
               return (
                 <View style={styles.systemWrapper}>
                   <View style={[
                     styles.systemPill,
-                    variant === 'mission' ? styles.systemPillMission : styles.systemPillMeeting,
+                    variant === 'mission' ? styles.systemPillMission : variant === 'price_change' ? styles.systemPillPrice : styles.systemPillMeeting,
                     { flexDirection: rtl ? 'row-reverse' : 'row' },
                   ]}>
                     {variant === 'mission'
                       ? <CheckSquare size={16} color={accent} strokeWidth={2} />
-                      : <Calendar size={16} color={accent} strokeWidth={2} />}
+                      : variant === 'price_change'
+                        ? <Coins size={16} color={accent} strokeWidth={2} />
+                        : <Calendar size={16} color={accent} strokeWidth={2} />}
                     <View style={{ flexShrink: 1 }}>
                       <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
                         {headline}
@@ -2052,6 +2064,7 @@ const styles = StyleSheet.create({
   },
   systemPillMeeting: { backgroundColor: 'rgba(30,79,163,0.08)' },
   systemPillMission: { backgroundColor: 'rgba(203,108,230,0.10)' },
+  systemPillPrice: { backgroundColor: 'rgba(245,158,11,0.10)' },
   systemHeadline: {
     fontSize: 13,
     textAlign: 'center',

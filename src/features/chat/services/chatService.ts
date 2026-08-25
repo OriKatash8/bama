@@ -220,7 +220,7 @@ export async function sendMessage(
   chatId: string,
   senderId: string,
   text: string,
-  opts?: { videoUrl?: string; imageURL?: string; audioUrl?: string; audioDuration?: number }
+  opts?: { videoUrl?: string; imageURL?: string; audioUrl?: string; audioDuration?: number; system?: boolean }
 ): Promise<void> {
   const messagesRef = collection(db, 'chats', chatId, 'messages');
   const chatRef = doc(db, 'chats', chatId);
@@ -231,6 +231,7 @@ export async function sendMessage(
     timestamp: serverTimestamp(),
     readBy: [senderId],
   };
+  if (opts?.system) messageData.system = true;
   if (opts?.videoUrl) messageData.videoUrl = opts.videoUrl;
   if (opts?.imageURL) messageData.imageURL = opts.imageURL;
   if (opts?.audioUrl) messageData.audioUrl = opts.audioUrl;
