@@ -230,11 +230,22 @@ export default function ProjectDetailsScreen() {
         )
       );
 
-      // Fetch accepted offers — may fail for non-clients; default to empty
-      const offers = await queryDocuments<PriceOffer>(
-        'priceOffers',
-        where('projectId', '==', projectId),
-        where('status', '==', 'accepted')
+      // Fetch accepted offers. The project-wide query is only allowed for the client;
+      // a professional viewer can only read his OWN offers, so scope the query by role.
+      const viewerUid = auth.currentUser?.uid ?? '';
+      const viewerIsClient = projectData.clientId === viewerUid;
+      const offers = await (viewerIsClient
+        ? queryDocuments<PriceOffer>(
+            'priceOffers',
+            where('projectId', '==', projectId),
+            where('status', '==', 'accepted'),
+          )
+        : queryDocuments<PriceOffer>(
+            'priceOffers',
+            where('projectId', '==', projectId),
+            where('professionalId', '==', viewerUid),
+            where('status', '==', 'accepted'),
+          )
       ).catch(() => [] as PriceOffer[]);
 
       setAcceptedOffers(offers);
@@ -849,6 +860,7 @@ export default function ProjectDetailsScreen() {
             roles={[t('project_details.project_client')]}
             badge={t('project_details.client')}
             rtl={rtl}
+            onReport={!isClient ? () => { setReportedUserId(project.clientId); setReportedUserName(clientUser.displayName); setReportVisible(true); } : undefined}
           />
         )}
 
@@ -880,9 +892,9 @@ export default function ProjectDetailsScreen() {
               isPendingRemoval={isClient && isPendingRemoval}
               isRemoving={removingId === professionalId}
               onRemove={isClient && !isCompleted ? () => handleRequestRemoval(professionalId) : undefined}
-              onReport={() => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? professionalId); setReportVisible(true); }}
-              payment={isClient ? payment : undefined}
-              onUpdate={isClient && !isCompleted && payment?.individualOffer
+              onReport={professionalId !== currentUserId ? () => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? professionalId); setReportVisible(true); } : undefined}
+              payment={(isClient || professionalId === currentUserId) ? payment : undefined}
+              onUpdate={(isClient || professionalId === currentUserId) && !isCompleted && payment?.individualOffer
                 ? (offer) => {
                     setSelectedOffer(offer);
                     setProposedAmount('');
