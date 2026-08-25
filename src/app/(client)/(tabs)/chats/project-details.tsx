@@ -132,14 +132,17 @@ export default function ProjectDetailsScreen() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [showAddMission, setShowAddMission] = useState(false);
   const [newMissionTitle, setNewMissionTitle] = useState('');
+  const [newMissionDescription, setNewMissionDescription] = useState('');
   const [newMissionAssignedTo, setNewMissionAssignedTo] = useState<string[]>([]);
   const [newMissionDueDate, setNewMissionDueDate] = useState('');
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [isAddingMission, setIsAddingMission] = useState(false);
+  const [detailMission, setDetailMission] = useState<Mission | null>(null);
 
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [showAddMeeting, setShowAddMeeting] = useState(false);
   const [newMeetingTitle, setNewMeetingTitle] = useState('');
+  const [newMeetingDescription, setNewMeetingDescription] = useState('');
   const [newMeetingDate, setNewMeetingDate] = useState('');
   const [newMeetingTime, setNewMeetingTime] = useState('');
   const [newMeetingLocation, setNewMeetingLocation] = useState('');
@@ -147,6 +150,7 @@ export default function ProjectDetailsScreen() {
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
   const [showMeetingTimePicker, setShowMeetingTimePicker] = useState(false);
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
+  const [detailMeeting, setDetailMeeting] = useState<Meeting | null>(null);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
 
   const [missionIndex, setMissionIndex] = useState(0);
@@ -570,12 +574,14 @@ export default function ProjectDetailsScreen() {
     try {
       await addMeeting(projectId, currentUserId, {
         title: newMeetingTitle.trim(),
+        description: newMeetingDescription.trim() || undefined,
         date: newMeetingDate,
         time: newMeetingTime.trim(),
         location: newMeetingLocation.trim(),
         invitedIds: newMeetingInvitedIds,
       });
       setNewMeetingTitle('');
+      setNewMeetingDescription('');
       setNewMeetingDate('');
       setNewMeetingTime('');
       setNewMeetingLocation('');
@@ -594,6 +600,7 @@ export default function ProjectDetailsScreen() {
     if (!currentUserId) return;
     const missionData = {
       title: newMissionTitle.trim(),
+      description: newMissionDescription.trim() || undefined,
       assignedTo: newMissionAssignedTo,
       dueDate: newMissionDueDate || undefined,
     };
@@ -603,6 +610,7 @@ export default function ProjectDetailsScreen() {
       await addMission(projectId, currentUserId, missionData);
       console.log('[handleAddMission] success');
       setNewMissionTitle('');
+      setNewMissionDescription('');
       setNewMissionAssignedTo([]);
       setNewMissionDueDate('');
       setShowAddMission(false);
@@ -940,6 +948,10 @@ export default function ProjectDetailsScreen() {
               const cfg = MISSION_STATUS_CONFIG[mission.status] ?? { color: '#6b7280' };
               const isAssigned = mission.assignedTo.includes(currentUserId);
               return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setDetailMission(mission)}
+                >
                 <View style={[styles.carouselCard, { flexDirection: rowDirection }]}>
                   {/* Avatar stack — leading (right in RTL) */}
                   {(() => {
@@ -1032,6 +1044,7 @@ export default function ProjectDetailsScreen() {
                     )}
                   </View>
                 </View>
+                </TouchableOpacity>
               );
             })()}
 
@@ -1084,6 +1097,10 @@ export default function ProjectDetailsScreen() {
                 '#1e4fa3';
               const { monthAbbr, day } = getMeetingDateParts(meeting.date);
               return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setDetailMeeting(meeting)}
+                >
                 <View style={[styles.carouselCard, { flexDirection: rowDirection }]}>
                   {/* Avatar stack — leading (right in RTL) */}
                   {(() => {
@@ -1136,6 +1153,7 @@ export default function ProjectDetailsScreen() {
                     <AppText weight="bold" style={[styles.meetingDateDay, { color: titleColor }]}>{day}</AppText>
                   </View>
                 </View>
+                </TouchableOpacity>
               );
             })()}
 
@@ -1278,6 +1296,19 @@ export default function ProjectDetailsScreen() {
             />
 
             <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+              {t('project_details.description_optional')}
+            </Text>
+            <TextInput
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              value={newMissionDescription}
+              onChangeText={setNewMissionDescription}
+              placeholder={t('project_details.description_placeholder')}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.assign_to')}
             </Text>
             {assignableMembers.map((m) => {
@@ -1391,6 +1422,19 @@ export default function ProjectDetailsScreen() {
               onChangeText={setNewMeetingTitle}
               placeholder={t('project_details.meeting_title_placeholder')}
               placeholderTextColor={colors.textMuted}
+            />
+
+            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+              {t('project_details.description_optional')}
+            </Text>
+            <TextInput
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              value={newMeetingDescription}
+              onChangeText={setNewMeetingDescription}
+              placeholder={t('project_details.description_placeholder')}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={3}
             />
 
             <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
@@ -1541,6 +1585,123 @@ export default function ProjectDetailsScreen() {
           flexibleLabel={t('builder.flexible')}
         />
       )}
+
+      {/* Mission detail popup */}
+      <Modal
+        visible={!!detailMission}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetailMission(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setDetailMission(null)} />
+          {detailMission && (
+            <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+                <View style={[styles.detailHeaderRow, { flexDirection: rowDirection }]}>
+                  <Text style={[styles.modalTitle, { color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+                    {detailMission.title}
+                  </Text>
+                  <View style={[
+                    styles.carouselStatusPill,
+                    detailMission.status === 'done' ? styles.carouselStatusDone : { borderColor: MISSION_STATUS_CONFIG[detailMission.status]?.color ?? '#6b7280', borderWidth: 1.5 },
+                  ]}>
+                    <AppText weight="bold" style={[styles.carouselStatusText, { color: detailMission.status === 'done' ? '#1c9d63' : (MISSION_STATUS_CONFIG[detailMission.status]?.color ?? '#6b7280') }]}>
+                      {detailMission.status === 'done' ? `✓ ${missionLabel(detailMission.status)}` : missionLabel(detailMission.status)}
+                    </AppText>
+                  </View>
+                </View>
+
+                {!!detailMission.description && (
+                  <View>
+                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.description')}</Text>
+                    <View style={styles.descPanel}>
+                      <AppText weight="regular" style={[styles.descText, { textAlign: rtl ? 'right' : 'left' }]}>{detailMission.description}</AppText>
+                    </View>
+                  </View>
+                )}
+
+                <View>
+                  <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.assign_to')}</Text>
+                  <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                    {detailMission.assignedTo.map((id) => allMemberNames[id] ?? id).join(', ') || '—'}
+                  </Text>
+                </View>
+
+                {!!detailMission.dueDate && (
+                  <View>
+                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.due_date')}</Text>
+                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{formatDueDate(detailMission.dueDate, '')}</Text>
+                  </View>
+                )}
+
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setDetailMission(null)} activeOpacity={0.8}>
+                  <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.close')}</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </Modal>
+
+      {/* Meeting detail popup */}
+      <Modal
+        visible={!!detailMeeting}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetailMeeting(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setDetailMeeting(null)} />
+          {detailMeeting && (
+            <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+                <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+                  {detailMeeting.title}
+                </Text>
+
+                {!!detailMeeting.description && (
+                  <View>
+                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.description')}</Text>
+                    <View style={styles.descPanel}>
+                      <AppText weight="regular" style={[styles.descText, { textAlign: rtl ? 'right' : 'left' }]}>{detailMeeting.description}</AppText>
+                    </View>
+                  </View>
+                )}
+
+                <View style={[styles.detailInlineRow, { flexDirection: rowDirection }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_date')}</Text>
+                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{formatDueDate(detailMeeting.date, '')}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_time')}</Text>
+                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{detailMeeting.time}</Text>
+                  </View>
+                </View>
+
+                {!!detailMeeting.location && (
+                  <View>
+                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_location')}</Text>
+                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{detailMeeting.location}</Text>
+                  </View>
+                )}
+
+                <View>
+                  <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_invitees')}</Text>
+                  <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                    {detailMeeting.invitedIds.map((id) => allMemberNames[id] ?? id).join(', ') || '—'}
+                  </Text>
+                </View>
+
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setDetailMeeting(null)} activeOpacity={0.8}>
+                  <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.close')}</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </Modal>
 
       {/* Payment Summary Modal */}
       <Modal
@@ -2186,6 +2347,33 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#eef0f6',
     alignSelf: 'stretch',
+  },
+  descPanel: {
+    backgroundColor: '#f5f6fb',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 6,
+  },
+  descText: {
+    fontSize: 14,
+    color: '#4a5578',
+    lineHeight: 20,
+  },
+  detailHeaderRow: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#8890b0',
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 15,
+    color: '#1e4fa3',
+  },
+  detailInlineRow: {
+    gap: 12,
   },
   carouselNavRow: {
     flexDirection: 'row',

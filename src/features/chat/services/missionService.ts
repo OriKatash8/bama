@@ -21,6 +21,7 @@ function docToMission(d: QueryDocumentSnapshot<DocumentData>): Mission {
     id: d.id,
     projectId: data.projectId as string,
     title: data.title as string,
+    description: data.description as string | undefined,
     assignedTo: (data.assignedTo ?? []) as string[],
     status: data.status as MissionStatus,
     dueDate: data.dueDate as string | undefined,
@@ -49,9 +50,9 @@ export function listenToMissions(
 export async function addMission(
   projectId: string,
   createdBy: string,
-  data: { title: string; assignedTo: string[]; dueDate?: string },
+  data: { title: string; description?: string; assignedTo: string[]; dueDate?: string },
 ): Promise<void> {
-  const { dueDate, ...rest } = data;
+  const { dueDate, description, ...rest } = data;
   const payload: Record<string, unknown> = {
     ...rest,
     projectId,
@@ -60,6 +61,7 @@ export async function addMission(
     createdAt: serverTimestamp(),
   };
   if (dueDate !== undefined) payload.dueDate = dueDate;
+  if (description !== undefined) payload.description = description;
   console.log('[addMission] writing to projects/' + projectId + '/missions', payload);
   await addDoc(collection(db, 'projects', projectId, 'missions'), payload);
   console.log('[addMission] success');

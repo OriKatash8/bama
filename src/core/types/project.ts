@@ -142,6 +142,7 @@ export type Mission = {
   id: string;
   projectId: string;
   title: string;
+  description?: string;
   assignedTo: string[];
   status: MissionStatus;
   dueDate?: string;
@@ -153,6 +154,7 @@ export type Meeting = {
   id: string;
   projectId: string;
   title: string;
+  description?: string;
   date: string;
   time: string;
   location: string;

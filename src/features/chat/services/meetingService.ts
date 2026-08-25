@@ -18,6 +18,7 @@ function docToMeeting(d: QueryDocumentSnapshot<DocumentData>): Meeting {
     id: d.id,
     projectId: data.projectId as string,
     title: data.title as string,
+    description: data.description as string | undefined,
     date: data.date as string,
     time: data.time as string,
     location: data.location as string,
@@ -65,10 +66,12 @@ export function listenToMeetings(
 export async function addMeeting(
   projectId: string,
   createdBy: string,
-  data: { title: string; date: string; time: string; location: string; invitedIds: string[] },
+  data: { title: string; description?: string; date: string; time: string; location: string; invitedIds: string[] },
 ): Promise<void> {
+  const { description, ...rest } = data;
   await addDoc(collection(db, 'projects', projectId, 'meetings'), {
-    ...data,
+    ...rest,
+    ...(description !== undefined ? { description } : {}),
     projectId,
     createdBy,
     createdAt: serverTimestamp(),
