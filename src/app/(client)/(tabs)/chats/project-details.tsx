@@ -181,7 +181,9 @@ export default function ProjectDetailsScreen() {
 
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
-  const [selectedOffer, setSelectedOffer] = useState<PriceOffer | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<
+    { professionalId: string; currentAmount: number; bundleId?: string } | null
+  >(null);
   const [proposedAmount, setProposedAmount] = useState('');
   const [requestNote, setRequestNote] = useState('');
   const [isSendingRequest, setIsSendingRequest] = useState(false);
@@ -371,7 +373,7 @@ export default function ProjectDetailsScreen() {
   }
 
   async function handleSendPaymentRequest() {
-    if (!projectId || !selectedOffer) return;
+    if (!projectId || !selectedPrice) return;
     const currentUserId = auth.currentUser?.uid;
     if (!currentUserId) return;
     const parsed = parseFloat(proposedAmount);
@@ -380,16 +382,17 @@ export default function ProjectDetailsScreen() {
     setIsSendingRequest(true);
     try {
       const isClient = project?.clientId === currentUserId;
-      const toUserId = isClient ? selectedOffer.professionalId : (project?.clientId ?? '');
+      const toUserId = isClient ? selectedPrice.professionalId : (project?.clientId ?? '');
       // Name of the party who needs to accept the price change (the recipient).
       const toName = (isClient
-        ? memberUsers[selectedOffer.professionalId]?.displayName
+        ? memberUsers[selectedPrice.professionalId]?.displayName
         : clientUser?.displayName) ?? '';
       await createPaymentRequest(projectId, {
         fromUserId: currentUserId,
         toUserId,
-        professionalId: selectedOffer.professionalId,
-        currentAmount: selectedOffer.price,
+        professionalId: selectedPrice.professionalId,
+        bundleId: selectedPrice.bundleId,
+        currentAmount: selectedPrice.currentAmount,
         proposedAmount: parsed,
         note: requestNote.trim() || undefined,
       });
@@ -411,7 +414,7 @@ export default function ProjectDetailsScreen() {
         } catch { /* notice is non-critical; the request was already created */ }
       }
       setShowPaymentRequestModal(false);
-      setSelectedOffer(null);
+      setSelectedPrice(null);
       setProposedAmount('');
       setRequestNote('');
     } catch {
@@ -431,7 +434,28 @@ export default function ProjectDetailsScreen() {
         accept,
         request.professionalId,
         request.proposedAmount,
+        request.bundleId,
       );
+      // Offers/bundles are one-shot fetches, so reflect the new price locally right
+      // away (mirrors the service).
+      if (accept) {
+        if (request.bundleId) {
+          setBundleMap((prev) => {
+            const next = new Map(prev);
+            const b = next.get(request.bundleId!);
+            if (b) next.set(request.bundleId!, { ...b, bundlePrice: request.proposedAmount });
+            return next;
+          });
+        } else {
+          setAcceptedOffers((prev) =>
+            prev.map((o) =>
+              o.professionalId === request.professionalId
+                ? { ...o, price: request.proposedAmount }
+                : o,
+            ),
+          );
+        }
+      }
     } catch {
       Alert.alert('Error', t('project_details.error_accept_reject', {
         action: accept ? t('project_details.accept').toLowerCase() : t('project_details.reject').toLowerCase(),
@@ -717,13 +741,13 @@ export default function ProjectDetailsScreen() {
   }
 
   // Per-professional payment summary (bundles counted once at bundlePrice)
-  type MemberPaymentInfo = { price: number; hasBundle: boolean; individualOffer: PriceOffer | null };
+  type MemberPaymentInfo = { price: number; hasBundle: boolean; individualOffer: PriceOffer | null; bundleId: string | null };
   const memberPaymentMap: Record<string, MemberPaymentInfo> = {};
   const seenBundleIds = new Set<string>();
   for (const offer of acceptedOffers) {
     const profId = offer.professionalId;
     if (!memberPaymentMap[profId]) {
-      memberPaymentMap[profId] = { price: 0, hasBundle: false, individualOffer: null };
+      memberPaymentMap[profId] = { price: 0, hasBundle: false, individualOffer: null, bundleId: null };
     }
     const info = memberPaymentMap[profId];
     if (offer.bundleId) {
@@ -733,6 +757,7 @@ export default function ProjectDetailsScreen() {
         if (bundle) {
           info.price += bundle.bundlePrice;
           info.hasBundle = true;
+          info.bundleId = offer.bundleId;
         }
       }
     } else {
@@ -928,9 +953,14 @@ export default function ProjectDetailsScreen() {
               onRemove={isClient && !isReadOnly ? () => handleRequestRemoval(professionalId) : undefined}
               onReport={professionalId !== currentUserId ? () => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? professionalId); setReportVisible(true); } : undefined}
               payment={(isClient || professionalId === currentUserId) ? payment : undefined}
-              onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly && payment?.individualOffer
-                ? (offer) => {
-                    setSelectedOffer(offer);
+              onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly && (payment?.individualOffer || payment?.bundleId)
+                ? () => {
+                    if (!payment) return;
+                    setSelectedPrice(
+                      payment.bundleId
+                        ? { professionalId, currentAmount: payment.price, bundleId: payment.bundleId }
+                        : { professionalId, currentAmount: payment.individualOffer?.price ?? payment.price },
+                    );
                     setProposedAmount('');
                     setRequestNote('');
                     setShowPaymentRequestModal(true);
@@ -1838,14 +1868,14 @@ export default function ProjectDetailsScreen() {
               {t('project_details.request_payment_update')}
             </Text>
 
-            {selectedOffer && (
+            {selectedPrice && (
               <>
                 <View style={styles.requestModalInfoRow}>
                   <Text style={[styles.requestModalLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                     {t('project_details.professional')}
                   </Text>
                   <Text style={[styles.requestModalValue, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-                    {memberUsers[selectedOffer.professionalId]?.displayName ?? selectedOffer.professionalId}
+                    {memberUsers[selectedPrice.professionalId]?.displayName ?? selectedPrice.professionalId}
                   </Text>
                 </View>
                 <View style={styles.requestModalInfoRow}>
@@ -1853,7 +1883,7 @@ export default function ProjectDetailsScreen() {
                     {t('project_details.current_amount')}
                   </Text>
                   <Text style={[styles.requestModalValue, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-                    ${selectedOffer.price.toLocaleString()}
+                    ${selectedPrice.currentAmount.toLocaleString()}
                   </Text>
                 </View>
               </>
@@ -1999,8 +2029,8 @@ function MemberRow({
   isRemoving?: boolean;
   onRemove?: () => void;
   onReport?: () => void;
-  payment?: { price: number; hasBundle: boolean; individualOffer: PriceOffer | null };
-  onUpdate?: (offer: PriceOffer) => void;
+  payment?: { price: number; hasBundle: boolean; individualOffer: PriceOffer | null; bundleId: string | null };
+  onUpdate?: () => void;
 }) {
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
@@ -2008,7 +2038,7 @@ function MemberRow({
   const t = makeT(language === 'he' ? he : en);
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   const isClient = badge !== undefined;
-  const canUpdate = !!onUpdate && !!payment?.individualOffer;
+  const canUpdate = !!onUpdate && (!!payment?.individualOffer || !!payment?.bundleId);
   const showActions = canUpdate || !!onRemove || isPendingRemoval || !!onReport;
   return (
     <View style={styles.memberCard}>
@@ -2062,7 +2092,7 @@ function MemberRow({
       {showActions && (
         <View style={[styles.memberActionBar, { flexDirection: rowDir }]}>
           {canUpdate && (
-            <TouchableOpacity style={styles.updatePill} onPress={() => onUpdate!(payment!.individualOffer!)} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.updatePill} onPress={() => onUpdate!()} activeOpacity={0.85}>
               <Pencil size={13} color="#ffffff" strokeWidth={2.2} />
               <AppText weight="semiBold" style={styles.updatePillText}>{t('project_details.update')}</AppText>
             </TouchableOpacity>

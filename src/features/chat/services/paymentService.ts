@@ -151,14 +151,18 @@ export async function createPaymentRequest(
     fromUserId: string;
     toUserId: string;
     professionalId: string;
+    bundleId?: string;
     currentAmount: number;
     proposedAmount: number;
     note?: string;
   },
 ): Promise<void> {
+  const { bundleId, note, ...rest } = data;
   await addDoc(collection(db, `projects/${projectId}/paymentRequests`), {
     projectId,
-    ...data,
+    ...rest,
+    ...(bundleId ? { bundleId } : {}),
+    ...(note ? { note } : {}),
     status: 'pending',
     createdAt: serverTimestamp(),
   });
@@ -170,6 +174,7 @@ export async function respondToPaymentRequest(
   accept: boolean,
   professionalId: string,
   newAmount: number,
+  bundleId?: string,
 ): Promise<void> {
   const requestRef = doc(db, `projects/${projectId}/paymentRequests/${requestId}`);
 
@@ -178,17 +183,21 @@ export async function respondToPaymentRequest(
     return;
   }
 
-  const offersSnap = await getDocs(
-    query(
-      collection(db, 'priceOffers'),
-      where('projectId', '==', projectId),
-      where('professionalId', '==', professionalId),
-      where('status', '==', 'accepted'),
-    ),
-  );
-
   const batch = writeBatch(db);
-  offersSnap.docs.forEach((d) => batch.update(d.ref, { price: newAmount }));
+  if (bundleId) {
+    // Bundle deal → reprice the single bundle.
+    batch.update(doc(db, 'bundleOffers', bundleId), { bundlePrice: newAmount });
+  } else {
+    const offersSnap = await getDocs(
+      query(
+        collection(db, 'priceOffers'),
+        where('projectId', '==', projectId),
+        where('professionalId', '==', professionalId),
+        where('status', '==', 'accepted'),
+      ),
+    );
+    offersSnap.docs.forEach((d) => batch.update(d.ref, { price: newAmount }));
+  }
   batch.update(requestRef, { status: 'accepted' });
   await batch.commit();
 }

@@ -171,6 +171,9 @@ export type PaymentRequest = {
   fromUserId: string;
   toUserId: string;
   professionalId: string;
+  /** Set when the request is for a BUNDLE deal — repriced on bundleOffers/{bundleId}
+   *  instead of the individual priceOffers. */
+  bundleId?: string;
   currentAmount: number;
   proposedAmount: number;
   note?: string;
