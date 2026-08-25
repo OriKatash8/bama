@@ -157,12 +157,8 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
   // Match by the Hebrew phrase (not only the emoji) so the amber price pill renders
   // identically on web and native, regardless of emoji encoding differences.
   if (text.startsWith('💰') || text.includes('בקשת שינוי מחיר')) {
-    const name = text.replace(/^(?:💰\s*)?בקשת שינוי מחיר:?\s*/, '').trim();
-    return {
-      variant: 'price_change',
-      headline: 'בקשה לשינוי מחיר',
-      detail: name ? `ממתין לאישור ${name}` : '',
-    };
+    const detail = text.replace(/^(?:💰\s*)?בקשת שינוי מחיר:?\s*/, '').trim();
+    return { variant: 'price_change', headline: 'בקשה לשינוי מחיר', detail };
   }
   return { variant: 'neutral', headline: text, detail: '' };
 }

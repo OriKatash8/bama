@@ -197,6 +197,7 @@
     "confirm_complete": "Confirm & Complete Project",
     "agreement": "By confirming, you agree to pay the platform fee of ₪{{amount}}",
     "request_payment_update": "Request Payment Update",
+    "price_requests": "Price change requests",
     "professional": "Professional",
     "current_amount": "Current amount",
     "proposed_amount": "Proposed amount",

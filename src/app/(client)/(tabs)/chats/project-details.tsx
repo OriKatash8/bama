@@ -396,7 +396,17 @@ export default function ProjectDetailsScreen() {
       // Post a chat notice (like a new mission/meeting) — no amounts, just a heads-up.
       if (project?.chatId) {
         try {
-          const noticeText = toName ? `💰 בקשת שינוי מחיר: ${toName}` : '💰 בקשת שינוי מחיר';
+          // Sender name from the loaded member maps (auth.currentUser.displayName is
+          // often empty — names live in Firestore, not the Firebase Auth profile).
+          const fromName = (isClient
+            ? clientUser?.displayName
+            : memberUsers[currentUserId]?.displayName) ?? '';
+          const parts: string[] = [];
+          if (fromName) parts.push(`מאת ${fromName}`);
+          if (toName) parts.push(`ממתין לאישור ${toName}`);
+          const noticeText = parts.length
+            ? `💰 בקשת שינוי מחיר: ${parts.join(' · ')}`
+            : '💰 בקשת שינוי מחיר';
           await sendMessage(project.chatId, currentUserId, noticeText, { system: true });
         } catch { /* notice is non-critical; the request was already created */ }
       }
@@ -1192,6 +1202,9 @@ export default function ProjectDetailsScreen() {
         {/* Pending payment-update requests */}
         {paymentRequests.length > 0 && (
           <>
+            <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 8, marginBottom: 4 }]}>
+              {t('project_details.price_requests')}
+            </AppText>
             {incomingRequests.map((req) => {
               const fromName = allMemberNames[req.fromUserId] ?? req.fromUserId;
               const isResponding = respondingId === req.id;

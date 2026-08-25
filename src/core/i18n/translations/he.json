@@ -197,6 +197,7 @@
     "confirm_complete": "אשר והשלם פרויקט",
     "agreement": "באישורך, אתה מסכים לשלם עמלת פלטפורמה של ₪{{amount}}",
     "request_payment_update": "בקשת עדכון תשלום",
+    "price_requests": "בקשות לשינוי מחיר",
     "professional": "איש מקצוע",
     "current_amount": "סכום נוכחי",
     "proposed_amount": "סכום מוצע",
