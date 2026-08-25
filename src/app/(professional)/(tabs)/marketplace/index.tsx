@@ -179,8 +179,10 @@ export default function MarketplaceScreen() {
   }, [params.listingId]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase();
     let result = listings.filter((l) =>
-      l.productName.toLowerCase().includes(searchQuery.toLowerCase())
+      l.productName.toLowerCase().includes(q) ||
+      (l.brand ?? '').toLowerCase().includes(q)
     );
     if (selectedCategory !== 'all') {
       result = result.filter((l) => l.category === selectedCategory);

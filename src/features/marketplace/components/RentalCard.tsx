@@ -25,6 +25,9 @@ export function RentalCard({ listing, onPress }: Props) {
       </View>
       <View style={styles.body}>
         <AppText weight="bold" style={styles.name} numberOfLines={2}>{listing.productName}</AppText>
+        {listing.brand && (
+          <AppText style={[styles.brand, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{listing.brand}</AppText>
+        )}
         <Text style={styles.price}>₪{listing.price.toLocaleString()}/day</Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Image
@@ -64,6 +67,7 @@ const styles = StyleSheet.create({
   placeholder: { fontSize: 36 },
   body: { padding: 8, gap: 2 },
   name: { fontSize: 13, fontWeight: '700', color: '#004aad' },
+  brand: { fontSize: 11, color: 'rgba(0,74,173,0.5)' },
   price: { fontSize: 13, fontWeight: '700', color: '#cb6ce6' },
   locationRow: { flexDirection: 'row', alignItems: 'center' },
   locationIcon: { width: 14, height: 14 },
