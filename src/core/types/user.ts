@@ -34,4 +34,7 @@ export type ProfessionalProfile = {
   reviewCount: number;
   equipment: string[];
   priceList: PriceEntry[];
+  /** True once the pro has saved a profile meeting the minimum requirements
+   *  (name + at least one role). Absent/false ⇒ first-time / not completed. */
+  proProfileCompleted?: boolean;
 };

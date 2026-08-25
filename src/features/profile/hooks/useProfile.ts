@@ -80,6 +80,9 @@ export function useProfile() {
         bio,
         equipment,
         priceList,
+        // Marks the profile complete once the minimum requirements are met.
+        // The UI only enables Save when valid, so this writes true on a qualifying save.
+        proProfileCompleted: name.trim().length > 0 && roleSkills.length > 0,
       });
       setUser({ ...user, displayName: name, photoURL });
     } catch (e: any) {

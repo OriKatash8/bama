@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator,
+  ActivityIndicator, BackHandler,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@components/layout/Screen';
@@ -12,6 +12,8 @@ import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
 import { useUiStore } from '@core/stores/uiStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -58,6 +60,28 @@ export default function ProfessionalProfileScreen() {
   const initialised = useRef(false);
   const handleSaveRef = useRef<() => void>(() => {});
   const handleCancelRef = useRef<() => void>(() => {});
+
+  // First-time / incomplete pros are locked here until they save the required fields.
+  const locked = useAuthStore((s) => s.proProfileCompleted) === false;
+  const { switchMode } = useSwitchMode();
+
+  // Required to complete: a name and at least one role.
+  const isComplete = name.trim().length > 0 && roleSkills.length > 0;
+  const missing: string[] = [];
+  if (!name.trim()) missing.push(t('profile.missing_name'));
+  if (roleSkills.length === 0) missing.push(t('profile.missing_role'));
+
+  // Force editing while locked; block Android hardware back so they can't escape
+  // into the app without completing (client-mode switch is the only way out).
+  useEffect(() => {
+    if (locked) setIsEditing(true);
+  }, [locked]);
+
+  useEffect(() => {
+    if (!locked) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [locked]);
 
   useEffect(() => {
     if (user) setName(user.displayName);
@@ -122,17 +146,24 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <Screen style={styles.content} scrollable>
-      <View style={styles.titleRow}>
+      <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        {locked && (
+          <TouchableOpacity onPress={() => switchMode('client')} style={styles.headerBtn}>
+            <AppText weight="semiBold" style={[styles.headerBtnText, { color: '#cb6ce6' }]}>{t('profile.switch_to_client')}</AppText>
+          </TouchableOpacity>
+        )}
         <View style={{ flex: 1 }} />
         {isEditing ? (
           <View style={styles.headerBtns}>
-            <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-              <AppText weight="regular" style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.cancel')}</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving}>
+            {!locked && (
+              <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
+                <AppText weight="regular" style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.cancel')}</AppText>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving || !isComplete}>
               {isSaving
                 ? <ActivityIndicator size="small" color="#004aad" />
-                : <AppText weight="bold" style={[styles.headerBtnText, styles.save]}>{t('profile.save')}</AppText>}
+                : <AppText weight="bold" style={[styles.headerBtnText, styles.save, !isComplete && styles.saveDisabled]}>{t('profile.save')}</AppText>}
             </TouchableOpacity>
           </View>
         ) : (
@@ -141,6 +172,21 @@ export default function ProfessionalProfileScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {locked && (
+        <View style={styles.completeBanner}>
+          <AppText weight="semiBold" style={[styles.completeBannerText, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('profile.complete_banner')}
+          </AppText>
+        </View>
+      )}
+
+      {isEditing && !isComplete && (
+        <AppText weight="regular" style={[styles.missingHint, { textAlign: rtl ? 'right' : 'left' }]}>
+          {t('profile.missing_prefix')}: {missing.join(', ')}
+        </AppText>
+      )}
+
       <ProfileHeader
         photoURL={photoUri ?? user?.photoURL ?? null}
         name={name}
@@ -185,6 +231,17 @@ const styles = StyleSheet.create({
   headerBtn: { paddingHorizontal: 8 },
   headerBtnText: { fontSize: 16 },
   save: { fontWeight: '700', color: '#004aad' },
+  saveDisabled: { color: '#9aa0b8' },
+
+  completeBanner: {
+    backgroundColor: 'rgba(203,108,230,0.12)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: -8,
+  },
+  completeBannerText: { fontSize: 14, color: '#004aad' },
+  missingHint: { fontSize: 13, color: '#e04b4b', marginTop: -12 },
 
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   pageTitle: {

@@ -16,8 +16,12 @@ export function useSwitchMode() {
       const profile = userId
         ? await getDocument<ProfessionalProfile>(`users/${userId}/profile/data`)
         : null;
+      // A completed profile goes to the dashboard; otherwise land on (and lock to)
+      // the profile screen so the pro must finish their details first.
       router.replace(
-        profile ? '/(professional)/(tabs)/dashboard' : '/(professional)/(tabs)/profile',
+        profile?.proProfileCompleted
+          ? '/(professional)/(tabs)/dashboard'
+          : '/(professional)/(tabs)/profile',
       );
     }
   }
