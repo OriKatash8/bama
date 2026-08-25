@@ -128,7 +128,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
             onPress={onViewProfile}
             activeOpacity={0.8}
           >
-            <Text style={[styles.btnOutlineText, { ...font.bold }]}>{t('search.view_profile')}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.btnOutlineText, { ...font.bold }]}>{t('search.view_profile')}</Text>
           </TouchableOpacity>
         )}
         {onDirectProject && (
@@ -137,7 +137,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
             onPress={onDirectProject}
             activeOpacity={0.8}
           >
-            <Text style={[styles.btnFilledText, { ...font.bold }]}>{t('search.tell_us_about_project')}</Text>
+            <Text numberOfLines={2} style={[styles.btnFilledText, { textAlign: 'center', ...font.bold }]}>{t('search.tell_us_about_project')}</Text>
           </TouchableOpacity>
         )}
         {onMessage && !onDirectProject && (
@@ -149,7 +149,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
           >
             {isMessaging
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={[styles.btnFilledText, { ...font.bold }]}>{t('search.message')}</Text>
+              : <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.btnFilledText, { ...font.bold }]}>{t('search.message')}</Text>
             }
           </TouchableOpacity>
         )}

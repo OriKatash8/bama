@@ -174,6 +174,8 @@ export default function ProfessionalChatsScreen() {
                   <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
                     <Text
                       numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}
                       style={[
                         styles.tabText,
                         { color: colors.textSec, ...(isActive ? font.bold : font.regular), textAlign: rtl ? 'right' : 'left' },
@@ -493,14 +495,14 @@ const styles = StyleSheet.create({
   },
   tabPill: {
     paddingVertical: 9,
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     borderRadius: 20,
   },
   tabPillActive: {
     backgroundColor: 'rgba(0,74,173,0.12)',
   },
   tabText: {
-    fontSize: 15,
+    fontSize: 14,
   },
   tabTextActive: {
     color: '#004aad',
