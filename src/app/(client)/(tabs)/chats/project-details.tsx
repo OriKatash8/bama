@@ -397,18 +397,11 @@ export default function ProjectDetailsScreen() {
         note: requestNote.trim() || undefined,
       });
       // Post a chat notice (like a new mission/meeting) — no amounts, just a heads-up.
+      // The info line names only the person who needs to accept the change.
       if (project?.chatId) {
         try {
-          // Sender name from the loaded member maps (auth.currentUser.displayName is
-          // often empty — names live in Firestore, not the Firebase Auth profile).
-          const fromName = (isClient
-            ? clientUser?.displayName
-            : memberUsers[currentUserId]?.displayName) ?? '';
-          const parts: string[] = [];
-          if (fromName) parts.push(`מאת ${fromName}`);
-          if (toName) parts.push(`ממתין לאישור ${toName}`);
-          const noticeText = parts.length
-            ? `💰 בקשת שינוי מחיר: ${parts.join(' · ')}`
+          const noticeText = toName
+            ? `💰 בקשת שינוי מחיר: ממתין לאישור ${toName}`
             : '💰 בקשת שינוי מחיר';
           await sendMessage(project.chatId, currentUserId, noticeText, { system: true });
         } catch { /* notice is non-critical; the request was already created */ }

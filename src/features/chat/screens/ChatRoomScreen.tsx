@@ -1099,7 +1099,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             const msg = item as Message;
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
-              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' ? '#f59e0b' : '#1e4fa3';
+              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' ? '#1c9d63' : '#1e4fa3';
               return (
                 <View style={styles.systemWrapper}>
                   <View style={[
@@ -2060,7 +2060,7 @@ const styles = StyleSheet.create({
   },
   systemPillMeeting: { backgroundColor: 'rgba(30,79,163,0.08)' },
   systemPillMission: { backgroundColor: 'rgba(203,108,230,0.10)' },
-  systemPillPrice: { backgroundColor: 'rgba(245,158,11,0.10)' },
+  systemPillPrice: { backgroundColor: 'rgba(28,157,99,0.10)' },
   systemHeadline: {
     fontSize: 13,
     textAlign: 'center',
