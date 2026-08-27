@@ -1182,15 +1182,27 @@ export function ChatRoomScreen({ chatId }: Props) {
               </AppText>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => setChatPhotoModalOpen(true)} activeOpacity={0.8} style={chatStyles.headerPhotoBtn}>
-            {chatPhotoURL ? (
-              <Image source={{ uri: chatPhotoURL }} style={chatStyles.headerPhoto} />
-            ) : (
-              <View style={[chatStyles.headerPhoto, chatStyles.headerPhotoFallback]}>
-                <AppText style={chatStyles.headerPhotoFallbackText}>{chatName?.[0] ?? '?'}</AppText>
-              </View>
-            )}
-          </TouchableOpacity>
+          {(() => {
+            // For purchase chats, the header avatar is the product image, and
+            // tapping it opens the product notice instead of the change-photo sheet.
+            const isPurchase = chatType === 'purchase';
+            const avatarUri = isPurchase ? purchaseListing?.imageUrl ?? null : chatPhotoURL;
+            return (
+              <TouchableOpacity
+                onPress={() => (isPurchase ? (purchaseListing && setShowPurchaseNotice(true)) : setChatPhotoModalOpen(true))}
+                activeOpacity={0.8}
+                style={chatStyles.headerPhotoBtn}
+              >
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={chatStyles.headerPhoto} />
+                ) : (
+                  <View style={[chatStyles.headerPhoto, chatStyles.headerPhotoFallback]}>
+                    <AppText style={chatStyles.headerPhotoFallbackText}>{chatName?.[0] ?? '?'}</AppText>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })()}
         </View>
       </View>
 
