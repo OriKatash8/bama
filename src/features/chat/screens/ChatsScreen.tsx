@@ -204,6 +204,9 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
       );
     }
     if (item.type === 'group') {
+      if (item.photoURL) {
+        return <Image source={{ uri: item.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
+      }
       return (
         <View style={[styles.avatar, { backgroundColor: '#e7c8f2' }]}>
           <Users size={24} color="#7c3aed" strokeWidth={1.8} />
