@@ -471,14 +471,14 @@ export default function HomeScreen() {
             <PageTitle>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: 'center' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
             <View style={[styles.progressRow, { justifyContent: 'center' }]}>
-              <View style={[styles.progressBar, { backgroundColor: '#6c5ce0' }]} />
-              <View style={[styles.progressBar, { backgroundColor: '#6c5ce0' }]} />
-              <View style={[styles.progressBar, { backgroundColor: '#6c5ce0' }]} />
+              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
+              <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
             </View>
 
             <TouchableOpacity style={styles.backArrow} onPress={() => setStep(2)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <ChevronLeft size={20} color="#6c5ce0" strokeWidth={2.5} />
-              <Text style={[styles.backArrowText, { color: '#6c5ce0' }]}>{t('search.back').replace('← ', '')}</Text>
+              <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+              <Text style={[styles.backArrowText, { color: '#004aad' }]}>{t('search.back').replace('← ', '')}</Text>
             </TouchableOpacity>
 
             {[...new Set(slots.map((s) => s.category))].map((category) => {
@@ -548,7 +548,7 @@ export default function HomeScreen() {
             <View style={styles.submitWrap}>
               <TouchableOpacity onPress={handleReview} activeOpacity={0.85}>
                 <LinearGradient
-                  colors={['#6c5ce0', '#8a72ec']}
+                  colors={['#004aad', '#cb6ce6']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.s3Footer}
@@ -1050,7 +1050,7 @@ function createStyles(
     s3SelLabel: { fontSize: 13, color: '#6c5ce0' },
     s3PillRow: { flexWrap: 'wrap', gap: 8 },
     s3Pill: { borderRadius: 16, paddingHorizontal: 13, paddingVertical: 7 },
-    s3PillSel: { backgroundColor: '#6c5ce0' },
+    s3PillSel: { backgroundColor: '#004aad' },
     s3PillUnsel: { backgroundColor: '#f0f0f7' },
     s3PillTextSel: { color: '#ffffff', fontSize: 13 },
     s3PillTextUnsel: { color: '#5c6180', fontSize: 13 },
