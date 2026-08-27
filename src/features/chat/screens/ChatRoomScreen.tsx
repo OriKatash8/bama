@@ -56,6 +56,7 @@ import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
+import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { shareListingToCommunities } from '@features/marketplace/services/marketplaceService';
@@ -501,6 +502,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   } | null>(null);
   const [pendingCaption, setPendingCaption] = useState('');
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [purchaseListing, setPurchaseListing] = useState<MarketplaceListing | null>(null);
+  const [showPurchaseNotice, setShowPurchaseNotice] = useState(false);
 
   // Channel state
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -651,9 +654,15 @@ export function ChatRoomScreen({ chatId }: Props) {
         } else if (data.type === 'purchase') {
           const lang = useSettingsStore.getState().language;
           let productName = data.name as string | undefined;
-          if (!productName && data.purchaseListingId) {
+          // Fetch the full listing so the header title can open the product
+          // notice (ListingDetailModal); also resolves the name when missing.
+          if (data.purchaseListingId) {
             const listingSnap = await getDoc(doc(db, 'marketplace_listings', data.purchaseListingId as string));
-            if (listingSnap.exists()) productName = (listingSnap.data() as { productName?: string }).productName;
+            if (listingSnap.exists()) {
+              const listingData = listingSnap.data() as Omit<MarketplaceListing, 'id'>;
+              if (!productName) productName = listingData.productName;
+              setPurchaseListing({ id: listingSnap.id, ...listingData });
+            }
           }
           // Prefer the buyer's name in the title so the seller can tell buyers
           // apart. Fall back to the buyer member's displayName, then to a suffix.
@@ -1148,6 +1157,17 @@ export function ChatRoomScreen({ chatId }: Props) {
               </AppText>
               <AppText style={chatStyles.headerHint}>{t('chats.click_for_project_info')}</AppText>
             </TouchableOpacity>
+          ) : chatType === 'purchase' && purchaseListing ? (
+            <TouchableOpacity
+              style={styles.headerNameTouchable}
+              onPress={() => setShowPurchaseNotice(true)}
+              activeOpacity={0.8}
+            >
+              <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+                {chatName}
+              </AppText>
+              <AppText style={chatStyles.headerHint}>{t('chats.purchase_info_hint')}</AppText>
+            </TouchableOpacity>
           ) : (
             <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
@@ -1205,6 +1225,13 @@ export function ChatRoomScreen({ chatId }: Props) {
           <PurchaseBanner chatId={chatId} onDismiss={() => setBannerDismissed(true)} />
         </View>
       )}
+
+      {/* Product notice opened by tapping the purchase-chat title */}
+      <ListingDetailModal
+        listing={showPurchaseNotice ? purchaseListing : null}
+        onClose={() => setShowPurchaseNotice(false)}
+        readOnly
+      />
 
       {/* Messages */}
       <View style={{ flex: 1, zIndex: 0 }}>

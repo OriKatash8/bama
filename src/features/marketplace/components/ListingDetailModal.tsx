@@ -45,9 +45,12 @@ type Props = {
   listing: MarketplaceListing | null;
   onClose: () => void;
   onEdit?: (listing: MarketplaceListing) => void;
+  /** When true, hides all marketplace action buttons (share/edit/delete/talk/buy)
+   * so the modal reads as a read-only product notice — used inside purchase chats. */
+  readOnly?: boolean;
 };
 
-export function ListingDetailModal({ listing, onClose, onEdit }: Props) {
+export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props) {
   const { showToast } = useUiStore();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
@@ -277,7 +280,7 @@ export function ListingDetailModal({ listing, onClose, onEdit }: Props) {
           </ScrollView>
 
           {/* Owner actions: share + edit + delete */}
-          {isOwnListing && (
+          {isOwnListing && !readOnly && (
             <>
               <TouchableOpacity style={styles.buyBtn} onPress={openPicker} activeOpacity={0.85}>
                 <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_to_communities')}</AppText>
@@ -308,7 +311,7 @@ export function ListingDetailModal({ listing, onClose, onEdit }: Props) {
           )}
 
           {/* Talk / In Discussion — pinned outside ScrollView */}
-          {!isOwnListing && (
+          {!isOwnListing && !readOnly && (
             isUnavailable ? (
               <View style={styles.reservedBtn}>
                 <AppText weight="bold" style={styles.reservedText}>

@@ -134,6 +134,7 @@
     "badge_completed": "Completed",
     "badge_cancelled": "Cancelled",
     "click_for_project_info": "(click for project information)",
+    "purchase_info_hint": "(click here for purchase information)",
     "change_photo": "Change photo",
     "error": "Error",
     "video_send_failed": "Could not send video. Please try again.",
