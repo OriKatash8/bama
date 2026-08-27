@@ -240,11 +240,9 @@ export default function MarketplaceScreen() {
   function clearFilters() {
     setDraftPriceSort(null);
     setDraftBrands([]);
-    setDraftLocation('');
     setDraftCondition(null);
     setPriceSort(null);
     setFilterBrands([]);
-    setFilterLocation('');
     setFilterCondition(null);
     setFilterModalVisible(false);
   }
