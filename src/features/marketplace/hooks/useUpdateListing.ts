@@ -30,7 +30,7 @@ export function useUpdateListing() {
         imageUrl,
         condition: input.condition ?? null,
         category: input.category || null,
-        subcategory: input.subcategory || null,
+        subcategory: input.subcategory && input.subcategory.length ? input.subcategory : null,
         brand: input.brand?.trim() || null,
       });
     } catch (e) {

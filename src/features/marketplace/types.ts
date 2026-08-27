@@ -19,7 +19,8 @@ export type MarketplaceListing = {
   condition?: ProductCondition;
   brand?: string;
   category?: string;
-  subcategory?: string;
+  /** One or more subcategories. Legacy listings stored a single string. */
+  subcategory?: string | string[];
   status?: ListingStatus;
   reservedBy?: string;
   reservedAt?: Timestamp;

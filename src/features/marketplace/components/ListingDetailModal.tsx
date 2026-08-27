@@ -242,7 +242,12 @@ export function ListingDetailModal({ listing, onClose, onEdit }: Props) {
                     <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.category')}</AppText>
                     <AppText weight="semiBold" style={styles.detailValue}>
                       {t(`marketplace.category_${listing.category}`) || listing.category}
-                      {listing.subcategory ? ` › ${listing.subcategory}` : ''}
+                      {(() => {
+                        const subs = Array.isArray(listing.subcategory)
+                          ? listing.subcategory
+                          : listing.subcategory ? [listing.subcategory] : [];
+                        return subs.length ? ` › ${subs.join(' · ')}` : '';
+                      })()}
                     </AppText>
                   </View>
                 )}

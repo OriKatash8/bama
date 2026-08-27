@@ -131,6 +131,18 @@ function getBrandOptions(category: string, subcategory: string): readonly string
   return BRANDS_BY_CATEGORY[category]?.[subcategory] ?? DEFAULT_BRANDS;
 }
 
+/** Union of the brand lists for all selected subcategories, deduped, "Other" last. */
+function getBrandOptionsMulti(category: string, subcategories: string[]): readonly string[] {
+  if (subcategories.length === 0) return DEFAULT_BRANDS;
+  const set = new Set<string>();
+  for (const sub of subcategories) {
+    for (const b of getBrandOptions(category, sub)) {
+      if (b !== 'Other') set.add(b);
+    }
+  }
+  return [...set, 'Other'];
+}
+
 type Props = {
   visible: boolean;
   initialType: MarketplaceListingType;
@@ -160,7 +172,11 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   const [imageUri, setImageUri]       = useState<string | null>(editListing?.imageUrl ?? null);
   const [productName, setProductName] = useState(editListing?.productName ?? '');
   const [category, setCategory]       = useState(editListing?.category ?? '');
-  const [subcategory, setSubcategory] = useState(editListing?.subcategory ?? '');
+  const [subcategory, setSubcategory] = useState<string[]>(
+    Array.isArray(editListing?.subcategory)
+      ? editListing.subcategory
+      : editListing?.subcategory ? [editListing.subcategory] : [],
+  );
   const [brand, setBrand]             = useState(editListing?.brand ?? '');
   const [customBrand, setCustomBrand] = useState('');
   const [condition, setCondition]     = useState<ProductCondition | null>(editListing?.condition ?? null);
@@ -190,16 +206,19 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
 
   function reset() {
     setImageUri(null); setProductName(''); setCategory('');
-    setSubcategory(''); setBrand(''); setCustomBrand(''); setCondition(null);
+    setSubcategory([]); setBrand(''); setCustomBrand(''); setCondition(null);
     setLocation(''); setPrice('');
   }
 
   function handleCategorySelect(id: string) {
-    setCategory(id); setSubcategory(''); setBrand(''); setCustomBrand('');
+    setCategory(id); setSubcategory([]); setBrand(''); setCustomBrand('');
   }
 
+  // Multi-select: toggle the subcategory in/out. Reset brand since the union of
+  // available brands changes with the selection.
   function handleSubcategorySelect(sub: string) {
-    setSubcategory(sub); setBrand(''); setCustomBrand('');
+    setSubcategory((prev) => (prev.includes(sub) ? prev.filter((s) => s !== sub) : [...prev, sub]));
+    setBrand(''); setCustomBrand('');
   }
 
   async function handleSubmit() {
@@ -346,11 +365,11 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                   {subcategoryOptions.map((sub) => (
                     <TouchableOpacity
                       key={sub}
-                      style={[styles.chip, subcategory === sub && styles.chipActive]}
+                      style={[styles.chip, subcategory.includes(sub) && styles.chipActive]}
                       onPress={() => handleSubcategorySelect(sub)}
                       activeOpacity={0.8}
                     >
-                      <AppText weight="semiBold" style={[styles.chipLabel, subcategory === sub && styles.chipLabelActive]}>
+                      <AppText weight="semiBold" style={[styles.chipLabel, subcategory.includes(sub) && styles.chipLabelActive]}>
                         {sub}
                       </AppText>
                     </TouchableOpacity>
@@ -367,7 +386,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                     {t('marketplace.brand')}
                   </AppText>
                   <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    {getBrandOptions(category, subcategory).map((b) => (
+                    {getBrandOptionsMulti(category, subcategory).map((b) => (
                       <TouchableOpacity
                         key={b}
                         style={[styles.chip, brand === b && styles.chipActive]}

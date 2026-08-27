@@ -12,7 +12,7 @@ export type CreateListingInput = {
   imageUri: string | null;
   condition?: ProductCondition | null;
   category?: string;
-  subcategory?: string;
+  subcategory?: string[];
   brand?: string;
 };
 
@@ -40,7 +40,7 @@ export function useCreateListing() {
         imageUrl,
         condition: input.condition ?? null,
         category: input.category || null,
-        subcategory: input.subcategory || null,
+        subcategory: input.subcategory && input.subcategory.length ? input.subcategory : null,
         brand: input.brand?.trim() || null,
         status: 'available',
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
