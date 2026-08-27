@@ -8,8 +8,9 @@ import { Image } from 'expo-image';
 
 const BLUE_CAM = require('../../../../assets/images/categories/blue-cam.png');
 import { LinearGradient } from 'expo-linear-gradient';
-import { X } from 'lucide-react-native';
+import { X, MapPin } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { CityPickerModal } from './CityPickerModal';
 import { useCreateListing } from '../hooks/useCreateListing';
 import { useUpdateListing } from '../hooks/useUpdateListing';
 import { useUiStore } from '@core/stores/uiStore';
@@ -164,6 +165,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   const [customBrand, setCustomBrand] = useState('');
   const [condition, setCondition]     = useState<ProductCondition | null>(editListing?.condition ?? null);
   const [location, setLocation]       = useState(editListing?.location ?? '');
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [price, setPrice]             = useState(editListing ? String(editListing.price) : '');
 
   const subcategoryOptions  = category ? SUBCATEGORIES[category] : undefined;
@@ -263,7 +265,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
           >
             {/* Type toggle */}
             {!lockedType && (
-              <View style={styles.toggle}>
+              <View style={[styles.toggle, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <TouchableOpacity
                   style={[styles.pill, type === 'secondhand' && styles.pillActive]}
                   onPress={() => setType('secondhand')}
@@ -286,14 +288,17 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             )}
 
             {/* Image */}
+            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('marketplace.label_image')}
+            </AppText>
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
               {imageUri ? (
                 <Image source={{ uri: imageUri }} style={styles.previewImage} />
               ) : (
-                <View style={styles.imagePickerPlaceholder}>
+                <View style={[styles.imagePickerPlaceholder, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Image
                     source={BLUE_CAM}
-                    style={styles.cameraIcon}
+                    style={[styles.cameraIcon, rtl ? { marginRight: 0, marginLeft: 8 } : null]}
                   />
                   <AppText weight="regular" style={styles.imagePickerLabel}>{t('marketplace.upload_photo')}</AppText>
                 </View>
@@ -301,6 +306,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             </TouchableOpacity>
 
             {/* Product name */}
+            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('marketplace.label_name')}
+            </AppText>
             <TextInput
               style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
               placeholder={t('marketplace.product_name')}
@@ -313,7 +321,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.category')}
             </AppText>
-            <View style={styles.grid}>
+            <View style={[styles.grid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               {CATEGORIES.map((cat) => (
                 <TouchableOpacity
                   key={cat.id}
@@ -334,7 +342,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                 <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                   {t('marketplace.subcategory')}
                 </AppText>
-                <View style={styles.chipRow}>
+                <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   {subcategoryOptions.map((sub) => (
                     <TouchableOpacity
                       key={sub}
@@ -358,7 +366,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                   <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                     {t('marketplace.brand')}
                   </AppText>
-                  <View style={styles.chipRow}>
+                  <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     {getBrandOptions(category, subcategory).map((b) => (
                       <TouchableOpacity
                         key={b}
@@ -400,7 +408,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                 <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                   {t('marketplace.condition')}
                 </AppText>
-                <View style={styles.conditionRow}>
+                <View style={[styles.conditionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   {CONDITIONS.map((c) => (
                     <TouchableOpacity
                       key={c.value}
@@ -421,23 +429,47 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             )}
 
             {/* Location */}
-            <TextInput
-              style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
-              placeholder={t('marketplace.location_city')}
-              placeholderTextColor="rgba(0,0,0,0.3)"
-              value={location}
-              onChangeText={setLocation}
-            />
+            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('marketplace.label_location')}
+            </AppText>
+            <TouchableOpacity
+              style={[styles.input, styles.locationTrigger, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={() => setLocationPickerOpen(true)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
+              <MapPin size={16} color="#004aad" strokeWidth={1.8} />
+              <AppText
+                weight="regular"
+                style={[styles.locationTriggerText, { textAlign: rtl ? 'right' : 'left', color: location ? '#1a1a2e' : 'rgba(0,0,0,0.3)' }]}
+                numberOfLines={1}
+              >
+                {location || t('marketplace.location_city')}
+              </AppText>
+              {location.length > 0 && (
+                <TouchableOpacity onPress={() => setLocation('')} hitSlop={8} activeOpacity={0.7}>
+                  <X size={14} color="rgba(0,0,0,0.35)" strokeWidth={2.5} />
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
 
             {/* Price */}
-            <TextInput
-              style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
-              placeholder={type === 'rental' ? t('marketplace.price_per_day') : t('marketplace.price_ils')}
-              placeholderTextColor="rgba(0,0,0,0.3)"
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="numeric"
-            />
+            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('marketplace.label_price')}
+            </AppText>
+            <View style={[styles.priceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <TextInput
+                style={[styles.input, styles.priceInput, { textAlign: rtl ? 'right' : 'left' }]}
+                placeholder={type === 'rental' ? t('marketplace.price_per_day') : t('marketplace.price_ils')}
+                placeholderTextColor="rgba(0,0,0,0.3)"
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="numeric"
+              />
+              {type === 'rental' && (
+                <AppText weight="semiBold" style={styles.priceSuffix}>{t('marketplace.per_day')}</AppText>
+              )}
+            </View>
 
             {/* Submit */}
             <TouchableOpacity
@@ -454,6 +486,13 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
         </LinearGradient>
         </TouchableOpacity>
       </TouchableOpacity>
+
+      <CityPickerModal
+        visible={locationPickerOpen}
+        value={location}
+        onSelect={setLocation}
+        onClose={() => setLocationPickerOpen(false)}
+      />
     </Modal>
   );
 }
@@ -544,6 +583,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.15)',
   },
+  locationTrigger: { alignItems: 'center', gap: 8 },
+  locationTriggerText: { flex: 1, fontSize: 15 },
+  priceRow: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  priceInput: { flex: 1, marginBottom: 0 },
+  priceSuffix: { fontSize: 15, color: '#004aad' },
 
   sectionLabel: {
     fontSize: 13,
