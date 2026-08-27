@@ -50,9 +50,9 @@ const CATEGORY_IMAGE: Record<string, number> = {
   'Editor':             require('../../../../../assets/images/categories/blue-edit.png'),
   'Graphic Designer':   require('../../../../../assets/images/categories/blue-grafic.png'),
   'Social Media':       require('../../../../../assets/images/categories/blue-social.png'),
-  'Studio & Audio':     require('../../../../../assets/images/categories/blue-sound.png'),
+  'Studio & Audio':     require('../../../../../assets/images/categories/blue-mic.png'),
   'Lighting Tech':      require('../../../../../assets/images/categories/blue-lightning.png'),
-  'Sound Recordist':    require('../../../../../assets/images/categories/blue-mic.png'),
+  'Sound Recordist':    require('../../../../../assets/images/categories/blue-sound.png'),
 };
 
 const CATEGORIES = ROLE_CATEGORIES.map((key) => ({
