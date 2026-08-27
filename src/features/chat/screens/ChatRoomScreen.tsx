@@ -39,7 +39,7 @@ import {
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -469,6 +469,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const creatingGeneralRef = useRef(false);
   const creatingMarketRef = useRef(false);
   const flatListRef = useRef<FlatList>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatArchived, setChatArchived] = useState(false);
@@ -1213,6 +1214,11 @@ export function ChatRoomScreen({ chatId }: Props) {
           data={listItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+            setShowScrollDown(contentSize.height - (contentOffset.y + layoutMeasurement.height) > 200);
+          }}
           renderItem={({ item }) => {
             if ('type' in item && item.type === 'date-separator') {
               return <DateSeparator label={(item as { label: string }).label} />;
@@ -1327,6 +1333,16 @@ export function ChatRoomScreen({ chatId }: Props) {
             );
           }}
         />
+        {showScrollDown && (
+          <TouchableOpacity
+            style={[styles.scrollDownBtn, rtl ? { left: 16 } : { right: 16 }]}
+            onPress={() => { flatListRef.current?.scrollToEnd({ animated: true }); setShowScrollDown(false); }}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+          >
+            <ChevronDown size={22} color="#004aad" strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* + Action bar — inline, above input, moves with keyboard */}
@@ -2063,6 +2079,21 @@ const styles = StyleSheet.create({
   listingHeaderAvatarText: { fontSize: 15, color: '#ffffff' },
   listingHeaderName: { flex: 1, fontSize: 14.5, color: '#2a2f5a' },
   listingHeaderTime: { fontSize: 11.5, color: '#8890b0' },
+  scrollDownBtn: {
+    position: 'absolute',
+    bottom: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1e4fa3',
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
   listingImage: { width: '100%', height: 150, backgroundColor: '#eef0fa' },
   listingImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
   listingRibbon: {
