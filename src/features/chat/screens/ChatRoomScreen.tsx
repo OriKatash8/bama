@@ -366,7 +366,7 @@ function SharedListingCard({ msg }: { msg: Message }) {
             ) : (
               <View style={[styles.listingImage, styles.listingImagePlaceholder]} />
             )}
-            <View style={[styles.listingRibbon, rtl ? { right: 10 } : { left: 10 }]}>
+            <View style={[styles.listingRibbon, !isRental && styles.listingRibbonSale, rtl ? { right: 10 } : { left: 10 }]}>
               <AppText weight="bold" style={styles.listingRibbonText}>
                 {isRental ? t('marketplace.for_rent') : t('marketplace.for_sale')}
               </AppText>
@@ -2059,6 +2059,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
+  listingRibbonSale: { backgroundColor: '#004aad' },
   listingRibbonText: { fontSize: 12, color: '#ffffff' },
   listingRemovedBadge: {
     position: 'absolute',
