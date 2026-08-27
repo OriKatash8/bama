@@ -156,7 +156,7 @@ export default function SummaryScreen() {
     <Screen scrollable={false}>
       {/* Back button */}
       <TouchableOpacity
-        style={[styles.backRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+        style={[styles.backRow, { flexDirection: rtl ? 'row-reverse' : 'row', alignSelf: rtl ? 'flex-end' : 'flex-start' }]}
         onPress={() => router.back()}
         activeOpacity={0.7}
         hitSlop={12}
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 60 },
 
-  backRow: { alignItems: 'center', gap: 4, paddingVertical: 12, alignSelf: 'flex-start' },
+  backRow: { alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 16 },
   backText: { fontSize: 15, color: '#004aad', fontWeight: '600' },
 
   card: { borderRadius: 20, padding: 20, margin: 4 },
