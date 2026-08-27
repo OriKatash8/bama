@@ -572,17 +572,17 @@ const styles = StyleSheet.create({
   categoriesRow: {
     flexDirection: 'row',
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 2,
     gap: 8,
     marginTop: 0,
   },
   catItem: {
-    width: 112,
+    width: 92,
     alignItems: 'center',
-    paddingVertical: 10,
-    gap: 4,
+    paddingVertical: 4,
+    gap: 2,
   },
-  tileIcon: { width: 96, height: 96 },
+  tileIcon: { width: 72, height: 72 },
   catLabel: { fontSize: 13, fontWeight: '600' },
 
   filterBarRow: {
