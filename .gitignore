@@ -49,3 +49,8 @@ functions/node_modules
 
 # Firebase Storage CORS config
 cors.json
+
+# Native build artifacts
+*.ipa
+*.apk
+*.aab
