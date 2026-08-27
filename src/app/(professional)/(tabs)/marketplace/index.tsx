@@ -497,6 +497,7 @@ export default function MarketplaceScreen() {
         onEdit={(l) => { setSelectedListing(null); setEditListing(l); }}
       />
       <PostListingSheet
+        key={activeTab}
         visible={postSheetVisible}
         initialType={activeTab}
         lockedType
