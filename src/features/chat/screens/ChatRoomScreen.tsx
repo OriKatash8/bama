@@ -313,6 +313,115 @@ interface Props {
   chatId: string;
 }
 
+/** A marketplace listing shared into a community market channel. Shows a
+ *  rental/sale ribbon and, if the listing was removed/sold, a "not relevant"
+ *  state with a disabled CTA. */
+function SharedListingCard({ msg }: { msg: Message }) {
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
+  const t = makeT(language === 'he' ? he : en);
+  const router = useRouter();
+  const [available, setAvailable] = useState<boolean | null>(null);
+  // Authoritative sale/rental type read from the live listing (falls back to the
+  // message field, which is only present on newer shared cards).
+  const [docType, setDocType] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!msg.listingId) { setAvailable(false); return; }
+    let cancelled = false;
+    getDoc(doc(db, 'marketplace_listings', msg.listingId))
+      .then((snap) => {
+        if (cancelled) return;
+        if (!snap.exists()) { setAvailable(false); return; }
+        const data = snap.data() as { status?: string; type?: string };
+        setDocType(data.type ?? null);
+        setAvailable(data.status !== 'sold' && data.status !== 'reserved');
+      })
+      .catch(() => { if (!cancelled) setAvailable(true); });
+    return () => { cancelled = true; };
+  }, [msg.listingId]);
+
+  const posterName = msg.posterName ?? '';
+  const initial = (posterName || '?').charAt(0).toUpperCase();
+  const isRental = (docType ?? msg.listingType) === 'rental';
+  const removed = available === false;
+
+  return (
+    <>
+      {/* Attention intro — styled like a system event pill */}
+      <View style={styles.systemWrapper}>
+        <View style={[styles.listingAnnouncePill, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <AppText weight="semiBold" style={styles.listingAnnounceText}>
+            {`🛒 ${posterName} ${t('marketplace.posted_a_listing')}`}
+          </AppText>
+        </View>
+      </View>
+
+      {/* Listing card */}
+      <View style={styles.listingWrapper}>
+        <View style={[styles.listingCard, removed && { opacity: 0.6 }]}>
+          <View>
+            {msg.imageUrl ? (
+              <Image source={{ uri: msg.imageUrl }} style={styles.listingImage} resizeMode="cover" />
+            ) : (
+              <View style={[styles.listingImage, styles.listingImagePlaceholder]} />
+            )}
+            <View style={[styles.listingRibbon, rtl ? { right: 10 } : { left: 10 }]}>
+              <AppText weight="bold" style={styles.listingRibbonText}>
+                {isRental ? t('marketplace.for_rent') : t('marketplace.for_sale')}
+              </AppText>
+            </View>
+            {removed && (
+              <View style={[styles.listingRemovedBadge, rtl ? { left: 10 } : { right: 10 }]}>
+                <AppText weight="bold" style={styles.listingRemovedText}>{t('marketplace.not_relevant')}</AppText>
+              </View>
+            )}
+          </View>
+          <View style={styles.listingBody}>
+            <AppText weight="bold" numberOfLines={2} style={[styles.listingTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {msg.title ?? ''}
+            </AppText>
+            <AppText weight="bold" style={[styles.listingPrice, { textAlign: rtl ? 'right' : 'left' }]}>
+              ₪{(msg.price ?? 0).toLocaleString()}
+            </AppText>
+            {!!posterName && (
+              <View style={[styles.listingSellerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <View style={styles.listingAvatar}>
+                  <AppText weight="bold" style={styles.listingAvatarText}>{initial}</AppText>
+                </View>
+                <AppText weight="regular" style={styles.listingPoster}>
+                  {(rtl ? 'מאת ' : 'By ') + posterName}
+                </AppText>
+              </View>
+            )}
+            {removed ? (
+              <View style={[styles.listingCta, styles.listingCtaDisabled, { flexDirection: rtl ? 'row-reverse' : 'row', marginTop: 10 }]}>
+                <AppText weight="bold" style={styles.listingCtaText}>{t('marketplace.listing_unavailable')}</AppText>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => router.push(`/(professional)/(tabs)/marketplace?listingId=${msg.listingId}` as never)}
+                activeOpacity={0.85}
+                style={{ marginTop: 10 }}
+              >
+                <LinearGradient
+                  colors={['#1e4fa3', '#3d6fc9']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.listingCta, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+                >
+                  <Eye size={16} color="#ffffff" strokeWidth={2.4} />
+                  <AppText weight="bold" style={styles.listingCtaText}>{t('marketplace.view_listing')}</AppText>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
+    </>
+  );
+}
+
 export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
   const font = useAppFont();
@@ -1125,69 +1234,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               );
             }
             if (msg.type === 'listing') {
-              const posterName = msg.posterName ?? '';
-              const initial = (posterName || '?').charAt(0).toUpperCase();
-              return (
-                <>
-                  {/* Attention intro — styled like a system event pill */}
-                  <View style={styles.systemWrapper}>
-                    <View style={[styles.listingAnnouncePill, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                      <AppText weight="semiBold" style={styles.listingAnnounceText}>
-                        {`🛒 ${posterName} ${t('marketplace.posted_a_listing')}`}
-                      </AppText>
-                    </View>
-                  </View>
-
-                  {/* Listing card */}
-                  <View style={styles.listingWrapper}>
-                    <View style={styles.listingCard}>
-                      <View>
-                        {msg.imageUrl ? (
-                          <Image source={{ uri: msg.imageUrl }} style={styles.listingImage} resizeMode="cover" />
-                        ) : (
-                          <View style={[styles.listingImage, styles.listingImagePlaceholder]} />
-                        )}
-                        <View style={[styles.listingRibbon, rtl ? { right: 10 } : { left: 10 }]}>
-                          <AppText weight="bold" style={styles.listingRibbonText}>{rtl ? 'למכירה' : 'For sale'}</AppText>
-                        </View>
-                      </View>
-                      <View style={styles.listingBody}>
-                        <AppText weight="bold" numberOfLines={2} style={[styles.listingTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-                          {msg.title ?? ''}
-                        </AppText>
-                        <AppText weight="bold" style={[styles.listingPrice, { textAlign: rtl ? 'right' : 'left' }]}>
-                          ₪{(msg.price ?? 0).toLocaleString()}
-                        </AppText>
-                        {!!posterName && (
-                          <View style={[styles.listingSellerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <View style={styles.listingAvatar}>
-                              <AppText weight="bold" style={styles.listingAvatarText}>{initial}</AppText>
-                            </View>
-                            <AppText weight="regular" style={styles.listingPoster}>
-                              {(rtl ? 'מאת ' : 'By ') + posterName}
-                            </AppText>
-                          </View>
-                        )}
-                        <TouchableOpacity
-                          onPress={() => router.push(`/(professional)/(tabs)/marketplace?listingId=${msg.listingId}` as never)}
-                          activeOpacity={0.85}
-                          style={{ marginTop: 10 }}
-                        >
-                          <LinearGradient
-                            colors={['#1e4fa3', '#3d6fc9']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={[styles.listingCta, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-                          >
-                            <Eye size={16} color="#ffffff" strokeWidth={2.4} />
-                            <AppText weight="bold" style={styles.listingCtaText}>{t('marketplace.view_listing')}</AppText>
-                          </LinearGradient>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-                </>
-              );
+              return <SharedListingCard msg={msg} />;
             }
             const isOwn = msg.senderId === currentUserId;
             return (
@@ -2013,6 +2060,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   listingRibbonText: { fontSize: 12, color: '#ffffff' },
+  listingRemovedBadge: {
+    position: 'absolute',
+    top: 10,
+    backgroundColor: '#6b7280',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  listingRemovedText: { fontSize: 12, color: '#ffffff' },
   listingBody: { padding: 14, gap: 5 },
   listingTitle: { fontSize: 17, color: '#2a2f5a' },
   listingPrice: { fontSize: 21, color: '#6c5ce0' },
@@ -2028,6 +2084,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   listingCtaText: { color: '#ffffff', fontSize: 14.5 },
+  listingCtaDisabled: { backgroundColor: '#c3c7d4' },
   listingPickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 20 },
   listingPickerCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 16 },
   listingPickerHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },

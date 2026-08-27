@@ -305,6 +305,7 @@ export async function shareListingToCommunities(
         // Structured listing payload (consumed by Part C's card renderer):
         type: 'listing',
         listingId: listing.id,
+        listingType: listing.type,
         title: listing.productName,
         price: listing.price,
         imageUrl: listing.imageUrl ?? null,

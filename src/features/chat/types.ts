@@ -23,6 +23,7 @@ export interface Message {
   /** Shared marketplace listing — rendered as an actionable card. */
   type?: 'listing';
   listingId?: string;
+  listingType?: 'secondhand' | 'rental';
   title?: string;
   price?: number;
   imageUrl?: string | null;
