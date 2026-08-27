@@ -470,6 +470,10 @@ export function ChatRoomScreen({ chatId }: Props) {
   const creatingMarketRef = useRef(false);
   const flatListRef = useRef<FlatList>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  // Tracks whether the list is at/near the bottom, so content-size changes keep
+  // the view pinned to the newest message (initial open + new messages while at
+  // the bottom) without yanking the user down when they've scrolled up.
+  const isAtBottomRef = useRef(true);
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatArchived, setChatArchived] = useState(false);
@@ -844,11 +848,6 @@ export function ChatRoomScreen({ chatId }: Props) {
     });
   }, [messages]);
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }
-  }, [messages.length]);
 
   async function handleChangeCommunityPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -1217,7 +1216,12 @@ export function ChatRoomScreen({ chatId }: Props) {
           scrollEventThrottle={16}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-            setShowScrollDown(contentSize.height - (contentOffset.y + layoutMeasurement.height) > 200);
+            const distanceFromBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+            isAtBottomRef.current = distanceFromBottom <= 80;
+            setShowScrollDown(distanceFromBottom > 200);
+          }}
+          onContentSizeChange={() => {
+            if (isAtBottomRef.current) flatListRef.current?.scrollToEnd({ animated: false });
           }}
           renderItem={({ item }) => {
             if ('type' in item && item.type === 'date-separator') {
