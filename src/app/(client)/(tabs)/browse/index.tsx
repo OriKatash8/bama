@@ -215,8 +215,9 @@ export default function SearchScreen() {
         animationType="slide"
         onRequestClose={closeModal}
       >
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeModal}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.modalSheetWrapper}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeModal} />
+          <View style={styles.modalSheetWrapper}>
           <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalSheet}>
             {/* Modal header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -300,8 +301,8 @@ export default function SearchScreen() {
               />
             )}
           </LinearGradient>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       <DirectProjectSheet
