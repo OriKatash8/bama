@@ -4,6 +4,7 @@ import {
   ActivityIndicator, BackHandler,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Pencil } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
@@ -146,14 +147,14 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <Screen style={styles.content} scrollable>
-      <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        {locked && (
-          <TouchableOpacity onPress={() => switchMode('client')} style={styles.headerBtn}>
-            <AppText weight="semiBold" style={[styles.headerBtnText, { color: '#cb6ce6' }]}>{t('profile.switch_to_client')}</AppText>
-          </TouchableOpacity>
-        )}
-        <View style={{ flex: 1 }} />
-        {isEditing ? (
+      {isEditing && (
+        <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          {locked && (
+            <TouchableOpacity onPress={() => switchMode('client')} style={styles.headerBtn}>
+              <AppText weight="semiBold" style={[styles.headerBtnText, { color: '#cb6ce6' }]}>{t('profile.switch_to_client')}</AppText>
+            </TouchableOpacity>
+          )}
+          <View style={{ flex: 1 }} />
           <View style={styles.headerBtns}>
             {!locked && (
               <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
@@ -166,12 +167,8 @@ export default function ProfessionalProfileScreen() {
                 : <AppText weight="bold" style={[styles.headerBtnText, styles.save, !isComplete && styles.saveDisabled]}>{t('profile.save')}</AppText>}
             </TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerBtn}>
-            <AppText weight="regular" style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.edit')}</AppText>
-          </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
 
       {locked && (
         <View style={styles.completeBanner}>
@@ -196,6 +193,21 @@ export default function ProfessionalProfileScreen() {
         reviews={reviews}
         size={130}
       />
+
+      {!isEditing && (
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.editPill, { backgroundColor: colors.primary, flexDirection: rtl ? 'row-reverse' : 'row' }]}
+            onPress={() => setIsEditing(true)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+          >
+            <Pencil size={16} color="#ffffff" strokeWidth={2} />
+            <AppText weight="medium" style={styles.editPillText}>{t('profile.edit_profile')}</AppText>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
       <ContentTabs
         equipment={equipment}
@@ -232,6 +244,25 @@ const styles = StyleSheet.create({
   headerBtnText: { fontSize: 16 },
   save: { fontWeight: '700', color: '#004aad' },
   saveDisabled: { color: '#9aa0b8' },
+
+  actionRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    gap: 8,
+    // The parent `content` already adds a 24px gap between children; pull the row
+    // in so it sits snug under the rating and above "קצת עליי".
+    marginTop: -12,
+    marginBottom: -12,
+  },
+  editPill: {
+    height: 44,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  editPillText: { color: '#ffffff', fontSize: 14, fontWeight: '500' },
 
   completeBanner: {
     backgroundColor: 'rgba(203,108,230,0.12)',
