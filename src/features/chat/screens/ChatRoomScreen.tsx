@@ -325,6 +325,7 @@ function SharedListingCard({ msg }: { msg: Message }) {
   // Authoritative sale/rental type read from the live listing (falls back to the
   // message field, which is only present on newer shared cards).
   const [docType, setDocType] = useState<string | null>(null);
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
 
   useEffect(() => {
     if (!msg.listingId) { setAvailable(false); return; }
@@ -341,6 +342,17 @@ function SharedListingCard({ msg }: { msg: Message }) {
     return () => { cancelled = true; };
   }, [msg.listingId]);
 
+  useEffect(() => {
+    if (!msg.senderId) return;
+    let cancelled = false;
+    getDoc(doc(db, 'users', msg.senderId))
+      .then((snap) => {
+        if (!cancelled && snap.exists()) setPhotoURL((snap.data() as { photoURL?: string }).photoURL ?? null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [msg.senderId]);
+
   const posterName = msg.posterName ?? '';
   const initial = (posterName || '?').charAt(0).toUpperCase();
   const isRental = (docType ?? msg.listingType) === 'rental';
@@ -348,18 +360,25 @@ function SharedListingCard({ msg }: { msg: Message }) {
 
   return (
     <>
-      {/* Attention intro — styled like a system event pill */}
-      <View style={styles.systemWrapper}>
-        <View style={[styles.listingAnnouncePill, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <AppText weight="semiBold" style={styles.listingAnnounceText}>
-            {`🛒 ${posterName} ${t('marketplace.posted_a_listing')}`}
-          </AppText>
-        </View>
-      </View>
-
       {/* Listing card */}
       <View style={styles.listingWrapper}>
         <View style={[styles.listingCard, removed && { opacity: 0.6 }]}>
+          {/* Header box: avatar (leading), name, and send time */}
+          <View style={styles.listingHeader}>
+            <View style={[styles.listingHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              {photoURL ? (
+                <Image source={{ uri: photoURL }} style={styles.listingHeaderAvatar} resizeMode="cover" />
+              ) : (
+                <View style={[styles.listingHeaderAvatar, styles.listingHeaderAvatarFallback]}>
+                  <AppText weight="bold" style={styles.listingHeaderAvatarText}>{initial}</AppText>
+                </View>
+              )}
+              <AppText weight="bold" numberOfLines={1} style={[styles.listingHeaderName, { textAlign: rtl ? 'right' : 'left' }]}>
+                {posterName}
+              </AppText>
+            </View>
+          </View>
+
           <View>
             {msg.imageUrl ? (
               <Image source={{ uri: msg.imageUrl }} style={styles.listingImage} resizeMode="cover" />
@@ -384,16 +403,6 @@ function SharedListingCard({ msg }: { msg: Message }) {
             <AppText weight="bold" style={[styles.listingPrice, { textAlign: rtl ? 'right' : 'left' }]}>
               ₪{(msg.price ?? 0).toLocaleString()}
             </AppText>
-            {!!posterName && (
-              <View style={[styles.listingSellerRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <View style={styles.listingAvatar}>
-                  <AppText weight="bold" style={styles.listingAvatarText}>{initial}</AppText>
-                </View>
-                <AppText weight="regular" style={styles.listingPoster}>
-                  {(rtl ? 'מאת ' : 'By ') + posterName}
-                </AppText>
-              </View>
-            )}
             {removed ? (
               <View style={[styles.listingCta, styles.listingCtaDisabled, { flexDirection: rtl ? 'row-reverse' : 'row', marginTop: 10 }]}>
                 <AppText weight="bold" style={styles.listingCtaText}>{t('marketplace.listing_unavailable')}</AppText>
@@ -415,6 +424,9 @@ function SharedListingCard({ msg }: { msg: Message }) {
                 </LinearGradient>
               </TouchableOpacity>
             )}
+            <AppText weight="regular" style={[styles.listingHeaderTime, { textAlign: rtl ? 'left' : 'right', marginTop: 8 }]}>
+              {formatMessageTime(msg.timestamp)}
+            </AppText>
           </View>
         </View>
       </View>
@@ -2044,6 +2056,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
+  listingHeader: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 4 },
+  listingHeaderRow: { alignItems: 'center', gap: 8 },
+  listingHeaderAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#eef0fa' },
+  listingHeaderAvatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#6c5ce0' },
+  listingHeaderAvatarText: { fontSize: 15, color: '#ffffff' },
+  listingHeaderName: { flex: 1, fontSize: 14.5, color: '#2a2f5a' },
+  listingHeaderTime: { fontSize: 11.5, color: '#8890b0' },
   listingImage: { width: '100%', height: 150, backgroundColor: '#eef0fa' },
   listingImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
   listingRibbon: {
