@@ -175,7 +175,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             </View>
           )}
 
-          {/* Title + time ago */}
+          {/* Title + poster name + time ago */}
           <View style={[styles.headerContent, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
             <Text
               style={[styles.cardTitle, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
@@ -183,6 +183,11 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             >
               {request.title}
             </Text>
+            {!!poster?.displayName && (
+              <AppText weight="semiBold" style={[styles.posterNameCompact, { color: statValueColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                {poster.displayName}
+              </AppText>
+            )}
             {!!timeAgo && (
               <AppText weight="regular" style={[styles.timeAgoText, { color: timeColor }]}>
                 {timeAgo}
@@ -438,6 +443,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 22,
     marginBottom: 3,
+  },
+  posterNameCompact: {
+    fontSize: 12,
+    marginTop: 1,
   },
   timeAgoText: {
     fontSize: 11,
