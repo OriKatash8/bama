@@ -251,18 +251,17 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               {/* Level */}
               <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.level_label')}</Text>
               <View style={[styles.levelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {(['level_beginner', 'level_intermediate', 'level_advanced'] as const).map((key) => {
-                  const val = t(`courses.${key}`);
-                  const active = level === val;
+                {(['beginner', 'intermediate', 'advanced'] as const).map((key) => {
+                  const active = level === key;
                   return (
                     <TouchableOpacity
                       key={key}
                       style={[styles.levelBtn, active && styles.levelBtnActive]}
-                      onPress={() => setLevel(active ? '' : val)}
+                      onPress={() => setLevel(active ? '' : key)}
                       activeOpacity={0.8}
                     >
                       <Text style={[styles.levelBtnText, { ...font.semiBold }, active && styles.levelBtnTextActive]}>
-                        {val}
+                        {t(`courses.level_${key}`)}
                       </Text>
                     </TouchableOpacity>
                   );

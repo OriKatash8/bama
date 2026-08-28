@@ -675,7 +675,18 @@
     "level_label": "Level",
     "level_beginner": "Beginner",
     "level_intermediate": "Intermediate",
-    "level_advanced": "Advanced"
+    "level_advanced": "Advanced",
+    "filters_title": "Filters",
+    "filter_sort": "Sort",
+    "sort_newest": "Newest",
+    "price_all": "All",
+    "price_band_free": "Free",
+    "price_band_low": "Up to ₪200",
+    "price_band_mid": "₪200–1000",
+    "price_band_high": "Over ₪1000",
+    "show_results": "Show {{count}} results",
+    "reset": "Reset",
+    "clear_all": "Clear all"
   },
   "review": {
     "title": "Rate your crew",

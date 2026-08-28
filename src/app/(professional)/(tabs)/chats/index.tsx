@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
-import { X, Camera, Search, Play, Clock, BookOpen, BarChart2 } from 'lucide-react-native';
+import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -13,6 +13,9 @@ import {
   collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy,
 } from 'firebase/firestore';
 import { SubmitCourseModal } from '@features/courses/components/SubmitCourseModal';
+import { CourseFilterSheet, type CourseRefinements, type CourseSort } from '@features/courses/components/CourseFilterSheet';
+import { normalizeLevel, type CourseLevelKey } from '@features/courses/levels';
+import { PRICE_BANDS, priceBandTest, type PriceBandId } from '@features/courses/priceBands';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { CommunityDiscoveryTab } from '@features/chat/components/CommunityDiscoveryTab';
 import { Screen } from '@components/layout/Screen';
@@ -90,7 +93,15 @@ export default function ProfessionalChatsScreen() {
   const [submitCourseModal, setSubmitCourseModal] = useState(false);
   const [courseSearch, setCourseSearch] = useState('');
   const [courseCategory, setCourseCategory] = useState<string>('all');
-  const [coursePriceSort, setCoursePriceSort] = useState<'asc' | 'desc' | null>(null);
+  const [courseLevel, setCourseLevel] = useState<CourseLevelKey | null>(null);
+  const [coursePriceBand, setCoursePriceBand] = useState<PriceBandId>('all');
+  const [courseSort, setCourseSort] = useState<CourseSort>('newest');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // Category pills: horizontal scroll ref + captured x offsets to scroll the
+  // selected category into view.
+  const categoryScrollRef = useRef<ScrollView>(null);
+  const categoryOffsets = useRef<Record<string, number>>({});
 
   // Only the categories that actually have courses.
   const courseCategories = useMemo(
@@ -98,21 +109,43 @@ export default function ProfessionalChatsScreen() {
     [courses],
   );
 
-  const filteredCourses = useMemo(() => {
+  // Refinements that count toward the filter badge (category is excluded — it's
+  // already visible as the selected pill).
+  const activeRefinementCount =
+    (courseLevel ? 1 : 0) + (coursePriceBand !== 'all' ? 1 : 0) + (courseSort !== 'newest' ? 1 : 0);
+
+  // Category + search + level + price band, without sort — shared by the list
+  // and the sheet's live result count.
+  function matchesFilters(c: Course, level: CourseLevelKey | null, band: PriceBandId): boolean {
     const q = courseSearch.trim().toLowerCase();
-    let list = courses.filter((c) => {
-      if (courseCategory !== 'all' && c.category !== courseCategory) return false;
-      if (q && !(
-        (c.title ?? '').toLowerCase().includes(q) ||
-        (c.instructorName ?? '').toLowerCase().includes(q) ||
-        (c.description ?? '').toLowerCase().includes(q)
-      )) return false;
-      return true;
-    });
-    if (coursePriceSort === 'asc') list = [...list].sort((a, b) => a.price - b.price);
-    if (coursePriceSort === 'desc') list = [...list].sort((a, b) => b.price - a.price);
-    return list;
-  }, [courses, courseSearch, courseCategory, coursePriceSort]);
+    if (courseCategory !== 'all' && c.category !== courseCategory) return false;
+    if (q && !(
+      (c.title ?? '').toLowerCase().includes(q) ||
+      (c.instructorName ?? '').toLowerCase().includes(q) ||
+      (c.description ?? '').toLowerCase().includes(q)
+    )) return false;
+    if (level && normalizeLevel(c.level) !== level) return false;
+    if (!priceBandTest(band)(c.price)) return false;
+    return true;
+  }
+
+  function countMatching(staged: CourseRefinements): number {
+    return courses.filter((c) => matchesFilters(c, staged.level, staged.priceBand)).length;
+  }
+
+  const filteredCourses = useMemo(() => {
+    const list = courses.filter((c) => matchesFilters(c, courseLevel, coursePriceBand));
+    if (courseSort === 'price_low_high') return [...list].sort((a, b) => a.price - b.price);
+    if (courseSort === 'price_high_low') return [...list].sort((a, b) => b.price - a.price);
+    return list; // 'newest' — already ordered by createdAt desc from the query
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courses, courseSearch, courseCategory, courseLevel, coursePriceBand, courseSort]);
+
+  // Scroll the selected category pill into view when the selection changes.
+  useEffect(() => {
+    const x = courseCategory === 'all' ? 0 : categoryOffsets.current[courseCategory];
+    if (x != null) categoryScrollRef.current?.scrollTo({ x: Math.max(0, x - 12), animated: true });
+  }, [courseCategory]);
 
   useEffect(() => {
     const q = query(
@@ -258,68 +291,96 @@ export default function ProfessionalChatsScreen() {
       {/* Courses tab */}
       {active === 'courses' && (
         <View>
-          {/* Search */}
-          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-            <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
-              placeholder={t('courses.search_placeholder')}
-              placeholderTextColor={colors.placeholder}
-              value={courseSearch}
-              onChangeText={setCourseSearch}
-              returnKeyType="search"
-            />
-            {courseSearch.length > 0 && (
-              <TouchableOpacity onPress={() => setCourseSearch('')} activeOpacity={0.7}>
-                <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Category chips + price sort (price stays on the trailing/right edge in both LTR and RTL) */}
-          <View style={[styles.courseFilterRow, { flexDirection: 'row' }]}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.courseChipsRow}
-              style={{ flex: 1 }}
-            >
-              <TouchableOpacity
-                style={[styles.courseChip, courseCategory === 'all' && styles.courseChipActive]}
-                onPress={() => setCourseCategory('all')}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.courseChipText, courseCategory === 'all' && styles.courseChipTextActive, { ...font.semiBold }]}>
-                  {t('courses.filter_all')}
-                </Text>
-              </TouchableOpacity>
-              {courseCategories.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[styles.courseChip, courseCategory === cat && styles.courseChipActive]}
-                  onPress={() => setCourseCategory(cat)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.courseChipText, courseCategory === cat && styles.courseChipTextActive, { ...font.semiBold }]}>
-                    {categoryLabel(cat, rtl ? 'he' : 'en')}
-                  </Text>
+          {/* Row 1 — search + filter button */}
+          <View style={[styles.courseSearchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.searchRow, styles.searchRowFlex, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+              <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+                placeholder={t('courses.search_placeholder')}
+                placeholderTextColor={colors.placeholder}
+                value={courseSearch}
+                onChangeText={setCourseSearch}
+                returnKeyType="search"
+              />
+              {courseSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setCourseSearch('')} activeOpacity={0.7}>
+                  <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={[styles.priceSortBtn, coursePriceSort && styles.priceSortBtnActive]}
-              onPress={() => setCoursePriceSort((p) => (p === 'asc' ? 'desc' : p === 'desc' ? null : 'asc'))}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.priceSortText, { ...font.semiBold }]}>
-                {coursePriceSort === 'asc'
-                  ? t('courses.price_low_high')
-                  : coursePriceSort === 'desc'
-                    ? t('courses.price_high_low')
-                    : t('courses.price_sort')}
-              </Text>
+              )}
+            </View>
+            <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterSheetOpen(true)} activeOpacity={0.85}>
+              <SlidersHorizontal size={19} color="#ffffff" strokeWidth={2.4} />
+              {activeRefinementCount > 0 && (
+                <View style={[styles.filterBadge, { backgroundColor: colors.accent, borderColor: colors.bg }]}>
+                  <Text style={[styles.filterBadgeText, { ...font.bold }]}>{activeRefinementCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
+
+          {/* Row 2 — category pills only */}
+          <ScrollView
+            ref={categoryScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryPillsRow}
+            style={styles.categoryPillsScroll}
+          >
+            <TouchableOpacity
+              style={[styles.catPill, courseCategory === 'all' && styles.catPillActive]}
+              onPress={() => setCourseCategory('all')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.catPillText, courseCategory === 'all' && styles.catPillTextActive, { ...font.semiBold }]}>
+                {t('courses.filter_all')}
+              </Text>
+            </TouchableOpacity>
+            {courseCategories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                onLayout={(e) => { categoryOffsets.current[cat] = e.nativeEvent.layout.x; }}
+                style={[styles.catPill, courseCategory === cat && styles.catPillActive]}
+                onPress={() => setCourseCategory(cat)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.catPillText, courseCategory === cat && styles.catPillTextActive, { ...font.semiBold }]}>
+                  {categoryLabel(cat, rtl ? 'he' : 'en')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Row 3 — active refinement chips */}
+          {activeRefinementCount > 0 && (
+            <View style={[styles.activeChipsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              {courseLevel && (
+                <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseLevel(null)} activeOpacity={0.7}>
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: colors.accent }]}>{t(`courses.level_${courseLevel}`)}</Text>
+                  <X size={13} color={colors.accent} strokeWidth={2.4} />
+                </TouchableOpacity>
+              )}
+              {coursePriceBand !== 'all' && (
+                <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCoursePriceBand('all')} activeOpacity={0.7}>
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: colors.accent }]}>
+                    {t(PRICE_BANDS.find((b) => b.id === coursePriceBand)?.labelKey ?? 'courses.price_all')}
+                  </Text>
+                  <X size={13} color={colors.accent} strokeWidth={2.4} />
+                </TouchableOpacity>
+              )}
+              {courseSort !== 'newest' && (
+                <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseSort('newest')} activeOpacity={0.7}>
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: colors.accent }]}>
+                    {t(courseSort === 'price_low_high' ? 'courses.price_low_high' : 'courses.price_high_low')}
+                  </Text>
+                  <X size={13} color={colors.accent} strokeWidth={2.4} />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={() => { setCourseLevel(null); setCoursePriceBand('all'); setCourseSort('newest'); }} activeOpacity={0.7} style={styles.clearAllBtn}>
+                <Text style={[styles.clearAllText, { ...font.semiBold, color: colors.textMuted }]}>{t('courses.clear_all')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {filteredCourses.length === 0 ? (
             <View style={styles.emptyState}>
@@ -392,7 +453,9 @@ export default function ProfessionalChatsScreen() {
                         {!!item.level && (
                           <View style={styles.metaChip}>
                             <BarChart2 size={12} color={colors.textMuted} strokeWidth={1.8} />
-                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.level}</Text>
+                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>
+                              {normalizeLevel(item.level) ? t(`courses.level_${normalizeLevel(item.level)}`) : item.level}
+                            </Text>
                           </View>
                         )}
                       </View>
@@ -526,6 +589,14 @@ export default function ProfessionalChatsScreen() {
         }}
       />
 
+      <CourseFilterSheet
+        visible={filterSheetOpen}
+        initial={{ level: courseLevel, priceBand: coursePriceBand, sort: courseSort }}
+        resultCount={countMatching}
+        onApply={(s) => { setCourseLevel(s.level); setCoursePriceBand(s.priceBand); setCourseSort(s.sort); }}
+        onClose={() => setFilterSheetOpen(false)}
+      />
+
     </Screen>
 
     {/* FAB — communities tab: sibling of Screen so position:absolute anchors to viewport */}
@@ -608,29 +679,63 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   myCoursesTitle: { fontSize: 18 },
-  courseFilterRow: { alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
-  courseChipsRow: { gap: 8, alignItems: 'center', paddingRight: 4 },
-  courseChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 18,
+  // Row 1 — search + filter button
+  courseSearchRow: { alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  searchRowFlex: { flex: 1, marginHorizontal: 0, marginBottom: 0 },
+  filterBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 16,
+    backgroundColor: '#004aad',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  filterBadgeText: { fontSize: 10, color: '#ffffff' },
+
+  // Row 2 — category pills
+  categoryPillsScroll: { marginBottom: 10 },
+  // Trailing padding keeps the last pill partially cut off so the swipe
+  // affordance is visible when the row overflows.
+  categoryPillsRow: { gap: 7, alignItems: 'center', paddingHorizontal: 12, paddingRight: 40 },
+  catPill: {
+    height: 34,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.2)',
     backgroundColor: '#ffffff',
   },
-  courseChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  courseChipText: { fontSize: 13, color: '#004aad' },
-  courseChipTextActive: { color: '#ffffff' },
-  priceSortBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.2)',
-    backgroundColor: '#ffffff',
+  catPillActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  catPillText: { fontSize: 13, color: '#004aad' },
+  catPillTextActive: { color: '#ffffff' },
+
+  // Row 3 — active refinement chips
+  activeChipsRow: { flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  activeChip: {
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(203,108,230,0.14)',
+    borderRadius: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
-  priceSortBtnActive: { backgroundColor: 'rgba(0,74,173,0.12)', borderColor: '#004aad' },
-  priceSortText: { fontSize: 13, color: '#004aad' },
+  activeChipText: { fontSize: 12 },
+  clearAllBtn: { paddingVertical: 6, paddingHorizontal: 4 },
+  clearAllText: { fontSize: 12 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',

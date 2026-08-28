@@ -675,7 +675,18 @@
     "level_label": "רמה",
     "level_beginner": "מתחילים",
     "level_intermediate": "בינוני",
-    "level_advanced": "מתקדם"
+    "level_advanced": "מתקדם",
+    "filters_title": "סינון",
+    "filter_sort": "מיון",
+    "sort_newest": "החדשים ביותר",
+    "price_all": "הכל",
+    "price_band_free": "חינם",
+    "price_band_low": "עד ₪200",
+    "price_band_mid": "₪200–1000",
+    "price_band_high": "מעל ₪1000",
+    "show_results": "הצג {{count}} תוצאות",
+    "reset": "איפוס",
+    "clear_all": "נקה הכל"
   },
   "review": {
     "title": "דרג את הצוות שלך",
