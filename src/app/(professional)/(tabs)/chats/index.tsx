@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams } from 'expo-router';
-import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, MessageCircle } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -17,6 +18,8 @@ import { CourseFilterSheet, type CourseRefinements, type CourseSort } from '@fea
 import { normalizeLevel, type CourseLevelKey } from '@features/courses/levels';
 import { PRICE_BANDS, priceBandTest, type PriceBandId } from '@features/courses/priceBands';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
+import { useUserChats } from '@features/chat/hooks/useUserChats';
+import { EmptyState } from '@components/ui/EmptyState';
 import { CommunityDiscoveryTab } from '@features/chat/components/CommunityDiscoveryTab';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
@@ -64,7 +67,12 @@ export default function ProfessionalChatsScreen() {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const user = useAuthStore((s) => s.user);
+  const proProfileCompleted = useAuthStore((s) => s.proProfileCompleted);
   const { showToast } = useUiStore();
+  const router = useRouter();
+  const { height: windowHeight } = useWindowDimensions();
+  const { chats: userChats, loading: chatsLoading } = useUserChats();
+  const hasChats = userChats.filter((c) => c.type !== 'community').length > 0;
 
   const [active, setActive] = useState<TabKey>('chats');
   const [searchQuery, setSearchQuery] = useState('');
@@ -262,25 +270,50 @@ export default function ProfessionalChatsScreen() {
 
       {/* Chats tab */}
       {active === 'chats' && (
-        <>
-          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-            <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
-              placeholder={t('search.placeholder')}
-              placeholderTextColor={colors.placeholder}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
-                <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
-              </TouchableOpacity>
-            )}
+        chatsLoading ? (
+          <View style={{ minHeight: windowHeight * 0.6, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={colors.primary} />
           </View>
-          <ChatsList scrollable={false} searchQuery={searchQuery} />
-        </>
+        ) : !hasChats ? (
+          <View style={{ minHeight: windowHeight * 0.6 }}>
+            <EmptyState
+              icon={MessageCircle}
+              title={t('chats.empty_pro_title')}
+              description={proProfileCompleted === false ? t('chats.empty_pro_incomplete_desc') : t('chats.empty_pro_complete_desc')}
+              primaryAction={proProfileCompleted === false
+                ? { label: t('chats.empty_pro_incomplete_primary'), onPress: () => router.push('/(professional)/(tabs)/profile?edit=1') }
+                : { label: t('chats.empty_pro_complete_primary'), onPress: () => router.push('/(professional)/(tabs)/dashboard') }}
+              secondaryAction={proProfileCompleted === false
+                ? { label: t('chats.empty_pro_secondary_board'), onPress: () => router.push('/(professional)/(tabs)/dashboard') }
+                : undefined}
+            />
+          </View>
+        ) : (
+          <>
+            <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+              <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+                placeholder={t('search.placeholder')}
+                placeholderTextColor={colors.placeholder}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
+                  <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <ChatsList
+              scrollable={false}
+              chats={userChats}
+              searchQuery={searchQuery}
+              onClearSearch={() => setSearchQuery('')}
+            />
+          </>
+        )
       )}
 
       {/* Communities tab */}

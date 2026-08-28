@@ -8,7 +8,7 @@ import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
-import { listenToUserChats, removeMemberFromGroup } from '../services/chatService';
+import { removeMemberFromGroup } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -63,7 +63,17 @@ function formatTimestamp(ts: { toDate(): Date } | null | undefined, language: st
 
 type DmInfo = { name: string; photoURL: string | null };
 
-export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollable?: boolean; searchQuery?: string }) {
+export function ChatsScreen({
+  scrollable = true,
+  searchQuery = '',
+  chats = [],
+  onClearSearch,
+}: {
+  scrollable?: boolean;
+  searchQuery?: string;
+  chats?: Chat[];
+  onClearSearch?: () => void;
+}) {
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
@@ -74,7 +84,6 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
-  const [chats, setChats] = useState<Chat[]>([]);
   const [dmInfo, setDmInfo] = useState<Record<string, DmInfo>>({});
   const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
   const [purchaseNames, setPurchaseNames] = useState<Record<string, string>>({});
@@ -82,13 +91,6 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
   const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
   const fetchedPurchaseChatIdsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!user) { setChats([]); return; }
-    setChats([]);
-    const unsubscribe = listenToUserChats(user.id, setChats);
-    return unsubscribe;
-  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -225,17 +227,9 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
     );
   }
 
-  if (chats.length === 0) {
-    return (
-      <View style={styles.flex}>
-        <View style={styles.empty}>
-          <AppText weight="regular" style={[styles.emptyText, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-            {t('chats.no_conversations')}
-          </AppText>
-        </View>
-      </View>
-    );
-  }
+  // The parent owns the loading + "no chats at all" states; this component only
+  // renders once there is at least one chat.
+  if (chats.length === 0) return null;
 
   const sortedChats = [...chats]
     // Communities live in their own tab — keep them out of the chats list.
@@ -350,6 +344,28 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
     );
   });
 
+  // Search returned nothing — compact treatment (no icon circle, no primary
+  // button), distinct from the illustrated "no chats at all" empty state.
+  if (searchQuery.trim() && visibleChats.length === 0) {
+    return (
+      <View style={styles.noResults}>
+        <AppText weight="medium" style={[styles.noResultsTitle, { color: colors.text }]}>
+          {t('chats.empty_search_title')}
+        </AppText>
+        <TouchableOpacity
+          style={styles.noResultsClear}
+          onPress={() => onClearSearch?.()}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+        >
+          <AppText weight="regular" style={[styles.noResultsClearText, { color: colors.primary }]}>
+            {t('chats.empty_search_clear')}
+          </AppText>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (scrollable) {
     return (
       <ScrollView style={styles.flex} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
@@ -363,8 +379,10 @@ export function ChatsScreen({ scrollable = true, searchQuery = '' }: { scrollabl
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   listContent: { paddingTop: 8, paddingBottom: 16 },
-  empty: { paddingTop: 60, alignItems: 'center' },
-  emptyText: { fontSize: 15 },
+  noResults: { paddingTop: 40, alignItems: 'center', gap: 6 },
+  noResultsTitle: { fontSize: 15 },
+  noResultsClear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
+  noResultsClearText: { fontSize: 13 },
 
   card: {
     alignItems: 'center',
