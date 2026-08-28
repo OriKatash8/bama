@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
-    gap: 3,
+    gap: 1,
   },
   dismissInline: {
     width: 28,
@@ -442,11 +442,11 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     lineHeight: 22,
-    marginBottom: 3,
+    marginBottom: 0,
   },
   posterNameCompact: {
     fontSize: 12,
-    marginTop: 1,
+    marginTop: 0,
   },
   timeAgoText: {
     fontSize: 11,
