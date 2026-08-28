@@ -365,6 +365,7 @@
     "sort_title": "Sort by",
     "sort_newest": "Newest first",
     "sort_oldest": "Oldest first",
+    "sort_direct_first": "Sent directly to me — first",
     "filter_role_title": "Filter by role",
     "filter_role_all": "All roles",
     "apply": "Apply",

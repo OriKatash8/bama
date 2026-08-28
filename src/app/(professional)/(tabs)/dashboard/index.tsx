@@ -88,11 +88,11 @@ export default function DashboardScreen() {
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
   // ── Sort & filter (client-side over the already-matched list) ──
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sortModalVisible, setSortModalVisible] = useState(false);
-  const [draftSort, setDraftSort] = useState<'newest' | 'oldest'>('newest');
+  const [draftSort, setDraftSort] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
   const [draftRole, setDraftRole] = useState<string | null>(null);
 
   const proRoles = useMemo(
@@ -133,12 +133,20 @@ export default function DashboardScreen() {
         (r.location ?? '').toLowerCase().includes(q),
       );
     }
-    return [...list].sort((a, b) =>
-      sortBy === 'oldest'
+    return [...list].sort((a, b) => {
+      if (sortBy === 'direct_first') {
+        // Notices addressed directly to this professional float to the top,
+        // newest-first within each group.
+        const ad = a.targetProfessionalId === currentUserId ? 0 : 1;
+        const bd = b.targetProfessionalId === currentUserId ? 0 : 1;
+        if (ad !== bd) return ad - bd;
+        return b.createdAt.seconds - a.createdAt.seconds;
+      }
+      return sortBy === 'oldest'
         ? a.createdAt.seconds - b.createdAt.seconds
-        : b.createdAt.seconds - a.createdAt.seconds,
-    );
-  }, [visible, roleFilter, sortBy, search]);
+        : b.createdAt.seconds - a.createdAt.seconds;
+    });
+  }, [visible, roleFilter, sortBy, search, currentUserId]);
 
   // Legacy category strings (for ProjectDetailModal's role-Q&A display, which is keyed by them).
   const categories = useMemo(
@@ -448,7 +456,7 @@ export default function DashboardScreen() {
               {t('noticeboard.sort_title')}
             </AppText>
             <View style={styles.sortOptions}>
-              {(['newest', 'oldest'] as const).map((opt) => (
+              {(['newest', 'oldest', 'direct_first'] as const).map((opt) => (
                 <TouchableOpacity
                   key={opt}
                   style={[styles.sortOption, draftSort === opt && styles.sortOptionActive]}
@@ -456,7 +464,7 @@ export default function DashboardScreen() {
                   activeOpacity={0.8}
                 >
                   <AppText weight="semiBold" style={[styles.sortOptionText, draftSort === opt && styles.sortOptionTextActive]}>
-                    {t(opt === 'newest' ? 'noticeboard.sort_newest' : 'noticeboard.sort_oldest')}
+                    {t(opt === 'newest' ? 'noticeboard.sort_newest' : opt === 'oldest' ? 'noticeboard.sort_oldest' : 'noticeboard.sort_direct_first')}
                   </AppText>
                 </TouchableOpacity>
               ))}
