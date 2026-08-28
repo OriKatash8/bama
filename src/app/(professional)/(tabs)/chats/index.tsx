@@ -439,19 +439,19 @@ export default function ProfessionalChatsScreen() {
                     {!!(item.durationHours || item.lessonsCount || item.level) && (
                       <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                         {!!item.durationHours && (
-                          <View style={styles.metaChip}>
+                          <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                             <Clock size={12} color={colors.textMuted} strokeWidth={1.8} />
                             <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.durationHours} {t('courses.hours')}</Text>
                           </View>
                         )}
                         {!!item.lessonsCount && (
-                          <View style={styles.metaChip}>
+                          <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                             <BookOpen size={12} color={colors.textMuted} strokeWidth={1.8} />
                             <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.lessonsCount} {t('courses.lessons')}</Text>
                           </View>
                         )}
                         {!!item.level && (
-                          <View style={styles.metaChip}>
+                          <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                             <BarChart2 size={12} color={colors.textMuted} strokeWidth={1.8} />
                             <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>
                               {normalizeLevel(item.level) ? t(`courses.level_${normalizeLevel(item.level)}`) : item.level}
