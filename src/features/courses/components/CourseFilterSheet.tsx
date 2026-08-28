@@ -75,11 +75,9 @@ export function CourseFilterSheet({ visible, initial, resultCount, onApply, onCl
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.sheet}>
-          <View style={styles.dragHandle} />
-
           <Text style={[styles.sheetTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
             {t('courses.filters_title')}
           </Text>
@@ -174,23 +172,22 @@ export function CourseFilterSheet({ visible, initial, resultCount, onApply, onCl
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
   sheet: {
+    width: '100%',
+    maxWidth: 440,
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 20,
     paddingBottom: 24,
     maxHeight: '85%',
-  },
-  dragHandle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    marginBottom: 12,
   },
   sheetTitle: { fontSize: 18, color: '#004aad', marginBottom: 12 },
   sectionLabel: { fontSize: 12, color: 'rgba(15,15,31,0.4)', marginTop: 10, marginBottom: 8 },
