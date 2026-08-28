@@ -61,7 +61,7 @@ const CARD_SHADOW = {
 } as const;
 
 export default function DashboardScreen() {
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
   const inProgressCardWidth = screenWidth - 104;
   const inProgressCardGap = 40;
@@ -402,7 +402,7 @@ export default function DashboardScreen() {
         {isLoading ? (
           <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
         ) : displayed.length === 0 ? (
-          <View style={styles.center}>
+          <View style={[styles.center, { minHeight: screenHeight * 0.6 }]}>
             <Inbox size={48} color={colors.textMuted} strokeWidth={1.5} style={{ marginBottom: 8 }} />
             <Text style={[styles.emptyText, { ...font.semiBold, color: colors.textSec, textAlign: 'center' }]}>
               {t('noticeboard.no_projects')}
