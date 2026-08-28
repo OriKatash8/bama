@@ -190,19 +190,16 @@ export function ContentTabs({
                 )}
               </View>
             ) : (
-              <View>
+              <View style={{ gap: 12 }}>
                 {groupEquipment(equipmentItems).map((group) => (
-                  <View key={group.category} style={styles.eqGroup}>
-                    <AppText weight="regular" style={[styles.eqGroupLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  <View key={group.category} style={styles.roleBlock}>
+                    <AppText weight="bold" style={[styles.roleBlockTitle, { textAlign: rtl ? 'right' : 'left' }]}>
                       {t(equipmentCategoryLabelKey(group.category))}
                     </AppText>
-                    <View style={[styles.eqChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                    <View style={[styles.chipsWrap, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
                       {group.entries.map(({ item, index }) => (
-                        <View
-                          key={`eq-${index}`}
-                          style={[styles.eqChip, { flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: colors.inputBg }]}
-                        >
-                          <AppText weight="regular" numberOfLines={1} style={[styles.eqChipText, { color: colors.primary, ...font.regular }]}>
+                        <View key={`eq-${index}`} style={[styles.chip, styles.eqChip, { flexDirection: rowDir }]}>
+                          <AppText weight="regular" numberOfLines={1} style={styles.chipText}>
                             {item.name}
                           </AppText>
                           {isEditing && (
@@ -212,7 +209,7 @@ export function ContentTabs({
                               activeOpacity={0.7}
                               accessibilityRole="button"
                             >
-                              <X size={13} color="#e05656" strokeWidth={2.5} />
+                              <X size={12} color="#ffffff" strokeWidth={2.5} />
                             </TouchableOpacity>
                           )}
                         </View>
@@ -241,21 +238,21 @@ export function ContentTabs({
                   />
                 </View>
                 {/* Category picker — the chosen category is applied to the next added item. */}
-                <AppText weight="regular" style={[styles.eqPickLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                <AppText weight="semiBold" style={[styles.subLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                   {t('profile_sections.eq_pick_category')}
                 </AppText>
-                <View style={[styles.eqCatPickRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <View style={[styles.pillsWrap, { flexDirection: rowDir }]}>
                   {EQUIPMENT_CATEGORIES.map((cat) => {
                     const selected = newEquipmentCat === cat.id;
                     return (
                       <TouchableOpacity
                         key={cat.id}
                         onPress={() => setNewEquipmentCat(cat.id)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.7}
                         accessibilityRole="button"
-                        style={[styles.eqCatChip, { borderColor: colors.inputBorder }, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                        style={[styles.pill, selected && styles.pillActive]}
                       >
-                        <AppText weight="semiBold" style={[styles.eqCatChipText, { color: selected ? '#ffffff' : colors.primary }]}>
+                        <AppText weight="semiBold" style={[styles.pillText, selected && styles.pillTextActive]}>
                           {t(equipmentCategoryLabelKey(cat.id))}
                         </AppText>
                       </TouchableOpacity>
@@ -417,34 +414,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  /* Equipment chips */
-  eqGroup: { marginBottom: 16 },
-  eqGroupLabel: { fontSize: 12, marginBottom: 8 },
-  eqChipRow: { flexWrap: 'wrap', gap: 6 },
-  eqChip: {
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: 14,
-    paddingVertical: 7,
-    paddingHorizontal: 13,
-    minHeight: 34,
-    maxWidth: '100%',
-  },
-  eqChipText: { fontSize: 13 },
+  /* Equipment chips (reuse the skills chip/pill styles) */
+  eqChip: { alignItems: 'center', gap: 5, maxWidth: '100%' },
   eqEmptyWrap: { gap: 8 },
   eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
   eqAddLink: { fontSize: 13 },
   addSection: { gap: 8 },
-  eqPickLabel: { fontSize: 12 },
-  eqCatPickRow: { flexWrap: 'wrap', gap: 6 },
-  eqCatChip: {
-    borderRadius: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    backgroundColor: '#ffffff',
-  },
-  eqCatChipText: { fontSize: 12 },
 
   /* Add row */
   addRow: {
