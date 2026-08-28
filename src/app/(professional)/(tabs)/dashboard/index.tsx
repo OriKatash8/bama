@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal, Search } from 'lucide-react-native';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal, Search, Inbox } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
@@ -403,13 +403,27 @@ export default function DashboardScreen() {
           <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
         ) : displayed.length === 0 ? (
           <View style={styles.center}>
-            <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={[styles.emptyText, { ...font.semiBold, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+            <Inbox size={48} color={colors.textMuted} strokeWidth={1.5} style={{ marginBottom: 8 }} />
+            <Text style={[styles.emptyText, { ...font.semiBold, color: colors.textSec, textAlign: 'center' }]}>
               {t('noticeboard.no_projects')}
             </Text>
-            <Text style={[styles.emptySubtext, { ...font.regular, color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.emptySubtext, { ...font.regular, color: colors.textMuted, textAlign: 'center' }]}>
               {t('noticeboard.check_back')}
             </Text>
+            {!activeProjectsLoading && activeProjects.length === 0 && (
+              <View style={styles.upgradeWrap}>
+                <Text style={[styles.upgradeHint, { ...font.regular, color: colors.textMuted, textAlign: 'center' }]}>
+                  {t('noticeboard.upgrade_profile_hint')}
+                </Text>
+                <TouchableOpacity
+                  style={styles.upgradeBtn}
+                  onPress={() => router.push('/(professional)/(tabs)/profile?edit=1')}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.upgradeBtnText, { ...font.bold }]}>{t('noticeboard.upgrade_profile_btn')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ) : (
           <FlatList
@@ -696,8 +710,11 @@ const styles = StyleSheet.create({
 
   // Empty state
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
-  emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontSize: 17, fontWeight: '600' },
   emptySubtext: { fontSize: 14 },
+  upgradeWrap: { alignItems: 'center', gap: 10, marginTop: 14 },
+  upgradeHint: { fontSize: 14, lineHeight: 20, paddingHorizontal: 24 },
+  upgradeBtn: { backgroundColor: BLUE, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 22 },
+  upgradeBtnText: { color: '#ffffff', fontSize: 14 },
 
 });

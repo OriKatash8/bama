@@ -4,6 +4,7 @@ import {
   ActivityIndicator, BackHandler,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams } from 'expo-router';
 import { Pencil } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
@@ -77,6 +78,13 @@ export default function ProfessionalProfileScreen() {
   useEffect(() => {
     if (locked) setIsEditing(true);
   }, [locked]);
+
+  // Deep link: ?edit=1 opens the editor directly (e.g. the noticeboard
+  // "upgrade your profile" CTA).
+  const params = useLocalSearchParams<{ edit?: string }>();
+  useEffect(() => {
+    if (params.edit === '1') setIsEditing(true);
+  }, [params.edit]);
 
   useEffect(() => {
     if (!locked) return;

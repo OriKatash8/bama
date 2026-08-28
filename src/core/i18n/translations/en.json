@@ -361,6 +361,8 @@
     "open_projects_other": "{{count}} open projects",
     "no_projects": "No open projects right now",
     "check_back": "Check back later for new opportunities",
+    "upgrade_profile_hint": "To increase your chances of getting accepted, upgrade your profile page!",
+    "upgrade_profile_btn": "Upgrade profile",
     "sort_filter": "Sort & filter",
     "sort_title": "Sort by",
     "sort_newest": "Newest first",
