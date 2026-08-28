@@ -362,7 +362,8 @@
     "optional": "אופציונלי",
     "equipment": "ציוד",
     "reviews": "ביקורות",
-    "no_equipment": "אין ציוד עדיין.",
+    "no_equipment": "לא הוזן ציוד",
+    "add_equipment": "הוסיפו ציוד",
     "add_item": "הוסף פריט...",
     "add_media": "הוסף מדיה"
   },

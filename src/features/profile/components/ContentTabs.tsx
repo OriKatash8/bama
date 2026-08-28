@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
-import { Plus, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { ROLES, getSpecializations, labelOf, type Labeled } from '@features/crew/data/categories';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
@@ -37,6 +37,9 @@ type ContentTabsProps = {
   isEditing: boolean;
   onEquipmentChange?: (items: string[]) => void;
   onRoleSkillsChange?: (next: RoleSkill[]) => void;
+  /** Own-profile only: invoked by the empty-state "add equipment" action to
+   *  enter edit mode. Omitted on read-only (browse) profiles. */
+  onRequestEdit?: () => void;
 };
 
 export function ContentTabs({
@@ -46,6 +49,7 @@ export function ContentTabs({
   isEditing,
   onEquipmentChange,
   onRoleSkillsChange,
+  onRequestEdit,
 }: ContentTabsProps) {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
@@ -102,9 +106,6 @@ export function ContentTabs({
   }
 
   const equipInputRef = useRef<TextInput>(null);
-  function focusAddInput() {
-    equipInputRef.current?.focus();
-  }
 
   function addEquipment() {
     const trimmed = newEquipment.trim();
@@ -166,39 +167,40 @@ export function ContentTabs({
         {active === 'equipment' && (
           <>
             {equipment.length === 0 && !isEditing ? (
-              <AppText weight="regular" style={styles.empty}>
-                {t('profile_sections.no_equipment')}
-              </AppText>
-            ) : (
-              <View style={[styles.eqGrid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {equipment.map((item, index) => (
-                  <View key={`eq-${index}`} style={styles.eqTile}>
-                    {isEditing && (
-                      <TouchableOpacity
-                        style={[styles.eqRemove, rtl ? { left: 8 } : { right: 8 }]}
-                        onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
-                        hitSlop={6}
-                        activeOpacity={0.7}
-                      >
-                        <X size={12} color="#e05656" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    )}
-                    <AppText weight="bold" numberOfLines={2} ellipsizeMode="tail" style={styles.eqTileName}>
-                      {item}
-                    </AppText>
-                  </View>
-                ))}
-
-                {isEditing && (
-                  <TouchableOpacity style={[styles.eqTile, styles.eqAddTile]} onPress={focusAddInput} activeOpacity={0.8}>
-                    <View style={[styles.eqIconTile, styles.eqAddIconTile]}>
-                      <Plus size={20} color="#004aad" strokeWidth={2.5} />
-                    </View>
-                    <AppText weight="semiBold" style={styles.eqAddLabel}>
-                      {rtl ? 'הוסף פריט' : 'Add'}
+              <View style={[styles.eqEmptyWrap, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+                <AppText weight="regular" style={[styles.empty, { color: colors.textMuted }]}>
+                  {t('profile_sections.no_equipment')}
+                </AppText>
+                {onRequestEdit && (
+                  <TouchableOpacity onPress={onRequestEdit} accessibilityRole="button" style={styles.eqAddLinkBtn} activeOpacity={0.7}>
+                    <AppText weight="semiBold" style={[styles.eqAddLink, { color: colors.primary }]}>
+                      {t('profile_sections.add_equipment')}
                     </AppText>
                   </TouchableOpacity>
                 )}
+              </View>
+            ) : (
+              <View style={[styles.eqChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                {equipment.map((item, index) => (
+                  <View
+                    key={`eq-${index}`}
+                    style={[styles.eqChip, { flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: colors.inputBg }]}
+                  >
+                    <AppText weight="regular" numberOfLines={1} style={[styles.eqChipText, { color: colors.primary, ...font.regular }]}>
+                      {item}
+                    </AppText>
+                    {isEditing && (
+                      <TouchableOpacity
+                        onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
+                        hitSlop={6}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                      >
+                        <X size={13} color="#e05656" strokeWidth={2.5} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
               </View>
             )}
 
@@ -372,46 +374,21 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  /* Equipment grid */
-  eqGrid: { flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
-  eqTile: {
-    width: '48%',
-    minHeight: 118,
-    backgroundColor: '#faf9fe',
+  /* Equipment chips */
+  eqChipRow: { flexWrap: 'wrap', gap: 6 },
+  eqChip: {
+    alignItems: 'center',
+    gap: 5,
     borderRadius: 14,
-    padding: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    minHeight: 34,
+    maxWidth: '100%',
   },
-  eqIconTile: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: '#eef0fa',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eqTileName: { fontSize: 13.5, color: '#2a2f5a', textAlign: 'center', marginTop: 8 },
-  eqRemove: {
-    position: 'absolute',
-    top: 8,
-    width: 22,
-    height: 22,
-    borderRadius: 8,
-    backgroundColor: '#fdecec',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  eqAddTile: {
-    backgroundColor: '#eaf0fb',
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: '#b6c6e6',
-  },
-  eqAddIconTile: { backgroundColor: '#dbe7fb' },
-  eqAddLabel: { fontSize: 13.5, color: '#004aad', textAlign: 'center', marginTop: 8 },
+  eqChipText: { fontSize: 13 },
+  eqEmptyWrap: { gap: 8 },
+  eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
+  eqAddLink: { fontSize: 13 },
 
   /* Add row */
   addRow: {

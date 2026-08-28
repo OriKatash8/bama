@@ -362,7 +362,8 @@
     "optional": "optional",
     "equipment": "Equipment",
     "reviews": "Reviews",
-    "no_equipment": "No equipment yet.",
+    "no_equipment": "No equipment added",
+    "add_equipment": "Add equipment",
     "add_item": "Add item...",
     "add_media": "Add Media"
   },

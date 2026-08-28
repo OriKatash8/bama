@@ -224,6 +224,7 @@ export default function ProfessionalProfileScreen() {
         isEditing={isEditing}
         onEquipmentChange={setEquipment}
         onRoleSkillsChange={setRoleSkills}
+        onRequestEdit={() => setIsEditing(true)}
       />
 
       <View style={styles.portfolioSection}>
