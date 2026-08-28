@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { Search, MessageCircle } from 'lucide-react-native';
+import { Search, MessageCircle, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { useUserChats } from '@features/chat/hooks/useUserChats';
@@ -50,6 +50,7 @@ export default function ChatsPage() {
           style={styles.emptyBias}
           primaryAction={{
             label: t(tr, 'chats.empty_client_primary'),
+            icon: Plus,
             onPress: () => router.push('/(client)/(tabs)/home'),
           }}
           secondaryAction={{
