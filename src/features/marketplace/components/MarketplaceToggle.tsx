@@ -51,15 +51,16 @@ export function MarketplaceToggle({ active, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
+  row: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
   pill: {
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 20,
   },
-  pillActive: { backgroundColor: '#004aad' },
+  // The selected tab is enlarged so it clearly stands out.
+  pillActive: { backgroundColor: '#004aad', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
   pillInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
   label: { fontSize: 14, fontWeight: '600' },
-  labelActive: { color: '#ffffff' },
+  labelActive: { color: '#ffffff', fontSize: 16 },
   labelInactive: { color: '#004aad' },
 });
