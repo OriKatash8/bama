@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, ActivityIndicator, Platform, Dimensions } from 'react-native';
-import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, SlidersHorizontal, X, FolderPlus, Plus } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
+import { EmptyState } from '@components/ui/EmptyState';
 import { useTheme } from '@core/hooks/useTheme';
 import { ProjectRequestCard } from '@features/crew/components';
 import { useProjectRequests } from '@features/crew/hooks';
@@ -247,10 +248,21 @@ export default function ProjectsPage() {
                 {requestsLoading ? (
                   <ActivityIndicator color={colors.accent} />
                 ) : active.length === 0 ? (
-                  <View style={styles.emptyWrap}>
-                    <Text style={[styles.emptyText, { color: colors.textMuted, ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-                      {t('chats_page.no_projects')}
-                    </Text>
+                  <View style={{ minHeight: Dimensions.get('window').height * 0.6 }}>
+                    <EmptyState
+                      icon={FolderPlus}
+                      title={t('chats_page.empty_projects_title')}
+                      description={t('chats_page.empty_projects_desc')}
+                      primaryAction={{
+                        label: t('chats_page.empty_projects_primary'),
+                        icon: Plus,
+                        onPress: () => router.push('/(client)/(tabs)/home'),
+                      }}
+                      secondaryAction={{
+                        label: t('chats_page.empty_projects_secondary'),
+                        onPress: () => router.push('/(client)/(tabs)/browse'),
+                      }}
+                    />
                   </View>
                 ) : (
                   <View style={styles.carouselWrap}>

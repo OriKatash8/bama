@@ -2,8 +2,9 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
 
-type Action = { label: string; onPress: () => void };
+type Action = { label: string; onPress: () => void; icon?: LucideIcon };
 
 type Props = {
   icon: LucideIcon;
@@ -20,6 +21,8 @@ type Props = {
  */
 export function EmptyState({ icon: Icon, title, description, primaryAction, secondaryAction }: Props) {
   const colors = useTheme();
+  const rtl = useSettingsStore((s) => s.language) === 'he';
+  const PrimaryIcon = primaryAction.icon;
   return (
     <View style={styles.container}>
       <View style={[styles.iconCircle, { backgroundColor: colors.card }]}>
@@ -32,11 +35,12 @@ export function EmptyState({ icon: Icon, title, description, primaryAction, seco
         {description}
       </AppText>
       <TouchableOpacity
-        style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+        style={[styles.primaryBtn, { backgroundColor: colors.primary, flexDirection: rtl ? 'row-reverse' : 'row' }]}
         onPress={primaryAction.onPress}
         activeOpacity={0.85}
         accessibilityRole="button"
       >
+        {PrimaryIcon && <PrimaryIcon size={16} color="#ffffff" strokeWidth={2} />}
         <AppText weight="medium" style={styles.primaryText}>{primaryAction.label}</AppText>
       </TouchableOpacity>
       {secondaryAction && (
@@ -74,6 +78,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
   primaryText: { color: '#ffffff', fontSize: 13, fontWeight: '500' },
   secondaryBtn: { marginTop: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
