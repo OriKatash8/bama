@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
@@ -356,7 +355,7 @@ export default function ProjectsPage() {
       <Modal visible={sortModalVisible} transparent animationType="fade" onRequestClose={() => setSortModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setSortModalVisible(false)} />
-          <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalCard}>
+          <View style={styles.modalCard}>
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <AppText weight="bold" style={[styles.modalTitle, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('offers.filter')}
@@ -366,10 +365,10 @@ export default function ProjectsPage() {
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
-              <AppText weight="bold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              <AppText weight="semiBold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('offers.sort_title')}
               </AppText>
-              <View style={styles.sortOptions}>
+              <View style={[styles.sortOptions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {SORT_OPTIONS.map((opt) => (
                   <TouchableOpacity
                     key={String(opt.value)}
@@ -383,10 +382,10 @@ export default function ProjectsPage() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <AppText weight="bold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              <AppText weight="semiBold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('offers.show_label')}
               </AppText>
-              <View style={styles.showOptions}>
+              <View style={[styles.showOptions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {SHOW_OPTIONS.map((opt) => (
                   <TouchableOpacity
                     key={opt.value}
@@ -401,15 +400,15 @@ export default function ProjectsPage() {
                 ))}
               </View>
             </ScrollView>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.clearBtn} onPress={clearSort} activeOpacity={0.8}>
-                <AppText weight="bold" style={styles.clearBtnText}>{t('offers.clear')}</AppText>
+            <View style={[styles.modalActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <TouchableOpacity style={styles.clearBtn} onPress={clearSort} activeOpacity={0.7}>
+                <AppText weight="semiBold" style={styles.clearBtnText}>{t('offers.clear')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.applyBtn} onPress={applySort} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.applyBtn} onPress={applySort} activeOpacity={0.85}>
                 <AppText weight="bold" style={styles.applyBtnText}>{t('offers.apply')}</AppText>
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
         </View>
       </Modal>
     </Screen>
@@ -465,23 +464,36 @@ const styles = StyleSheet.create({
   },
   sortBtnActive: { backgroundColor: '#ffffff', borderColor: '#1e4fa3' },
   sortBtnText: { fontSize: 13, color: '#1e4fa3' },
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalCard: { width: '88%', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 20 },
-  modalHeader: { alignItems: 'center', marginBottom: 20 },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalCard: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  modalHeader: { alignItems: 'center', marginBottom: 12 },
   modalTitle: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#004aad' },
   modalClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   modalScroll: { flexShrink: 1, marginBottom: 4 },
-  modalSectionLabel: { fontSize: 13, fontWeight: '700', color: '#004aad', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 4 },
-  sortOptions: { gap: 8, marginBottom: 16 },
-  showOptions: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  showOption: { flex: 1 },
-  sortOption: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,74,173,0.15)', backgroundColor: '#fff' },
+  modalSectionLabel: { fontSize: 12, color: 'rgba(15,15,31,0.4)', marginBottom: 8, marginTop: 10 },
+  sortOptions: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  showOptions: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  showOption: {},
+  sortOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', backgroundColor: '#fff' },
   sortOptionActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  sortOptionText: { fontSize: 14, color: 'rgba(0,0,0,0.55)' },
+  sortOptionText: { fontSize: 13, color: '#004aad' },
   sortOptionTextActive: { color: '#fff' },
-  modalActions: { flexDirection: 'row', gap: 10 },
-  clearBtn: { flex: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5, borderColor: '#004aad' },
-  clearBtnText: { color: '#004aad', fontSize: 15 },
-  applyBtn: { flex: 2, borderRadius: 12, paddingVertical: 13, alignItems: 'center', backgroundColor: '#004aad' },
+  modalActions: { alignItems: 'center', gap: 12, marginTop: 18 },
+  clearBtn: { paddingHorizontal: 12, paddingVertical: 12 },
+  clearBtnText: { color: 'rgba(15,15,31,0.4)', fontSize: 14 },
+  applyBtn: { flex: 1, borderRadius: 16, paddingVertical: 14, alignItems: 'center', backgroundColor: '#004aad' },
   applyBtnText: { color: '#fff', fontSize: 15 },
 });
