@@ -4,6 +4,13 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { ROLES, getSpecializations, labelOf, type Labeled } from '@features/crew/data/categories';
+import {
+  EQUIPMENT_CATEGORIES,
+  equipmentCategoryLabelKey,
+  groupEquipment,
+  normalizeEquipment,
+  type EquipmentItem,
+} from '@features/profile/equipment';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -31,11 +38,11 @@ const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews', 'skills'];
 export type RoleSkill = { role: string; specializations: string[] };
 
 type ContentTabsProps = {
-  equipment: string[];
+  equipment: (string | EquipmentItem)[];
   reviews: Review[];
   roleSkills?: RoleSkill[];
   isEditing: boolean;
-  onEquipmentChange?: (items: string[]) => void;
+  onEquipmentChange?: (items: EquipmentItem[]) => void;
   onRoleSkillsChange?: (next: RoleSkill[]) => void;
   /** Own-profile only: invoked by the empty-state "add equipment" action to
    *  enter edit mode. Omitted on read-only (browse) profiles. */
@@ -106,11 +113,14 @@ export function ContentTabs({
   }
 
   const equipInputRef = useRef<TextInput>(null);
+  // Normalize legacy string items + new objects into a single shape.
+  const equipmentItems = normalizeEquipment(equipment);
+  const [newEquipmentCat, setNewEquipmentCat] = useState<string>('camera');
 
   function addEquipment() {
     const trimmed = newEquipment.trim();
     if (!trimmed || !onEquipmentChange) return;
-    onEquipmentChange([...equipment, trimmed]);
+    onEquipmentChange([...equipmentItems, { name: trimmed, category: newEquipmentCat }]);
     setNewEquipment('');
   }
 
@@ -166,7 +176,7 @@ export function ContentTabs({
         {/* Equipment */}
         {active === 'equipment' && (
           <>
-            {equipment.length === 0 && !isEditing ? (
+            {equipmentItems.length === 0 && !isEditing ? (
               <View style={[styles.eqEmptyWrap, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
                 <AppText weight="regular" style={[styles.empty, { color: colors.textMuted }]}>
                   {t('profile_sections.no_equipment')}
@@ -180,45 +190,78 @@ export function ContentTabs({
                 )}
               </View>
             ) : (
-              <View style={[styles.eqChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {equipment.map((item, index) => (
-                  <View
-                    key={`eq-${index}`}
-                    style={[styles.eqChip, { flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: colors.inputBg }]}
-                  >
-                    <AppText weight="regular" numberOfLines={1} style={[styles.eqChipText, { color: colors.primary, ...font.regular }]}>
-                      {item}
+              <View>
+                {groupEquipment(equipmentItems).map((group) => (
+                  <View key={group.category} style={styles.eqGroup}>
+                    <AppText weight="regular" style={[styles.eqGroupLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                      {t(equipmentCategoryLabelKey(group.category))}
                     </AppText>
-                    {isEditing && (
-                      <TouchableOpacity
-                        onPress={() => onEquipmentChange?.(equipment.filter((_, i) => i !== index))}
-                        hitSlop={6}
-                        activeOpacity={0.7}
-                        accessibilityRole="button"
-                      >
-                        <X size={13} color="#e05656" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    )}
+                    <View style={[styles.eqChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                      {group.entries.map(({ item, index }) => (
+                        <View
+                          key={`eq-${index}`}
+                          style={[styles.eqChip, { flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: colors.inputBg }]}
+                        >
+                          <AppText weight="regular" numberOfLines={1} style={[styles.eqChipText, { color: colors.primary, ...font.regular }]}>
+                            {item.name}
+                          </AppText>
+                          {isEditing && (
+                            <TouchableOpacity
+                              onPress={() => onEquipmentChange?.(equipmentItems.filter((_, i) => i !== index))}
+                              hitSlop={6}
+                              activeOpacity={0.7}
+                              accessibilityRole="button"
+                            >
+                              <X size={13} color="#e05656" strokeWidth={2.5} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 ))}
               </View>
             )}
 
             {isEditing && (
-              <View style={[styles.addRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <TouchableOpacity style={styles.addBtn} onPress={addEquipment} activeOpacity={0.8}>
-                  <Text style={styles.addBtnText}>+</Text>
-                </TouchableOpacity>
-                <TextInput
-                  ref={equipInputRef}
-                  style={[styles.addInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
-                  value={newEquipment}
-                  onChangeText={setNewEquipment}
-                  placeholder={t('profile_sections.add_item')}
-                  placeholderTextColor="rgba(0,74,173,0.4)"
-                  onSubmitEditing={addEquipment}
-                  returnKeyType="done"
-                />
+              <View style={styles.addSection}>
+                <View style={[styles.addRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <TouchableOpacity style={styles.addBtn} onPress={addEquipment} activeOpacity={0.8}>
+                    <Text style={styles.addBtnText}>+</Text>
+                  </TouchableOpacity>
+                  <TextInput
+                    ref={equipInputRef}
+                    style={[styles.addInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
+                    value={newEquipment}
+                    onChangeText={setNewEquipment}
+                    placeholder={t('profile_sections.add_item')}
+                    placeholderTextColor="rgba(0,74,173,0.4)"
+                    onSubmitEditing={addEquipment}
+                    returnKeyType="done"
+                  />
+                </View>
+                {/* Category picker — the chosen category is applied to the next added item. */}
+                <AppText weight="regular" style={[styles.eqPickLabel, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('profile_sections.eq_pick_category')}
+                </AppText>
+                <View style={[styles.eqCatPickRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  {EQUIPMENT_CATEGORIES.map((cat) => {
+                    const selected = newEquipmentCat === cat.id;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        onPress={() => setNewEquipmentCat(cat.id)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        style={[styles.eqCatChip, { borderColor: colors.inputBorder }, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                      >
+                        <AppText weight="semiBold" style={[styles.eqCatChipText, { color: selected ? '#ffffff' : colors.primary }]}>
+                          {t(equipmentCategoryLabelKey(cat.id))}
+                        </AppText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             )}
           </>
@@ -375,6 +418,8 @@ const styles = StyleSheet.create({
   },
 
   /* Equipment chips */
+  eqGroup: { marginBottom: 16 },
+  eqGroupLabel: { fontSize: 12, marginBottom: 8 },
   eqChipRow: { flexWrap: 'wrap', gap: 6 },
   eqChip: {
     alignItems: 'center',
@@ -389,6 +434,17 @@ const styles = StyleSheet.create({
   eqEmptyWrap: { gap: 8 },
   eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
   eqAddLink: { fontSize: 13 },
+  addSection: { gap: 8 },
+  eqPickLabel: { fontSize: 12 },
+  eqCatPickRow: { flexWrap: 'wrap', gap: 6 },
+  eqCatChip: {
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
+  },
+  eqCatChipText: { fontSize: 12 },
 
   /* Add row */
   addRow: {

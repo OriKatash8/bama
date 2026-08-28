@@ -10,6 +10,8 @@ import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs, type RoleSkill } from '@features/profile/components/ContentTabs';
+import { normalizeEquipment } from '@features/profile/equipment';
+import type { EquipmentItem } from '@core/types/user';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { usePortfolio } from '@features/profile/hooks/usePortfolio';
@@ -56,7 +58,7 @@ export default function ProfessionalProfileScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [roleSkills, setRoleSkills] = useState<RoleSkill[]>([]);
   const [bio, setBio] = useState('');
-  const [equipment, setEquipment] = useState<string[]>([]);
+  const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
 
   const initialised = useRef(false);
@@ -101,7 +103,7 @@ export default function ProfessionalProfileScreen() {
       initialised.current = true;
       setRoleSkills(profile.roleSkills ?? []);
       setBio(profile.bio ?? '');
-      setEquipment(profile.equipment ?? []);
+      setEquipment(normalizeEquipment(profile.equipment));
       setPriceList(profile.priceList ?? []);
     }
   }, [profile]);
@@ -136,7 +138,7 @@ export default function ProfessionalProfileScreen() {
     if (profile) {
       setRoleSkills(profile.roleSkills ?? []);
       setBio(profile.bio ?? '');
-      setEquipment(profile.equipment ?? []);
+      setEquipment(normalizeEquipment(profile.equipment));
       setPriceList(profile.priceList ?? []);
     }
     setPhotoUri(null);

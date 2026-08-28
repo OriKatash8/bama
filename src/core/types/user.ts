@@ -22,6 +22,11 @@ export type ClientProfile = {
   projectCount: number;
 };
 
+/** A single piece of equipment on a professional profile. Older docs stored
+ *  equipment as bare name strings; newer ones store this object. Read paths
+ *  normalize both via normalizeEquipment(). */
+export type EquipmentItem = { name: string; category: string };
+
 export type ProfessionalProfile = {
   userId: ID;
   roles: MediaRole[];
@@ -35,7 +40,8 @@ export type ProfessionalProfile = {
   availability: 'available' | 'busy';
   rating: number;
   reviewCount: number;
-  equipment: string[];
+  /** Legacy docs hold bare strings; new docs hold EquipmentItem objects. */
+  equipment: (string | EquipmentItem)[];
   priceList: PriceEntry[];
   /** True once the pro has saved a profile meeting the minimum requirements
    *  (name + at least one role). Absent/false ⇒ first-time / not completed. */

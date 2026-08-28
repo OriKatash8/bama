@@ -67,7 +67,7 @@ describe('useProfile', () => {
         photoUri: null,
         roleSkills: [{ role: 'editor', specializations: ['general'] }],
         bio: 'My bio',
-        equipment: ['Canon R5'],
+        equipment: [{ name: 'Canon R5', category: 'camera' }],
         priceList: [{ service: 'Half day', price: 500 }],
       });
     });
@@ -78,8 +78,9 @@ describe('useProfile', () => {
     expect(mockMergeDocument).toHaveBeenCalledWith('users/u1/profile/data', {
       roleSkills: [{ role: 'editor', specializations: ['general'] }],
       bio: 'My bio',
-      equipment: ['Canon R5'],
+      equipment: [{ name: 'Canon R5', category: 'camera' }],
       priceList: [{ service: 'Half day', price: 500 }],
+      proProfileCompleted: true,
     });
   });
 

@@ -7,7 +7,7 @@ import {
   queryByField,
 } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
-import type { ProfessionalProfile } from '@core/types/user';
+import type { ProfessionalProfile, EquipmentItem } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
 
 type RoleSkill = { role: string; specializations: string[] };
@@ -17,7 +17,7 @@ type SaveFields = {
   photoUri: string | null;
   roleSkills: RoleSkill[];
   bio: string;
-  equipment: string[];
+  equipment: EquipmentItem[];
   priceList: PriceEntry[];
 };
 
