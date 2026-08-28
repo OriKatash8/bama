@@ -10,6 +10,9 @@ export type User = {
   displayName: string;
   photoURL: string | null;
   createdAt: Timestamp;
+  /** Set true once the user completes the first-time client onboarding
+   *  (profile photo + name). Absent/false ⇒ first-time. */
+  clientOnboarded?: boolean;
 };
 
 export type ClientProfile = {

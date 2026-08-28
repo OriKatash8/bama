@@ -262,6 +262,16 @@
     "stat_execution": "Execution",
     "open_slot": "Open"
   },
+  "client_onboarding": {
+    "title": "Welcome! Set up your profile",
+    "subtitle": "Add a profile photo and confirm your name so professionals recognize you.",
+    "name_label": "Your name",
+    "name_placeholder": "Enter your name",
+    "add_photo": "Tap the picture to add a profile photo",
+    "continue": "Continue",
+    "saving": "Saving…",
+    "save_failed": "Could not save your profile. Please try again."
+  },
   "profile": {
     "title": "Profile",
     "cancel": "Cancel",
