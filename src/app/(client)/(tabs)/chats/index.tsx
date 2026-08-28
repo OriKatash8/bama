@@ -47,13 +47,14 @@ export default function ChatsPage() {
           icon={MessageCircle}
           title={t(tr, 'chats.empty_client_title')}
           description={t(tr, 'chats.empty_client_desc')}
+          style={styles.emptyBias}
           primaryAction={{
             label: t(tr, 'chats.empty_client_primary'),
-            onPress: () => router.push('/(client)/(tabs)/browse'),
+            onPress: () => router.push('/(client)/(tabs)/home'),
           }}
           secondaryAction={{
             label: t(tr, 'chats.empty_client_secondary'),
-            onPress: () => router.push('/(client)/(tabs)/home'),
+            onPress: () => router.push('/(client)/(tabs)/browse'),
           }}
         />
       ) : (
@@ -89,6 +90,8 @@ export default function ChatsPage() {
 
 const styles = StyleSheet.create({
   centerFill: { flex: 1 },
+  // Bias the empty block upward instead of dead-centering it.
+  emptyBias: { paddingBottom: 150 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',

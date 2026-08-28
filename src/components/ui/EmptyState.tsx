@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -12,6 +12,8 @@ type Props = {
   description: string;
   primaryAction: Action;
   secondaryAction?: Action;
+  /** Extra style for the outer container (e.g. to bias the block upward). */
+  style?: StyleProp<ViewStyle>;
 };
 
 /**
@@ -19,12 +21,12 @@ type Props = {
  * one-line description, a primary pill button and an optional secondary text
  * link. Centers within the space it's given (flex:1). RTL-safe.
  */
-export function EmptyState({ icon: Icon, title, description, primaryAction, secondaryAction }: Props) {
+export function EmptyState({ icon: Icon, title, description, primaryAction, secondaryAction, style }: Props) {
   const colors = useTheme();
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const PrimaryIcon = primaryAction.icon;
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <View style={[styles.iconCircle, { backgroundColor: colors.card }]}>
         <Icon size={32} color={colors.primary} strokeWidth={1.8} />
       </View>
