@@ -91,8 +91,8 @@ export default function ChatsPage() {
 
 const styles = StyleSheet.create({
   centerFill: { flex: 1 },
-  // Bias the empty block upward instead of dead-centering it.
-  emptyBias: { paddingBottom: 150 },
+  // Bias the empty block upward a little (matches the Projects empty position).
+  emptyBias: { paddingBottom: 60 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
