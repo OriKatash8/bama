@@ -6,7 +6,6 @@ import {
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { SlidersHorizontal, X, Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceToggle';
@@ -383,12 +382,7 @@ export default function MarketplaceScreen() {
       >
         <View style={styles.filterOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
-          <LinearGradient
-            colors={['#efd4f6', '#b7cae6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.filterCard}
-          >
+          <View style={styles.filterCard}>
             {/* Header */}
             <View style={[styles.filterCardHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <AppText weight="bold" style={[styles.filterCardTitle, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -401,7 +395,7 @@ export default function MarketplaceScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.filterScroll}>
               {/* Price */}
-              <AppText weight="bold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.price')}
               </AppText>
               <View style={styles.filterChipRow}>
@@ -424,7 +418,7 @@ export default function MarketplaceScreen() {
               </View>
 
               {/* Brand */}
-              <AppText weight="bold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.brand')}
                 {selectedCategory !== 'all' && selectedCatLabelKey
                   ? ` · ${t(`marketplace.${selectedCatLabelKey}`)}`
@@ -453,7 +447,7 @@ export default function MarketplaceScreen() {
               </View>
 
               {/* Condition */}
-              <AppText weight="bold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+              <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.condition')}
               </AppText>
               <View style={styles.filterChipRow}>
@@ -479,15 +473,15 @@ export default function MarketplaceScreen() {
             </ScrollView>
 
             {/* Actions */}
-            <View style={styles.filterActions}>
-              <TouchableOpacity style={styles.filterClearBtn} onPress={clearFilters} activeOpacity={0.8}>
-                <AppText weight="bold" style={styles.filterClearText}>{t('marketplace.clear_all')}</AppText>
+            <View style={[styles.filterActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <TouchableOpacity style={styles.filterClearBtn} onPress={clearFilters} activeOpacity={0.7}>
+                <AppText weight="semiBold" style={styles.filterClearText}>{t('marketplace.clear_all')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.filterApplyBtn} onPress={applyFilters} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.filterApplyBtn} onPress={applyFilters} activeOpacity={0.85}>
                 <AppText weight="bold" style={styles.filterApplyText}>{t('marketplace.apply_filters')}</AppText>
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
         </View>
       </Modal>
 
@@ -628,13 +622,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   filterCard: {
-    width: '90%',
-    maxHeight: '80%',
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    backgroundColor: '#ffffff',
     borderRadius: 24,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 20,
@@ -656,25 +655,22 @@ const styles = StyleSheet.create({
   filterScroll: { flexShrink: 1 },
 
   filterSectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#004aad',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 12,
+    color: 'rgba(15,15,31,0.4)',
     marginBottom: 8,
-    marginTop: 4,
+    marginTop: 10,
   },
   filterChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
+    borderColor: 'rgba(0,74,173,0.2)',
     backgroundColor: '#ffffff',
   },
   filterChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  filterChipLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.5)' },
+  filterChipLabel: { fontSize: 13, fontWeight: '600', color: '#004aad' },
   filterChipLabelActive: { color: '#fff' },
 
   brandGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
@@ -701,23 +697,19 @@ const styles = StyleSheet.create({
   },
 
   filterActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 18,
   },
   filterClearBtn: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#004aad',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
-  filterClearText: { color: '#004aad', fontSize: 15, fontWeight: '700' },
+  filterClearText: { color: 'rgba(15,15,31,0.4)', fontSize: 14 },
   filterApplyBtn: {
-    flex: 2,
-    borderRadius: 12,
-    paddingVertical: 13,
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     backgroundColor: '#004aad',
   },
