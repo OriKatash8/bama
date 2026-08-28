@@ -797,7 +797,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, flex: 1 },
   coursePrice: { fontSize: 16 },
   cardDesc: { fontSize: 13, lineHeight: 18 },
-  metaRow: { flexWrap: 'wrap', gap: 8 },
+  metaRow: { flexWrap: 'wrap', gap: 16 },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 11 },
   cardFooter: { alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
