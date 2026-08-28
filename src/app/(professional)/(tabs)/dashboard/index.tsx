@@ -452,10 +452,13 @@ export default function DashboardScreen() {
         <View style={styles.sortOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setSortModalVisible(false)} />
           <View style={styles.sortCard}>
-            <AppText weight="bold" style={[styles.sortSectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+            <AppText weight="bold" style={[styles.sortHeader, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('noticeboard.sort_filter')}
+            </AppText>
+            <AppText weight="semiBold" style={[styles.sortSectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('noticeboard.sort_title')}
             </AppText>
-            <View style={styles.sortOptions}>
+            <View style={[styles.sortOptions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               {(['newest', 'oldest', 'direct_first'] as const).map((opt) => (
                 <TouchableOpacity
                   key={opt}
@@ -472,10 +475,10 @@ export default function DashboardScreen() {
 
             {showRoleFilter && (
               <>
-                <AppText weight="bold" style={[styles.sortSectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 16 }]}>
+                <AppText weight="semiBold" style={[styles.sortSectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
                   {t('noticeboard.filter_role_title')}
                 </AppText>
-                <View style={styles.sortOptions}>
+                <View style={[styles.sortOptions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <TouchableOpacity
                     style={[styles.sortOption, draftRole === null && styles.sortOptionActive]}
                     onPress={() => setDraftRole(null)}
@@ -569,26 +572,36 @@ const styles = StyleSheet.create({
   sortBtnActive: { backgroundColor: BLUE },
   sortBtnText: { fontSize: 13, color: BLUE },
   sortBtnTextActive: { color: '#ffffff' },
-  sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', paddingHorizontal: 28 },
-  sortCard: { backgroundColor: '#ffffff', borderRadius: 18, padding: 18 },
-  sortSectionTitle: { fontSize: 15, color: '#2a2f5a', marginBottom: 10 },
-  sortOptions: { gap: 8 },
+  sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  sortCard: {
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    maxHeight: '85%',
+  },
+  sortHeader: { fontSize: 18, color: BLUE, marginBottom: 12 },
+  sortSectionTitle: { fontSize: 12, color: 'rgba(15,15,31,0.4)', marginBottom: 8 },
+  sortOptions: { flexWrap: 'wrap', gap: 8 },
   sortOption: {
     paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
+    borderColor: 'rgba(0,74,173,0.2)',
     backgroundColor: '#fff',
   },
-  sortOptionActive: { backgroundColor: '#eef0fa', borderColor: BLUE },
-  sortOptionText: { fontSize: 14, color: '#5c6180', textAlign: 'center' },
-  sortOptionTextActive: { color: BLUE },
-  sortFooter: { marginTop: 18, gap: 10 },
-  sortClearBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', alignItems: 'center' },
-  sortClearText: { fontSize: 14, color: '#5c6180' },
-  sortApplyBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: BLUE, alignItems: 'center' },
-  sortApplyText: { fontSize: 14, color: '#ffffff' },
+  sortOptionActive: { backgroundColor: BLUE, borderColor: BLUE },
+  sortOptionText: { fontSize: 13, color: BLUE, textAlign: 'center' },
+  sortOptionTextActive: { color: '#ffffff' },
+  sortFooter: { marginTop: 18, alignItems: 'center', gap: 12 },
+  sortClearBtn: { paddingHorizontal: 12, paddingVertical: 12 },
+  sortClearText: { fontSize: 14, color: 'rgba(15,15,31,0.4)' },
+  sortApplyBtn: { flex: 1, paddingVertical: 14, borderRadius: 16, backgroundColor: BLUE, alignItems: 'center' },
+  sortApplyText: { fontSize: 15, color: '#ffffff' },
 
   // In-progress section
   projectsSection: { marginBottom: 4 },
