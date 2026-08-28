@@ -398,7 +398,7 @@ export default function MarketplaceScreen() {
               <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.price')}
               </AppText>
-              <View style={styles.filterChipRow}>
+              <View style={[styles.filterChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {(['asc', 'desc', null] as const).map((val) => (
                   <TouchableOpacity
                     key={String(val)}
@@ -424,7 +424,7 @@ export default function MarketplaceScreen() {
                   ? ` · ${t(`marketplace.${selectedCatLabelKey}`)}`
                   : ''}
               </AppText>
-              <View style={styles.brandGrid}>
+              <View style={[styles.brandGrid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {availableBrands.map((brand) => {
                   const selected = draftBrands.includes(brand);
                   return (
@@ -450,7 +450,7 @@ export default function MarketplaceScreen() {
               <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.condition')}
               </AppText>
-              <View style={styles.filterChipRow}>
+              <View style={[styles.filterChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {([null, ...CONDITIONS]).map((c) => {
                   const val = c === null ? null : c.value;
                   const label = c === null
