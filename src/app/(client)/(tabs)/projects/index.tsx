@@ -234,7 +234,7 @@ export default function ProjectsPage() {
         <View style={[styles.myProjectsHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <PageTitle>{t('chats_page.my_projects')}</PageTitle>
           {!requestsLoading && activeRequests.length > 0 && (
-            <Text style={[styles.projectCounter, { ...font.regular }]}>
+            <Text style={[styles.projectCounter, { ...font.regular, marginTop: 10 }]}>
               {projectIndex + 1}/{activeRequests.length}
             </Text>
           )}
