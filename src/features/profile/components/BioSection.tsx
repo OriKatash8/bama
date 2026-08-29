@@ -53,7 +53,7 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
         {t('profile_sections.about')}
       </AppText>
       <TextInput
-        style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+        style={[styles.input, { backgroundColor: '#ffffff', borderColor: colors.inputBorder, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
         value={bio}
         onChangeText={onChange}
         multiline
