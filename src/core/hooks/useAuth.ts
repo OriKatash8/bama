@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
-import { deleteField } from 'firebase/firestore';
+import { Platform } from 'react-native';
+import { deleteField, serverTimestamp } from 'firebase/firestore';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@core/stores/authStore';
 import { onAuthChange } from '@core/firebase/auth';
-import { getDocument, updateDocument } from '@core/firebase/firestore';
+import { getDocument, updateDocument, setDocument } from '@core/firebase/firestore';
 import { registerForPushNotifications } from '@core/notifications/registerForPushNotifications';
+import i18n from '@core/i18n';
 import type { User } from '@core/types/user';
 
 type LegacyUserDoc = User & { role?: string };
@@ -40,25 +42,30 @@ export function useAuth() {
           setUser(cleanUser as User);
           setLoading(false);
 
-          // Fire-and-forget: save push token if new or changed — never blocks sign-in
+          // Fire-and-forget: claim this device's push token for the current
+          // user. UNCONDITIONAL — the token string is identical across users on
+          // one device, so a conditional write would leave the previous user's
+          // id on the doc and old notifications would keep arriving. Never
+          // blocks sign-in; no-ops on web/simulator (token is null).
           void (async () => {
             const token = await registerForPushNotifications();
             console.log('[push] registerForPushNotifications returned:', token);
-            const currentToken = (userData as any).expoPushToken as string | undefined;
-            console.log('[push] currentToken in doc:', currentToken);
-            if (token && token !== currentToken) {
-              console.log('[push] writing new token to Firestore...');
-              try {
-                await updateDocument(`users/${firebaseUser.uid}`, {
-                  expoPushToken: token,
-                  pushTokenUpdatedAt: new Date().toISOString(),
-                });
-                console.log('[push] token saved successfully');
-              } catch (e) {
-                console.log('[push] Firestore write error:', e);
-              }
-            } else {
-              console.log('[push] skipping write — token unchanged or null');
+            if (!token) return;
+            try {
+              await setDocument(`pushTokens/${token}`, {
+                userId: firebaseUser.uid,
+                platform: Platform.OS,
+                language: i18n.language,
+                updatedAt: serverTimestamp(),
+              });
+              // Retire the legacy per-user field so it can't shadow the new source.
+              await updateDocument(`users/${firebaseUser.uid}`, {
+                expoPushToken: deleteField(),
+                pushTokenUpdatedAt: deleteField(),
+              } as any);
+              console.log('[push] token claimed for user', firebaseUser.uid);
+            } catch (e) {
+              console.log('[push] token claim failed:', e);
             }
           })();
         } else {

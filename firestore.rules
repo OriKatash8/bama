@@ -236,6 +236,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ─── pushTokens ──────────────────────────────────────────────────
+    // Device push tokens, keyed by the token string. Clients never read; the
+    // Cloud Function sender uses the Admin SDK (bypasses rules). A user may
+    // only claim/refresh a token for themselves, and delete their own on logout.
+    match /pushTokens/{tokenId} {
+      allow read: if false;
+      allow create, update: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+
     // ─── videoJobs ───────────────────────────────────────────────────
     // Written exclusively by the transcoding Cloud Function (Admin SDK bypasses rules).
     // Clients read via onSnapshot to await job completion during video upload.

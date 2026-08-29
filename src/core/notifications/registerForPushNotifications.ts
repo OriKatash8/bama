@@ -3,6 +3,14 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+// Last obtained Expo push token for this device, cached so logout can delete
+// the matching pushTokens/{token} doc without re-deriving it. Null on
+// web/simulator/permission-denied.
+let cachedPushToken: string | null = null;
+export function getCachedPushToken(): string | null {
+  return cachedPushToken;
+}
+
 export async function registerForPushNotifications(): Promise<string | null> {
   console.log('[push] isDevice:', Device.isDevice);
   if (!Device.isDevice) return null;
@@ -23,6 +31,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
     console.log('[push] got token:', token);
+    cachedPushToken = token;
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
