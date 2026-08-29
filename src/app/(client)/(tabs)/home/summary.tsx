@@ -139,8 +139,10 @@ export default function SummaryScreen() {
     }
     // Firestore write succeeded — navigate outside the try so navigation errors don't look like write failures
     if (isEditMode) {
+      resetSlots();
+      notifyProjectSubmitted(); // clear the Home builder form + drop edit context
       showToast(t('builder.project_updated'), 'success');
-      router.back();
+      router.navigate('/(client)/(tabs)/home' as never);
     } else {
       resetSlots();
       notifyProjectSubmitted(); // tell the Home builder to clear its form
