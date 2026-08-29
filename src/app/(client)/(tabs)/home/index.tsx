@@ -16,13 +16,13 @@ import { useTheme } from '@core/hooks/useTheme';
 import { ROLES, ROLE_BY_ID, ROLE_TO_LEGACY_CATEGORY, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, X, MapPin } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, X, MapPin, Lock } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { ProjectRequest } from '@core/types/project';
+import type { ProjectRequest, FilledSlot } from '@core/types/project';
 import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@features/projects/constants/roleQuestions';
 import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
 
@@ -88,6 +88,14 @@ export default function HomeScreen() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
   const [roleAnswers, setRoleAnswers] = useState<Record<string, Record<string, string>>>({});
+  // Slots already occupied by an assigned professional (edit mode). Roles with
+  // any occupied slot cannot be removed — only added to.
+  const [filledSlots, setFilledSlots] = useState<FilledSlot[]>([]);
+  const occupiedByCategory = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const f of filledSlots) m[f.category] = (m[f.category] ?? 0) + 1;
+    return m;
+  }, [filledSlots]);
 
   // After a new project is submitted (from the summary screen), wipe this form.
   const projectSubmittedNonce = useUiStore((s) => s.projectSubmittedNonce);
@@ -106,6 +114,7 @@ export default function HomeScreen() {
     setCalOpen(null);
     setLocationModalOpen(false);
     setLocationSearch('');
+    setFilledSlots([]);
     loadSlots([]);
   }, [projectSubmittedNonce, loadSlots]);
 
@@ -141,6 +150,7 @@ export default function HomeScreen() {
         setDeadline(project.deadline ?? '');
         setLocation(project.location);
         setRoleAnswers(project.roleAnswers ?? {});
+        setFilledSlots(project.filledSlots ?? []);
         loadSlots(project.crewSlots);
       })
       .finally(() => setIsLoadingProject(false));
@@ -407,6 +417,7 @@ export default function HomeScreen() {
                 ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                 renderItem={({ item: cat }) => {
                   const q = roleQuantity(cat.key);
+                  const locked = (occupiedByCategory[cat.key] ?? 0) > 0;
                   return (
                     <TouchableOpacity
                       style={[
@@ -426,12 +437,16 @@ export default function HomeScreen() {
                       {q > 0 && (
                         <View style={styles.tileControls}>
                           <TouchableOpacity
-                            style={styles.tileControlBtnRemove}
-                            onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q - 1); }}
+                            style={[styles.tileControlBtnRemove, locked && styles.tileControlBtnLocked]}
+                            onPress={(e) => { e.stopPropagation?.(); if (!locked) setQuantity(cat.key, q - 1); }}
+                            disabled={locked}
+                            accessibilityLabel={locked ? t('builder.role_locked_a11y') : undefined}
                             hitSlop={6}
                             activeOpacity={0.7}
                           >
-                            <Text style={styles.tileControlText}>−</Text>
+                            {locked
+                              ? <Lock size={11} color="#ffffff" strokeWidth={2.5} />
+                              : <Text style={styles.tileControlText}>−</Text>}
                           </TouchableOpacity>
                           <Text style={styles.tileCountText}>{q}</Text>
                           <TouchableOpacity
@@ -701,6 +716,7 @@ function createStyles(
     tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center', lineHeight: 17, includeFontPadding: false },
     tileControls: { width: '100%', height: 28, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)' },
     tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
+    tileControlBtnLocked: { backgroundColor: 'rgba(120,125,150,0.7)' },
     tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
     tileControlText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 16 },
     tileCountText: { color: '#004aad', fontSize: 14, fontWeight: '800', fontFamily: ffBold, minWidth: 14, textAlign: 'center' },

@@ -42,6 +42,7 @@
     "submit_request_roles": "שלח בקשה ({{count}} תפקיד)",
     "submit_request_roles_plural": "שלח בקשה ({{count}} תפקידים)",
     "project_updated": "הפרויקט עודכן!",
+    "role_locked_a11y": "משובץ איש מקצוע — לא ניתן להסיר",
     "failed_update": "עדכון הפרויקט נכשל",
     "failed_submit": "שליחת הבקשה נכשלה",
     "tap_to_add": "לחץ + להוספת תפקידים",

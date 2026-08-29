@@ -42,6 +42,7 @@
     "submit_request_roles": "Submit Request ({{count}} role)",
     "submit_request_roles_plural": "Submit Request ({{count}} roles)",
     "project_updated": "Project updated!",
+    "role_locked_a11y": "Assigned professional — can't remove",
     "failed_update": "Failed to update project",
     "failed_submit": "Failed to submit request",
     "tap_to_add": "Tap + to add roles",
