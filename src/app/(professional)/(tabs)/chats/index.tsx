@@ -363,6 +363,9 @@ export default function ProfessionalChatsScreen() {
             ref={categoryScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
+            // RTL row flows row-reverse, so its visual start is the right edge —
+            // anchor the scroll there once the content is laid out.
+            onContentSizeChange={() => { if (rtl) categoryScrollRef.current?.scrollToEnd({ animated: false }); }}
             contentContainerStyle={[
               styles.categoryPillsRow,
               { flexDirection: rtl ? 'row-reverse' : 'row', paddingLeft: rtl ? 40 : 12, paddingRight: rtl ? 12 : 40 },
