@@ -6,8 +6,11 @@ import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { useOffersSeenStore } from '@core/stores/offersSeenStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { listenToUserChats } from '@features/chat/services/chatService';
+import { usePriceOffers } from '@features/offers/hooks/usePriceOffers';
+import { useBundleOffers } from '@features/offers/hooks/useBundleOffers';
 import { AppHeader } from '@components/layout/AppHeader';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -49,6 +52,21 @@ export default function ClientTabsLayout() {
 
   const pathname = usePathname();
   const inChatRoom = /\/chats\/.+/.test(pathname);
+
+  // Badge the Projects tab for price offers newer than the client last viewed
+  // it. Offers have no seen flag, so "last seen" is tracked per device.
+  const { offers } = usePriceOffers();
+  const { bundles } = useBundleOffers();
+  const lastSeenAt = useOffersSeenStore((s) => s.lastSeenAt);
+  const markSeen = useOffersSeenStore((s) => s.markSeen);
+  const seenTs = userId ? (lastSeenAt[userId] ?? 0) : 0;
+  const offerTimes = [...offers, ...bundles].map((o) => (o.createdAt?.seconds ?? 0) * 1000);
+  const newOffers = offerTimes.filter((ts) => ts > seenTs).length;
+  const maxOfferTs = offerTimes.length ? Math.max(...offerTimes) : 0;
+  const onProjects = pathname.includes('/projects');
+  useEffect(() => {
+    if (onProjects && userId && maxOfferTs > 0) markSeen(userId, maxOfferTs);
+  }, [onProjects, userId, maxOfferTs, markSeen]);
 
   const router = useRouter();
   const pathnameRef = useRef(pathname);
@@ -154,6 +172,8 @@ export default function ClientTabsLayout() {
             name="projects"
             options={{
               title: t('tabs.projects'),
+              tabBarBadge: newOffers > 0 ? (newOffers > 99 ? '99+' : newOffers) : undefined,
+              tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
               tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
