@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { serverTimestamp } from 'firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { addDocument, runBatchUpdates } from '@core/firebase/firestore';
 
@@ -20,7 +21,7 @@ export function usePriceOffer() {
             category: slot.category,
             price: slot.price,
             status: 'pending' as const,
-            createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
+            createdAt: serverTimestamp(),
           })
         )
       );
@@ -46,7 +47,7 @@ export function usePriceOffer() {
             category: slot.category,
             price: slot.price,
             status: 'pending' as const,
-            createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
+            createdAt: serverTimestamp(),
           })
         )
       );

@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal, Search, Inbox } from 'lucide-react-native';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal, Search, Inbox, History } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
+import { NoticeHistorySheet } from '@features/noticeboard/components/NoticeHistorySheet';
+import { useSentOffers } from '@features/offers/hooks/useSentOffers';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
 import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
@@ -92,6 +94,8 @@ export default function DashboardScreen() {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const { pendingCount } = useSentOffers();
   const [draftSort, setDraftSort] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
   const [draftRole, setDraftRole] = useState<string | null>(null);
 
@@ -383,6 +387,21 @@ export default function DashboardScreen() {
               </AppText>
             </TouchableOpacity>
           )}
+          {/* History — always available (sent offers + hidden projects) */}
+          <TouchableOpacity
+            style={styles.historyBtn}
+            onPress={() => setHistoryOpen(true)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={t('history.title')}
+          >
+            <History size={18} color="#004aad" strokeWidth={2.2} />
+            {pendingCount > 0 && (
+              <View style={[styles.historyBadge, { backgroundColor: colors.accent, borderColor: colors.bg }]}>
+                <AppText weight="bold" style={styles.historyBadgeText}>{pendingCount > 99 ? '99+' : pendingCount}</AppText>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {!isLoading && visible.length > 0 && (
@@ -534,6 +553,9 @@ export default function DashboardScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Sent-offers + hidden-projects history */}
+      <NoticeHistorySheet visible={historyOpen} onClose={() => setHistoryOpen(false)} />
     </Screen>
   );
 }
@@ -591,6 +613,29 @@ const styles = StyleSheet.create({
   sortBtnActive: { backgroundColor: BLUE },
   sortBtnText: { fontSize: 13, color: BLUE },
   sortBtnTextActive: { color: '#ffffff' },
+  historyBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: BLUE,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyBadgeText: { fontSize: 10, color: '#ffffff', lineHeight: 13 },
   sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   sortCard: {
     width: '100%',

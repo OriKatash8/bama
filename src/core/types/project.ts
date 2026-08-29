@@ -107,6 +107,9 @@ export type PriceOffer = {
   status: 'pending' | 'accepted' | 'rejected' | 'removed';
   bundleId?: string;
   createdAt: Timestamp;
+  /** Set when the professional edits a pending offer's price. */
+  editedAt?: Timestamp;
+  editCount?: number;
 };
 
 export type RemovalRequest = {
