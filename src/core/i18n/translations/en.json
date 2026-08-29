@@ -481,6 +481,8 @@
     "condition_good": "Good",
     "condition_fair": "Fair",
     "search_placeholder": "Search equipment...",
+    "mode_desc_market": "Second-hand gear for sale",
+    "mode_desc_rental": "Gear available to rent",
     "filter": "Filter",
     "no_listings": "No listings found",
     "filters_title": "Filters",

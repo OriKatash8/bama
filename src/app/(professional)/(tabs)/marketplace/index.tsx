@@ -271,6 +271,11 @@ export default function MarketplaceScreen() {
           <MarketplaceToggle active={activeTab} onChange={(tab) => { setActiveTab(tab); setFilterCondition(null); }} />
         </View>
 
+        {/* Mode description — switches with the selected toggle mode */}
+        <AppText weight="regular" numberOfLines={1} style={[styles.modeDesc, { color: colors.textSec }]}>
+          {t(activeTab === 'rental' ? 'marketplace.mode_desc_rental' : 'marketplace.mode_desc_market')}
+        </AppText>
+
         {/* Search */}
         <View style={[styles.searchWrap, { flexDirection: rtl ? 'row-reverse' : 'row', borderColor: colors.borderMuted }]}>
           <Search size={18} color={colors.placeholder} strokeWidth={2} />
@@ -533,10 +538,11 @@ const styles = StyleSheet.create({
   fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
 
   toggleWrap: { paddingHorizontal: 16, paddingVertical: 4, marginTop: 12 },
+  modeDesc: { fontSize: 12, textAlign: 'center', marginTop: 9, marginBottom: 9, paddingHorizontal: 16 },
 
   searchWrap: {
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',

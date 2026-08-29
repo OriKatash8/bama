@@ -481,6 +481,8 @@
     "condition_good": "טוב",
     "condition_fair": "סביר",
     "search_placeholder": "חיפוש ציוד...",
+    "mode_desc_market": "ציוד יד שנייה למכירה",
+    "mode_desc_rental": "ציוד להשכרה מאנשי מקצוע",
     "filter": "סינון",
     "no_listings": "לא נמצאו מוצרים",
     "filters_title": "סינון",
