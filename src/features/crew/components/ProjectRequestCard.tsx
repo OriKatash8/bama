@@ -119,8 +119,9 @@ export function ProjectRequestCard({ request }: Props) {
 
   return (
     <View style={styles.card}>
-      {/* Zone 1 — Header: ⋯ on leading corner + project title */}
-      <View style={[styles.headerRow, { flexDirection: rowDir }]}>
+      {/* Zone 1 — Header: ⋯ on the trailing corner (left in Hebrew, right in
+          English) + project title. Reversed relative to rowDir on purpose. */}
+      <View style={[styles.headerRow, { flexDirection: rtl ? 'row' : 'row-reverse' }]}>
         <View ref={moreBtnRef}>
           <TouchableOpacity
             onPress={openMoreMenu}
