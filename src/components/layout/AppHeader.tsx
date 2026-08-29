@@ -14,7 +14,9 @@ import { Image } from 'expo-image';
 const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
+  Bell,
   Camera,
   ChevronRight,
   Globe,
@@ -68,6 +70,7 @@ export function AppHeader() {
   const colors = useTheme();
   const font = useAppFont();
   const { logout } = useLogout();
+  const router = useRouter();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
@@ -248,6 +251,19 @@ export function AppHeader() {
                 })}
               </View>
             </View>
+
+            {/* Notifications */}
+            <TouchableOpacity
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => { setSettingsVisible(false); router.push('/settings/notifications'); }}
+              activeOpacity={0.7}
+            >
+              <Bell size={18} color={colors.textMuted} strokeWidth={1.5} />
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                {t('settings.notifications')}
+              </AppText>
+              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+            </TouchableOpacity>
 
             {/* Information */}
             <TouchableOpacity

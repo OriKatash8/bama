@@ -272,6 +272,10 @@ export const onProjectCreate = functions.firestore
       usersSnap.docs.map(async (userDoc) => {
         const uid = userDoc.id;
         if (uid === clientId) return;
+        // 'project' is optional — skip opted-out users (free: userDoc already loaded),
+        // avoiding a notification doc the sender would only read again to discard.
+        const prefs = userDoc.data()?.notifPrefs as Record<string, boolean> | undefined;
+        if (prefs?.project === false) return;
         const profileDoc = await db
           .collection('users').doc(uid)
           .collection('profile').doc('data').get();

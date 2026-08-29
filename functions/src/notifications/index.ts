@@ -9,10 +9,25 @@ export const onNotificationCreate = functions.firestore
   .document('notifications/{notificationId}')
   .onCreate(async (snap) => {
     const notification = snap.data();
-
-    // Tokens now live in a top-level pushTokens/{token} collection keyed by the
-    // device token, each carrying { userId }. Send to every device of the user.
     const db = admin.firestore();
+
+    // Per-type preference gate. Only optional types are stored/checked; offer,
+    // offer_accepted and purchase are essential and always sent. Missing prefs
+    // or missing key = enabled (opt-out model). One extra read at this single
+    // choke point instead of per-trigger.
+    const type: string | undefined = notification.data?.type;
+    const ESSENTIAL = ['offer', 'offer_accepted', 'purchase'];
+    if (type && !ESSENTIAL.includes(type)) {
+      const userDoc = await db.collection('users').doc(notification.userId).get();
+      const prefs = userDoc.data()?.notifPrefs as Record<string, boolean> | undefined;
+      if (prefs?.[type] === false) {
+        console.log('[push] suppressed by pref', type, 'for user', notification.userId);
+        return;
+      }
+    }
+
+    // Tokens live in a top-level pushTokens/{token} collection keyed by the
+    // device token, each carrying { userId }. Send to every device of the user.
     const snapshot = await db
       .collection('pushTokens')
       .where('userId', '==', notification.userId)
