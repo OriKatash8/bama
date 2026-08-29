@@ -14,6 +14,7 @@ import { useAuth } from '@core/hooks/useAuth';
 import { useNotificationRouting } from '@core/notifications/useNotificationRouting';
 import { ToastContainer } from '@components/ui/Toast';
 import { ReviewFlowGate } from '@features/reviews/components/ReviewFlowGate';
+import { ModerationGate } from '@features/moderation/components/ModerationGate';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 import { LanguageSync } from '@components/layout/LanguageSync';
 import { I18nextProvider } from 'react-i18next';
@@ -104,6 +105,7 @@ function AppShell() {
         <Slot />
         <ToastContainer />
         <ReviewFlowGate />
+        <ModerationGate />
       </LinearGradient>
     </I18nextProvider>
   );

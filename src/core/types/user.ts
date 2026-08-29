@@ -13,6 +13,22 @@ export type User = {
   /** Set true once the user completes the first-time client onboarding
    *  (profile photo + name). Absent/false ⇒ first-time. */
   clientOnboarded?: boolean;
+  /** Current moderation state. Absent ⇒ active/in good standing. Written
+   *  ONLY by the moderateUser callable (Admin SDK); clients cannot edit it. */
+  moderation?: UserModeration;
+};
+
+/** Snapshot of the latest enforcement action against a user. `warned` is a
+ *  non-blocking notice; `suspended` also disables the Firebase Auth account.
+ *  `reason` is kept restatable so a suspended/warned user can see (and appeal)
+ *  why. Cleared (field deleted) on unsuspend / clear_warning. */
+export type UserModeration = {
+  status: 'warned' | 'suspended';
+  reason: string;
+  actionId: ID;
+  actorId: ID;
+  actorName: string;
+  at: Timestamp;
 };
 
 export type ClientProfile = {

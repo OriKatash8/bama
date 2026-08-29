@@ -38,7 +38,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuth();
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+      // Owners may update their own doc, but never their moderation state —
+      // that is written only by the moderateUser callable (Admin SDK).
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['moderation']);
       allow delete: if false;
 
       match /profile/data {
@@ -227,6 +230,14 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['evidenceURLs'])
       );
       allow delete: if false;
+    }
+
+    // ─── adminActions ───────────────────────────────────────────────
+    // Append-only evidence log. Written exclusively by the moderateUser
+    // callable (Admin SDK bypasses rules); admins may read.
+    match /adminActions/{actionId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     // ─── notifications ───────────────────────────────────────────────

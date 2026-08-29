@@ -3,7 +3,8 @@ import { Platform } from 'react-native';
 import { deleteField, serverTimestamp } from 'firebase/firestore';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@core/stores/authStore';
-import { onAuthChange } from '@core/firebase/auth';
+import { useModerationStore } from '@core/stores/moderationStore';
+import { onAuthChange, signOut } from '@core/firebase/auth';
 import { getDocument, updateDocument, setDocument } from '@core/firebase/firestore';
 import { registerForPushNotifications } from '@core/notifications/registerForPushNotifications';
 import i18n from '@core/i18n';
@@ -35,12 +36,23 @@ export function useAuth() {
         console.log('[useAuth] calling getDocument at', Date.now());
         const userData = await getDocument<LegacyUserDoc>(`users/${firebaseUser.uid}`);
         if (userData) {
+          // Enforcement: a suspended user is signed out immediately and shown
+          // the (appealable) reason; a warned user is let in but sees a notice.
+          const moderation = userData.moderation;
+          if (moderation?.status === 'suspended') {
+            useModerationStore.getState().setNotice({ status: 'suspended', reason: moderation.reason });
+            await signOut();
+            return;
+          }
           if ('role' in userData) {
             void updateDocument(`users/${firebaseUser.uid}`, { role: deleteField() } as any);
           }
           const { role: _role, ...cleanUser } = userData as any;
           setUser(cleanUser as User);
           setLoading(false);
+          if (moderation?.status === 'warned') {
+            useModerationStore.getState().setNotice({ status: 'warned', reason: moderation.reason });
+          }
 
           // Fire-and-forget: claim this device's push token for the current
           // user. UNCONDITIONAL — the token string is identical across users on

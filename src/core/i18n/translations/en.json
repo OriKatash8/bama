@@ -385,6 +385,16 @@
     "notice_board": "Notice Board",
     "marketplace": "Marketplace"
   },
+  "moderation": {
+    "suspended_title": "Account suspended",
+    "suspended_body": "Your account has been suspended for violating our Terms of Use. You have been signed out.",
+    "warned_title": "Warning",
+    "warned_body": "An administrator has issued you a warning. Please review it and correct the issue to avoid suspension.",
+    "reason_label": "Reason",
+    "appeal_hint": "If you believe this is a mistake, you can appeal by contacting support.",
+    "dismiss": "Close",
+    "acknowledge": "I understand"
+  },
   "history": {
     "title": "Offers & hidden",
     "tab_sent": "Sent offers",
