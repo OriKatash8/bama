@@ -112,7 +112,10 @@ export function ProjectRequestCard({ request }: Props) {
   function openMoreMenu() {
     moreBtnRef.current?.measureInWindow((x, y, width, height) => {
       setMenuY(y + height + 4);
-      setMenuX(rtl ? x + width - MENU_WIDTH : x);
+      // The ⋯ sits on the trailing edge, so open the menu inward from it:
+      // rightward in Hebrew (anchor the left edge to the button), leftward in
+      // English (anchor the right edge to the button).
+      setMenuX(rtl ? x : x + width - MENU_WIDTH);
       setMoreMenuVisible(true);
     });
   }
