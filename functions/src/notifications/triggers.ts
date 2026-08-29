@@ -131,11 +131,16 @@ export const onPriceOfferAccepted = functions.firestore
     const clientId: string | undefined = projectDoc.data()?.clientId as string | undefined;
     if (after.professionalId === clientId) return;
 
+    // chatId lets the tap open the project's group chat (same source as the
+    // mission/meeting triggers). Absent on very old projects → the client
+    // router falls back to the dashboard.
+    const chatId: string | undefined = projectDoc.data()?.chatId as string | undefined;
+
     await createNotification(db, {
       userId: after.professionalId,
       title: 'ההצעה שלך התקבלה 🎉',
       message: `ההצעה שלך לפרויקט ${projectTitle} התקבלה`,
-      data: { type: 'offer_accepted', projectId: after.projectId },
+      data: { type: 'offer_accepted', projectId: after.projectId, ...(chatId ? { chatId } : {}) },
     });
   });
 

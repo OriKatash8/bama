@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@core/hooks/useAuth';
+import { useNotificationRouting } from '@core/notifications/useNotificationRouting';
 import { ToastContainer } from '@components/ui/Toast';
 import { ReviewFlowGate } from '@features/reviews/components/ReviewFlowGate';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
@@ -46,6 +47,7 @@ class ErrorBoundary extends React.Component<
 
 function AppShell() {
   useAuth();
+  useNotificationRouting(); // deep-links notification taps (no render output)
 
 
   const [fontsLoaded] = useFonts({
