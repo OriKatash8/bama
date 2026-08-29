@@ -205,6 +205,11 @@ export default function DashboardScreen() {
               console.log(`[ActiveProjects] Filtered out project ${project.id} — status: ${project.status}`);
               return null;
             }
+            // Only projects the current user is actually a professional on (an
+            // assigned slot) — not ones they merely own as a client or were removed from.
+            if (!(project.filledSlots ?? []).some((s) => s.professionalId === currentUserId)) {
+              return null;
+            }
 
             const clientDoc = await getDocument<{ displayName: string }>(`users/${project.clientId}`);
             const clientName = clientDoc?.displayName ?? 'Unknown';
