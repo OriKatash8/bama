@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Image,
 } from 'react-native';
 import {
-  collection, onSnapshot, updateDoc, doc, query, orderBy, Timestamp,
+  collection, onSnapshot, updateDoc, doc, getDoc, query, orderBy, Timestamp,
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
@@ -48,6 +48,8 @@ export default function ReportsAdmin() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>('pending');
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
+  // Fallback names for reports whose denormalized name is blank or is just the id.
+  const [resolvedNames, setResolvedNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
@@ -56,6 +58,33 @@ export default function ReportsAdmin() {
       setLoading(false);
     });
   }, []);
+
+  // Resolve reportedUserId → current displayName only when the stored name is
+  // missing or degraded to the id. The denormalized name (evidence snapshot)
+  // stays primary; this just fills the gaps.
+  useEffect(() => {
+    const missing = reports
+      .filter((r) => !r.reportedUserName || r.reportedUserName === r.reportedUserId)
+      .map((r) => r.reportedUserId)
+      .filter((id) => id && resolvedNames[id] === undefined);
+    const unique = [...new Set(missing)];
+    if (unique.length === 0) return;
+    let active = true;
+    (async () => {
+      const entries = await Promise.all(
+        unique.map(async (id) => {
+          try {
+            const snap = await getDoc(doc(db, 'users', id));
+            return [id, (snap.data()?.displayName as string | undefined) ?? ''] as const;
+          } catch {
+            return [id, ''] as const;
+          }
+        }),
+      );
+      if (active) setResolvedNames((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+    return () => { active = false; };
+  }, [reports, resolvedNames]);
 
   async function updateStatus(id: string, status: Report['status']) {
     setUpdating((prev) => ({ ...prev, [id]: true }));
@@ -122,7 +151,9 @@ export default function ReportsAdmin() {
               <View style={styles.cardHeader}>
                 <View style={styles.cardHeaderLeft}>
                   <Text style={[styles.reportedName, { ...font.bold, color: colors.text }]}>
-                    {report.reportedUserName || 'Unknown User'}
+                    {(report.reportedUserName && report.reportedUserName !== report.reportedUserId)
+                      ? report.reportedUserName
+                      : (resolvedNames[report.reportedUserId] || report.reportedUserName || 'Unknown User')}
                   </Text>
                   <Text style={[styles.date, { ...font.regular, color: colors.textMuted }]}>
                     {formatDate(report.createdAt)}

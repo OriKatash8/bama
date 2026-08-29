@@ -17,8 +17,10 @@ import { confirmDialog } from '@utils/confirmDialog';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection } from 'firebase/firestore';
+import * as ImagePicker from 'expo-image-picker';
 import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
+import { uploadFile } from '@core/firebase/storage';
 import { auth } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -92,6 +94,8 @@ function formatDueDate(iso: string, prefix: string): string {
 }
 
 type MemberInfo = Pick<User, 'displayName' | 'photoURL'>;
+
+const MAX_EVIDENCE = 3;
 
 const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
   open: '#1c9d63',
@@ -199,6 +203,7 @@ export default function ProjectDetailsScreen() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportedUserId, setReportedUserId] = useState('');
   const [reportedUserName, setReportedUserName] = useState('');
+  const [reportEvidence, setReportEvidence] = useState<string[]>([]);
 
   // Feature B: add professional
   const [showRolePicker, setShowRolePicker] = useState(false);
@@ -479,21 +484,49 @@ export default function ProjectDetailsScreen() {
   function closeReport() {
     setReportVisible(false);
     setReportReason('');
+    setReportEvidence([]);
+  }
+
+  async function pickEvidence() {
+    if (reportEvidence.length >= MAX_EVIDENCE) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setReportEvidence((prev) => [...prev, result.assets[0].uri]);
+    }
+  }
+
+  function removeEvidence(idx: number) {
+    setReportEvidence((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function submitReport() {
     if (reportReason.trim().length < 20 || !currentUserId || !reportedUserId) return;
     setReportSubmitting(true);
     try {
-      await addDoc(collection(db, 'reports'), {
+      const docRef = await addDoc(collection(db, 'reports'), {
         reporterId: currentUserId,
         reportedUserId,
         reportedUserName,
         reason: reportReason.trim(),
-        evidenceURLs: [],
+        evidenceURLs: [] as string[],
         status: 'pending',
         createdAt: serverTimestamp(),
       });
+
+      if (reportEvidence.length > 0) {
+        const urls = await Promise.all(
+          reportEvidence.map(async (uri, i) => {
+            const blob = await (await fetch(uri)).blob();
+            const ext = uri.split('.').pop() ?? 'jpg';
+            return uploadFile(`reports/${docRef.id}/evidence/${Date.now()}_${i}.${ext}`, blob);
+          })
+        );
+        await updateDoc(doc(db, 'reports', docRef.id), { evidenceURLs: urls });
+      }
+
       closeReport();
       showToast(t('report.success'), 'success');
     } catch {
@@ -944,7 +977,7 @@ export default function ProjectDetailsScreen() {
               isPendingRemoval={isClient && isPendingRemoval}
               isRemoving={removingId === professionalId}
               onRemove={isClient && !isReadOnly ? () => handleRequestRemoval(professionalId) : undefined}
-              onReport={professionalId !== currentUserId ? () => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? professionalId); setReportVisible(true); } : undefined}
+              onReport={professionalId !== currentUserId ? () => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? ''); setReportVisible(true); } : undefined}
               payment={(isClient || professionalId === currentUserId) ? payment : undefined}
               onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly && (payment?.individualOffer || payment?.bundleId)
                 ? () => {
@@ -1982,6 +2015,29 @@ export default function ProjectDetailsScreen() {
                 {t('report.min_chars')}
               </AppText>
             )}
+
+            {/* Evidence screenshots (optional) */}
+            <TouchableOpacity
+              style={[styles.reportEvidenceBtn, { flexDirection: rowDirection, opacity: reportEvidence.length >= MAX_EVIDENCE ? 0.4 : 1 }]}
+              onPress={pickEvidence}
+              disabled={reportEvidence.length >= MAX_EVIDENCE}
+              activeOpacity={0.7}
+            >
+              <AppText weight="semiBold" style={styles.reportEvidenceBtnText}>{t('report.add_evidence')}</AppText>
+            </TouchableOpacity>
+            {reportEvidence.length > 0 && (
+              <View style={styles.reportThumbRow}>
+                {reportEvidence.map((uri, idx) => (
+                  <View key={idx} style={styles.reportThumbWrap}>
+                    <Image source={{ uri }} style={styles.reportThumb} resizeMode="cover" />
+                    <TouchableOpacity style={styles.reportThumbRemove} onPress={() => removeEvidence(idx)} hitSlop={4} activeOpacity={0.8}>
+                      <AppText weight="bold" style={{ color: '#fff', fontSize: 11 }}>✕</AppText>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <TouchableOpacity
               style={[styles.reportSubmitBtn, { opacity: reportReason.trim().length >= 20 && !reportSubmitting ? 1 : 0.45 }]}
               onPress={submitReport}
@@ -2683,4 +2739,10 @@ const styles = StyleSheet.create({
   reportHint: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
   reportSubmitBtn: { backgroundColor: '#fff', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
   reportSubmitText: { color: '#004aad', fontSize: 15 },
+  reportEvidenceBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 12, marginBottom: 12, gap: 6 },
+  reportEvidenceBtnText: { color: '#fff', fontSize: 14 },
+  reportThumbRow: { flexDirection: 'row', gap: 10, marginBottom: 16, flexWrap: 'wrap' },
+  reportThumbWrap: { position: 'relative' },
+  reportThumb: { width: 72, height: 72, borderRadius: 8 },
+  reportThumbRemove: { position: 'absolute', top: -6, right: -6, backgroundColor: '#ff4d6d', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
 });

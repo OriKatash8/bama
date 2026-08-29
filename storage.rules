@@ -1,8 +1,31 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Any signed-in user may upload anywhere (unchanged upload behavior).
+    // Note: image display uses tokenized getDownloadURL links that bypass these
+    // rules, so read rules below only affect rule-based (ref/list) access.
     match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow write: if request.auth != null;
     }
+
+    // Report evidence is sensitive: only admins may read it via rules.
+    // Reporters still upload via the write rule above. There is deliberately
+    // no recursive read catch-all — Storage grants access if ANY matching rule
+    // allows, so a read-all wildcard would defeat this restriction.
+    match /reports/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.token.role == 'admin';
+    }
+
+    // All other content stays readable by any signed-in user.
+    match /users/{allPaths=**}            { allow read: if request.auth != null; }
+    match /avatars/{allPaths=**}          { allow read: if request.auth != null; }
+    match /portfolio/{allPaths=**}        { allow read: if request.auth != null; }
+    match /marketplace/{allPaths=**}      { allow read: if request.auth != null; }
+    match /chat-images/{allPaths=**}      { allow read: if request.auth != null; }
+    match /chat-audio/{allPaths=**}       { allow read: if request.auth != null; }
+    match /chat-videos/{allPaths=**}      { allow read: if request.auth != null; }
+    match /community-images/{allPaths=**} { allow read: if request.auth != null; }
+    match /course-images/{allPaths=**}    { allow read: if request.auth != null; }
+    match /courses/{allPaths=**}          { allow read: if request.auth != null; }
   }
 }
