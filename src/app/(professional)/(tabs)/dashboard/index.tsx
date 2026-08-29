@@ -375,18 +375,6 @@ export default function DashboardScreen() {
               </AppText>
             )}
           </View>
-          {!isLoading && visible.length > 0 && (
-            <TouchableOpacity
-              style={[styles.sortBtn, filterActive && styles.sortBtnActive, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-              onPress={openSortModal}
-              activeOpacity={0.8}
-            >
-              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
-              <AppText weight="semiBold" style={[styles.sortBtnText, filterActive && styles.sortBtnTextActive]}>
-                {t('noticeboard.sort_filter')}
-              </AppText>
-            </TouchableOpacity>
-          )}
           {/* History — always available (sent offers + hidden projects) */}
           <TouchableOpacity
             style={styles.historyBtn}
@@ -402,6 +390,18 @@ export default function DashboardScreen() {
               </View>
             )}
           </TouchableOpacity>
+          {!isLoading && visible.length > 0 && (
+            <TouchableOpacity
+              style={[styles.sortBtn, filterActive && styles.sortBtnActive, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={openSortModal}
+              activeOpacity={0.8}
+            >
+              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
+              <AppText weight="semiBold" style={[styles.sortBtnText, filterActive && styles.sortBtnTextActive]}>
+                {t('noticeboard.sort_filter')}
+              </AppText>
+            </TouchableOpacity>
+          )}
         </View>
 
         {!isLoading && visible.length > 0 && (
