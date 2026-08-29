@@ -417,7 +417,9 @@ export default function HomeScreen() {
                 ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                 renderItem={({ item: cat }) => {
                   const q = roleQuantity(cat.key);
-                  const locked = (occupiedByCategory[cat.key] ?? 0) > 0;
+                  // Locked only at/below the assigned count: you can trim seats
+                  // added above it, but never reduce below the occupied count.
+                  const locked = q <= (occupiedByCategory[cat.key] ?? 0);
                   return (
                     <TouchableOpacity
                       style={[
