@@ -242,9 +242,6 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 <TouchableOpacity style={styles.applyBtn} onPress={openBid} activeOpacity={0.8}>
                   <AppText weight="bold" style={styles.applyText}>{t('noticeboard.make_offer_action')}</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.dismissBtn} onPress={onDismiss} activeOpacity={0.8}>
-                  <AppText weight="semiBold" style={styles.dismissText}>{t('noticeboard.not_interested')}</AppText>
-                </TouchableOpacity>
               </View>
             </ScrollView>
           )}
