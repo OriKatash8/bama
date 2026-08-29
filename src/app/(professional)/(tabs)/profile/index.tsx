@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator, BackHandler,
+  ActivityIndicator, BackHandler, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
@@ -156,30 +156,8 @@ export default function ProfessionalProfileScreen() {
   }
 
   return (
-    <Screen style={styles.content} scrollable>
-      {isEditing && (
-        <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {locked && (
-            <TouchableOpacity onPress={() => switchMode('client')} style={styles.headerBtn}>
-              <AppText weight="semiBold" style={[styles.headerBtnText, { color: '#cb6ce6' }]}>{t('profile.switch_to_client')}</AppText>
-            </TouchableOpacity>
-          )}
-          <View style={{ flex: 1 }} />
-          <View style={styles.headerBtns}>
-            {!locked && (
-              <TouchableOpacity onPress={() => handleCancelRef.current()} style={styles.headerBtn}>
-                <AppText weight="regular" style={[styles.headerBtnText, { color: '#004aad' }]}>{t('profile.cancel')}</AppText>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={() => handleSaveRef.current()} style={styles.headerBtn} disabled={isSaving || !isComplete}>
-              {isSaving
-                ? <ActivityIndicator size="small" color="#004aad" />
-                : <AppText weight="bold" style={[styles.headerBtnText, styles.save, !isComplete && styles.saveDisabled]}>{t('profile.save')}</AppText>}
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
+    <View style={{ flex: 1 }}>
+    <Screen style={[styles.content, isEditing && styles.contentEditing]} scrollable>
       {locked && (
         <View style={styles.completeBanner}>
           <AppText weight="semiBold" style={[styles.completeBannerText, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -243,18 +221,53 @@ export default function ProfessionalProfileScreen() {
         />
       </View>
     </Screen>
+
+      {isEditing && (
+        <View style={[styles.saveBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <TouchableOpacity
+            style={[styles.saveBarBtn, styles.saveBarCancel]}
+            onPress={() => (locked ? switchMode('client') : handleCancelRef.current())}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+          >
+            <AppText weight="semiBold" style={styles.saveBarCancelText}>
+              {t(locked ? 'profile.switch_to_client' : 'profile.cancel')}
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.saveBarBtn, styles.saveBarSave, (!isComplete || isSaving) && styles.saveBarSaveDisabled]}
+            onPress={() => handleSaveRef.current()}
+            disabled={isSaving || !isComplete}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+          >
+            {isSaving
+              ? <ActivityIndicator size="small" color="#ffffff" />
+              : <AppText weight="bold" style={styles.saveBarSaveText}>{t('profile.save')}</AppText>}
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   content: { gap: 24, paddingBottom: 100 },
+  contentEditing: { paddingBottom: 180 },
+  saveBar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: Platform.OS === 'web' ? 100 : 88,
+    gap: 12,
+  },
+  saveBarBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  saveBarCancel: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#004aad' },
+  saveBarCancelText: { color: '#004aad', fontSize: 15 },
+  saveBarSave: { backgroundColor: '#004aad' },
+  saveBarSaveDisabled: { backgroundColor: '#9aa0b8' },
+  saveBarSaveText: { color: '#ffffff', fontSize: 15 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  headerBtns: { flexDirection: 'row', gap: 12 },
-  headerBtn: { paddingHorizontal: 8 },
-  headerBtnText: { fontSize: 16 },
-  save: { fontWeight: '700', color: '#004aad' },
-  saveDisabled: { color: '#9aa0b8' },
 
   actionRow: {
     flexDirection: 'row-reverse',
@@ -285,7 +298,6 @@ const styles = StyleSheet.create({
   completeBannerText: { fontSize: 14, color: '#004aad' },
   missingHint: { fontSize: 13, color: '#e04b4b', marginTop: -12 },
 
-  titleRow: { flexDirection: 'row', alignItems: 'center' },
   pageTitle: {
     fontSize: 36,
     fontWeight: '800',
