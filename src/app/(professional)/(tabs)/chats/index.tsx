@@ -150,10 +150,16 @@ export default function ProfessionalChatsScreen() {
   }, [courses, courseSearch, courseCategory, courseLevel, coursePriceBand, courseSort]);
 
   // Scroll the selected category pill into view when the selection changes.
+  // In RTL the row flows row-reverse, so "all" sits at the right end.
   useEffect(() => {
-    const x = courseCategory === 'all' ? 0 : categoryOffsets.current[courseCategory];
+    if (courseCategory === 'all') {
+      if (rtl) categoryScrollRef.current?.scrollToEnd({ animated: false });
+      else categoryScrollRef.current?.scrollTo({ x: 0, animated: true });
+      return;
+    }
+    const x = categoryOffsets.current[courseCategory];
     if (x != null) categoryScrollRef.current?.scrollTo({ x: Math.max(0, x - 12), animated: true });
-  }, [courseCategory]);
+  }, [courseCategory, rtl]);
 
   useEffect(() => {
     const q = query(
@@ -357,7 +363,10 @@ export default function ProfessionalChatsScreen() {
             ref={categoryScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryPillsRow}
+            contentContainerStyle={[
+              styles.categoryPillsRow,
+              { flexDirection: rtl ? 'row-reverse' : 'row', paddingLeft: rtl ? 40 : 12, paddingRight: rtl ? 12 : 40 },
+            ]}
             style={styles.categoryPillsScroll}
           >
             <TouchableOpacity
@@ -742,7 +751,9 @@ const styles = StyleSheet.create({
   categoryPillsScroll: { marginBottom: 10 },
   // Trailing padding keeps the last pill partially cut off so the swipe
   // affordance is visible when the row overflows.
-  categoryPillsRow: { gap: 7, alignItems: 'center', paddingHorizontal: 12, paddingRight: 40 },
+  // Trailing padding (set inline per direction) keeps the last pill partially
+  // cut off so the swipe affordance is visible.
+  categoryPillsRow: { gap: 7, alignItems: 'center' },
   catPill: {
     height: 34,
     borderRadius: 16,
