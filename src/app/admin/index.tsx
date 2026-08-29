@@ -1,16 +1,28 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { getCountFromServer, collection } from 'firebase/firestore';
+import { getCountFromServer, collection, query, where, type Query } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 
 type Counts = {
-  users: number;
-  projects: number;
-  courses: number;
-  communities: number;
+  users: number | null;
+  projects: number | null;
+  courses: number | null;
+  communities: number | null;
 };
+
+/** Count a query independently — a single failure returns null (rendered as
+ *  "—") instead of throwing and zeroing every other stat. */
+async function countOf(q: Query): Promise<number | null> {
+  try {
+    const snap = await getCountFromServer(q);
+    return snap.data().count;
+  } catch (e) {
+    console.warn('[AdminDashboard] count query failed:', e);
+    return null;
+  }
+}
 
 export default function AdminDashboard() {
   const colors = useTheme();
@@ -20,18 +32,15 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function load() {
+      // Communities live in `chats` with type == 'community' (there is no
+      // `communities` collection); the filtered query is rules-permitted.
       const [users, projects, courses, communities] = await Promise.all([
-        getCountFromServer(collection(db, 'users')),
-        getCountFromServer(collection(db, 'projects')),
-        getCountFromServer(collection(db, 'courses')),
-        getCountFromServer(collection(db, 'communities')),
+        countOf(collection(db, 'users')),
+        countOf(collection(db, 'projects')),
+        countOf(collection(db, 'courses')),
+        countOf(query(collection(db, 'chats'), where('type', '==', 'community'))),
       ]);
-      setCounts({
-        users: users.data().count,
-        projects: projects.data().count,
-        courses: courses.data().count,
-        communities: communities.data().count,
-      });
+      setCounts({ users, projects, courses, communities });
       setLoading(false);
     }
     load().catch(() => setLoading(false));
@@ -60,7 +69,7 @@ export default function AdminDashboard() {
           {stats.map(({ label, key }) => (
             <View key={key} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.count, { ...font.bold, color: colors.primary }]}>
-                {counts?.[key] ?? 0}
+                {counts?.[key] ?? '—'}
               </Text>
               <Text style={[styles.label, { ...font.regular, color: colors.textSec }]}>
                 {label}
