@@ -4,6 +4,7 @@ import {
   ActivityIndicator, BackHandler, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Pencil } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -47,6 +48,7 @@ export default function ProfessionalProfileScreen() {
   const { user, profile, reviews, isLoading, isSaving, save, updateAvailability } = useProfile();
   const { assets, upload, addVideoUrl, remove } = usePortfolio();
   const { showToast } = useUiStore();
+  const setProfileEditing = useUiStore((s) => s.setProfileEditing);
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -87,6 +89,12 @@ export default function ProfessionalProfileScreen() {
   useEffect(() => {
     if (params.edit === '1') setIsEditing(true);
   }, [params.edit]);
+
+  // Hide the tab bar while editing (the Save/Cancel bar takes the bottom).
+  useEffect(() => {
+    setProfileEditing(isEditing);
+    return () => setProfileEditing(false);
+  }, [isEditing, setProfileEditing]);
 
   useEffect(() => {
     if (!locked) return;
@@ -253,12 +261,12 @@ export default function ProfessionalProfileScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: 24, paddingBottom: 100 },
-  contentEditing: { paddingBottom: 180 },
+  contentEditing: { paddingBottom: 120 },
   saveBar: {
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: Platform.OS === 'web' ? 100 : 88,
+    bottom: (initialWindowMetrics?.insets.bottom ?? 0) + (Platform.OS === 'web' ? 20 : 10),
     gap: 12,
   },
   saveBarBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

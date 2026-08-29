@@ -14,12 +14,15 @@ type UiState = {
   isNewProfessional: boolean;
   isDark: boolean;
   projectSubmittedNonce: number;
+  /** True while the professional profile is in edit mode — hides the tab bar. */
+  profileEditing: boolean;
   setLoading: (loading: boolean) => void;
   showToast: (message: string, type?: ToastType) => void;
   dismissToast: (id: string) => void;
   setNewProfessional: (val: boolean) => void;
   toggleTheme: () => void;
   notifyProjectSubmitted: () => void;
+  setProfileEditing: (val: boolean) => void;
 };
 
 export const useUiStore = create<UiState>((set) => ({
@@ -28,6 +31,7 @@ export const useUiStore = create<UiState>((set) => ({
   isNewProfessional: false,
   isDark: false,
   projectSubmittedNonce: 0,
+  profileEditing: false,
   setLoading: (isLoading) => set({ isLoading }),
   showToast: (message, type = 'info') =>
     set((state) => ({
@@ -44,4 +48,5 @@ export const useUiStore = create<UiState>((set) => ({
   toggleTheme: () => set((state) => ({ isDark: !state.isDark })),
   notifyProjectSubmitted: () =>
     set((state) => ({ projectSubmittedNonce: state.projectSubmittedNonce + 1 })),
+  setProfileEditing: (profileEditing) => set({ profileEditing }),
 }));

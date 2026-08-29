@@ -57,6 +57,11 @@ export default function ProfessionalTabsLayout() {
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
 
+  // Editing the profile hides the tab bar (its Save/Cancel bar takes the bottom).
+  const profileEditing = useUiStore((s) => s.profileEditing);
+  const profileEditingRef = useRef(profileEditing);
+  profileEditingRef.current = profileEditing;
+
   const router = useRouter();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
@@ -68,7 +73,7 @@ export default function ProfessionalTabsLayout() {
   const tabPanResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => {
-        if (lockedRef.current || inChatRoomRef.current) return false;
+        if (lockedRef.current || inChatRoomRef.current || profileEditingRef.current) return false;
         const startX = gs.moveX - gs.dx;
         const screenWidth = Dimensions.get('window').width;
         const EDGE_ZONE = 50;
@@ -77,7 +82,7 @@ export default function ProfessionalTabsLayout() {
         return Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
       },
       onPanResponderRelease: (_, gs) => {
-        if (lockedRef.current || inChatRoomRef.current) return;
+        if (lockedRef.current || inChatRoomRef.current || profileEditingRef.current) return;
         const idx = PROF_TABS.findIndex((t) => pathnameRef.current.includes(`/${t}`));
         if (idx === -1) return;
         if (gs.dx < -80) {
@@ -103,7 +108,7 @@ export default function ProfessionalTabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: (locked || inChatRoom) ? { display: 'none' } : getFloatingTabBarStyle(isDark),
+            tabBarStyle: (locked || inChatRoom || profileEditing) ? { display: 'none' } : getFloatingTabBarStyle(isDark),
             tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,
             tabBarActiveTintColor: '#004aad',
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
