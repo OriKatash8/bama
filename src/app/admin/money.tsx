@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Coins, Percent, Clock, ArrowLeftRight, Info } from 'lucide-react-native';
 import { useTheme } from '@core/hooks/useTheme';
@@ -35,13 +36,23 @@ export default function MoneyAdmin() {
   const rowDir = rtl ? 'row-reverse' : 'row';
   const textAlign = rtl ? 'right' : 'left';
 
-  // Last 7 days, oldest → newest. No data source yet → all zeros (scaffold).
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return d.toLocaleDateString(rtl ? 'he-IL' : 'en-US', { weekday: 'short' });
-  });
-  const zeros = [0, 0, 0, 0, 0, 0, 0];
+  const [period, setPeriod] = useState<'daily' | 'weekly'>('daily');
+
+  // Buckets oldest → newest. No data source yet → all zeros (scaffold).
+  // Daily = last 7 days (weekday labels); Weekly = last 6 weeks (week-start dates).
+  const locale = rtl ? 'he-IL' : 'en-US';
+  const labels = period === 'daily'
+    ? Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return d.toLocaleDateString(locale, { weekday: 'short' });
+      })
+    : Array.from({ length: 6 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (5 - i) * 7);
+        return d.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
+      });
+  const zeros = labels.map(() => 0);
 
   const metrics: { key: string; label: string; value: string; icon: typeof Coins }[] = [
     { key: 'revenue', label: t('admin_money.total_revenue'), value: '₪0', icon: Coins },
@@ -75,16 +86,36 @@ export default function MoneyAdmin() {
         </View>
 
         {/* Money-flow graphs — scaffold, currently flat at zero */}
-        <Text style={[styles.heading, styles.headingSpaced, { ...font.medium, color: colors.text, textAlign }]}>
-          {t('admin_money.flow_heading')}
-        </Text>
+        <View style={[styles.flowHeader, styles.headingSpaced, { flexDirection: rowDir }]}>
+          <Text style={[styles.heading, { ...font.medium, color: colors.text, textAlign, marginBottom: 0, width: 'auto', flex: 1 }]}>
+            {t('admin_money.flow_heading')}
+          </Text>
+          {/* Daily / Weekly toggle */}
+          <View style={[styles.toggle, { flexDirection: rowDir, backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+            {(['daily', 'weekly'] as const).map((p) => {
+              const active = period === p;
+              return (
+                <TouchableOpacity
+                  key={p}
+                  style={[styles.toggleBtn, active && { backgroundColor: colors.primary }]}
+                  onPress={() => setPeriod(p)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.toggleText, { ...font.medium, color: active ? '#ffffff' : colors.textSec }]}>
+                    {t(`admin_money.${p}`)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.chartLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_money.revenue_7d')}</Text>
-          <MoneyFlowChart data={zeros} labels={days} variant="area" color={colors.primary} gridColor={colors.border} labelColor={colors.textMuted} />
+          <MoneyFlowChart data={zeros} labels={labels} variant="area" color={colors.primary} gridColor={colors.border} labelColor={colors.textMuted} />
         </View>
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 8 }]}>
           <Text style={[styles.chartLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_money.fees_7d')}</Text>
-          <MoneyFlowChart data={zeros} labels={days} variant="bar" color={HEADER_PURPLE} gridColor={colors.border} labelColor={colors.textMuted} />
+          <MoneyFlowChart data={zeros} labels={labels} variant="bar" color={HEADER_PURPLE} gridColor={colors.border} labelColor={colors.textMuted} />
         </View>
 
         {/* Placeholder note — no payments data source yet */}
@@ -115,6 +146,11 @@ const styles = StyleSheet.create({
   metricTop: { alignItems: 'center', gap: 6, marginBottom: 6 },
   metricLabel: { flex: 1, fontSize: 11 },
   metricValue: { fontSize: 21 },
+
+  flowHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  toggle: { borderRadius: 9, borderWidth: 1, padding: 2, gap: 2 },
+  toggleBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 7 },
+  toggleText: { fontSize: 12 },
 
   chartCard: { borderRadius: 12, borderWidth: 1, padding: 12 },
   chartLabel: { fontSize: 11, marginBottom: 8, width: '100%' },

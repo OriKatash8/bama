@@ -410,8 +410,10 @@
     "pending_payouts": "Pending payouts",
     "transactions": "Transactions",
     "flow_heading": "Money flow",
-    "revenue_7d": "Revenue · last 7 days",
-    "fees_7d": "Platform fees · last 7 days",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "revenue_7d": "Revenue",
+    "fees_7d": "Platform fees",
     "coming_soon_title": "No financial data yet",
     "coming_soon_body": "Financial reporting will appear here once payments are wired up."
   },
