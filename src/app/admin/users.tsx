@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Modal,
 } from 'react-native';
-import { Search, ShieldAlert, ShieldBan, ShieldCheck, UserX } from 'lucide-react-native';
+import { Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, MessageSquare } from 'lucide-react-native';
 import { where } from 'firebase/firestore';
 import { queryDocuments } from '@core/firebase/firestore';
 import { callFunction } from '@core/firebase/functions';
@@ -17,6 +17,7 @@ import type { AdminAction, AdminActionType } from '@core/types/admin';
 type ModerateArgs = { targetUid: string; action: AdminActionType; reason?: string; reportId?: string };
 type ModerateResult = { success: boolean; actionId: string };
 const moderateUser = callFunction<ModerateArgs, ModerateResult>('moderateUser');
+const sendSystemMessage = callFunction<{ targetUid: string; text: string }, { chatId: string }>('sendSystemMessage');
 
 const STATUS_COLOR: Record<'active' | 'warned' | 'suspended', string> = {
   active: '#4caf50',
@@ -44,6 +45,10 @@ export default function UsersAdmin() {
   const [pending, setPending] = useState<AdminActionType | null>(null);
   const [reasonModal, setReasonModal] = useState<null | 'warn' | 'suspend'>(null);
   const [reason, setReason] = useState('');
+
+  const [msgModal, setMsgModal] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
 
   const status: 'active' | 'warned' | 'suspended' = user?.moderation?.status ?? 'active';
 
@@ -103,6 +108,23 @@ export default function UsersAdmin() {
     const r = reason.trim();
     if (!r) { showToast('A reason is required', 'error'); return; }
     if (reasonModal) run(reasonModal, r);
+  }
+
+  async function sendMessage() {
+    if (!user) return;
+    const text = messageText.trim();
+    if (!text) { showToast('A message is required', 'error'); return; }
+    setSendingMsg(true);
+    try {
+      await sendSystemMessage({ targetUid: user.id, text });
+      showToast('Message sent from BAMA System', 'success');
+      setMsgModal(false);
+      setMessageText('');
+    } catch (e) {
+      showToast((e as { message?: string })?.message ?? 'Failed to send', 'error');
+    } finally {
+      setSendingMsg(false);
+    }
   }
 
   return (
@@ -176,6 +198,7 @@ export default function UsersAdmin() {
               ) : (
                 <ActionButton icon={ShieldCheck} label="Unsuspend" color="#4caf50" busy={pending === 'unsuspend'} onPress={() => run('unsuspend')} font={font} />
               )}
+              <ActionButton icon={MessageSquare} label="Message from BAMA System" color="#004aad" busy={sendingMsg} onPress={() => setMsgModal(true)} font={font} />
             </View>
 
             {/* Action history */}
@@ -230,6 +253,35 @@ export default function UsersAdmin() {
                 activeOpacity={0.85}
               >
                 {pending ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.modalBtnText, { ...font.semiBold, color: '#fff' }]}>{reasonModal === 'suspend' ? 'Suspend' : 'Warn'}</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Send a BAMA System message */}
+      <Modal visible={msgModal} transparent animationType="fade" onRequestClose={() => setMsgModal(false)}>
+        <View style={styles.overlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setMsgModal(false)} />
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { ...font.bold, color: colors.text }]}>Message from BAMA System</Text>
+            <Text style={[styles.modalHint, { ...font.regular, color: colors.textMuted }]}>
+              Delivered as a read-only chat from “BAMA System”. The user is notified but cannot reply.
+            </Text>
+            <TextInput
+              style={[styles.reasonInput, { ...font.regular, color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
+              value={messageText}
+              onChangeText={setMessageText}
+              placeholder="Message"
+              placeholderTextColor={colors.placeholder}
+              multiline
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: 'rgba(0,0,0,0.06)' }]} onPress={() => setMsgModal(false)} activeOpacity={0.8}>
+                <Text style={[styles.modalBtnText, { ...font.semiBold, color: colors.textSec }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#004aad' }]} onPress={sendMessage} disabled={sendingMsg} activeOpacity={0.85}>
+                {sendingMsg ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.modalBtnText, { ...font.semiBold, color: '#fff' }]}>Send</Text>}
               </TouchableOpacity>
             </View>
           </View>

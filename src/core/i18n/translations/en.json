@@ -138,6 +138,7 @@
     "purchase_completed": "Transaction completed · Chat is read-only",
     "purchase_cancelled": "Purchase cancelled · Chat closed",
     "project_cancelled": "This project was cancelled · chat is read-only",
+    "system_read_only": "This is an official BAMA System message · you cannot reply",
     "purchase_not_relevant": "No longer relevant · Chat is read-only",
     "delete_chat": "Delete Chat",
     "delete_chat_title": "Delete Chat",

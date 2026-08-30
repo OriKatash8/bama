@@ -16,6 +16,8 @@ export type AdminAction = {
   actorName: string;
   targetUserId: ID;
   targetUserName: string;
+  /** Denormalized email at action time (recorded for warn/suspend). */
+  targetUserEmail?: string;
   /** Restatable reason. Required for `warn` and `suspend`. */
   reason: string;
   /** Originating report, if the action was taken from a report. */

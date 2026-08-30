@@ -16,7 +16,7 @@ export const onNotificationCreate = functions.firestore
     // or missing key = enabled (opt-out model). One extra read at this single
     // choke point instead of per-trigger.
     const type: string | undefined = notification.data?.type;
-    const ESSENTIAL = ['offer', 'offer_accepted', 'purchase'];
+    const ESSENTIAL = ['offer', 'offer_accepted', 'purchase', 'system'];
     if (type && !ESSENTIAL.includes(type)) {
       const userDoc = await db.collection('users').doc(notification.userId).get();
       const prefs = userDoc.data()?.notifPrefs as Record<string, boolean> | undefined;

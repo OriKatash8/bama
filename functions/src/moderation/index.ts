@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+import { sendBamaSystemDM } from '../system';
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -64,6 +65,8 @@ export const moderateUser = functions.https.onCall(async (data: ModerateInput, c
   ]);
   const targetUserName =
     (targetSnap.data()?.displayName as string | undefined) || targetAuth.displayName || targetAuth.email || targetUid;
+  const targetUserEmail =
+    (targetSnap.data()?.email as string | undefined) || targetAuth.email || '';
   const actorName = (actorSnap.data()?.displayName as string | undefined) || 'Admin';
 
   // 1) Append-only evidence entry.
@@ -74,6 +77,7 @@ export const moderateUser = functions.https.onCall(async (data: ModerateInput, c
     actorName,
     targetUserId: targetUid,
     targetUserName,
+    targetUserEmail,
     reason,
     ...(reportId ? { reportId } : {}),
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -98,6 +102,10 @@ export const moderateUser = functions.https.onCall(async (data: ModerateInput, c
     if (action === 'suspend') {
       await admin.auth().updateUser(targetUid, { disabled: true });
       await admin.auth().revokeRefreshTokens(targetUid);
+    }
+    // A warning also reaches the user as a BAMA System DM + in-app notification.
+    if (action === 'warn') {
+      await sendBamaSystemDM(db, targetUid, `⚠️ ${reason}`);
     }
   } else {
     // unsuspend / clear_warning → clear the mirror.

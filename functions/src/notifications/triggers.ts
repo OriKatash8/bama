@@ -6,6 +6,7 @@ import {
   professionalMatchesAnyVacantSlot,
   type RoleSkillEntry,
 } from '../matching';
+import { SYSTEM_USER_ID } from '../system';
 
 async function createNotification(
   db: admin.firestore.Firestore,
@@ -38,8 +39,9 @@ export const onNewChatMessage = functions.firestore
     };
 
     if (!message.senderId) return;
-    // System messages (new mission/meeting) are notified via their own triggers.
-    if (message.system || message.senderId === 'system') return;
+    // System messages (new mission/meeting) and BAMA System DMs are notified via
+    // their own triggers/helpers.
+    if (message.system || message.senderId === 'system' || message.senderId === SYSTEM_USER_ID) return;
 
     const { chatId } = context.params;
     const db = admin.firestore();

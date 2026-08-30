@@ -53,4 +53,5 @@ export interface Chat {
   archived?: boolean;
   archiveReason?: 'completed' | 'cancelled' | 'superseded';
   hiddenFor?: string[];
+  readOnly?: boolean;   // BAMA System DMs — the user cannot reply
 }

@@ -478,6 +478,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatArchived, setChatArchived] = useState(false);
+  const [chatReadOnly, setChatReadOnly] = useState(false);
   const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | 'superseded' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
   const [projectDeadline, setProjectDeadline] = useState<string | undefined>(undefined);
@@ -631,6 +632,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
       setChatType(data.type);
       setChatArchived(data.archived ?? false);
+      setChatReadOnly(data.readOnly ?? false);
       setChatArchiveReason(data.archiveReason ?? null);
       setChatProjectId(data.projectId);
       if (data.ownerId) setChatOwnerId(data.ownerId);
@@ -1461,8 +1463,17 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
       )}
 
+      {/* BAMA System chat — read-only, user cannot reply */}
+      {chatReadOnly && (
+        <View style={[styles.inputRow, { paddingBottom: BOTTOM_INSET + 10, borderTopColor: colors.border, backgroundColor: colors.card, flexDirection: 'column', gap: 8, alignItems: 'center' }]}>
+          <AppText weight="semiBold" style={{ color: '#8890b0', fontSize: 13, textAlign: 'center' }}>
+            {t('chats.system_read_only')}
+          </AppText>
+        </View>
+      )}
+
       {/* Recording bar — same geometry as input row, no position jump */}
-      {isRecording && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
+      {isRecording && !chatReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
         <View style={[
           styles.inputRow,
           { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10, alignItems: 'center' },
@@ -1490,7 +1501,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       )}
 
       {/* Input */}
-      {!isRecording && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
+      {!isRecording && !chatReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>

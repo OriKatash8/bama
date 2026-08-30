@@ -138,6 +138,7 @@
     "purchase_completed": "העסקה הושלמה · הצ'אט נסגר לצפייה בלבד",
     "purchase_cancelled": "העסקה בוטלה · הצ'אט נסגר",
     "project_cancelled": "הפרויקט בוטל · הצ'אט לקריאה בלבד",
+    "system_read_only": "זוהי הודעה רשמית ממערכת BAMA · לא ניתן להשיב",
     "purchase_not_relevant": "לא רלוונטי יותר · הצ'אט לקריאה בלבד",
     "delete_chat": "מחק צ'אט",
     "delete_chat_title": "מחיקת צ'אט",

@@ -80,7 +80,8 @@ export function useNotificationRouting(): void {
     switch (data.type) {
       case 'message':
       case 'mission':
-      case 'meeting': {
+      case 'meeting':
+      case 'system': {
         if (!data.chatId) return;
         await navigate(null, `/${modeSegment(current)}/(tabs)/chats/${data.chatId}`);
         return;

@@ -18,6 +18,12 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/chats/$(chatId)).data.members;
     }
 
+    // True if the parent chat is read-only (e.g. BAMA System DMs). Clients may
+    // not post into it; the Admin SDK (bypasses rules) still can.
+    function chatReadOnly(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId)).data.get('readOnly', false) == true;
+    }
+
     // Fetches the parent project document data
     function projectDoc(projectId) {
       return get(/databases/$(database)/documents/projects/$(projectId)).data;
@@ -69,7 +75,9 @@ service cloud.firestore {
 
       // direct messages
       match /messages/{messageId} {
-        allow read, create: if isAuth() && request.auth.uid in chatMembers(chatId);
+        allow read: if isAuth() && request.auth.uid in chatMembers(chatId);
+        // No client writes into a read-only chat (BAMA System DMs); Admin SDK bypasses.
+        allow create: if isAuth() && request.auth.uid in chatMembers(chatId) && !chatReadOnly(chatId);
         allow update, delete: if false;
       }
 
