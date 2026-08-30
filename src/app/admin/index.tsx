@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { getCountFromServer, collection, query, where, type Query } from 'firebase/firestore';
+import { BookOpen, Users, ShoppingBag, ChevronRight } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -24,9 +26,16 @@ async function countOf(q: Query): Promise<number | null> {
   }
 }
 
+const MANAGE: { label: string; route: '/admin/courses' | '/admin/communities' | '/admin/marketplace'; icon: typeof BookOpen }[] = [
+  { label: 'Courses', route: '/admin/courses', icon: BookOpen },
+  { label: 'Communities', route: '/admin/communities', icon: Users },
+  { label: 'Marketplace', route: '/admin/marketplace', icon: ShoppingBag },
+];
+
 export default function AdminDashboard() {
   const colors = useTheme();
   const font = useAppFont();
+  const router = useRouter();
   const [counts, setCounts] = useState<Counts | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -78,6 +87,25 @@ export default function AdminDashboard() {
           ))}
         </View>
       )}
+
+      {/* Manage — sections moved off the tab bar */}
+      <Text style={[styles.sectionTitle, { ...font.semiBold, color: colors.text }]}>Manage</Text>
+      <View style={styles.manageList}>
+        {MANAGE.map(({ label, route, icon: Icon }) => (
+          <TouchableOpacity
+            key={route}
+            style={[styles.manageRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push(route)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.manageIcon, { backgroundColor: colors.primary + '18' }]}>
+              <Icon size={20} color={colors.primary} strokeWidth={2.2} />
+            </View>
+            <Text style={[styles.manageLabel, { ...font.semiBold, color: colors.text }]}>{label}</Text>
+            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+          </TouchableOpacity>
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -95,4 +123,17 @@ const styles = StyleSheet.create({
   },
   count: { fontSize: 36, fontWeight: '800' },
   label: { fontSize: 13, marginTop: 6, textAlign: 'center' },
+  sectionTitle: { fontSize: 18, marginTop: 32, marginBottom: 12 },
+  manageList: { gap: 12 },
+  manageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  manageIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  manageLabel: { flex: 1, fontSize: 16 },
 });

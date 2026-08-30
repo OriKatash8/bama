@@ -8,7 +8,8 @@ import {
   serverTimestamp, Timestamp, query, orderBy,
 } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Plus, Pencil, Trash2, Video } from 'lucide-react-native';
+import { X, Plus, Pencil, Trash2, Video, ChevronLeft } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -78,6 +79,7 @@ const EMPTY_FORM: CourseForm = {
 export default function CoursesAdmin() {
   const colors = useTheme();
   const font = useAppFont();
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { showToast } = useUiStore();
   const { uploading, processing, uploadVideo } = useVideoUpload();
@@ -193,7 +195,12 @@ export default function CoursesAdmin() {
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { ...font.bold, color: colors.text }]}>Courses</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TouchableOpacity onPress={() => router.push('/admin')} hitSlop={8} activeOpacity={0.7}>
+            <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { ...font.bold, color: colors.text }]}>Courses</Text>
+        </View>
         <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openAdd}>
           <Plus size={20} color="#fff" />
           <Text style={[styles.addBtnText, { ...font.semiBold }]}>Add Course</Text>

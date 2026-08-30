@@ -7,7 +7,8 @@ import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
   serverTimestamp, query, where, orderBy, Timestamp, arrayRemove, getDoc,
 } from 'firebase/firestore';
-import { ChevronDown, ChevronUp, X } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, X, ChevronLeft } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { createCommunityChat } from '@features/chat/services/chatService';
 import { useTheme } from '@core/hooks/useTheme';
@@ -39,6 +40,7 @@ type Community = {
 export default function CommunitiesAdmin() {
   const colors = useTheme();
   const font = useAppFont();
+  const router = useRouter();
   const { showToast } = useUiStore();
 
   const [requests, setRequests] = useState<CommunityRequest[]>([]);
@@ -121,9 +123,14 @@ export default function CommunitiesAdmin() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={styles.container}>
-      <Text style={[styles.pageTitle, { ...font.bold, color: colors.text }]}>
-        Communities
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <TouchableOpacity onPress={() => router.push('/admin')} hitSlop={8} activeOpacity={0.7}>
+          <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
+        </TouchableOpacity>
+        <Text style={[styles.pageTitle, { ...font.bold, color: colors.text }]}>
+          Communities
+        </Text>
+      </View>
 
       {/* Pending Requests */}
       <Text style={[styles.sectionTitle, { ...font.semiBold, color: colors.textSec }]}>

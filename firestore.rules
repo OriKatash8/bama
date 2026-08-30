@@ -217,7 +217,7 @@ service cloud.firestore {
         (resource.data.status == 'available' &&
          request.resource.data.buyerId == request.auth.uid)
       );
-      allow delete: if isAuth() && resource.data.posterId == request.auth.uid;
+      allow delete: if isAuth() && (resource.data.posterId == request.auth.uid || isAdmin());
     }
 
     // ─── reviews ────────────────────────────────────────────────────

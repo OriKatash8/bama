@@ -1,6 +1,6 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
-import { Home, BookOpen, Users, Flag, Settings, UserCog } from 'lucide-react-native';
+import { Home, Flag, Settings, UserCog } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -51,28 +51,10 @@ export default function AdminTabsLayout() {
               ),
             }}
           />
-          <Tabs.Screen
-            name="courses"
-            options={{
-              title: 'Courses',
-              tabBarIcon: ({ color, focused }) => (
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <BookOpen size={24} color={color} strokeWidth={2.5} />
-                </View>
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="communities"
-            options={{
-              title: 'Communities',
-              tabBarIcon: ({ color, focused }) => (
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <Users size={24} color={color} strokeWidth={2.5} />
-                </View>
-              ),
-            }}
-          />
+          {/* Managed from the Dashboard hub — hidden from the tab bar. */}
+          <Tabs.Screen name="courses" options={{ href: null }} />
+          <Tabs.Screen name="communities" options={{ href: null }} />
+          <Tabs.Screen name="marketplace" options={{ href: null }} />
           <Tabs.Screen
             name="reports"
             options={{
