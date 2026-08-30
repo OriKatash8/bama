@@ -6,7 +6,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 
-type TermsConsent = { acceptedAt: number; version: string };
+type TermsConsent = { acceptedAt: number; version: string; ageConfirmedAt: number };
 
 type RegisterState = {
   isLoading: boolean;
@@ -34,6 +34,8 @@ export function useRegister(): RegisterState {
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
         termsAcceptedAt: terms.acceptedAt,
         termsVersion: terms.version,
+        ageConfirmed: true,
+        ageConfirmedAt: terms.ageConfirmedAt,
       };
       await setDocument(`users/${firebaseUser.uid}`, userData);
       setUser(userData);

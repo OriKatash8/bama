@@ -59,7 +59,7 @@ export function useGoogleSignIn(): GoogleSignInState {
         email: result.user.email ?? '',
         displayName: result.user.displayName ?? '',
         photoURL: result.user.photoURL,
-      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION });
+      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION, ageConfirmedAt: termsAcceptedAt });
       router.replace('/(auth)/mode-select');
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? '';
@@ -99,7 +99,7 @@ export function useGoogleSignIn(): GoogleSignInState {
         email: result.user.email || googleUser?.email || '',
         displayName: result.user.displayName || googleName,
         photoURL: result.user.photoURL || googleUser?.photo || null,
-      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION });
+      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION, ageConfirmedAt: termsAcceptedAt });
       router.replace('/(auth)/mode-select');
     } catch (error: any) {
       console.log('[GoogleSignIn] full error:', JSON.stringify(error));

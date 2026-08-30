@@ -68,7 +68,7 @@ export function useAppleSignIn(): AppleSignInState {
         email: appleCredential.email ?? result.user.email ?? '',
         displayName,
         photoURL: null,
-      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION });
+      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION, ageConfirmedAt: termsAcceptedAt });
 
       router.replace('/(auth)/mode-select');
     } catch (e: any) {

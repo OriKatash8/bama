@@ -698,7 +698,9 @@
     "terms_agree_prefix": "I agree to the",
     "terms_of_service": "Terms of Service",
     "terms_and": "and",
-    "privacy_policy": "Privacy Policy"
+    "privacy_policy": "Privacy Policy",
+    "age_confirm": "I confirm I am 18 years of age or older",
+    "err_age_required": "You must be 18 or older to use this app"
   },
   "common": {
     "cancel": "Cancel"

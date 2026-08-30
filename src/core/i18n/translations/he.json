@@ -698,7 +698,9 @@
     "terms_agree_prefix": "אני מסכים/ה ל",
     "terms_of_service": "תנאי השימוש",
     "terms_and": "ו",
-    "privacy_policy": "מדיניות הפרטיות"
+    "privacy_policy": "מדיניות הפרטיות",
+    "age_confirm": "אני מאשר/ת שאני בן/בת 18 ומעלה",
+    "err_age_required": "עליך להיות בן/בת 18 ומעלה כדי להשתמש באפליקציה"
   },
   "common": {
     "cancel": "ביטול"

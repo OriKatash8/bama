@@ -40,11 +40,13 @@ export function RegisterForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{
     fullName?: string;
     email?: string;
     confirmPassword?: string;
     terms?: string;
+    age?: string;
   }>({});
   const [passwordFocused, setPasswordFocused] = useState(false);
 
@@ -67,18 +69,24 @@ export function RegisterForm() {
     if (!isValidEmail(email)) errors.email = t('auth.err_valid_email');
     if (password !== confirmPassword) errors.confirmPassword = t('auth.err_passwords_dont_match');
     if (!termsAccepted) errors.terms = t('auth.err_terms_required');
+    if (!ageConfirmed) errors.age = t('auth.err_age_required');
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
 
   async function handleSubmit() {
     if (!validate() || !pwValid) return;
-    await register(fullName, email, password, { acceptedAt: Date.now(), version: TERMS_VERSION });
+    const now = Date.now();
+    await register(fullName, email, password, { acceptedAt: now, version: TERMS_VERSION, ageConfirmedAt: now });
   }
 
   function handleBeforeSocialSignIn(): boolean {
     if (!termsAccepted) {
       showToast(t('auth.err_terms_required'), 'error');
+      return false;
+    }
+    if (!ageConfirmed) {
+      showToast(t('auth.err_age_required'), 'error');
       return false;
     }
     return true;
@@ -185,6 +193,21 @@ export function RegisterForm() {
           />
           {fieldErrors.terms ? (
             <AppText weight="regular" style={styles.termsError}>{fieldErrors.terms}</AppText>
+          ) : null}
+        </View>
+
+        <View style={styles.termsRow}>
+          <Checkbox
+            checked={ageConfirmed}
+            onChange={setAgeConfirmed}
+            label={
+              <AppText weight="regular" style={[styles.termsText, { color: colors.text }]}>
+                {t('auth.age_confirm')}
+              </AppText>
+            }
+          />
+          {fieldErrors.age ? (
+            <AppText weight="regular" style={styles.termsError}>{fieldErrors.age}</AppText>
           ) : null}
         </View>
 

@@ -20,6 +20,10 @@ export type User = {
   termsAcceptedAt?: number | null;
   /** Version string of the terms accepted, e.g. '1.0'. */
   termsVersion?: string;
+  /** True once the user confirmed they are 18+. */
+  ageConfirmed?: boolean;
+  /** Unix ms timestamp of the age confirmation. */
+  ageConfirmedAt?: number | null;
 };
 
 /** Snapshot of the latest enforcement action against a user. `warned` is a
