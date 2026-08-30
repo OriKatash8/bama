@@ -16,6 +16,10 @@ export type User = {
   /** Current moderation state. Absent ⇒ active/in good standing. Written
    *  ONLY by the moderateUser callable (Admin SDK); clients cannot edit it. */
   moderation?: UserModeration;
+  /** Unix ms timestamp of when the user accepted the terms. Null until accepted. */
+  termsAcceptedAt?: number | null;
+  /** Version string of the terms accepted, e.g. '1.0'. */
+  termsVersion?: string;
 };
 
 /** Snapshot of the latest enforcement action against a user. `warned` is a

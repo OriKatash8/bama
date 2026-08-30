@@ -8,9 +8,10 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 import { syncUser } from '@features/auth/utils/syncUser';
+import { TERMS_VERSION } from '@core/constants/legal';
 
 type AppleSignInState = {
-  signInWithApple: () => Promise<void>;
+  signInWithApple: (termsAcceptedAt: number) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 };
@@ -22,7 +23,7 @@ export function useAppleSignIn(): AppleSignInState {
   const { showToast } = useUiStore();
   const router = useRouter();
 
-  async function signInWithApple() {
+  async function signInWithApple(termsAcceptedAt: number) {
     setIsLoading(true);
     setError(null);
     try {
@@ -67,7 +68,7 @@ export function useAppleSignIn(): AppleSignInState {
         email: appleCredential.email ?? result.user.email ?? '',
         displayName,
         photoURL: null,
-      }, setUser);
+      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION });
 
       router.replace('/(auth)/mode-select');
     } catch (e: any) {

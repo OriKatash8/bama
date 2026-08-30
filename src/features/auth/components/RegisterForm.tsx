@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Linking, StyleSheet, TouchableOpacity, View, Text, Platform } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
@@ -8,7 +8,9 @@ import { useRouter } from 'expo-router';
 import { CheckCircle, Circle } from 'lucide-react-native';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
+import { Checkbox } from '@components/ui/Checkbox';
 import { useRegister } from '@features/auth/hooks/useRegister';
+import { useUiStore } from '@core/stores/uiStore';
 import { validatePassword } from '@features/auth/utils/validatePassword';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { AppleSignInButton } from './AppleSignInButton';
@@ -17,6 +19,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { isValidEmail, isNonEmpty } from '@utils/validators';
+import { TERMS_VERSION, TERMS_URL, PRIVACY_URL } from '@core/constants/legal';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -35,10 +38,18 @@ export function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ fullName?: string; email?: string }>({});
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    fullName?: string;
+    email?: string;
+    confirmPassword?: string;
+    terms?: string;
+  }>({});
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const { isLoading, register } = useRegister();
+  const { showToast } = useUiStore();
   const router = useRouter();
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
@@ -51,17 +62,46 @@ export function RegisterForm() {
   const pwValid = pwValidation.valid;
 
   function validate(): boolean {
-    const errors: { fullName?: string; email?: string } = {};
+    const errors: typeof fieldErrors = {};
     if (!isNonEmpty(fullName)) errors.fullName = t('auth.err_full_name_required');
     if (!isValidEmail(email)) errors.email = t('auth.err_valid_email');
+    if (password !== confirmPassword) errors.confirmPassword = t('auth.err_passwords_dont_match');
+    if (!termsAccepted) errors.terms = t('auth.err_terms_required');
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
 
   async function handleSubmit() {
     if (!validate() || !pwValid) return;
-    await register(fullName, email, password);
+    await register(fullName, email, password, { acceptedAt: Date.now(), version: TERMS_VERSION });
   }
+
+  function handleBeforeSocialSignIn(): boolean {
+    if (!termsAccepted) {
+      showToast(t('auth.err_terms_required'), 'error');
+      return false;
+    }
+    return true;
+  }
+
+  const termsLabel = (
+    <AppText weight="regular" style={[styles.termsText, { color: colors.text }]}>
+      {t('auth.terms_agree_prefix')}{' '}
+      <Text
+        style={[styles.termsLink, { color: '#004aad' }]}
+        onPress={() => void Linking.openURL(TERMS_URL)}
+      >
+        {t('auth.terms_of_service')}
+      </Text>
+      {' '}{t('auth.terms_and')}{' '}
+      <Text
+        style={[styles.termsLink, { color: '#004aad' }]}
+        onPress={() => void Linking.openURL(PRIVACY_URL)}
+      >
+        {t('auth.privacy_policy')}
+      </Text>
+    </AppText>
+  );
 
   return (
     <View style={styles.container}>
@@ -77,7 +117,6 @@ export function RegisterForm() {
           autoCapitalize="words"
           error={fieldErrors.fullName}
           textAlign={textAlign}
-
           style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
         />
         <Input
@@ -89,7 +128,6 @@ export function RegisterForm() {
           autoCapitalize="none"
           error={fieldErrors.email}
           textAlign={textAlign}
-
           style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
         />
         <Input
@@ -99,7 +137,6 @@ export function RegisterForm() {
           onChangeText={setPassword}
           secureTextEntry
           textAlign={textAlign}
-
           style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
           onFocus={() => setPasswordFocused(true)}
           onBlur={() => setPasswordFocused(false)}
@@ -129,6 +166,28 @@ export function RegisterForm() {
           </View>
         )}
 
+        <Input
+          placeholder={t('auth.confirm_password')}
+          placeholderTextColor={colors.placeholder}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          textAlign={textAlign}
+          error={fieldErrors.confirmPassword}
+          style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
+        />
+
+        <View style={styles.termsRow}>
+          <Checkbox
+            checked={termsAccepted}
+            onChange={setTermsAccepted}
+            label={termsLabel}
+          />
+          {fieldErrors.terms ? (
+            <AppText weight="regular" style={styles.termsError}>{fieldErrors.terms}</AppText>
+          ) : null}
+        </View>
+
         <Button
           label={t('auth.create_account')}
           onPress={handleSubmit}
@@ -156,10 +215,10 @@ export function RegisterForm() {
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Social buttons row */}
+        {/* Social buttons row — gated by terms checkbox */}
         <View style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />
-          <AppleSignInButton style={{ flex: 1 }} />
+          <GoogleSignInButton style={{ flex: 1 }} showDivider={false} onBeforeSignIn={handleBeforeSocialSignIn} />
+          <AppleSignInButton style={{ flex: 1 }} onBeforeSignIn={handleBeforeSocialSignIn} />
         </View>
       </View>
     </View>
@@ -184,6 +243,10 @@ const styles = StyleSheet.create({
   checklist: { gap: 6, paddingHorizontal: 2 },
   checkRow: { flexDirection: 'row', alignItems: 'center' },
   checkLabel: { fontSize: 13 },
+  termsRow: { gap: 4 },
+  termsText: { fontSize: 13, lineHeight: 18 },
+  termsLink: { fontWeight: '600', textDecorationLine: 'underline' },
+  termsError: { fontSize: 12, color: '#e00', marginTop: 2 },
   link: { fontSize: 14, fontWeight: '500', textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   footerText: { fontSize: 14 },

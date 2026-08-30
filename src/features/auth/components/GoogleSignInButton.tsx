@@ -19,9 +19,14 @@ function makeT(translations: Translations) {
   };
 }
 
-type Props = { style?: import('react-native').ViewStyle; showDivider?: boolean };
+type Props = {
+  style?: import('react-native').ViewStyle;
+  showDivider?: boolean;
+  /** Called before sign-in begins. Return false to abort (e.g. terms not accepted). */
+  onBeforeSignIn?: () => boolean;
+};
 
-export function GoogleSignInButton({ style, showDivider = true }: Props) {
+export function GoogleSignInButton({ style, showDivider = true, onBeforeSignIn }: Props) {
   const { signInWithGoogle, isLoading } = useGoogleSignIn();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -42,7 +47,10 @@ export function GoogleSignInButton({ style, showDivider = true }: Props) {
       {/* Google button */}
       <TouchableOpacity
         style={[styles.button, isLoading && styles.buttonDisabled]}
-        onPress={signInWithGoogle}
+        onPress={() => {
+          if (onBeforeSignIn && !onBeforeSignIn()) return;
+          void signInWithGoogle(Date.now());
+        }}
         disabled={isLoading}
         activeOpacity={0.8}
         accessibilityLabel="Sign in with Google"

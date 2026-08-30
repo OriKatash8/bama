@@ -691,7 +691,14 @@
     "err_google_email_exists": "An account with this email already exists. Please sign in with your original method.",
     "err_google_failed": "Google sign-in failed. Please try again.",
     "continue_apple": "Continue with Apple",
-    "err_apple_failed": "Apple sign-in failed. Please try again."
+    "err_apple_failed": "Apple sign-in failed. Please try again.",
+    "confirm_password": "Confirm Password",
+    "err_passwords_dont_match": "Passwords don't match",
+    "err_terms_required": "Please accept the Terms & Privacy Policy to continue",
+    "terms_agree_prefix": "I agree to the",
+    "terms_of_service": "Terms of Service",
+    "terms_and": "and",
+    "privacy_policy": "Privacy Policy"
   },
   "common": {
     "cancel": "Cancel"

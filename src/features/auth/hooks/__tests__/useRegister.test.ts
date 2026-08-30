@@ -47,7 +47,7 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John Doe', 'john@example.com', 'password123');
+      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0' });
     });
     expect(mockSignUp).toHaveBeenCalledWith('john@example.com', 'password123');
     expect(mockSetDocument).toHaveBeenCalledWith(
@@ -66,7 +66,7 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John Doe', 'john@example.com', 'password123');
+      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0' });
     });
     expect(useAuthStore.getState().user?.id).toBe('u1');
     expect(useAuthStore.getState().activeMode).toBeNull();
@@ -77,7 +77,7 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('Jane', 'jane@example.com', 'password123');
+      await result.current.register('Jane', 'jane@example.com', 'password123', { acceptedAt: 0, version: '1.0' });
     });
     expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
   });
@@ -86,7 +86,7 @@ describe('useRegister', () => {
     mockSignUp.mockRejectedValue({ code: 'auth/email-already-in-use' });
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John', 'john@example.com', 'password123');
+      await result.current.register('John', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0' });
     });
     expect(result.current.error).toBe('An account with this email already exists.');
   });
@@ -95,7 +95,7 @@ describe('useRegister', () => {
     mockSignUp.mockRejectedValue({ code: 'auth/email-already-in-use' });
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John', 'john@example.com', 'password123');
+      await result.current.register('John', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0' });
     });
     expect(result.current.isLoading).toBe(false);
   });

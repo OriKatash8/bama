@@ -5,6 +5,7 @@ export async function syncUser(
   uid: string,
   info: { email: string; displayName: string; photoURL: string | null },
   setUser: (user: User) => void,
+  terms?: { acceptedAt: number; version: string },
 ): Promise<void> {
   const existing = await getDocument<User>(`users/${uid}`);
   if (!existing) {
@@ -14,6 +15,8 @@ export async function syncUser(
       displayName: info.displayName,
       photoURL: info.photoURL,
       createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
+      termsAcceptedAt: terms?.acceptedAt ?? null,
+      termsVersion: terms?.version ?? undefined,
     };
     await setDocument(`users/${uid}`, userData);
     setUser(userData);

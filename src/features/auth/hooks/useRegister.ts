@@ -6,10 +6,12 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 
+type TermsConsent = { acceptedAt: number; version: string };
+
 type RegisterState = {
   isLoading: boolean;
   error: string | null;
-  register: (fullName: string, email: string, password: string) => Promise<void>;
+  register: (fullName: string, email: string, password: string, terms: TermsConsent) => Promise<void>;
 };
 
 export function useRegister(): RegisterState {
@@ -19,7 +21,7 @@ export function useRegister(): RegisterState {
   const { setUser } = useAuthStore();
   const { showToast } = useUiStore();
 
-  async function register(fullName: string, email: string, password: string) {
+  async function register(fullName: string, email: string, password: string, terms: TermsConsent) {
     setError(null);
     setIsLoading(true);
     try {
@@ -30,6 +32,8 @@ export function useRegister(): RegisterState {
         displayName: fullName,
         photoURL: null,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
+        termsAcceptedAt: terms.acceptedAt,
+        termsVersion: terms.version,
       };
       await setDocument(`users/${firebaseUser.uid}`, userData);
       setUser(userData);

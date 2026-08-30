@@ -12,6 +12,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 import { syncUser } from '@features/auth/utils/syncUser';
+import { TERMS_VERSION } from '@core/constants/legal';
 
 const IOS_CLIENT_ID =
   '165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r.apps.googleusercontent.com';
@@ -25,7 +26,7 @@ if (Platform.OS !== 'web') {
 }
 
 type GoogleSignInState = {
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (termsAcceptedAt: number) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 };
@@ -37,28 +38,28 @@ export function useGoogleSignIn(): GoogleSignInState {
   const { showToast } = useUiStore();
   const router = useRouter();
 
-  async function signInWithGoogle() {
+  async function signInWithGoogle(termsAcceptedAt: number) {
     setIsLoading(true);
     setError(null);
     try {
       if (Platform.OS === 'web') {
-        await signInWithWeb();
+        await signInWithWeb(termsAcceptedAt);
       } else {
-        await signInWithNative();
+        await signInWithNative(termsAcceptedAt);
       }
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function signInWithWeb() {
+  async function signInWithWeb(termsAcceptedAt: number) {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await syncUser(result.user.uid, {
         email: result.user.email ?? '',
         displayName: result.user.displayName ?? '',
         photoURL: result.user.photoURL,
-      }, setUser);
+      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION });
       router.replace('/(auth)/mode-select');
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? '';
@@ -79,7 +80,7 @@ export function useGoogleSignIn(): GoogleSignInState {
     }
   }
 
-  async function signInWithNative() {
+  async function signInWithNative(termsAcceptedAt: number) {
     try {
       await GoogleSignin.hasPlayServices();
       const signInResult = await GoogleSignin.signIn();
@@ -98,7 +99,7 @@ export function useGoogleSignIn(): GoogleSignInState {
         email: result.user.email || googleUser?.email || '',
         displayName: result.user.displayName || googleName,
         photoURL: result.user.photoURL || googleUser?.photo || null,
-      }, setUser);
+      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION });
       router.replace('/(auth)/mode-select');
     } catch (error: any) {
       console.log('[GoogleSignIn] full error:', JSON.stringify(error));

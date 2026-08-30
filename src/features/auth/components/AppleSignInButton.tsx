@@ -5,13 +5,16 @@ const APPLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 814 1000
 import { useAppleSignIn } from '../hooks/useAppleSignIn';
 
 // Inner component holds all hooks — rendered only on iOS, so no conditional hook calls.
-function AppleButton({ style }: { style?: import('react-native').ViewStyle }) {
+function AppleButton({ style, onBeforeSignIn }: { style?: import('react-native').ViewStyle; onBeforeSignIn?: () => boolean }) {
   const { signInWithApple, isLoading } = useAppleSignIn();
 
   return (
     <TouchableOpacity
       style={[styles.button, isLoading && styles.buttonDisabled, style]}
-      onPress={signInWithApple}
+      onPress={() => {
+        if (onBeforeSignIn && !onBeforeSignIn()) return;
+        void signInWithApple(Date.now());
+      }}
       disabled={isLoading}
       activeOpacity={0.8}
       accessibilityLabel="Sign in with Apple"
@@ -25,11 +28,15 @@ function AppleButton({ style }: { style?: import('react-native').ViewStyle }) {
   );
 }
 
-type Props = { style?: import('react-native').ViewStyle };
+type Props = {
+  style?: import('react-native').ViewStyle;
+  /** Called before sign-in begins. Return false to abort (e.g. terms not accepted). */
+  onBeforeSignIn?: () => boolean;
+};
 
-export function AppleSignInButton({ style }: Props) {
+export function AppleSignInButton({ style, onBeforeSignIn }: Props) {
   if (Platform.OS !== 'ios') return null;
-  return <AppleButton style={style} />;
+  return <AppleButton style={style} onBeforeSignIn={onBeforeSignIn} />;
 }
 
 const styles = StyleSheet.create({
