@@ -401,6 +401,17 @@
     "communities": "קהילות",
     "marketplace": "מרקטפלייס"
   },
+  "admin_money": {
+    "greeting": "סקירה פיננסית",
+    "title": "כסף",
+    "metrics": "נתונים",
+    "total_revenue": "הכנסה כוללת",
+    "platform_fees": "עמלות פלטפורמה",
+    "pending_payouts": "תשלומים ממתינים",
+    "transactions": "עסקאות",
+    "coming_soon_title": "אין עדיין נתונים פיננסיים",
+    "coming_soon_body": "הנתונים הפיננסיים יופיעו כאן לאחר חיבור מערכת התשלומים."
+  },
   "moderation": {
     "suspended_title": "החשבון הושעה",
     "suspended_body": "החשבון שלך הושעה עקב הפרת תנאי השימוש. נותקת מהמערכת.",

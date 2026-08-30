@@ -401,6 +401,17 @@
     "communities": "Communities",
     "marketplace": "Marketplace"
   },
+  "admin_money": {
+    "greeting": "Financial overview",
+    "title": "Money",
+    "metrics": "Overview",
+    "total_revenue": "Total revenue",
+    "platform_fees": "Platform fees",
+    "pending_payouts": "Pending payouts",
+    "transactions": "Transactions",
+    "coming_soon_title": "No financial data yet",
+    "coming_soon_body": "Financial reporting will appear here once payments are wired up."
+  },
   "moderation": {
     "suspended_title": "Account suspended",
     "suspended_body": "Your account has been suspended for violating our Terms of Use. You have been signed out.",
