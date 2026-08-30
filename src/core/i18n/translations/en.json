@@ -386,6 +386,21 @@
     "notice_board": "Notice Board",
     "marketplace": "Marketplace"
   },
+  "admin_dashboard": {
+    "greeting": "Welcome back",
+    "title": "Dashboard",
+    "attention": "Needs attention",
+    "reports": "Reports",
+    "metrics": "Overview",
+    "total_users": "Total users",
+    "total_projects": "Total projects",
+    "total_courses": "Total courses",
+    "total_communities": "Total communities",
+    "manage": "Manage",
+    "courses": "Courses",
+    "communities": "Communities",
+    "marketplace": "Marketplace"
+  },
   "moderation": {
     "suspended_title": "Account suspended",
     "suspended_body": "Your account has been suspended for violating our Terms of Use. You have been signed out.",

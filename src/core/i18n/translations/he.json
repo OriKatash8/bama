@@ -386,6 +386,21 @@
     "notice_board": "לוח מודעות",
     "marketplace": "חנות"
   },
+  "admin_dashboard": {
+    "greeting": "ברוך הבא",
+    "title": "לוח בקרה",
+    "attention": "דורש תשומת לב",
+    "reports": "דיווחים",
+    "metrics": "נתונים",
+    "total_users": "סה״כ משתמשים",
+    "total_projects": "סה״כ פרויקטים",
+    "total_courses": "סה״כ קורסים",
+    "total_communities": "סה״כ קהילות",
+    "manage": "ניהול",
+    "courses": "קורסים",
+    "communities": "קהילות",
+    "marketplace": "מרקטפלייס"
+  },
   "moderation": {
     "suspended_title": "החשבון הושעה",
     "suspended_body": "החשבון שלך הושעה עקב הפרת תנאי השימוש. נותקת מהמערכת.",
