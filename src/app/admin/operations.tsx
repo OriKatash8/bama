@@ -40,10 +40,10 @@ export default function OperationsAdmin() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
-      {/* Header — flat solid purple */}
-      <View style={[styles.header, { backgroundColor: HEADER_PURPLE, paddingTop: insets.top + 14, alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.greeting, { ...font.regular, textAlign }]}>{t('admin_operations.greeting')}</Text>
-        <Text style={[styles.headerTitle, { ...font.medium, textAlign }]}>{t('admin_operations.title')}</Text>
+      {/* Header — flat solid purple, title on the right */}
+      <View style={[styles.header, { backgroundColor: HEADER_PURPLE, paddingTop: insets.top + 14, alignItems: 'flex-end' }]}>
+        <Text style={[styles.greeting, { ...font.regular, textAlign: 'right' }]}>{t('admin_operations.greeting')}</Text>
+        <Text style={[styles.headerTitle, { ...font.medium, textAlign: 'right' }]}>{t('admin_operations.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
