@@ -180,6 +180,8 @@ export async function cancelPurchase(
   userId: string,
   systemMessage: string,
   isAcceptedChat: boolean,
+  productName: string,
+  actorName: string,
 ): Promise<void> {
   const batch = writeBatch(db);
   if (isAcceptedChat) {
@@ -196,6 +198,16 @@ export async function cancelPurchase(
     archived: true,
     archiveReason: 'cancelled',
     archivedAt: serverTimestamp(),
+  });
+  // Admin cancellation log — purchase chats aren't admin-readable, so record a
+  // denormalized trace for the Money page.
+  batch.set(doc(collection(db, 'cancellations')), {
+    type: 'purchase',
+    listingId,
+    productName,
+    actorId: userId,
+    actorName,
+    createdAt: serverTimestamp(),
   });
   await batch.commit();
 

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Coins, Percent, Clock, ArrowLeftRight, Info } from 'lucide-react-native';
+import { Coins, Percent, Clock, ArrowLeftRight, Info, Ban } from 'lucide-react-native';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
+import { useCancellationLog } from '@features/admin/useCancellationLog';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -37,6 +38,10 @@ export default function MoneyAdmin() {
   const textAlign = rtl ? 'right' : 'left';
 
   const [period, setPeriod] = useState<'daily' | 'weekly'>('daily');
+  const { entries: cancellations } = useCancellationLog();
+
+  const fmtDate = (ts: number) =>
+    ts ? new Date(ts * 1000).toLocaleDateString(rtl ? 'he-IL' : 'en-US', { day: '2-digit', month: '2-digit' }) : '';
 
   // Buckets oldest → newest. No data source yet → all zeros (scaffold).
   // Daily = last 7 days (weekday labels); Weekly = last 6 weeks (week-start dates).
@@ -137,6 +142,33 @@ export default function MoneyAdmin() {
           </View>
         </View>
 
+        {/* Cancellation log — projects (live) + purchases (audit) */}
+        <Text style={[styles.heading, styles.headingSpaced, { ...font.medium, color: colors.text, textAlign }]}>
+          {t('admin_money.cancellations')}
+        </Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {cancellations.length === 0 ? (
+            <Text style={[styles.emptyRow, { ...font.regular, color: colors.textMuted, textAlign }]}>
+              {t('admin_money.no_cancellations')}
+            </Text>
+          ) : (
+            cancellations.map((c, i) => (
+              <View
+                key={c.id}
+                style={[styles.cancelRow, { flexDirection: rowDir }, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}
+              >
+                <Ban size={15} color={colors.textMuted} strokeWidth={2} />
+                <Text style={[styles.cancelText, { ...font.regular, color: colors.textSec, textAlign }]} numberOfLines={1}>
+                  {`${t(`admin_money.type_${c.kind}`)} · ${c.title || '—'} · ${t('admin_money.cancelled_by')} ${c.actorName || '—'}`}
+                </Text>
+                <Text style={[styles.cancelDate, { ...font.regular, color: colors.textMuted }]} numberOfLines={1}>
+                  {fmtDate(c.ts)}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+
         {/* Placeholder note — no payments data source yet */}
         <View style={[styles.note, { flexDirection: rowDir, backgroundColor: colors.card, borderColor: colors.border, marginTop: 22 }]}>
           <Info size={18} color={colors.textMuted} strokeWidth={2} />
@@ -178,6 +210,12 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendLabel: { fontSize: 11 },
   legendValue: { fontSize: 11 },
+
+  card: { borderRadius: 12, borderWidth: 1, marginTop: 8, overflow: 'hidden' },
+  cancelRow: { alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 11 },
+  cancelText: { flex: 1, fontSize: 12 },
+  cancelDate: { fontSize: 11 },
+  emptyRow: { fontSize: 13, padding: 14, width: '100%' },
 
   note: { alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, marginTop: 22 },
   noteTitle: { fontSize: 13, marginBottom: 2 },

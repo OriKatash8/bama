@@ -418,6 +418,11 @@
     "src_courses": "קורסים",
     "src_subscriptions": "מנויים",
     "src_other": "אחר",
+    "cancellations": "ביטולים",
+    "type_project": "פרויקט",
+    "type_purchase": "רכישה",
+    "cancelled_by": "בוטל על ידי",
+    "no_cancellations": "אין ביטולים",
     "coming_soon_title": "אין עדיין נתונים פיננסיים",
     "coming_soon_body": "הנתונים הפיננסיים יופיעו כאן לאחר חיבור מערכת התשלומים."
   },

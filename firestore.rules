@@ -248,6 +248,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ─── cancellations ──────────────────────────────────────────────
+    // Append-only audit trail of purchase cancellations (project cancellations
+    // are read live from `projects`). Written by the cancelling user; only
+    // admins read. Never editable.
+    match /cancellations/{id} {
+      allow create: if isAuth() && request.resource.data.actorId == request.auth.uid;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
     // ─── notifications ───────────────────────────────────────────────
     // Written exclusively by Cloud Functions (Admin SDK bypasses rules).
     match /notifications/{notificationId} {

@@ -43,6 +43,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
   const [sellerLoading, setSellerLoading] = useState(false);
 
   const currentUserId = useAuthStore((s) => s.user?.id) ?? '';
+  const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -121,7 +122,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
     setBuyerLoading(true);
     setSellerLoading(true);
     try {
-      await cancelPurchase(snap.id, chatId, currentUserId, t('marketplace.purchase_cancelled'), false);
+      await cancelPurchase(snap.id, chatId, currentUserId, t('marketplace.purchase_cancelled'), false, snap.productName, currentUserName);
     } finally {
       setBuyerLoading(false);
       setSellerLoading(false);
@@ -167,6 +168,8 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         currentUserId,
         t('marketplace.purchase_cancelled'),
         isAcceptedChat,
+        snap.productName,
+        currentUserName,
       );
     } catch (err) {
       console.error('[PurchaseBanner] cancelPurchase error:', err);
