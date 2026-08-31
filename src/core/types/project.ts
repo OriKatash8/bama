@@ -124,11 +124,18 @@ export type ProjectRequest = {
     requestedBy?: ID;
     requestedAt?: Timestamp;
     confirmedAt?: Timestamp;
+    /** Which reminder days (3/6) the cron already sent — idempotency marker. */
+    remindedDays?: number[];
   };
+  /** Set once the cron has sent the "did the project finish?" prompt (idempotency). */
+  endDatePromptedAt?: Timestamp;
   /** 3% of project value, set when completion is confirmed. */
   feeDue?: number;
   feePaid?: boolean;
   feePaidAt?: Timestamp;
+  /** Flat list of hired pro uids (mirrors filledSlots' professionalIds) so the
+   *  slot cap can be counted with an array-contains query. Maintained at hire. */
+  professionalIds?: string[];
   /** Occupies a slot from hire until settled (paid / cancelled / archived).
    *  UNDEFINED (pre-backfill) never counts toward the slot cap. */
   slotActive?: boolean;

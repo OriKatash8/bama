@@ -71,3 +71,18 @@ export function professionalMatchesAnyVacantSlot(
 ): boolean {
   return vacantSlots.some((slot) => professionalMatchesSlot(roleSkills, slot));
 }
+
+/** Which capability slot a fill consumes — mirror of the client's
+ *  assignFilledCapability. Prefers capability-specific vacancies first. */
+export function assignFilledCapability(
+  crewSlots: Slot[],
+  filledSlots: FilledLike[],
+  roleSkills: RoleSkillEntry[],
+  category: string,
+): string | undefined {
+  const vacant = getVacantSlots({ crewSlots, filledSlots })
+    .filter((s) => s.category === category)
+    .sort((a, b) => (b.requiredCapability ? 1 : 0) - (a.requiredCapability ? 1 : 0));
+  const match = vacant.find((s) => professionalMatchesSlot(roleSkills, s));
+  return match?.requiredCapability;
+}

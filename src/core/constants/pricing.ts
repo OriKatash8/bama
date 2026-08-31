@@ -29,7 +29,7 @@ export const REVIEW_FORCE_PUBLISH_DAYS = 60;   // held review publishes even if 
 
 /** Fallback project length used to derive expectedEndDate when the deadline
  *  can't be parsed into a date. No inline defaults elsewhere. */
-export const DEFAULT_PROJECT_DURATION_DAYS = 14;
+export const DEFAULT_PROJECT_DURATION_DAYS = 30;
 
 /** All scheduled jobs and the monthly-counter reset run in this zone, not UTC. */
 export const TIMEZONE = 'Asia/Jerusalem';

@@ -25,7 +25,7 @@ export const ARCHIVE_UNCONFIRMED_DAYS = 45;
 export const REVIEW_FORCE_PUBLISH_DAYS = 60;
 
 /** Fallback project length for expectedEndDate when the deadline can't be parsed. */
-export const DEFAULT_PROJECT_DURATION_DAYS = 14;
+export const DEFAULT_PROJECT_DURATION_DAYS = 30;
 
 /** All scheduled jobs + the monthly-counter reset run in this zone, not UTC. */
 export const TIMEZONE = 'Asia/Jerusalem';
