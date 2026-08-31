@@ -1,6 +1,6 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
-import { Home, Flag, Settings, UserCog, Wallet } from 'lucide-react-native';
+import { Home, Flag, LogOut, UserCog, Wallet } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -91,14 +91,14 @@ export default function AdminTabsLayout() {
         </Tabs>
       </SafeAreaInsetsContext.Provider>
 
-      {/* Settings / log out — shown on every admin page */}
+      {/* Log out — shown on every admin page */}
       <TouchableOpacity
         onPress={handleLogout}
         activeOpacity={0.8}
         style={{
           position: 'absolute',
           top: insets.top + 10,
-          right: 16,
+          left: 16,
           width: 40,
           height: 40,
           borderRadius: 20,
@@ -113,7 +113,7 @@ export default function AdminTabsLayout() {
           shadowOffset: { width: 0, height: 2 },
         }}
       >
-        <Settings size={20} color="#fff" strokeWidth={2} />
+        <LogOut size={20} color="#fff" strokeWidth={2} />
       </TouchableOpacity>
     </View>
   );
