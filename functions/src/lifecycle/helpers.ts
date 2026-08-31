@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { FieldValue as AdminFieldValue, Timestamp as AdminTimestamp } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { PLATFORM_FEE_RATE, TIMEZONE } from '../pricing';
 
@@ -7,9 +8,13 @@ if (admin.apps.length === 0) {
 }
 
 export const db = admin.firestore();
-export const FieldValue = admin.firestore.FieldValue;
-export const Timestamp = admin.firestore.Timestamp;
-export type Ts = admin.firestore.Timestamp;
+// From the MODULAR entry point, not the `admin.firestore.X` namespace: under the
+// functions emulator that namespace is a bare function with its statics stripped,
+// so `admin.firestore.FieldValue` is undefined and every write throws at runtime.
+// `admin.firestore()` itself still works, which is why only the statics moved.
+export const FieldValue = AdminFieldValue;
+export const Timestamp = AdminTimestamp;
+export type Ts = AdminTimestamp;
 
 /** 'YYYY-MM' for a date, in Asia/Jerusalem — the subscriber counter's period key. */
 export function monthKey(d: Date = new Date()): string {

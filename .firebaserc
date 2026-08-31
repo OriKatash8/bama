@@ -1,7 +1,5 @@
 {
   "projects": {
-    "default": "bama-dev",
-    "staging": "bama-staging",
-    "production": "bama-prod"
+    "default": "bama-af0a0"
   }
 }
