@@ -101,13 +101,12 @@ describe it as repairing a live outage without evidence.
 
 ## Gaps the emulator cannot close
 
-- **Composite indexes are not enforced by the emulator.** The slot-cap query
-  (`projects` where `professionalIds array-contains` + `slotActive ==`) passed
-  here regardless of whether its index exists. Both indexes added in `ab79735` —
-  that one and `reviews` (`projectId` + `published`, used by
-  `publishProjectReview`) — are **only** validated by a real deploy. Treat them
-  as unverified until `firebase deploy --only firestore:indexes` succeeds and the
-  cap query runs against the deployed project.
+- **Composite indexes are not enforced by the emulator** — a query passes locally
+  whether or not its index exists. This bit once already: the slice-1 index audit
+  covered only the callables, and `lifecycleCron`'s four queries went unnoticed
+  until deploy time, needing three further indexes (`918c84b`). When adding any
+  query, add its index by inspection; the emulator will never tell you.
+  Resolved for slice 1 — see the deployment record below.
 - **Rules were never validated before this run.** The Firestore emulator needs
   Java; the machine had none at commit time, which is why `ab79735` shipped
   unverified. Java is required for any local rules work.
@@ -119,6 +118,52 @@ describe it as repairing a live outage without evidence.
   script above is ad hoc and lives outside the repo.
 
 ---
+
+## Deployment record — bama-af0a0, 2026-09-01
+
+| Item | State |
+|---|---|
+| Firestore indexes (5 lifecycle) | **deployed, all `READY`** |
+| Firestore rules | **NOT deployed — deliberately held** |
+| Lifecycle functions (10) | **deployed** |
+| Backfill | **run — 52/52 projects** |
+
+**Indexes.** Two deploys, each diffed against the live project first (zero
+deletions both times): the two callable indexes, then the three `lifecycleCron`
+ones. Build state is *not* reported by the firebase CLI — poll the Firestore
+Admin API (`.../collectionGroups/-/indexes`, field `state`) instead. They sat at
+`CREATING` for 3–5 minutes before reaching `READY`.
+
+**Functions.** Deployed by name, not `--only functions`, to avoid incidentally
+shipping `moderateUser` and `sendSystemMessage` — both exist in source and have
+never been deployed. Nine callables landed in us-central1; `onReviewCreate`
+landed in **europe-west1**, correctly, because a v2 Firestore trigger colocates
+with the database (this one is `eur3`). Cloud Scheduler was enabled by the deploy;
+job `firebase-schedule-lifecycleCron-us-central1` is `ENABLED` at
+`every day 03:00 (Asia/Jerusalem)`.
+
+**Rules are the outstanding item.** They are held because the client rewire ships
+in the *app bundle*: every installed build still writes `filledSlots`,
+`status:'completed'`, `completedAt`, `status:'cancelled'` and `cancelledAt`
+directly, and the new rules deny all of it. Deploying rules before an app release
+breaks hire, complete, cancel and remove for every existing user, and a functions
+deploy does not rescue them — the old binary never calls the callables. **Deploy
+rules with, or just after, the app release carrying `ab79735`.** Until then the
+security holes in §2/§3 of that commit remain open in production.
+
+**Backfill** (`scripts/backfill-lifecycle.mjs`, run `--commit`): scanned 52,
+touched 52 — `feeStatus:'exempt'`, `slotActive:false`, `professionalIds` derived
+from `filledSlots`. Independently read back: 52/52 carry all three, `slotActive`
+is `true` on none, and `professionalIds` matches `filledSlots` on every doc with
+zero mismatches. Re-running the dry run reports 52 skipped / 0 to touch, so it is
+confirmed idempotent.
+
+Deliberate policy call: the 22 **in-flight** legacy projects (not
+completed/cancelled, with a hired pro) also got `slotActive:false`, so they do not
+occupy slots. The cap is therefore unenforced for pre-launch work until those
+projects turn over. Chosen over `slotActive:true` because nothing routes legacy
+projects through `confirmCompletion`/`markFeePaid`, so a `true` would strand
+those slots permanently.
 
 ## Project ID: `bama-af0a0`
 
