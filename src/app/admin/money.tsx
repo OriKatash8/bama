@@ -52,7 +52,6 @@ export default function MoneyAdmin() {
         d.setDate(d.getDate() - (5 - i) * 7);
         return d.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
       });
-  const zeros = labels.map(() => 0);
 
   const metrics: { key: string; label: string; value: string; icon: typeof Coins }[] = [
     { key: 'revenue', label: t('admin_money.total_revenue'), value: '₪0', icon: Coins },
@@ -60,6 +59,17 @@ export default function MoneyAdmin() {
     { key: 'payouts', label: t('admin_money.pending_payouts'), value: '₪0', icon: Clock },
     { key: 'transactions', label: t('admin_money.transactions'), value: '0', icon: ArrowLeftRight },
   ];
+
+  // Revenue sources (reused app palette). Marketplace/projects have fee backing
+  // today; courses/subscriptions are future streams → all ₪0 for now.
+  const sources = [
+    { key: 'src_marketplace', color: colors.primary },
+    { key: 'src_projects', color: HEADER_PURPLE },
+    { key: 'src_courses', color: '#1c9d63' },
+    { key: 'src_subscriptions', color: '#ff9800' },
+    { key: 'src_other', color: colors.textMuted },
+  ];
+  const series = sources.map((s) => ({ color: s.color, data: labels.map(() => 0) }));
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
@@ -110,12 +120,21 @@ export default function MoneyAdmin() {
           </View>
         </View>
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.chartLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_money.revenue_7d')}</Text>
-          <MoneyFlowChart data={zeros} labels={labels} variant="area" color={colors.primary} gridColor={colors.border} labelColor={colors.textMuted} />
-        </View>
-        <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 8 }]}>
-          <Text style={[styles.chartLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_money.fees_7d')}</Text>
-          <MoneyFlowChart data={zeros} labels={labels} variant="bar" color={HEADER_PURPLE} gridColor={colors.border} labelColor={colors.textMuted} />
+          <Text style={[styles.chartLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_money.by_source')}</Text>
+          <MoneyFlowChart series={series} labels={labels} gridColor={colors.border} labelColor={colors.textMuted} />
+
+          {/* Legend — names each revenue source */}
+          <View style={[styles.legend, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            {sources.map((s) => (
+              <View key={s.key} style={[styles.legendItem, { flexDirection: rowDir }]}>
+                <View style={[styles.legendDot, { backgroundColor: s.color }]} />
+                <Text style={[styles.legendLabel, { ...font.regular, color: colors.textSec }]} numberOfLines={1}>
+                  {t(`admin_money.${s.key}`)}
+                </Text>
+                <Text style={[styles.legendValue, { ...font.medium, color: colors.text }]}>₪0</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Placeholder note — no payments data source yet */}
@@ -154,6 +173,11 @@ const styles = StyleSheet.create({
 
   chartCard: { borderRadius: 12, borderWidth: 1, padding: 12 },
   chartLabel: { fontSize: 11, marginBottom: 8, width: '100%' },
+  legend: { flexWrap: 'wrap', gap: 10, marginTop: 12 },
+  legendItem: { alignItems: 'center', gap: 5 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { fontSize: 11 },
+  legendValue: { fontSize: 11 },
 
   note: { alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, marginTop: 22 },
   noteTitle: { fontSize: 13, marginBottom: 2 },
