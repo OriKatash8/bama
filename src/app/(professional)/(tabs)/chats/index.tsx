@@ -28,6 +28,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { db } from '@core/firebase/config';
+import { setDocument } from '@core/firebase/firestore';
 import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -524,7 +525,17 @@ export default function ProfessionalChatsScreen() {
                         </View>
                       </View>
                       {!!item.courseUrl && (
-                        <TouchableOpacity onPress={() => Linking.openURL(item.courseUrl!)} activeOpacity={0.8} style={styles.visitBtn}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            // Record a unique visit (doc id = uid → repeats collapse to one).
+                            if (user?.id) {
+                              void setDocument(`courses/${item.id}/clicks/${user.id}`, { at: serverTimestamp() }).catch(() => {});
+                            }
+                            Linking.openURL(item.courseUrl!);
+                          }}
+                          activeOpacity={0.8}
+                          style={styles.visitBtn}
+                        >
                           <Text style={[styles.visitBtnText, { ...font.semiBold }]}>{t('courses.visit_course')}</Text>
                         </TouchableOpacity>
                       )}

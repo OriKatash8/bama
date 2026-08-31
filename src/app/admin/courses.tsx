@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
-  serverTimestamp, Timestamp, query, orderBy,
+  serverTimestamp, Timestamp, query, orderBy, getCountFromServer,
 } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Plus, Pencil, Trash2, Video, ChevronLeft } from 'lucide-react-native';
+import { X, Plus, Pencil, Trash2, Video, ChevronLeft, Eye } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
@@ -87,6 +87,7 @@ export default function CoursesAdmin() {
   const t = makeT(language === 'he' ? he : en);
 
   const [courses, setCourses] = useState<Course[]>([]);
+  const [clicks, setClicks] = useState<Record<string, number>>({});
   const [requests, setRequests] = useState<CourseRequest[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -99,6 +100,25 @@ export default function CoursesAdmin() {
       setCourses(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Course)));
     });
   }, []);
+
+  // Unique "Visit course" counts = size of each course's clicks subcollection.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const entries = await Promise.all(
+        courses.map(async (c) => {
+          try {
+            const snap = await getCountFromServer(collection(db, 'courses', c.id, 'clicks'));
+            return [c.id, snap.data().count] as const;
+          } catch {
+            return [c.id, 0] as const;
+          }
+        }),
+      );
+      if (active) setClicks(Object.fromEntries(entries));
+    })();
+    return () => { active = false; };
+  }, [courses]);
 
   useEffect(() => {
     const q = query(collection(db, 'courseRequests'), orderBy('createdAt', 'desc'));
@@ -246,6 +266,10 @@ export default function CoursesAdmin() {
                 ₪{item.price} · {item.instructorName}
               </Text>
             </View>
+            <View style={styles.clicksChip}>
+              <Eye size={13} color={colors.textMuted} strokeWidth={2} />
+              <Text style={[styles.clicksText, { ...font.semiBold, color: colors.textMuted }]}>{clicks[item.id] ?? 0}</Text>
+            </View>
             <View style={[styles.badge, { backgroundColor: item.published ? '#16a34a' : '#9ca3af' }]}>
               <Text style={styles.badgeText}>{item.published ? 'Live' : 'Draft'}</Text>
             </View>
@@ -367,6 +391,8 @@ const styles = StyleSheet.create({
   },
   rowTitle: { fontSize: 15, fontWeight: '600' },
   rowSub: { fontSize: 13, marginTop: 2 },
+  clicksChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  clicksText: { fontSize: 12 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   iconBtn: { padding: 6 },

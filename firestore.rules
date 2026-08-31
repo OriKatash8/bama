@@ -124,6 +124,15 @@ service cloud.firestore {
     match /courses/{courseId} {
       allow read: if isAuth();
       allow create, update, delete: if isAdmin();
+
+      // Per-user "Visit course" markers — doc id is the clicking user's uid, so
+      // the unique-visitor count can't be inflated (repeat taps overwrite one
+      // doc, and a user may write only their own). Only admins read the count.
+      match /clicks/{userId} {
+        allow read: if isAdmin();
+        allow create, update: if isAuth() && request.auth.uid == userId;
+        allow delete: if false;
+      }
     }
 
     // ─── courseRequests ─────────────────────────────────────────────
