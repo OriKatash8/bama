@@ -71,15 +71,18 @@ export default function ReportsAdmin() {
     });
   }, []);
 
-  // Resolve reportedUserId → current displayName only when the stored name is
-  // missing or degraded to the id. The denormalized name (evidence snapshot)
-  // stays primary; this just fills the gaps.
+  // Resolve ids → current displayName: the reporter (always, no denormalized
+  // name stored) and the reported user only when its snapshot name is missing
+  // or degraded to the id.
   useEffect(() => {
-    const missing = reports
-      .filter((r) => !r.reportedUserName || r.reportedUserName === r.reportedUserId)
-      .map((r) => r.reportedUserId)
-      .filter((id) => id && resolvedNames[id] === undefined);
-    const unique = [...new Set(missing)];
+    const needed: string[] = [];
+    reports.forEach((r) => {
+      if (r.reporterId) needed.push(r.reporterId);
+      if (r.reportedUserId && (!r.reportedUserName || r.reportedUserName === r.reportedUserId)) {
+        needed.push(r.reportedUserId);
+      }
+    });
+    const unique = [...new Set(needed)].filter((id) => resolvedNames[id] === undefined);
     if (unique.length === 0) return;
     let active = true;
     (async () => {
@@ -201,6 +204,11 @@ export default function ReportsAdmin() {
                   </Text>
                 </View>
               </View>
+
+              {/* Reporter */}
+              <Text style={[styles.reporterLine, { ...font.regular, color: colors.textMuted }]}>
+                Reported by {resolvedNames[report.reporterId] || '—'}
+              </Text>
 
               {/* Reason */}
               <Text style={[styles.reasonText, { ...font.regular, color: colors.textSec }]}>
@@ -355,6 +363,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   badgeText: { fontSize: 12, textTransform: 'capitalize' },
+  reporterLine: { fontSize: 12 },
   reasonText: { fontSize: 14, lineHeight: 20 },
   thumbScroll: { marginTop: 4 },
   thumb: {
