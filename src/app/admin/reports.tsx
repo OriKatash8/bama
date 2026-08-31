@@ -207,7 +207,7 @@ export default function ReportsAdmin() {
 
               {/* Reporter */}
               <Text style={[styles.reporterLine, { ...font.regular, color: colors.textMuted }]}>
-                Reported by {resolvedNames[report.reporterId] || '—'}
+                {resolvedNames[report.reporterId] || '—'}
               </Text>
 
               {/* Reason */}
