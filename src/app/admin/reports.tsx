@@ -1,16 +1,24 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Image,
+  ActivityIndicator, Image, Modal, TextInput,
 } from 'react-native';
 import {
   collection, onSnapshot, updateDoc, doc, getDoc, query, orderBy, Timestamp,
 } from 'firebase/firestore';
+import { ShieldAlert, ShieldBan } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
+import { callFunction } from '@core/firebase/functions';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
 import { Screen } from '@components/layout/Screen';
+
+type ModAction = 'warn' | 'suspend';
+const moderateUser = callFunction<
+  { targetUid: string; action: ModAction; reason: string; reportId?: string },
+  { success: boolean; actionId: string }
+>('moderateUser');
 
 type Report = {
   id: string;
@@ -50,6 +58,10 @@ export default function ReportsAdmin() {
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
   // Fallback names for reports whose denormalized name is blank or is just the id.
   const [resolvedNames, setResolvedNames] = useState<Record<string, string>>({});
+  // Warn/suspend the reported user, straight from the report.
+  const [modTarget, setModTarget] = useState<{ report: Report; action: ModAction } | null>(null);
+  const [modReason, setModReason] = useState('');
+  const [modBusy, setModBusy] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
@@ -95,6 +107,30 @@ export default function ReportsAdmin() {
       showToast('Failed to update report', 'error');
     } finally {
       setUpdating((prev) => ({ ...prev, [id]: false }));
+    }
+  }
+
+  async function submitModeration() {
+    if (!modTarget) return;
+    const reason = modReason.trim();
+    if (!reason) { showToast('A reason is required', 'error'); return; }
+    setModBusy(true);
+    try {
+      await moderateUser({
+        targetUid: modTarget.report.reportedUserId,
+        action: modTarget.action,
+        reason,
+        reportId: modTarget.report.id,
+      });
+      // Acting on a report means it's been handled → mark it resolved.
+      await updateDoc(doc(db, 'reports', modTarget.report.id), { status: 'resolved' }).catch(() => {});
+      showToast(modTarget.action === 'suspend' ? 'User suspended' : 'User warned', 'success');
+      setModTarget(null);
+      setModReason('');
+    } catch (e) {
+      showToast((e as { message?: string })?.message ?? 'Action failed', 'error');
+    } finally {
+      setModBusy(false);
     }
   }
 
@@ -180,7 +216,27 @@ export default function ReportsAdmin() {
                 </ScrollView>
               )}
 
-              {/* Action buttons */}
+              {/* Moderate the reported user */}
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.modBtn, { borderColor: '#ff9800' }]}
+                  onPress={() => { setModTarget({ report, action: 'warn' }); setModReason(''); }}
+                  activeOpacity={0.7}
+                >
+                  <ShieldAlert size={15} color="#ff9800" strokeWidth={2.2} />
+                  <Text style={[styles.actionText, { ...font.semiBold, color: '#ff9800' }]}>Warn</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.modBtn, { borderColor: '#e53935' }]}
+                  onPress={() => { setModTarget({ report, action: 'suspend' }); setModReason(''); }}
+                  activeOpacity={0.7}
+                >
+                  <ShieldBan size={15} color="#e53935" strokeWidth={2.2} />
+                  <Text style={[styles.actionText, { ...font.semiBold, color: '#e53935' }]}>Suspend</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Report status */}
               <View style={styles.actions}>
                 {report.status !== 'reviewed' && (
                   <TouchableOpacity
@@ -219,6 +275,43 @@ export default function ReportsAdmin() {
           ))
         )}
       </ScrollView>
+
+      {/* Warn / Suspend reason modal */}
+      <Modal visible={!!modTarget} transparent animationType="fade" onRequestClose={() => setModTarget(null)}>
+        <View style={styles.overlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModTarget(null)} />
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { ...font.bold, color: colors.text }]}>
+              {modTarget?.action === 'suspend' ? 'Suspend user' : 'Warn user'}
+              {modTarget ? ` · ${(modTarget.report.reportedUserName && modTarget.report.reportedUserName !== modTarget.report.reportedUserId) ? modTarget.report.reportedUserName : (resolvedNames[modTarget.report.reportedUserId] || 'user')}` : ''}
+            </Text>
+            <Text style={[styles.modalHint, { ...font.regular, color: colors.textMuted }]}>
+              This reason is shown to the user and kept as a record. The report will be resolved.
+            </Text>
+            <TextInput
+              style={[styles.reasonInput, { ...font.regular, color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
+              value={modReason}
+              onChangeText={setModReason}
+              placeholder="Reason"
+              placeholderTextColor={colors.placeholder}
+              multiline
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: 'rgba(0,0,0,0.06)' }]} onPress={() => setModTarget(null)} activeOpacity={0.8}>
+                <Text style={[styles.modalBtnText, { ...font.semiBold, color: colors.textSec }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: modTarget?.action === 'suspend' ? '#e53935' : '#ff9800' }]}
+                onPress={submitModeration}
+                disabled={modBusy}
+                activeOpacity={0.85}
+              >
+                {modBusy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.modalBtnText, { ...font.semiBold, color: '#fff' }]}>{modTarget?.action === 'suspend' ? 'Suspend' : 'Warn'}</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -273,10 +366,22 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8, marginTop: 4 },
   actionBtn: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 5,
     paddingVertical: 8,
     borderRadius: 8,
   },
+  modBtn: { borderWidth: 1.5, backgroundColor: 'transparent' },
   actionText: { fontSize: 13 },
+
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalCard: { width: '100%', maxWidth: 420, borderRadius: 18, padding: 18, gap: 10 },
+  modalTitle: { fontSize: 17 },
+  modalHint: { fontSize: 13 },
+  reasonInput: { borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 14, minHeight: 84, textAlignVertical: 'top' },
+  modalActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  modalBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10 },
+  modalBtnText: { fontSize: 14 },
 });
