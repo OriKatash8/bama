@@ -52,6 +52,13 @@ export type Review = {
   rating: number;
   body: string;
   createdAt: Timestamp;
+  /** Client→pro reviews are HELD until the project closes + fee settled (or 60d);
+   *  pro→client reviews publish immediately. Read paths treat a MISSING field as
+   *  visible (`published != false`), so legacy reviews need no backfill — only a
+   *  newly-held review is written with `published: false`. */
+  published?: boolean;
+  visibleAt?: Timestamp;
+  kind?: 'client_to_pro' | 'pro_to_client';
 };
 
 export type CrewRequestSlot = {
@@ -95,6 +102,39 @@ export type ProjectRequest = {
   vibe?: string;
   budget?: string;
   roleAnswers?: Record<string, Record<string, string>>;
+  /** Set client-side today when a project is completed/cancelled (were untyped). */
+  completedAt?: Timestamp;
+  cancelledAt?: Timestamp;
+
+  // ── Pricing & lifecycle (Admin-SDK-written; locked at hire, immutable after) ──
+  /** 'included' = covered by the pro's subscription at hire; 'owed' = 3% due;
+   *  'exempt' = pre-pricing-model project (backfilled) — never charged or blocked. */
+  feeStatus?: 'included' | 'owed' | 'exempt';
+  /** Snapshot of PLATFORM_FEE_RATE at hire (immutable, for display). */
+  feeRate?: number;
+  /** Captured at hire; drives the auto-completion prompt (deadline or hire + default). */
+  expectedEndDate?: Timestamp;
+  /** Early payment (spec §5) — fields present now to avoid re-migrating later. */
+  feeLockedAt?: Timestamp;
+  feeLockedAmount?: number;
+  /** Completion state machine. */
+  completion?: {
+    state: 'none' | 'requested' | 'confirmed' | 'disputed';
+    source?: 'pro' | 'client' | 'auto';
+    requestedBy?: ID;
+    requestedAt?: Timestamp;
+    confirmedAt?: Timestamp;
+  };
+  /** 3% of project value, set when completion is confirmed. */
+  feeDue?: number;
+  feePaid?: boolean;
+  feePaidAt?: Timestamp;
+  /** Occupies a slot from hire until settled (paid / cancelled / archived).
+   *  UNDEFINED (pre-backfill) never counts toward the slot cap. */
+  slotActive?: boolean;
+  archivedUnconfirmedAt?: Timestamp;
+  /** Set when a paid project is cancelled early — admin decides the refund (§5). */
+  refundReviewPending?: boolean;
 };
 
 export type PriceOffer = {
