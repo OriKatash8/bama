@@ -406,6 +406,13 @@
     "daily": "Daily",
     "weekly": "Weekly"
   },
+  "admin_operations": {
+    "greeting": "Content & marketplace",
+    "title": "Operations",
+    "courses": "Courses",
+    "communities": "Communities",
+    "marketplace": "Marketplace"
+  },
   "admin_users": {
     "greeting": "User management",
     "title": "Users",

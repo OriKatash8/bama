@@ -77,7 +77,7 @@ export default function MarketplaceAdmin() {
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header with back */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/admin')} hitSlop={8} activeOpacity={0.7} style={styles.back}>
+          <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7} style={styles.back}>
             <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
           </TouchableOpacity>
           <Text style={[styles.title, { ...font.bold, color: colors.text }]}>Marketplace</Text>

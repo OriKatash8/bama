@@ -124,7 +124,7 @@ export default function CommunitiesAdmin() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={styles.container}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-        <TouchableOpacity onPress={() => router.push('/admin')} hitSlop={8} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7}>
           <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
         </TouchableOpacity>
         <Text style={[styles.pageTitle, { ...font.bold, color: colors.text }]}>

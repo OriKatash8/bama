@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { useRouter } from 'expo-router';
 import { getCountFromServer, collection, query, where, type Query } from 'firebase/firestore';
 import {
-  Users, Briefcase, BookOpen, MessagesSquare, ShoppingBag, Flag,
+  Users, Briefcase, BookOpen, MessagesSquare, Flag,
   ChevronRight, ChevronLeft,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,12 +79,6 @@ export default function AdminDashboard() {
     { key: 'projects', label: t('admin_dashboard.total_projects'), icon: Briefcase },
     { key: 'courses', label: t('admin_dashboard.total_courses'), icon: BookOpen },
     { key: 'communities', label: t('admin_dashboard.total_communities'), icon: MessagesSquare },
-  ];
-
-  const manage: { label: string; route: '/admin/courses' | '/admin/communities' | '/admin/marketplace'; icon: typeof Users }[] = [
-    { label: t('admin_dashboard.courses'), route: '/admin/courses', icon: BookOpen },
-    { label: t('admin_dashboard.communities'), route: '/admin/communities', icon: MessagesSquare },
-    { label: t('admin_dashboard.marketplace'), route: '/admin/marketplace', icon: ShoppingBag },
   ];
 
   return (
@@ -195,27 +189,6 @@ export default function AdminDashboard() {
               </View>
             </>
           )}
-        </View>
-
-        {/* Manage — sub-pages reachable only from here */}
-        <Text style={[styles.heading, styles.headingSpaced, { ...font.medium, color: colors.text, textAlign }]}>
-          {t('admin_dashboard.manage')}
-        </Text>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {manage.map(({ label, route, icon: Icon }, i) => (
-            <TouchableOpacity
-              key={route}
-              style={[styles.queueRow, { flexDirection: rowDir }, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}
-              onPress={() => router.push(route)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.queueIcon, { backgroundColor: colors.primary + '18' }]}>
-                <Icon size={16} color={colors.primary} strokeWidth={2.2} />
-              </View>
-              <Text style={[styles.queueLabel, { ...font.regular, color: colors.text, textAlign }]}>{label}</Text>
-              <Chevron size={18} color={colors.textMuted} strokeWidth={2} />
-            </TouchableOpacity>
-          ))}
         </View>
       </ScrollView>
     </View>

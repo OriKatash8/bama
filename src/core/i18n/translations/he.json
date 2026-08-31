@@ -406,6 +406,13 @@
     "daily": "יומי",
     "weekly": "שבועי"
   },
+  "admin_operations": {
+    "greeting": "תוכן ומרקטפלייס",
+    "title": "תפעול",
+    "courses": "קורסים",
+    "communities": "קהילות",
+    "marketplace": "מרקטפלייס"
+  },
   "admin_users": {
     "greeting": "ניהול משתמשים",
     "title": "משתמשים",

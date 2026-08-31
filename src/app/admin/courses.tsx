@@ -216,7 +216,7 @@ export default function CoursesAdmin() {
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <TouchableOpacity onPress={() => router.push('/admin')} hitSlop={8} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7}>
             <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
           </TouchableOpacity>
           <Text style={[styles.title, { ...font.bold, color: colors.text }]}>Courses</Text>
