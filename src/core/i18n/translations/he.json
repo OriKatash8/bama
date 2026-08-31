@@ -399,7 +399,12 @@
     "manage": "ניהול",
     "courses": "קורסים",
     "communities": "קהילות",
-    "marketplace": "מרקטפלייס"
+    "marketplace": "מרקטפלייס",
+    "registrations": "הרשמות חדשות",
+    "reg_total": "הכול",
+    "reg_by_mode": "לפי מצב",
+    "daily": "יומי",
+    "weekly": "שבועי"
   },
   "admin_money": {
     "greeting": "סקירה פיננסית",

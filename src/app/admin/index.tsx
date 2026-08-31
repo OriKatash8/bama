@@ -11,6 +11,8 @@ import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
+import { useRegistrationStats } from '@features/admin/useRegistrationStats';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -53,6 +55,11 @@ export default function AdminDashboard() {
   const Chevron = rtl ? ChevronLeft : ChevronRight;
 
   const [counts, setCounts] = useState<Counts | null>(null);
+  const [period, setPeriod] = useState<'daily' | 'weekly'>('daily');
+  const [regView, setRegView] = useState<'total' | 'by_mode'>('total');
+  const { labels, total, client, pro, loading: regLoading } = useRegistrationStats(period, rtl);
+  const clientTotal = client.reduce((a, b) => a + b, 0);
+  const proTotal = pro.reduce((a, b) => a + b, 0);
 
   useEffect(() => {
     (async () => {
@@ -133,6 +140,63 @@ export default function AdminDashboard() {
           ))}
         </View>
 
+        {/* New registrations */}
+        <View style={[styles.flowHeader, styles.headingSpaced, { flexDirection: rowDir }]}>
+          <Text style={[styles.heading, { ...font.medium, color: colors.text, textAlign, width: 'auto', flex: 1 }]}>
+            {t('admin_dashboard.registrations')}
+          </Text>
+          <View style={[styles.toggle, { flexDirection: rowDir, backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+            {(['daily', 'weekly'] as const).map((p) => {
+              const active = period === p;
+              return (
+                <TouchableOpacity key={p} style={[styles.toggleBtn, active && { backgroundColor: colors.primary }]} onPress={() => setPeriod(p)} activeOpacity={0.8}>
+                  <Text style={[styles.toggleText, { ...font.medium, color: active ? '#ffffff' : colors.textSec }]}>{t(`admin_dashboard.${p}`)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, padding: 12 }]}>
+          {/* Total / By mode switch */}
+          <View style={[styles.toggle, styles.viewToggle, { flexDirection: rowDir, alignSelf: rtl ? 'flex-end' : 'flex-start', backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+            {(['total', 'by_mode'] as const).map((v) => {
+              const active = regView === v;
+              return (
+                <TouchableOpacity key={v} style={[styles.toggleBtn, styles.viewToggleBtn, active && { backgroundColor: colors.primary }]} onPress={() => setRegView(v)} activeOpacity={0.8}>
+                  <Text style={[styles.toggleText, { ...font.medium, color: active ? '#ffffff' : colors.textSec }]}>{t(`admin_dashboard.reg_${v}`)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {regLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 40 }} />
+          ) : regView === 'total' ? (
+            <MoneyFlowChart data={total} labels={labels} variant="bar" color={colors.primary} gridColor={colors.border} labelColor={colors.textMuted} />
+          ) : (
+            <>
+              <MoneyFlowChart
+                series={[{ color: colors.primary, data: client }, { color: HEADER_PURPLE, data: pro }]}
+                labels={labels}
+                gridColor={colors.border}
+                labelColor={colors.textMuted}
+              />
+              <View style={[styles.legend, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <View style={[styles.legendItem, { flexDirection: rowDir }]}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+                  <Text style={[styles.legendLabel, { ...font.regular, color: colors.textSec }]}>{t('mode_picker.client')}</Text>
+                  <Text style={[styles.legendValue, { ...font.medium, color: colors.text }]}>{clientTotal}</Text>
+                </View>
+                <View style={[styles.legendItem, { flexDirection: rowDir }]}>
+                  <View style={[styles.legendDot, { backgroundColor: HEADER_PURPLE }]} />
+                  <Text style={[styles.legendLabel, { ...font.regular, color: colors.textSec }]}>{t('mode_picker.professional')}</Text>
+                  <Text style={[styles.legendValue, { ...font.medium, color: colors.text }]}>{proTotal}</Text>
+                </View>
+              </View>
+            </>
+          )}
+        </View>
+
         {/* Manage — sub-pages reachable only from here */}
         <Text style={[styles.heading, styles.headingSpaced, { ...font.medium, color: colors.text, textAlign }]}>
           {t('admin_dashboard.manage')}
@@ -181,4 +245,17 @@ const styles = StyleSheet.create({
   metricLabel: { flex: 1, fontSize: 11 },
   metricValue: { fontSize: 21 },
   metricSpinner: { alignSelf: 'flex-start' },
+
+  flowHeader: { alignItems: 'center', justifyContent: 'space-between' },
+  toggle: { borderRadius: 9, borderWidth: 1, padding: 2, gap: 2 },
+  toggleBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 7 },
+  toggleText: { fontSize: 12 },
+  viewToggle: { marginBottom: 12 },
+  viewToggleBtn: { paddingHorizontal: 14 },
+
+  legend: { flexWrap: 'wrap', gap: 14, marginTop: 12 },
+  legendItem: { alignItems: 'center', gap: 5 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { fontSize: 11 },
+  legendValue: { fontSize: 11 },
 });
