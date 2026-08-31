@@ -7,6 +7,7 @@ import {
   queryByField,
 } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
+import { visibleReviews } from '@features/reviews/utils/rating';
 import type { ProfessionalProfile, EquipmentItem } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
 
@@ -41,8 +42,10 @@ export function useProfile() {
     );
     // One-shot fetch intentional: review submission is out of scope, so cards won't change
     // during a session. The profile sub-doc (rating/reviewCount) stays live-subscribed above.
+    // Held reviews are invisible to the pro until the fee settles — filter before
+    // they reach any render path, not just the average.
     queryByField<Review>('reviews', 'professionalId', user.id)
-      .then(setReviews)
+      .then((r) => setReviews(visibleReviews(r)))
       .catch((e: any) => setError(e.message ?? 'Failed to load reviews'));
     return unsub;
   }, [user?.id]);

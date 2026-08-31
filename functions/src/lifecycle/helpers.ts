@@ -42,7 +42,7 @@ export function requireAuth(uid: string | undefined): string {
   return uid;
 }
 
-export function requireAdmin(token: { role?: string } | undefined): void {
+export function requireAdmin(token: Record<string, unknown> | undefined): void {
   if (token?.role !== 'admin') throw new HttpsError('permission-denied', 'Admins only');
 }
 

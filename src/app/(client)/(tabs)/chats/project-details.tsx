@@ -32,7 +32,6 @@ import type { BundleOffer, CrewRequestSlot, FilledSlot, Meeting, Mission, Missio
 import type { User } from '@core/types/user';
 import {
   calculateProjectFee,
-  markProjectComplete,
   listenToPaymentRequests,
   createPaymentRequest,
   respondToPaymentRequest,
@@ -52,6 +51,9 @@ import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/co
 import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
+import { callFunction } from '@core/firebase/functions';
+
+const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
 import { sendMessage } from '@features/chat/services/chatService';
 import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
@@ -332,7 +334,7 @@ export default function ProjectDetailsScreen() {
       console.log('[ReviewFlow] already reviewed — running normal complete flow');
       setIsConfirming(true);
       try {
-        await markProjectComplete(projectId);
+        await confirmCompletion({ projectId });
         setProject((prev) => (prev ? { ...prev, status: 'completed' } : prev));
         setShowPaymentSummary(false);
         Alert.alert(t('project_details.success_complete'));
@@ -344,18 +346,19 @@ export default function ProjectDetailsScreen() {
       return;
     }
 
-    // Mark complete and require reviews
+    // Mark complete and require reviews. `status`/`completedAt` are server-owned
+    // — the callable computes feeDue and decides whether the slot stays occupied.
+    // reviewsCompleted/reviewsPending stay client-owned (pure review-flow state).
     const uniqueProfIds = [...new Set((project.filledSlots ?? []).map((s) => s.professionalId))];
     console.log('[ReviewFlow] uniqueProfIds:', uniqueProfIds);
     setIsConfirming(true);
     try {
+      await confirmCompletion({ projectId });
       await updateDoc(doc(db, 'projects', projectId), {
-        status: 'completed',
-        completedAt: serverTimestamp(),
         reviewsCompleted: false,
         reviewsPending: uniqueProfIds,
       });
-      console.log('[ReviewFlow] Firestore updated — setting showReviewFlow=true');
+      console.log('[ReviewFlow] completion confirmed — setting showReviewFlow=true');
       setProject((prev) =>
         prev
           ? { ...prev, status: 'completed', reviewsCompleted: false, reviewsPending: uniqueProfIds }
@@ -364,7 +367,7 @@ export default function ProjectDetailsScreen() {
       setShowPaymentSummary(false);
       setShowReviewFlow(true);
     } catch (err) {
-      console.error('[ReviewFlow] updateDoc failed:', err);
+      console.error('[ReviewFlow] confirmCompletion failed:', err);
       Alert.alert('Error', t('project_details.error_complete'));
     } finally {
       setIsConfirming(false);
@@ -546,7 +549,6 @@ export default function ProjectDetailsScreen() {
         projectId,
         chatId,
         currentUserId,
-        project.filledSlots,
         t('project_details.member_left').replace('{{name}}', name),
       );
       router.back();
@@ -1825,23 +1827,6 @@ export default function ProjectDetailsScreen() {
                   </Text>
                 </View>
 
-                <View style={[styles.feeDivider, { backgroundColor: colors.border }]} />
-
-                <Text style={[styles.modalSectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-                  {t('project_details.platform_fee')}
-                </Text>
-
-                <View style={styles.feeRow}>
-                  <Text style={[styles.feeName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-                    {t('project_details.fee_percent')}
-                  </Text>
-                  <Text style={[styles.feeAmountBold, { color: '#004aad', ...font.bold }]}>
-                    ₪{feeData.platformFee.toLocaleString()}
-                  </Text>
-                </View>
-                <Text style={[styles.feePlatformNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-                  {t('project_details.paid_to_bama')}
-                </Text>
               </>
             )}
 
@@ -1868,11 +1853,6 @@ export default function ProjectDetailsScreen() {
               </TouchableOpacity>
             </View>
 
-            {feeData && (
-              <Text style={[styles.feeAgreementNote, { color: '#004aad99', textAlign: 'center', ...font.regular }]}>
-                {t('project_details.agreement', { amount: feeData.platformFee.toLocaleString() })}
-              </Text>
-            )}
           </View>
         </View>
       </Modal>

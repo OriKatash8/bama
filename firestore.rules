@@ -29,6 +29,28 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/projects/$(projectId)).data;
     }
 
+    // Pricing & lifecycle fields — written ONLY by the Admin SDK (hireProfessional,
+    // confirmCompletion, cancelProject, freeSlot, markFeePaid, lifecycleCron).
+    // A client that could write these could free its own slot, unset the fee, or
+    // fake completion — the whole collection mechanism is these fields.
+    function serverOnlyProjectFields() {
+      return [
+        'filledSlots', 'professionalIds', 'chatId',
+        'feeStatus', 'feeRate', 'feeDue', 'feePaid', 'feePaidAt',
+        'feeLockedAt', 'feeLockedAmount', 'slotActive',
+        'completion', 'expectedEndDate', 'endDatePromptedAt',
+        'archivedUnconfirmedAt', 'refundReviewPending',
+        'completedAt', 'cancelledAt'
+      ];
+    }
+
+    // `status` is not server-only — clients set 'open' at create and when
+    // reposting roles. Only the TERMINAL transitions belong to the callables.
+    function statusTransitionAllowed() {
+      return request.resource.data.get('status', '') == resource.data.get('status', '') ||
+        !(request.resource.data.get('status', '') in ['completed', 'cancelled']);
+    }
+
     // True if the user is the project's client OR is in the project's group chat.
     // Professionals are added to the group chat's members[] when their offer is accepted.
     function isProjectParticipant(projectId) {
@@ -144,15 +166,21 @@ service cloud.firestore {
     // ─── projects ───────────────────────────────────────────────────
     match /projects/{projectId} {
       allow read: if isAuth();    // professionals browse the noticeboard
-      allow create: if isAuth();  // clients create projects
-      allow update: if isAuth() && (
-        resource.data.clientId == request.auth.uid ||
-        // Professionals may update ONLY filledSlots (e.g. acceptRemoval removes their slot)
-        (
-          isProjectParticipant(projectId) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['filledSlots'])
-        )
-      );
+      // Clients create projects. `filledSlots: []` is fine; every other lifecycle
+      // field must be absent so a client cannot self-assign feeStatus at create.
+      allow create: if isAuth() &&
+        request.resource.data.get('filledSlots', []) == [] &&
+        !request.resource.data.keys().hasAny(
+          serverOnlyProjectFields().removeAll(['filledSlots'])
+        );
+      // Only the client may update, and never a server-owned field. The former
+      // "professionals may update filledSlots" branch is gone — removal now goes
+      // through the freeSlot callable, which also maintains professionalIds.
+      allow update: if isAuth() &&
+        resource.data.clientId == request.auth.uid &&
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(serverOnlyProjectFields()) &&
+        statusTransitionAllowed();
       allow delete: if isAuth() && resource.data.clientId == request.auth.uid;
 
       match /meetings/{meetingId} {
@@ -231,9 +259,19 @@ service cloud.firestore {
 
     // ─── reviews ────────────────────────────────────────────────────
     match /reviews/{reviewId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.reviewerId == request.auth.uid;
-      allow update, delete: if false;  // reviews are immutable
+      // A held review must be invisible to the pro it is about — otherwise they
+      // read the rating straight from the SDK and the hold buys nothing. The
+      // get() default keeps legacy field-less reviews readable.
+      allow read: if isAuth() && (
+        resource.data.get('published', true) != false ||
+        request.auth.uid != resource.data.professionalId
+      );
+      // published/visibleAt are resolved by the onReviewCreate trigger from the
+      // project's feeStatus. A client that could set them would bypass the hold.
+      allow create: if isAuth() &&
+        request.resource.data.reviewerId == request.auth.uid &&
+        !request.resource.data.keys().hasAny(['published', 'visibleAt']);
+      allow update, delete: if false;  // reviews are immutable (Admin SDK bypasses)
     }
 
     // ─── reports ────────────────────────────────────────────────────

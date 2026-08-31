@@ -21,10 +21,15 @@ export type ProjectFeeSlot = {
   amount: number;
 };
 
+/**
+ * What the CLIENT pays, which under the current model is exactly the sum of the
+ * accepted offers — BAMA charges the professional 3% on completion and takes
+ * nothing from the client. The old 5% client add-on is retired; `total` is kept
+ * equal to `subtotal` so existing call sites keep rendering a total.
+ */
 export type ProjectFee = {
   slots: ProjectFeeSlot[];
   subtotal: number;
-  platformFee: number;
   total: number;
 };
 
@@ -82,17 +87,8 @@ export async function calculateProjectFee(projectId: string): Promise<ProjectFee
   );
 
   const subtotal = slots.reduce((sum, s) => sum + s.amount, 0);
-  const platformFee = subtotal * 0.05;
-  const total = subtotal + platformFee;
 
-  return { slots, subtotal, platformFee, total };
-}
-
-export async function markProjectComplete(projectId: string): Promise<void> {
-  await updateDoc(doc(db, 'projects', projectId), {
-    status: 'completed',
-    completedAt: serverTimestamp(),
-  });
+  return { slots, subtotal, total: subtotal };
 }
 
 export function listenToPaymentRequests(

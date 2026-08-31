@@ -15,6 +15,7 @@ import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
 import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
+import { visibleReviews } from '@features/reviews/utils/rating';
 import { uploadFile } from '@core/firebase/storage';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
@@ -88,7 +89,7 @@ export default function PublicProfileScreen() {
         setPortfolio(
           portfolioData.sort((a, b) => b.uploadedAt.seconds - a.uploadedAt.seconds)
         );
-        setReviews(reviewData);
+        setReviews(visibleReviews(reviewData));
       } finally {
         setIsLoading(false);
       }

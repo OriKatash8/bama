@@ -1,129 +1,25 @@
 import { useState } from 'react';
-import { queryDocuments, getDocument, runBatchUpdates, updateDocument, arrayUnion, where } from '@core/firebase/firestore';
-import type { PriceOffer, BundleOffer, CrewRequestSlot, FilledSlot } from '@core/types/project';
-import { assignFilledCapability, type RoleSkillEntry } from '@features/noticeboard/matching';
-import { createProjectGroup, addMemberToGroup } from '../../chat/services/chatService';
+import { updateDocument } from '@core/firebase/firestore';
+import { callFunction } from '@core/firebase/functions';
+import type { PriceOffer } from '@core/types/project';
 
-/** Read the project + the pro's roleSkills and decide which capability slot the fill consumes. */
-async function attributeFilledCapability(
-  projectId: string,
-  category: string,
-  professionalId: string,
-): Promise<string | undefined> {
-  const [proj, prof] = await Promise.all([
-    getDocument<{ crewSlots?: CrewRequestSlot[]; filledSlots?: FilledSlot[] }>(`projects/${projectId}`),
-    getDocument<{ roleSkills?: RoleSkillEntry[] }>(
-      `users/${professionalId}/profile/data`,
-    ),
-  ]);
-  const roleSkills = prof?.roleSkills ?? [];
-  return assignFilledCapability(proj?.crewSlots ?? [], proj?.filledSlots ?? [], roleSkills, category);
-}
+type HireResult = { chatId: string | null; alreadyAccepted?: boolean };
+
+const hireProfessional = callFunction<{ offerId: string }, HireResult>('hireProfessional');
 
 export function useAcceptOffer() {
   const [isAccepting, setIsAccepting] = useState<string | null>(null);
 
+  /**
+   * Accepting is a single server call. Competing-offer rejection, capability
+   * attribution, filledSlots/professionalIds, the group chat, the slot cap and
+   * the fee lock all happen atomically in `hireProfessional` — the client can no
+   * longer write those fields, and the old 4-step sequence could half-fail.
+   */
   async function accept(offer: PriceOffer): Promise<void> {
     setIsAccepting(offer.id);
     try {
-      // Step 1: batch-reject competing offers
-      let competing: PriceOffer[] = [];
-      try {
-        competing = await queryDocuments<PriceOffer>(
-          'priceOffers',
-          where('projectId', '==', offer.projectId),
-          where('category', '==', offer.category),
-          where('status', '==', 'pending')
-        );
-        const others = competing.filter((o) => o.id !== offer.id);
-        if (others.length > 0) {
-          await runBatchUpdates(
-            others.map((o) => ({ path: `priceOffers/${o.id}`, data: { status: 'rejected' } }))
-          );
-        }
-        console.log('[useAcceptOffer] step 1 ok — rejected', competing.length - 1, 'competing offers');
-      } catch (e: unknown) {
-        console.error('[useAcceptOffer] step 1 FAILED (batch-reject competing offers)', e);
-        throw e;
-      }
-
-      // Step 2: mark this offer accepted
-      try {
-        await updateDocument(`priceOffers/${offer.id}`, { status: 'accepted' });
-        console.log('[useAcceptOffer] step 2 ok — offer', offer.id, 'marked accepted');
-      } catch (e: unknown) {
-        console.error('[useAcceptOffer] step 2 FAILED (accept offer status)', e);
-        throw e;
-      }
-
-      // Step 2.5: reject any pending bundle offers from this same professional (they can't have both)
-      try {
-        const pendingBundles = await queryDocuments<BundleOffer>(
-          'bundleOffers',
-          where('projectId', '==', offer.projectId),
-          where('professionalId', '==', offer.professionalId),
-          where('status', '==', 'pending'),
-        );
-        if (pendingBundles.length > 0) {
-          await runBatchUpdates(
-            pendingBundles.map((b) => ({ path: `bundleOffers/${b.id}`, data: { status: 'rejected' } }))
-          );
-          console.log('[useAcceptOffer] step 2.5 ok — rejected', pendingBundles.length, 'pending bundle(s) from this professional');
-        }
-      } catch (e: unknown) {
-        console.error('[useAcceptOffer] step 2.5 FAILED (reject stale bundles)', e);
-        // Non-fatal: don't throw — the individual offer is already accepted
-      }
-
-      // Step 3: add professional to project filledSlots (with the capability slot they fill)
-      try {
-        let requiredCapability: string | undefined;
-        try {
-          requiredCapability = await attributeFilledCapability(
-            offer.projectId, offer.category, offer.professionalId,
-          );
-        } catch (e: unknown) {
-          console.error('[useAcceptOffer] capability attribution failed (defaulting to general)', e);
-        }
-        const filled: FilledSlot = {
-          category: offer.category,
-          professionalId: offer.professionalId,
-          ...(requiredCapability ? { requiredCapability } : {}),
-        };
-        await updateDocument(`projects/${offer.projectId}`, {
-          filledSlots: arrayUnion(filled) as unknown,
-        });
-        console.log('[useAcceptOffer] step 3 ok — filledSlots updated on project', offer.projectId);
-      } catch (e: unknown) {
-        console.error('[useAcceptOffer] step 3 FAILED (filledSlots arrayUnion)', e);
-        throw e;
-      }
-
-      // Step 4: create or join project group chat
-      try {
-        const project = await getDocument<{ clientId: string; title: string; chatId?: string }>(
-          `projects/${offer.projectId}`
-        );
-        if (project) {
-          if (!project.chatId) {
-            const newChatId = await createProjectGroup(
-              project.clientId,
-              offer.professionalId,
-              offer.projectId,
-              project.title,
-            );
-            await updateDocument(`projects/${offer.projectId}`, { chatId: newChatId });
-            console.log('[useAcceptOffer] step 4 ok — created group chat', newChatId);
-          } else {
-            await addMemberToGroup(project.chatId, offer.professionalId);
-            console.log('[useAcceptOffer] step 4 ok — added to existing group chat', project.chatId);
-          }
-        } else {
-          console.error('[useAcceptOffer] step 4 — project', offer.projectId, 'not found, skipping chat setup');
-        }
-      } catch (e: unknown) {
-        console.error('[useAcceptOffer] step 4 FAILED (group chat setup)', e);
-      }
+      await hireProfessional({ offerId: offer.id });
     } finally {
       setIsAccepting(null);
     }
