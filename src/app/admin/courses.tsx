@@ -215,11 +215,11 @@ export default function CoursesAdmin() {
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
           <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7}>
             <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
           </TouchableOpacity>
-          <Text style={[styles.title, { ...font.bold, color: colors.text }]}>Courses</Text>
+          <Text style={[styles.title, { ...font.bold, color: colors.text, flex: 1, textAlign: 'right' }]}>Courses</Text>
         </View>
         <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openAdd}>
           <Plus size={20} color="#fff" />

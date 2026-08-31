@@ -127,7 +127,7 @@ export default function CommunitiesAdmin() {
         <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7}>
           <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
         </TouchableOpacity>
-        <Text style={[styles.pageTitle, { ...font.bold, color: colors.text }]}>
+        <Text style={[styles.pageTitle, { ...font.bold, color: colors.text, flex: 1, textAlign: 'right' }]}>
           Communities
         </Text>
       </View>
