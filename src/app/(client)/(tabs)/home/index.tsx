@@ -131,6 +131,18 @@ export default function HomeScreen() {
     loadSlots([]);
   }, [projectSubmittedNonce, loadSlots]);
 
+  // The review screen's per-section "edit" links pop back to this screen (which
+  // stayed mounted, so every field survives) and ask for a specific step.
+  const builderStep = useUiStore((s) => s.builderStep);
+  const builderStepNonce = useUiStore((s) => s.builderStepNonce);
+  const seenStepNonce = useRef(builderStepNonce);
+  useEffect(() => {
+    if (builderStepNonce === seenStepNonce.current) return;
+    seenStepNonce.current = builderStepNonce;
+    setStep(builderStep);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
+  }, [builderStepNonce, builderStep]);
+
   const todayISO = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

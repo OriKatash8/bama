@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
+  ScrollView, StyleSheet, View, Text, TouchableOpacity,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { Screen } from '@components/layout/Screen';
-import { MiniCalendar } from '@features/crew/components';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
 import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { roleIdForCategory, professionalMatchesSlot, capabilityLabel, type RoleSkillEntry } from '@features/noticeboard/matching';
@@ -13,8 +12,9 @@ import { ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { CalendarDays, ChevronLeft, X } from 'lucide-react-native';
+import { CalendarCheck, CalendarDays, ChevronLeft, MapPin, Users, X } from 'lucide-react-native';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
@@ -29,6 +29,10 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
+
+/** The tabs layout zeroes the safe-area context for its screens, so the real
+ *  bottom inset has to come from the window metrics (same as ChatRoomScreen). */
+const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
 
 export default function SummaryScreen() {
   const params = useLocalSearchParams<{
@@ -51,21 +55,22 @@ export default function SummaryScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const { submit, updateProject } = useProjectRequests();
-  const { showToast, notifyProjectSubmitted } = useUiStore();
+  const { showToast, notifyProjectSubmitted, requestBuilderStep } = useUiStore();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
+  const colors = useTheme();
   const font = useAppFont();
 
   const isEditMode = !!params.projectId;
 
-  const [title, setTitle] = useState(params.title ?? '');
-  const [description, setDescription] = useState(params.description ?? '');
-  const [exec, setExec] = useState(params.exec ?? '');
-  const [deadline, setDeadline] = useState(params.deadline ?? '');
-  const [location, setLocation] = useState(params.location ?? '');
-  const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
+  // Read-only view of the draft — editing happens back in the wizard.
+  const title = params.title ?? '';
+  const description = params.description ?? '';
+  const exec = params.exec ?? '';
+  const deadline = params.deadline ?? '';
+  const location = params.location ?? '';
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const parsedRoleAnswers = useMemo<Record<string, Record<string, string>>>(() => {
@@ -74,6 +79,20 @@ export default function SummaryScreen() {
   }, []);
 
   const canConfirm = !isSubmitting && !!deadline && slots.length > 0;
+  const totalPeople = slots.reduce((sum, s) => sum + s.quantity, 0);
+  const rowDir = rtl ? 'row-reverse' : ('row' as const);
+  const textAlign = rtl ? 'right' : ('left' as const);
+
+  /** Pop back to the wizard (still mounted, so the draft survives) at a step. */
+  function editStep(step: 1 | 2 | 3) {
+    requestBuilderStep(step);
+    router.back();
+  }
+
+  async function confirmRemoveCategory(category: string) {
+    const ok = await confirmDialog(t('builder.remove_role_title'), t('builder.remove_role_msg'));
+    if (ok) removeCategory(category);
+  }
 
   async function handleConfirm() {
     if (!canConfirm) return;
@@ -154,292 +173,298 @@ export default function SummaryScreen() {
   /** "General" label for a slot with no requiredCapability. */
   const generalLabel = rtl ? 'כללי' : 'General';
 
+  /** A missing value never shows a form placeholder — it says so plainly. */
+  function renderValue(value: string, style?: object) {
+    const empty = !value;
+    return (
+      <Text
+        style={[
+          styles.value,
+          { ...font.regular, textAlign, color: empty ? colors.textMuted : colors.text },
+          empty && styles.valueEmpty,
+          style,
+        ]}
+      >
+        {empty ? t('builder.not_specified') : value}
+      </Text>
+    );
+  }
+
+  /** Section header: title at the start, an optional edit link to its wizard step. */
+  function renderCardHeader(label: string, step?: 1 | 2 | 3) {
+    return (
+      <View style={[styles.cardHeader, { flexDirection: rowDir }]}>
+        <Text style={[styles.cardTitle, { ...font.medium, color: colors.text, textAlign }]}>
+          {label}
+        </Text>
+        {step !== undefined && (
+          <TouchableOpacity onPress={() => editStep(step)} hitSlop={10} activeOpacity={0.7}>
+            <Text style={[styles.editLink, { ...font.medium }]}>{t('builder.edit')}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  /** One "when & where" row: icon + label, value at the end. */
+  function renderMetaRow(
+    Icon: typeof CalendarDays,
+    label: string,
+    value: string,
+    chip = false,
+  ) {
+    return (
+      <View style={[styles.metaRow, { flexDirection: rowDir }]}>
+        <Icon size={17} color={colors.textMuted} strokeWidth={1.8} />
+        <Text style={[styles.metaLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+          {label}
+        </Text>
+        {chip ? (
+          <View style={styles.chip}>
+            <Text style={[styles.chipText, { ...font.medium }]}>{value}</Text>
+          </View>
+        ) : (
+          renderValue(value, styles.metaValue)
+        )}
+      </View>
+    );
+  }
+
   return (
-    <Screen scrollable={false}>
-      {/* Back button */}
+    <Screen scrollable={false} backgroundColor={colors.bg}>
+      {/* Back */}
       <TouchableOpacity
-        style={[styles.backRow, { flexDirection: rtl ? 'row-reverse' : 'row', alignSelf: rtl ? 'flex-end' : 'flex-start' }]}
+        style={[styles.backRow, { flexDirection: rowDir, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}
         onPress={() => router.back()}
         activeOpacity={0.7}
         hitSlop={12}
       >
-        <ChevronLeft size={20} color="#004aad" strokeWidth={2} />
+        <ChevronLeft
+          size={20}
+          color="#004aad"
+          strokeWidth={2}
+          style={rtl ? { transform: [{ scaleX: -1 }] } : undefined}
+        />
         <Text style={[styles.backText, { ...font.semiBold }]}>{t('builder.back_to_edit')}</Text>
       </TouchableOpacity>
+
+      {/* Title + subtitle */}
+      <View style={styles.headerBlock}>
+        <Text style={[styles.screenTitle, { ...font.medium, textAlign }]}>
+          {t('builder.summary_title')}
+        </Text>
+        <Text style={[styles.screenSubtitle, { ...font.regular, color: colors.textMuted, textAlign }]}>
+          {t('builder.summary_subtitle')}
+        </Text>
+      </View>
 
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <LinearGradient colors={['#efd4f6', '#b7cae6']} style={styles.card}>
-          <Text style={[styles.cardTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
-            {t('builder.summary_title')}
-          </Text>
+        {/* ── Card 1: project details ── */}
+        <View style={styles.card}>
+          {renderCardHeader(t('builder.section_project'), 1)}
 
-          {/* Title */}
-          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
-            {t('builder.confirm_title')}
+          <Text style={[styles.fieldLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+            {t('builder.title')}
           </Text>
-          <TextInput
-            style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-            value={title}
-            onChangeText={setTitle}
-            placeholder={t('builder.confirm_title')}
-            placeholderTextColor="#004aad99"
-          />
-          {/* Description (read-only, only shown for projects that have one) */}
-          {description.length > 0 && (
-            <>
-              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
-                {t('builder.tell_us')}
-              </Text>
-              <Text style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left', color: '#004aad' }]}>
-                {description}
-              </Text>
-            </>
+          {renderValue(title)}
+
+          <Text style={[styles.fieldLabel, { ...font.regular, color: colors.textMuted, textAlign, marginTop: 10 }]}>
+            {t('builder.description')}
+          </Text>
+          {renderValue(description, styles.description)}
+        </View>
+
+        {/* ── Card 2: when & where ── */}
+        <View style={styles.card}>
+          {renderCardHeader(t('builder.section_when_where'), 1)}
+          {renderMetaRow(CalendarDays, t('builder.execution'), exec)}
+          {renderMetaRow(
+            CalendarCheck,
+            t('builder.deadline'),
+            deadline === 'flexible' ? t('builder.flexible') : deadline,
+            deadline === 'flexible',
           )}
+          {renderMetaRow(MapPin, t('builder.location'), location)}
+        </View>
 
-          {/* Dates */}
-          <View style={styles.dateRow}>
-            <View style={styles.dateCol}>
-              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('builder.execution')}{' '}
-                <Text style={{ fontWeight: '400', opacity: 0.6 }}>({t('builder.optional')})</Text>
-              </Text>
-              <TouchableOpacity
-                style={styles.dateBtn}
-                onPress={() => setCalOpen('exec')}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.dateBtnText, { ...font.regular, color: exec ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
-                  {exec || t('builder.placeholder_date')}
-                </Text>
-                <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
-              </TouchableOpacity>
-            </View>
+        {/* ── Card 3: crew ── */}
+        <View style={styles.card}>
+          {renderCardHeader(`${t('builder.section_crew')} · ${totalPeople}`, 2)}
 
-            <View style={styles.dateCol}>
-              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('builder.deadline')}
-              </Text>
-              <TouchableOpacity
-                style={styles.dateBtn}
-                onPress={() => setCalOpen('deadline')}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.dateBtnText, { ...font.regular, color: deadline ? '#004aad' : '#004aad99' }]} numberOfLines={1}>
-                  {deadline === 'flexible' ? t('builder.flexible') : (deadline || t('builder.placeholder_deadline'))}
-                </Text>
-                <CalendarDays size={14} color="#cb6ce6" strokeWidth={1.8} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Location */}
-          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
-            {t('builder.location')}
-          </Text>
-          <TextInput
-            style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-            value={location}
-            onChangeText={setLocation}
-            placeholder={t('builder.placeholder_location')}
-            placeholderTextColor="#004aad99"
-          />
-
-          {/* Role answers */}
-          {Object.keys(parsedRoleAnswers).length > 0 && (
-            <>
-              <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
-                {rtl ? 'פרטי הפרויקט' : 'Project Details'}
-              </Text>
-              {Object.entries(parsedRoleAnswers).map(([roleKey, answers]) => {
-                const questions = ROLE_QUESTIONS[roleKey];
-                if (!questions) return null;
-                return (
-                  <View key={roleKey} style={{ marginBottom: 12 }}>
-                    <Text style={[styles.hint, { ...font.semiBold, color: '#004aad', opacity: 1, marginBottom: 4, textAlign: rtl ? 'right' : 'left' }]}>
-                      {roleKey}
-                    </Text>
-                    {questions.map(q => {
-                      const value = answers[q.id];
-                      if (!value) return null;
-                      return (
-                        <View key={q.id} style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 6, marginBottom: 2 }}>
-                          <Text style={[styles.hint, { ...font.regular, textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
-                            {questionLabel(q, rtl)}:
-                          </Text>
-                          <Text style={[styles.hint, { ...font.semiBold, color: '#004aad', opacity: 1, textAlign: rtl ? 'right' : 'left' }]}>
-                            {value}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                );
-              })}
-            </>
-          )}
-
-          {/* Slots */}
-          <Text style={[styles.fieldLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left', marginTop: 14 }]}>
-            {t('builder.select_roles')}
-          </Text>
-          {[...new Set(slots.map((s) => s.category))].map((category) => {
+          {[...new Set(slots.map((s) => s.category))].map((category, i, arr) => {
             const role = ROLE_BY_ID[roleIdForCategory(category)];
             const roleLabel = role ? labelOf(role, lang) : category;
-            const breakdown = slots
-              .filter((s) => s.category === category)
-              .map((s) =>
-                `${s.quantity} ${s.requiredCapability ? capabilityLabel(s.category, s.requiredCapability, lang) : generalLabel}`,
-              )
+            const forCategory = slots.filter((s) => s.category === category);
+            const breakdown = forCategory
+              .map((s) => {
+                const cap = s.requiredCapability
+                  ? capabilityLabel(s.category, s.requiredCapability, lang)
+                  : generalLabel;
+                return `${cap} · ${s.quantity} ${t('builder.people_suffix')}`;
+              })
               .join(' · ');
             return (
-              <View key={category} style={styles.slotRow}>
-                <View style={styles.slotInfo}>
-                  <Text style={[styles.slotSub, { ...font.semiBold }]}>{roleLabel}</Text>
-                  <Text style={[styles.slotCap, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+              <View
+                key={category}
+                style={[
+                  styles.crewRow,
+                  { flexDirection: rowDir },
+                  i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+                ]}
+              >
+                <View style={styles.crewIcon}>
+                  <Users size={16} color="#004aad" strokeWidth={2} />
+                </View>
+                <View style={styles.crewText}>
+                  <Text style={[styles.crewRole, { ...font.medium, color: colors.text, textAlign }]}>
+                    {roleLabel}
+                  </Text>
+                  <Text style={[styles.crewMeta, { ...font.regular, color: colors.textMuted, textAlign }]}>
                     {breakdown}
                   </Text>
                 </View>
                 <TouchableOpacity
-                  style={styles.removeBtn}
-                  onPress={() => removeCategory(category)}
-                  hitSlop={8}
+                  onPress={() => void confirmRemoveCategory(category)}
+                  hitSlop={10}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('builder.remove_role_title')}
                 >
-                  <X size={14} color="#e53935" strokeWidth={2.5} />
+                  <X size={16} color="#9aa0b8" strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
             );
           })}
+
           {slots.length === 0 && (
-            <Text style={[styles.hint, { ...font.regular, color: '#e53935', textAlign: rtl ? 'right' : 'left' }]}>
+            <Text style={[styles.error, { ...font.regular, textAlign }]}>
               {t('builder.error_role')}
             </Text>
           )}
+        </View>
 
-          {/* Submit */}
-          <TouchableOpacity
-            style={[
-              styles.submitBtn,
-              { marginTop: 24 },
-              !canConfirm && styles.submitBtnDisabled,
-              Platform.OS === 'web' && canConfirm
-                ? ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object)
-                : undefined,
-            ]}
-            onPress={() => void handleConfirm()}
-            disabled={!canConfirm}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.submitText, { ...font.bold }]}>
-              {isSubmitting
-                ? t('builder.submitting')
-                : isEditMode
-                  ? t('builder.save_changes')
-                  : t('builder.confirm_submit')}
-            </Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        {/* ── Role answers (only for projects that carry them) ── */}
+        {Object.keys(parsedRoleAnswers).length > 0 && (
+          <View style={styles.card}>
+            {renderCardHeader(t('builder.section_role_details'))}
+            {Object.entries(parsedRoleAnswers).map(([roleKey, answers]) => {
+              const questions = ROLE_QUESTIONS[roleKey];
+              if (!questions) return null;
+              return (
+                <View key={roleKey} style={{ marginBottom: 8 }}>
+                  <Text style={[styles.fieldLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+                    {roleKey}
+                  </Text>
+                  {questions.map((q) => {
+                    const value = answers[q.id];
+                    if (!value) return null;
+                    return (
+                      <View key={q.id} style={[styles.metaRow, { flexDirection: rowDir }]}>
+                        <Text style={[styles.metaLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+                          {questionLabel(q, rtl)}
+                        </Text>
+                        {renderValue(value, styles.metaValue)}
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
-      {calOpen !== null && (
-        <MiniCalendar
-          value={calOpen === 'exec' ? exec : (deadline === 'flexible' ? '' : deadline)}
-          onSelect={(d) => {
-            if (calOpen === 'exec') setExec(d);
-            else setDeadline(d);
-            setCalOpen(null);
-          }}
-          onClose={() => setCalOpen(null)}
-        />
-      )}
+      {/* ── Pinned publish bar — the tab bar is hidden on this route ── */}
+      <View style={[styles.footer, { borderTopColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.publishBtn, !canConfirm && styles.publishBtnDisabled]}
+          onPress={() => void handleConfirm()}
+          disabled={!canConfirm}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.publishText, { ...font.medium }]}>
+            {isSubmitting
+              ? t('builder.submitting')
+              : isEditMode
+                ? t('builder.save_changes')
+                : t('builder.publish_project')}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 60 },
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 16 },
 
-  backRow: { alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 16 },
-  backText: { fontSize: 15, color: '#004aad', fontWeight: '600' },
+  backRow: { alignItems: 'center', gap: 4, paddingTop: 12, paddingHorizontal: 16 },
+  backText: { fontSize: 15, color: '#004aad' },
 
-  card: { borderRadius: 20, padding: 20, margin: 4 },
-  cardTitle: { fontSize: 22, fontWeight: '800', color: '#004aad', marginBottom: 16 },
+  headerBlock: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12 },
+  screenTitle: { fontSize: 19, fontWeight: '500', color: '#004aad' },
+  screenSubtitle: { fontSize: 12, marginTop: 2 },
 
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#004aad',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 6,
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 13,
+    marginBottom: 10,
   },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
+  cardHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  cardTitle: { fontSize: 13, fontWeight: '500', flex: 1 },
+  editLink: { fontSize: 12, color: '#004aad' },
+
+  fieldLabel: { fontSize: 11 },
+  value: { fontSize: 14, marginTop: 2 },
+  valueEmpty: { opacity: 0.7 },
+  description: { lineHeight: 20 },
+
+  metaRow: { alignItems: 'center', gap: 8, paddingVertical: 7 },
+  metaLabel: { fontSize: 11, flex: 1 },
+  metaValue: { fontSize: 13, marginTop: 0 },
+
+  chip: {
+    backgroundColor: '#eceef3',
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  chipText: { fontSize: 12, color: '#9aa0b8' },
+
+  crewRow: { alignItems: 'center', gap: 10, paddingVertical: 8 },
+  crewIcon: {
+    width: 30,
+    height: 30,
     borderRadius: 10,
+    backgroundColor: 'rgba(0,74,173,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crewText: { flex: 1 },
+  crewRole: { fontSize: 13 },
+  crewMeta: { fontSize: 11, marginTop: 1 },
+
+  error: { fontSize: 12, color: '#e53935', paddingVertical: 4 },
+
+  footer: {
+    backgroundColor: '#ffffff',
+    borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#004aad',
+    paddingTop: 14,
+    paddingBottom: 14 + BOTTOM_INSET,
   },
-  multiline: { height: 80, textAlignVertical: 'top' },
-  hint: { fontSize: 12, color: '#004aad', marginTop: 4, opacity: 0.8 },
-
-  dateRow: { flexDirection: 'row', gap: 16, marginTop: 6 },
-  dateCol: { flex: 1 },
-  dateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 6,
-  },
-  dateBtnText: { fontSize: 13, flex: 1 },
-
-  slotRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,74,173,0.1)',
-  },
-  slotInfo: { flex: 1 },
-  slotSub: { fontSize: 14, fontWeight: '600', color: '#004aad' },
-  slotCap: { fontSize: 12, color: '#7b2fa8', marginTop: 2 },
-  slotCat: { fontSize: 12, color: '#004aad', marginTop: 1 },
-  qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  qtyBtn: {
-    width: 28, height: 28, borderRadius: 14,
-    borderWidth: 1.5, borderColor: '#004aad33',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  qtyBtnAdd: { borderColor: '#004aad', backgroundColor: '#004aad22' },
-  qtyBtnText: { fontSize: 16, lineHeight: 18, fontWeight: '700', color: '#004aad' },
-  qtyBtnAddText: { color: '#004aad' },
-  qtyBadge: {
-    minWidth: 26, height: 26, borderRadius: 13,
+  publishBtn: {
     backgroundColor: '#004aad',
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
-  },
-  qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  removeBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-
-  submitBtn: {
-    backgroundColor: '#004aad',
-    borderRadius: 10,
-    paddingVertical: 15,
+    borderRadius: 16,
+    paddingVertical: 13,
     alignItems: 'center',
   },
-  submitBtnDisabled: { backgroundColor: '#555' },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
+  publishBtnDisabled: { opacity: 0.4 },
+  publishText: { color: '#ffffff', fontSize: 14, fontWeight: '500' },
 });

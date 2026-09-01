@@ -52,6 +52,11 @@ export default function ClientTabsLayout() {
 
   const pathname = usePathname();
   const inChatRoom = /\/chats\/.+/.test(pathname);
+  // The project review screen is a focused wizard step with its own pinned
+  // publish button — tab navigation mid-flow would drop the draft, and the
+  // floating bar would sit on top of the button. Header stays.
+  const inProjectReview = pathname.includes('/home/summary');
+  const hideTabBar = inChatRoom || inProjectReview;
 
   // Badge the Projects tab for price offers newer than the client last viewed
   // it. Offers have no seen flag, so "last seen" is tracked per device.
@@ -114,7 +119,7 @@ export default function ClientTabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: inChatRoom ? { display: 'none' } : getFloatingTabBarStyle(isDark),
+            tabBarStyle: hideTabBar ? { display: 'none' } : getFloatingTabBarStyle(isDark),
             tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['home', 'browse', 'chats', 'projects']} />,
             tabBarActiveTintColor: '#004aad',
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
