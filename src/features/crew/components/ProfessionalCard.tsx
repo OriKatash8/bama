@@ -137,7 +137,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
             onPress={onDirectProject}
             activeOpacity={0.8}
           >
-            <Text numberOfLines={2} style={[styles.btnFilledText, { textAlign: 'center', ...font.bold }]}>{t('search.tell_us_about_project')}</Text>
+            <Text numberOfLines={2} style={[styles.btnFilledText, { textAlign: 'center', ...font.bold }]}>{t('search.tell_us_about_project_card')}</Text>
           </TouchableOpacity>
         )}
         {onMessage && !onDirectProject && (
@@ -190,5 +190,5 @@ const styles = StyleSheet.create({
     borderColor: '#004aad',
   },
   btnOutlineText: { color: '#004aad', fontSize: 14 },
-  btnFilledText: { color: '#fff', fontSize: 14 },
+  btnFilledText: { color: '#fff', fontSize: 14, lineHeight: 17 },
 });

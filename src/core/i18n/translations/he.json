@@ -100,6 +100,7 @@
     "no_results_subtext": "אין תוצאות עבור \"{{query}}\"",
     "no_categories_match": "אין קטגוריות התואמות \"{{query}}\"",
     "tell_us_about_project": "ספר לי על הפרויקט שלך",
+    "tell_us_about_project_card": "ספר לי על\nהפרויקט שלך",
     "message": "הודעה",
     "view_profile": "צפה בפרופיל"
   },
