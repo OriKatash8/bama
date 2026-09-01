@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  collection, query, where, onSnapshot, getDoc, setDoc, doc, serverTimestamp,
+  collection, query, where, onSnapshot, getDoc, setDoc, deleteDoc, doc, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import type { Chat } from '../types';
@@ -75,9 +75,18 @@ export function useCommunityDiscovery(userId: string | undefined) {
     setJoinStatuses((prev) => ({ ...prev, [communityId]: 'pending' }));
   }
 
+  /** Withdraw a still-pending request. Deleting the doc (rather than marking it
+   *  cancelled) drops it straight out of the owner's pending-requests listener
+   *  and leaves the user free to ask again later. */
+  async function cancelJoinRequest(communityId: string) {
+    if (!userId) return;
+    await deleteDoc(doc(db, 'chats', communityId, 'joinRequests', userId));
+    setJoinStatuses((prev) => ({ ...prev, [communityId]: null }));
+  }
+
   // Include joined communities in Explore too — the UI marks them as "Member"
   // and offers "Open Chat" instead of "Request to Join".
   const discover = discoverCommunities;
 
-  return { myCommunities, discover, joinStatuses, requestToJoin };
+  return { myCommunities, discover, joinStatuses, requestToJoin, cancelJoinRequest };
 }

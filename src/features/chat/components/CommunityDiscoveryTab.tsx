@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
-import { Users, Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { Users, Search, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '@components/ui/AppText';
@@ -99,7 +99,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
     stripRef.current?.scrollTo({ x: next, animated: true });
   }
 
-  const { myCommunities, discover, joinStatuses, requestToJoin } = useCommunityDiscovery(user?.id);
+  const { myCommunities, discover, joinStatuses, requestToJoin, cancelJoinRequest } = useCommunityDiscovery(user?.id);
 
   const memberIds = useMemo(() => new Set(myCommunities.map((c) => c.id)), [myCommunities]);
 
@@ -118,6 +118,23 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       (typeof c.description === 'string' && c.description.toLowerCase().includes(q));
     return matchCat && matchText;
   });
+
+  function confirmCancelJoin(communityId: string, communityName: string) {
+    Alert.alert(
+      rtl ? 'לבטל את הבקשה?' : 'Withdraw request?',
+      rtl
+        ? `הבקשה להצטרף אל ${communityName} תבוטל. תמיד אפשר לבקש שוב.`
+        : `Your request to join ${communityName} will be withdrawn. You can ask again later.`,
+      [
+        { text: rtl ? 'השאר' : 'Keep', style: 'cancel' },
+        {
+          text: rtl ? 'בטל בקשה' : 'Withdraw',
+          style: 'destructive',
+          onPress: () => { void cancelJoinRequest(communityId); },
+        },
+      ],
+    );
+  }
 
   function navigateToCommunity(communityId: string) {
     router.push(`/${modeSegment}/(tabs)/chats/${communityId}` as never);
@@ -309,9 +326,16 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                     <AppText weight="semiBold" style={styles.btnTextLight}>{rtl ? 'פתח צ׳אט' : 'Open chat'}</AppText>
                   </TouchableOpacity>
                 ) : isPending ? (
-                  <View style={styles.btnMuted}>
+                  <TouchableOpacity
+                    style={[styles.btnMuted, styles.btnMutedRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+                    onPress={() => confirmCancelJoin(c.id, c.name ?? '')}
+                    accessibilityRole="button"
+                    accessibilityLabel={rtl ? 'ביטול בקשת הצטרפות' : 'Withdraw join request'}
+                    activeOpacity={0.7}
+                  >
                     <AppText weight="semiBold" style={styles.btnTextMuted}>{rtl ? 'בקשה נשלחה' : 'Requested'}</AppText>
-                  </View>
+                    <X size={13} color="#9aa0b8" strokeWidth={2.5} />
+                  </TouchableOpacity>
                 ) : (
                   <TouchableOpacity style={styles.btnSoft} onPress={() => requestToJoin(c.id, user?.displayName ?? '')} activeOpacity={0.8}>
                     <AppText weight="semiBold" style={styles.btnTextBlue}>{rtl ? 'הצטרף' : 'Join'}</AppText>
@@ -345,6 +369,7 @@ const styles = StyleSheet.create({
   btnSolid: { backgroundColor: '#004aad', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
   btnSoft: { backgroundColor: '#e8f0fd', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
   btnMuted: { backgroundColor: '#eceef3', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
+  btnMutedRow: { alignItems: 'center', gap: 6 },
   btnTextLight: { color: '#ffffff', fontSize: 13 },
   btnTextBlue: { color: '#004aad', fontSize: 13 },
   btnTextMuted: { color: '#9aa0b8', fontSize: 13 },

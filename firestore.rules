@@ -132,7 +132,11 @@ service cloud.firestore {
           get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
           || isAdmin()
         );
-        allow delete: if false;
+        // The requester may withdraw their own request while it is still
+        // pending — never once the owner has approved or rejected it.
+        allow delete: if isAuth()
+          && request.auth.uid == requestId
+          && resource.data.status == 'pending';
       }
     }
 
