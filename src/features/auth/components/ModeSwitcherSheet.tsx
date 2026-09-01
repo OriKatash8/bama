@@ -92,7 +92,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
       <Animated.View
         style={[
           styles.card,
-          { backgroundColor: colors.card, borderColor: colors.border },
+          { backgroundColor: '#ffffff', borderColor: colors.border },
           {
             opacity,
             transform: [{ translateY }],
