@@ -516,7 +516,7 @@
     "acknowledge": "הבנתי"
   },
   "history": {
-    "title": "הצעות והוסתרו",
+    "title": "היסטוריה",
     "tab_sent": "הצעות שנשלחו",
     "tab_hidden": "הוסתרו",
     "close": "סגירה",
@@ -526,7 +526,7 @@
     "status_rejected": "נדחה",
     "status_removed": "הוסר",
     "bundle": "חבילה",
-    "bundle_note": "לא ניתן לערוך הצעות חבילה כאן.",
+    "bundle_note": "סה\"כ בנפרד: ₪{{total}}",
     "edited": "עודכן",
     "edit": "עריכה",
     "edit_price": "עריכת מחיר",
@@ -811,6 +811,9 @@
     "appearance": "מראה",
     "information": "מידע",
     "privacy": "פרטיות ואבטחה",
+    "subscription": "מנוי",
+    "terms": "תנאי שימוש",
+    "soon": "בקרוב",
     "logout": "התנתק",
     "notifications": "התראות",
     "notif_perm_on": "ההתראות מופעלות",

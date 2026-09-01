@@ -80,7 +80,7 @@ export const ROLES: RoleDef[] = [
     specializations: [
       { id: 'general',         he: 'כללי',                 en: 'General' },
       { id: 'manager',         he: 'ניהול סושיאל (אסטרטגיה)', en: 'Social Manager' },
-      { id: 'content_creator', he: 'יוצר תוכן ויזואלי',      en: 'Content Creator' },
+      { id: 'content_creator', he: 'יוצר תוכן UGC',          en: 'UGC Content Creator' },
       { id: 'ppc',             he: 'קמפיינים ממומנים (PPC)', en: 'PPC / Paid Campaigns' },
     ],
   },

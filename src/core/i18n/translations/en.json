@@ -516,7 +516,7 @@
     "acknowledge": "I understand"
   },
   "history": {
-    "title": "Offers & hidden",
+    "title": "History",
     "tab_sent": "Sent offers",
     "tab_hidden": "Hidden",
     "close": "Close",
@@ -526,7 +526,7 @@
     "status_rejected": "Rejected",
     "status_removed": "Removed",
     "bundle": "Bundle",
-    "bundle_note": "Bundle offers can't be edited here.",
+    "bundle_note": "Individual total: ₪{{total}}",
     "edited": "Updated",
     "edit": "Edit",
     "edit_price": "Edit price",
@@ -811,6 +811,9 @@
     "appearance": "Appearance",
     "information": "Information",
     "privacy": "Privacy & Security",
+    "subscription": "Subscription",
+    "terms": "Terms & Conditions",
+    "soon": "Soon",
     "logout": "Log out",
     "notifications": "Notifications",
     "notif_perm_on": "Notifications are on",
