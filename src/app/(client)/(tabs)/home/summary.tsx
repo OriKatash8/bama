@@ -238,30 +238,27 @@ export default function SummaryScreen() {
 
   return (
     <Screen scrollable={false} backgroundColor={colors.bg}>
-      {/* Back */}
-      <TouchableOpacity
-        style={[styles.backRow, { flexDirection: rowDir, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}
-        onPress={() => router.back()}
-        activeOpacity={0.7}
-        hitSlop={12}
-      >
-        <ChevronLeft
-          size={20}
-          color="#004aad"
-          strokeWidth={2}
-          style={rtl ? { transform: [{ scaleX: -1 }] } : undefined}
-        />
-        <Text style={[styles.backText, { ...font.semiBold }]}>{t('builder.back_to_edit')}</Text>
-      </TouchableOpacity>
+      {/* Back shares the title's row and stays on the left in both languages —
+          it points out of the flow, not into the RTL text. */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity
+          style={styles.backRow}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+          hitSlop={12}
+        >
+          <ChevronLeft size={20} color="#004aad" strokeWidth={2} />
+          <Text style={[styles.backText, { ...font.semiBold }]}>{t('builder.back_to_edit')}</Text>
+        </TouchableOpacity>
 
-      {/* Title + subtitle */}
-      <View style={styles.headerBlock}>
-        <Text style={[styles.screenTitle, { ...font.medium, textAlign }]}>
-          {t('builder.summary_title')}
-        </Text>
-        <Text style={[styles.screenSubtitle, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
-          {t('builder.summary_subtitle')}
-        </Text>
+        <View style={styles.headerBlock}>
+          <Text style={[styles.screenTitle, { ...font.medium, textAlign }]} numberOfLines={1}>
+            {t('builder.summary_title')}
+          </Text>
+          <Text style={[styles.screenSubtitle, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
+            {t('builder.summary_subtitle')}
+          </Text>
+        </View>
       </View>
 
       <ScrollView
@@ -409,10 +406,18 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingBottom: 16 },
 
-  backRow: { alignItems: 'center', gap: 4, paddingTop: 12, paddingHorizontal: 16 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backText: { fontSize: 15, color: '#004aad' },
 
-  headerBlock: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12 },
+  headerBlock: { flex: 1 },
   screenTitle: { fontSize: 19, fontWeight: '500', color: '#004aad' },
   screenSubtitle: { fontSize: 12, marginTop: 2 },
 
