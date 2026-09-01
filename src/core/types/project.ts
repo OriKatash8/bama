@@ -176,6 +176,9 @@ export type BundleOffer = {
   offerIds: string[];
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: Timestamp;
+  /** Set when the professional edits a pending bundle's price. */
+  editedAt?: Timestamp;
+  editCount?: number;
 };
 
 export type AcceptedMember = {

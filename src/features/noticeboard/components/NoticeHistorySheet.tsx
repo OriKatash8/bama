@@ -59,12 +59,18 @@ export function NoticeHistorySheet({ visible, onClose }: { visible: boolean; onC
     return new Date(ts * 1000).toLocaleDateString(rtl ? 'he-IL' : 'en-US', { day: '2-digit', month: '2-digit', year: '2-digit' });
   }
 
-  async function saveEdit(offerId: string) {
+  /** Individual offers reprice `priceOffers.price`; bundles reprice
+   *  `bundleOffers.bundlePrice` — the same field the payment-request flow
+   *  reprices a bundle on. `individualTotal` stays as the original
+   *  per-slot sum, so it keeps working as the discount anchor. */
+  async function saveEdit(entry: SentOfferEntry) {
     const price = Number(editValue);
     if (!Number.isFinite(price) || price <= 0) { showToast(t('history.invalid_price'), 'error'); return; }
-    setSavingId(offerId);
+    setSavingId(entry.id);
     try {
-      await updateDocument(`priceOffers/${offerId}`, { price, editedAt: serverTimestamp(), editCount: increment(1) } as never);
+      const path = entry.kind === 'bundle' ? `bundleOffers/${entry.id}` : `priceOffers/${entry.id}`;
+      const priceField = entry.kind === 'bundle' ? { bundlePrice: price } : { price };
+      await updateDocument(path, { ...priceField, editedAt: serverTimestamp(), editCount: increment(1) } as never);
       setEditingId(null);
     } catch {
       showToast(t('history.save_error'), 'error');
@@ -77,12 +83,13 @@ export function NoticeHistorySheet({ visible, onClose }: { visible: boolean; onC
     const isPrice = entry.kind === 'price';
     const status = entry.data.status;
     const readOnly = status !== 'pending';
-    const editable = isPrice && status === 'pending';
+    const editable = status === 'pending';
     const editing = editingId === entry.id;
+    const currentPrice = isPrice ? (entry.data as PriceOffer).price : (entry.data as BundleOffer).bundlePrice;
     const meta = isPrice
-      ? `${categoryLabel((entry.data as PriceOffer).category, lang)} · ₪${(entry.data as PriceOffer).price.toLocaleString()}`
-      : `${t('history.bundle')} · ₪${(entry.data as BundleOffer).bundlePrice.toLocaleString()}`;
-    const edited = isPrice && !!(entry.data as PriceOffer).editedAt;
+      ? `${categoryLabel((entry.data as PriceOffer).category, lang)} · ₪${currentPrice.toLocaleString()}`
+      : `${t('history.bundle')} · ₪${currentPrice.toLocaleString()}`;
+    const edited = !!entry.data.editedAt;
 
     return (
       <View key={`${entry.kind}-${entry.id}`} style={[styles.card, { borderColor: colors.border }, readOnly && styles.cardDim]}>
@@ -102,7 +109,7 @@ export function NoticeHistorySheet({ visible, onClose }: { visible: boolean; onC
         </AppText>
         {!isPrice && (
           <AppText weight="regular" style={[styles.bundleNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-            {t('history.bundle_note')}
+            {t('history.bundle_note', { total: (entry.data as BundleOffer).individualTotal.toLocaleString() })}
           </AppText>
         )}
 
@@ -113,7 +120,7 @@ export function NoticeHistorySheet({ visible, onClose }: { visible: boolean; onC
           {editable && !editing && (
             <TouchableOpacity
               style={[styles.editBtn, { flexDirection: rowDir }]}
-              onPress={() => { setEditingId(entry.id); setEditValue(String((entry.data as PriceOffer).price)); }}
+              onPress={() => { setEditingId(entry.id); setEditValue(String(currentPrice)); }}
               accessibilityRole="button"
               accessibilityLabel={t('history.edit_price')}
               activeOpacity={0.7}
@@ -134,7 +141,7 @@ export function NoticeHistorySheet({ visible, onClose }: { visible: boolean; onC
               placeholder="₪"
               placeholderTextColor={colors.placeholder}
             />
-            <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.primary }]} onPress={() => saveEdit(entry.id)} disabled={savingId === entry.id} accessibilityRole="button" accessibilityLabel={t('history.save')}>
+            <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.primary }]} onPress={() => saveEdit(entry)} disabled={savingId === entry.id} accessibilityRole="button" accessibilityLabel={t('history.save')}>
               {savingId === entry.id ? <ActivityIndicator size="small" color="#ffffff" /> : <Check size={16} color="#ffffff" strokeWidth={2.5} />}
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtnGhost} onPress={() => setEditingId(null)} accessibilityRole="button" accessibilityLabel={t('history.cancel')}>
