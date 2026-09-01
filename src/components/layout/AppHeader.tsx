@@ -19,6 +19,8 @@ import {
   Bell,
   Camera,
   ChevronRight,
+  CreditCard,
+  FileText,
   Globe,
   Info,
   LogOut,
@@ -95,7 +97,7 @@ export function AppHeader() {
   const firstName = user?.displayName?.split(' ')[0] ?? '';
   const greeting = `${t(getGreetingKey())}, ${firstName}`;
   const modeIsClient = activeMode === 'client';
-  const modeBadgeColor = modeIsClient ? '#004aad' : '#5b21b6';
+  const modeBadgeColor = modeIsClient ? '#004aad' : '#7c3aed';
   const modeBadgeLabel = modeIsClient ? t('header.client_mode') : t('header.pro_mode');
 
   async function handleAvatarPress() {
@@ -265,6 +267,24 @@ export function AppHeader() {
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
 
+            {/* Subscription — not built yet; the row is here to place it in the menu. */}
+            <TouchableOpacity
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => Alert.alert(t('settings.subscription'), 'Coming soon')}
+              activeOpacity={0.7}
+            >
+              <CreditCard size={18} color={colors.textMuted} strokeWidth={1.5} />
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                {t('settings.subscription')}
+              </AppText>
+              <View style={[styles.soonBadge, { backgroundColor: colors.inputBg }]}>
+                <AppText weight="semiBold" style={[styles.soonText, { color: colors.primary }]}>
+                  {t('settings.soon')}
+                </AppText>
+              </View>
+              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+            </TouchableOpacity>
+
             {/* Information */}
             <TouchableOpacity
               style={[styles.menuRow, { borderBottomColor: colors.border }]}
@@ -287,6 +307,19 @@ export function AppHeader() {
               <Shield size={18} color={colors.textMuted} strokeWidth={1.5} />
               <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                 {t('settings.privacy')}
+              </AppText>
+              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+            </TouchableOpacity>
+
+            {/* Terms & conditions */}
+            <TouchableOpacity
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => Alert.alert(t('settings.terms'), 'Coming soon')}
+              activeOpacity={0.7}
+            >
+              <FileText size={18} color={colors.textMuted} strokeWidth={1.5} />
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                {t('settings.terms')}
               </AppText>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
@@ -413,6 +446,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   menuLabel: { flex: 1, fontSize: 14 },
+  soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  soonText: { fontSize: 10 },
 
   langToggle: {
     flexDirection: 'row',
