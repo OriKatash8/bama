@@ -104,7 +104,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
           const isLast   = index === MODES.length - 1;
 
           // Native fallback: dark purple when active
-          const nativeActiveColor = { color: '#7c3aed' };
+          const nativeActiveColor = { color: '#8b5cf6' };
           const nativeInactiveColor = { color: colors.text };
 
           return (
