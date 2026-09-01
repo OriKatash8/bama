@@ -480,6 +480,11 @@ export function ChatRoomScreen({ chatId }: Props) {
   // the view pinned to the newest message (initial open + new messages while at
   // the bottom) without yanking the user down when they've scrolled up.
   const isAtBottomRef = useRef(true);
+  // Opening a conversation (or switching channel) pins the list to the newest
+  // message until the user drags. isAtBottomRef alone is not enough: rows are
+  // measured as they render — images and listing cards land late — so the first
+  // scrollToEnd lands short and the last message sits below the fold.
+  const pinToBottomRef = useRef(true);
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatArchived, setChatArchived] = useState(false);
@@ -767,6 +772,14 @@ export function ChatRoomScreen({ chatId }: Props) {
       });
     });
   }, [chatId, chatType]);
+
+  // Entering a chat — or switching community channel — opens on the last message.
+  useEffect(() => {
+    pinToBottomRef.current = true;
+    isAtBottomRef.current = true;
+    setShowScrollDown(false);
+    flatListRef.current?.scrollToEnd({ animated: false });
+  }, [chatId, activeChannelId]);
 
   // Community: listen to active channel messages
   useEffect(() => {
@@ -1284,8 +1297,15 @@ export function ChatRoomScreen({ chatId }: Props) {
             isAtBottomRef.current = distanceFromBottom <= 80;
             setShowScrollDown(distanceFromBottom > 200);
           }}
+          // The user taking hold of the list releases the open-at-bottom pin.
+          onScrollBeginDrag={() => { pinToBottomRef.current = false; }}
+          onLayout={() => {
+            if (pinToBottomRef.current) flatListRef.current?.scrollToEnd({ animated: false });
+          }}
           onContentSizeChange={() => {
-            if (isAtBottomRef.current) flatListRef.current?.scrollToEnd({ animated: false });
+            if (pinToBottomRef.current || isAtBottomRef.current) {
+              flatListRef.current?.scrollToEnd({ animated: false });
+            }
           }}
           renderItem={({ item }) => {
             if ('type' in item && item.type === 'date-separator') {
