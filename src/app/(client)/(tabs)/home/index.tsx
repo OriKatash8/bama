@@ -38,6 +38,19 @@ const ROLE_IMAGES: Record<string, ReturnType<typeof require>> = {
   sound:            require('../../../../../assets/images/categories/sound-wide.png'),
 };
 
+// Round category icons — the same set the client browse (search) page uses,
+// keyed by the legacy category string stored on crewSlot.category.
+const CATEGORY_ICON: Record<string, ReturnType<typeof require>> = {
+  'Video Photographer': require('../../../../../assets/images/categories/videographer-blue.png'),
+  'Still Photographer': require('../../../../../assets/images/categories/blue-cam.png'),
+  'Editor':             require('../../../../../assets/images/categories/blue-edit.png'),
+  'Graphic Designer':   require('../../../../../assets/images/categories/blue-grafic.png'),
+  'Social Media':       require('../../../../../assets/images/categories/blue-social.png'),
+  'Studio & Audio':     require('../../../../../assets/images/categories/blue-mic.png'),
+  'Lighting Tech':      require('../../../../../assets/images/categories/blue-lightning.png'),
+  'Sound Recordist':    require('../../../../../assets/images/categories/blue-sound.png'),
+};
+
 // Builder role tiles: sourced from ROLES; `key` is the legacy category string that
 // gets stored on crewSlot.category (matching + questions still key on it).
 const CATEGORIES = ROLES.map((r) => ({
@@ -486,8 +499,8 @@ export default function HomeScreen() {
         {step === 3 && (
           <>
             <PageTitle>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
-            <Text style={[styles.stepLabel, { textAlign: 'center' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
-            <View style={[styles.progressRow, { justifyContent: 'center' }]}>
+            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
+            <View style={styles.progressRow}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -508,8 +521,8 @@ export default function HomeScreen() {
                 <View key={category} style={styles.s3Card}>
                   {/* Role header */}
                   <View style={[styles.s3Header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    {catDef?.image ? (
-                      <Image source={catDef.image} style={styles.s3Avatar} contentFit="contain" cachePolicy="memory-disk" />
+                    {CATEGORY_ICON[category] ? (
+                      <Image source={CATEGORY_ICON[category]} style={styles.s3Avatar} contentFit="cover" cachePolicy="memory-disk" />
                     ) : null}
                     <View style={{ flex: 1 }}>
                       <AppText weight="bold" style={[styles.s3RoleName, { textAlign: rtl ? 'right' : 'left' }]}>{roleLabel}</AppText>
@@ -696,7 +709,7 @@ function createStyles(
   return StyleSheet.create({
     scroll: { flex: 1 },
     scrollContent: { paddingBottom: 24 },
-    stepLabel: { fontSize: 13, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
+    stepLabel: { fontSize: 13, fontWeight: '500', fontFamily: ffMedium, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
 
     progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },
@@ -1057,7 +1070,7 @@ function createStyles(
       elevation: 2,
     },
     s3Header: { alignItems: 'center', gap: 12, marginBottom: 4 },
-    s3Avatar: { width: 40, height: 40 },
+    s3Avatar: { width: 80, height: 80, borderRadius: 40 },
     s3RoleName: { fontSize: 16, color: '#2a2f5a' },
     s3RoleNeed: { fontSize: 12, color: '#9aa0b8', marginTop: 1 },
     s3Slot: { backgroundColor: '#faf9fe', borderRadius: 13, padding: 11, marginTop: 10, gap: 8 },
