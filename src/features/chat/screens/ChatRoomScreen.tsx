@@ -68,6 +68,10 @@ import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
 import type { MediaAsset } from '@core/types/media';
 
 type Translations = typeof en;
+
+/** Names the General channel has shipped under. Matched language-agnostically so
+ *  a community created in one language still resolves in the other. */
+const GENERAL_CHANNEL_NAMES = ['כללי', 'General'];
 function makeT(translations: Translations) {
   return (key: string): string => {
     const keys = key.split('.');
@@ -469,6 +473,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const fetchedIdsRef = useRef<Set<string>>(new Set());
   const creatingGeneralRef = useRef(false);
   const creatingMarketRef = useRef(false);
+  const channelBarRef = useRef<ScrollView>(null);
   const flatListRef = useRef<FlatList>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
   // Tracks whether the list is at/near the bottom, so content-size changes keep
@@ -746,7 +751,12 @@ export function ChatRoomScreen({ chatId }: Props) {
       }
 
       // Order: General, שוק, then legacy channels (by createdAt) — timestamp-independent.
-      const rank = (c: Channel) => (c.kind === 'general' ? 0 : c.kind === 'market' ? 1 : 2);
+      // General is matched by name too: channels created before `kind` existed
+      // carry no kind, and this one must stay first (it anchors the strip).
+      const rank = (c: Channel) =>
+        c.kind === 'general' || GENERAL_CHANNEL_NAMES.includes(c.name) ? 0
+        : c.kind === 'market' ? 1
+        : 2;
       const sorted = [...list].sort(
         (a, b) => rank(a) - rank(b) || (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0),
       );
@@ -1211,10 +1221,23 @@ export function ChatRoomScreen({ chatId }: Props) {
       {/* Channel tab bar (community only) */}
       {chatType === 'community' && channels.length > 0 && (
         <ScrollView
+          ref={channelBarRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.channelBar}
-          contentContainerStyle={[styles.channelBarContent, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+          // row-reverse puts channels[0] (General) at the right in Hebrew and at
+          // the left in English; flexGrow packs a short strip against that same
+          // edge instead of leaving it stranded on the left.
+          contentContainerStyle={[
+            styles.channelBarContent,
+            { flexDirection: rtl ? 'row-reverse' : 'row', flexGrow: 1 },
+          ]}
+          // A strip too wide to fit opens at scroll offset 0 — the far left,
+          // i.e. the LAST channel in Hebrew. Jump to the right edge so General
+          // is what the user sees first.
+          onContentSizeChange={() => {
+            if (rtl) channelBarRef.current?.scrollToEnd({ animated: false });
+          }}
         >
           {channels.map((ch) => {
             const isActive = activeChannelId === ch.id;
