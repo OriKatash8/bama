@@ -17,10 +17,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument } from '@core/firebase/firestore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useTheme } from '@core/hooks/useTheme';
+import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
+import { brandLabel } from '@features/marketplace/utils';
 
 type Translations = typeof en;
 
@@ -155,6 +157,7 @@ export default function MarketplaceScreen() {
   const [draftCondition, setDraftCondition]     = useState<ProductCondition | null>(null);
 
   const colors = useTheme();
+  const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -209,7 +212,7 @@ export default function MarketplaceScreen() {
     }] : []),
     ...(filterBrands.length > 0 ? [{
       key: 'brand',
-      label: `${t('marketplace.filter_brand')}: ${filterBrands.join(', ')}`,
+      label: `${t('marketplace.filter_brand')}: ${filterBrands.map((b) => brandLabel(b, rtl ? 'he' : 'en')).join(', ')}`,
       onRemove: () => setFilterBrands([]),
     }] : []),
 ...(filterCondition ? [{
@@ -280,7 +283,7 @@ export default function MarketplaceScreen() {
         <View style={[styles.searchWrap, { flexDirection: rtl ? 'row-reverse' : 'row', borderColor: colors.borderMuted }]}>
           <Search size={18} color={colors.placeholder} strokeWidth={2} />
           <TextInput
-            style={[styles.searchBar, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+            style={[styles.searchBar, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
             placeholder={t('marketplace.search_placeholder')}
             placeholderTextColor={colors.placeholder}
             value={searchQuery}
@@ -429,22 +432,18 @@ export default function MarketplaceScreen() {
                   ? ` · ${t(`marketplace.${selectedCatLabelKey}`)}`
                   : ''}
               </AppText>
-              <View style={[styles.brandGrid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.filterChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {availableBrands.map((brand) => {
                   const selected = draftBrands.includes(brand);
                   return (
                     <TouchableOpacity
                       key={brand}
-                      style={[
-                        styles.brandPill,
-                        { borderColor: selected ? '#004aad' : colors.border },
-                        selected && styles.brandPillActive,
-                      ]}
+                      style={[styles.filterChip, selected && styles.filterChipActive]}
                       onPress={() => toggleDraftBrand(brand)}
                       activeOpacity={0.8}
                     >
-                      <AppText weight="semiBold" style={[styles.brandPillLabel, { color: selected ? '#fff' : colors.text }]}>
-                        {brand}
+                      <AppText weight="semiBold" style={[styles.filterChipLabel, selected && styles.filterChipLabelActive]}>
+                        {brandLabel(brand, rtl ? 'he' : 'en')}
                       </AppText>
                     </TouchableOpacity>
                   );
@@ -573,11 +572,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    gap: 8,
+    gap: 4,
     marginTop: 0,
   },
   catItem: {
-    width: 92,
+    width: 82,
     alignItems: 'center',
     paddingVertical: 4,
     gap: 2,
@@ -678,18 +677,6 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
   filterChipLabel: { fontSize: 13, fontWeight: '600', color: '#004aad' },
   filterChipLabelActive: { color: '#fff' },
-
-  brandGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
-  brandPill: {
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    backgroundColor: '#ffffff',
-    margin: 4,
-  },
-  brandPillActive: { backgroundColor: '#004aad' },
-  brandPillLabel: { fontSize: 13, fontWeight: '600' },
 
   filterModalInput: {
     backgroundColor: '#ffffff',

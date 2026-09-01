@@ -1,13 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
-  Modal, View, TouchableOpacity, TextInput,
-  StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, PanResponder,
+  Modal, View, Text, TouchableOpacity, TextInput,
+  StyleSheet, ScrollView, ActivityIndicator, type TextProps,
 } from 'react-native';
-import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 const BLUE_CAM = require('../../../../assets/images/categories/blue-cam.png');
-import { LinearGradient } from 'expo-linear-gradient';
 import { X, MapPin } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CityPickerModal } from './CityPickerModal';
@@ -15,11 +13,23 @@ import { useCreateListing } from '../hooks/useCreateListing';
 import { useUpdateListing } from '../hooks/useUpdateListing';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '../types';
+import { brandLabel } from '../utils';
 
 type Translations = typeof en;
+
+/** Every string in this sheet follows the APP LANGUAGE rather than the string's
+ *  own script (which is what AppText does). In Hebrew mode that keeps the Latin
+ *  data — brand and subcategory names — in Heebo instead of falling back to
+ *  Montserrat mid-form. */
+type SheetTextProps = TextProps & { weight?: 'regular' | 'medium' | 'semiBold' | 'bold' | 'light' };
+function SheetText({ weight = 'regular', style, children, ...rest }: SheetTextProps) {
+  const font = useAppFont();
+  return <Text style={[style, font[weight]]} {...rest}>{children}</Text>;
+}
 
 function makeT(translations: Translations) {
   return (key: string): string => {
@@ -152,20 +162,14 @@ type Props = {
 };
 
 export function PostListingSheet({ visible, initialType, lockedType = false, editListing, onClose }: Props) {
-  const { height: screenHeight } = useWindowDimensions();
   const { create, isSubmitting: isCreating } = useCreateListing();
   const { update, isSubmitting: isUpdating } = useUpdateListing();
   const isEditing = !!editListing;
   const isSubmitting = isCreating || isUpdating;
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 8 && Math.abs(gs.dy) > Math.abs(gs.dx),
-      onPanResponderRelease: (_, gs) => { if (gs.dy > 80) onClose(); },
-    })
-  ).current;
   const { showToast } = useUiStore();
   const language = useSettingsStore((s) => s.language);
+  const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const [type, setType]               = useState<MarketplaceListingType>(editListing?.type ?? initialType);
@@ -249,26 +253,15 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { maxHeight: screenHeight * 0.88 }]}>
-
-        <LinearGradient
-          colors={['#efd4f6', '#b7cae6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.card}
-        >
-          {/* Drag handle */}
-          <View style={styles.dragHandleArea} {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
-          </View>
-
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <View style={styles.card}>
           {/* Header */}
           <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <AppText weight="bold" style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
+            <SheetText weight="bold" style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
               {t(isEditing ? 'marketplace.edit_listing_title' : 'marketplace.post_listing')}
-            </AppText>
+            </SheetText>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
               <X size={20} color="#004aad" />
             </TouchableOpacity>
@@ -277,7 +270,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
           {/* Scrollable form */}
           <ScrollView
             automaticallyAdjustKeyboardInsets
-            style={[styles.scroll, { maxHeight: screenHeight * 0.88 - 130 }]}
+            style={styles.scroll}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -290,26 +283,26 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                   onPress={() => setType('secondhand')}
                   activeOpacity={0.8}
                 >
-                  <AppText weight="semiBold" style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive]}>
+                  <SheetText weight="semiBold" style={[styles.pillLabel, type === 'secondhand' && styles.pillLabelActive]}>
                     {t('marketplace.second_hand')}
-                  </AppText>
+                  </SheetText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.pill, type === 'rental' && styles.pillActive]}
                   onPress={() => setType('rental')}
                   activeOpacity={0.8}
                 >
-                  <AppText weight="semiBold" style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive]}>
+                  <SheetText weight="semiBold" style={[styles.pillLabel, type === 'rental' && styles.pillLabelActive]}>
                     {t('marketplace.rental')}
-                  </AppText>
+                  </SheetText>
                 </TouchableOpacity>
               </View>
             )}
 
             {/* Image */}
-            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+            <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.label_image')}
-            </AppText>
+            </SheetText>
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
               {imageUri ? (
                 <Image source={{ uri: imageUri }} style={styles.previewImage} />
@@ -319,17 +312,17 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                     source={BLUE_CAM}
                     style={[styles.cameraIcon, rtl ? { marginRight: 0, marginLeft: 8 } : null]}
                   />
-                  <AppText weight="regular" style={styles.imagePickerLabel}>{t('marketplace.upload_photo')}</AppText>
+                  <SheetText weight="regular" style={styles.imagePickerLabel}>{t('marketplace.upload_photo')}</SheetText>
                 </View>
               )}
             </TouchableOpacity>
 
             {/* Product name */}
-            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+            <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.label_name')}
-            </AppText>
+            </SheetText>
             <TextInput
-              style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
               placeholder={t('marketplace.product_name')}
               placeholderTextColor="rgba(0,0,0,0.3)"
               value={productName}
@@ -337,9 +330,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             />
 
             {/* Category */}
-            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+            <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.category')}
-            </AppText>
+            </SheetText>
             <View style={[styles.grid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               {CATEGORIES.map((cat) => (
                 <TouchableOpacity
@@ -348,9 +341,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                   onPress={() => handleCategorySelect(cat.id)}
                   activeOpacity={0.8}
                 >
-                  <AppText weight="semiBold" style={[styles.catLabel, category === cat.id && styles.catLabelActive]}>
+                  <SheetText weight="semiBold" style={[styles.catLabel, category === cat.id && styles.catLabelActive]}>
                     {t(`marketplace.${cat.labelKey}`)}
-                  </AppText>
+                  </SheetText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -358,9 +351,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             {/* Subcategory */}
             {hasSubcategoryStep && subcategoryOptions && (
               <>
-                <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                   {t('marketplace.subcategory')}
-                </AppText>
+                </SheetText>
                 <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   {subcategoryOptions.map((sub) => (
                     <TouchableOpacity
@@ -369,9 +362,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                       onPress={() => handleSubcategorySelect(sub)}
                       activeOpacity={0.8}
                     >
-                      <AppText weight="semiBold" style={[styles.chipLabel, subcategory.includes(sub) && styles.chipLabelActive]}>
+                      <SheetText weight="semiBold" style={[styles.chipLabel, subcategory.includes(sub) && styles.chipLabelActive]}>
                         {sub}
-                      </AppText>
+                      </SheetText>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -382,9 +375,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             {hasSubcategoryStep ? (
               subcategory.length > 0 && (
                 <>
-                  <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                  <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                     {t('marketplace.brand')}
-                  </AppText>
+                  </SheetText>
                   <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     {getBrandOptionsMulti(category, subcategory).map((b) => (
                       <TouchableOpacity
@@ -393,13 +386,13 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                         onPress={() => { setBrand(b); if (b !== 'Other') setCustomBrand(''); }}
                         activeOpacity={0.8}
                       >
-                        <AppText weight="semiBold" style={[styles.chipLabel, brand === b && styles.chipLabelActive]}>{b}</AppText>
+                        <SheetText weight="semiBold" style={[styles.chipLabel, brand === b && styles.chipLabelActive]}>{brandLabel(b, rtl ? 'he' : 'en')}</SheetText>
                       </TouchableOpacity>
                     ))}
                   </View>
                   {brand === 'Other' && (
                     <TextInput
-                      style={[styles.input, { textAlign: rtl ? 'right' : 'left', marginTop: -2 }]}
+                      style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left', marginTop: -2 }]}
                       placeholder={rtl ? 'שם החברה / המותג' : 'Brand / company name'}
                       placeholderTextColor="rgba(0,0,0,0.3)"
                       value={customBrand}
@@ -412,7 +405,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             ) : (
               category.length > 0 && (
                 <TextInput
-                  style={[styles.input, { textAlign: rtl ? 'right' : 'left' }]}
+                  style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                   placeholder={t('marketplace.brand_placeholder')}
                   placeholderTextColor="rgba(0,0,0,0.3)"
                   value={brand}
@@ -424,9 +417,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             {/* Condition (secondhand only) */}
             {type === 'secondhand' && (
               <>
-                <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                   {t('marketplace.condition')}
-                </AppText>
+                </SheetText>
                 <View style={[styles.conditionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   {CONDITIONS.map((c) => (
                     <TouchableOpacity
@@ -438,9 +431,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                       onPress={() => setCondition(condition === c.value ? null : c.value)}
                       activeOpacity={0.8}
                     >
-                      <AppText weight="semiBold" style={[styles.conditionLabel, condition === c.value && { color: '#fff' }]}>
+                      <SheetText weight="semiBold" style={[styles.conditionLabel, condition === c.value && { color: '#fff' }]}>
                         {t(`marketplace.condition_${c.value}`)}
-                      </AppText>
+                      </SheetText>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -448,9 +441,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             )}
 
             {/* Location */}
-            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+            <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.label_location')}
-            </AppText>
+            </SheetText>
             <TouchableOpacity
               style={[styles.input, styles.locationTrigger, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
               onPress={() => setLocationPickerOpen(true)}
@@ -458,13 +451,13 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
               accessibilityRole="button"
             >
               <MapPin size={16} color="#004aad" strokeWidth={1.8} />
-              <AppText
+              <SheetText
                 weight="regular"
                 style={[styles.locationTriggerText, { textAlign: rtl ? 'right' : 'left', color: location ? '#1a1a2e' : 'rgba(0,0,0,0.3)' }]}
                 numberOfLines={1}
               >
                 {location || t('marketplace.location_city')}
-              </AppText>
+              </SheetText>
               {location.length > 0 && (
                 <TouchableOpacity onPress={() => setLocation('')} hitSlop={8} activeOpacity={0.7}>
                   <X size={14} color="rgba(0,0,0,0.35)" strokeWidth={2.5} />
@@ -473,12 +466,12 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             </TouchableOpacity>
 
             {/* Price */}
-            <AppText weight="bold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+            <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.label_price')}
-            </AppText>
+            </SheetText>
             <View style={[styles.priceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <TextInput
-                style={[styles.input, styles.priceInput, { textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.input, styles.priceInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={type === 'rental' ? t('marketplace.price_per_day') : t('marketplace.price_ils')}
                 placeholderTextColor="rgba(0,0,0,0.3)"
                 value={price}
@@ -486,25 +479,27 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                 keyboardType="numeric"
               />
               {type === 'rental' && (
-                <AppText weight="semiBold" style={styles.priceSuffix}>{t('marketplace.per_day')}</AppText>
+                <SheetText weight="semiBold" style={styles.priceSuffix}>{t('marketplace.per_day')}</SheetText>
               )}
             </View>
 
-            {/* Submit */}
+          </ScrollView>
+
+          {/* Actions — pinned below the scroll, like the filter modal's apply row */}
+          <View style={[styles.actions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity
               style={[styles.submitBtn, !canSubmit && styles.disabled]}
               onPress={handleSubmit}
               disabled={!canSubmit}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               {isSubmitting
                 ? <ActivityIndicator color="#fff" />
-                : <AppText weight="bold" style={styles.submitText}>{t(isEditing ? 'marketplace.save_changes' : 'marketplace.post_listing_btn')}</AppText>}
+                : <SheetText weight="bold" style={styles.submitText}>{t(isEditing ? 'marketplace.save_changes' : 'marketplace.post_listing_btn')}</SheetText>}
             </TouchableOpacity>
-          </ScrollView>
-        </LinearGradient>
-        </TouchableOpacity>
-      </TouchableOpacity>
+          </View>
+        </View>
+      </View>
 
       <CityPickerModal
         visible={locationPickerOpen}
@@ -517,31 +512,29 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
 }
 
 const styles = StyleSheet.create({
+  // Shell mirrors the marketplace filter modal: centred card, fade in,
+  // white surface, 24 radius, capped at 85% of the screen.
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
     backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  sheetWrapper: {
-    width: '100%',
-    overflow: 'hidden',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
   },
   card: {
     width: '100%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
+    maxWidth: 440,
+    maxHeight: '85%',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 24,
-    paddingTop: 8,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 20,
   },
-  dragHandleArea: { alignItems: 'center', paddingVertical: 8 },
-  dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.18)' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -560,23 +553,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scroll: {},
-  scrollContent: { paddingBottom: 100 },
+  scroll: { flexShrink: 1 },
+  scrollContent: { paddingBottom: 4 },
 
   toggle: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   pill: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 16,
     paddingVertical: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#ffffff',
   },
-  pillActive: { backgroundColor: '#cb6ce6' },
-  pillLabel: { fontSize: 14, fontWeight: '600', color: 'rgba(0,0,0,0.4)' },
+  pillActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  pillLabel: { fontSize: 13, fontWeight: '600', color: '#004aad' },
   pillLabelActive: { color: '#fff' },
 
   imagePicker: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(0,74,173,0.04)',
     borderRadius: 12,
     height: 100,
     alignItems: 'center',
@@ -584,87 +579,90 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: 'rgba(0,74,173,0.3)',
-    marginBottom: 12,
+    marginBottom: 16,
     overflow: 'hidden',
   },
   previewImage: { width: '100%', height: 100 },
   imagePickerPlaceholder: { flexDirection: 'row', alignItems: 'center' },
   cameraIcon: { width: 40, height: 40, marginRight: 8 },
-  imagePickerLabel: { fontSize: 13, color: 'rgba(0,0,0,0.4)' },
+  imagePickerLabel: { fontSize: 13, color: 'rgba(15,15,31,0.4)' },
 
+  // Same input treatment as the filter modal's `filterModalInput`.
   input: {
     backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
     color: '#1a1a2e',
-    marginBottom: 10,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.15)',
   },
   locationTrigger: { alignItems: 'center', gap: 8 },
   locationTriggerText: { flex: 1, fontSize: 15 },
-  priceRow: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  priceRow: { alignItems: 'center', gap: 8, marginBottom: 16 },
   priceInput: { flex: 1, marginBottom: 0 },
   priceSuffix: { fontSize: 15, color: '#004aad' },
 
+  // Filter modal's muted section label, not the purple uppercase one.
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#cb6ce6',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 12,
+    color: 'rgba(15,15,31,0.4)',
     marginBottom: 8,
-    marginTop: 4,
+    marginTop: 10,
   },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  // Chips match `filterChip` / `filterChipActive`.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   catChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.12)',
-  },
-  catChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  catLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.5)' },
-  catLabelActive: { color: '#fff' },
-
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
-    backgroundColor: '#ffffff',
-  },
-  chipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  chipLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.5)' },
-  chipLabelActive: { color: '#fff' },
-
-  conditionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-  conditionChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.2)',
     backgroundColor: '#ffffff',
   },
-  conditionLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.5)' },
+  catChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  catLabel: { fontSize: 13, fontWeight: '600', color: '#004aad' },
+  catLabelActive: { color: '#fff' },
 
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#ffffff',
+  },
+  chipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  chipLabel: { fontSize: 13, fontWeight: '600', color: '#004aad' },
+  chipLabelActive: { color: '#fff' },
+
+  // Condition keeps its per-value colour (it carries meaning) in the chip shape.
+  conditionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  conditionChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#ffffff',
+  },
+  conditionLabel: { fontSize: 13, fontWeight: '600', color: '#004aad' },
+
+  // Mirrors `filterActions` / `filterApplyBtn`.
+  actions: { alignItems: 'center', gap: 12, marginTop: 18 },
   submitBtn: {
-    backgroundColor: '#004aad',
-    borderRadius: 12,
-    paddingVertical: 15,
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    backgroundColor: '#004aad',
   },
   disabled: { opacity: 0.4 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

@@ -1,1 +1,1 @@
-﻿// utils will be exported from here
+export { brandLabel } from './brandLabel';
