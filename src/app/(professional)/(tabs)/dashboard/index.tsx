@@ -408,7 +408,7 @@ export default function DashboardScreen() {
           <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
             <TextInput
-              style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
               placeholder={rtl ? 'חיפוש בלוח המודעות…' : 'Search the notice board…'}
               placeholderTextColor={colors.placeholder}
               value={search}

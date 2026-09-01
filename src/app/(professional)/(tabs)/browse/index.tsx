@@ -73,7 +73,7 @@ export default function BrowseScreen() {
         <View style={[styles.searchRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
           <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
+            style={[styles.searchInput, { ...font.regular, color: colors.text }]}
             placeholder="Search by category…"
             placeholderTextColor={colors.placeholder}
             value={query}
@@ -134,7 +134,7 @@ export default function BrowseScreen() {
             <View style={[styles.modalSearchRow, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
               <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
               <TextInput
-                style={[styles.modalSearchInput, { color: colors.text }]}
+                style={[styles.modalSearchInput, { ...font.regular, color: colors.text }]}
                 placeholder="Search by name…"
                 placeholderTextColor={colors.placeholder}
                 value={modalQuery}

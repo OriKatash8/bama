@@ -300,7 +300,7 @@ export default function ProfessionalChatsScreen() {
             <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
               <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
               <TextInput
-                style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={t('search.placeholder')}
                 placeholderTextColor={colors.placeholder}
                 value={searchQuery}
@@ -336,7 +336,7 @@ export default function ProfessionalChatsScreen() {
             <View style={[styles.searchRow, styles.searchRowFlex, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
               <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
               <TextInput
-                style={[styles.searchInput, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={t('courses.search_placeholder')}
                 placeholderTextColor={colors.placeholder}
                 value={courseSearch}
