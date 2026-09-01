@@ -61,7 +61,19 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
     feeDue,
     slotActive: owes ? true : false, // owed keeps the slot until paid; else free it now
   };
-  await snap.ref.update(update);
+  const batch = db.batch();
+  batch.update(snap.ref, update);
+  // The group chat becomes read-only once the work is done — the same flag the
+  // BAMA System DMs use, so the message-create rule already enforces it.
+  // Mirrors cancelProject, which archives the chat.
+  if (project.chatId) {
+    batch.update(db.doc(`chats/${project.chatId as string}`), {
+      readOnly: true,
+      readOnlyReason: 'completed',
+      readOnlyAt: FieldValue.serverTimestamp(),
+    });
+  }
+  await batch.commit();
 
   // Non-owed projects publish their held review immediately (nothing to pay).
   if (!owes) await publishProjectReview(projectId);

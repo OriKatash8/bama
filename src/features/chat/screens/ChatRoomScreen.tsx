@@ -489,6 +489,11 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatArchived, setChatArchived] = useState(false);
   const [chatReadOnly, setChatReadOnly] = useState(false);
+  const [chatReadOnlyReason, setChatReadOnlyReason] = useState<string | null>(null);
+  // Projects completed before the chat was flagged server-side have no readOnly
+  // field; the linked project's status stands in for it so old group chats close
+  // too, without a backfill.
+  const [projectCompleted, setProjectCompleted] = useState(false);
   const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | 'superseded' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
   const [projectDeadline, setProjectDeadline] = useState<string | undefined>(undefined);
@@ -643,6 +648,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       setChatType(data.type);
       setChatArchived(data.archived ?? false);
       setChatReadOnly(data.readOnly ?? false);
+      setChatReadOnlyReason((data as { readOnlyReason?: string }).readOnlyReason ?? null);
       setChatArchiveReason(data.archiveReason ?? null);
       setChatProjectId(data.projectId);
       if (data.ownerId) setChatOwnerId(data.ownerId);
@@ -830,17 +836,29 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Load the linked project's end date so mission/meeting dates can be
   // constrained to the project window (today → project end).
   useEffect(() => {
-    if (!chatProjectId) { setProjectDeadline(undefined); return; }
+    if (!chatProjectId) { setProjectDeadline(undefined); setProjectCompleted(false); return; }
     let cancelled = false;
     getDoc(doc(db, 'projects', chatProjectId))
       .then((snap) => {
         if (cancelled) return;
-        const dl = snap.exists() ? (snap.data() as { deadline?: string }).deadline : undefined;
+        const data = snap.exists() ? (snap.data() as { deadline?: string; status?: string }) : undefined;
+        const dl = data?.deadline;
         setProjectDeadline(dl && dl !== 'flexible' ? dl : undefined);
+        setProjectCompleted(data?.status === 'completed');
       })
-      .catch(() => { if (!cancelled) setProjectDeadline(undefined); });
+      .catch(() => {
+        if (cancelled) return;
+        setProjectDeadline(undefined);
+        setProjectCompleted(false);
+      });
     return () => { cancelled = true; };
   }, [chatProjectId]);
+
+  // One switch for "this conversation is closed to new messages".
+  const isReadOnly = chatReadOnly || projectCompleted;
+  const readOnlyLabel = chatReadOnlyReason === 'completed' || projectCompleted
+    ? t('chats.completed_read_only')
+    : t('chats.system_read_only');
 
   const todayISO = (() => {
     const d = new Date();
@@ -1506,17 +1524,17 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
       )}
 
-      {/* BAMA System chat — read-only, user cannot reply */}
-      {chatReadOnly && (
+      {/* Read-only: BAMA System DMs, and group chats whose project is completed */}
+      {isReadOnly && (
         <View style={[styles.inputRow, { paddingBottom: BOTTOM_INSET + 10, borderTopColor: colors.border, backgroundColor: colors.card, flexDirection: 'column', gap: 8, alignItems: 'center' }]}>
           <AppText weight="semiBold" style={{ color: '#8890b0', fontSize: 13, textAlign: 'center' }}>
-            {t('chats.system_read_only')}
+            {readOnlyLabel}
           </AppText>
         </View>
       )}
 
       {/* Recording bar — same geometry as input row, no position jump */}
-      {isRecording && !chatReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
+      {isRecording && !isReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
         <View style={[
           styles.inputRow,
           { borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10, alignItems: 'center' },
@@ -1544,7 +1562,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       )}
 
       {/* Input */}
-      {!isRecording && !chatReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
+      {!isRecording && !isReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
