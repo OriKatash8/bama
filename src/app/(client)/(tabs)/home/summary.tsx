@@ -173,6 +173,12 @@ export default function SummaryScreen() {
   /** "General" label for a slot with no requiredCapability. */
   const generalLabel = rtl ? 'כללי' : 'General';
 
+  // Text on this screen is brand blue: full strength for values and titles,
+  // muted blue for labels so the hierarchy still reads.
+  const BLUE = '#004aad';
+  const BLUE_MUTED = 'rgba(0,74,173,0.55)';
+  const BLUE_FAINT = 'rgba(0,74,173,0.4)';
+
   /** A missing value never shows a form placeholder — it says so plainly. */
   function renderValue(value: string, style?: object) {
     const empty = !value;
@@ -180,7 +186,7 @@ export default function SummaryScreen() {
       <Text
         style={[
           styles.value,
-          { ...font.regular, textAlign, color: empty ? colors.textMuted : colors.text },
+          { ...font.regular, textAlign, color: empty ? BLUE_FAINT : BLUE },
           empty && styles.valueEmpty,
           style,
         ]}
@@ -194,7 +200,7 @@ export default function SummaryScreen() {
   function renderCardHeader(label: string, step?: 1 | 2 | 3) {
     return (
       <View style={[styles.cardHeader, { flexDirection: rowDir }]}>
-        <Text style={[styles.cardTitle, { ...font.medium, color: colors.text, textAlign }]}>
+        <Text style={[styles.cardTitle, { ...font.medium, color: BLUE, textAlign }]}>
           {label}
         </Text>
         {step !== undefined && (
@@ -215,8 +221,8 @@ export default function SummaryScreen() {
   ) {
     return (
       <View style={[styles.metaRow, { flexDirection: rowDir }]}>
-        <Icon size={17} color={colors.textMuted} strokeWidth={1.8} />
-        <Text style={[styles.metaLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+        <Icon size={17} color={BLUE_MUTED} strokeWidth={1.8} />
+        <Text style={[styles.metaLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
           {label}
         </Text>
         {chip ? (
@@ -253,7 +259,7 @@ export default function SummaryScreen() {
         <Text style={[styles.screenTitle, { ...font.medium, textAlign }]}>
           {t('builder.summary_title')}
         </Text>
-        <Text style={[styles.screenSubtitle, { ...font.regular, color: colors.textMuted, textAlign }]}>
+        <Text style={[styles.screenSubtitle, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
           {t('builder.summary_subtitle')}
         </Text>
       </View>
@@ -267,12 +273,12 @@ export default function SummaryScreen() {
         <View style={styles.card}>
           {renderCardHeader(t('builder.section_project'), 1)}
 
-          <Text style={[styles.fieldLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+          <Text style={[styles.fieldLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
             {t('builder.title')}
           </Text>
           {renderValue(title)}
 
-          <Text style={[styles.fieldLabel, { ...font.regular, color: colors.textMuted, textAlign, marginTop: 10 }]}>
+          <Text style={[styles.fieldLabel, { ...font.regular, color: BLUE_MUTED, textAlign, marginTop: 10 }]}>
             {t('builder.description')}
           </Text>
           {renderValue(description, styles.description)}
@@ -320,10 +326,10 @@ export default function SummaryScreen() {
                   <Users size={16} color="#004aad" strokeWidth={2} />
                 </View>
                 <View style={styles.crewText}>
-                  <Text style={[styles.crewRole, { ...font.medium, color: colors.text, textAlign }]}>
+                  <Text style={[styles.crewRole, { ...font.medium, color: BLUE, textAlign }]}>
                     {roleLabel}
                   </Text>
-                  <Text style={[styles.crewMeta, { ...font.regular, color: colors.textMuted, textAlign }]}>
+                  <Text style={[styles.crewMeta, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
                     {breakdown}
                   </Text>
                 </View>
@@ -356,7 +362,7 @@ export default function SummaryScreen() {
               if (!questions) return null;
               return (
                 <View key={roleKey} style={{ marginBottom: 8 }}>
-                  <Text style={[styles.fieldLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+                  <Text style={[styles.fieldLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
                     {roleKey}
                   </Text>
                   {questions.map((q) => {
@@ -364,7 +370,7 @@ export default function SummaryScreen() {
                     if (!value) return null;
                     return (
                       <View key={q.id} style={[styles.metaRow, { flexDirection: rowDir }]}>
-                        <Text style={[styles.metaLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>
+                        <Text style={[styles.metaLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
                           {questionLabel(q, rtl)}
                         </Text>
                         {renderValue(value, styles.metaValue)}
