@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { db, FieldValue, daysAgo, notify } from './helpers';
+import { db, FieldValue, daysAgo, notify, feesCol } from './helpers';
 import { confirmCompletionInternal } from './completion';
 import {
   AUTO_CONFIRM_DAYS, COMPLETION_REMINDER_DAYS, END_DATE_PROMPT_GRACE_DAYS,
@@ -72,7 +72,10 @@ export const lifecycleCron = onSchedule(
       },
     );
 
-    // 3) Archive unconfirmed: hired, nobody acted, 45 days past end date → free slot, no fee.
+    // 3) Archive unconfirmed: hired, nobody acted, 45 days past end date → every
+    //    pro's slot frees, no fee is due from any of them. Clearing the derived
+    //    boolean alone would leave the per-pro fee docs still holding slots, so
+    //    each one is voided too.
     await paginate(
       db.collection('projects')
         .where('slotActive', '==', true)
@@ -80,7 +83,15 @@ export const lifecycleCron = onSchedule(
         .where('expectedEndDate', '<', daysAgo(ARCHIVE_UNCONFIRMED_DAYS))
         .orderBy('expectedEndDate'),
       async (doc) => {
-        await doc.ref.update({ slotActive: false, archivedUnconfirmedAt: FieldValue.serverTimestamp() });
+        const feesSnap = await feesCol(doc.id).get();
+        const batch = db.batch();
+        batch.update(doc.ref, {
+          slotHolders: [],
+          slotActive: false,
+          archivedUnconfirmedAt: FieldValue.serverTimestamp(),
+        });
+        feesSnap.docs.forEach((f) => batch.update(f.ref, { slotActive: false, feeDue: 0 }));
+        await batch.commit();
       },
     );
 
