@@ -5,15 +5,14 @@ import {
   getDocs,
   doc,
   getDoc,
-  updateDoc,
   addDoc,
   onSnapshot,
-  writeBatch,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../../core/firebase/config';
 import type { PriceOffer, BundleOffer, PaymentRequest } from '../../../core/types/project';
 import type { User } from '../../../core/types/user';
+import { callFunction } from '@core/firebase/functions';
 
 export type ProjectFeeSlot = {
   professionalId: string;
@@ -148,52 +147,52 @@ export async function createPaymentRequest(
     toUserId: string;
     professionalId: string;
     bundleId?: string;
+    /** The role being repriced — required for non-bundle requests so the accept
+     *  only touches that offer, not every accepted offer the pro holds here. */
+    category?: string;
     currentAmount: number;
     proposedAmount: number;
     note?: string;
   },
 ): Promise<void> {
-  const { bundleId, note, ...rest } = data;
+  const { bundleId, category, note, ...rest } = data;
   await addDoc(collection(db, `projects/${projectId}/paymentRequests`), {
     projectId,
     ...rest,
     ...(bundleId ? { bundleId } : {}),
+    ...(category ? { category } : {}),
     ...(note ? { note } : {}),
     status: 'pending',
     createdAt: serverTimestamp(),
   });
 }
 
+const respondToPaymentRequestFn = callFunction<
+  { projectId: string; requestId: string; accept: boolean },
+  { ok: boolean; accepted: boolean; repriced?: number }
+>('respondToPaymentRequest');
+
+/**
+ * Accept or reject a price-renegotiation request.
+ *
+ * The reprice itself runs SERVER-SIDE. An accepted offer's amount is the base
+ * the platform fee is computed from, so the rules now freeze it — a professional
+ * could otherwise cut their accepted price just before the client confirmed
+ * completion and shrink their own fee. The callable also scopes the reprice to
+ * the request's `category`: a pro can hold two separate non-bundled roles on one
+ * project, and the old client query matched on projectId + professionalId alone,
+ * overwriting both.
+ *
+ * The remaining parameters are kept for call-site compatibility but are read
+ * from the request document server-side, where they cannot be forged.
+ */
 export async function respondToPaymentRequest(
   projectId: string,
   requestId: string,
   accept: boolean,
-  professionalId: string,
-  newAmount: number,
-  bundleId?: string,
+  _professionalId?: string,
+  _newAmount?: number,
+  _bundleId?: string,
 ): Promise<void> {
-  const requestRef = doc(db, `projects/${projectId}/paymentRequests/${requestId}`);
-
-  if (!accept) {
-    await updateDoc(requestRef, { status: 'rejected' });
-    return;
-  }
-
-  const batch = writeBatch(db);
-  if (bundleId) {
-    // Bundle deal → reprice the single bundle.
-    batch.update(doc(db, 'bundleOffers', bundleId), { bundlePrice: newAmount });
-  } else {
-    const offersSnap = await getDocs(
-      query(
-        collection(db, 'priceOffers'),
-        where('projectId', '==', projectId),
-        where('professionalId', '==', professionalId),
-        where('status', '==', 'accepted'),
-      ),
-    );
-    offersSnap.docs.forEach((d) => batch.update(d.ref, { price: newAmount }));
-  }
-  batch.update(requestRef, { status: 'accepted' });
-  await batch.commit();
+  await respondToPaymentRequestFn({ projectId, requestId, accept });
 }

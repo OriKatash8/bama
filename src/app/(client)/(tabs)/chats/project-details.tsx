@@ -188,7 +188,7 @@ export default function ProjectDetailsScreen() {
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<
-    { professionalId: string; currentAmount: number; bundleId?: string } | null
+    { professionalId: string; currentAmount: number; bundleId?: string; category?: string } | null
   >(null);
   const [proposedAmount, setProposedAmount] = useState('');
   const [requestNote, setRequestNote] = useState('');
@@ -400,6 +400,7 @@ export default function ProjectDetailsScreen() {
         toUserId,
         professionalId: selectedPrice.professionalId,
         bundleId: selectedPrice.bundleId,
+        category: selectedPrice.category,
         currentAmount: selectedPrice.currentAmount,
         proposedAmount: parsed,
         note: requestNote.trim() || undefined,
@@ -987,7 +988,14 @@ export default function ProjectDetailsScreen() {
                     setSelectedPrice(
                       payment.bundleId
                         ? { professionalId, currentAmount: payment.price, bundleId: payment.bundleId }
-                        : { professionalId, currentAmount: payment.individualOffer?.price ?? payment.price },
+                        : {
+                            professionalId,
+                            currentAmount: payment.individualOffer?.price ?? payment.price,
+                            // Names the ROLE being repriced. Without it the accept
+                            // matched every accepted offer this pro holds on the
+                            // project and overwrote all of them.
+                            category: payment.individualOffer?.category,
+                          },
                     );
                     setProposedAmount('');
                     setRequestNote('');

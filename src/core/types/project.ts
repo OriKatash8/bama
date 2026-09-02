@@ -283,6 +283,10 @@ export type PaymentRequest = {
   /** Set when the request is for a BUNDLE deal — repriced on bundleOffers/{bundleId}
    *  instead of the individual priceOffers. */
   bundleId?: string;
+  /** Which ROLE is being repriced. Required for non-bundle requests: a pro can
+   *  hold two separate non-bundled roles on one project, and without this the
+   *  reprice matched on projectId+professionalId alone and overwrote both. */
+  category?: string;
   currentAmount: number;
   proposedAmount: number;
   note?: string;
