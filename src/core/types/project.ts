@@ -107,14 +107,19 @@ export type ProjectRequest = {
   cancelledAt?: Timestamp;
 
   // ── Pricing & lifecycle (Admin-SDK-written; locked at hire, immutable after) ──
-  /** 'included' = covered by the pro's subscription at hire; 'owed' = 3% due;
-   *  'exempt' = pre-pricing-model project (backfilled) — never charged or blocked. */
+  //
+  // LEGACY. The fee is per-PROFESSIONAL and lives at
+  // `projects/{id}/fees/{professionalId}` (see ProjectFee). These project-level
+  // fields are written by NOTHING as of the per-pro correction — they survive
+  // only on pre-correction docs. Read `ProjectFee`; a MISSING fee doc means
+  // 'exempt'. Do not treat anything below as authoritative for a new project.
+  /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.feeStatus. */
   feeStatus?: 'included' | 'owed' | 'exempt';
-  /** Snapshot of PLATFORM_FEE_RATE at hire (immutable, for display). */
+  /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.feeRate. */
   feeRate?: number;
   /** Captured at hire; drives the auto-completion prompt (deadline or hire + default). */
   expectedEndDate?: Timestamp;
-  /** Early payment (spec §5) — fields present now to avoid re-migrating later. */
+  /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.feeLockedAt/-Amount. */
   feeLockedAt?: Timestamp;
   feeLockedAmount?: number;
   /** Completion state machine. */
@@ -129,19 +134,70 @@ export type ProjectRequest = {
   };
   /** Set once the cron has sent the "did the project finish?" prompt (idempotency). */
   endDatePromptedAt?: Timestamp;
-  /** 3% of project value, set when completion is confirmed. */
+  /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.feeDue. */
+  feeDue?: number;
+  /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.feePaid. */
+  feePaid?: boolean;
+  feePaidAt?: Timestamp;
+  /** Flat list of hired pro uids (mirrors filledSlots' professionalIds). Every pro
+   *  ever hired, including ones who have since settled or left. */
+  professionalIds?: string[];
+  /** Pros who currently OCCUPY a slot on this project — the slot cap's source of
+   *  truth, counted with `array-contains`. A pro leaves this array when their own
+   *  fee settles (paid / included / cancelled / archived), independently of the
+   *  others. Maintained by the lifecycle callables. */
+  slotHolders?: string[];
+  /** DERIVED and LEGACY-SHAPED: `slotHolders.length > 0`, i.e. "at least one pro
+   *  is still unsettled". NOT authoritative for any individual pro — never gate a
+   *  pro's slot on this, use `slotHolders` / ProjectFee.slotActive.
+   *
+   *  It exists solely so lifecycleCron's two range sweeps stay indexable: Firestore
+   *  cannot express "slotHolders is non-empty" in a composite range query, so the
+   *  boolean is kept in step with the array. Its only readers are
+   *  functions/src/lifecycle/cron.ts (sweeps 1 and 3) and the two composite indexes
+   *  serving them. */
+  slotActive?: boolean;
+  archivedUnconfirmedAt?: Timestamp;
+  /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.refundReviewPending. */
+  refundReviewPending?: boolean;
+};
+
+/**
+ * A single professional's fee on a single project, at
+ * `projects/{projectId}/fees/{professionalId}` — the doc ID IS the pro's uid.
+ *
+ * Admin-SDK-written only. Locked at hire from THAT pro's subscription status, so
+ * two pros on one project can owe different amounts (or one owe and one not).
+ *
+ * A MISSING fee doc means 'exempt' — that is the permanent fallback covering
+ * every project created before the per-pro correction. Never infer a fee from the
+ * project doc's legacy fields.
+ */
+export type ProjectFee = {
+  professionalId: ID;
+  /** 'included' = covered by THIS pro's subscription at THEIR hire; 'owed' = fee
+   *  due on their own amount; 'exempt' = never charged or blocked. */
+  feeStatus: 'included' | 'owed' | 'exempt';
+  /** Snapshot of PLATFORM_FEE_RATE at this pro's hire (immutable, for display). */
+  feeRate: number;
+  /** This pro's own accepted value — their offer price, or their bundle's
+   *  bundlePrice counted once. Captured at hire; topped up (never reduced) at
+   *  completion if the agreed price rose, per spec §5. */
+  baseAmount: number;
+  /** round(baseAmount * feeRate). Set when completion is confirmed. */
   feeDue?: number;
   feePaid?: boolean;
   feePaidAt?: Timestamp;
-  /** Flat list of hired pro uids (mirrors filledSlots' professionalIds) so the
-   *  slot cap can be counted with an array-contains query. Maintained at hire. */
-  professionalIds?: string[];
-  /** Occupies a slot from hire until settled (paid / cancelled / archived).
-   *  UNDEFINED (pre-backfill) never counts toward the slot cap. */
-  slotActive?: boolean;
-  archivedUnconfirmedAt?: Timestamp;
-  /** Set when a paid project is cancelled early — admin decides the refund (§5). */
+  /** Early payment (spec §5): the amount locked on the day they paid early. */
+  feeLockedAt?: Timestamp;
+  feeLockedAmount?: number;
+  /** Whether THIS pro still occupies a slot. Mirrors their membership of the
+   *  project's `slotHolders`. */
+  slotActive: boolean;
+  /** Set when a project this pro already paid for is cancelled — admin decides
+   *  the refund (§5, discretionary). */
   refundReviewPending?: boolean;
+  hiredAt?: Timestamp;
 };
 
 export type PriceOffer = {

@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { db, FieldValue, daysAgo, notify, publishProjectReview } from './helpers';
+import { db, FieldValue, daysAgo, notify } from './helpers';
 import { confirmCompletionInternal } from './completion';
 import {
   AUTO_CONFIRM_DAYS, COMPLETION_REMINDER_DAYS, END_DATE_PROMPT_GRACE_DAYS,
@@ -94,7 +94,5 @@ export const lifecycleCron = onSchedule(
         await doc.ref.update({ published: true, visibleAt: FieldValue.serverTimestamp() });
       },
     );
-
-    void publishProjectReview; // (kept for symmetry; per-review publish above)
   },
 );

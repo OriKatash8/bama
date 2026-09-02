@@ -67,15 +67,45 @@ export async function notify(payload: {
   });
 }
 
+/** A professional's fee record: `projects/{projectId}/fees/{professionalId}`. */
+export function feeRef(projectId: string, proId: string) {
+  return db.doc(`projects/${projectId}/fees/${proId}`);
+}
+
+export function feesCol(projectId: string) {
+  return db.collection(`projects/${projectId}/fees`);
+}
+
+export type FeeDoc = {
+  professionalId: string;
+  feeStatus: 'included' | 'owed' | 'exempt';
+  feeRate: number;
+  baseAmount: number;
+  feeDue?: number;
+  /** Cumulative shekels already settled. Everything derives from
+   *  `outstanding = max(0, computeFee(baseAmount, feeRate) - paidAmount)`, which
+   *  covers §5's top-up rule, re-hire, and ordinary settlement without branching. */
+  paidAmount?: number;
+  feePaid?: boolean;
+  slotActive: boolean;
+};
+
 /**
- * Sum of accepted price offers for a project (bundles counted once) — the
- * project value the 3% fee is taken from. Mirrors paymentService.calculateProjectFee
- * minus the (retired) client add-on.
+ * ONE professional's accepted value on a project: their individual accepted
+ * offers, plus each accepted bundle of theirs counted ONCE at `bundlePrice`.
+ *
+ * A bundle is a single discounted amount covering several slots, so summing its
+ * individual offers (which keep their own prices) would over-charge. `freeSlot`
+ * sets a departing pro's offers to 'removed', so they drop out here by status.
+ *
+ * Three equality filters need no composite index — Firestore serves equality-only
+ * queries with a zigzag merge join (same shape as removal.ts's existing query).
  */
-export async function computeProjectValue(projectId: string): Promise<number> {
+export async function computeProAmount(projectId: string, proId: string): Promise<number> {
   const offersSnap = await db
     .collection('priceOffers')
     .where('projectId', '==', projectId)
+    .where('professionalId', '==', proId)
     .where('status', '==', 'accepted')
     .get();
   const seenBundles = new Set<string>();
@@ -94,17 +124,39 @@ export async function computeProjectValue(projectId: string): Promise<number> {
   return total;
 }
 
-/** feeDue = 3% of project value, rounded to the nearest shekel. */
-export async function computeFeeDue(projectId: string): Promise<number> {
-  const value = await computeProjectValue(projectId);
-  return Math.round(value * PLATFORM_FEE_RATE);
+/** The fee a pro owes on their own amount, rounded to the nearest shekel. Pure. */
+export function computeFee(baseAmount: number, feeRate = PLATFORM_FEE_RATE): number {
+  return Math.round(baseAmount * feeRate);
 }
 
-/** Publish the held client→pro review(s) for a project (idempotent). */
-export async function publishProjectReview(projectId: string): Promise<void> {
+/**
+ * Read one pro's fee record. A MISSING doc means 'exempt' — the permanent
+ * fallback for every project created before the per-pro correction. Those can
+ * never owe, never hold a slot, and their reviews publish immediately.
+ */
+export async function readFee(projectId: string, proId: string): Promise<FeeDoc> {
+  const snap = await feeRef(projectId, proId).get();
+  if (!snap.exists) {
+    return {
+      professionalId: proId,
+      feeStatus: 'exempt',
+      feeRate: PLATFORM_FEE_RATE,
+      baseAmount: 0,
+      slotActive: false,
+    };
+  }
+  return snap.data() as FeeDoc;
+}
+
+/**
+ * Publish the held client→pro review(s) for ONE professional on a project
+ * (idempotent). Per-pro: pro A paying must not publish pro B's held review.
+ */
+export async function publishProReview(projectId: string, proId: string): Promise<void> {
   const snap = await db
     .collection('reviews')
     .where('projectId', '==', projectId)
+    .where('professionalId', '==', proId)
     .where('published', '==', false)
     .get();
   const batch = db.batch();

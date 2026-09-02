@@ -4,8 +4,20 @@
  * docs/bama-pricing-model-decisions.md.
  */
 
-/** Platform fee charged to the PROFESSIONAL on client-confirmed completion. */
-export const PLATFORM_FEE_RATE = 0.03; // 3% of project value
+/** Platform fee charged to the PROFESSIONAL on client-confirmed completion.
+ *  Taken on EACH pro's own accepted amount, not on the project total. */
+export const PLATFORM_FEE_RATE = 0.03; // 3% of what each professional is paid
+
+/**
+ * Real payments (Cardcom) are live. FALSE until Cardcom ships.
+ *
+ * While false, `payFee` lets the owning professional settle their own project's
+ * fee directly — a fake payment, so the flow is testable before Cardcom exists.
+ * When this flips to true, `payFee` MUST reject direct calls: settlement then
+ * happens only via the Cardcom webhook or the admin-only `markFeePaid`.
+ * The flag closes the hole on its own — do not rely on remembering.
+ */
+export const PAYMENTS_ENABLED = false;
 
 /** Non-subscriber: max simultaneously slot-active projects before hiring is blocked. */
 export const NON_SUBSCRIBER_SLOT_CAP = 2;
