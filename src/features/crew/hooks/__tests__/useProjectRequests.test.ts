@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useProjectRequests } from '../useProjectRequests';
-import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument, queryDocuments } from '@core/firebase/firestore';
+import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 
 jest.mock('@core/firebase/firestore', () => ({
@@ -9,7 +9,17 @@ jest.mock('@core/firebase/firestore', () => ({
   where: jest.fn(() => ({ type: 'where-constraint' })),
   updateDocument: jest.fn(),
   deleteDocument: jest.fn(),
-  queryDocuments: jest.fn(() => Promise.resolve([])),
+}));
+
+// Deletion is now one server call: the cascade over priceOffers, bundleOffers,
+// the per-pro fee subcollection and the chat moved into the deleteProject
+// callable (functions/src/lifecycle/deletion.ts). The rules deny client deletes
+// on offers and can never permit them on fee docs, so the old client-side
+// cascade would have orphaned all of it. The module binds the callable at load,
+// so the factory dereferences mockDelete lazily — it is still in its TDZ here.
+const mockDeleteProject = jest.fn();
+jest.mock('@core/firebase/functions', () => ({
+  callFunction: jest.fn(() => (data: unknown) => mockDeleteProject(data)),
 }));
 
 const mockAddDocument = addDocument as jest.MockedFunction<typeof addDocument>;
@@ -123,33 +133,28 @@ describe('useProjectRequests', () => {
     expect(result.current.error).toBe('Update failed');
   });
 
-  it('deleteProject calls deleteDocument with correct path', async () => {
+  it('deleteProject delegates the whole cascade to the deleteProject callable', async () => {
     const { result } = renderHook(() => useProjectRequests());
     await act(async () => {
       await result.current.deleteProject('proj-1');
     });
-    expect(mockDeleteDocument).toHaveBeenCalledWith('projects/proj-1');
+    expect(mockDeleteProject).toHaveBeenCalledWith({ projectId: 'proj-1' });
   });
 
-  it('deleteProject also removes the project\'s orphaned priceOffers and bundleOffers', async () => {
-    (queryDocuments as jest.Mock)
-      .mockResolvedValueOnce([{ id: 'off-1' }, { id: 'off-2' }]) // priceOffers
-      .mockResolvedValueOnce([{ id: 'bun-1' }]); // bundleOffers
+  it('deleteProject issues no client-side deletes — offers and fee docs are server-only', async () => {
     const { result } = renderHook(() => useProjectRequests());
     await act(async () => {
       await result.current.deleteProject('proj-1', 'chat-1');
     });
-    expect(queryDocuments).toHaveBeenCalledWith('priceOffers', expect.anything());
-    expect(queryDocuments).toHaveBeenCalledWith('bundleOffers', expect.anything());
-    expect(mockDeleteDocument).toHaveBeenCalledWith('priceOffers/off-1');
-    expect(mockDeleteDocument).toHaveBeenCalledWith('priceOffers/off-2');
-    expect(mockDeleteDocument).toHaveBeenCalledWith('bundleOffers/bun-1');
-    expect(mockDeleteDocument).toHaveBeenCalledWith('projects/proj-1');
-    expect(mockDeleteDocument).toHaveBeenCalledWith('chats/chat-1');
+    // The rules deny client deletes on priceOffers/bundleOffers outright and can
+    // never permit them on projects/{id}/fees/{proId}. Any direct delete here
+    // would silently orphan that data instead of removing it.
+    expect(mockDeleteDocument).not.toHaveBeenCalled();
+    expect(mockDeleteProject).toHaveBeenCalledWith({ projectId: 'proj-1' });
   });
 
   it('deleteProject sets error and rethrows on failure', async () => {
-    mockDeleteDocument.mockRejectedValue(new Error('Delete failed'));
+    mockDeleteProject.mockRejectedValue(new Error('Delete failed'));
     const { result } = renderHook(() => useProjectRequests());
     await act(async () => {
       try {

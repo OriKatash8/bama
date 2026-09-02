@@ -37,11 +37,29 @@ service cloud.firestore {
       return [
         'filledSlots', 'professionalIds', 'chatId',
         'feeStatus', 'feeRate', 'feeDue', 'feePaid', 'feePaidAt',
-        'feeLockedAt', 'feeLockedAmount', 'slotActive',
+        'feeLockedAt', 'feeLockedAmount', 'slotActive', 'slotHolders',
         'completion', 'expectedEndDate', 'endDatePromptedAt',
         'archivedUnconfirmedAt', 'refundReviewPending',
         'completedAt', 'cancelledAt'
       ];
+    }
+
+    // An ACCEPTED offer's amount is the base the platform fee is computed from.
+    // Either party could previously rewrite it at any time, including after
+    // completion — so a professional could cut their accepted price just before
+    // the client confirmed and shrink their own fee. Once accepted, the amount
+    // and the offer's identity are frozen to everything except the Admin SDK
+    // (which is how legitimate renegotiation now lands).
+    function offerAmountFrozenOnceAccepted() {
+      return resource.data.get('status', '') != 'accepted' ||
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['price', 'bundlePrice', 'individualTotal']);
+    }
+
+    // An offer can never be repointed at a different project or professional.
+    function offerIdentityStable() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['projectId', 'professionalId']);
     }
 
     // `status` is not server-only — clients set 'open' at create and when
@@ -185,7 +203,12 @@ service cloud.firestore {
         !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(serverOnlyProjectFields()) &&
         statusTransitionAllowed();
-      allow delete: if isAuth() && resource.data.clientId == request.auth.uid;
+      // Deletion goes through the deleteProject callable (Admin SDK), which
+      // cascades to priceOffers, bundleOffers, the fee subcollection and the
+      // chat, and refuses once anyone is hired. A direct client delete could not
+      // reach the fee docs at all — subcollections outlive their parent — and
+      // would leave accepted offers orphaned, still priceable by computeProAmount.
+      allow delete: if isAdmin();
 
       match /meetings/{meetingId} {
         allow read, create, update, delete: if isAuth() && isProjectParticipant(projectId);
@@ -204,6 +227,16 @@ service cloud.firestore {
         );
         allow update: if isAuth() && resource.data.toUserId == request.auth.uid;
         allow delete: if false;
+      }
+
+      // Per-professional platform fee. Doc id IS the pro's uid.
+      // Admin SDK only for writes — a pro who could write this could zero their
+      // own fee or free their own slot, which is the entire collection mechanism.
+      // Only the pro themself reads it: per spec §6 the CLIENT is never told that
+      // a professional owes money, so the client has no read here either.
+      match /fees/{proId} {
+        allow read: if isAuth() && request.auth.uid == proId;
+        allow write: if false;
       }
 
       // Removal requests — document ID is the professionalId being removed
@@ -229,7 +262,7 @@ service cloud.firestore {
         resource.data.professionalId == request.auth.uid ||
         // Client accepts/rejects, including batch-rejecting competing offers
         projectDoc(resource.data.projectId).clientId == request.auth.uid
-      );
+      ) && offerAmountFrozenOnceAccepted() && offerIdentityStable();
       allow delete: if false;
     }
 
@@ -243,7 +276,7 @@ service cloud.firestore {
       allow update: if isAuth() && (
         resource.data.professionalId == request.auth.uid ||
         projectDoc(resource.data.projectId).clientId == request.auth.uid
-      );
+      ) && offerAmountFrozenOnceAccepted() && offerIdentityStable();
       allow delete: if false;
     }
 
@@ -339,6 +372,25 @@ service cloud.firestore {
     match /projectApplications/{applicationId} {
       allow create: if isAuth();
       allow read, update, delete: if isAdmin();
+    }
+
+    // ─── subscriptions ──────────────────────────────────────────────
+    // Written ONLY by the Admin SDK (setSubscription today, Cardcom later). A pro
+    // who could write this would grant themselves 'included' fees and an
+    // unlimited slot cap. They may read their own to see plan, counter and dates.
+    match /subscriptions/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    // Collection-group read over every projects/{id}/fees/{proId}, so a pro can
+    // list their own outstanding fees across projects in one query. The
+    // subcollection rule above does NOT authorise a collectionGroup query — that
+    // needs its own path-pattern match. Scoped identically: the doc id must be
+    // the caller's uid, so this grants nothing the direct read does not.
+    match /{path=**}/fees/{proId} {
+      allow read: if isAuth() && request.auth.uid == proId;
+      allow write: if false;
     }
 
     // ─── deny everything not explicitly listed ────────────────────────
