@@ -17,7 +17,8 @@ async function loadProject(projectId: string) {
 /**
  * What a pro still owes: their fee on their own amount, less anything already
  * paid. Floors at zero, so a price DROP after an early payment yields no refund
- * (§5) rather than a negative.
+ * (§5) rather than a negative — this floor, not a pinned base, is what makes
+ * early payments non-refundable.
  */
 function outstandingOf(fee: FeeDoc, baseAmount: number): number {
   return Math.max(0, computeFee(baseAmount, fee.feeRate) - (fee.paidAmount ?? 0));
@@ -86,9 +87,12 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
       continue;
     }
 
-    // Top-up only (§5): the base may rise after an early payment, never fall.
-    const current = await computeProAmount(projectId, proId);
-    const baseAmount = Math.max(fee.baseAmount ?? 0, current);
+    // The fee is 3% of what this pro was ACTUALLY paid, so the base is the
+    // current accepted value — a genuine price reduction reduces the fee.
+    // §5's no-refund rule is carried by `outstanding` flooring at zero, not by
+    // pinning the base to its hire-time value: pinning would bill a pro ₪90 on
+    // work that was renegotiated down to ₪1,000 and never paid for.
+    const baseAmount = await computeProAmount(projectId, proId);
     const outstanding = outstandingOf(fee, baseAmount);
 
     if (outstanding > 0) {
@@ -257,11 +261,9 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
     if (fee.feeStatus !== 'owed') throw new HttpsError('failed-precondition', 'nothing-owed');
 
     const confirmed = (project.completion as { state?: string } | undefined)?.state === 'confirmed';
-    // Early: price it now off the pro's current amount, and lock that (§5).
-    // Confirmed: feeDue was already stored NET of anything paid earlier.
-    const baseAmount = confirmed
-      ? (fee.baseAmount ?? 0)
-      : Math.max(fee.baseAmount ?? 0, currentAmount);
+    // Early: price it now off the pro's current accepted amount, and lock that
+    // (§5). Confirmed: feeDue was already stored NET of anything paid earlier.
+    const baseAmount = confirmed ? (fee.baseAmount ?? 0) : currentAmount;
     const outstanding = confirmed
       ? Math.max(0, fee.feeDue ?? 0)
       : outstandingOf(fee, baseAmount);

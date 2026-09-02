@@ -203,3 +203,87 @@ Moving the lifecycle functions to `europe-west1` would break them. A genuine
 region migration is a coordinated change on both sides — `setGlobalOptions` in
 functions *and* `getFunctions(app, 'europe-west1')` in `config.ts` — affecting all
 five pre-existing callables.
+
+---
+
+# Per-professional fee correction — verification record
+
+Run 2026-09-02 against the emulators, on `fix/per-professional-fees`. Java 26 is
+now installed, so unlike the original slice-1 run the **rules were verified
+locally** rather than shipped unverified.
+
+## Result: 60 passed / 0 failed / 0 inconclusive
+
+Two harnesses (scratchpad, not committed), because they answer different questions:
+
+**33 assertions — fee algebra and document shapes.** Mirrors the settlement logic
+against real Firestore reads/writes. Covers the per-pro split, bundle
+deduplication, independent settlement, the §5 top-up, and the legacy fallback.
+This validates the arithmetic, *not* the shipped callables — see below.
+
+**27 assertions — the REAL callables and the REAL rules.** Admin SDK seeds and
+asserts (bypassing rules); the `firebase` JS SDK with real emulator Auth users
+exercises everything that must be subject to rules, against
+`connect{Firestore,Auth,Functions}Emulator`.
+
+### What the second harness proved
+
+- **Rules.** A pro reads their own fee doc and **not** another pro's; the
+  **client cannot read any fee doc** (§6 — the client is never told a pro owes
+  money); no client can write a fee doc or edit `slotHolders`. An **accepted**
+  offer's price cannot be rewritten by either party, while a **pending** one
+  still can; an offer cannot be repointed at another professional.
+- **`deleteProject`.** A client deleting their own un-hired project removes its
+  priceOffers, bundleOffers and the project itself — verified **gone, not
+  orphaned**. Deleting a **hired** project is refused
+  (`cannot-delete-hired-project`), and both the project and the owed fee doc
+  survive the refusal.
+- **`payFee`.** A stranger cannot pay (and so free) another pro's project; the
+  client cannot call it; the owning pro can. Early payment credits `paidAmount`,
+  records `feeLockedAmount`, and frees only that pro's slot. Paying twice is
+  refused with `already-paid`.
+- **`onReviewCreate`.** On one project with two pros, the review of the pro who
+  still owes is **held**, and the review of the pro who has paid **publishes** —
+  the per-pro hold, and the "still owes" check that stops `feeStatus`'s
+  immutability from holding an early payer's review until the 60-day sweep.
+
+### Key numbers asserted
+
+| Scenario | Expected | Result |
+|---|---|---|
+| Two pros ₪2,000 + ₪1,000, only the second owes | fee ₪30 (3% of their own 1,000, not of 3,000) | ✓ |
+| Bundle: two offers ₪3,000+₪2,000, bundlePrice ₪4,000 | base ₪4,000, fee ₪120 | ✓ |
+| Pro A pays, B does not | A's slot freed and review published; **B still owes ₪30, still held**, project `slotActive` still true | ✓ |
+| Early-pay ₪3,000, renegotiate **up** to ₪5,000, confirm | outstanding **₪60** — not ₪150, not ₪0 | ✓ |
+| Early-pay ₪3,000, price **falls** to ₪1,000 | outstanding ₪0, no refund, `paidAmount` stays 90 | ✓ |
+| Price falls to ₪1,000 with **nothing paid** | fee ₪30 — follows the real amount | ✓ |
+| Missing fee doc (legacy) | settles as `exempt`, no fee, slot frees | ✓ |
+
+The last two are why `baseAmount` at confirmation is the **current accepted
+value**, not `max(hire-time, current)`. The earlier `max()` produced ₪90 on work
+renegotiated down to ₪1,000 and never paid for. §5's no-refund guarantee is
+carried by `outstanding` flooring at zero, not by pinning the base — the two
+early-payment rows above are identical under either rule, so `max()` bought
+nothing and overcharged in one reachable case.
+
+## Known noise in the run
+
+`onNewPriceOffer` throws `Cannot read properties of undefined (reading
+'serverTimestamp')` during these runs. That is the **pre-existing**
+`admin.firestore.X`-statics-are-undefined issue recorded above
+(`notifications/triggers.ts`, 4 × FieldValue) — emulator-only, unrelated to this
+change, and it affected no assertion.
+
+## Still not covered
+
+- **Composite indexes.** Unchanged: the emulator never validates them. The new
+  `reviews projectId+professionalId+published` and the collection-group `fees`
+  index were added by inspection. The reviews one is probably redundant —
+  equality-only queries can use a zigzag merge join, which is why `freeSlot`'s
+  three-equality query has always run index-free — but it is kept as insurance,
+  since a missing index has already cost one production failure here.
+- **The collection-group fees query itself.** The rule permitting it is in place
+  and compiles, but nothing queries it yet; slice 2's cross-project fee list will
+  be its first real exercise.
+- **Nothing was deployed.** Rules, indexes and functions all remain local, joining
+  the bundle already held pending the app release.
