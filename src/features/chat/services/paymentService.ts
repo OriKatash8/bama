@@ -145,31 +145,44 @@ export function listenToPaymentRequests(
   };
 }
 
+const createPaymentRequestFn = callFunction<
+  {
+    projectId: string;
+    professionalId?: string;
+    category?: string;
+    bundleId?: string;
+    proposedAmount: number;
+    note?: string;
+  },
+  { ok: boolean; requestId: string; currentAmount: number }
+>('createPaymentRequest');
+
+/**
+ * Raise a price-renegotiation request.
+ *
+ * Runs SERVER-SIDE, and deliberately takes no identity fields. This was a raw
+ * client `addDoc`, so every field was attacker-controlled — `fromUserId`,
+ * `toUserId` and `professionalId` alike — and the responder was left validating
+ * around it. The callable derives the pair from the project instead: the caller
+ * is always `fromUserId`, a professional can only reprice their own engagement,
+ * and a client must name a professional actually on the project. A self-addressed
+ * request is unrepresentable rather than merely rejected.
+ *
+ * `currentAmount` is read from the accepted offer, not supplied, which also
+ * proves there is something repriceable before the request exists. The chat
+ * notice is posted in the same batch.
+ */
 export async function createPaymentRequest(
   projectId: string,
   data: {
-    fromUserId: string;
-    toUserId: string;
-    professionalId: string;
+    professionalId?: string;
     bundleId?: string;
-    /** The role being repriced — required for non-bundle requests so the accept
-     *  only touches that offer, not every accepted offer the pro holds here. */
     category?: string;
-    currentAmount: number;
     proposedAmount: number;
     note?: string;
   },
 ): Promise<void> {
-  const { bundleId, category, note, ...rest } = data;
-  await addDoc(collection(db, `projects/${projectId}/paymentRequests`), {
-    projectId,
-    ...rest,
-    ...(bundleId ? { bundleId } : {}),
-    ...(category ? { category } : {}),
-    ...(note ? { note } : {}),
-    status: 'pending',
-    createdAt: serverTimestamp(),
-  });
+  await createPaymentRequestFn({ projectId, ...data });
 }
 
 const respondToPaymentRequestFn = callFunction<
@@ -180,16 +193,9 @@ const respondToPaymentRequestFn = callFunction<
 /**
  * Accept or reject a price-renegotiation request.
  *
- * The reprice itself runs SERVER-SIDE. An accepted offer's amount is the base
- * the platform fee is computed from, so the rules now freeze it — a professional
- * could otherwise cut their accepted price just before the client confirmed
- * completion and shrink their own fee. The callable also scopes the reprice to
- * the request's `category`: a pro can hold two separate non-bundled roles on one
- * project, and the old client query matched on projectId + professionalId alone,
- * overwriting both.
- *
- * The remaining parameters are kept for call-site compatibility but are read
- * from the request document server-side, where they cannot be forged.
+ * Server-side: an accepted offer's amount is the platform fee's base, so the
+ * rules freeze it and the callable re-derives both parties from the project
+ * rather than trusting the request document's own fields.
  */
 export async function respondToPaymentRequest(
   projectId: string,

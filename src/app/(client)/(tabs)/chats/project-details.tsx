@@ -57,7 +57,6 @@ import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
-import { sendMessage } from '@features/chat/services/chatService';
 import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
@@ -414,6 +413,21 @@ export default function ProjectDetailsScreen() {
     Alert.alert(t('project_details.success_complete'));
   }
 
+  /**
+   * createPaymentRequest refuses for distinct, actionable reasons; a bare catch
+   * collapsed them into one generic alert.
+   */
+  function repriceErrorMessage(err: unknown): string {
+    const msg = String((err as { message?: string })?.message ?? '');
+    if (msg.includes('no-accepted-offer-to-reprice') || msg.includes('no-accepted-bundle-to-reprice')) {
+      return t('project_details.reprice_no_offer');
+    }
+    if (msg.includes('professional-not-on-project') || msg.includes('not-a-party')) {
+      return t('project_details.reprice_not_a_party');
+    }
+    return t('project_details.error_payment_request');
+  }
+
   async function handleSendPaymentRequest() {
     if (!projectId || !selectedPrice) return;
     const currentUserId = auth.currentUser?.uid;
@@ -423,38 +437,26 @@ export default function ProjectDetailsScreen() {
 
     setIsSendingRequest(true);
     try {
-      const isClient = project?.clientId === currentUserId;
-      const toUserId = isClient ? selectedPrice.professionalId : (project?.clientId ?? '');
-      // Name of the party who needs to accept the price change (the recipient).
-      const toName = (isClient
-        ? memberUsers[selectedPrice.professionalId]?.displayName
-        : clientUser?.displayName) ?? '';
+      // No identity fields: the callable derives fromUserId from the caller and
+      // the counterparty from the project, so a self-addressed request cannot be
+      // expressed. `currentAmount` is read server-side from the accepted offer.
+      // The chat notice is posted in the same batch — it used to be a separate
+      // client write wrapped in a swallow, so a failure left the counterparty
+      // with a pending request and no heads-up.
       await createPaymentRequest(projectId, {
-        fromUserId: currentUserId,
-        toUserId,
         professionalId: selectedPrice.professionalId,
         bundleId: selectedPrice.bundleId,
         category: selectedPrice.category,
-        currentAmount: selectedPrice.currentAmount,
         proposedAmount: parsed,
         note: requestNote.trim() || undefined,
       });
-      // Post a chat notice (like a new mission/meeting) — no amounts, just a heads-up.
-      // The info line names only the person who needs to accept the change.
-      if (project?.chatId) {
-        try {
-          const noticeText = toName
-            ? `💰 בקשת שינוי מחיר: ממתין לאישור ${toName}`
-            : '💰 בקשת שינוי מחיר';
-          await sendMessage(project.chatId, currentUserId, noticeText, { system: true });
-        } catch { /* notice is non-critical; the request was already created */ }
-      }
       setShowPaymentRequestModal(false);
       setSelectedPrice(null);
       setProposedAmount('');
       setRequestNote('');
-    } catch {
-      Alert.alert('Error', t('project_details.error_payment_request'));
+    } catch (err) {
+      console.error('[reprice] createPaymentRequest failed:', err);
+      Alert.alert('Error', repriceErrorMessage(err));
     } finally {
       setIsSendingRequest(false);
     }

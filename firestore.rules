@@ -228,12 +228,26 @@ service cloud.firestore {
 
       // Payment renegotiation — only the two parties involved
       match /paymentRequests/{paymentRequestId} {
-        allow create: if isAuth() && request.resource.data.fromUserId == request.auth.uid;
+        // INTERIM — see "PENDING DEPLOYS" at the top of
+        // docs/known-issues-silent-failures.md. Creation has moved to the
+        // createPaymentRequest callable; this stays open only until the app build
+        // carrying that client ships, then becomes `if false`.
+        //
+        // The `toUserId != uid` clause is the hole being closed: create checked
+        // fromUserId and the responder checked toUserId, so one person satisfied
+        // both halves, addressed a request to themselves and accepted it —
+        // unilaterally repricing an accepted offer, which is the platform fee's
+        // base.
+        allow create: if isAuth()
+          && request.resource.data.fromUserId == request.auth.uid
+          && request.resource.data.toUserId != request.auth.uid;
         allow read: if isAuth() && (
           resource.data.fromUserId == request.auth.uid ||
           resource.data.toUserId == request.auth.uid
         );
-        allow update: if isAuth() && resource.data.toUserId == request.auth.uid;
+        // Answering goes through respondToPaymentRequest (Admin SDK), which
+        // re-derives both parties from the project.
+        allow update: if false;
         allow delete: if false;
       }
 

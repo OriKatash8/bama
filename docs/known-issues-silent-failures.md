@@ -1,5 +1,33 @@
 # Known issues — silently swallowed errors
 
+> ## ⚠ PENDING DEPLOYS — read this first
+>
+> Follow-ups that are written but deliberately **not yet deployed**, each with the
+> trigger that releases them. These are the ones that get dropped once the
+> immediate problem looks solved.
+>
+> ### 1. `paymentRequests` → `allow create: if false`
+>
+> **Trigger: deploy after the app build carrying the `createPaymentRequest`
+> callable ships.**
+>
+> Creation moved server-side, but the rule is currently the *interim* form:
+>
+> ```
+> allow create: if isAuth()
+>   && request.resource.data.fromUserId == request.auth.uid
+>   && request.resource.data.toUserId != request.auth.uid;
+> ```
+>
+> That already closes the self-addressing hole, and it keeps installed builds
+> working — they still create these documents directly. Once the new client is
+> out, replace it with `allow create: if false;` so the document is fully
+> server-owned. Verify afterwards that a direct client `addDoc` into
+> `projects/{id}/paymentRequests` is denied.
+>
+> Deploy: `firebase deploy --only firestore:rules`.
+
+
 Catch blocks and error handlers that discard the real failure. Each one turns a
 specific bug into "something went wrong" or, worse, into a plausible-looking
 empty state. Recorded 2026-09-04, from the removal-flow investigation.
@@ -262,3 +290,59 @@ party to the project rather than trusting the request's own fields.
 When authority is split across a rule and a callable, or across two rules, ask
 whether one person can satisfy both halves. The individual checks all look
 correct in isolation — that is exactly why this shape survives review.
+
+
+---
+
+# My own verification code left residue in production
+
+Recorded 2026-09-04, against myself, because it is the same failure this document
+exists to catalogue — in the code whose entire job is to prove things are clean.
+
+## What happened
+
+Every production probe in this work printed `cleanup: … removed` and returned
+zero failures. Two of those claims were false:
+
+1. **The review deletion never ran.** The probe called `ref.delete()` on a
+   **client-SDK** `DocumentReference`, which has no such method — the client SDK
+   uses `deleteDoc(ref)`; only the Admin SDK puts `.delete()` on the reference.
+   It threw a `TypeError`, an **empty `catch {}`** swallowed it, and the loop
+   reported success.
+2. **Deleting an auth user does not delete its Firestore document.**
+   `createUserWithEmailAndPassword` fires the auth-create trigger, which writes
+   `users/{uid}`. Removing the auth record leaves that document behind.
+
+Net residue in production: **15 orphan `users/` documents** and **1 scratch
+review**, accumulated across a day of probes. Found only because an unrelated
+count moved from 7 to 8. Since removed, guarded on the unroutable
+`@bama-invalid.test` domain and the scratch project id, and verified afterwards.
+
+## The rule
+
+**Verification code with an empty catch is worse than application code with one.**
+App code that swallows an error shows the user a wrong screen. A probe that
+swallows an error *reports success* — it actively asserts the thing it failed to
+check, and everything downstream is then reasoned about on a false premise.
+
+**Probe cleanup must assert what it deleted, not assume it.** Re-read after
+deleting and fail loudly if anything survives. Never `catch {}` in a teardown
+block; if a delete can legitimately fail, say why in a comment, as anywhere else.
+
+Four specific traps, all of which have actually bitten:
+
+- **Client SDK vs Admin SDK deletion.** `deleteDoc(ref)` versus `ref.delete()`.
+  Mixing them fails at runtime, not compile time, in a place nobody reads.
+- **Auth deletion leaves Firestore behind.** Any throwaway account created
+  through the client SDK needs its `users/{uid}` document — and anything the
+  create-trigger wrote beneath it — removed explicitly.
+- **The create-trigger races the teardown.** `onUserCreate` writes `users/{uid}`
+  asynchronously, so deleting that document *before* the auth record can lose the
+  race: the trigger lands afterwards and re-creates it. Caught by an asserting
+  teardown that found exactly one survivor. **Delete the auth account first**, then
+  the documents, then sweep once more after a short pause.
+- **A brand-new 2nd-gen callable is briefly uninvokable.** Immediately after a
+  `create` deploy the client gets `functions/unauthenticated` while the
+  `allUsers` run-invoker binding propagates. That is not an auth bug in the
+  callable — check `gcloud run services get-iam-policy` before chasing it, and
+  retry.

@@ -277,7 +277,9 @@
     "pay_nothing_owed": "אין חוב פתוח בפרויקט הזה",
     "pay_not_found": "הפרויקט לא נמצא",
     "confirm_leave_title": "עזיבת הפרויקט",
-    "confirm_leave_body": "לאשר את ההסרה ולעזוב את הפרויקט? הפעולה אינה הפיכה."
+    "confirm_leave_body": "לאשר את ההסרה ולעזוב את הפרויקט? הפעולה אינה הפיכה.",
+    "reprice_no_offer": "אין הצעה מאושרת לעדכון מחיר בפרויקט הזה",
+    "reprice_not_a_party": "אינך צד בפרויקט הזה"
   },
   "chats_page": {
     "title": "צ'אטים",

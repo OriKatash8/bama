@@ -277,7 +277,9 @@
     "pay_nothing_owed": "Nothing outstanding on this project",
     "pay_not_found": "Project not found",
     "confirm_leave_title": "Leave project",
-    "confirm_leave_body": "Accept the removal and leave this project? This cannot be undone."
+    "confirm_leave_body": "Accept the removal and leave this project? This cannot be undone.",
+    "reprice_no_offer": "There is no accepted offer to reprice on this project",
+    "reprice_not_a_party": "You are not a party to this project"
   },
   "chats_page": {
     "title": "Chats",
