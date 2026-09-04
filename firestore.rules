@@ -140,6 +140,14 @@ service cloud.firestore {
 
       // community join requests
       match /joinRequests/{requestId} {
+        // LOAD-BEARING: ChatRoomScreen only runs the collection query when the
+        // caller is the community OWNER (it returns early otherwise). That works
+        // because the owner clause below reads the parent chat and is therefore
+        // provable from the query. The `request.auth.uid == requestId` clause is
+        // the document-ID wildcard, which a query can never bind — so if that
+        // owner gate is ever removed, the listener will be denied in production
+        // and (unless its error handler logs) will look like "no pending
+        // requests". Same failure that hid the removal-request bug.
         allow create: if isAuth() && request.auth.uid == requestId;
         allow read: if isAuth() && (
           request.auth.uid == requestId  // requester can read their own join status
@@ -235,7 +243,11 @@ service cloud.firestore {
       // Only the pro themself reads it: per spec §6 the CLIENT is never told that
       // a professional owes money, so the client has no read here either.
       match /fees/{proId} {
-        allow read: if isAuth() && request.auth.uid == proId;
+        // Keyed off the FIELD, not the {proId} wildcard. A wildcard cannot be
+        // bound by a collection query, so the wildcard form permits a direct get
+        // while silently denying slice 2's cross-project fee list. The document
+        // id and the professionalId field are always the same value.
+        allow read: if isAuth() && resource.data.professionalId == request.auth.uid;
         allow write: if false;
       }
 
@@ -306,12 +318,33 @@ service cloud.firestore {
     // ─── reviews ────────────────────────────────────────────────────
     match /reviews/{reviewId} {
       // A held review must be invisible to the pro it is about — otherwise they
-      // read the rating straight from the SDK and the hold buys nothing. The
-      // get() default keeps legacy field-less reviews readable.
-      allow read: if isAuth() && (
+      // read the rating straight from the SDK and the hold buys nothing.
+      //
+      // GET and LIST are split because they are enforced differently.
+      //
+      // `get` is evaluated per document, so the full condition works. The
+      // get() default keeps any legacy field-less review readable.
+      allow get: if isAuth() && (
         resource.data.get('published', true) != false ||
         request.auth.uid != resource.data.professionalId
       );
+      // `list` must be provable from the QUERY, not the document. The condition
+      // above is NOT: production returned a professional their own held review
+      // (rating and body) through where('professionalId','==',uid), while
+      // denying a direct get on the very same document. A `.get(field, default)`
+      // comparison does not constrain a query; a plain equality does — the
+      // notifications rule proves the shape works, denying an unconstrained list
+      // and allowing where('userId','==',uid).
+      //
+      // So every query on reviews must carry where('published','==',true).
+      // No read path wants held reviews: the professional must not see them, and
+      // public profiles and search only ever show published ones. The server
+      // publishes via the Admin SDK, which bypasses rules.
+      //
+      // This depends on EVERY review carrying `published`
+      // (scripts/backfill-review-published.mjs) — without the field the equality
+      // is unsatisfiable and the document silently vanishes from every list.
+      allow list: if isAuth() && resource.data.published == true;
       // published/visibleAt are resolved by the onReviewCreate trigger from the
       // project's feeStatus. A client that could set them would bypass the hold.
       allow create: if isAuth() &&
@@ -398,7 +431,11 @@ service cloud.firestore {
     // needs its own path-pattern match. Scoped identically: the doc id must be
     // the caller's uid, so this grants nothing the direct read does not.
     match /{path=**}/fees/{proId} {
-      allow read: if isAuth() && request.auth.uid == proId;
+      // Field-keyed for the same reason as the subcollection rule above: a
+      // collectionGroup('fees').where('professionalId','==',uid) query cannot
+      // bind {proId}, so the wildcard form would deny the very query this rule
+      // exists to permit.
+      allow read: if isAuth() && resource.data.professionalId == request.auth.uid;
       allow write: if false;
     }
 

@@ -4,10 +4,10 @@ import {
   subscribeToDocument,
   updateDocument,
   mergeDocument,
-  queryByField,
 } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
 import { visibleReviews } from '@features/reviews/utils/rating';
+import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import type { ProfessionalProfile, EquipmentItem } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
 
@@ -44,7 +44,11 @@ export function useProfile() {
     // during a session. The profile sub-doc (rating/reviewCount) stays live-subscribed above.
     // Held reviews are invisible to the pro until the fee settles — filter before
     // they reach any render path, not just the average.
-    queryByField<Review>('reviews', 'professionalId', user.id)
+    // Published only, enforced by the rules. An unconstrained query here used to
+    // return this professional their own HELD reviews — rating and body — with
+    // visibleReviews() hiding them client-side. The filter stays as defence in
+    // depth, but the query is now the boundary.
+    fetchPublishedReviews(user.id)
       .then((r) => setReviews(visibleReviews(r)))
       .catch((e: any) => setError(e.message ?? 'Failed to load reviews'));
     return unsub;

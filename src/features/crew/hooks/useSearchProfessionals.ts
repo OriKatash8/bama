@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { queryDocuments, getDocument, queryByField } from '@core/firebase/firestore';
+import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 import type { ProfessionalProfile } from '@core/types/user';
 import type { Review } from '@core/types/project';
 import { computeAverageRating } from '@features/reviews/utils/rating';
+import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 
 export type ProfessionalResult = {
@@ -41,7 +42,12 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
           const roleId = roleIdForCategory(category);
           const hasSkill = profile.roleSkills.some((r) => r.role === roleId);
           if (!hasSkill) return;
-          const reviews = await queryByField<Review>('reviews', 'professionalId', user.id).catch(() => [] as Review[]);
+          const reviews = await fetchPublishedReviews(user.id).catch((e) => {
+            // Logged, not swallowed: a denial here renders as "no reviews"
+            // and a 0 rating, which is indistinguishable from a new pro.
+            console.error('[reviews] fetchPublishedReviews failed:', e?.code, e);
+            return [] as Review[];
+          });
           const { average, count } = computeAverageRating(reviews);
           matches.push({ user, profile: { ...profile, rating: average, reviewCount: count } });
         })

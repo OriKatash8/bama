@@ -14,8 +14,9 @@ import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { DirectProjectSheet } from '@features/projects/components/DirectProjectSheet';
-import { getDocument, queryDocuments, queryByField } from '@core/firebase/firestore';
+import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { visibleReviews } from '@features/reviews/utils/rating';
+import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import { uploadFile } from '@core/firebase/storage';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
@@ -81,7 +82,7 @@ export default function PublicProfileScreen() {
           getDocument<User>(`users/${userId}`),
           getDocument<ProfessionalProfile>(`users/${userId}/profile/data`),
           queryDocuments<MediaAsset>(`users/${userId}/portfolio`),
-          queryByField<Review>('reviews', 'professionalId', userId),
+          fetchPublishedReviews(userId),
         ]);
 
         setUser(userData);

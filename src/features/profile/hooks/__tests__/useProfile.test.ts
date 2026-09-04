@@ -4,8 +4,8 @@ import {
   subscribeToDocument,
   updateDocument,
   mergeDocument,
-  queryByField,
 } from '@core/firebase/firestore';
+import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import { uploadFile } from '@core/firebase/storage';
 import { useAuthStore } from '@core/stores/authStore';
 
@@ -13,7 +13,11 @@ jest.mock('@core/firebase/firestore', () => ({
   subscribeToDocument: jest.fn(),
   updateDocument: jest.fn(),
   mergeDocument: jest.fn(),
-  queryByField: jest.fn(),
+}));
+// Reviews go through a service that pins where('published','==',true). The pro
+// must never receive their own held reviews; see reviewsService.
+jest.mock('@features/reviews/services/reviewsService', () => ({
+  fetchPublishedReviews: jest.fn(),
 }));
 jest.mock('@core/firebase/storage', () => ({ uploadFile: jest.fn() }));
 global.fetch = jest.fn();
@@ -21,7 +25,7 @@ global.fetch = jest.fn();
 const mockSubscribeToDocument = subscribeToDocument as jest.MockedFunction<typeof subscribeToDocument>;
 const mockUpdateDocument = updateDocument as jest.MockedFunction<typeof updateDocument>;
 const mockMergeDocument = mergeDocument as jest.MockedFunction<typeof mergeDocument>;
-const mockQueryByField = queryByField as jest.MockedFunction<typeof queryByField>;
+const mockFetchPublishedReviews = fetchPublishedReviews as jest.MockedFunction<typeof fetchPublishedReviews>;
 
 const mockUser = {
   id: 'u1',
@@ -38,7 +42,7 @@ beforeEach(() => {
     callback(null);
     return () => {};
   });
-  mockQueryByField.mockResolvedValue([]);
+  mockFetchPublishedReviews.mockResolvedValue([]);
 });
 
 describe('useProfile', () => {
@@ -51,10 +55,13 @@ describe('useProfile', () => {
     );
   });
 
-  it('fetches reviews by professionalId', async () => {
-    const { result } = renderHook(() => useProfile());
+  it('fetches reviews through the published-only service, never an unconstrained query', async () => {
+    renderHook(() => useProfile());
     await act(async () => {});
-    expect(mockQueryByField).toHaveBeenCalledWith('reviews', 'professionalId', 'u1');
+    // The professional's own profile must never issue an unconstrained reviews
+    // query: production returned held reviews (rating and body) to their own
+    // subject through where('professionalId','==',uid).
+    expect(mockFetchPublishedReviews).toHaveBeenCalledWith('u1');
   });
 
   it('save writes name/photo to base user doc and profile fields to sub-doc', async () => {

@@ -64,3 +64,23 @@ A `catch` may discard an error only when the failure is genuinely non-critical
 `console.error` — the alert can stay generic, but the cause must reach the logs.
 Never resolve a failed fetch to an empty collection without logging: an empty
 list is a legitimate state, so that failure mode is invisible by construction.
+
+---
+
+## Update 2026-09-04 — two more fixed, one class understood
+
+`useSearchProfessionals.ts:44` and `useUnifiedSearch.ts:51` both had
+`.catch(() => [] as Review[])` on the reviews fetch. A permission denial there
+renders as **"no reviews" and a 0.0 rating** — indistinguishable from a brand-new
+professional, on the browse and search cards. Both now log before falling back.
+
+That mattered more than it looked: the reviews query was simultaneously
+*changed* to require `where('published','==',true)`. Had these kept swallowing,
+a mistake in that constraint would have silently zeroed every rating on the
+platform rather than surfacing an error.
+
+**The pattern to watch.** Every instance found so far sits on a Firestore read
+whose rule can deny it. A denial is not an exception the user recognises — it
+arrives looking exactly like legitimately-empty data. Two production bugs in this
+codebase have now been caused by it (the removal banner, and nearly the ratings),
+and both were invisible in the logs.
