@@ -267,23 +267,21 @@ export function AppHeader() {
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
 
-            {/* Subscription — not built yet; the row is here to place it in the menu. */}
-            <TouchableOpacity
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => Alert.alert(t('settings.subscription'), 'Coming soon')}
-              activeOpacity={0.7}
-            >
-              <CreditCard size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.subscription')}
-              </AppText>
-              <View style={[styles.soonBadge, { backgroundColor: colors.inputBg }]}>
-                <AppText weight="semiBold" style={[styles.soonText, { color: colors.primary }]}>
-                  {t('settings.soon')}
+            {/* Subscription — professionals only: the slot cap and the monthly
+                quota are theirs, and a client has nothing to subscribe to. */}
+            {!modeIsClient && (
+              <TouchableOpacity
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => { setSettingsVisible(false); router.push('/settings/subscription'); }}
+                activeOpacity={0.7}
+              >
+                <CreditCard size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.subscription')}
                 </AppText>
-              </View>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-            </TouchableOpacity>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+              </TouchableOpacity>
+            )}
 
             {/* Information */}
             <TouchableOpacity
@@ -446,8 +444,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   menuLabel: { flex: 1, fontSize: 14 },
-  soonBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  soonText: { fontSize: 10 },
 
   langToggle: {
     flexDirection: 'row',

@@ -9,6 +9,9 @@ import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDeta
 import { NoticeHistorySheet } from '@features/noticeboard/components/NoticeHistorySheet';
 import { useSentOffers } from '@features/offers/hooks/useSentOffers';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
+import { SlotBlockedSheet } from '@features/pricing/components/SlotBlockedSheet';
+import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
+import { listenToSubscription, type SubscriptionState, deriveSubscriptionState } from '@features/pricing/services/subscriptionService';
 import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { useProfile } from '@features/profile/hooks/useProfile';
@@ -86,6 +89,34 @@ export default function DashboardScreen() {
   );
 
   const { requests: visible, posters, isLoading, dismiss: hookDismiss } = useNoticeboard(roleSkills, currentUserId);
+
+  // Slot state, so a blocked professional is stopped BEFORE composing an offer
+  // rather than by hireProfessional rejecting it afterwards. Same query the
+  // server enforces with, so the two cannot disagree.
+  const [slotUsage, setSlotUsage] = useState<SlotUsage | null>(null);
+  const [subState, setSubState] = useState<SubscriptionState>(() => deriveSubscriptionState(null));
+  const [blockedFor, setBlockedFor] = useState<ProjectRequest | null>(null);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    return listenToSlotUsage(currentUserId, setSlotUsage);
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    return listenToSubscription(currentUserId, setSubState);
+  }, [currentUserId]);
+
+  // Subscribers have no slot cap at all — only the monthly limit, which the
+  // server enforces and which is not this sheet's job.
+  const slotsBlocked = !subState.isSubscriber && slotUsage?.atCap === true;
+
+  /** Open a notice, unless every slot is taken. Returns true when blocked. */
+  function guardSlots(request: ProjectRequest): boolean {
+    if (!slotsBlocked) return false;
+    setBlockedFor(request);
+    return true;
+  }
 
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
@@ -460,9 +491,9 @@ export default function DashboardScreen() {
               <NoticeBoardCard
                 request={item}
                 poster={posters[item.clientId]}
-                onPress={() => { setSelectedView('details'); setSelected(item); }}
-                onApply={() => { setSelectedView('details'); setSelected(item); }}
-                onMakeOffer={() => { setSelectedView('bid'); setSelected(item); }}
+                onPress={() => { if (guardSlots(item)) return; setSelectedView('details'); setSelected(item); }}
+                onApply={() => { if (guardSlots(item)) return; setSelectedView('details'); setSelected(item); }}
+                onMakeOffer={() => { if (guardSlots(item)) return; setSelectedView('bid'); setSelected(item); }}
                 onDismiss={() => dismiss(item.id)}
                 isApplying={false}
                 isDirectInvite={item.targetProfessionalId === currentUserId}
@@ -474,6 +505,13 @@ export default function DashboardScreen() {
           />
         )}
       </ScrollView>
+
+      <SlotBlockedSheet
+        visible={blockedFor !== null}
+        targetProject={blockedFor}
+        occupied={slotUsage?.projects ?? []}
+        onClose={() => setBlockedFor(null)}
+      />
 
       <ProjectDetailModal
         request={selected}
