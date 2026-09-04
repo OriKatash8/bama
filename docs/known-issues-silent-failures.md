@@ -172,12 +172,48 @@ reason is written at each site — no money moved between parties, so there is n
 fee to present and nothing to settle. This keeps the UI coherent; it does **not**
 stop the fee being assessed server-side.
 
-## If it is fixed later
+## FIXED 2026-09-04 — rejected outright in `loadAndEnforce`
 
-The cheap guard is in `loadAndEnforce`: reject when `proId === project.clientId`
-with a `failed-precondition`. That stops new ones. The six existing projects
-would need deciding separately — particularly the completed one, where a fee may
-already be recorded.
+`proId === project.clientId` now throws `failed-precondition`
+(`cannot-hire-yourself`). The six existing projects needed no migration: all
+pre-date the pricing model, carry **no fee documents** and hold **no slots**, and
+the completed one never ran `confirmCompletionInternal` (`completion` is still
+`none`), so **no money was ever owed on any of them**.
+
+### Why blocking, not "skip the fee and the slot"
+
+`commitHire` does **four** things per hire, not two:
+
+| | neutralised by "skip fee and slot"? |
+|---|---|
+| `fees/{proId}` document | yes |
+| `slotHolders` / `slotActive` | yes |
+| **subscriber `monthCount` increment** (`hire.ts:146-149`) | **no** |
+| `filledSlots` / `professionalIds` / chat membership | kept on purpose |
+
+A subscriber self-hiring would still burn one of their **10 free projects that
+month** on a transaction where nobody paid anybody — the same error as the fee,
+in the field the neutralising approach does not reach.
+
+### The decisive reason: self-review, not the fee
+
+`reviewsPending` is built from `filledSlots` (`project-details.tsx:393`), so
+completing a self-hire prompts the client to review **themselves**, and the
+result counts toward their own public rating. That is a ratings-integrity hole,
+not a pricing bug, and neutralising the fee would not have touched it.
+
+**It has already happened.** `reviews/KGWJrEi3GIa52tRoNi9N` on project
+`12MgwfyuVyhNf7OcGrvr`: `professionalId === reviewerId`, **rating 5,
+`published: true`**. It is that account's *entire* public rating — 5.00 from one
+review; without it they have no rating at all. Left in place deliberately:
+removing real user data is a separate decision, not a side effect of a code fix.
+
+### The roster case
+
+"I direct and I also edit" is a real need, and blocking self-hire removes it. It
+deserves its own **add-yourself-as-crew** path that writes `filledSlots` without
+a fee, a slot, a counter increment or a review prompt — rather than routing a
+person through hire-and-charge and then unwinding three of its four effects.
 
 ---
 
@@ -193,3 +229,36 @@ subscription.
 **Mode picks which tab you are in. It does not decide who you are on a given
 project.** Role comes from `project.clientId` and `project.professionalIds`.
 `modeSegment` routing is the legitimate use of mode and stays.
+
+
+---
+
+# The identity gap: two rules each checking a different half of one person
+
+The self-hire bug is one instance of a shape worth recognising. A permission is
+split across two places, each checking a different party, and neither notices
+they are the same person.
+
+| Site | One half | The other half | Status |
+|---|---|---|---|
+| **hire** | `priceOffers` create: `professionalId == uid` | `hireProfessional`: `clientId == uid` | **fixed 2026-09-04** |
+| **reviews** | create: `reviewerId == uid` | nothing checked `professionalId` | **fixed 2026-09-04** |
+| **paymentRequests** | create: `fromUserId == uid` | `respondToPaymentRequest`: `toUserId == uid` | **OPEN** |
+| marketplace | — | — | guarded only in the `onMarketplacePurchase` notification; 0 instances |
+
+## OPEN: paymentRequests can be addressed to yourself
+
+A party can create a request with `fromUserId: me, toUserId: me,
+professionalId: <the other party>` and then accept their own request —
+`respondToPaymentRequest` only checks `req.toUserId === uid`. That unilaterally
+reprices an accepted offer, which is **the platform fee's base**.
+
+Zero instances in production today. The fix is symmetrical to the others: refuse
+when `fromUserId === toUserId`, and ideally verify that the caller is actually a
+party to the project rather than trusting the request's own fields.
+
+## The lesson
+
+When authority is split across a rule and a callable, or across two rules, ask
+whether one person can satisfy both halves. The individual checks all look
+correct in isolation — that is exactly why this shape survives review.

@@ -347,8 +347,16 @@ service cloud.firestore {
       allow list: if isAuth() && resource.data.published == true;
       // published/visibleAt are resolved by the onReviewCreate trigger from the
       // project's feeStatus. A client that could set them would bypass the hold.
+      // You cannot review yourself. Nothing used to constrain professionalId, so
+      // a self-review could be POSTed straight through the SDK — no project and
+      // no hire needed — and it counted toward the author's own public rating.
+      // Blocking self-hire removes the route the UI offers; this removes the
+      // hole. Existing self-reviews are untouched: reviews are already immutable
+      // to clients (`allow update, delete: if false`) and this constrains only
+      // creation.
       allow create: if isAuth() &&
         request.resource.data.reviewerId == request.auth.uid &&
+        request.resource.data.professionalId != request.auth.uid &&
         !request.resource.data.keys().hasAny(['published', 'visibleAt']);
       allow update, delete: if false;  // reviews are immutable (Admin SDK bypasses)
     }

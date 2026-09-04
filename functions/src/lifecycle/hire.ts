@@ -22,6 +22,20 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   const project = projSnap.data() as Record<string, unknown>;
   if (project.clientId !== uid) throw new HttpsError('permission-denied', 'Only the client can hire');
 
+  // A client cannot hire themselves. Two rules each guard a different half of
+  // the same person — priceOffers create checks `professionalId == uid`, and the
+  // line above checks `clientId == uid` — so one user satisfies both and neither
+  // notices.
+  //
+  // The reason to block rather than neutralise is NOT the fee. `filledSlots`
+  // drives the review prompt, so a self-hire lets someone generate reviews of
+  // themselves that count toward their own public rating. That has already
+  // happened in production. Skipping the fee and the slot would leave both the
+  // self-review and the subscriber monthCount increment intact.
+  if (proId === project.clientId) {
+    throw new HttpsError('failed-precondition', 'cannot-hire-yourself');
+  }
+
   const subSnap = await db.doc(`subscriptions/${proId}`).get();
   const sub = subSnap.exists ? (subSnap.data() as Record<string, unknown>) : null;
   const isSubscriber = sub?.status === 'active';

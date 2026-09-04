@@ -313,7 +313,10 @@
     "stat_location": "Location",
     "stat_deadline": "End Date",
     "stat_execution": "Execution",
-    "open_slot": "Open"
+    "open_slot": "Open",
+    "hire_self_error": "You cannot hire yourself onto your own project",
+    "hire_slot_cap_error": "All your slots are taken — free one up first",
+    "hire_monthly_limit_error": "This month's subscription project quota is used up"
   },
   "client_onboarding": {
     "title": "Welcome! Set up your profile",

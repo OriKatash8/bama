@@ -146,12 +146,27 @@ export default function ProjectsPage() {
     router.push(`/${modeSegment}/(tabs)/browse/profile/${professionalId}` as never);
   }
 
+  /**
+   * hireProfessional refuses for three distinct, actionable reasons, and a bare
+   * catch collapsed all of them into "failed to accept" — the client was told
+   * nothing about what to do next. The callable carries the reason in its
+   * message; anything unrecognised keeps the generic text.
+   */
+  function hireErrorMessage(err: unknown): string {
+    const msg = String((err as { message?: string })?.message ?? '');
+    if (msg.includes('cannot-hire-yourself')) return t('chats_page.hire_self_error');
+    if (msg.includes('slot-cap-reached')) return t('chats_page.hire_slot_cap_error');
+    if (msg.includes('monthly-limit-reached')) return t('chats_page.hire_monthly_limit_error');
+    return t('chats_page.failed_accept');
+  }
+
   async function handleAccept(offer: PriceOffer) {
     try {
       await accept(offer);
       showToast(t('chats_page.offer_accepted'), 'success');
-    } catch {
-      showToast(t('chats_page.failed_accept'), 'error');
+    } catch (err) {
+      console.error('[hire] accept offer failed:', err);
+      showToast(hireErrorMessage(err), 'error');
     }
   }
 
@@ -167,8 +182,9 @@ export default function ProjectsPage() {
     try {
       await acceptBundle(bundle);
       showToast(t('chats_page.offer_accepted'), 'success');
-    } catch {
-      showToast(t('chats_page.failed_accept'), 'error');
+    } catch (err) {
+      console.error('[hire] accept bundle failed:', err);
+      showToast(hireErrorMessage(err), 'error');
     }
   }
 
