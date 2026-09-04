@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-nati
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments } from 'expo-router';
-import { Users, Package, Trash2 } from 'lucide-react-native';
+import { Users, Package, Trash2, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
@@ -15,7 +15,9 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Chat } from '../types';
-import type { ProjectRequest } from '@core/types/project';
+import type { ProjectRequest, ProjectFee } from '@core/types/project';
+import { listenToMyFees } from '@features/pricing/services/feesService';
+import { owesFee } from '@features/pricing/utils/fee';
 
 type ProjectStatus = ProjectRequest['status'];
 type Translations = typeof en;
@@ -34,6 +36,12 @@ function makeT(translations: Translations) {
     return str;
   };
 }
+
+/** Tint for a completed project's row — same family as the `completed` badge,
+ *  light enough to read as a state rather than a highlight. */
+const COMPLETED_ROW_BG = '#f4faea';
+/** Completed-line text and chevron — the same green as the `completed` badge. */
+const COMPLETED_LINE_COLOR = '#2d6a2d';
 
 const STATUS_CONFIG: Record<ProjectStatus, { bg: string; text: string }> = {
   open:        { bg: '#c1ecf9', text: '#004aad' },
@@ -80,12 +88,15 @@ export function ChatsScreen({
   const colors = useTheme();
   const font = useAppFont();
   const user = useAuthStore((s) => s.user);
+  const activeMode = useAuthStore((s) => s.activeMode);
+  const isProMode = activeMode === 'professional';
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
   const [dmInfo, setDmInfo] = useState<Record<string, DmInfo>>({});
   const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
+  const [feesByProject, setFeesByProject] = useState<Map<string, ProjectFee>>(new Map());
   const [purchaseNames, setPurchaseNames] = useState<Record<string, string>>({});
   const [purchaseImages, setPurchaseImages] = useState<Record<string, string>>({});
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
@@ -117,6 +128,15 @@ export function ChatsScreen({
       setDmInfo((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
     });
   }, [chats, user]);
+
+  // The professional's own fees across every project, keyed by projectId.
+  // A LISTENER, not a fetch: this screen is a mounted tab, so pushing the payment
+  // screen and popping back never remounts it — a fetch-on-mount would leave the
+  // row reading "unpaid" immediately after they paid. Client mode reads nothing.
+  useEffect(() => {
+    if (!isProMode || !user?.id) { setFeesByProject(new Map()); return; }
+    return listenToMyFees(user.id, setFeesByProject);
+  }, [isProMode, user?.id]);
 
   useEffect(() => {
     const toFetch = chats.filter(
@@ -273,10 +293,43 @@ export function ChatsScreen({
     const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
     const timestamp = formatTimestamp(item.lastMessage?.timestamp, language);
     const unread = item.unreadCount?.[currentUserId] ?? 0;
+
+    // Completion comes from the CHAT document, which is live-subscribed, rather
+    // than the project fetch above — that is cached per chat id and never
+    // refetched, so a project completing while this list is mounted would never
+    // show. `status` is the fallback for chats completed before the server
+    // started stamping readOnlyReason.
+    const isCompletedProject =
+      item.type === 'group' &&
+      ((item.readOnly === true && item.readOnlyReason === 'completed') || status === 'completed');
+
+    // The professional's own fee on this project. Absent = exempt = nothing owed.
+    const myFee = isProMode && item.projectId ? feesByProject.get(item.projectId) : undefined;
+    const iOweOnThisProject = isProMode && isCompletedProject && owesFee(myFee ?? null);
+
+    // Role-aware completed line. No amount appears anywhere in this list.
+    // Three states, not two: a professional who owes is told to settle, but a
+    // SUBSCRIBER (feeStatus 'included') or an exempt legacy project has nothing
+    // to settle, so "tap to close" would be a lie — they just get the fact.
+    const completedLine = !isCompletedProject
+      ? null
+      : isProMode
+      ? (iOweOnThisProject ? t('chats.completed_pro') : t('chats.completed_pro_settled'))
+      : t('chats.completed_client');
+
+    // The badge is redundant for the professional — their line already says the
+    // project is complete. The client's line says what to DO ("leave a review"),
+    // so once they have written it and the row reverts, the badge is the only
+    // thing still marking the project finished. Cancelled keeps it for both.
+    const showStatusBadge =
+      status != null && !(isCompletedProject && isProMode);
     return (
       <TouchableOpacity
         key={item.id}
-        style={[styles.card, { backgroundColor: '#ffffff', flexDirection: rowDir }]}
+        style={[
+          styles.card,
+          { backgroundColor: isCompletedProject ? COMPLETED_ROW_BG : '#ffffff', flexDirection: rowDir },
+        ]}
         onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}` as never)}
         activeOpacity={0.75}
       >
@@ -295,7 +348,7 @@ export function ChatsScreen({
             <AppText weight="bold" style={[styles.name, { color: '#004aad', textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
               {chatName}
             </AppText>
-            {status != null && (
+            {showStatusBadge && status != null && (
               <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
               </View>
@@ -310,9 +363,9 @@ export function ChatsScreen({
           </View>
           <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
             <AppText
-              weight="regular"
+              weight={completedLine ? 'semiBold' : 'regular'}
               style={[styles.preview, {
-                color: colors.textMuted,
+                color: completedLine ? COMPLETED_LINE_COLOR : colors.textMuted,
                 textAlign: rtl ? 'right' : 'left',
                 paddingRight: rtl ? 0 : 4,
                 paddingLeft: rtl ? 4 : 0,
@@ -320,9 +373,19 @@ export function ChatsScreen({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {item.lastMessage?.text ?? ''}
+              {completedLine ?? item.lastMessage?.text ?? ''}
             </AppText>
-            {(item.type === 'group' && (status === 'completed' || status === 'cancelled')) || (item.type === 'purchase' && !!item.archived) ? (
+            {iOweOnThisProject ? (
+              // The professional still owes on this project: a chevron into the
+              // conversation, and NO trash — they should not get a one-tap way to
+              // dismiss the row that is asking them to settle. It returns the
+              // moment the fee is paid, via the live fee listener.
+              <View style={[styles.trashBtn, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
+                {rtl
+                  ? <ChevronLeft size={18} color={COMPLETED_LINE_COLOR} strokeWidth={2.2} />
+                  : <ChevronRight size={18} color={COMPLETED_LINE_COLOR} strokeWidth={2.2} />}
+              </View>
+            ) : (item.type === 'group' && (status === 'completed' || status === 'cancelled' || isCompletedProject)) || (item.type === 'purchase' && !!item.archived) ? (
               <TouchableOpacity
                 onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
                 hitSlop={8}

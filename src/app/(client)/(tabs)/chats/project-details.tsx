@@ -35,7 +35,7 @@ import {
   listenToPaymentRequests,
   createPaymentRequest,
   respondToPaymentRequest,
-  type ProjectFee,
+  type ClientCostBreakdown,
 } from '@features/chat/services/paymentService';
 import {
   listenToMissions,
@@ -131,7 +131,7 @@ export default function ProjectDetailsScreen() {
   const [bundleMap, setBundleMap] = useState<Map<string, BundleOffer>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [showPaymentSummary, setShowPaymentSummary] = useState(false);
-  const [feeData, setFeeData] = useState<ProjectFee | null>(null);
+  const [feeData, setFeeData] = useState<ClientCostBreakdown | null>(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [showReviewFlow, setShowReviewFlow] = useState(false);

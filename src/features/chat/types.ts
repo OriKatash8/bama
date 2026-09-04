@@ -54,4 +54,8 @@ export interface Chat {
   archiveReason?: 'completed' | 'cancelled' | 'superseded';
   hiddenFor?: string[];
   readOnly?: boolean;   // BAMA System DMs — the user cannot reply
+  /** Why the chat closed. `'completed'` is written by confirmCompletion, which
+   *  makes the chat document a LIVE source of project completion — chats are
+   *  already subscribed, so nothing needs to re-read the project. */
+  readOnlyReason?: 'completed' | string;
 }

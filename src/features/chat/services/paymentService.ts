@@ -21,18 +21,23 @@ export type ProjectFeeSlot = {
 };
 
 /**
- * What the CLIENT pays, which under the current model is exactly the sum of the
- * accepted offers — BAMA charges the professional 3% on completion and takes
- * nothing from the client. The old 5% client add-on is retired; `total` is kept
- * equal to `subtotal` so existing call sites keep rendering a total.
+ * What the CLIENT pays their crew: the sum of the accepted offers. BAMA charges
+ * the professional 3% on completion and takes nothing from the client. The old
+ * 5% client add-on is retired; `total` is kept equal to `subtotal` so existing
+ * call sites keep rendering a total.
+ *
+ * NOT to be confused with `ProjectFee` in core/types/project.ts, which is a
+ * single PROFESSIONAL's platform fee at projects/{id}/fees/{proId}. This one is
+ * the client's cost breakdown and has nothing to do with the platform fee — the
+ * two were both called `ProjectFee` until this rename.
  */
-export type ProjectFee = {
+export type ClientCostBreakdown = {
   slots: ProjectFeeSlot[];
   subtotal: number;
   total: number;
 };
 
-export async function calculateProjectFee(projectId: string): Promise<ProjectFee> {
+export async function calculateProjectFee(projectId: string): Promise<ClientCostBreakdown> {
   const offersSnap = await getDocs(
     query(
       collection(db, 'priceOffers'),

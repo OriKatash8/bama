@@ -166,7 +166,10 @@
     "error": "שגיאה",
     "video_send_failed": "לא ניתן לשלוח וידאו. אנא נסה שוב.",
     "media_load_failed": "לא ניתן לטעון את הקובץ. ייתכן שהוידאו נמצא ב-iCloud או בפורמט לא נתמך.",
-    "caption_placeholder": "הוסף כיתוב..."
+    "caption_placeholder": "הוסף כיתוב...",
+    "completed_pro": "הפרויקט הושלם — לחצו לסגירה",
+    "completed_client": "הפרויקט הושלם — השאירו ביקורת",
+    "completed_pro_settled": "הפרויקט הושלם"
   },
   "project_details": {
     "header": "פרטי פרויקט",

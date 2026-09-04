@@ -184,8 +184,15 @@ export type ProjectFee = {
    *  bundlePrice counted once. Captured at hire; topped up (never reduced) at
    *  completion if the agreed price rose, per spec §5. */
   baseAmount: number;
-  /** round(baseAmount * feeRate). Set when completion is confirmed. */
+  /** What is still owed, stored NET of `paidAmount`. Set when completion is
+   *  confirmed; absent before that, so pre-completion display must derive
+   *  `round(baseAmount * feeRate) - paidAmount` itself. */
   feeDue?: number;
+  /** Cumulative shekels already settled. Every amount derives from
+   *  `outstanding = max(0, round(baseAmount * feeRate) - paidAmount)`, which
+   *  covers §5's top-up rule, re-hire, and ordinary settlement without
+   *  branching. Written by the server; absent means nothing paid yet. */
+  paidAmount?: number;
   feePaid?: boolean;
   feePaidAt?: Timestamp;
   /** Early payment (spec §5): the amount locked on the day they paid early. */
