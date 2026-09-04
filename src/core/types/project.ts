@@ -62,9 +62,12 @@ export type Review = {
 };
 
 export type CrewRequestSlot = {
-  category: string;  // holds the role (RoleDef id) for now
+  /** Legacy category string (ROLE_TO_LEGACY_CATEGORY), e.g. 'Video Photographer'
+   *  — NOT the RoleDef id. `roleIdForCategory` maps it back. */
+  category: string;
   quantity: number;
-  /** Required specialization id (e.g. 'drone'); undefined = general capability. */
+  /** Required specialization id (e.g. 'drone'); undefined = general capability.
+   *  Never the string 'general' — normalize through `capabilityOf`. */
   requiredCapability?: string;
 };
 

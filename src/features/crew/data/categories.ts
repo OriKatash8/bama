@@ -137,6 +137,25 @@ export function labelOf(item: Labeled, lang: 'he' | 'en'): string {
 }
 
 /**
+ * The `requiredCapability` a specialization row contributes to a CrewRequestSlot.
+ *
+ * `'general'` is the ABSENCE of a requirement, not a requirement named 'general'.
+ * Every role's specialization list starts with it (see RoleDef.specializations),
+ * so a picker that passed the id straight through would write
+ * `requiredCapability: 'general'` — and that slot could never be filled:
+ * `assignFilledCapability` assigns `undefined` to a general fill, and
+ * `sameSlotKind` compares `undefined !== 'general'`, so `getVacantSlots` would go
+ * on reporting the slot vacant after somebody was hired into it.
+ *
+ * Anything that turns a specialization id into a slot capability must go through
+ * here. Mirrored in `src/features/noticeboard/matching.ts` and
+ * `functions/src/matching.ts`, which consume the convention from the other end.
+ */
+export function capabilityOf(specializationId: string): string | undefined {
+  return specializationId === 'general' ? undefined : specializationId;
+}
+
+/**
  * Role id → legacy category string. Retained as the normalization layer: `crewSlot.category`
  * is persisted as these legacy strings (on projects, offers, filledSlots, CATEGORY_QUESTION_MAP),
  * so builders emit them and `roleIdForCategory`/`categoryLabel` map back to the role.

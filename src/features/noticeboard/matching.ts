@@ -18,7 +18,15 @@ export function roleIdForCategory(category: string): string {
   return LEGACY_CATEGORY_TO_ROLE[category] ?? category;
 }
 
-/** Two slots are the "same kind" iff same category AND same required capability. */
+/**
+ * Two slots are the "same kind" iff same category AND same required capability.
+ *
+ * A general slot carries `requiredCapability: undefined`, NOT the string
+ * 'general' — the two are different kinds here, so a slot written as 'general'
+ * would never be matched by the general fill that satisfies it and would stay
+ * vacant forever. Producers must normalize through `capabilityOf` in
+ * `src/features/crew/data/categories.ts`.
+ */
 function sameSlotKind(
   a: { category: string; requiredCapability?: string },
   b: { category: string; requiredCapability?: string },
@@ -73,6 +81,10 @@ export function professionalMatchesProject(
  * Among still-vacant (category, cap) slots, pick the most SPECIFIC one the pro
  * matches (specialized before general) so a drone pro consumes the drone slot,
  * not the general one. Returns its requiredCapability (undefined = general).
+ *
+ * `undefined` here is the SAME value a general slot must be written with — see
+ * `capabilityOf` in `src/features/crew/data/categories.ts`. The two ends have to
+ * agree or sameSlotKind never matches them up.
  */
 export function assignFilledCapability(
   crewSlots: CrewRequestSlot[],

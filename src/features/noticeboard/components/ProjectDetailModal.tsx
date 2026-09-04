@@ -16,7 +16,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { categoryLabel } from '@features/crew/data/categories';
-import { capabilityLabel } from '@features/noticeboard/matching';
+import { capabilityLabel, professionalMatchesSlot, type RoleSkillEntry } from '@features/noticeboard/matching';
 import { translateCity } from '@core/utils/cityTranslations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -36,6 +36,21 @@ function makeT(translations: Translations) {
 
 type BidEntry = CrewRequestSlot & { selected: boolean; price: string };
 
+/**
+ * The vacant slots this professional can actually fill.
+ *
+ * Every list in this modal goes through here. Showing a role the pro cannot take
+ * invited an offer that could never be accepted, and the details list and the bid
+ * list disagreeing about which roles exist reads as a bug.
+ *
+ * `roleSkills === null` disables the skill half for direct invites, mirroring
+ * useNoticeboard, which bypasses skill matching for those projects too.
+ */
+function biddableSlots(request: ProjectRequest, roleSkills: RoleSkillEntry[] | null): CrewRequestSlot[] {
+  const vacant = getVacantSlots(request);
+  return roleSkills === null ? vacant : vacant.filter((s) => professionalMatchesSlot(roleSkills, s));
+}
+
 type Props = {
   request: ProjectRequest | null;
   onClose: () => void;
@@ -44,9 +59,15 @@ type Props = {
   isApplying: boolean;
   initialView?: 'details' | 'bid';
   professionalCategories?: string[];
+  /**
+   * This professional's skills, used to show only slots they can actually fill.
+   * `null` disables the filter — that is the direct-invite case, which bypasses
+   * skill matching exactly as useNoticeboard does when building the board.
+   */
+  roleSkills: RoleSkillEntry[] | null;
 };
 
-export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories }: Props) {
+export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories, roleSkills }: Props) {
   const { submit, submitWithBundle, isSubmitting } = usePriceOffer();
   const colors = useTheme();
   const { height: screenHeight } = useWindowDimensions();
@@ -63,19 +84,19 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   useEffect(() => {
     if (request) {
       if (initialView === 'bid') {
-        setBids(getVacantSlots(request).map((s) => ({ ...s, selected: false, price: '' })));
+        setBids(biddableSlots(request, roleSkills).map((s) => ({ ...s, selected: false, price: '' })));
         setView('bid');
       } else {
         setView('details');
         setBids([]);
       }
     }
-  }, [request?.id, initialView]);
+  }, [request?.id, initialView, roleSkills]);
 
   if (!request) return null;
 
   function openBid() {
-    setBids(getVacantSlots(request!).map((s) => ({ ...s, selected: false, price: '' })));
+    setBids(biddableSlots(request!, roleSkills).map((s) => ({ ...s, selected: false, price: '' })));
     setView('bid');
   }
 
@@ -222,7 +243,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               })()}
 
               <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('noticeboard.roles_needed')}</AppText>
-              {getVacantSlots(request).map((s, i) => (
+              {biddableSlots(request, roleSkills).map((s, i) => (
                 <View key={i} style={styles.slotRow}>
                   <Text style={styles.slotQty}>{s.quantity}×</Text>
                   <View>
@@ -414,13 +435,10 @@ const styles = StyleSheet.create({
   slotQty: { fontSize: 18, fontWeight: '800', color: '#cb6ce6', width: 32 },
   slotSub: { fontSize: 15, fontWeight: '600', color: '#004aad' },
   slotCap: { fontSize: 12, color: '#7b2fa8', marginTop: 1 },
-  slotCat: { fontSize: 12, marginTop: 1 },
   actions: { marginTop: 20, gap: 10 },
   applyBtn: { backgroundColor: '#004aad', borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
   disabled: { opacity: 0.4 },
   applyText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  dismissBtn: { borderWidth: 1.5, borderColor: '#e53935', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  dismissText: { color: '#e53935', fontSize: 15, fontWeight: '600' },
   backBtn: { marginBottom: 12 },
   backText: { fontSize: 14, color: '#cb6ce6', fontWeight: '600' },
   bidHint: { fontSize: 14, marginBottom: 16, lineHeight: 20 },

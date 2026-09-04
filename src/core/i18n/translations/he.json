@@ -169,7 +169,8 @@
     "caption_placeholder": "הוסף כיתוב...",
     "completed_pro": "הפרויקט הושלם — לחצו לסגירה",
     "completed_client": "הפרויקט הושלם — השאירו ביקורת",
-    "completed_pro_settled": "הפרויקט הושלם"
+    "completed_pro_settled": "הפרויקט הושלם",
+    "fee_paid_pill": "שולם"
   },
   "project_details": {
     "header": "פרטי פרויקט",
@@ -317,8 +318,7 @@
     "stat_execution": "ביצוע",
     "open_slot": "פתוח",
     "hire_self_error": "לא ניתן לשכור את עצמך לפרויקט שלך",
-    "hire_slot_cap_error": "כל המקומות שלכם תפוסים — יש לפנות מקום אחד תחילה",
-    "hire_monthly_limit_error": "נוצלה מכסת הפרויקטים החודשית של המנוי"
+    "hire_unavailable_error": "המקצוען לא יכול לקחת פרויקטים נוספים כרגע"
   },
   "client_onboarding": {
     "title": "ברוכים הבאים! הגדירו את הפרופיל",
@@ -664,8 +664,7 @@
     "sort_price_low": "מחיר: נמוך לגבוה",
     "sort_price_high": "מחיר: גבוה לנמוך",
     "sort_stars": "הכי הרבה כוכבים",
-    "sort_date": "החדשים ביותר",
-    "sort_none": "ברירת מחדל",
+    "sort_none": "ברירת מחדל · החדשים ביותר",
     "filter": "מיון וסינון",
     "apply": "החל",
     "clear": "נקה",

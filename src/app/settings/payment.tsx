@@ -111,7 +111,7 @@ export default function PaymentScreen() {
       {rtl
         ? <ChevronRight size={22} color={colors.primary} strokeWidth={2} />
         : <ChevronLeft size={22} color={colors.primary} strokeWidth={2} />}
-      <AppText weight="bold" style={[styles.title, { color: colors.primary }]}>
+      <AppText weight="bold" style={styles.title}>
         {t('project_details.pay_title')}
       </AppText>
     </TouchableOpacity>
@@ -146,7 +146,7 @@ export default function PaymentScreen() {
       </AppText>
 
       {owed <= 0 ? (
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.card}>
           <AppText weight="semiBold" style={[styles.settled, { color: '#2d6a2d' }]}>
             {t('project_details.pay_nothing_owed')}
           </AppText>
@@ -155,7 +155,7 @@ export default function PaymentScreen() {
         <>
           {/* Amount, large — with the breakdown directly beneath it so the
               number is never presented without saying what it is 3% of. */}
-          <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={styles.card}>
             <AppText weight="regular" style={[styles.amountLabel, { color: colors.textMuted }]}>
               {t('project_details.pay_amount_label')}
             </AppText>
@@ -168,7 +168,7 @@ export default function PaymentScreen() {
           </View>
 
           {/* What the money buys. Both levers from the spec, stated plainly. */}
-          <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={styles.card}>
             <AppText weight="semiBold" style={[styles.unlocksTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
               {t('project_details.pay_unlocks_title')}
             </AppText>
@@ -200,21 +200,46 @@ export default function PaymentScreen() {
   );
 }
 
+// The app's card convention, hardcoded per screen rather than themed — see the
+// note on `card` in src/core/hooks/useTheme.tsx for why the token is not used.
+const CARD_SHADOW = {
+  shadowColor: '#1e4fa3',
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 3,
+} as const;
+const CARD_BORDER = 'rgba(30,79,163,0.07)';
+const HEADING_BLUE = '#1e4fa3';
+
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16 },
   backRow: { alignItems: 'center', gap: 6, paddingVertical: 12 },
-  title: { fontSize: 18 },
+  title: { fontSize: 18, color: HEADING_BLUE },
   projectTitle: { fontSize: 15, marginBottom: 12 },
-  card: { borderRadius: 16, padding: 18, marginBottom: 12, alignItems: 'center', gap: 4 },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 12,
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    ...CARD_SHADOW,
+  },
   amountLabel: { fontSize: 13 },
   amount: { fontSize: 40, lineHeight: 48 },
   breakdown: { fontSize: 13 },
   unlocksTitle: { fontSize: 14, alignSelf: 'stretch', marginBottom: 6 },
   unlockRow: { alignItems: 'center', gap: 8, alignSelf: 'stretch', paddingVertical: 3 },
   unlockText: { fontSize: 13, flex: 1 },
+  // Blue, not green: this is the pay ACTION. Green on this screen is reserved for
+  // affirmative state — "nothing owed", and the checkmarks listing what payment
+  // unlocks — so the button must not share it.
   payButton: {
-    backgroundColor: '#2d6a2d', borderRadius: 999,
-    paddingVertical: 15, alignItems: 'center', marginTop: 4,
+    backgroundColor: '#004aad', borderRadius: 10,
+    paddingVertical: 12, alignItems: 'center', marginTop: 4,
   },
   payButtonDisabled: { opacity: 0.6 },
   payButtonText: { fontSize: 16, color: '#ffffff' },

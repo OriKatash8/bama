@@ -13,6 +13,7 @@ import { SlotBlockedSheet } from '@features/pricing/components/SlotBlockedSheet'
 import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
 import { listenToSubscription, type SubscriptionState, deriveSubscriptionState } from '@features/pricing/services/subscriptionService';
 import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
+import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '@features/noticeboard/unoffered';
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
@@ -126,7 +127,9 @@ export default function DashboardScreen() {
   const [search, setSearch] = useState('');
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const { pendingCount } = useSentOffers();
+  // Same hook instance the history badge already used — `offers` comes free, so
+  // the "have I bid on this?" check costs no extra query or listener.
+  const { pendingCount, offers: sentOffers } = useSentOffers();
   const [draftSort, setDraftSort] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
   const [draftRole, setDraftRole] = useState<string | null>(null);
 
@@ -155,8 +158,25 @@ export default function DashboardScreen() {
     setSortModalVisible(false);
   }
 
+  // A project stays on the board while it still holds a vacant slot this pro can
+  // fill AND has not already bid on. This replaces dismissing the whole project
+  // on the first offer, which hid the other roles on it forever. See unoffered.ts.
+  const offeredByProject = useMemo(() => offeredCategoriesByProject(sentOffers), [sentOffers]);
+  const biddable = useMemo(
+    () =>
+      visible.filter((r) =>
+        hasUnofferedMatchingSlot(
+          r,
+          // Direct invites bypass skill matching, as they do in useNoticeboard.
+          r.targetProfessionalId === currentUserId ? null : (roleSkills ?? []),
+          offeredByProject.get(r.id),
+        ),
+      ),
+    [visible, roleSkills, offeredByProject, currentUserId],
+  );
+
   const displayed = useMemo(() => {
-    let list = visible;
+    let list = biddable;
     if (roleFilter) {
       list = list.filter((r) => getVacantSlots(r).some((s) => roleIdForCategory(s.category) === roleFilter));
     }
@@ -181,7 +201,7 @@ export default function DashboardScreen() {
         ? a.createdAt.seconds - b.createdAt.seconds
         : b.createdAt.seconds - a.createdAt.seconds;
     });
-  }, [visible, roleFilter, sortBy, search, currentUserId]);
+  }, [biddable, roleFilter, sortBy, search, currentUserId]);
 
   // Legacy category strings (for ProjectDetailModal's role-Q&A display, which is keyed by them).
   const categories = useMemo(
@@ -271,9 +291,12 @@ export default function DashboardScreen() {
     if (selected?.id === id) setSelected(null);
   }
 
-  function handleApply(request: ProjectRequest) {
+  function handleApply(_request: ProjectRequest) {
     showToast(t('noticeboard.offer_submitted'), 'success');
-    dismiss(request.id);
+    // Deliberately NOT dismiss(): that wrote dismissedNotices, hiding the whole
+    // project permanently because the pro bid on one of its roles. The notice now
+    // drops out on its own once every slot they match is bid on — see `biddable`.
+    setSelected(null);
   }
 
   const openProjectsLabel = displayed.length === 1
@@ -421,7 +444,7 @@ export default function DashboardScreen() {
               </View>
             )}
           </TouchableOpacity>
-          {!isLoading && visible.length > 0 && (
+          {!isLoading && biddable.length > 0 && (
             <TouchableOpacity
               style={[styles.sortBtn, filterActive && styles.sortBtnActive, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
               onPress={openSortModal}
@@ -435,7 +458,7 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        {!isLoading && visible.length > 0 && (
+        {!isLoading && biddable.length > 0 && (
           <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
             <TextInput
@@ -521,6 +544,7 @@ export default function DashboardScreen() {
         isApplying={false}
         initialView={selectedView}
         professionalCategories={categories}
+        roleSkills={selected?.targetProfessionalId === currentUserId ? null : (roleSkills ?? [])}
       />
 
       {/* Sort & filter modal */}

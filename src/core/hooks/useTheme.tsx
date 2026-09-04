@@ -40,6 +40,20 @@ export const DARK: AppColors = {
 export const LIGHT: AppColors = {
   bg: '#E6E0F4',
   bgGradient: ['#E6E0F4', '#D0DFF7'],
+  /**
+   * NOT the product card colour, despite the name. This is a pale blue.
+   *
+   * ~50 sites use it, and they are all one stratum: admin screens, modal sheets,
+   * input bars and a few shared components. NO product content card does —
+   * PriceOfferCard, BundleOfferCard, ProjectRequestCard, the dashboard project
+   * card and project-details' memberCard all hardcode `#ffffff` with a
+   * `rgba(30,79,163,0.07)` border and a `#1e4fa3` CARD_SHADOW.
+   *
+   * Following this token on a new content surface produces a card that does not
+   * match any other card in the app. That already happened once, to the pricing
+   * screens. Reach for the hardcoded convention instead; see `memberCard` in
+   * src/app/(client)/(tabs)/chats/project-details.tsx for the reference.
+   */
   card: '#dce8ff',
   cardAlt: '#d0dfff',
   text: '#0f0f1f',

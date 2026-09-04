@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { Users, Package, Trash2, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -17,13 +17,22 @@ import he from '@core/i18n/translations/he.json';
 import type { Chat } from '../types';
 import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import { listenToMyFees } from '@features/pricing/services/feesService';
-import { owesFee } from '@features/pricing/utils/fee';
+import { owesFee, outstandingFee } from '@features/pricing/utils/fee';
 
 type ProjectStatus = ProjectRequest['status'];
 type ProjectRoleInfo = {
   status: ProjectStatus;
   clientId: string;
   professionalIds: string[];
+  /**
+   * Whether the client has finished reviewing this project.
+   *
+   * `undefined` means NOTHING OUTSTANDING, not "not yet done": projects completed
+   * before the field existed never had it written. ReviewFlowGate makes the same
+   * call with a strict `=== false`, and the two must agree or the chat list would
+   * ask for a review the gate refuses to open.
+   */
+  reviewsCompleted?: boolean;
 };
 type Translations = typeof en;
 
@@ -41,6 +50,14 @@ function makeT(translations: Translations) {
     return str;
   };
 }
+
+// ── Colour rule for this screen ───────────────────────────────────────────────
+// GREEN means project state. BLUE means an action, or something the user did.
+// They are not two ends of one scale and must not be swapped for each other:
+// green here belongs to the same family as the cancelled and in_progress badges,
+// so flattening it to blue would make a completed project read like an open one.
+// The paid pill is blue, and is outlined rather than filled so it cannot be
+// mistaken for a fifth status badge. See `paidPill` in the stylesheet.
 
 /** Tint for a completed project's row — same family as the `completed` badge,
  *  light enough to read as a state rather than a highlight. */
@@ -109,6 +126,11 @@ export function ChatsScreen({
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
   const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
   const fetchedPurchaseChatIdsRef = useRef<Set<string>>(new Set());
+  /** Bumped on focus to re-run the project fetch after its cache is invalidated. */
+  const [refreshTick, setRefreshTick] = useState(0);
+  /** Latest projectInfo, readable from a stable-identity focus callback. */
+  const projectInfoRef = useRef<Record<string, ProjectRoleInfo>>({});
+  useEffect(() => { projectInfoRef.current = projectInfo; }, [projectInfo]);
 
   useEffect(() => {
     if (!user) return;
@@ -158,24 +180,45 @@ export function ChatsScreen({
     if (toFetch.length === 0) return;
     toFetch.forEach((c) => fetchedChatProjectIdsRef.current.add(c.id));
     Promise.all(
-      toFetch.map(async (c) => {
+      toFetch.map(async (c): Promise<readonly [string, ProjectRoleInfo] | null> => {
         const snap = await getDoc(doc(db, 'projects', c.projectId!));
         if (!snap.exists()) return null;
         // The whole document is already read — Pick<> narrowed the type, it did
         // not project fields — so carrying clientId and professionalIds costs
         // nothing extra.
-        const d = snap.data() as Pick<ProjectRequest, 'status' | 'clientId' | 'professionalIds'>;
+        const d = snap.data() as Pick<ProjectRequest, 'status' | 'clientId' | 'professionalIds' | 'reviewsCompleted'>;
         return [c.id, {
           status: d.status,
           clientId: d.clientId,
           professionalIds: d.professionalIds ?? [],
+          reviewsCompleted: d.reviewsCompleted,
         }] as const;
       }),
     ).then((entries) => {
-      const valid = entries.filter((e): e is [string, ProjectRoleInfo] => e !== null);
+      const valid = entries.filter((e): e is readonly [string, ProjectRoleInfo] => e !== null);
       if (valid.length > 0) setProjectInfo((prev) => ({ ...prev, ...Object.fromEntries(valid) }));
     });
-  }, [chats]);
+  }, [chats, refreshTick]);
+
+  // The fetch above caches per chat id and never refetches, and this is a mounted
+  // tab — so leaving to write a review and coming back would not update the row.
+  // On focus, forget the completed projects so the effect re-reads them; the tick
+  // is what actually re-triggers it, since `chats` is unchanged.
+  // Deps MUST stay empty: useFocusEffect re-runs whenever the callback identity
+  // changes, and the refetch this schedules sets projectInfo — depending on it
+  // would re-arm the effect and spin. The snapshot comes through a ref instead.
+  useFocusEffect(
+    useCallback(() => {
+      let dropped = false;
+      for (const [chatId, info] of Object.entries(projectInfoRef.current)) {
+        if (info.status === 'completed') {
+          fetchedChatProjectIdsRef.current.delete(chatId);
+          dropped = true;
+        }
+      }
+      if (dropped) setRefreshTick((n) => n + 1);
+    }, []),
+  );
 
   useEffect(() => {
     // Fetch each purchase chat's listing once to get its product name (fallback)
@@ -339,6 +382,25 @@ export function ChatsScreen({
     const myFee = viewerIsPro && item.projectId ? feesByProject.get(item.projectId) : undefined;
     const iOweOnThisProject = viewerIsPro && isCompletedProject && owesFee(myFee ?? null);
 
+    // The client is asked for a review only while one is actually outstanding.
+    // `=== false` is deliberate and matches ReviewFlowGate: undefined means the
+    // field was never written (legacy completed project), which is nothing to do,
+    // not something pending. Otherwise the row kept asking forever, because it
+    // never consulted review state at all.
+    const clientOwesReview = viewerIsClient && info?.reviewsCompleted === false;
+
+    // Early payment: a real chargeable fee ('owed') with nothing left outstanding,
+    // on a project still running. Mirrors MemberRow's fee_paid line exactly.
+    //
+    // NOT `!owesFee(myFee)`: that is also false for a MISSING fee doc (exempt) and
+    // for feeStatus 'included' (subscriber), so it would stamp "paid" on every
+    // subscriber and every legacy row where nothing was ever charged.
+    const feeSettledEarly =
+      viewerIsPro &&
+      !isCompletedProject &&
+      myFee?.feeStatus === 'owed' &&
+      outstandingFee(myFee) === 0;
+
     // Role-aware completed line. No amount appears anywhere in this list.
     // Three states, not two: a professional who owes is told to settle, but a
     // SUBSCRIBER (feeStatus 'included') or an exempt legacy project has nothing
@@ -347,7 +409,7 @@ export function ChatsScreen({
       ? null
       : viewerIsPro
       ? (iOweOnThisProject ? t('chats.completed_pro') : t('chats.completed_pro_settled'))
-      : viewerIsClient
+      : clientOwesReview
       ? t('chats.completed_client')
       : null;
 
@@ -385,6 +447,11 @@ export function ChatsScreen({
             {showStatusBadge && status != null && (
               <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
+              </View>
+            )}
+            {feeSettledEarly && (
+              <View style={styles.paidPill}>
+                <AppText weight="bold" style={styles.paidPillText}>{t('chats.fee_paid_pill')}</AppText>
               </View>
             )}
             {item.type === 'purchase' && item.archived && (
@@ -518,6 +585,25 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'center', justifyContent: 'space-between' },
   name: { fontSize: 15, fontWeight: '700' },
   statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
+  // OUTLINED, not filled, and radius 10 rather than the badges' 20.
+  //
+  // Every status badge beside it is a solid fill on one colour scale
+  // (open/in_progress/completed/cancelled). A filled blue pill would join that
+  // scale and read as a fifth status — and against the completed row's green it
+  // would imply blue and green are two ends of one axis, which they are not:
+  // green marks project state, blue marks something the professional did. The
+  // outline puts this in a different visual class, so it reads as an attribute of
+  // the row rather than its state. It also keeps it clear of the solid-#004aad
+  // unread badge in the trailing slot.
+  paidPill: {
+    borderWidth: 1,
+    borderColor: '#004aad',
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+    flexShrink: 0,
+  },
+  paidPillText: { fontSize: 11, color: '#004aad' },
   trashBtn: { padding: 4, marginLeft: 6 },
   statusBadgeText: { fontSize: 11, fontWeight: '700' },
   bottomRow: { alignItems: 'center', justifyContent: 'space-between' },

@@ -32,7 +32,10 @@ export function useNoticeboard(
           setDismissed(new Set(doc.dismissedNotices));
         }
       })
-      .catch(() => {});
+      // A denial here is indistinguishable from "nothing dismissed" — the board
+      // simply renders every project, including ones the pro hid on purpose. Keep
+      // the permissive fallback, but let the cause reach the logs.
+      .catch((err) => console.error('[noticeboard] failed to read dismissedNotices:', err));
   }, [currentUserId]);
 
   async function dismiss(projectId: string) {

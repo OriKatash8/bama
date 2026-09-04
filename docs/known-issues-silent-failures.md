@@ -245,6 +245,59 @@ person through hire-and-charge and then unwinding three of its four effects.
 
 ---
 
+# Capability is lost at the offer boundary — reachable from 2026-09-04
+
+**Not a swallowed error, but the same failure mode: a real mismatch that renders
+as legitimately-empty data.** Recorded when the role picker started writing
+capability-bearing slots.
+
+## The asymmetry
+
+Slots are identified by **(category, requiredCapability)** — `sameSlotKind` in
+both copies of `matching.ts`. Offers are identified by **category alone**:
+
+- `PriceOffer` (`src/core/types/project.ts`) has no `requiredCapability` field.
+  Its `subcategory?` is a different, unrelated concept and is not written by the
+  noticeboard path.
+- `ProjectDetailModal`'s submit maps bids down to `{ category, price }`,
+  discarding the `requiredCapability` that `getVacantSlots` put on them.
+
+So the read path is capability-aware and the write path is not.
+
+## Why it was dormant, and why it is not any more
+
+Until 2026-09-04 the "add professional" picker discarded the subcategory
+entirely, so **every slot in production was a general slot** and the distinction
+never arose — `crewSlots` on real projects are all `{category, quantity}`. Fixing
+the picker means projects can now carry a `drone` slot and a `general` slot in
+the same category.
+
+## What it will look like
+
+Anything reasoning about "which slots has this pro already bid on" can only
+resolve to category. The first consumer is the noticeboard's
+"still has an unoffered matching slot" check, which decides whether a project
+stays visible after the pro bids on one of its roles. On a project with both a
+`drone` and a `general` slot in one category, bidding on **either** marks the
+category done and the project disappears — with the other slot still vacant.
+
+The pro sees a project quietly stop appearing. There is no error, no empty state,
+nothing in the logs; the board just has one fewer card. That is exactly the shape
+this document exists to catalogue, and it will present months later as "the
+noticeboard is hiding projects I can still bid on".
+
+## The fix, when it is worth doing
+
+Add `requiredCapability?: string` to `PriceOffer` and to `BundleOffer.slots[]`,
+carry it through the modal's submit, and key the already-offered check on
+(category, capability). It is a schema addition, not a migration: existing offers
+having no capability is indistinguishable from the general slots they were
+actually made against, so old data reads correctly under the new shape.
+
+Deliberately deferred — recorded so the eventual symptom has a cause.
+
+---
+
 # Related: mode was standing in for role
 
 Fixed 2026-09-04, in the same pass. The chat list, `ChatRoomScreen`'s fee

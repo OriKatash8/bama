@@ -169,7 +169,8 @@
     "caption_placeholder": "Add a caption...",
     "completed_pro": "Project complete — tap to close",
     "completed_client": "Project complete — leave a review",
-    "completed_pro_settled": "Project complete"
+    "completed_pro_settled": "Project complete",
+    "fee_paid_pill": "Paid"
   },
   "project_details": {
     "header": "Project Details",
@@ -317,8 +318,7 @@
     "stat_execution": "Execution",
     "open_slot": "Open",
     "hire_self_error": "You cannot hire yourself onto your own project",
-    "hire_slot_cap_error": "All your slots are taken — free one up first",
-    "hire_monthly_limit_error": "This month's subscription project quota is used up"
+    "hire_unavailable_error": "This professional cannot take on additional projects right now"
   },
   "client_onboarding": {
     "title": "Welcome! Set up your profile",
@@ -664,8 +664,7 @@
     "sort_price_low": "Price: Low to High",
     "sort_price_high": "Price: High to Low",
     "sort_stars": "Most Stars First",
-    "sort_date": "Newest First",
-    "sort_none": "Default",
+    "sort_none": "Default · Newest First",
     "filter": "Sort & Filter",
     "apply": "Apply",
     "clear": "Clear",

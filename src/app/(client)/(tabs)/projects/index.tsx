@@ -27,7 +27,9 @@ import type { User, ProfessionalProfile } from '@core/types/user';
 const CARD_W = Dimensions.get('window').width - 104;
 const CARD_GAP = 40;
 
-type OfferSort = 'price_asc' | 'price_desc' | 'stars' | 'date' | null;
+/** `null` is the default: newest first. There is no separate 'date' member —
+ *  date-descending IS the default order, so a chip for it would duplicate it. */
+type OfferSort = 'price_asc' | 'price_desc' | 'stars' | null;
 type ShowOnly = 'all' | 'bundle';
 
 type CombinedOffer =
@@ -151,12 +153,19 @@ export default function ProjectsPage() {
    * catch collapsed all of them into "failed to accept" — the client was told
    * nothing about what to do next. The callable carries the reason in its
    * message; anything unrecognised keeps the generic text.
+   *
+   * This is a CLIENT screen, so §6 applies: slot occupancy and subscription state
+   * belong to the professional and must not be disclosed here. Both refusals
+   * collapse to one neutral line — the client's next step is the same either way
+   * (pick somebody else), and the difference between them is not theirs to know.
+   * `cannot-hire-yourself` stays distinct: it is about the client themselves.
    */
   function hireErrorMessage(err: unknown): string {
     const msg = String((err as { message?: string })?.message ?? '');
     if (msg.includes('cannot-hire-yourself')) return t('chats_page.hire_self_error');
-    if (msg.includes('slot-cap-reached')) return t('chats_page.hire_slot_cap_error');
-    if (msg.includes('monthly-limit-reached')) return t('chats_page.hire_monthly_limit_error');
+    if (msg.includes('slot-cap-reached') || msg.includes('monthly-limit-reached')) {
+      return t('chats_page.hire_unavailable_error');
+    }
     return t('chats_page.failed_accept');
   }
 
@@ -204,21 +213,16 @@ export default function ProjectsPage() {
     const bundleItems: CombinedOffer[] = bundles.map((b) => ({ kind: 'bundle', data: b }));
     const priceItems: CombinedOffer[] = offers.map((o) => ({ kind: 'price', data: o }));
 
-    let combined: CombinedOffer[];
-    if (showOnly === 'bundle') {
-      combined = bundleItems;
-    } else if (!offerSort) {
-      // Default: bundles first, then price offers, each in arrival order
-      combined = [...bundleItems, ...priceItems];
-    } else {
-      combined = [...bundleItems, ...priceItems];
-    }
+    const combined: CombinedOffer[] =
+      showOnly === 'bundle' ? bundleItems : [...bundleItems, ...priceItems];
 
     if (offerSort === 'price_asc')  return [...combined].sort((a, b) => getPrice(a) - getPrice(b));
     if (offerSort === 'price_desc') return [...combined].sort((a, b) => getPrice(b) - getPrice(a));
     if (offerSort === 'stars')      return [...combined].sort((a, b) => getRating(b) - getRating(a));
-    if (offerSort === 'date')       return [...combined].sort((a, b) => getDate(b) - getDate(a));
-    return combined;
+    // Default (offerSort === null): newest first. Arrival order surfaced whichever
+    // offer happened to be written first, which on a busy project buried the ones
+    // the client had not seen yet.
+    return [...combined].sort((a, b) => getDate(b) - getDate(a));
   }, [offers, bundles, offerSort, showOnly, professionalProfiles]);
 
   const filterActive = offerSort !== null || showOnly !== 'all';
@@ -228,7 +232,6 @@ export default function ProjectsPage() {
     { value: 'price_asc',  label: t('offers.sort_price_low') },
     { value: 'price_desc', label: t('offers.sort_price_high') },
     { value: 'stars',      label: t('offers.sort_stars') },
-    { value: 'date',       label: t('offers.sort_date') },
   ];
 
   const SHOW_OPTIONS: { value: ShowOnly; label: string }[] = [

@@ -2448,11 +2448,16 @@ const styles = StyleSheet.create({
   },
   rolePillText: { fontSize: 12, color: '#5c6180' },
   memberPriceGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  memberFeeLine: { fontSize: 11, color: '#6b7280' },
+  // #9aa0b8 is this file's muted tone (memberSubtitle, in the same card). The
+  // previous #6b7280 was a one-off that appeared nowhere else here.
+  memberFeeLine: { fontSize: 11, color: '#9aa0b8' },
+  // Blue and radius 10, matching updatePill and removePill beside it in the same
+  // action bar — three pills in one row should not be three shapes. Green is
+  // reserved for project state elsewhere in the app; this is an action.
   payPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#2d6a2d', borderRadius: 999,
-    paddingHorizontal: 12, paddingVertical: 6,
+    backgroundColor: '#004aad', borderRadius: 10,
+    paddingHorizontal: 15, paddingVertical: 7,
   },
   payPillText: { fontSize: 13, color: '#ffffff' },
   memberPrice: { fontSize: 16, fontWeight: '700', color: '#7d5fd0' },
@@ -2736,7 +2741,6 @@ const styles = StyleSheet.create({
   feeLabel: { fontSize: 14, fontWeight: '500' },
   feeAmount: { fontSize: 15, fontWeight: '500' },
   feeAmountBold: { fontSize: 15, fontWeight: '700' },
-  feeDivider: { height: StyleSheet.hairlineWidth, marginVertical: 8 },
   modalSectionLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -2745,8 +2749,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 2,
   },
-  feePlatformNote: { fontSize: 12, marginTop: -6, marginBottom: 4 },
-  feeAgreementNote: { fontSize: 12, marginTop: 4 },
   requestModalInfoRow: { gap: 2 },
   requestModalLabel: {
     fontSize: 12,

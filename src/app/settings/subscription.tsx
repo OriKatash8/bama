@@ -91,7 +91,7 @@ export default function SubscriptionScreen() {
       {rtl
         ? <ChevronRight size={22} color={colors.primary} strokeWidth={2} />
         : <ChevronLeft size={22} color={colors.primary} strokeWidth={2} />}
-      <AppText weight="bold" style={[styles.title, { color: colors.primary }]}>
+      <AppText weight="bold" style={styles.title}>
         {t('settings.sub_title')}
       </AppText>
     </TouchableOpacity>
@@ -104,7 +104,7 @@ export default function SubscriptionScreen() {
       <Screen style={styles.content} scrollable>
         {header}
 
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.card}>
           <AppText weight="semiBold" style={[styles.counterTitle, { color: colors.text, textAlign: align }]}>
             {t('settings.sub_counter_title')}
           </AppText>
@@ -130,7 +130,7 @@ export default function SubscriptionScreen() {
           )}
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card, alignItems: 'stretch' }]}>
+        <View style={[styles.card, { alignItems: 'stretch' }]}>
           <AppText weight="semiBold" style={[styles.planName, { color: colors.text, textAlign: align }]}>
             {subscription?.plan === 'annual'
               ? t('settings.sub_plan_annual')
@@ -162,7 +162,7 @@ export default function SubscriptionScreen() {
       key={opts.name}
       style={[
         styles.plan,
-        { borderColor: opts.recommended ? colors.primary : colors.border, backgroundColor: colors.card },
+        { borderColor: opts.recommended ? colors.primary : colors.border },
         opts.recommended && styles.planRecommended,
       ]}
     >
@@ -242,11 +242,11 @@ export default function SubscriptionScreen() {
         recommended: true,
       })}
 
-      <AppText weight="bold" style={[styles.faqTitle, { color: colors.text, textAlign: align }]}>
+      <AppText weight="bold" style={[styles.faqTitle, { textAlign: align }]}>
         {t('settings.sub_faq_title')}
       </AppText>
       {faq.map(([q, a]) => (
-        <View key={q} style={[styles.faqItem, { borderColor: colors.border }]}>
+        <View key={q} style={styles.faqItem}>
           <View style={[styles.faqQRow, { flexDirection: rowDir }]}>
             <Check size={14} color={colors.primary} strokeWidth={2.5} />
             <AppText weight="semiBold" style={[styles.faqQ, { color: colors.text, textAlign: align }]}>{q}</AppText>
@@ -258,34 +258,72 @@ export default function SubscriptionScreen() {
   );
 }
 
+// The app's card convention, hardcoded per screen rather than themed — see the
+// note on `card` in src/core/hooks/useTheme.tsx for why the token is not used.
+const CARD_SHADOW = {
+  shadowColor: '#1e4fa3',
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 3,
+} as const;
+const CARD_BORDER = 'rgba(30,79,163,0.07)';
+const HEADING_BLUE = '#1e4fa3';
+
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingBottom: 32 },
   backRow: { alignItems: 'center', gap: 6, paddingVertical: 12 },
-  title: { fontSize: 18 },
+  title: { fontSize: 18, color: HEADING_BLUE },
 
-  card: { borderRadius: 16, padding: 18, marginBottom: 12, alignItems: 'center', gap: 6 },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 12,
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    ...CARD_SHADOW,
+  },
   counterTitle: { fontSize: 14, alignSelf: 'stretch' },
   counterNumber: { fontSize: 34, lineHeight: 40 },
   pipRow: { gap: 6, marginVertical: 6, flexWrap: 'wrap', justifyContent: 'center' },
   pip: { width: 18, height: 6, borderRadius: 3 },
   metaLine: { fontSize: 12 },
   planName: { fontSize: 15, marginBottom: 10 },
-  manageBtn: { borderWidth: 1.5, borderRadius: 999, paddingVertical: 11, alignItems: 'center' },
+  manageBtn: { borderWidth: 1.5, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
 
-  plan: { borderWidth: 1.5, borderRadius: 18, padding: 16, marginBottom: 12, gap: 3 },
+  plan: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    gap: 3,
+    ...CARD_SHADOW,
+  },
   planRecommended: { borderWidth: 2 },
   planHeader: { alignItems: 'center', gap: 8, marginBottom: 2 },
   planTitle: { fontSize: 15, flex: 1 },
-  tag: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  tag: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3 },
   tagText: { fontSize: 11, color: '#ffffff' },
   planPrice: { fontSize: 26, lineHeight: 32 },
   launch: { fontSize: 11 },
   planBenefit: { fontSize: 13, marginTop: 4, lineHeight: 18 },
-  planCta: { borderWidth: 1.5, borderRadius: 999, paddingVertical: 11, alignItems: 'center', marginTop: 10 },
+  planCta: { borderWidth: 1.5, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
   planCtaText: { fontSize: 14 },
 
-  faqTitle: { fontSize: 16, marginTop: 8, marginBottom: 8 },
-  faqItem: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 8, gap: 5 },
+  faqTitle: { fontSize: 16, marginTop: 8, marginBottom: 8, color: HEADING_BLUE },
+  faqItem: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 8,
+    gap: 5,
+    ...CARD_SHADOW,
+  },
   faqQRow: { alignItems: 'center', gap: 7 },
   faqQ: { fontSize: 13, flex: 1 },
   faqA: { fontSize: 12, lineHeight: 18 },

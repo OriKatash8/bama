@@ -1,17 +1,21 @@
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import type { CrewRequestSlot } from '@core/types/project';
 import { useTheme } from '@core/hooks/useTheme';
+import { capabilityOf } from '../data/categories';
 import { SubCategoryRow } from './SubCategoryRow';
+
+/** A specialization row: the stable id used for matching, plus its display label. */
+export type SubcategoryOption = { id: string; label: string };
 
 type Props = {
   category: string;
   label: string;
-  subcategories: string[];
+  subcategories: SubcategoryOption[];
   expanded: boolean;
   onToggle: () => void;
-  slots: CrewRequestSlot[];
-  onSelectSubcategory: (subcategory: string) => void;
-  onRemoveSubcategory: (subcategory: string) => void;
+  /** Slots held for one (category, capability) pair — from useCrewBuilder. */
+  unitCount: (category: string, cap?: string) => number;
+  onSelectSubcategory: (capability: string | undefined) => void;
+  onRemoveSubcategory: (capability: string | undefined) => void;
 };
 
 export function CategoryItem({
@@ -20,7 +24,7 @@ export function CategoryItem({
   subcategories,
   expanded,
   onToggle,
-  slots,
+  unitCount,
   onSelectSubcategory,
   onRemoveSubcategory,
 }: Props) {
@@ -37,16 +41,16 @@ export function CategoryItem({
       </TouchableOpacity>
       {expanded &&
         subcategories.map((sub) => {
-          const slot = slots.find(
-            (s) => s.category === category
-          );
+          // Per (category, capability), not per category: matching on the category
+          // alone made every subskill row under a role show the same number.
+          const cap = capabilityOf(sub.id);
           return (
             <SubCategoryRow
-              key={sub}
-              subcategory={sub}
-              quantity={slot?.quantity ?? 0}
-              onPress={() => onSelectSubcategory(sub)}
-              onRemove={() => onRemoveSubcategory(sub)}
+              key={sub.id}
+              subcategory={sub.label}
+              quantity={unitCount(category, cap)}
+              onPress={() => onSelectSubcategory(cap)}
+              onRemove={() => onRemoveSubcategory(cap)}
             />
           );
         })}

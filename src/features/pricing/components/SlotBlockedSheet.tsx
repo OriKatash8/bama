@@ -58,7 +58,7 @@ export function SlotBlockedSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+        <View style={styles.sheet}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <AppText weight="bold" style={[styles.title, { color: colors.text, textAlign: align }]}>
               {t('noticeboard.blocked_title')}
@@ -76,7 +76,7 @@ export function SlotBlockedSheet({
             {occupied.map((p) => {
               const isCompleted = p.status === 'completed';
               return (
-                <View key={p.id} style={[styles.slotRow, { flexDirection: rowDir, borderColor: colors.border }]}>
+                <View key={p.id} style={[styles.slotRow, { flexDirection: rowDir }]}>
                   <View style={styles.slotInfo}>
                     <AppText weight="semiBold" style={[styles.slotTitle, { color: colors.text, textAlign: align }]} numberOfLines={1}>
                       {p.title}
@@ -88,11 +88,11 @@ export function SlotBlockedSheet({
                     </AppText>
                   </View>
                   <TouchableOpacity
-                    style={[styles.slotAction, { backgroundColor: isCompleted ? '#2d6a2d' : 'transparent', borderColor: '#2d6a2d' }]}
+                    style={[styles.slotAction, { backgroundColor: isCompleted ? PRIMARY_BLUE : 'transparent', borderColor: PRIMARY_BLUE }]}
                     onPress={() => go(`/settings/payment?projectId=${p.id}`)}
                     activeOpacity={0.85}
                   >
-                    <AppText weight="semiBold" style={[styles.slotActionText, { color: isCompleted ? '#ffffff' : '#2d6a2d' }]}>
+                    <AppText weight="semiBold" style={[styles.slotActionText, { color: isCompleted ? '#ffffff' : PRIMARY_BLUE }]}>
                       {isCompleted
                         ? t('noticeboard.blocked_close')
                         : t('noticeboard.blocked_close_early')}
@@ -136,25 +136,38 @@ export function SlotBlockedSheet({
   );
 }
 
+// The app's card convention, hardcoded per screen rather than themed — see the
+// note on `card` in src/core/hooks/useTheme.tsx for why the token is not used.
+const CARD_BORDER = 'rgba(30,79,163,0.07)';
+/** Pay actions are blue. Green marks state elsewhere in the app, never an action. */
+const PRIMARY_BLUE = '#004aad';
+
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, maxHeight: '85%' },
+  sheet: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    maxHeight: '85%',
+  },
   title: { fontSize: 19, marginBottom: 6 },
   body: { fontSize: 14, marginBottom: 10, lineHeight: 20 },
   slotCount: { fontSize: 12, marginBottom: 12 },
   slotRow: {
-    alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 14,
+    alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16,
+    borderColor: CARD_BORDER,
     paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8,
   },
   slotInfo: { flex: 1, gap: 2 },
   slotTitle: { fontSize: 14 },
   slotStatus: { fontSize: 12 },
-  slotAction: { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
+  slotAction: { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 15, paddingVertical: 7 },
   slotActionText: { fontSize: 13 },
   pitch: { borderWidth: 1, borderRadius: 16, padding: 16, marginTop: 10, gap: 6 },
   pitchTitle: { fontSize: 15 },
   pitchBody: { fontSize: 13, lineHeight: 19 },
-  pitchCta: { borderRadius: 999, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
+  pitchCta: { borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   pitchCtaText: { fontSize: 15, color: '#ffffff' },
   notNow: { alignItems: 'center', paddingVertical: 16 },
   notNowText: { fontSize: 14 },
