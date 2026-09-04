@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator,
+  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
@@ -145,7 +145,6 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
         t('marketplace.sale_complete'),
         snap.sellerConfirmed ?? false,
       );
-      Alert.alert(t('marketplace.fee_charged'));
     } catch (err) {
       console.error('[PurchaseBanner] confirmReceived error:', err);
     } finally {

@@ -84,3 +84,47 @@ whose rule can deny it. A denial is not an exception the user recognises — it
 arrives looking exactly like legitimately-empty data. Two production bugs in this
 codebase have now been caused by it (the removal banner, and nearly the ratings),
 and both were invisible in the logs.
+
+---
+
+## Marketplace fee — removed from copy 2026-09-04, dead code left behind
+
+**Decision: BAMA charges no fee on marketplace transactions.** Not now, possibly
+in future.
+
+The fee was never actually charged. The only calculation,
+`Math.round(listing.price * 0.03)`, was deleted on 2026-08-20 in `ecbdfe5`
+("Talk with the Seller replaces instant buy"), whose own message records
+"no platform fee at chat-open time". No payment integration ever existed.
+`onMarketplacePurchase` sends a notification and touches no money.
+
+What was left was copy describing a fee nobody was charging — six strings, two of
+them live in front of real users. Those are now gone.
+
+### If a marketplace fee is ever introduced
+
+**It gets its own rate in `src/core/constants/pricing.ts`, mirrored in
+`functions/src/pricing.ts` — it does NOT revive any of the below.** The project
+fee (`PLATFORM_FEE_RATE`) is 3% of what each professional is paid on a completed
+project; a marketplace rate is a different thing that happened to share a number.
+Reusing that constant would silently couple two unrelated prices, so that when
+one moves the other moves with it.
+
+### Left in place deliberately, worth cleaning before launch
+
+| Item | Why it is still here |
+|---|---|
+| **13 listings with a stale `platformFee`** | **The one that matters.** 12 sold, 1 reserved, each exactly 3% of price (₪5,000 → ₪150). Written before 2026-08-20. Real numbers on real documents implying a fee was assessed, and nothing reads them. Clean these before launch. |
+| `src/features/marketplace/components/CheckoutModal.tsx` | Orphaned — nothing imports or mounts it since `ecbdfe5`. Still references `marketplace.platform_fee` and `marketplace.fee_note`, which no longer exist; its `makeT` returns the key on a miss, so it degrades to raw key text rather than crashing. Never rendered, so no user impact. |
+| `MarketplaceListing.platformFee?: number` and its `deleteField()` in `cancelPurchase` | No write site anywhere in `src/`, `functions/` or `scripts/`. The `deleteField()` clears a field nothing sets. |
+| `// STRIPE CHARGE GOES HERE` at `marketplaceService.ts:162-165` | A placeholder referencing `listing.platformFee`. Reads as though a charge is pending when none is. |
+
+### Why the `fee_charged` alert was deleted rather than reworded
+
+It existed only to announce the fee, so there was nothing left to say. Removing
+it leaves no gap: `listenToPurchaseContext` is a live listener, so the banner
+re-renders on its own — `sale_completed_label` when both sides have confirmed,
+`waiting_seller` when only the buyer has — and `confirmReceived` posts
+`sale_complete` into the chat the buyer is already looking at. Two independent
+signals in each branch. It was also an `Alert.alert`, which no-ops on web, so
+web buyers never saw it in the first place.
