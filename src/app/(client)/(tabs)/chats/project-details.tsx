@@ -51,6 +51,9 @@ import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/co
 import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
+import { listenToProjectFee } from '@features/pricing/services/feesService';
+import { outstandingFee, feePercent } from '@features/pricing/utils/fee';
+import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
@@ -200,6 +203,11 @@ export default function ProjectDetailsScreen() {
   // The professional's own request arrives by DOCUMENT listener, not from the
   // collection above — production denies that query to them (see removalService).
   const [myRemovalDoc, setMyRemovalDoc] = useState<RemovalRequest | null>(null);
+
+  // This professional's own platform fee on this project. The CLIENT never reads
+  // it — the rules deny them, and spec §6 says the client is never told that a
+  // professional owes BAMA money.
+  const [myFee, setMyFee] = useState<ProjectFee | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   // Report user
@@ -313,6 +321,13 @@ export default function ProjectDetailsScreen() {
     const uid = auth.currentUser?.uid;
     if (!projectId || !project?.clientId || project.clientId !== uid) return;
     return listenToRemovalRequests(projectId, setRemovalRequests);
+  }, [projectId, project?.clientId]);
+
+  // PROFESSIONAL: their own fee document. Not run in client mode at all.
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!projectId || !uid || !project?.clientId || project.clientId === uid) return;
+    return listenToProjectFee(projectId, uid, setMyFee);
   }, [projectId, project?.clientId]);
 
   // PROFESSIONAL: only their own request, by document id. Listening to the
@@ -1004,6 +1019,14 @@ export default function ProjectDetailsScreen() {
               onRemove={isClient && !isReadOnly ? () => handleRequestRemoval(professionalId) : undefined}
               onReport={professionalId !== currentUserId ? () => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? ''); setReportVisible(true); } : undefined}
               payment={(isClient || professionalId === currentUserId) ? payment : undefined}
+              // Only the viewing professional's OWN row carries the fee — the
+              // client cannot read fee docs by rule and is never told (§6).
+              fee={!isClient && professionalId === currentUserId ? myFee : undefined}
+              // NOT gated on isReadOnly: a completed project is precisely when
+              // the fee is due, and that is the state that hides "update price".
+              onPay={!isClient && professionalId === currentUserId
+                ? () => router.push(`/settings/payment?projectId=${projectId}` as never)
+                : undefined}
               onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly && (payment?.individualOffer || payment?.bundleId)
                 ? () => {
                     if (!payment) return;
@@ -2078,6 +2101,8 @@ function MemberRow({
   onReport,
   payment,
   onUpdate,
+  fee,
+  onPay,
 }: {
   displayName: string;
   photoURL: string | null;
@@ -2090,6 +2115,10 @@ function MemberRow({
   onReport?: () => void;
   payment?: { price: number; hasBundle: boolean; individualOffer: PriceOffer | null; bundleId: string | null };
   onUpdate?: () => void;
+  /** THIS professional's platform fee. Passed only when the viewer IS this
+   *  professional — the client must never see it (spec §6). */
+  fee?: ProjectFee | null;
+  onPay?: () => void;
 }) {
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
@@ -2098,7 +2127,22 @@ function MemberRow({
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   const isClient = badge !== undefined;
   const canUpdate = !!onUpdate && (!!payment?.individualOffer || !!payment?.bundleId);
-  const showActions = canUpdate || !!onRemove || isPendingRemoval || !!onReport;
+  // The fee line is the ONLY place an amount appears before the payment screen.
+  const owed = outstandingFee(fee ?? null);
+  const feeLine = !fee
+    ? null
+    : fee.feeStatus === 'included'
+    ? t('project_details.fee_included')
+    : fee.feeStatus === 'exempt'
+    ? null
+    : owed > 0
+    ? t('project_details.fee_line', { percent: String(feePercent(fee)), amount: owed.toLocaleString() })
+    : t('project_details.fee_paid');
+  // Deliberately NOT gated on isReadOnly: completion is exactly when the fee
+  // falls due, so the pay action has to survive the read-only project state that
+  // hides "update price".
+  const canPay = !!onPay && owed > 0;
+  const showActions = canUpdate || canPay || !!onRemove || isPendingRemoval || !!onReport;
   return (
     <View style={styles.memberCard}>
       {/* Top row: avatar + name/role + price */}
@@ -2136,12 +2180,19 @@ function MemberRow({
         </View>
 
         {payment !== undefined && (
-          <View style={[styles.memberPriceGroup, { flexDirection: rowDir }]}>
-            <AppText weight="bold" style={styles.memberPrice}>₪{payment.price.toLocaleString()}</AppText>
-            {payment.hasBundle && (
-              <View style={styles.bundlePayBadge}>
-                <AppText weight="bold" style={styles.bundlePayBadgeText}>{t('offers.bundle_badge')}</AppText>
-              </View>
+          <View style={{ alignItems: rtl ? 'flex-start' : 'flex-end', gap: 2 }}>
+            <View style={[styles.memberPriceGroup, { flexDirection: rowDir }]}>
+              <AppText weight="bold" style={styles.memberPrice}>₪{payment.price.toLocaleString()}</AppText>
+              {payment.hasBundle && (
+                <View style={styles.bundlePayBadge}>
+                  <AppText weight="bold" style={styles.bundlePayBadgeText}>{t('offers.bundle_badge')}</AppText>
+                </View>
+              )}
+            </View>
+            {feeLine && (
+              <AppText weight="regular" style={styles.memberFeeLine} numberOfLines={1}>
+                {feeLine}
+              </AppText>
             )}
           </View>
         )}
@@ -2150,6 +2201,11 @@ function MemberRow({
       {/* Action bar */}
       {showActions && (
         <View style={[styles.memberActionBar, { flexDirection: rowDir }]}>
+          {canPay && (
+            <TouchableOpacity style={styles.payPill} onPress={() => onPay!()} activeOpacity={0.85}>
+              <AppText weight="semiBold" style={styles.payPillText}>{t('project_details.pay_fee')}</AppText>
+            </TouchableOpacity>
+          )}
           {canUpdate && (
             <TouchableOpacity style={styles.updatePill} onPress={() => onUpdate!()} activeOpacity={0.85}>
               <Pencil size={13} color="#ffffff" strokeWidth={2.2} />
@@ -2364,6 +2420,13 @@ const styles = StyleSheet.create({
   },
   rolePillText: { fontSize: 12, color: '#5c6180' },
   memberPriceGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  memberFeeLine: { fontSize: 11, color: '#6b7280' },
+  payPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: '#2d6a2d', borderRadius: 999,
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  payPillText: { fontSize: 13, color: '#ffffff' },
   memberPrice: { fontSize: 16, fontWeight: '700', color: '#7d5fd0' },
   clientBadge: {
     backgroundColor: '#1e4fa3',

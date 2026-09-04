@@ -52,6 +52,9 @@ import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
 import { listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
+import { listenToProjectFee } from '@features/pricing/services/feesService';
+import { outstandingFee } from '@features/pricing/utils/fee';
+import type { ProjectFee } from '@core/types/project';
 import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
 import { MiniCalendar } from '@features/crew/components';
@@ -854,8 +857,24 @@ export function ChatRoomScreen({ chatId }: Props) {
     return () => { cancelled = true; };
   }, [chatProjectId]);
 
+  // This professional's own fee on the linked project, so a completed-but-unpaid
+  // chat can offer a way to settle. Professional mode only — the client never
+  // reads fee documents (§6), and the rules deny them.
+  const [myProjectFee, setMyProjectFee] = useState<ProjectFee | null>(null);
+  useEffect(() => {
+    if (!chatProjectId || !currentUserId || activeMode !== 'professional') {
+      setMyProjectFee(null);
+      return;
+    }
+    return listenToProjectFee(chatProjectId, currentUserId, setMyProjectFee);
+  }, [chatProjectId, currentUserId, activeMode]);
+
   // One switch for "this conversation is closed to new messages".
   const isReadOnly = chatReadOnly || projectCompleted;
+  // Independent of isReadOnly by design: an early payment on an ACTIVE project
+  // frees the slot while the chat stays open, and a completed chat is read-only
+  // whether or not anything is owed.
+  const feeOutstanding = outstandingFee(myProjectFee);
   const readOnlyLabel = chatReadOnlyReason === 'completed' || projectCompleted
     ? t('chats.completed_read_only')
     : t('chats.system_read_only');
@@ -1530,6 +1549,19 @@ export function ChatRoomScreen({ chatId }: Props) {
           <AppText weight="semiBold" style={{ color: '#8890b0', fontSize: 13, textAlign: 'center' }}>
             {readOnlyLabel}
           </AppText>
+          {/* The composer is gone, so the pay action lives here — a completed
+              chat is precisely when the fee is due, and it must stay reachable. */}
+          {feeOutstanding > 0 && chatProjectId && (
+            <TouchableOpacity
+              style={chatStyles.payFromChatBtn}
+              onPress={() => router.push(`/settings/payment?projectId=${chatProjectId}` as never)}
+              activeOpacity={0.85}
+            >
+              <AppText weight="bold" style={chatStyles.payFromChatText}>
+                {t('project_details.pay_fee')}
+              </AppText>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -2464,6 +2496,11 @@ const manageStyles = StyleSheet.create({
 });
 
 const chatStyles = StyleSheet.create({
+  payFromChatBtn: {
+    backgroundColor: '#2d6a2d', borderRadius: 999,
+    paddingHorizontal: 22, paddingVertical: 9,
+  },
+  payFromChatText: { fontSize: 14, color: '#ffffff' },
   menuSheet: {
     flexDirection: 'row',
     justifyContent: 'space-around',
