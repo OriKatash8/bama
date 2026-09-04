@@ -203,6 +203,9 @@ export default function ProjectDetailsScreen() {
   // The professional's own request arrives by DOCUMENT listener, not from the
   // collection above — production denies that query to them (see removalService).
   const [myRemovalDoc, setMyRemovalDoc] = useState<RemovalRequest | null>(null);
+  // freeSlot can cold-start for several seconds; without this the button looks
+  // dead and people tap again, firing calls that then fail as "not on project".
+  const [acceptingRemoval, setAcceptingRemoval] = useState(false);
 
   // This professional's own platform fee on this project. The CLIENT never reads
   // it — the rules deny them, and spec §6 says the client is never told that a
@@ -575,23 +578,41 @@ export default function ProjectDetailsScreen() {
   }
 
   async function handleAcceptRemoval() {
-    if (!projectId || !project) return;
-    const chatId = project.chatId;
-    if (!chatId) return;
+    // These used to return with no feedback of any kind — the button simply did
+    // nothing and nobody, user or developer, had a signal.
+    if (!projectId || !project) {
+      console.error('[removal] accept blocked: project not loaded', { projectId, hasProject: !!project });
+      return;
+    }
+    if (!project.chatId) {
+      console.error('[removal] accept blocked: project has no chatId', { projectId });
+      return;
+    }
+
+    // Leaving a project cannot be undone, and every other destructive action on
+    // this screen confirms first.
+    const confirmed = await confirmDialog(
+      t('project_details.confirm_leave_title'),
+      t('project_details.confirm_leave_body'),
+    );
+    if (!confirmed) return;
+
+    setAcceptingRemoval(true);
     try {
-      const name = memberUsers[currentUserId]?.displayName ?? currentUserId;
-      await acceptRemoval(
-        projectId,
-        chatId,
-        currentUserId,
-        t('project_details.member_left').replace('{{name}}', name),
-      );
-      router.back();
+      // The "X left" notice is posted server-side inside freeSlot, in the same
+      // batch as the membership removal — it cannot be written from here once
+      // membership is gone.
+      await acceptRemoval(projectId);
+      // NOT router.back(): that returns to the project's chat, which this
+      // professional has just been removed from and can no longer read.
+      router.replace('/(professional)/(tabs)/chats');
     } catch (err) {
       // freeSlot refuses deliberately when this pro owes on a confirmed project.
       // Without logging, that reason never reaches anyone.
       console.error('[removal] acceptRemoval/freeSlot failed:', err);
       Alert.alert('Error', t('project_details.error_accept_removal'));
+    } finally {
+      setAcceptingRemoval(false);
     }
   }
 
@@ -901,13 +922,18 @@ export default function ProjectDetailsScreen() {
               {t('project_details.removal_pending')}
             </Text>
             <TouchableOpacity
-              style={styles.removalAcceptBtn}
+              style={[styles.removalAcceptBtn, acceptingRemoval && styles.removalAcceptBtnBusy]}
               onPress={handleAcceptRemoval}
+              disabled={acceptingRemoval}
               activeOpacity={0.8}
             >
-              <Text style={[styles.removalAcceptText, { ...font.bold }]}>
-                {t('project_details.accept_removal')}
-              </Text>
+              {acceptingRemoval ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={[styles.removalAcceptText, { ...font.bold }]}>
+                  {t('project_details.accept_removal')}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -2753,6 +2779,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     alignItems: 'center',
   },
+  removalAcceptBtnBusy: { opacity: 0.7 },
   removalAcceptText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   // ── Pending removal chip & remove button ──────────────────────────────────────

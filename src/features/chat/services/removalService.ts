@@ -7,7 +7,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { callFunction } from '@core/firebase/functions';
-import { sendMessage } from './chatService';
 import type { RemovalRequest } from '@core/types/project';
 
 const freeSlot = callFunction<{ projectId: string }, { ok: boolean; chatId: string | null }>(
@@ -28,27 +27,19 @@ export async function requestRemoval(
 }
 
 /**
- * The professional accepts their removal. All of it — filledSlots, the chat
- * membership, their accepted offers, the request status, and crucially
- * `professionalIds` (what actually frees the slot for the cap query) — is done
- * server-side by the `freeSlot` callable. Clients can no longer write those
- * fields, and the callable refuses once completion is confirmed so an owed fee
- * cannot be escaped by leaving.
+ * The professional accepts their removal. ALL of it — filledSlots, chat
+ * membership, their accepted offers, the removal request, `professionalIds` and
+ * `slotHolders` (what actually frees the slot for the cap query), and the
+ * "X left the project" notice — is done server-side by `freeSlot`, in one batch.
+ *
+ * The notice used to be a client write here, after the callable returned. It
+ * could never succeed: the callable removes this professional from the chat's
+ * `members`, and the message-create rule requires membership. It failed every
+ * time and was swallowed by a `catch {}` marked non-fatal, so the remaining crew
+ * were never told anyone had left. It is now part of the same batch.
  */
-export async function acceptRemoval(
-  projectId: string,
-  chatId: string,
-  professionalId: string,
-  systemMessage: string,
-): Promise<void> {
+export async function acceptRemoval(projectId: string): Promise<void> {
   await freeSlot({ projectId });
-
-  // System message is non-atomic — send after the callable commits.
-  try {
-    await sendMessage(chatId, professionalId, systemMessage);
-  } catch {
-    // Non-fatal: removal already committed
-  }
 }
 
 /**

@@ -275,7 +275,9 @@
     "pay_success": "Payment received",
     "pay_error": "Payment failed. Please try again.",
     "pay_nothing_owed": "Nothing outstanding on this project",
-    "pay_not_found": "Project not found"
+    "pay_not_found": "Project not found",
+    "confirm_leave_title": "Leave project",
+    "confirm_leave_body": "Accept the removal and leave this project? This cannot be undone."
   },
   "chats_page": {
     "title": "Chats",

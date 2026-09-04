@@ -275,7 +275,9 @@
     "pay_success": "התשלום התקבל",
     "pay_error": "התשלום נכשל. נסו שוב.",
     "pay_nothing_owed": "אין חוב פתוח בפרויקט הזה",
-    "pay_not_found": "הפרויקט לא נמצא"
+    "pay_not_found": "הפרויקט לא נמצא",
+    "confirm_leave_title": "עזיבת הפרויקט",
+    "confirm_leave_body": "לאשר את ההסרה ולעזוב את הפרויקט? הפעולה אינה הפיכה."
   },
   "chats_page": {
     "title": "צ'אטים",

@@ -77,7 +77,38 @@ export const freeSlot = onCall(async (request) => {
 
   const chatId = project.chatId as string | undefined;
   if (chatId) {
-    batch.update(db.doc(`chats/${chatId}`), { members: FieldValue.arrayRemove(uid) });
+    // The "X left" notice is posted HERE, in the same batch that removes them.
+    //
+    // It used to be a client write after the callable returned — which could
+    // never succeed: this batch strips the professional from `members`, and the
+    // message-create rule requires membership. It failed every time and was
+    // swallowed by a `catch {}` marked non-fatal, so the remaining crew were
+    // never told anyone had left. Batched here it is atomic with the removal:
+    // either both land or neither does, and the Admin SDK is not subject to the
+    // membership rule.
+    const proSnap = await db.doc(`users/${uid}`).get();
+    const proName = (proSnap.data()?.displayName as string | undefined) ?? 'בעל מקצוע';
+    const text = `${proName} עזב את הפרויקט`;
+
+    batch.set(db.collection(`chats/${chatId}/messages`).doc(), {
+      senderId: 'system',
+      system: true,
+      text,
+      timestamp: FieldValue.serverTimestamp(),
+      readBy: [],
+    });
+
+    const remaining = ((project.professionalIds as string[]) ?? [])
+      .filter((id) => id !== uid)
+      .concat(project.clientId ? [project.clientId as string] : []);
+    const chatUpdate: Record<string, unknown> = {
+      members: FieldValue.arrayRemove(uid),
+      lastMessage: { text, senderId: 'system', timestamp: FieldValue.serverTimestamp() },
+    };
+    for (const memberId of remaining) {
+      chatUpdate[`unreadCount.${memberId}`] = FieldValue.increment(1);
+    }
+    batch.update(db.doc(`chats/${chatId}`), chatUpdate);
   }
 
   offersSnap.docs.forEach((d) => batch.update(d.ref, { status: 'removed' }));

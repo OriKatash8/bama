@@ -708,6 +708,14 @@ export function ChatRoomScreen({ chatId }: Props) {
           setChatName(data.name ?? 'Group Chat');
         }
       }
+    }, (err) => {
+      // A permission-denied here is what a removed member gets: they are no
+      // longer in the chat's `members`, so the rule denies the read. With no
+      // error callback this did nothing at all — the screen sat on stale content
+      // and looked frozen, which is the same silent-empty shape that has now
+      // caused three bugs. Send them somewhere they can actually read.
+      console.error('[chat] chat listener failed:', err?.code, err);
+      router.replace(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats`);
     });
 
     return unsub;
