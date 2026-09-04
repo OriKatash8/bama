@@ -267,21 +267,21 @@ export function AppHeader() {
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
 
-            {/* Subscription — professionals only: the slot cap and the monthly
-                quota are theirs, and a client has nothing to subscribe to. */}
-            {!modeIsClient && (
-              <TouchableOpacity
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => { setSettingsVisible(false); router.push('/settings/subscription'); }}
-                activeOpacity={0.7}
-              >
-                <CreditCard size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.subscription')}
-                </AppText>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-              </TouchableOpacity>
-            )}
+            {/* Subscription — shown in both modes. It used to be hidden in client
+                mode, which locked a professional out of their own subscription
+                merely because they were browsing as a client. Mode picks the
+                tab; it does not decide who you are. */}
+            <TouchableOpacity
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => { setSettingsVisible(false); router.push('/settings/subscription'); }}
+              activeOpacity={0.7}
+            >
+              <CreditCard size={18} color={colors.textMuted} strokeWidth={1.5} />
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                {t('settings.subscription')}
+              </AppText>
+              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+            </TouchableOpacity>
 
             {/* Information */}
             <TouchableOpacity

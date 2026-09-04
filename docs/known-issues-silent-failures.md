@@ -128,3 +128,68 @@ re-renders on its own — `sale_completed_label` when both sides have confirmed,
 `sale_complete` into the chat the buyer is already looking at. Two independent
 signals in each branch. It was also an `Alert.alert`, which no-ops on web, so
 web buyers never saw it in the first place.
+
+---
+
+# Self-hire: a client can hire themselves onto their own project
+
+**Reachable today, and already present on 6 production projects** (one of them
+`completed`). Not fixed — recorded 2026-09-04 so it is a decision rather than a
+surprise.
+
+## How it happens
+
+Nothing blocks it at either step:
+
+- `priceOffers` create only requires `request.resource.data.professionalId ==
+  request.auth.uid` — you may bid on your own project.
+- `hireProfessional` → `loadAndEnforce` only requires `project.clientId == uid`
+  — you may accept it. There is no `clientId !== proId` guard anywhere in
+  `functions/src/lifecycle/hire.ts`.
+
+The notification triggers *do* guard against it (`if (clientId ===
+offer.professionalId) return`), which suggests it was noticed at the
+notification layer and never pushed down into the hire path.
+
+## What it costs
+
+- **A slot.** The self-hire lands in `slotHolders`, so it counts against the
+  non-subscriber cap of 2 exactly like real work, and against a subscriber's
+  monthly limit of 10.
+- **A fee.** A `fees/{proId}` document is written with the normal status, so on
+  client-confirmed completion the platform fee falls due — on a transaction where
+  no money moved between two parties. The completed self-hire above is the shape
+  that would bill someone for paying themselves.
+- **Fee-document readability.** Fee docs are readable by the professional and
+  denied to the client (§6). Under self-hire those are the same person, so the
+  "client never learns the professional owes money" property is vacuous.
+
+## How the UI resolves it (already implemented)
+
+Wherever a role decides what to render, **the client variant wins**: chat-list
+row copy, and the fee listeners in `project-details` and `ChatRoomScreen`. The
+reason is written at each site — no money moved between parties, so there is no
+fee to present and nothing to settle. This keeps the UI coherent; it does **not**
+stop the fee being assessed server-side.
+
+## If it is fixed later
+
+The cheap guard is in `loadAndEnforce`: reject when `proId === project.clientId`
+with a `failed-precondition`. That stops new ones. The six existing projects
+would need deciding separately — particularly the completed one, where a fee may
+already be recorded.
+
+---
+
+# Related: mode was standing in for role
+
+Fixed 2026-09-04, in the same pass. The chat list, `ChatRoomScreen`'s fee
+listener and the subscription menu row all branched on `activeMode` where they
+meant "my role on this project". A client who switched to professional mode was
+told to pay a fee on their own project; a professional browsing as a client lost
+the pay button on a project they owed on, and could not reach their own
+subscription.
+
+**Mode picks which tab you are in. It does not decide who you are on a given
+project.** Role comes from `project.clientId` and `project.professionalIds`.
+`modeSegment` routing is the legitimate use of mode and stays.

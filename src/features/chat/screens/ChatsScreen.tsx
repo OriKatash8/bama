@@ -20,6 +20,11 @@ import { listenToMyFees } from '@features/pricing/services/feesService';
 import { owesFee } from '@features/pricing/utils/fee';
 
 type ProjectStatus = ProjectRequest['status'];
+type ProjectRoleInfo = {
+  status: ProjectStatus;
+  clientId: string;
+  professionalIds: string[];
+};
 type Translations = typeof en;
 
 function makeT(translations: Translations) {
@@ -88,14 +93,16 @@ export function ChatsScreen({
   const colors = useTheme();
   const font = useAppFont();
   const user = useAuthStore((s) => s.user);
-  const activeMode = useAuthStore((s) => s.activeMode);
-  const isProMode = activeMode === 'professional';
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : 'row' as const;
   const [dmInfo, setDmInfo] = useState<Record<string, DmInfo>>({});
-  const [projectStatuses, setProjectStatuses] = useState<Record<string, ProjectStatus>>({});
+  // Status AND the viewer's role on each project. The role must come from the
+  // PROJECT, not from activeMode: mode picks which tab you are in, it does not
+  // decide who you are on a given project. A client who switches to
+  // professional mode is still the client of their own project.
+  const [projectInfo, setProjectInfo] = useState<Record<string, ProjectRoleInfo>>({});
   const [feesByProject, setFeesByProject] = useState<Map<string, ProjectFee>>(new Map());
   const [purchaseNames, setPurchaseNames] = useState<Record<string, string>>({});
   const [purchaseImages, setPurchaseImages] = useState<Record<string, string>>({});
@@ -129,14 +136,20 @@ export function ChatsScreen({
     });
   }, [chats, user]);
 
-  // The professional's own fees across every project, keyed by projectId.
+  // This user's own fees across every project, keyed by projectId.
+  //
   // A LISTENER, not a fetch: this screen is a mounted tab, so pushing the payment
   // screen and popping back never remounts it — a fetch-on-mount would leave the
-  // row reading "unpaid" immediately after they paid. Client mode reads nothing.
+  // row reading "unpaid" immediately after they paid.
+  //
+  // NOT gated on mode. A project where you are the professional still appears in
+  // your list while you browse as a client, and without the fee its row would
+  // render as settled — trash restored, nothing owed — to somebody who owes.
+  // The query is scoped to this user's own fee documents either way.
   useEffect(() => {
-    if (!isProMode || !user?.id) { setFeesByProject(new Map()); return; }
+    if (!user?.id) { setFeesByProject(new Map()); return; }
     return listenToMyFees(user.id, setFeesByProject);
-  }, [isProMode, user?.id]);
+  }, [user?.id]);
 
   useEffect(() => {
     const toFetch = chats.filter(
@@ -148,12 +161,19 @@ export function ChatsScreen({
       toFetch.map(async (c) => {
         const snap = await getDoc(doc(db, 'projects', c.projectId!));
         if (!snap.exists()) return null;
-        const status = (snap.data() as Pick<ProjectRequest, 'status'>).status;
-        return [c.id, status] as const;
+        // The whole document is already read — Pick<> narrowed the type, it did
+        // not project fields — so carrying clientId and professionalIds costs
+        // nothing extra.
+        const d = snap.data() as Pick<ProjectRequest, 'status' | 'clientId' | 'professionalIds'>;
+        return [c.id, {
+          status: d.status,
+          clientId: d.clientId,
+          professionalIds: d.professionalIds ?? [],
+        }] as const;
       }),
     ).then((entries) => {
-      const valid = entries.filter((e): e is [string, ProjectStatus] => e !== null);
-      if (valid.length > 0) setProjectStatuses((prev) => ({ ...prev, ...Object.fromEntries(valid) }));
+      const valid = entries.filter((e): e is [string, ProjectRoleInfo] => e !== null);
+      if (valid.length > 0) setProjectInfo((prev) => ({ ...prev, ...Object.fromEntries(valid) }));
     });
   }, [chats]);
 
@@ -290,7 +310,8 @@ export function ChatsScreen({
             : (rtl ? `קנייה - ${pName}` : `${pName} - ${t('chats.purchase_suffix')}`);
         })()
       : (dmInfo[item.id]?.name ?? t('chats.loading'));
-    const status = item.type === 'group' ? projectStatuses[item.id] : undefined;
+    const info = item.type === 'group' ? projectInfo[item.id] : undefined;
+    const status = info?.status;
     const timestamp = formatTimestamp(item.lastMessage?.timestamp, language);
     const unread = item.unreadCount?.[currentUserId] ?? 0;
 
@@ -303,9 +324,20 @@ export function ChatsScreen({
       item.type === 'group' &&
       ((item.readOnly === true && item.readOnlyReason === 'completed') || status === 'completed');
 
-    // The professional's own fee on this project. Absent = exempt = nothing owed.
-    const myFee = isProMode && item.projectId ? feesByProject.get(item.projectId) : undefined;
-    const iOweOnThisProject = isProMode && isCompletedProject && owesFee(myFee ?? null);
+    // ── Role on THIS project, not the current mode ──────────────────────────
+    // Mode picks which tab you are in; it must not decide who you are on a given
+    // project. Rendering the professional variant to a client — telling them to
+    // pay a fee on their own project — is what mode-based branching produced.
+    //
+    // Self-hire (clientId also in professionalIds) is reachable and exists in
+    // production: the CLIENT variant wins. No money moved between parties in
+    // that case, so there is no fee to charge and nothing to settle.
+    const viewerIsClient = !!info && info.clientId === currentUserId;
+    const viewerIsPro = !!info && !viewerIsClient && info.professionalIds.includes(currentUserId);
+
+    // This user's own fee on this project. Absent = exempt = nothing owed.
+    const myFee = viewerIsPro && item.projectId ? feesByProject.get(item.projectId) : undefined;
+    const iOweOnThisProject = viewerIsPro && isCompletedProject && owesFee(myFee ?? null);
 
     // Role-aware completed line. No amount appears anywhere in this list.
     // Three states, not two: a professional who owes is told to settle, but a
@@ -313,16 +345,18 @@ export function ChatsScreen({
     // to settle, so "tap to close" would be a lie — they just get the fact.
     const completedLine = !isCompletedProject
       ? null
-      : isProMode
+      : viewerIsPro
       ? (iOweOnThisProject ? t('chats.completed_pro') : t('chats.completed_pro_settled'))
-      : t('chats.completed_client');
+      : viewerIsClient
+      ? t('chats.completed_client')
+      : null;
 
     // The badge is redundant for the professional — their line already says the
     // project is complete. The client's line says what to DO ("leave a review"),
     // so once they have written it and the row reverts, the badge is the only
     // thing still marking the project finished. Cancelled keeps it for both.
     const showStatusBadge =
-      status != null && !(isCompletedProject && isProMode);
+      status != null && !(isCompletedProject && viewerIsPro);
     return (
       <TouchableOpacity
         key={item.id}

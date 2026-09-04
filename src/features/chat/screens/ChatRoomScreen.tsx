@@ -500,6 +500,9 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | 'superseded' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
   const [projectDeadline, setProjectDeadline] = useState<string | undefined>(undefined);
+  // Who owns this project. The fee entry point keys off this, not activeMode —
+  // mode picks the tab, it does not decide your role on a given project.
+  const [projectClientId, setProjectClientId] = useState<string | undefined>(undefined);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [communityPhotoURL, setCommunityPhotoURL] = useState<string | undefined>(undefined);
   const [communityPhotoUploading, setCommunityPhotoUploading] = useState(false);
@@ -852,30 +855,42 @@ export function ChatRoomScreen({ chatId }: Props) {
     getDoc(doc(db, 'projects', chatProjectId))
       .then((snap) => {
         if (cancelled) return;
-        const data = snap.exists() ? (snap.data() as { deadline?: string; status?: string }) : undefined;
+        // Same read as before — clientId costs nothing extra.
+        const data = snap.exists()
+          ? (snap.data() as { deadline?: string; status?: string; clientId?: string })
+          : undefined;
         const dl = data?.deadline;
         setProjectDeadline(dl && dl !== 'flexible' ? dl : undefined);
         setProjectCompleted(data?.status === 'completed');
+        setProjectClientId(data?.clientId);
       })
       .catch(() => {
         if (cancelled) return;
         setProjectDeadline(undefined);
         setProjectCompleted(false);
+        setProjectClientId(undefined);
       });
     return () => { cancelled = true; };
   }, [chatProjectId]);
 
   // This professional's own fee on the linked project, so a completed-but-unpaid
-  // chat can offer a way to settle. Professional mode only — the client never
-  // reads fee documents (§6), and the rules deny them.
+  // chat can offer a way to settle.
+  //
+  // Gated on ROLE, not mode. Keying this on activeMode meant a professional
+  // browsing in client mode lost the pay button on a project they owe on. The
+  // client never reads fee documents (§6) and the rules deny them, so the gate
+  // is "I am not this project's client".
+  //
+  // Self-hire (client also hired as a professional) resolves to the client:
+  // no money moved between parties, so there is no fee to settle.
   const [myProjectFee, setMyProjectFee] = useState<ProjectFee | null>(null);
   useEffect(() => {
-    if (!chatProjectId || !currentUserId || activeMode !== 'professional') {
+    if (!chatProjectId || !currentUserId || !projectClientId || projectClientId === currentUserId) {
       setMyProjectFee(null);
       return;
     }
     return listenToProjectFee(chatProjectId, currentUserId, setMyProjectFee);
-  }, [chatProjectId, currentUserId, activeMode]);
+  }, [chatProjectId, currentUserId, projectClientId]);
 
   // One switch for "this conversation is closed to new messages".
   const isReadOnly = chatReadOnly || projectCompleted;
