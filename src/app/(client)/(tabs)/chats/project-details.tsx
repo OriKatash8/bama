@@ -50,7 +50,7 @@ import {
 import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/components';
 import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
-import { requestRemoval, acceptRemoval, listenToRemovalRequests } from '@features/chat/services/removalService';
+import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
@@ -197,6 +197,9 @@ export default function ProjectDetailsScreen() {
 
   // Feature A: removal requests
   const [removalRequests, setRemovalRequests] = useState<RemovalRequest[]>([]);
+  // The professional's own request arrives by DOCUMENT listener, not from the
+  // collection above — production denies that query to them (see removalService).
+  const [myRemovalDoc, setMyRemovalDoc] = useState<RemovalRequest | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   // Report user
@@ -304,10 +307,23 @@ export default function ProjectDetailsScreen() {
     return listenToPaymentRequests(projectId, userId, setPaymentRequests);
   }, [projectId]);
 
+  // Two different reads, because the rules permit two different shapes.
+  // CLIENT: the whole collection, to render every member's pending chip.
   useEffect(() => {
-    if (!projectId) return;
+    const uid = auth.currentUser?.uid;
+    if (!projectId || !project?.clientId || project.clientId !== uid) return;
     return listenToRemovalRequests(projectId, setRemovalRequests);
-  }, [projectId]);
+  }, [projectId, project?.clientId]);
+
+  // PROFESSIONAL: only their own request, by document id. Listening to the
+  // collection here is denied in production and, because the old error handler
+  // resolved to an empty list, silently rendered as "no pending removal" — the
+  // accept banner never appeared.
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!projectId || !uid || !project?.clientId || project.clientId === uid) return;
+    return listenToMyRemovalRequest(projectId, uid, setMyRemovalDoc);
+  }, [projectId, project?.clientId]);
 
   async function handleMarkComplete() {
     if (!projectId) return;
@@ -812,8 +828,8 @@ export default function ProjectDetailsScreen() {
   const removalMap = Object.fromEntries(
     removalRequests.map((r) => [r.professionalId, r.status]),
   );
-  const myRemovalRequest = !isClient
-    ? removalRequests.find((r) => r.professionalId === currentUserId && r.status === 'pending')
+  const myRemovalRequest = !isClient && myRemovalDoc?.status === 'pending'
+    ? myRemovalDoc
     : undefined;
 
   const allMemberNames: Record<string, string> = {

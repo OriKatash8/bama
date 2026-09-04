@@ -287,3 +287,90 @@ change, and it affected no assertion.
   be its first real exercise.
 - **Nothing was deployed.** Rules, indexes and functions all remain local, joining
   the bundle already held pending the app release.
+
+---
+
+# Emulator limitation: `list` rules and document-ID conditions
+
+Found 2026-09-04, the hard way. Sits alongside the composite-index gap above:
+another thing local verification **cannot** tell you.
+
+## The limitation
+
+**The Firestore emulator cannot validate `list` (collection query) operations
+against rule conditions that depend on the document-ID wildcard.** It allows
+queries that production denies.
+
+Production distinguishes what a rule condition depends on:
+
+| Condition depends on | Available during `list`? |
+|---|---|
+| `request.auth` | yes |
+| a **parent-path** wildcard (e.g. `{projectId}` for a subcollection) | yes |
+| `resource.data.*` | yes — production allows the query |
+| the **document-ID wildcard** (e.g. `{professionalId}`) | **no — query denied** |
+
+A `get` binds the document-ID wildcard, so the same rule permits reading the
+document directly. A `list` cannot bind it, so the query is refused outright.
+
+## What it cost
+
+`projects/{projectId}/removalRequests/{professionalId}`:
+
+```
+allow read: if isAuth() && (
+  professionalId == request.auth.uid ||                  // doc-ID wildcard
+  projectDoc(projectId).clientId == request.auth.uid     // parent path — fine
+);
+```
+
+`listenToRemovalRequests` listened to the whole collection. Production denied it
+for the professional; the error handler was `() => callback([])`, so the denial
+rendered as "no pending removals" and the accept-removal banner never appeared.
+The client's identical listener worked, because their clause reads the parent
+project, which is document-independent — so the bug looked one-sided.
+
+**The emulator run reported 18 passed / 0 failed, and one of those passing
+assertions was `PRO collection listener works — got size=1`.** The emulator
+appears to evaluate `list` per returned document with the wildcard bound. That
+green run was not the assurance it was presented as.
+
+Confirmed in production with a throwaway user and scratch documents (cleaned up):
+
+| Operation | Professional | Client |
+|---|---|---|
+| `onSnapshot(collection(...))` | **DENIED** `permission-denied` | ALLOWED |
+| `onSnapshot(doc(.../{uid}))` | ALLOWED | — |
+| `getDoc` | ALLOWED | ALLOWED |
+| `where(documentId(), '==', uid)` | ALLOWED | — |
+
+Fixed by giving the professional a document listener
+(`listenToMyRemovalRequest`) and keeping the collection listener for the client.
+
+## Rule of thumb
+
+If a read rule's permitting clause names the document-ID wildcard, that
+collection **must not be read by an unconstrained query** by the user that clause
+is for. Read the document directly, or constrain the query with
+`where(documentId(), '==', uid)`. The emulator will not catch a violation.
+
+## The Rules test API is not a substitute
+
+`firebaserules.googleapis.com/…:test` **returns FAILURE for every `list`**,
+including a control against a collection whose rule is `allow read: if isAuth()`
+— which must succeed. Its `get` results are trustworthy (a three-way
+allow/deny/unauthenticated control passed); its `list` results are worthless.
+
+This was briefly reported as "confirmed: list is denied" on the strength of that
+API before the control exposed it. **A tool that always fails is worse than no
+tool** — it produces a correct-looking answer for the wrong reason. Any `list`
+question must be settled against production. Always run a known-good control
+before trusting a rules-testing tool.
+
+## How to test `list` rules for real
+
+Throwaway auth user via `createUserWithEmailAndPassword` (needs only the public
+API key — no service-account signing, no impersonation), scratch documents keyed
+to that uid, run the query, delete everything. `iam.serviceAccounts.signBlob` is
+**not** granted to developer ADC, so `createCustomToken` is unavailable; do not
+grant it just to test rules — that is token-minting authority over every account.
