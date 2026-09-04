@@ -374,3 +374,93 @@ API key — no service-account signing, no impersonation), scratch documents key
 to that uid, run the query, delete everything. `iam.serviceAccounts.signBlob` is
 **not** granted to developer ADC, so `createCustomToken` is unavailable; do not
 grant it just to test rules — that is token-minting authority over every account.
+
+---
+
+# False-pass class 3: the probe tested a different query than the code ships
+
+The two failures above are tool limitations — the emulator cannot validate `list`
+against document-ID-scoped rules, and the Rules test API fails every `list`.
+**This one is not a tool problem. It is a discipline failure, and it is the more
+dangerous of the two**, because the tooling behaved correctly and reported a
+truthful result about the wrong thing.
+
+## What happened
+
+`listenToMyFees` ships:
+
+```ts
+query(collectionGroup(db, 'fees'), where('professionalId', '==', professionalId))
+```
+
+The production probe that "verified" it ran:
+
+```ts
+query(collectionGroup(db, 'fees'),
+      where('professionalId', '==', uid), where('feePaid', '==', false))
+```
+
+The probe passed — correctly. A `COLLECTION_GROUP` composite index on
+`professionalId + feePaid` was deployed and served it. The shipped single-field
+query has no such index and failed in production with `failed-precondition`.
+
+Confirmed afterwards, in production:
+
+| Query | Result |
+|---|---|
+| `where(professionalId ==)` — **shipped** | **FAILED** `failed-precondition`, error link is `create_exemption=…` |
+| `where(professionalId ==).where(feePaid ==)` — **probed** | OK, served by the composite |
+| `where(professionalId ==).orderBy(__name__)` | **FAILED** |
+
+The third row is the important one: a composite index **cannot** serve the
+single-field prefix at collection-group scope. The exemption was genuinely
+required; the composite was never going to cover it.
+
+## The rule
+
+**A probe must run the exact query the shipped code runs — not an equivalent
+one, not a superset, not "morally the same".** A query differing by one filter
+is a different query to the index planner, and an extra filter can make it
+*more* servable, which is precisely the direction that produces a false pass.
+
+Where a probe cannot import the shipped function directly, it should read the
+source and assert the query shape before running, so the two cannot drift. The
+re-verification does this: it parses the `where(...)` clauses out of
+`feesService.ts` and aborts if they are not exactly one equality on
+`professionalId`.
+
+## The fix
+
+A single-field index exemption, in `firestore.indexes.json` under
+`fieldOverrides`:
+
+```json
+{ "collectionGroup": "fees", "fieldPath": "professionalId", "ttl": false,
+  "indexes": [
+    { "order": "ASCENDING",  "queryScope": "COLLECTION" },
+    { "order": "DESCENDING", "queryScope": "COLLECTION" },
+    { "order": "ASCENDING",  "queryScope": "COLLECTION_GROUP" } ] }
+```
+
+**Declaring a `fieldOverride` REPLACES the automatic single-field indexing for
+that field.** Listing only the `COLLECTION_GROUP` entry would have silently
+dropped the default collection-scope ascending and descending indexes. Both
+defaults are restated so the override is purely additive. Verify with the
+Firestore Admin API (`collectionGroups/{cg}/fields/{field}`) that all three
+appear, not just the new one.
+
+Build time was ~3.5 minutes at `CREATING`. As with composite indexes, the CLI
+does not report build state — poll the Admin API.
+
+## Related trap: `feePaid` does not exist until completion
+
+`commitHire` writes a fee document without `feePaid`; only
+`confirmCompletionInternal` sets it. A filter of `where('feePaid','==',false)`
+therefore **excludes every active project's fee**, because a missing field does
+not equal `false`.
+
+Harmless for the chat list, which only reads completed projects. It would
+silently drop rows from any future "all my fees" view, which is exactly the
+shape that looks like an empty state rather than a bug. Either backfill
+`feePaid: false` at hire, or filter on `feeStatus` and compute settlement in the
+client with `outstandingFee`.
