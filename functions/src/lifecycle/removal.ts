@@ -82,9 +82,14 @@ export const freeSlot = onCall(async (request) => {
 
   offersSnap.docs.forEach((d) => batch.update(d.ref, { status: 'removed' }));
 
-  // Absent when the pro leaves through a path that never raised a request —
-  // updating a missing doc would fail the whole batch.
-  if (removalSnap.exists) batch.update(removalRef, { status: 'accepted' });
+  // DELETE, not mark-accepted. A request left behind is never removable
+  // (`allow delete: if false` for clients), so if this professional is ever
+  // re-hired onto the same project the client's next remove press would be a
+  // rules update on a stale doc — and they could never be removed again.
+  // The Admin SDK bypasses rules, so no rule change is needed for this.
+  // Absent when the pro leaves through a path that never raised a request;
+  // deleting a missing doc is a no-op, unlike updating one.
+  if (removalSnap.exists) batch.delete(removalRef);
 
   await batch.commit();
   return { ok: true, chatId: chatId ?? null };

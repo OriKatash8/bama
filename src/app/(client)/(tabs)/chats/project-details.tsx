@@ -478,7 +478,10 @@ export default function ProjectDetailsScreen() {
     setRemovingId(professionalId);
     try {
       await requestRemoval(projectId, professionalId, currentUserId);
-    } catch {
+    } catch (err) {
+      // Logged, not swallowed: a bare catch here hid a rules denial on repeat
+      // requests for weeks — the client saw only a generic alert.
+      console.error('[removal] requestRemoval failed:', err);
       Alert.alert('Error', t('project_details.error_remove'));
     } finally {
       setRemovingId(null);
@@ -553,7 +556,10 @@ export default function ProjectDetailsScreen() {
         t('project_details.member_left').replace('{{name}}', name),
       );
       router.back();
-    } catch {
+    } catch (err) {
+      // freeSlot refuses deliberately when this pro owes on a confirmed project.
+      // Without logging, that reason never reaches anyone.
+      console.error('[removal] acceptRemoval/freeSlot failed:', err);
       Alert.alert('Error', t('project_details.error_accept_removal'));
     }
   }

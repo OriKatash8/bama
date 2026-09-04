@@ -104,6 +104,26 @@ export function useNotificationRouting(): void {
         await navigate('client', '/(client)/(tabs)/projects');
         return;
       }
+      case 'removal': {
+        // Land on project-details, where the removal banner and its accept
+        // button live — the chat room does not surface the request at all.
+        // Falls back to the chat, then the dashboard, if ids are missing.
+        if (data.projectId) {
+          await navigate(
+            'professional',
+            `/(client)/(tabs)/chats/project-details?projectId=${data.projectId}` +
+              (data.chatId ? `&chatId=${data.chatId}` : ''),
+          );
+          return;
+        }
+        await navigate(
+          'professional',
+          data.chatId
+            ? `/(professional)/(tabs)/chats/${data.chatId}`
+            : '/(professional)/(tabs)/dashboard',
+        );
+        return;
+      }
       case 'project': {
         // The noticeboard lives on the dashboard tab (no standalone route).
         await navigate('professional', '/(professional)/(tabs)/dashboard');

@@ -218,6 +218,11 @@ export type PriceOffer = {
 export type RemovalRequest = {
   professionalId: string;
   requestedBy: string;
+  /** In practice only 'pending' is ever observed. `freeSlot` DELETES the request
+   *  document when the professional accepts, rather than marking it — a request
+   *  left behind can never be cleared (clients cannot delete it) and would make
+   *  a re-hired professional permanently un-removable. 'accepted' is retained
+   *  only for documents written before that change. */
   status: 'pending' | 'accepted';
   createdAt: Timestamp;
 };

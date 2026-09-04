@@ -246,7 +246,16 @@ service cloud.firestore {
           professionalId == request.auth.uid ||
           projectDoc(projectId).clientId == request.auth.uid
         );
-        allow update: if isAuth() && professionalId == request.auth.uid;
+        // The professional answers the request. The CLIENT may also write it —
+        // `requestRemoval` uses setDoc, so a second press is an update, and
+        // without this a client could never re-request after the pro ignored
+        // one. Constrained to 'pending': only the professional can accept.
+        allow update: if isAuth() && (
+          professionalId == request.auth.uid ||
+          (projectDoc(projectId).clientId == request.auth.uid &&
+           request.resource.data.status == 'pending')
+        );
+        // Cleared by the freeSlot callable (Admin SDK bypasses rules), never by a client.
         allow delete: if false;
       }
     }

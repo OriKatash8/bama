@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions';
 import {
   seedRoleSkills,
@@ -22,7 +23,7 @@ async function createNotification(
     title: payload.title,
     message: payload.message,
     data: payload.data ?? {},
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   });
 }
 
@@ -185,6 +186,11 @@ async function announceProjectEvent(
     notifTitle: string;
     buildMessage: (projectTitle: string) => string;
     notifData: (chatId: string) => Record<string, string>;
+    /** Who gets the push. Defaults to every chat member except `createdBy`.
+     *  Set explicitly when an event concerns ONE member — a removal request must
+     *  not push to the rest of the crew. The system message still goes to the
+     *  thread either way; only the notification is narrowed. */
+    recipients?: string[];
   }
 ): Promise<void> {
   const projectDoc = await db.collection('projects').doc(params.projectId).get();
@@ -207,7 +213,7 @@ async function announceProjectEvent(
     senderId: 'system',
     system: true,
     text: params.systemText,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: FieldValue.serverTimestamp(),
     readBy: [],
   });
 
@@ -216,18 +222,21 @@ async function announceProjectEvent(
     lastMessage: {
       text: params.systemText,
       senderId: 'system',
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
     },
   };
   for (const uid of members) {
     if (!notRecipient(uid)) {
-      chatUpdate[`unreadCount.${uid}`] = admin.firestore.FieldValue.increment(1);
+      chatUpdate[`unreadCount.${uid}`] = FieldValue.increment(1);
     }
   }
   await db.collection('chats').doc(chatId).update(chatUpdate);
 
-  // 3) Push notifications to everyone but the creator
-  const recipients = members.filter((uid) => !notRecipient(uid));
+  // 3) Push notifications — an explicit list when the event concerns one member,
+  //    otherwise everyone but the creator.
+  const recipients = params.recipients
+    ? params.recipients.filter((uid) => members.includes(uid))
+    : members.filter((uid) => !notRecipient(uid));
   await Promise.all(
     recipients.map((userId) =>
       createNotification(db, {
@@ -296,6 +305,54 @@ export const onProjectCreate = functions.firestore
         });
       }),
     );
+  });
+
+/**
+ * A client asks a professional to leave a project.
+ *
+ * Until this existed the request document was written and NOTHING surfaced it:
+ * no push, no chat message, no trigger. The professional only ever found out by
+ * independently opening the project-details screen, so `freeSlot` was never
+ * called and the slot was never released.
+ *
+ * onWrite, NOT onCreate. After the rules were widened so a client can re-request,
+ * a repeat press is an UPDATE — an onCreate trigger would stay silent on exactly
+ * the retry that feature exists to enable. `requestRemoval` rewrites
+ * `createdAt: serverTimestamp()` on every press, so a changed timestamp is the
+ * re-request signal.
+ *
+ * The push goes ONLY to the professional being removed; the rest of the crew
+ * have no business being notified that a colleague was asked to leave. The
+ * system message still lands in the shared project thread.
+ */
+export const onRemovalRequest = functions.firestore
+  .document('projects/{projectId}/removalRequests/{professionalId}')
+  .onWrite(async (change, context) => {
+    const after = change.after.exists
+      ? (change.after.data() as { status?: string; createdAt?: admin.firestore.Timestamp; requestedBy?: string })
+      : null;
+    if (!after) return;                        // deleted (freeSlot clears it)
+    if (after.status !== 'pending') return;    // only an open request is announced
+
+    if (change.before.exists) {
+      const before = change.before.data() as { createdAt?: admin.firestore.Timestamp };
+      const same =
+        !!before.createdAt && !!after.createdAt && before.createdAt.isEqual(after.createdAt);
+      if (same) return;                        // nothing was re-requested
+    }
+
+    const { projectId, professionalId } = context.params;
+
+    await announceProjectEvent(admin.firestore(), {
+      projectId,
+      createdBy: after.requestedBy,
+      systemText: '👋 נשלחה בקשה לסיום השתתפות בפרויקט',
+      notifTitle: 'בקשה לסיום השתתפות',
+      buildMessage: (projectTitle) => `התבקשת לסיים את השתתפותך בפרויקט ${projectTitle}`,
+      notifData: (chatId) => ({ type: 'removal', projectId, chatId }),
+      // Only the professional being removed.
+      recipients: [professionalId],
+    });
   });
 
 export const onMissionCreate = functions.firestore
