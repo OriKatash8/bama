@@ -333,15 +333,24 @@ export default function DashboardScreen() {
           </View>
           {/* History — always available (sent offers + hidden projects) */}
           <TouchableOpacity
-            style={styles.historyBtn}
+            style={styles.navBtn}
             onPress={() => setHistoryOpen(true)}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={t('history.title')}
           >
-            <History size={18} color="#004aad" strokeWidth={2.2} />
+            <History size={17} color="#004aad" strokeWidth={2.2} />
+            <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
+              {t('history.title')}
+            </AppText>
             {pendingCount > 0 && (
-              <View style={[styles.historyBadge, { backgroundColor: colors.accent, borderColor: colors.bg }]}>
+              <View
+                style={[
+                  styles.historyBadge,
+                  { backgroundColor: colors.accent, borderColor: colors.bg },
+                  { [rtl ? 'left' : 'right']: -4 },
+                ]}
+              >
                 <AppText weight="bold" style={styles.historyBadgeText}>{pendingCount > 99 ? '99+' : pendingCount}</AppText>
               </View>
             )}
@@ -352,27 +361,27 @@ export default function DashboardScreen() {
               this way there is always a visible button back. Never filled, since
               it navigates rather than filtering. */}
           <TouchableOpacity
-            style={[styles.sortBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+            style={styles.navBtn}
             onPress={() => setShowInProgress((v) => !v)}
             activeOpacity={0.8}
             accessibilityRole="button"
           >
             {showInProgress
-              ? <LayoutGrid size={15} color="#004aad" strokeWidth={2.5} />
-              : <Briefcase size={15} color="#004aad" strokeWidth={2.5} />}
-            <AppText weight="semiBold" style={styles.sortBtnText}>
+              ? <LayoutGrid size={17} color="#004aad" strokeWidth={2.5} />
+              : <Briefcase size={17} color="#004aad" strokeWidth={2.5} />}
+            <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
             </AppText>
           </TouchableOpacity>
           {!showInProgress && !isLoading && biddable.length > 0 && (
             <TouchableOpacity
-              style={[styles.sortBtn, filterActive && styles.sortBtnActive, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              style={[styles.navBtn, filterActive && styles.navBtnActive]}
               onPress={openSortModal}
               activeOpacity={0.8}
             >
-              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
-              <AppText weight="semiBold" style={[styles.sortBtnText, filterActive && styles.sortBtnTextActive]}>
-                {t('noticeboard.sort_filter')}
+              <SlidersHorizontal size={17} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
+              <AppText weight="semiBold" style={[styles.navBtnText, filterActive && styles.navBtnTextActive]} numberOfLines={2}>
+                {t('noticeboard.filter_short')}
               </AppText>
             </TouchableOpacity>
           )}
@@ -646,33 +655,28 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
-  sortBtn: {
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: BLUE,
-    backgroundColor: '#ffffff',
-  },
-  sortBtnActive: { backgroundColor: BLUE },
-  sortBtnText: { fontSize: 13, color: BLUE },
-  sortBtnTextActive: { color: '#ffffff' },
-  historyBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: BLUE,
-    backgroundColor: '#ffffff',
+  // Icon over a small label, at a FIXED width: the middle button's label swaps
+  // ("In progress" <-> "Notice board") and must not resize, or the page title
+  // would reflow every time the view changes. A column, so nothing inside needs
+  // a direction.
+  navBtn: {
+    width: 58,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 3,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BLUE,
+    backgroundColor: '#ffffff',
   },
+  navBtnActive: { backgroundColor: BLUE },
+  navBtnText: { fontSize: 10, lineHeight: 12, color: BLUE, textAlign: 'center' },
+  navBtnTextActive: { color: '#ffffff' },
   historyBadge: {
     position: 'absolute',
     top: -4,
-    right: -4,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
