@@ -339,7 +339,7 @@ export default function DashboardScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('history.title')}
           >
-            <History size={17} color="#004aad" strokeWidth={2.2} />
+            <History size={15} color="#004aad" strokeWidth={2.2} />
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {t('history.title')}
             </AppText>
@@ -367,8 +367,8 @@ export default function DashboardScreen() {
             accessibilityRole="button"
           >
             {showInProgress
-              ? <LayoutGrid size={17} color="#004aad" strokeWidth={2.5} />
-              : <Briefcase size={17} color="#004aad" strokeWidth={2.5} />}
+              ? <LayoutGrid size={15} color="#004aad" strokeWidth={2.5} />
+              : <Briefcase size={15} color="#004aad" strokeWidth={2.5} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
             </AppText>
@@ -379,7 +379,7 @@ export default function DashboardScreen() {
               onPress={openSortModal}
               activeOpacity={0.8}
             >
-              <SlidersHorizontal size={17} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
+              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
               <AppText weight="semiBold" style={[styles.navBtnText, filterActive && styles.navBtnTextActive]} numberOfLines={2}>
                 {t('noticeboard.filter_short')}
               </AppText>
@@ -660,19 +660,22 @@ const styles = StyleSheet.create({
   // would reflow every time the view changes. A column, so nothing inside needs
   // a direction.
   navBtn: {
-    width: 58,
+    // Explicit width AND height. English labels differ in line count — "Filter"
+    // and "History" are one line, "In progress" and "Notice board" are two — so
+    // without a fixed height the three buttons were visibly different sizes.
+    width: 52,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    gap: 2,
+    paddingHorizontal: 3,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: BLUE,
     backgroundColor: '#ffffff',
   },
   navBtnActive: { backgroundColor: BLUE },
-  navBtnText: { fontSize: 10, lineHeight: 12, color: BLUE, textAlign: 'center' },
+  navBtnText: { fontSize: 9, lineHeight: 11, color: BLUE, textAlign: 'center' },
   navBtnTextActive: { color: '#ffffff' },
   historyBadge: {
     position: 'absolute',

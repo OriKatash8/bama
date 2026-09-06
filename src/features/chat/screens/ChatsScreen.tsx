@@ -604,7 +604,12 @@ export function ChatsScreen({
   // Sits directly beneath the search bar, which lives in the two tab pages —
   // rendering it here gives both tabs the same row from one implementation.
   const filterRow = (
-    <View style={[styles.filterRow, { flexDirection: rowDir }]}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.filterScroll}
+      contentContainerStyle={[styles.filterRow, { flexDirection: rowDir }]}
+    >
       {CHAT_FILTERS.map((f) => {
         const active = chatFilter === f;
         return (
@@ -622,7 +627,7 @@ export function ChatsScreen({
           </TouchableOpacity>
         );
       })}
-    </View>
+    </ScrollView>
   );
 
   if (scrollable) {
@@ -639,7 +644,12 @@ export function ChatsScreen({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   listContent: { paddingTop: 8, paddingBottom: 16 },
-  filterRow: { gap: 7, paddingHorizontal: 16, marginBottom: 10, flexWrap: 'wrap' },
+  // One row that scrolls, never a wrapping block: in English the four labels
+  // exceed a phone's width and used to spill onto a second line, pushing the
+  // list down. flexGrow keeps a short row aligned to the reading edge, since
+  // under row-reverse the default flex-start IS the right edge.
+  filterScroll: { flexGrow: 0, marginBottom: 10 },
+  filterRow: { gap: 7, paddingHorizontal: 16, alignItems: 'center', flexGrow: 1 },
   filterChip: {
     height: 34,
     borderRadius: 16,

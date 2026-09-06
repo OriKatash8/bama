@@ -257,7 +257,7 @@ export default function ProfessionalChatsScreen() {
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={[styles.gradient, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-          <View style={styles.tabBar}>
+          <View style={[styles.tabBar, { flexDirection: rtl ? 'row-reverse' : 'row', gap: rtl ? 22 : 12 }]}>
             {TAB_KEYS.map((key) => {
               const isActive = active === key;
               return (
@@ -728,15 +728,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchInput: { flex: 1, fontSize: 15 },
+  // `gap` on content-sized tabs, so the spacing is measured EDGE TO EDGE. Equal
+  // thirds (or space-between) distribute by centre or by free space, which leaves
+  // visibly different gaps whenever the labels differ in width — and "Chats",
+  // "Courses" and "Communities" do, in both languages.
+  //
+  // The gap itself is direction-aware: Hebrew's labels are shorter, so the pills
+  // are narrower and the same gap reads as cramped.
   tabBar: {
-    flexDirection: 'row',
     width: '100%',
     paddingHorizontal: 8,
+    justifyContent: 'center',
   },
   tab: {
-    flex: 1,
-    alignItems: 'center',
     paddingVertical: 8,
+    flexShrink: 1,
   },
   tabPill: {
     paddingVertical: 9,
