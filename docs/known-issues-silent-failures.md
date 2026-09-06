@@ -298,6 +298,150 @@ Deliberately deferred — recorded so the eventual symptom has a cause.
 
 ---
 
+# marketplace_listings: an update rule that checked who, never what
+
+**FIXED 2026-09-06.** Recorded because the shape is the same one this document
+already catalogues twice, and because the fix has a trap in it.
+
+## What was open
+
+```
+allow update: if isAuth() && (
+  A:  resource.data.posterId == request.auth.uid ||
+  B:  resource.data.buyerId  == request.auth.uid ||
+  C: (resource.data.status == 'available' &&
+      request.resource.data.buyerId == request.auth.uid)
+);
+```
+
+Clause C existed so a second buyer pressing "Agree" could run `acceptDeal`. It
+granted **any signed-in user the right to write any fields to any `available`
+listing**, on the single condition that the result carried their own `buyerId`.
+No `affectedKeys()` guard, no transition check, no field allow-list — while
+`bundleOffers` twelve lines above and `projects` both had exactly those.
+
+Clause B compounded it: once `buyerId == self` was written — which C permitted
+unilaterally — that user kept write access **forever, whatever the status became**.
+
+**Verified in production against the live rules before the fix**, from a throwaway
+account acting on another account's listing. Every one of these succeeded:
+
+| Write | Effect |
+|---|---|
+| `posterId: self` | Listing theft — clause A then holds permanently, and `allow delete` is `posterId == uid` |
+| `status: 'sold'` | Denial of service — `useMarketplaceListings.ts:15` filters `sold` out of the feed |
+| `price`, `productName` | Vandalism / price manipulation |
+| `sellerConfirmed: true` | Forges the seller's half of the handover handshake |
+| `status: 'negotiating'` | A value no code path writes, reachable by hand |
+
+An existing buyer could additionally rewrite the price, steal the listing, forge the
+seller's confirmation and **install a different buyer** on their own reserved listing.
+
+## Exposure at the time of the fix
+
+28 listings: 6 `available` (clause C applied — any user, any field), 2 with no
+`status` (C did not apply, `undefined != 'available'`), 20 `reserved`/`sold`. All 20
+carried a `buyerId`, so 20 users held permanent write access via clause B.
+
+**Nothing had come through it.** All 28 were audited against the invariants the code
+maintains: no `buyerId === posterId` self-deals, no `buyerId` without a
+`purchaseChatId`, no `buyerId` on an available listing, no `'negotiating'`, no
+confirmation flags without a reservation, no `posterId` pointing at a missing user,
+and no `posterName` drifted from the owner's real `displayName` — the trace a
+rewritten `posterId` would leave. The only anomalies were the 13 known stale
+`platformFee` values and one `buyerId` pointing at a deleted account.
+
+## The trap in the fix
+
+The obvious buyer-side constraint — *"a buyer may only ever set `buyerId` to
+themselves"* — **breaks seller-side acceptance.** `acceptDeal(listingId, chatId,
+buyerId, userId, …)` passes the BUYER's uid regardless of which party presses Agree
+second, so when the seller accepts, the seller legitimately writes somebody else's
+uid. Only the *buyer* clause may restrict `buyerId` to self-or-cleared; the seller
+clause must not.
+
+Second trap: `cancelPurchase` **deletes both** `sellerConfirmed` and
+`buyerConfirmed`, so a rule that simply forbids each party touching the other's
+confirmation blocks cancellation. `notForgingConfirmation(field)` allows the field
+to be REMOVED and only its owner to SET it.
+
+Both would have passed a denied-set-only test and broken the live sale flow.
+
+## Why the probe asserted both directions
+
+The hole had been open for months and nobody used it; the sale flow is used by 25
+live listings. **A false denial was the worse outcome**, so the probe asserted the
+legitimate writes as well as the hostile ones, and ran twice: once against the old
+rules (proving the hole real AND every legitimate write already passing, so any
+later failure was attributable to the change), then again after deploying. 19/19
+both times. `scripts/probe-marketplace-rules.mjs`, `--baseline` for the first run.
+
+**The emulator would not have been sufficient** — see the entry below on verification
+residue, and note the rules here depend on `request.resource.data` diffs whose
+behaviour is worth confirming against the real service.
+
+---
+
+# Deferred marketplace work, recorded so it is not lost
+
+Both deliberately postponed on 2026-09-06 in favour of the rules fix above.
+
+## Dead marketplace UI (~460 lines) — delete post-launch
+
+| File | Lines | Why it is dead |
+|---|---|---|
+| `CheckoutModal.tsx` | 233 | Orphaned — not even in the barrel. References `marketplace.platform_fee` / `fee_note`, which no longer exist |
+| `RentalGrid.tsx` | 70 | Superseded by the inline grid in `marketplace/index.tsx` |
+| `RentalCard.tsx` | 90 | Only used by `RentalGrid` |
+| `SecondHandList.tsx` | 69 | Superseded by the same inline grid |
+
+Note the *rental-specific* components are the unreachable ones. Also dead in the
+data model: `reservedBy` / `reservedAt` (declared, never written or read — 0 in
+production), `'negotiating'` (declared and filtered on, never written), and
+`platformFee` (never set; the charge is a comment at `marketplaceService.ts:162-165`).
+
+## Rental availability calendar — investigated, deferred
+
+Goal was: a renter sees which dates are taken, from owner blocks plus confirmed
+rentals. Stopped because the second source does not exist and the rules hole above
+was the more serious finding.
+
+What the investigation established, so it need not be repeated:
+
+- **`bookings/` is dead scaffolding.** `onBookingCreate` is deployed but unreachable
+  (no `match /bookings/`, so the catch-all denies every client write); 0 documents;
+  the client feature is three empty barrel files and a placeholder screen; the tab is
+  `href: null`. The `Booking` type has **no date** — it models an assignment, not a
+  period. Nothing to reuse.
+- **Rentals reuse the sale flow verbatim.** `type: 'rental'` changes an emoji, a
+  badge and a `/day` suffix. `price` is documented as a daily rate and is never
+  multiplied. One of the three production rentals is marked `sold`. Duration exists
+  only as free text in chat.
+- **`MiniCalendar` is single-date** and cannot mark a set of busy days — only a
+  contiguous `minDate`..`maxDate`. It is also not RTL-aware, not themed, hardcoded
+  English, and renders its own Modal. It has 8 mount sites, so it should be left
+  alone and a dedicated component built instead.
+- **No date library is installed and none is needed** — the app is `'YYYY-MM-DD'`
+  strings plus lexicographic comparison.
+
+Sizing if it resumes: **Slice A ≈900 lines + 2 deploys** (server-authoritative rental
+agreement) and **Slice B ≈650 lines, no deploy** (availability calendar).
+
+Two decisions worth keeping:
+
+1. **Overlap must be enforced in a transaction against ONE document** — keep the
+   busy set denormalised on the listing so the race-critical read is single-doc.
+   **Do not copy `hireProfessional`**: it reads state then commits a `db.batch()`
+   with no transaction (`hire.ts:93,165`), so its own slot-cap check has a TOCTOU
+   race. `completion.ts:256` is the only real transaction in the repo and is the
+   right precedent.
+2. **Rental overrun is unmodelled.** With plain ranges the dates free themselves at
+   `end`, so late-returned gear shows as available. Preferred handling is to block
+   `[start, max(end, today)]` while accepted and stop only when the owner marks
+   returned — a false-busy day is a smaller harm than a double-booking.
+
+---
+
 # Copy that lives in components, invisible to any string audit
 
 Recorded 2026-09-06, after a grep for hardcoded English nearly missed it.

@@ -316,16 +316,88 @@ service cloud.firestore {
     }
 
     // ─── marketplace_listings ────────────────────────────────────────
+    // The update rule used to constrain WHO writes and never WHAT. Its third
+    // clause — needed so a second buyer can run acceptDeal — let ANY signed-in
+    // user write ANY fields to ANY available listing, provided the result carried
+    // their own buyerId. Verified in production before this change: a non-owner
+    // could rewrite posterId (taking the listing, which the delete rule below then
+    // hands them), set status 'sold' (hiding it from the feed), rewrite price and
+    // title, and forge sellerConfirmed. Setting buyerId once also granted
+    // permanent access through the second clause, whatever the status became.
+    //
+    // Same shape as projects: identity frozen, transitions enumerated, and the
+    // non-owner clause reduced to exactly the write it exists for.
+
+    /** posterId and createdAt are identity — no client write may change them. */
+    function listingIdentityStable() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['posterId', 'createdAt']);
+    }
+
+    /**
+     * available -> reserved (accept), reserved -> sold (handover),
+     * reserved -> available (cancel), or unchanged. 'sold' is unreachable from
+     * 'available', and 'negotiating' — which no code path writes — from anywhere.
+     */
+    function listingStatusTransitionAllowed() {
+      return request.resource.data.get('status', 'available') ==
+               resource.data.get('status', 'available')
+        || (resource.data.get('status', 'available') == 'available' &&
+            request.resource.data.get('status', '') == 'reserved')
+        || (resource.data.get('status', '') == 'reserved' &&
+            request.resource.data.get('status', '') in ['sold', 'available']);
+    }
+
+    /**
+     * A confirmation may be REMOVED (cancelPurchase deletes both halves) but only
+     * its owner may SET it. Otherwise either party forges the other's half of the
+     * handover handshake.
+     */
+    function notForgingConfirmation(field) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([field])
+        || !(field in request.resource.data);
+    }
+
+    /** The buyer's own fields, plus the cancel reset. Never price, never identity. */
+    function listingBuyerKeysOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'status', 'buyerId', 'purchaseChatId',
+        'buyerConfirmed', 'buyerConfirmedAt',
+        'sellerConfirmed', 'platformFee'
+      ]);
+    }
+
     match /marketplace_listings/{listingId} {
       allow read: if isAuth();
       allow create: if isAuth() && request.resource.data.posterId == request.auth.uid;
-      allow update: if isAuth() && (
-        resource.data.posterId == request.auth.uid ||       // seller: markHandedOver, cancel
-        resource.data.buyerId == request.auth.uid ||        // buyer: confirmReceived, cancel
-        // New buyer initiating purchase on an available listing (confirmPurchase)
-        (resource.data.status == 'available' &&
-         request.resource.data.buyerId == request.auth.uid)
-      );
+      allow update: if isAuth()
+        && listingIdentityStable()
+        && listingStatusTransitionAllowed()
+        && (
+          // Seller: edit their own listing, markHandedOver, accept, cancel. May set
+          // buyerId to the buyer they accepted (acceptDeal passes the BUYER's uid
+          // whichever party presses second), but may not forge the buyer's receipt.
+          (resource.data.posterId == request.auth.uid &&
+           notForgingConfirmation('buyerConfirmed')) ||
+
+          // Existing buyer: confirmReceived and cancelPurchase on their own
+          // purchase, and nothing else. May clear buyerId when cancelling, never
+          // hand it to somebody else.
+          (resource.data.buyerId == request.auth.uid &&
+           listingBuyerKeysOnly() &&
+           notForgingConfirmation('sellerConfirmed') &&
+           (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['buyerId'])
+            || !('buyerId' in request.resource.data)
+            || request.resource.data.buyerId == request.auth.uid)) ||
+
+          // New buyer taking an available listing: EXACTLY acceptDeal's three
+          // fields, and only into 'reserved'. This is the clause that was open.
+          (resource.data.get('status', '') == 'available' &&
+           request.resource.data.get('status', '') == 'reserved' &&
+           request.resource.data.buyerId == request.auth.uid &&
+           request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'buyerId', 'purchaseChatId']))
+        );
       allow delete: if isAuth() && (resource.data.posterId == request.auth.uid || isAdmin());
     }
 
