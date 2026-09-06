@@ -257,7 +257,21 @@ export default function ProfessionalChatsScreen() {
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={[styles.gradient, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-          <View style={[styles.tabBar, { flexDirection: rtl ? 'row-reverse' : 'row', gap: rtl ? 22 : 12 }]}>
+          <View
+            style={[
+              styles.tabBar,
+              {
+                flexDirection: rtl ? 'row-reverse' : 'row',
+                gap: rtl ? 52 : 38,
+                // English only: nudge the centred group toward the trailing edge.
+                // Asymmetric padding shifts the WHOLE group, which is deliberate —
+                // moving only Courses and Communities would reopen the uneven-gap
+                // problem the pill padding was just tuned to close.
+                paddingLeft: rtl ? 8 : 34,
+                paddingRight: rtl ? 8 : 8,
+              },
+            ]}
+          >
             {TAB_KEYS.map((key) => {
               const isActive = active === key;
               return (
@@ -744,9 +758,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     flexShrink: 1,
   },
+  // Horizontal padding is deliberately small. Only the ACTIVE pill paints a
+  // background, so this padding is what the eye adds to the gap on one side and
+  // not the other: text-to-text reads `gap + 2p` between two inactive tabs but
+  // `gap + p` beside the active one. The difference IS p, so keeping p small
+  // keeps the spacing looking even whichever tab is selected. The gap carries the
+  // separation instead.
   tabPill: {
     paddingVertical: 9,
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
     borderRadius: 20,
   },
   tabPillActive: {
