@@ -579,10 +579,12 @@ const styles = StyleSheet.create({
     width: 82,
     alignItems: 'center',
     paddingVertical: 4,
-    gap: 2,
   },
   tileIcon: { width: 72, height: 72 },
-  catLabel: { fontSize: 13, fontWeight: '600' },
+  // The visible gap is not `gap` — that was already 2. It is transparent padding
+  // baked into the 72×72 contentFit="contain" icons, so the label is pulled up
+  // into it rather than the spacing being reduced. Icon hit area is unchanged.
+  catLabel: { fontSize: 13, fontWeight: '600', marginTop: -10 },
 
   filterBarRow: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '../unoffered';
+import { offeredCategoriesByProject, hasUnofferedMatchingSlot, isOfferedSlot } from '../unoffered';
 import type { SentOfferEntry } from '@features/offers/hooks/useSentOffers';
 import type { ProjectRequest } from '@core/types/project';
 import type { Timestamp } from '@core/types/common';
@@ -132,5 +132,32 @@ describe('hasUnofferedMatchingSlot', () => {
       { category: VIDEO, quantity: 1, requiredCapability: 'drone' },
     ]);
     expect(hasUnofferedMatchingSlot(p, SKILLS, new Set([VIDEO]))).toBe(false);
+  });
+});
+
+/**
+ * The modal's two lists diverge on already-offered slots: the details list marks
+ * them, the bid form drops them. Both read the same per-category set, so the only
+ * thing worth pinning is that they disagree in the right direction.
+ */
+describe('offered-slot split between the details and bid lists', () => {
+  const slots = [
+    { category: VIDEO, quantity: 1 },
+    { category: SOUND, quantity: 1 },
+  ];
+  it('marks the offered slot in the details list but keeps it', () => {
+    const offered = new Set([VIDEO]);
+    expect(slots.map((s) => isOfferedSlot(s, offered))).toEqual([true, false]);
+    expect(slots.length).toBe(2); // nothing removed
+  });
+
+  it('drops the offered slot from the bid form', () => {
+    const offered = new Set([VIDEO]);
+    expect(slots.filter((s) => !isOfferedSlot(s, offered)).map((s) => s.category)).toEqual([SOUND]);
+  });
+
+  it('leaves both lists intact when nothing has been offered', () => {
+    expect(slots.filter((s) => !isOfferedSlot(s, undefined))).toHaveLength(2);
+    expect(slots.map((s) => isOfferedSlot(s, undefined))).toEqual([false, false]);
   });
 });

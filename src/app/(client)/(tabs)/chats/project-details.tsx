@@ -2047,15 +2047,21 @@ export default function ProjectDetailsScreen() {
         onComplete={handleReviewsComplete}
       />
 
-      <Modal visible={reportVisible} transparent animationType="slide" onRequestClose={closeReport}>
+      <Modal visible={reportVisible} transparent animationType="fade" onRequestClose={closeReport}>
+        {/* Marketplace-filter shell: plain overlay View, absolute-fill dismiss
+            layer BEHIND a centred white card. The card must not be nested inside
+            a touchable — `width: '100%'` would resolve against a content-sized
+            parent and collapse. */}
         <View style={styles.reportBackdrop}>
-          <LinearGradient colors={['#1a237e', '#004aad']} style={styles.reportSheet}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeReport} />
+          <View style={styles.reportSheet}>
             <View style={[styles.reportHeader, { flexDirection: rowDirection }]}>
-              <AppText weight="bold" style={styles.reportTitle}>{t('report.title')}</AppText>
+              <AppText weight="bold" style={[styles.reportTitle, { textAlign: rtl ? 'right' : 'left' }]}>{t('report.title')}</AppText>
               <TouchableOpacity onPress={closeReport} hitSlop={8} activeOpacity={0.7}>
-                <AppText weight="regular" style={{ color: '#fff', fontSize: 20 }}>✕</AppText>
+                <AppText weight="regular" style={{ color: '#004aad', fontSize: 20 }}>✕</AppText>
               </TouchableOpacity>
             </View>
+            <ScrollView style={styles.reportScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <AppText weight="regular" style={[styles.reportSubtitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('report.reporting', { name: reportedUserName })}
             </AppText>
@@ -2068,7 +2074,7 @@ export default function ProjectDetailsScreen() {
               value={reportReason}
               onChangeText={setReportReason}
               placeholder={t('report.reason_placeholder')}
-              placeholderTextColor="rgba(255,255,255,0.45)"
+              placeholderTextColor="#004aad80"
               textAlignVertical="top"
             />
             {reportReason.length > 0 && reportReason.length < 20 && (
@@ -2099,6 +2105,7 @@ export default function ProjectDetailsScreen() {
               </View>
             )}
 
+            </ScrollView>
             <TouchableOpacity
               style={[styles.reportSubmitBtn, { opacity: reportReason.trim().length >= 20 && !reportSubmitting ? 1 : 0.45 }]}
               onPress={submitReport}
@@ -2106,10 +2113,10 @@ export default function ProjectDetailsScreen() {
               activeOpacity={0.8}
             >
               {reportSubmitting
-                ? <ActivityIndicator size="small" color="#004aad" />
+                ? <ActivityIndicator size="small" color="#ffffff" />
                 : <AppText weight="bold" style={styles.reportSubmitText}>{t('report.submit')}</AppText>}
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
       </Modal>
     </LinearGradient>
@@ -2170,7 +2177,10 @@ function MemberRow({
   // falls due, so the pay action has to survive the read-only project state that
   // hides "update price".
   const canPay = !!onPay && owed > 0;
-  const showActions = canUpdate || canPay || !!onRemove || isPendingRemoval || !!onReport;
+  // Report moved into the top row, so it no longer keeps this bar alive. The
+  // client card passes none of the rest, so its action bar — and the separator
+  // line that was the bar's top border — simply stops rendering.
+  const showActions = canUpdate || canPay || !!onRemove || isPendingRemoval;
   return (
     <View style={styles.memberCard}>
       {/* Top row: avatar + name/role + price */}
@@ -2224,6 +2234,15 @@ function MemberRow({
             )}
           </View>
         )}
+
+        {/* Report sits up here rather than in the action bar. On the CLIENT card
+            it was the only thing keeping that bar alive, so moving it up also
+            removes the bar and its separator line — the two were one change. */}
+        {onReport && (
+          <TouchableOpacity onPress={onReport} hitSlop={6} activeOpacity={0.7} style={styles.reportSquare}>
+            <Flag size={15} color="#9aa0b8" strokeWidth={1.9} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Action bar */}
@@ -2256,12 +2275,7 @@ function MemberRow({
               )}
             </TouchableOpacity>
           ) : null}
-          <View style={{ flex: 1 }} />
-          {onReport && (
-            <TouchableOpacity onPress={onReport} hitSlop={6} activeOpacity={0.7} style={styles.reportSquare}>
-              <Flag size={15} color="#9aa0b8" strokeWidth={1.9} />
-            </TouchableOpacity>
-          )}
+
         </View>
       )}
     </View>
@@ -2433,7 +2447,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   removePillText: { fontSize: 13, color: '#e05656' },
-  reportSquare: { width: 32, height: 32, borderRadius: 9, backgroundColor: '#f4f5f9', alignItems: 'center', justifyContent: 'center' },
+  // alignSelf pins it to the card's top corner rather than letting the row's
+  // alignItems:'center' float it against the 48px avatar.
+  reportSquare: { width: 32, height: 32, borderRadius: 9, backgroundColor: '#f4f5f9', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
   avatar: { width: 48, height: 48, borderRadius: 24 },
   avatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontSize: 18, fontWeight: '700' },
@@ -2833,18 +2849,51 @@ const styles = StyleSheet.create({
   bottomPad: { height: 32 },
 
   // ── Report modal ──────────────────────────────────────────────────────────────
-  reportBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  reportSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 12 },
+  // Matches the marketplace filter popup: white card, radius 24, maxWidth 440,
+  // maxHeight 85%, 20/20/24 padding, soft shadow, #004aad title.
+  reportBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  reportSheet: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  /** flexShrink, not flex:1 — the card is auto-height capped at maxHeight. */
+  reportScroll: { flexShrink: 1 },
   reportHeader: { alignItems: 'center', justifyContent: 'space-between' },
-  reportTitle: { color: '#fff', fontSize: 20 },
-  reportSubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
-  reportLabel: { color: '#fff', fontSize: 14 },
-  reportInput: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 12, color: '#fff', height: 120, textAlignVertical: 'top' },
-  reportHint: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
-  reportSubmitBtn: { backgroundColor: '#fff', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  reportSubmitText: { color: '#004aad', fontSize: 15 },
-  reportEvidenceBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 12, marginBottom: 12, gap: 6 },
-  reportEvidenceBtnText: { color: '#fff', fontSize: 14 },
+  reportTitle: { flex: 1, color: '#004aad', fontSize: 18 },
+  reportSubtitle: { color: '#8890b0', fontSize: 14 },
+  reportLabel: { color: '#1a1a2e', fontSize: 14 },
+  reportInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.15)',
+    borderRadius: 10,
+    padding: 12,
+    color: '#1a1a2e',
+    height: 120,
+    textAlignVertical: 'top',
+  },
+  reportHint: { color: '#8890b0', fontSize: 12 },
+  reportSubmitBtn: { backgroundColor: '#004aad', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
+  reportSubmitText: { color: '#ffffff', fontSize: 15 },
+  reportEvidenceBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 12, marginBottom: 12, gap: 6 },
+  reportEvidenceBtnText: { color: '#004aad', fontSize: 14 },
   reportThumbRow: { flexDirection: 'row', gap: 10, marginBottom: 16, flexWrap: 'wrap' },
   reportThumbWrap: { position: 'relative' },
   reportThumb: { width: 72, height: 72, borderRadius: 8 },

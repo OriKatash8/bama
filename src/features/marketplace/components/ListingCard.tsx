@@ -85,7 +85,13 @@ export function ListingCard({ listing, onPress }: Props) {
             style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
             contentFit="contain" cachePolicy="memory-disk"
           />
-          <AppText style={[styles.location, { color: colors.textMuted }]} numberOfLines={1}>
+          {/* textAlign is required: `location` is flex:1, so without it the value
+              renders at the box's LTR start — the far side from its icon in
+              Hebrew. Every other line in this card already sets it. */}
+          <AppText
+            style={[styles.location, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}
+            numberOfLines={1}
+          >
             {listing.location}
           </AppText>
         </View>

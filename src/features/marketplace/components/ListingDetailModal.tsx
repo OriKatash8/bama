@@ -237,13 +237,13 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                 {listing.brand && (
                   <View style={[styles.detailRow, { flexDirection: rowDir }]}>
                     <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.brand')}</AppText>
-                    <AppText weight="semiBold" style={styles.detailValue}>{listing.brand}</AppText>
+                    <AppText weight="semiBold" style={[styles.detailValue, { textAlign: rtl ? 'left' : 'right' }]}>{listing.brand}</AppText>
                   </View>
                 )}
                 {listing.category && (
                   <View style={[styles.detailRow, { flexDirection: rowDir }]}>
                     <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.category')}</AppText>
-                    <AppText weight="semiBold" style={styles.detailValue}>
+                    <AppText weight="semiBold" style={[styles.detailValue, { textAlign: rtl ? 'left' : 'right' }]}>
                       {t(`marketplace.category_${listing.category}`) || listing.category}
                       {(() => {
                         const subs = Array.isArray(listing.subcategory)
@@ -266,7 +266,13 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                   style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
                   contentFit="contain" cachePolicy="memory-disk"
                 />
-                <AppText weight="regular" style={styles.location} numberOfLines={1}>{listing.location}</AppText>
+                <AppText
+                  weight="regular"
+                  style={[styles.location, { textAlign: rtl ? 'right' : 'left' }]}
+                  numberOfLines={1}
+                >
+                  {listing.location}
+                </AppText>
               </View>
             </View>
 
@@ -518,7 +524,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#004aad',
     flexShrink: 1,
-    textAlign: 'right',
   },
   conditionBadge: {
     borderRadius: 6,

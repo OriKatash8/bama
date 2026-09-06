@@ -37,7 +37,20 @@ const STATUS_COLOR: Record<string, string> = {
   removed: 'rgba(15,15,31,0.4)',
 };
 
-export function NoticeHistorySheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function NoticeHistorySheet({
+  visible,
+  onClose,
+  onRestored,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  /**
+   * Called after a project is restored, so the noticeboard can drop it from its
+   * own dismissed set. This sheet is an in-page Modal — restoring never navigates,
+   * so nothing else would tell the board to re-read.
+   */
+  onRestored?: (projectId: string) => void;
+}) {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -208,7 +221,7 @@ export function NoticeHistorySheet({ visible, onClose }: { visible: boolean; onC
                   </AppText>
                   <TouchableOpacity
                     style={[styles.restoreBtn, { borderColor: colors.primary, flexDirection: rowDir }]}
-                    onPress={() => restore(p.id)}
+                    onPress={() => { void restore(p.id); onRestored?.(p.id); }}
                     accessibilityRole="button"
                     accessibilityLabel={t('history.restore')}
                     activeOpacity={0.8}

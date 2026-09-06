@@ -369,7 +369,11 @@ export default function ProfessionalChatsScreen() {
             onContentSizeChange={() => { if (rtl) categoryScrollRef.current?.scrollToEnd({ animated: false }); }}
             contentContainerStyle={[
               styles.categoryPillsRow,
-              { flexDirection: rtl ? 'row-reverse' : 'row', paddingLeft: rtl ? 40 : 12, paddingRight: rtl ? 12 : 40 },
+              {
+                flexDirection: rtl ? 'row-reverse' : 'row',
+                paddingLeft: rtl ? 40 : 12,
+                paddingRight: rtl ? 12 : 40,
+              },
             ]}
             style={styles.categoryPillsScroll}
           >
@@ -551,16 +555,21 @@ export default function ProfessionalChatsScreen() {
       {/* Community request modal */}
       <Modal visible={commModal} transparent animationType="fade" onRequestClose={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
-            <TouchableOpacity activeOpacity={1}>
-              <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modal}>
-                <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { ...font.bold }]}>{t('communities.modal_title')}</Text>
+          {/* Overlay is a plain View with an absolute-fill dismiss layer behind
+              the card — the marketplace filter's structure. Nesting the card in a
+              TouchableOpacity made its `width: '100%'` resolve against a
+              content-sized parent, collapsing the white surface to nothing. */}
+          <View style={styles.overlay}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }} />
+              <View style={styles.modal}>
+                <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <Text style={[styles.modalTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{t('communities.modal_title')}</Text>
                   <TouchableOpacity onPress={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
-                    <X size={22} color="#fff" />
+                    <X size={20} color="#004aad" />
                   </TouchableOpacity>
                 </View>
 
+                <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Avatar picker */}
                 <TouchableOpacity style={styles.avatarPicker} onPress={handlePickCommunityPhoto} activeOpacity={0.8}>
                   {commPhotoUri ? (
@@ -577,7 +586,7 @@ export default function ProfessionalChatsScreen() {
 
                 <TextInput
                   placeholder={t('communities.name_placeholder')}
-                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  placeholderTextColor="#004aad80"
                   value={commName}
                   onChangeText={setCommName}
                   style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
@@ -589,7 +598,7 @@ export default function ProfessionalChatsScreen() {
                   onPress={() => setCommShowCategoryPicker(!commShowCategoryPicker)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[{ ...font.regular, color: commCategory ? '#fff' : 'rgba(255,255,255,0.5)', textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[{ ...font.regular, color: commCategory ? '#1a1a2e' : '#004aad80', textAlign: rtl ? 'right' : 'left' }]}>
                     {commCategory || t('communities.select_category')}
                   </Text>
                 </TouchableOpacity>
@@ -612,26 +621,26 @@ export default function ProfessionalChatsScreen() {
 
                 <TextInput
                   placeholder={t('communities.description_placeholder')}
-                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  placeholderTextColor="#004aad80"
                   value={commDesc}
                   onChangeText={setCommDesc}
                   multiline
                   numberOfLines={3}
                   style={[styles.input, { ...font.regular, height: 80, textAlignVertical: 'top', textAlign: rtl ? 'right' : 'left' }]}
                 />
+                </ScrollView>
                 <TouchableOpacity
                   style={[styles.submitBtn, { opacity: (submitting || uploadingPhoto) ? 0.6 : 1 }]}
                   onPress={handleSubmitCommunityRequest}
                   disabled={submitting || uploadingPhoto}
                 >
                   {(submitting || uploadingPhoto)
-                    ? <ActivityIndicator color="#004aad" />
+                    ? <ActivityIndicator color="#ffffff" />
                     : <Text style={[styles.submitBtnText, { ...font.bold }]}>{t('communities.submit')}</Text>
                   }
                 </TouchableOpacity>
-              </LinearGradient>
-            </TouchableOpacity>
-          </TouchableOpacity>
+              </View>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
 
@@ -767,7 +776,13 @@ const styles = StyleSheet.create({
   // affordance is visible when the row overflows.
   // Trailing padding (set inline per direction) keeps the last pill partially
   // cut off so the swipe affordance is visible.
-  categoryPillsRow: { gap: 7, alignItems: 'center' },
+  // flexGrow is the whole fix. A horizontal ScrollView sizes its content
+  // container to the content, so a SHORT pill row had no width to align within
+  // and hugged the visual left in Hebrew regardless of row-reverse. Growing it to
+  // the full width is enough: under row-reverse the default justifyContent
+  // ('flex-start') IS the right edge, so adding an explicit 'flex-end' pushed the
+  // pills back to the left — the opposite of what was wanted.
+  categoryPillsRow: { gap: 7, alignItems: 'center', flexGrow: 1 },
   catPill: {
     height: 34,
     borderRadius: 16,
@@ -871,66 +886,62 @@ const styles = StyleSheet.create({
   instructorInitial: { color: '#fff', fontSize: 14 },
   instructorName: { fontSize: 13 },
   instructorBadge: { fontSize: 11 },
+  // Matches the marketplace filter popup: white card, radius 24, maxWidth 440,
+  // 20/20/24 padding, soft shadow, #004aad title.
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  modal: {
-    width: 320,
-    borderRadius: 24,
     padding: 24,
   },
+  modal: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  /** flexShrink, not flex:1 — the card is auto-height capped at maxHeight. */
+  modalScroll: { flexShrink: 1 },
   modalHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    flex: 1,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004aad',
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#ffffff',
     borderRadius: 10,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: '#fff',
+    paddingVertical: 12,
+    color: '#1a1a2e',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.15)',
   },
   submitBtn: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#004aad',
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 4,
   },
   submitBtnText: {
-    color: '#004aad',
-    fontSize: 16,
-  },
-  modalCourseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.15)',
-  },
-  modalCourseTitle: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  modalCourseSub: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  modalCoursePrice: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#ffffff',
+    fontSize: 15,
   },
   visitBtn: {
     backgroundColor: '#004aad',
@@ -940,7 +951,9 @@ const styles = StyleSheet.create({
   },
   visitBtnText: { color: '#fff', fontSize: 13 },
   commCategoryPicker: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.15)',
     borderRadius: 10,
     marginBottom: 12,
     overflow: 'hidden',
@@ -949,9 +962,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(0,74,173,0.10)',
   },
-  commCategoryItemText: { color: '#fff', fontSize: 14 },
+  commCategoryItemText: { color: '#1a1a2e', fontSize: 14 },
   avatarPicker: { alignSelf: 'center', marginBottom: 16, position: 'relative' },
   cameraBadge: {
     position: 'absolute',

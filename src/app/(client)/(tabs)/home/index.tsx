@@ -249,7 +249,7 @@ export default function HomeScreen() {
           <>
             <PageTitle>{rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 1 מתוך 3` : `Step 1 of 3`}</Text>
-            <View style={styles.progressRow}>
+            <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
@@ -273,7 +273,7 @@ export default function HomeScreen() {
               <TextInput
                 style={[
                   styles.input,
-                  { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left', minHeight: 80, textAlignVertical: 'top', fontSize: 13 },
+                  { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left', minHeight: 140, textAlignVertical: 'top', fontSize: 15, lineHeight: 21 },
                   Platform.OS === 'web' && webInputShadow,
                   errors.description ? { borderWidth: 1.5, borderColor: '#fc8181' } : null,
                 ]}
@@ -282,7 +282,7 @@ export default function HomeScreen() {
                 placeholder={t('builder.tell_us_placeholder')}
                 placeholderTextColor="#004aad99"
                 multiline
-                numberOfLines={3}
+                numberOfLines={6}
               />
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
@@ -316,7 +316,7 @@ export default function HomeScreen() {
                 {/* Execution square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
-                    <View style={{ position: 'absolute', top: -8, left: -8 }}>
+                    <View style={{ position: 'absolute', top: -8, [rtl ? 'right' : 'left']: -8 }}>
                       <HelpTooltip text={t('builder.help_execution')} />
                     </View>
                     {exec ? (
@@ -343,7 +343,7 @@ export default function HomeScreen() {
                     onPress={() => setCalOpen('deadline')}
                     activeOpacity={0.8}
                   >
-                    <View style={{ position: 'absolute', top: -8, left: -8 }}>
+                    <View style={{ position: 'absolute', top: -8, [rtl ? 'right' : 'left']: -8 }}>
                       <HelpTooltip text={t('builder.help_deadline')} />
                     </View>
                     {deadline ? (
@@ -371,7 +371,7 @@ export default function HomeScreen() {
                     onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
                     activeOpacity={0.8}
                   >
-                    <View style={{ position: 'absolute', top: -8, left: -8 }}>
+                    <View style={{ position: 'absolute', top: -8, [rtl ? 'right' : 'left']: -8 }}>
                       <HelpTooltip text={t('builder.help_location')} />
                     </View>
                     {location ? (
@@ -394,6 +394,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
+            <View style={styles.grow} />
             <View style={[styles.submitWrap, { paddingHorizontal: 36, paddingTop: 4 }]}>
               <TouchableOpacity
                 style={[
@@ -415,7 +416,7 @@ export default function HomeScreen() {
           <>
             <PageTitle>{rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 2 מתוך 3` : `Step 2 of 3`}</Text>
-            <View style={styles.progressRow}>
+            <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
@@ -492,6 +493,7 @@ export default function HomeScreen() {
               />
             </View>
 
+            <View style={styles.grow} />
             <View style={styles.submitWrap}>
               <TouchableOpacity
                 style={[
@@ -512,7 +514,7 @@ export default function HomeScreen() {
           <>
             <PageTitle>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
-            <View style={styles.progressRow}>
+            <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -587,6 +589,7 @@ export default function HomeScreen() {
               );
             })}
 
+            <View style={styles.grow} />
             <View style={styles.submitWrap}>
               <TouchableOpacity onPress={handleReview} activeOpacity={0.85}>
                 <LinearGradient
@@ -720,10 +723,19 @@ function createStyles(
 ) {
   return StyleSheet.create({
     scroll: { flex: 1 },
-    scrollContent: { paddingBottom: 24 },
+    // flexGrow lets step 1 fill a tall screen, so the spacer below the card can
+    // push the next-step button to the bottom instead of leaving dead space under
+    // it. Short screens still scroll normally.
+    scrollContent: { paddingBottom: 56, flexGrow: 1 },
+    /** Eats the leftover height on tall screens, pushing the button down. Used
+     *  by all three steps so the button lands in the same place throughout. */
+    grow: { flexGrow: 1 },
     stepLabel: { fontSize: 13, fontWeight: '500', fontFamily: ffMedium, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
 
-    progressRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
+    // Direction is set inline per render: the three segments are equal-flex
+    // siblings coloured in order, so the row's direction IS the fill direction.
+    // Hardcoded 'row' filled left-to-right in Hebrew, against the step label.
+    progressRow: { gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },
 
     backArrow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, alignSelf: 'flex-start' },
@@ -734,7 +746,6 @@ function createStyles(
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
     input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: ff },
-    multiline: { height: 100 },
     error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     tile: { borderRadius: 12, overflow: 'hidden', position: 'relative', alignItems: 'center' },

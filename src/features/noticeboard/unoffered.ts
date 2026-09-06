@@ -49,6 +49,21 @@ export function offeredCategoriesByProject(offers: SentOfferEntry[]): Map<string
 }
 
 /**
+ * Has this professional already bid on this slot's category?
+ *
+ * The noticeboard modal's two lists diverge on the answer: the details list keeps
+ * the slot and MARKS it (it answers "what does this project need?", so silently
+ * dropping a role reads as a disappearing bug), while the bid form DROPS it (a row
+ * that cannot be priced is only clutter). Per-category, per the limit above.
+ */
+export function isOfferedSlot(
+  slot: { category: string },
+  offeredCategories: Set<string> | undefined,
+): boolean {
+  return offeredCategories?.has(slot.category) ?? false;
+}
+
+/**
  * Does this project still have a vacant slot this professional could bid on?
  *
  * `roleSkills === null` skips the skill half, for direct invites — the same

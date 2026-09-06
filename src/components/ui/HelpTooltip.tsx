@@ -1,9 +1,13 @@
 import { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
 
 type Props = { text: string };
+
+/** Must match `popover.maxWidth` — the clamp needs a number, not a style. */
+const POPOVER_WIDTH = 220;
 
 export function HelpTooltip({ text }: Props) {
   const [visible, setVisible] = useState(false);
@@ -11,6 +15,8 @@ export function HelpTooltip({ text }: Props) {
   const btnRef = useRef<View>(null);
   const colors = useTheme();
   const font = useAppFont();
+  const { width: screenWidth } = useWindowDimensions();
+  const rtl = useSettingsStore((s) => s.language) === 'he';
 
   function openPopover() {
     btnRef.current?.measureInWindow((x, y, _w, h) => {
@@ -20,7 +26,13 @@ export function HelpTooltip({ text }: Props) {
   }
 
   const popoverTop = anchor.y + anchor.height + 6;
-  const popoverLeft = Math.max(8, anchor.x - 90);
+  // Clamped at BOTH edges. The old `Math.max(8, anchor.x - 90)` only guarded the
+  // left, so a 220-wide popover anchored near the right edge ran off screen —
+  // which is where these buttons sit in Hebrew.
+  const popoverLeft = Math.min(
+    Math.max(8, anchor.x - POPOVER_WIDTH / 2),
+    Math.max(8, screenWidth - POPOVER_WIDTH - 8),
+  );
 
   return (
     <View ref={btnRef} collapsable={false}>
@@ -38,7 +50,13 @@ export function HelpTooltip({ text }: Props) {
               ]}
               onPress={() => setVisible(false)}
             >
-              <Text style={[styles.popoverText, { color: colors.text, ...font.regular }]}>
+              <Text
+                style={[
+                  styles.popoverText,
+                  // Help text is a sentence, so it has to follow the language.
+                  { color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.regular },
+                ]}
+              >
                 {text}
               </Text>
             </Pressable>
@@ -73,7 +91,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 8,
     padding: 10,
-    maxWidth: 220,
+    maxWidth: POPOVER_WIDTH,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

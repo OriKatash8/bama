@@ -16,6 +16,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Chat } from '../types';
 import type { ProjectRequest, ProjectFee } from '@core/types/project';
+import type { MarketplaceListingType } from '@features/marketplace/types';
 import { listenToMyFees } from '@features/pricing/services/feesService';
 import { owesFee, outstandingFee } from '@features/pricing/utils/fee';
 
@@ -93,6 +94,16 @@ function formatTimestamp(ts: { toDate(): Date } | null | undefined, language: st
 
 type DmInfo = { name: string; photoURL: string | null };
 
+/**
+ * Chat-list filters.
+ *
+ * 'marketplace' is every purchase chat. Rental and sale are NOT separable at the
+ * chat level — `Chat.type` is just 'purchase' — so splitting them would need
+ * `purchaseTypes`, which this screen now carries. One chip until that is asked for.
+ */
+type ChatFilter = 'all' | 'open' | 'completed' | 'marketplace';
+const CHAT_FILTERS: ChatFilter[] = ['all', 'open', 'completed', 'marketplace'];
+
 export function ChatsScreen({
   scrollable = true,
   searchQuery = '',
@@ -123,9 +134,12 @@ export function ChatsScreen({
   const [feesByProject, setFeesByProject] = useState<Map<string, ProjectFee>>(new Map());
   const [purchaseNames, setPurchaseNames] = useState<Record<string, string>>({});
   const [purchaseImages, setPurchaseImages] = useState<Record<string, string>>({});
+  /** Purchase chat id -> whether its listing was a sale or a rental. */
+  const [purchaseTypes, setPurchaseTypes] = useState<Record<string, MarketplaceListingType>>({});
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
   const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
   const fetchedPurchaseChatIdsRef = useRef<Set<string>>(new Set());
+  const [chatFilter, setChatFilter] = useState<ChatFilter>('all');
   /** Bumped on focus to re-run the project fetch after its cache is invalidated. */
   const [refreshTick, setRefreshTick] = useState(0);
   /** Latest projectInfo, readable from a stable-identity focus callback. */
@@ -233,18 +247,32 @@ export function ChatsScreen({
         try {
           const snap = await getDoc(doc(db, 'marketplace_listings', c.purchaseListingId!));
           if (!snap.exists()) return null;
-          const data = snap.data() as { productName?: string; imageUrl?: string | null };
-          return [c.id, data.productName ?? null, data.imageUrl ?? null] as const;
-        } catch {
+          // The whole document is already read, so carrying `type` costs nothing.
+          // Rental vs sale is NOT on the chat — `purchase` is one chat type — so
+          // the listing is the only place that distinction exists.
+          const data = snap.data() as {
+            productName?: string;
+            imageUrl?: string | null;
+            type?: MarketplaceListingType;
+          };
+          return [c.id, data.productName ?? null, data.imageUrl ?? null, data.type ?? null] as const;
+        } catch (err) {
+          // A denial here renders as a nameless, imageless purchase row — a
+          // legitimate-looking state. Log the cause rather than lose it.
+          console.error('[chats] failed to read listing for purchase chat', c.id, err);
           return null;
         }
       }),
     ).then((entries) => {
-      const valid = entries.filter((e): e is readonly [string, string | null, string | null] => e !== null);
+      const valid = entries.filter(
+        (e): e is readonly [string, string | null, string | null, MarketplaceListingType | null] => e !== null,
+      );
       const names = valid.filter((e) => e[1]).map((e) => [e[0], e[1] as string] as const);
       const images = valid.filter((e) => e[2]).map((e) => [e[0], e[2] as string] as const);
+      const types = valid.filter((e) => e[3]).map((e) => [e[0], e[3] as MarketplaceListingType] as const);
       if (names.length > 0) setPurchaseNames((prev) => ({ ...prev, ...Object.fromEntries(names) }));
       if (images.length > 0) setPurchaseImages((prev) => ({ ...prev, ...Object.fromEntries(images) }));
+      if (types.length > 0) setPurchaseTypes((prev) => ({ ...prev, ...Object.fromEntries(types) }));
     });
   }, [chats]);
 
@@ -325,8 +353,34 @@ export function ChatsScreen({
       return 0;
     });
 
+  /**
+   * Completion comes from the same two signals the row uses: the live chat doc's
+   * readOnlyReason, and the cached project status as a fallback.
+   */
+  function isChatCompleted(c: Chat): boolean {
+    const info = projectInfo[c.id];
+    return c.type === 'group'
+      && ((c.readOnly === true && c.readOnlyReason === 'completed') || info?.status === 'completed');
+  }
+
+  const filteredChats = sortedChats.filter((c) => {
+    switch (chatFilter) {
+      case 'open':
+        // Live project work: a project chat that is neither finished nor called off.
+        return c.type === 'group'
+          && !isChatCompleted(c)
+          && projectInfo[c.id]?.status !== 'cancelled';
+      case 'completed':
+        return isChatCompleted(c);
+      case 'marketplace':
+        return c.type === 'purchase';
+      default:
+        return true;
+    }
+  });
+
   const visibleChats = searchQuery.trim()
-    ? sortedChats.filter((item) => {
+    ? filteredChats.filter((item) => {
         const name =
           item.type === 'community' ? (item.name ?? 'Community')
           : item.type === 'group' ? (item.name ?? t('chats.group_chat'))
@@ -334,7 +388,7 @@ export function ChatsScreen({
           : (dmInfo[item.id]?.name ?? '');
         return name.toLowerCase().includes(searchQuery.toLowerCase());
       })
-    : sortedChats;
+    : filteredChats;
 
   const cards = visibleChats.map((item) => {
     const currentUserId = user?.id ?? '';
@@ -449,11 +503,6 @@ export function ChatsScreen({
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
               </View>
             )}
-            {feeSettledEarly && (
-              <View style={styles.paidPill}>
-                <AppText weight="bold" style={styles.paidPillText}>{t('chats.fee_paid_pill')}</AppText>
-              </View>
-            )}
             {item.type === 'purchase' && item.archived && (
               <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? '#fee2e2' : '#ecf9c1' }]}>
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? '#dc2626' : '#2d6a2d' }]}>
@@ -502,20 +551,31 @@ export function ChatsScreen({
             ) : (
               <View style={[styles.badgePlaceholder, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]} />
             )}
+            {/* Last child, so it hugs the row's trailing edge and lands directly
+                under the status badge on the line above. */}
+            {feeSettledEarly && (
+              <View style={[styles.paidPill, { marginLeft: rtl ? 0 : 6, marginRight: rtl ? 6 : 0 }]}>
+                <AppText weight="bold" style={styles.paidPillText}>{t('chats.fee_paid_pill')}</AppText>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
     );
   });
 
-  // Search returned nothing — compact treatment (no icon circle, no primary
-  // button), distinct from the illustrated "no chats at all" empty state.
-  if (searchQuery.trim() && visibleChats.length === 0) {
-    return (
-      <View style={styles.noResults}>
-        <AppText weight="medium" style={[styles.noResultsTitle, { color: colors.text }]}>
-          {t('chats.empty_search_title')}
-        </AppText>
+  // Nothing matched — compact treatment (no icon circle, no primary button),
+  // distinct from the illustrated "no chats at all" empty state.
+  //
+  // Rendered INSIDE the normal return, not as an early one, so the filter chips
+  // stay on screen: a filter that matches nothing must still be clearable.
+  const searching = searchQuery.trim().length > 0;
+  const emptyBody = visibleChats.length > 0 ? null : (
+    <View style={styles.noResults}>
+      <AppText weight="medium" style={[styles.noResultsTitle, { color: colors.text }]}>
+        {searching ? t('chats.empty_search_title') : t('chats.empty_filter_title')}
+      </AppText>
+      {searching ? (
         <TouchableOpacity
           style={styles.noResultsClear}
           onPress={() => onClearSearch?.()}
@@ -526,23 +586,72 @@ export function ChatsScreen({
             {t('chats.empty_search_clear')}
           </AppText>
         </TouchableOpacity>
-      </View>
-    );
-  }
+      ) : (
+        <TouchableOpacity
+          style={styles.noResultsClear}
+          onPress={() => setChatFilter('all')}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+        >
+          <AppText weight="regular" style={[styles.noResultsClearText, { color: colors.primary }]}>
+            {t('chats.filter_all')}
+          </AppText>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  // Sits directly beneath the search bar, which lives in the two tab pages —
+  // rendering it here gives both tabs the same row from one implementation.
+  const filterRow = (
+    <View style={[styles.filterRow, { flexDirection: rowDir }]}>
+      {CHAT_FILTERS.map((f) => {
+        const active = chatFilter === f;
+        return (
+          <TouchableOpacity
+            key={f}
+            style={[styles.filterChip, active && styles.filterChipActive]}
+            onPress={() => setChatFilter(f)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+          >
+            <AppText weight="semiBold" style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+              {t(`chats.filter_${f}`)}
+            </AppText>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
 
   if (scrollable) {
     return (
       <ScrollView style={styles.flex} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-        {cards}
+        {filterRow}
+        {emptyBody ?? cards}
       </ScrollView>
     );
   }
-  return <View style={styles.listContent}>{cards}</View>;
+  return <View style={styles.listContent}>{filterRow}{emptyBody ?? cards}</View>;
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   listContent: { paddingTop: 8, paddingBottom: 16 },
+  filterRow: { gap: 7, paddingHorizontal: 16, marginBottom: 10, flexWrap: 'wrap' },
+  filterChip: {
+    height: 34,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#ffffff',
+  },
+  filterChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
+  filterChipText: { fontSize: 13, color: '#004aad' },
+  filterChipTextActive: { color: '#ffffff' },
   noResults: { paddingTop: 40, alignItems: 'center', gap: 6 },
   noResultsTitle: { fontSize: 15 },
   noResultsClear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
@@ -585,25 +694,28 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'center', justifyContent: 'space-between' },
   name: { fontSize: 15, fontWeight: '700' },
   statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
-  // OUTLINED, not filled, and radius 10 rather than the badges' 20.
+  // Sits at the trailing end of the preview line — the last child of the row, so
+  // it lines up directly beneath the status badge above it.
   //
-  // Every status badge beside it is a solid fill on one colour scale
-  // (open/in_progress/completed/cancelled). A filled blue pill would join that
-  // scale and read as a fifth status — and against the completed row's green it
-  // would imply blue and green are two ends of one axis, which they are not:
-  // green marks project state, blue marks something the professional did. The
-  // outline puts this in a different visual class, so it reads as an attribute of
-  // the row rather than its state. It also keeps it clear of the solid-#004aad
-  // unread badge in the trailing slot.
+  // OUTLINED, not filled, and radius 10 rather than the status badges' 20. Those
+  // badges are solid fills on one colour scale (open/in_progress/completed/
+  // cancelled); a filled blue pill would read as another point on it — and
+  // against the completed row's green it would imply blue and green are two ends
+  // of one axis, which they are not: green marks project state, blue marks
+  // something the professional did. The outline also keeps it distinct from the
+  // solid-#004aad unread badge it now sits next to.
   paidPill: {
     borderWidth: 1,
     borderColor: '#004aad',
     borderRadius: 10,
-    paddingHorizontal: 9,
-    paddingVertical: 2,
+    // Padding is one less than statusBadge's on each axis, because the 1px border
+    // adds it back — the two pills then measure the same. Radius stays 10: that
+    // is the deliberate signal that this is not a fifth status badge.
+    paddingHorizontal: 6,
+    paddingVertical: 1,
     flexShrink: 0,
   },
-  paidPillText: { fontSize: 11, color: '#004aad' },
+  paidPillText: { fontSize: 11, fontWeight: '700', color: '#004aad' },
   trashBtn: { padding: 4, marginLeft: 6 },
   statusBadgeText: { fontSize: 11, fontWeight: '700' },
   bottomRow: { alignItems: 'center', justifyContent: 'space-between' },

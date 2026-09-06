@@ -1,9 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
-  ScrollView, ActivityIndicator, StyleSheet, useWindowDimensions, PanResponder,
+  ScrollView, ActivityIndicator, StyleSheet,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -36,15 +35,7 @@ type Props = {
 };
 
 export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
-  const { height: screenHeight } = useWindowDimensions();
   const font = useAppFont();
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 8 && Math.abs(gs.dy) > Math.abs(gs.dx),
-      onPanResponderRelease: (_, gs) => { if (gs.dy > 80) onClose(); },
-    })
-  ).current;
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -113,15 +104,14 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
   const canSubmit = title.trim() && category && courseUrl.trim() && instructorName.trim() && !isSubmitting;
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheetWrapper, { height: screenHeight * 0.88 }]}>
-          <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sheet}>
-            {/* Drag handle */}
-            <View style={styles.dragHandleArea} {...panResponder.panHandlers}>
-              <View style={styles.dragHandle} />
-            </View>
-
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      {/* Same shell as the marketplace filter popup: a plain overlay View with an
+          absolute-fill dismiss layer behind a centred white card. The card must
+          NOT be nested inside a TouchableOpacity — its `width: '100%'` would then
+          resolve against a content-sized parent and collapse. */}
+      <View style={styles.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <View style={styles.sheet}>
             {/* Header */}
             <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.headerTitle, { ...font.bold }]}>{t('courses.add_your_course')}</Text>
@@ -130,7 +120,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form} style={{ flex: 1 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form} style={styles.formScroll}>
               {/* Title */}
               <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.course_title_label')} *</Text>
               <TextInput
@@ -281,26 +271,45 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 }
               </TouchableOpacity>
             </ScrollView>
-          </LinearGradient>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  sheetWrapper: { width: '100%', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
-  sheet: { flex: 1, paddingTop: 8, paddingHorizontal: 16, paddingBottom: 32 },
-  dragHandleArea: { alignItems: 'center', paddingVertical: 8 },
-  dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.18)' },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
+  },
   header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  headerTitle: { fontSize: 20, color: '#004aad', flex: 1 },
+  headerTitle: { fontSize: 18, color: '#004aad', flex: 1 },
   form: { gap: 4, paddingBottom: 16 },
+  // flexShrink, NOT flex:1. The card is auto-height capped at maxHeight, so a
+  // flex:1 child has no basis to grow from and collapses to nothing — which left
+  // the modal showing only its header. Same as the marketplace filter's scroll.
+  formScroll: { flexShrink: 1 },
   label: { fontSize: 13, color: 'rgba(0,74,173,0.8)', marginBottom: 4, marginTop: 12 },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    borderColor: 'rgba(0,74,173,0.2)',
+    backgroundColor: '#ffffff',
+    borderColor: 'rgba(0,74,173,0.15)',
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
@@ -310,7 +319,9 @@ const styles = StyleSheet.create({
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
   picker: {
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.15)',
     borderRadius: 10,
     marginTop: 4,
     overflow: 'hidden',
@@ -333,7 +344,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(0,74,173,0.3)',
     borderStyle: 'dashed',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -348,7 +359,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.3)',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: '#ffffff',
   },
   levelBtnActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
   levelBtnText: { fontSize: 12, color: '#004aad' },

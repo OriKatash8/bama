@@ -200,16 +200,21 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
             {/* Dates */}
-            <View style={styles.dateRow}>
+            <View style={[styles.dateRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={styles.dateCol}>
                 <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text
+                    style={[styles.label, styles.labelShrink, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}
+                    numberOfLines={2}
+                  >
                     {t('builder.execution')} <Text style={{ fontWeight: '400', color: '#7b2fa899' }}>({t('builder.optional')})</Text>
                   </Text>
-                  <HelpTooltip text={t('builder.help_execution')} />
+                  <View style={styles.helpAnchor}>
+                    <HelpTooltip text={t('builder.help_execution')} />
+                  </View>
                 </View>
                 <TouchableOpacity
-                  style={[styles.dateBtn, Platform.OS === 'web' && webInputShadow]}
+                  style={[styles.dateBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }, Platform.OS === 'web' && webInputShadow]}
                   onPress={() => setCalOpen('exec')}
                   activeOpacity={0.8}
                 >
@@ -222,13 +227,18 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
 
               <View style={styles.dateCol}>
                 <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.label, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text
+                    style={[styles.label, styles.labelShrink, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}
+                    numberOfLines={2}
+                  >
                     {t('builder.deadline')}
                   </Text>
-                  <HelpTooltip text={t('builder.help_deadline')} />
+                  <View style={styles.helpAnchor}>
+                    <HelpTooltip text={t('builder.help_deadline')} />
+                  </View>
                 </View>
                 <TouchableOpacity
-                  style={[styles.dateBtn, errors.deadline && { borderWidth: 1, borderColor: '#fc8181' }, Platform.OS === 'web' && webInputShadow]}
+                  style={[styles.dateBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }, errors.deadline && { borderWidth: 1, borderColor: '#fc8181' }, Platform.OS === 'web' && webInputShadow]}
                   onPress={() => setCalOpen('deadline')}
                   activeOpacity={0.8}
                 >
@@ -431,10 +441,12 @@ const styles = StyleSheet.create({
   },
   multiline: { height: 96, textAlignVertical: 'top' },
   error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
-  dateRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  dateRow: { gap: 12, marginTop: 16 },
+  /** The label yields space; the 16px "?" never does. */
+  labelShrink: { flexShrink: 1 },
+  helpAnchor: { flexShrink: 0 },
   dateCol: { flex: 1 },
   dateBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderRadius: 8,

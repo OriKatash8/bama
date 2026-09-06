@@ -17,6 +17,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { categoryLabel } from '@features/crew/data/categories';
 import { capabilityLabel, professionalMatchesSlot, type RoleSkillEntry } from '@features/noticeboard/matching';
+import { isOfferedSlot } from '@features/noticeboard/unoffered';
 import { translateCity } from '@core/utils/cityTranslations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -39,9 +40,9 @@ type BidEntry = CrewRequestSlot & { selected: boolean; price: string };
 /**
  * The vacant slots this professional can actually fill.
  *
- * Every list in this modal goes through here. Showing a role the pro cannot take
- * invited an offer that could never be accepted, and the details list and the bid
- * list disagreeing about which roles exist reads as a bug.
+ * Showing a role the pro cannot take invited an offer that could never be
+ * accepted, and the details list and the bid list disagreeing about which roles
+ * exist reads as a bug.
  *
  * `roleSkills === null` disables the skill half for direct invites, mirroring
  * useNoticeboard, which bypasses skill matching for those projects too.
@@ -49,6 +50,17 @@ type BidEntry = CrewRequestSlot & { selected: boolean; price: string };
 function biddableSlots(request: ProjectRequest, roleSkills: RoleSkillEntry[] | null): CrewRequestSlot[] {
   const vacant = getVacantSlots(request);
   return roleSkills === null ? vacant : vacant.filter((s) => professionalMatchesSlot(roleSkills, s));
+}
+
+/** Bid-form rows: fillable, still-vacant slots the pro has not already bid on. */
+function bidRows(
+  request: ProjectRequest,
+  roleSkills: RoleSkillEntry[] | null,
+  offeredCategories: Set<string> | undefined,
+): BidEntry[] {
+  return biddableSlots(request, roleSkills)
+    .filter((s) => !isOfferedSlot(s, offeredCategories))
+    .map((s) => ({ ...s, selected: false, price: '' }));
 }
 
 type Props = {
@@ -65,9 +77,11 @@ type Props = {
    * skill matching exactly as useNoticeboard does when building the board.
    */
   roleSkills: RoleSkillEntry[] | null;
+  /** Categories this professional has already bid on for THIS project. */
+  offeredCategories?: Set<string>;
 };
 
-export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories, roleSkills }: Props) {
+export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories, roleSkills, offeredCategories }: Props) {
   const { submit, submitWithBundle, isSubmitting } = usePriceOffer();
   const colors = useTheme();
   const { height: screenHeight } = useWindowDimensions();
@@ -84,19 +98,19 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   useEffect(() => {
     if (request) {
       if (initialView === 'bid') {
-        setBids(biddableSlots(request, roleSkills).map((s) => ({ ...s, selected: false, price: '' })));
+        setBids(bidRows(request, roleSkills, offeredCategories));
         setView('bid');
       } else {
         setView('details');
         setBids([]);
       }
     }
-  }, [request?.id, initialView, roleSkills]);
+  }, [request?.id, initialView, roleSkills, offeredCategories]);
 
   if (!request) return null;
 
   function openBid() {
-    setBids(biddableSlots(request!, roleSkills).map((s) => ({ ...s, selected: false, price: '' })));
+    setBids(bidRows(request!, roleSkills, offeredCategories));
     setView('bid');
   }
 
@@ -243,10 +257,12 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               })()}
 
               <AppText weight="semiBold" style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('noticeboard.roles_needed')}</AppText>
-              {biddableSlots(request, roleSkills).map((s, i) => (
-                <View key={i} style={styles.slotRow}>
+              {biddableSlots(request, roleSkills).map((s, i) => {
+                const offered = isOfferedSlot(s, offeredCategories);
+                return (
+                <View key={i} style={[styles.slotRow, offered && styles.slotRowOffered]}>
                   <Text style={styles.slotQty}>{s.quantity}×</Text>
-                  <View>
+                  <View style={styles.slotInfo}>
                     <AppText weight="semiBold" style={styles.slotSub}>
                       {categoryLabel(s.category, rtl ? 'he' : 'en')}
                     </AppText>
@@ -256,8 +272,16 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                       </AppText>
                     ) : null}
                   </View>
+                  {offered && (
+                    <View style={styles.offeredTag}>
+                      <AppText weight="semiBold" style={styles.offeredTagText}>
+                        {t('noticeboard.slot_offered')}
+                      </AppText>
+                    </View>
+                  )}
                 </View>
-              ))}
+                );
+              })}
 
               <View style={styles.actions}>
                 <TouchableOpacity style={styles.applyBtn} onPress={openBid} activeOpacity={0.8}>
@@ -435,6 +459,19 @@ const styles = StyleSheet.create({
   slotQty: { fontSize: 18, fontWeight: '800', color: '#cb6ce6', width: 32 },
   slotSub: { fontSize: 15, fontWeight: '600', color: '#004aad' },
   slotCap: { fontSize: 12, color: '#7b2fa8', marginTop: 1 },
+  slotInfo: { flex: 1 },
+  // Dimmed rather than removed: the row still tells the pro what the project
+  // needs, it just is not theirs to bid on again.
+  slotRowOffered: { opacity: 0.55 },
+  offeredTag: {
+    borderWidth: 1,
+    borderColor: '#004aad',
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+    flexShrink: 0,
+  },
+  offeredTagText: { fontSize: 11, color: '#004aad' },
   actions: { marginTop: 20, gap: 10 },
   applyBtn: { backgroundColor: '#004aad', borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
   disabled: { opacity: 0.4 },

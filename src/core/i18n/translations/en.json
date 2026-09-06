@@ -170,7 +170,12 @@
     "completed_pro": "Project complete — tap to close",
     "completed_client": "Project complete — leave a review",
     "completed_pro_settled": "Project complete",
-    "fee_paid_pill": "Paid"
+    "fee_paid_pill": "Paid",
+    "filter_all": "All",
+    "filter_open": "Active",
+    "filter_completed": "Completed",
+    "filter_marketplace": "Marketplace",
+    "empty_filter_title": "No chats match this filter"
   },
   "project_details": {
     "header": "Project Details",
@@ -586,6 +591,9 @@
     "greeting_evening": "Good evening",
     "greeting_night": "Good night",
     "projects_in_progress": "Projects in Progress",
+    "in_progress_toggle": "In progress",
+    "no_in_progress": "No active projects",
+    "no_in_progress_sub": "Projects you are hired for will appear here",
     "client_prefix": "Client: ",
     "notice_board": "Notice Board",
     "open_projects_one": "{{count}} open project",
@@ -627,6 +635,7 @@
     "submit_offer_btn": "Submit Offer",
     "sending": "Sending…",
     "needed": "needed",
+    "slot_offered": "Offered",
     "individual_total": "Individual total",
     "bid_hint": "Select the roles you want to fill and enter your price for each.",
     "per_role": "/ role",

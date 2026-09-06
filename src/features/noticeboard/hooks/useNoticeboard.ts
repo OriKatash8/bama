@@ -28,7 +28,9 @@ export function useNoticeboard(
     if (!currentUserId) return;
     getDocument<{ dismissedNotices?: string[] }>(`users/${currentUserId}`)
       .then((doc) => {
-        if (doc?.dismissedNotices?.length) {
+        // No `.length` guard: an empty array must be able to CLEAR the set, or
+        // restoring the last hidden project would leave it hidden.
+        if (doc?.dismissedNotices) {
           setDismissed(new Set(doc.dismissedNotices));
         }
       })
@@ -44,6 +46,24 @@ export function useNoticeboard(
     updateDocument(`users/${currentUserId}`, {
       dismissedNotices: arrayUnion(projectId),
     }).catch(() => {});
+  }
+
+  /**
+   * Drop a project from the local dismissed set, without touching Firestore.
+   *
+   * The History sheet owns the WRITE (`useHiddenProjects.restore` does the
+   * arrayRemove) and is live-subscribed, so it updates itself. This hook is not:
+   * it reads dismissedNotices once, and the sheet is an in-page Modal, so no
+   * navigation ever occurs to trigger a refetch. Without this the restored
+   * project stays hidden from the board until the tab remounts.
+   */
+  function undismiss(projectId: string) {
+    setDismissed((prev) => {
+      if (!prev.has(projectId)) return prev;
+      const next = new Set(prev);
+      next.delete(projectId);
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -98,5 +118,5 @@ export function useNoticeboard(
 
   const visible = requests.filter((r) => !dismissed.has(r.id));
 
-  return { requests: visible, posters, isLoading, dismiss };
+  return { requests: visible, posters, isLoading, dismiss, undismiss };
 }

@@ -170,7 +170,12 @@
     "completed_pro": "הפרויקט הושלם — לחצו לסגירה",
     "completed_client": "הפרויקט הושלם — השאירו ביקורת",
     "completed_pro_settled": "הפרויקט הושלם",
-    "fee_paid_pill": "שולם"
+    "fee_paid_pill": "שולם",
+    "filter_all": "הכל",
+    "filter_open": "פעילים",
+    "filter_completed": "הושלמו",
+    "filter_marketplace": "שוק יד שנייה",
+    "empty_filter_title": "אין צ׳אטים בסינון הזה"
   },
   "project_details": {
     "header": "פרטי פרויקט",
@@ -586,6 +591,9 @@
     "greeting_evening": "ערב טוב",
     "greeting_night": "לילה טוב",
     "projects_in_progress": "פרויקטים בתהליך",
+    "in_progress_toggle": "בתהליך",
+    "no_in_progress": "אין פרויקטים פעילים",
+    "no_in_progress_sub": "פרויקטים שתשובצו אליהם יופיעו כאן",
     "client_prefix": "לקוח: ",
     "notice_board": "לוח מודעות",
     "open_projects_one": "פרויקט פתוח אחד",
@@ -627,6 +635,7 @@
     "submit_offer_btn": "שלח הצעה",
     "sending": "שולח…",
     "needed": "נדרש",
+    "slot_offered": "הוצעה",
     "individual_total": "סה״כ פרטני",
     "bid_hint": "בחר את התפקידים שאתה רוצה למלא והזן את המחיר שלך לכל אחד.",
     "per_role": "/ תפקיד",

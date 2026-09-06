@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
-import { useRouter, useSegments } from 'expo-router';
-import { MapPin, CalendarDays, CalendarCheck, MessageCircle, ChevronLeft, ChevronRight, SlidersHorizontal, Search, Inbox, History } from 'lucide-react-native';
+import { useRouter, useSegments, useFocusEffect } from 'expo-router';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, Inbox, History, Briefcase, LayoutGrid } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
@@ -69,8 +69,6 @@ const CARD_SHADOW = {
 export default function DashboardScreen() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
-  const inProgressCardWidth = screenWidth - 104;
-  const inProgressCardGap = 40;
 
   const { profile, isLoading: profileLoading } = useProfile();
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -89,7 +87,7 @@ export default function DashboardScreen() {
     [profile?.roleSkills, profileLoading]
   );
 
-  const { requests: visible, posters, isLoading, dismiss: hookDismiss } = useNoticeboard(roleSkills, currentUserId);
+  const { requests: visible, posters, isLoading, dismiss: hookDismiss, undismiss } = useNoticeboard(roleSkills, currentUserId);
 
   // Slot state, so a blocked professional is stopped BEFORE composing an offer
   // rather than by hireProfessional rejecting it afterwards. Same query the
@@ -127,6 +125,21 @@ export default function DashboardScreen() {
   const [search, setSearch] = useState('');
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // The board shows the noticeboard by default; in-progress projects are a
+  // deliberate detour, not something competing for the same screen.
+  const [showInProgress, setShowInProgress] = useState(false);
+
+  // Opening a project's chat leaves the screen; coming back should land on the
+  // board, not on whatever detour you were in. The toggle is view state, not a
+  // preference — the spec is "the noticeboard page shows only the noticeboard by
+  // default". Deps stay empty so the callback identity is stable and the effect
+  // fires once per focus.
+  useFocusEffect(
+    useCallback(() => {
+      setShowInProgress(false);
+    }, []),
+  );
+
   // Same hook instance the history badge already used — `offers` comes free, so
   // the "have I bid on this?" check costs no extra query or listener.
   const { pendingCount, offers: sentOffers } = useSentOffers();
@@ -217,12 +230,7 @@ export default function DashboardScreen() {
 
   const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
   const [activeProjectsLoading, setActiveProjectsLoading] = useState(true);
-  const [inProgressIndex, setInProgressIndex] = useState(0);
-  const inProgressScrollRef = useRef<ScrollView>(null);
 
-  function scrollToInProgress(index: number) {
-    inProgressScrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
-  }
 
   useEffect(() => {
     if (!currentUserId) {
@@ -311,37 +319,70 @@ export default function DashboardScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── In-progress projects ── */}
-        {!activeProjectsLoading && activeProjects.length > 0 && (
-          <View style={styles.projectsSection}>
-            {/* Compact section header */}
-            <View style={[styles.sectionHeader, { flexDirection: rowDir, justifyContent: 'flex-start', gap: 8 }]}>
-              <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('noticeboard.projects_in_progress')}
+        {/* ── Notice board ── */}
+        <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={{ flex: 1 }}>
+            <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {showInProgress ? t('noticeboard.projects_in_progress') : t('noticeboard.notice_board')}
+            </AppText>
+            {!showInProgress && !isLoading && (
+              <AppText weight="regular" style={[styles.sectionCount, { textAlign: rtl ? 'right' : 'left' }]}>
+                {openProjectsLabel}
               </AppText>
-              <AppText weight="regular" style={styles.inProgressCounter}>
-                {inProgressIndex + 1}/{activeProjects.length}
-              </AppText>
-            </View>
-
-            <View style={styles.carouselWrap}>
-            <ScrollView
-              ref={inProgressScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.projectsScroll}
-              pagingEnabled
-              scrollEventThrottle={16}
-              onScroll={(e) => {
-                const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-                setInProgressIndex(Math.max(0, Math.min(idx, activeProjects.length - 1)));
-              }}
+            )}
+          </View>
+          {/* History — always available (sent offers + hidden projects) */}
+          <TouchableOpacity
+            style={styles.historyBtn}
+            onPress={() => setHistoryOpen(true)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={t('history.title')}
+          >
+            <History size={18} color="#004aad" strokeWidth={2.2} />
+            {pendingCount > 0 && (
+              <View style={[styles.historyBadge, { backgroundColor: colors.accent, borderColor: colors.bg }]}>
+                <AppText weight="bold" style={styles.historyBadgeText}>{pendingCount > 99 ? '99+' : pendingCount}</AppText>
+              </View>
+            )}
+          </TouchableOpacity>
+          {/* Names its DESTINATION, not its state: on the board it offers
+              in-progress, on in-progress it offers the board. A toggle whose label
+              stays put leaves you guessing whether it is on or where it goes —
+              this way there is always a visible button back. Never filled, since
+              it navigates rather than filtering. */}
+          <TouchableOpacity
+            style={[styles.sortBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+            onPress={() => setShowInProgress((v) => !v)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            {showInProgress
+              ? <LayoutGrid size={15} color="#004aad" strokeWidth={2.5} />
+              : <Briefcase size={15} color="#004aad" strokeWidth={2.5} />}
+            <AppText weight="semiBold" style={styles.sortBtnText}>
+              {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
+            </AppText>
+          </TouchableOpacity>
+          {!showInProgress && !isLoading && biddable.length > 0 && (
+            <TouchableOpacity
+              style={[styles.sortBtn, filterActive && styles.sortBtnActive, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={openSortModal}
+              activeOpacity={0.8}
             >
+              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
+              <AppText weight="semiBold" style={[styles.sortBtnText, filterActive && styles.sortBtnTextActive]}>
+                {t('noticeboard.sort_filter')}
+              </AppText>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* ── In-progress projects — shown only while the toggle is on ── */}
+        {showInProgress && activeProjects.length > 0 && (
+          <View style={styles.projectsList}>
               {activeProjects.map(({ chat, project, clientName }) => (
-                <View key={chat.id} style={{ width: screenWidth, alignItems: 'center' }}>
-                <View
-                  style={[styles.projectCard, { width: inProgressCardWidth }]}
-                >
+                <View key={chat.id} style={styles.projectCard}>
                   {/* Zone 1: title + client name */}
                   <View style={[styles.projectCardHeader, { flexDirection: rowDir }]}>
                     <View style={[styles.projectCardNameCol, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
@@ -388,77 +429,26 @@ export default function DashboardScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-                </View>
               ))}
-            </ScrollView>
-              {inProgressIndex > 0 && (
-                <TouchableOpacity
-                  style={[styles.arrowBtn, { left: 0 }]}
-                  onPress={() => scrollToInProgress(inProgressIndex - 1)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.arrowCircle}>
-                    <ChevronLeft size={18} color="#004aad" strokeWidth={2.5} />
-                  </View>
-                </TouchableOpacity>
-              )}
-              {inProgressIndex < activeProjects.length - 1 && (
-                <TouchableOpacity
-                  style={[styles.arrowBtn, { right: 0 }]}
-                  onPress={() => scrollToInProgress(inProgressIndex + 1)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.arrowCircle}>
-                    <ChevronRight size={18} color="#004aad" strokeWidth={2.5} />
-                  </View>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
         )}
 
-        {/* ── Notice board ── */}
-        <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <View style={{ flex: 1 }}>
-            <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-              {t('noticeboard.notice_board')}
+        {/* Toggled on with nothing running: say so, rather than showing an empty
+            screen with no explanation of what the button did. */}
+        {showInProgress && !activeProjectsLoading && activeProjects.length === 0 && (
+          <View style={styles.inProgressEmpty}>
+            <AppText weight="semiBold" style={styles.emptyText}>{t('noticeboard.no_in_progress')}</AppText>
+            <AppText weight="regular" style={[styles.emptySubtext, { color: MUTED }]}>
+              {t('noticeboard.no_in_progress_sub')}
             </AppText>
-            {!isLoading && (
-              <AppText weight="regular" style={[styles.sectionCount, { textAlign: rtl ? 'right' : 'left' }]}>
-                {openProjectsLabel}
-              </AppText>
-            )}
           </View>
-          {/* History — always available (sent offers + hidden projects) */}
-          <TouchableOpacity
-            style={styles.historyBtn}
-            onPress={() => setHistoryOpen(true)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={t('history.title')}
-          >
-            <History size={18} color="#004aad" strokeWidth={2.2} />
-            {pendingCount > 0 && (
-              <View style={[styles.historyBadge, { backgroundColor: colors.accent, borderColor: colors.bg }]}>
-                <AppText weight="bold" style={styles.historyBadgeText}>{pendingCount > 99 ? '99+' : pendingCount}</AppText>
-              </View>
-            )}
-          </TouchableOpacity>
-          {!isLoading && biddable.length > 0 && (
-            <TouchableOpacity
-              style={[styles.sortBtn, filterActive && styles.sortBtnActive, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-              onPress={openSortModal}
-              activeOpacity={0.8}
-            >
-              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
-              <AppText weight="semiBold" style={[styles.sortBtnText, filterActive && styles.sortBtnTextActive]}>
-                {t('noticeboard.sort_filter')}
-              </AppText>
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
 
-        {!isLoading && biddable.length > 0 && (
+        {showInProgress && activeProjectsLoading && (
+          <ActivityIndicator color="#004aad" style={{ marginVertical: 24 }} />
+        )}
+
+        {!showInProgress && !isLoading && biddable.length > 0 && (
           <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
             <TextInput
@@ -477,7 +467,7 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {isLoading ? (
+        {showInProgress ? null : isLoading ? (
           <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
         ) : displayed.length === 0 ? (
           <View style={[styles.center, { minHeight: screenHeight * 0.6 }]}>
@@ -545,6 +535,7 @@ export default function DashboardScreen() {
         initialView={selectedView}
         professionalCategories={categories}
         roleSkills={selected?.targetProfessionalId === currentUserId ? null : (roleSkills ?? [])}
+        offeredCategories={selected ? offeredByProject.get(selected.id) : undefined}
       />
 
       {/* Sort & filter modal */}
@@ -617,7 +608,7 @@ export default function DashboardScreen() {
       </Modal>
 
       {/* Sent-offers + hidden-projects history */}
-      <NoticeHistorySheet visible={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <NoticeHistorySheet visible={historyOpen} onClose={() => setHistoryOpen(false)} onRestored={undismiss} />
     </Screen>
   );
 }
@@ -627,13 +618,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 140 },
 
   // Section headers
-  sectionHeader: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
   sectionTitle: {
     fontSize: 24,
     color: BLUE,
@@ -730,27 +714,10 @@ const styles = StyleSheet.create({
   sortApplyText: { fontSize: 15, color: '#ffffff' },
 
   // In-progress section
-  projectsSection: { marginBottom: 4 },
-  projectsScroll: { paddingBottom: 12 },
-  inProgressCounter: { fontSize: 13, color: '#8890b0' },
-  carouselWrap: { position: 'relative' },
-  arrowBtn: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 36,
-    zIndex: 10,
-  },
-  arrowCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,74,173,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // Vertical list, same rhythm as the noticeboard's gridContent — the two
+  // sections swap into the same slot, so they should scroll the same way.
+  projectsList: { paddingVertical: 8, gap: 12, paddingBottom: 100, paddingHorizontal: 16 },
+  inProgressEmpty: { alignItems: 'center', paddingHorizontal: 32, paddingVertical: 48, gap: 6 },
 
   projectCard: {
     borderRadius: 16,
