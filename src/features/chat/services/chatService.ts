@@ -56,6 +56,16 @@ function docToChat(doc: QueryDocumentSnapshot<DocumentData>): Chat {
     archived: data.archived ?? false,
     archiveReason: data.archiveReason ?? null,
     hiddenFor: data.hiddenFor,
+    // Completion is read off the CHAT doc, which is live-subscribed, precisely to
+    // avoid the chat list's project fetch — that is cached per chat id and never
+    // refetched. Omitting these left `readOnly` permanently undefined, so the
+    // list silently fell back to the stale project status it was meant to bypass.
+    //
+    // Nothing here is type-checked: DocumentData's fields are `any`, so a missing
+    // one widens away rather than erroring. Adding a field to Chat does NOT mean
+    // it arrives — it has to be mapped here too.
+    readOnly: data.readOnly ?? false,
+    readOnlyReason: data.readOnlyReason,
   };
 }
 

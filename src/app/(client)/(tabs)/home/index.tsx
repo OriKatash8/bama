@@ -395,11 +395,10 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.grow} />
-            <View style={[styles.submitWrap, { paddingHorizontal: 36, paddingTop: 4 }]}>
+            <View style={styles.submitWrap}>
               <TouchableOpacity
                 style={[
                   styles.submitBtn,
-                  { alignSelf: 'stretch' },
                   Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
                 ]}
                 onPress={handleNext}
@@ -758,7 +757,10 @@ function createStyles(
     tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
     tileControlText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 16 },
     tileCountText: { color: '#004aad', fontSize: 14, fontWeight: '800', fontFamily: ffBold, minWidth: 14, textAlign: 'center' },
-    submitWrap: { paddingTop: 6, paddingHorizontal: 16, paddingBottom: 12 },
+    /** Shared by all three steps, so the next-step button is the same width
+     *  throughout. The 36pt inset used to be inline on step 1 only, leaving
+     *  steps 2 and 3 with the 16pt default and visibly wider buttons. */
+    submitWrap: { paddingTop: 4, paddingHorizontal: 36, paddingBottom: 12 },
     submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginTop: 4 },
     disabled: { backgroundColor: '#555' },
     submitText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: ffBold },

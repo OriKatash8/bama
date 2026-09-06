@@ -110,7 +110,10 @@ export default function ProfessionalChatsScreen() {
   // Category pills: horizontal scroll ref + captured x offsets to scroll the
   // selected category into view.
   const categoryScrollRef = useRef<ScrollView>(null);
-  const categoryOffsets = useRef<Record<string, number>>({});
+  /** Per-pill layout within the content container, plus the viewport width —
+   *  both are needed to anchor a pill to the correct edge in each direction. */
+  const categoryOffsets = useRef<Record<string, { x: number; width: number }>>({});
+  const categoryViewportW = useRef(0);
 
   // Only the categories that actually have courses.
   const courseCategories = useMemo(
@@ -152,14 +155,24 @@ export default function ProfessionalChatsScreen() {
 
   // Scroll the selected category pill into view when the selection changes.
   // In RTL the row flows row-reverse, so "all" sits at the right end.
+  //
+  // `layout.x` is always measured from the content's LEFT edge, whichever way the
+  // row flows — so scrolling to `x - 12` does reveal the right pill, but it pins
+  // it to the viewport's left edge with the 12px gap on the wrong side. In RTL
+  // the pill should sit against the right edge instead, which needs its width and
+  // the viewport's. scrollTo clamps out-of-range values itself.
   useEffect(() => {
     if (courseCategory === 'all') {
       if (rtl) categoryScrollRef.current?.scrollToEnd({ animated: false });
       else categoryScrollRef.current?.scrollTo({ x: 0, animated: true });
       return;
     }
-    const x = categoryOffsets.current[courseCategory];
-    if (x != null) categoryScrollRef.current?.scrollTo({ x: Math.max(0, x - 12), animated: true });
+    const pill = categoryOffsets.current[courseCategory];
+    if (!pill) return;
+    const target = rtl
+      ? pill.x + pill.width - categoryViewportW.current + 12
+      : pill.x - 12;
+    categoryScrollRef.current?.scrollTo({ x: Math.max(0, target), animated: true });
   }, [courseCategory, rtl]);
 
   useEffect(() => {
@@ -367,6 +380,7 @@ export default function ProfessionalChatsScreen() {
             // RTL row flows row-reverse, so its visual start is the right edge —
             // anchor the scroll there once the content is laid out.
             onContentSizeChange={() => { if (rtl) categoryScrollRef.current?.scrollToEnd({ animated: false }); }}
+            onLayout={(e) => { categoryViewportW.current = e.nativeEvent.layout.width; }}
             contentContainerStyle={[
               styles.categoryPillsRow,
               {
@@ -389,7 +403,10 @@ export default function ProfessionalChatsScreen() {
             {courseCategories.map((cat) => (
               <TouchableOpacity
                 key={cat}
-                onLayout={(e) => { categoryOffsets.current[cat] = e.nativeEvent.layout.x; }}
+                onLayout={(e) => {
+                  const { x, width } = e.nativeEvent.layout;
+                  categoryOffsets.current[cat] = { x, width };
+                }}
                 style={[styles.catPill, courseCategory === cat && styles.catPillActive]}
                 onPress={() => setCourseCategory(cat)}
                 activeOpacity={0.8}
