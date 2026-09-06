@@ -8,6 +8,8 @@ import { Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { auth } from '@core/firebase/config';
 import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
@@ -18,12 +20,25 @@ import { getOrCreateDM } from '@features/chat/services/chatService';
 
 const CATEGORIES = ROLE_CATEGORIES.map((key) => ({ key }));
 
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
+
 export default function BrowseScreen() {
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [modalQuery, setModalQuery] = useState('');
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
   const font = useAppFont();
   const router = useRouter();
   const segments = useSegments();
@@ -153,9 +168,9 @@ export default function BrowseScreen() {
             ) : filteredModalResults.length === 0 ? (
               <View style={styles.emptyResults}>
                 <Text style={styles.emptyIcon}>👤</Text>
-                <Text style={[styles.emptyText, { color: colors.textSec }]}>No professionals yet</Text>
+                <Text style={[styles.emptyText, { color: colors.textSec }]}>{t('search.no_professionals_yet')}</Text>
                 <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
-                  Professionals in this category will appear here once they set up their profile.
+                  {t('search.no_professionals_subtext')}
                 </Text>
               </View>
             ) : (

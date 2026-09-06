@@ -372,6 +372,8 @@
     "failed_photo": "Failed to update photo",
     "reviews_count": "({{count}} reviews)",
     "no_reviews": "No reviews yet",
+    "not_found": "Profile not found",
+    "go_back": "Go back",
     "report": "Report Account",
     "status_available": "Available",
     "status_busy": "Busy"
@@ -815,6 +817,7 @@
     "email": "Email",
     "password": "Password",
     "forgot_password": "Forgot password?",
+    "back_to_login": "Back to login",
     "login": "Login",
     "no_account": "Don't have an account? ",
     "register_link": "Register",

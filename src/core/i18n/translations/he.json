@@ -372,6 +372,8 @@
     "failed_photo": "עדכון התמונה נכשל",
     "reviews_count": "({{count}} ביקורות)",
     "no_reviews": "אין ביקורות עדיין",
+    "not_found": "הפרופיל לא נמצא",
+    "go_back": "חזרה",
     "report": "דווח על חשבון",
     "status_available": "זמין",
     "status_busy": "עסוק"
@@ -815,6 +817,7 @@
     "email": "אימייל",
     "password": "סיסמה",
     "forgot_password": "שכחת סיסמה?",
+    "back_to_login": "חזרה להתחברות",
     "login": "התחבר",
     "no_account": "אין לך חשבון? ",
     "register_link": "הרשמה",

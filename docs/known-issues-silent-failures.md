@@ -298,6 +298,60 @@ Deliberately deferred — recorded so the eventual symptom has a cause.
 
 ---
 
+# Copy that lives in components, invisible to any string audit
+
+Recorded 2026-09-06, after a grep for hardcoded English nearly missed it.
+
+## The shape
+
+Some user-facing copy is written as an inline bilingual ternary at the call site
+rather than as a key in `he.json` / `en.json`:
+
+```ts
+const confirmed = await confirmDialog(
+  rtl ? 'הסרת צ׳אט' : 'Remove chat',
+  rtl ? 'האם להסיר צ׳אט זה מהרשימה שלך?' : 'Remove this chat from your list?',
+);
+```
+
+Known instances: `ChatsScreen.tsx` (`handleLeaveChat`), and the noticeboard
+search placeholder in `dashboard/index.tsx`. Others almost certainly exist —
+this pattern is what makes them hard to enumerate.
+
+## Why it is worth recording
+
+**Nothing is broken.** Both languages render. That is exactly the problem: it
+looks correct in both, so no test, no type and no reviewer catches it.
+
+What it defeats is *auditing*. The he/en parity check run after every string
+change compares key sets in the two locale files — copy that never enters those
+files is invisible to it. A search for untranslated text finds hardcoded English
+(`<Text>No listings found</Text>`) but not a ternary that already contains both
+languages. So this copy cannot be counted, reviewed by a translator, reused, or
+changed in one place.
+
+It also silently sets a second convention. Someone copying a nearby line gets
+the ternary, not `t()`, and the split widens.
+
+## Why the greps nearly missed it
+
+A hardcoded-English sweep matches on *English text where a key was expected*.
+These lines contain the Hebrew too, so they pass every heuristic aimed at
+untranslated strings. They only surfaced while reading `confirmDialog` call
+sites to check whether they used `t()` — i.e. by accident.
+
+The lesson generalises: an audit that looks for *missing* translations cannot
+find copy that was translated in the wrong place.
+
+## The fix, when it is worth doing
+
+Move each pair into `he.json` / `en.json` under the owning namespace and call
+`t()`. Mechanical and low risk — the strings already exist in both languages, so
+it is a move, not a translation. Deferred deliberately; recorded so the next
+string audit knows its own blind spot.
+
+---
+
 # Related: mode was standing in for role
 
 Fixed 2026-09-04, in the same pass. The chat list, `ChatRoomScreen`'s fee

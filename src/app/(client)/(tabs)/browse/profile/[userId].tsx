@@ -171,9 +171,13 @@ export default function PublicProfileScreen() {
     return (
       <Screen scrollable={false} backgroundColor={colors.bg}>
         <View style={styles.center}>
-          <Text style={[styles.errorText, { color: colors.textMuted }]}>Profile not found</Text>
+          <Text style={[styles.errorText, { color: colors.textMuted }]}>{t('profile.not_found')}</Text>
           <TouchableOpacity onPress={goToBrowse} style={styles.backFallback} activeOpacity={0.7}>
-            <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '600' }}>← Go back</Text>
+            {/* The arrow is rendered here rather than baked into the string, so it
+                points back in both directions. */}
+            <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '600' }}>
+              {rtl ? '→' : '←'} {t('profile.go_back')}
+            </Text>
           </TouchableOpacity>
         </View>
       </Screen>

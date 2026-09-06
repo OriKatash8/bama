@@ -9,9 +9,26 @@ import { Button } from '@components/ui/Button';
 import { useForgotPassword } from '@features/auth/hooks/useForgotPassword';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import { isValidEmail } from '@utils/validators';
 
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
+
 export function ForgotPasswordForm() {
+  const language = useSettingsStore((s) => s.language);
+  const t = makeT(language === 'he' ? he : en);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>();
   const { isLoading, sent, sendReset } = useForgotPassword();
@@ -40,7 +57,7 @@ export function ForgotPasswordForm() {
           <Text style={styles.title}>CHECK INBOX</Text>
           <Text style={[styles.body, { color: colors.textSec }]}>We sent a password reset link to {email}.</Text>
           <TouchableOpacity onPress={() => router.replace('/(auth)')}>
-            <Text style={[styles.link, { color: colors.text }]}>Back to login</Text>
+            <Text style={[styles.link, { color: colors.text }]}>{t('auth.back_to_login')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -73,7 +90,7 @@ export function ForgotPasswordForm() {
         />
         <View style={styles.footer}>
           <TouchableOpacity onPress={() => router.replace('/(auth)')}>
-            <Text style={[styles.link, { color: colors.text }]}>Back to login</Text>
+            <Text style={[styles.link, { color: colors.text }]}>{t('auth.back_to_login')}</Text>
           </TouchableOpacity>
         </View>
       </View>

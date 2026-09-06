@@ -2,11 +2,25 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { Review } from '@core/types/project';
 
 type ReviewsListProps = {
   reviews: Review[];
 };
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 function initials(name: string): string {
   return name
@@ -20,15 +34,26 @@ function initials(name: string): string {
 
 export function ReviewsList({ reviews }: ReviewsListProps) {
   const [index, setIndex] = useState(0);
+  // This card was written Hebrew-first: the three textAligns below were 'right'
+  // and the header row a hardcoded 'row', so in ENGLISH the text sat against the
+  // far edge from where reading starts. Alignment and row direction have to move
+  // together — flipping only the text would leave the avatar stranded.
+  const language = useSettingsStore((s) => s.language);
+  const rtl = language === 'he';
+  const t = makeT(rtl ? he : en);
+  const align = rtl ? 'right' : 'left' as const;
 
   if (reviews.length === 0) {
-    return <Text style={styles.empty}>No reviews yet.</Text>;
+    return <Text style={styles.empty}>{t('profile.no_reviews')}</Text>;
   }
 
   const review = reviews[index];
   const clamped = Math.max(0, Math.min(5, Math.round(review.rating)));
   const stars = '★'.repeat(clamped) + '☆'.repeat(5 - clamped);
-  const date = new Date(review.createdAt.seconds * 1000).toLocaleDateString();
+  // Explicit locale: a bare toLocaleDateString() follows the DEVICE, so a Hebrew
+  // UI on an English phone showed English-formatted dates. Same pair the rest of
+  // the app uses.
+  const date = new Date(review.createdAt.seconds * 1000).toLocaleDateString(rtl ? 'he-IL' : 'en-GB');
 
   function prev() { setIndex((i) => (i - 1 + reviews.length) % reviews.length); }
   function next() { setIndex((i) => (i + 1) % reviews.length); }
@@ -37,20 +62,21 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
     <View style={styles.container}>
       {/* Review card — tap to go to next */}
       <TouchableOpacity activeOpacity={0.85} onPress={next} style={styles.card}>
-        {/* Date (left) + name (middle) + avatar (right) */}
-        <View style={styles.nameAvatarRow}>
+        {/* Date, name, then avatar — mirrored as a unit so the avatar always sits
+            at the trailing edge and the date at the leading one. */}
+        <View style={[styles.nameAvatarRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Text style={styles.date}>{date}</Text>
-          <AppText weight="bold" style={styles.author}>{review.authorName}</AppText>
+          <AppText weight="bold" style={[styles.author, { textAlign: align }]}>{review.authorName}</AppText>
           <View style={styles.avatar}>
             <AppText weight="bold" style={styles.avatarText}>{initials(review.authorName)}</AppText>
           </View>
         </View>
 
         {/* Stars */}
-        <Text style={styles.stars}>{stars}</Text>
+        <Text style={[styles.stars, { textAlign: align }]}>{stars}</Text>
 
         {/* Body */}
-        <AppText style={styles.body}>{review.body}</AppText>
+        <AppText style={[styles.body, { textAlign: align }]}>{review.body}</AppText>
       </TouchableOpacity>
 
       {/* Navigation row */}
@@ -90,7 +116,6 @@ const styles = StyleSheet.create({
   },
 
   nameAvatarRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
@@ -99,14 +124,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#004aad',
-    textAlign: 'right',
     flex: 1,
   },
 
   stars: {
     fontSize: 15,
     color: '#cb6ce6',
-    textAlign: 'right',
   },
 
   avatar: {
@@ -128,7 +151,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#004aad',
     lineHeight: 20,
-    textAlign: 'right',
   },
 
   navRow: {

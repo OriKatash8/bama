@@ -5,6 +5,20 @@ import { AppText } from '@components/ui/AppText';
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { MarketplaceListing } from '../types';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
+
+
+type Translations = typeof en;
+
+function makeT(translations: Translations) {
+  return (key: string): string => {
+    const keys = key.split('.');
+    let result: unknown = translations;
+    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
+    return typeof result === 'string' ? result : key;
+  };
+}
 
 type Props = {
   listing: MarketplaceListing;
@@ -14,6 +28,7 @@ type Props = {
 export function RentalCard({ listing, onPress }: Props) {
   const language = useSettingsStore((s) => s.language);
   const rtl = language === 'he';
+  const t = makeT(rtl ? he : en);
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.imageWrap}>
@@ -28,7 +43,7 @@ export function RentalCard({ listing, onPress }: Props) {
         {listing.brand && (
           <AppText style={[styles.brand, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{listing.brand}</AppText>
         )}
-        <Text style={styles.price}>₪{listing.price.toLocaleString()}/day</Text>
+        <Text style={styles.price}>₪{listing.price.toLocaleString()}{t('marketplace.per_day')}</Text>
         <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Image
             source={LOCATION_ICON}
