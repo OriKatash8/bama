@@ -949,6 +949,7 @@
     "reject": "Reject",
     "members": "Members",
     "no_communities": "No communities yet",
+    "placeholder_name": "Community {{n}}",
     "no_discover": "No communities to discover",
     "add_photo": "Add Photo",
     "change_photo": "Change Photo",

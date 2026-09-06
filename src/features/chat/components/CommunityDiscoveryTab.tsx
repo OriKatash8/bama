@@ -17,13 +17,18 @@ import { categoryLabel } from '@features/crew/data/categories';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
-  return (key: string): string => {
+  return (key: string, vars?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let result: unknown = translations;
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
+    if (typeof result !== 'string') return key;
+    if (!vars) return result;
+    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
   };
 }
+
+/** Filler shown in place of an empty "my communities" strip. */
+const PLACEHOLDER_COMMUNITY_COUNT = 5;
 
 
 const GRADIENTS: [string, string][] = [
@@ -163,9 +168,39 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       </View>
 
       {myCommunities.length === 0 ? (
-        <AppText weight="regular" style={[styles.empty, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-          {t('communities.no_communities')}
-        </AppText>
+        <>
+          <AppText weight="regular" style={[styles.empty, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('communities.no_communities')}
+          </AppText>
+          {/* Illustrative filler so the strip has the shape it will have once the
+              user joins something. Deliberately inert — plain Views, no press
+              handler — so a tap does nothing rather than failing to open a chat
+              that does not exist. */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.stripScroll, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+          >
+            {Array.from({ length: PLACEHOLDER_COMMUNITY_COUNT }, (_, i) => (
+              <View key={i} style={styles.stripItem} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <View style={styles.placeholderSquare} />
+                {/* One row always. "Community 1" overflows the 64pt tile at the
+                    shared size while "קהילה 1" does not, so the label shrinks to
+                    fit rather than wrapping — the real strip titles keep two
+                    lines, since actual community names need them. */}
+                <AppText
+                  weight="regular"
+                  style={styles.stripTitle}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {t('communities.placeholder_name', { n: i + 1 })}
+                </AppText>
+              </View>
+            ))}
+          </ScrollView>
+        </>
       ) : (
         <View style={styles.stripWrap}>
         <ScrollView
@@ -405,6 +440,21 @@ const styles = StyleSheet.create({
   stripOuter: { marginHorizontal: -16, marginBottom: 8 },
   stripScroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 12 },
   stripItem: { alignItems: 'center', width: 68 },
+  // Matches CommunityAvatar's geometry at size 60 (radius = size * 0.26), so the
+  // filler occupies exactly the space a real community will.
+  //
+  // Border strong enough to read as a tile rather than a skeleton, and the title
+  // keeps the real strip colour: a greyed-out version made the strip look
+  // disabled, which is the opposite of filling the page. Nothing here is
+  // tappable, and the Discover list directly below carries the real communities.
+  placeholderSquare: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.18)',
+  },
   stripArrow: {
     position: 'absolute',
     top: 20,

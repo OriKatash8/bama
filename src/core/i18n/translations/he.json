@@ -949,6 +949,7 @@
     "reject": "דחה",
     "members": "חברים",
     "no_communities": "אין קהילות עדיין",
+    "placeholder_name": "קהילה {{n}}",
     "no_discover": "אין קהילות לגילוי",
     "add_photo": "הוסף תמונה",
     "change_photo": "שנה תמונה",
