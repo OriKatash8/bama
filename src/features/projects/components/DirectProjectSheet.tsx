@@ -202,9 +202,9 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             {/* Dates */}
             <View style={[styles.dateRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={styles.dateCol}>
-                <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                <View style={[styles.dateLabelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text
-                    style={[styles.label, styles.labelShrink, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}
+                    style={[styles.label, styles.labelShrink, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, lineHeight: 17, textAlign: rtl ? 'right' : 'left' }]}
                     numberOfLines={2}
                   >
                     {t('builder.execution')} <Text style={{ fontWeight: '400', color: '#7b2fa899' }}>({t('builder.optional')})</Text>
@@ -226,9 +226,9 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               </View>
 
               <View style={styles.dateCol}>
-                <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                <View style={[styles.dateLabelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text
-                    style={[styles.label, styles.labelShrink, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, textAlign: rtl ? 'right' : 'left' }]}
+                    style={[styles.label, styles.labelShrink, { ...font.semiBold, color: '#7b2fa8', marginTop: 0, marginBottom: 6, fontSize: 13, lineHeight: 17, textAlign: rtl ? 'right' : 'left' }]}
                     numberOfLines={2}
                   >
                     {t('builder.deadline')}
@@ -444,6 +444,11 @@ const styles = StyleSheet.create({
   dateRow: { gap: 12, marginTop: 16 },
   /** The label yields space; the 16px "?" never does. */
   labelShrink: { flexShrink: 1 },
+  // Both date labels reserve two lines' height whether or not they use it.
+  // "Execution (optional)" wraps in a half-width column while "Deadline" does
+  // not, and content-height rows left the two date buttons on different lines.
+  // 2 x lineHeight 17 + the label's 6pt marginBottom.
+  dateLabelRow: { alignItems: 'center', gap: 6, minHeight: 40 },
   helpAnchor: { flexShrink: 0 },
   dateCol: { flex: 1 },
   dateBtn: {

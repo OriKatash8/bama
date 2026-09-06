@@ -60,7 +60,7 @@ export default function ChatsPage() {
         />
       ) : (
         <>
-          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
             <TextInput
               style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
@@ -94,7 +94,8 @@ const styles = StyleSheet.create({
   // Bias the empty block upward a little (matches the Projects empty position).
   emptyBias: { paddingBottom: 100 },
   searchRow: {
-    flexDirection: 'row',
+    // Direction is set inline. Hardcoded 'row' left the magnifier on the visual
+    // left in Hebrew while the input was right-aligned beside it.
     alignItems: 'center',
     borderRadius: 24,
     marginHorizontal: 16,

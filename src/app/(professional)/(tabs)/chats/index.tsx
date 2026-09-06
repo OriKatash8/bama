@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
-  useWindowDimensions,
+  useWindowDimensions, Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -45,7 +45,7 @@ function makeT(translations: Translations) {
 }
 
 type TabKey = 'chats' | 'courses' | 'communities';
-const TAB_KEYS: TabKey[] = ['chats', 'courses', 'communities'];
+const TAB_KEYS: TabKey[] = ['chats', 'communities', 'courses'];
 
 type Course = {
   id: string;
@@ -76,6 +76,16 @@ export default function ProfessionalChatsScreen() {
   const hasChats = userChats.filter((c) => c.type !== 'community').length > 0;
 
   const [active, setActive] = useState<TabKey>('chats');
+  // Pop the newly-selected tab, as MarketplaceToggle does. One value per tab
+  // rather than the toggle's two named refs, since there are three of them.
+  const tabScales = useRef(
+    Object.fromEntries(TAB_KEYS.map((k) => [k, new Animated.Value(1)])) as Record<TabKey, Animated.Value>,
+  ).current;
+  useEffect(() => {
+    const val = tabScales[active];
+    val.setValue(0.9);
+    Animated.spring(val, { toValue: 1, useNativeDriver: true, friction: 4, tension: 120 }).start();
+  }, [active, tabScales]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Honor a ?tab= param (e.g. the back button inside a community returns here
@@ -257,45 +267,30 @@ export default function ProfessionalChatsScreen() {
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={[styles.gradient, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-          <View
-            style={[
-              styles.tabBar,
-              {
-                flexDirection: rtl ? 'row-reverse' : 'row',
-                gap: rtl ? 52 : 38,
-                // English only: nudge the centred group toward the trailing edge.
-                // Asymmetric padding shifts the WHOLE group, which is deliberate —
-                // moving only Courses and Communities would reopen the uneven-gap
-                // problem the pill padding was just tuned to close.
-                paddingLeft: rtl ? 8 : 34,
-                paddingRight: rtl ? 8 : 8,
-              },
-            ]}
-          >
+          <View style={[styles.tabBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             {TAB_KEYS.map((key) => {
               const isActive = active === key;
               return (
+                <Animated.View key={key} style={{ transform: [{ scale: tabScales[key] }] }}>
                 <TouchableOpacity
-                  key={key}
-                  style={styles.tab}
+                  style={[styles.tabPill, isActive ? styles.tabPillActive : styles.tabPillInactive]}
                   onPress={() => { setActive(key); setSearchQuery(''); }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                 >
-                  <View style={[styles.tabPill, isActive && styles.tabPillActive]}>
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.85}
-                      style={[
-                        styles.tabText,
-                        { color: colors.textSec, ...(isActive ? font.bold : font.regular), textAlign: rtl ? 'right' : 'left' },
-                        isActive && styles.tabTextActive,
-                      ]}
-                    >
-                      {TAB_LABELS[key]}
-                    </Text>
-                  </View>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}
+                    style={[
+                      styles.tabText,
+                      isActive ? styles.tabTextActive : styles.tabTextInactive,
+                      isActive ? font.semiBold : font.semiBold,
+                    ]}
+                  >
+                    {TAB_LABELS[key]}
+                  </Text>
                 </TouchableOpacity>
+                </Animated.View>
               );
             })}
           </View>
@@ -324,7 +319,7 @@ export default function ProfessionalChatsScreen() {
           </View>
         ) : (
           <>
-            <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
               <TextInput
                 style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
@@ -360,7 +355,7 @@ export default function ProfessionalChatsScreen() {
         <View>
           {/* Row 1 — search + filter button */}
           <View style={[styles.courseSearchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <View style={[styles.searchRow, styles.searchRowFlex, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
+            <View style={[styles.searchRow, styles.searchRowFlex, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
               <TextInput
                 style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
@@ -731,7 +726,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   searchRow: {
-    flexDirection: 'row',
+    // Direction is set inline. Hardcoded 'row' left the magnifier on the visual
+    // left in Hebrew while the input was right-aligned beside it.
     alignItems: 'center',
     borderRadius: 24,
     marginHorizontal: 16,
@@ -742,43 +738,33 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchInput: { flex: 1, fontSize: 15 },
-  // `gap` on content-sized tabs, so the spacing is measured EDGE TO EDGE. Equal
-  // thirds (or space-between) distribute by centre or by free space, which leaves
-  // visibly different gaps whenever the labels differ in width — and "Chats",
-  // "Courses" and "Communities" do, in both languages.
-  //
-  // The gap itself is direction-aware: Hebrew's labels are shorter, so the pills
-  // are narrower and the same gap reads as cramped.
+  // Same shape as MarketplaceToggle: a centred row of pills, the selected one
+  // filled and enlarged so it reads as chosen rather than merely tinted. This
+  // replaces the earlier edge-to-edge gap tuning — the marketplace row centres
+  // with a fixed gap, so spacing comes from the shared style, not per-language
+  // values.
   tabBar: {
     width: '100%',
     paddingHorizontal: 8,
-    justifyContent: 'center',
-  },
-  tab: {
     paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  tabPill: {
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
     flexShrink: 1,
   },
-  // Horizontal padding is deliberately small. Only the ACTIVE pill paints a
-  // background, so this padding is what the eye adds to the gap on one side and
-  // not the other: text-to-text reads `gap + 2p` between two inactive tabs but
-  // `gap + p` beside the active one. The difference IS p, so keeping p small
-  // keeps the spacing looking even whichever tab is selected. The gap carries the
-  // separation instead.
-  tabPill: {
-    paddingVertical: 9,
-    paddingHorizontal: 5,
-    borderRadius: 20,
-  },
-  tabPillActive: {
-    backgroundColor: 'rgba(0,74,173,0.12)',
-  },
-  tabText: {
-    fontSize: 14,
-  },
-  tabTextActive: {
-    color: '#004aad',
-    fontWeight: '700',
-  },
+  // The selected tab is filled and enlarged, matching MarketplaceToggle.
+  tabPillActive: { backgroundColor: '#004aad', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
+  tabPillInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
+  tabText: { fontSize: 14, fontWeight: '600' },
+  // Active label is white on the filled pill and a size larger, as in the
+  // marketplace toggle.
+  tabTextActive: { color: '#ffffff', fontSize: 16 },
+  tabTextInactive: { color: '#004aad' },
   tabContentHeader: {
     alignItems: 'stretch',
     justifyContent: 'space-between',

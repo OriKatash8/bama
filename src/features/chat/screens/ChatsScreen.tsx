@@ -649,18 +649,21 @@ const styles = StyleSheet.create({
   // list down. flexGrow keeps a short row aligned to the reading edge, since
   // under row-reverse the default flex-start IS the right edge.
   filterScroll: { flexGrow: 0, marginBottom: 10 },
-  filterRow: { gap: 7, paddingHorizontal: 16, alignItems: 'center', flexGrow: 1 },
+  filterRow: { gap: 6, paddingHorizontal: 16, alignItems: 'center', flexGrow: 1 },
   filterChip: {
-    height: 34,
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    height: 28,
+    borderRadius: 14,
+    paddingHorizontal: 11,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.2)',
+    // A real blue outline, not the 20%-opacity version it had — at that alpha it
+    // read as grey and the unselected chips looked borderless. Same treatment as
+    // MarketplaceToggle's inactive pill.
+    borderColor: '#004aad',
     backgroundColor: '#ffffff',
   },
   filterChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  filterChipText: { fontSize: 13, color: '#004aad' },
+  filterChipText: { fontSize: 12, color: '#004aad' },
   filterChipTextActive: { color: '#ffffff' },
   noResults: { paddingTop: 40, alignItems: 'center', gap: 6 },
   noResultsTitle: { fontSize: 15 },
