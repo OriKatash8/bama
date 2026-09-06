@@ -864,6 +864,18 @@
     "client_mode": "לקוח/ה",
     "pro_mode": "בעל/ת מקצוע"
   },
+  "notif_prompt": {
+    "banner_title": "ההתראות כבויות",
+    "banner_body_chats": "יש לכם הודעות שלא נקראו. הפעילו התראות כדי לדעת מיד כשמישהו עונה.",
+    "banner_body_offers": "שלחתם הצעות מחיר שממתינות לתשובה. הפעילו התראות כדי לדעת מיד כשלקוח עונה.",
+    "dismiss": "סגירה",
+    "softask_title_offers": "שנעדכן אתכם כשיענו?",
+    "softask_body_offers": "ההצעה נשלחה. נשלח לכם התראה ברגע שהלקוח יגיב.",
+    "softask_title_client": "שנעדכן אתכם כשיגיעו הצעות?",
+    "softask_body_client": "הפרויקט פורסם. נשלח לכם התראה ברגע שתגיע הצעת מחיר.",
+    "softask_allow": "הפעלת התראות",
+    "softask_not_now": "לא עכשיו"
+  },
   "settings": {
     "language": "שפה",
     "appearance": "מראה",

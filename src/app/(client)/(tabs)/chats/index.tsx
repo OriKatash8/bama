@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Search, MessageCircle, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,9 @@ import { Screen } from '@components/layout/Screen';
 import { PageTitle } from '@components/ui/PageTitle';
 import { EmptyState } from '@components/ui/EmptyState';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useUiStore } from '@core/stores/uiStore';
+import { NotifSoftAskModal } from '@features/notifications/components/NotifSoftAskModal';
+import { useNotifSoftAsk } from '@features/notifications/hooks/useNotifSoftAsk';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
@@ -28,6 +31,18 @@ export default function ChatsPage() {
   const router = useRouter();
   const tr = language === 'he' ? he : en;
   const rtl = language === 'he';
+
+  // The publish flow navigates straight here, so the soft-ask lands on arrival
+  // rather than on the summary screen it would unmount with. Same nonce the Home
+  // builder uses to clear its form.
+  const softAsk = useNotifSoftAsk();
+  const projectSubmittedNonce = useUiStore((s) => s.projectSubmittedNonce);
+  const seenSubmitNonce = useRef(projectSubmittedNonce);
+  useEffect(() => {
+    if (projectSubmittedNonce === seenSubmitNonce.current) return;
+    seenSubmitNonce.current = projectSubmittedNonce;
+    softAsk.ask('client');
+  }, [projectSubmittedNonce, softAsk]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { chats, loading } = useUserChats();
@@ -85,6 +100,8 @@ export default function ChatsPage() {
           />
         </>
       )}
+
+      <NotifSoftAskModal context={softAsk.context} onClose={softAsk.close} />
     </Screen>
   );
 }

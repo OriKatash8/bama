@@ -133,7 +133,11 @@ export default function NotificationsSettings() {
               {t('settings.notif_perm_on')}
             </AppText>
           </View>
-        ) : perm.status === 'denied' ? (
+        ) : perm.status === 'denied' && !perm.canAskAgain ? (
+          // Deep-link to Settings ONLY when the OS will not show its dialog again —
+          // iOS after a decline. Android generally keeps canAskAgain true, and a
+          // re-request there still works, so those users fall through to the
+          // "enable" branch instead of a pointless trip to system Settings.
           <>
             <AppText weight="regular" style={[styles.permText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
               {t('settings.notif_perm_denied_text')}

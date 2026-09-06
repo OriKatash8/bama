@@ -7,6 +7,10 @@ import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { NoticeHistorySheet } from '@features/noticeboard/components/NoticeHistorySheet';
+import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
+import { NotifSoftAskModal } from '@features/notifications/components/NotifSoftAskModal';
+import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
+import { useNotifSoftAsk } from '@features/notifications/hooks/useNotifSoftAsk';
 import { useSentOffers } from '@features/offers/hooks/useSentOffers';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
 import { SlotBlockedSheet } from '@features/pricing/components/SlotBlockedSheet';
@@ -143,6 +147,8 @@ export default function DashboardScreen() {
   // Same hook instance the history badge already used — `offers` comes free, so
   // the "have I bid on this?" check costs no extra query or listener.
   const { pendingCount, offers: sentOffers } = useSentOffers();
+  const notifPrompt = useNotifPermissionPrompt();
+  const softAsk = useNotifSoftAsk();
   const [draftSort, setDraftSort] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
   const [draftRole, setDraftRole] = useState<string | null>(null);
 
@@ -301,6 +307,9 @@ export default function DashboardScreen() {
 
   function handleApply(_request: ProjectRequest) {
     showToast(t('noticeboard.offer_submitted'), 'success');
+    // A moment of intent: they just asked a client for work and will want to know
+    // the reply. No-ops unless the OS prompt has never been shown.
+    softAsk.ask('offers');
     // Deliberately NOT dismiss(): that wrote dismissedNotices, hiding the whole
     // project permanently because the pro bid on one of its roles. The notice now
     // drops out on its own once every slot they match is bid on — see `biddable`.
@@ -319,6 +328,10 @@ export default function DashboardScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {notifPrompt.visible && pendingCount > 0 && (
+          <NotifPermissionBanner context="offers" onDismiss={notifPrompt.dismiss} />
+        )}
+
         {/* ── Notice board ── */}
         <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <View style={{ flex: 1 }}>
@@ -618,6 +631,8 @@ export default function DashboardScreen() {
 
       {/* Sent-offers + hidden-projects history */}
       <NoticeHistorySheet visible={historyOpen} onClose={() => setHistoryOpen(false)} onRestored={undismiss} />
+
+      <NotifSoftAskModal context={softAsk.context} onClose={softAsk.close} />
     </Screen>
   );
 }

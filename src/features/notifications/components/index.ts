@@ -1,1 +1,2 @@
-﻿// components will be exported from here
+export { NotifPermissionBanner } from './NotifPermissionBanner';
+export { NotifSoftAskModal, type SoftAskContext } from './NotifSoftAskModal';

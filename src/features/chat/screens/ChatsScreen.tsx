@@ -19,6 +19,8 @@ import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import type { MarketplaceListingType } from '@features/marketplace/types';
 import { listenToMyFees } from '@features/pricing/services/feesService';
 import { owesFee, outstandingFee } from '@features/pricing/utils/fee';
+import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
+import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 
 type ProjectStatus = ProjectRequest['status'];
 type ProjectRoleInfo = {
@@ -140,6 +142,7 @@ export function ChatsScreen({
   const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
   const fetchedPurchaseChatIdsRef = useRef<Set<string>>(new Set());
   const [chatFilter, setChatFilter] = useState<ChatFilter>('all');
+  const notifPrompt = useNotifPermissionPrompt();
   /** Bumped on focus to re-run the project fetch after its cache is invalidated. */
   const [refreshTick, setRefreshTick] = useState(0);
   /** Latest projectInfo, readable from a stable-identity focus callback. */
@@ -630,15 +633,22 @@ export function ChatsScreen({
     </ScrollView>
   );
 
+  // Only where the loss is concrete: something is unread and nobody was told.
+  const hasUnread = visibleChats.some((c) => (c.unreadCount?.[user?.id ?? ''] ?? 0) > 0);
+  const notifBanner = notifPrompt.visible && hasUnread
+    ? <NotifPermissionBanner context="chats" onDismiss={notifPrompt.dismiss} />
+    : null;
+
   if (scrollable) {
     return (
       <ScrollView style={styles.flex} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+        {notifBanner}
         {filterRow}
         {emptyBody ?? cards}
       </ScrollView>
     );
   }
-  return <View style={styles.listContent}>{filterRow}{emptyBody ?? cards}</View>;
+  return <View style={styles.listContent}>{notifBanner}{filterRow}{emptyBody ?? cards}</View>;
 }
 
 const styles = StyleSheet.create({

@@ -6,7 +6,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useModerationStore } from '@core/stores/moderationStore';
 import { onAuthChange, signOut } from '@core/firebase/auth';
 import { getDocument, updateDocument, setDocument } from '@core/firebase/firestore';
-import { registerForPushNotifications } from '@core/notifications/registerForPushNotifications';
+import { registerIfGranted } from '@core/notifications/registerForPushNotifications';
 import i18n from '@core/i18n';
 import type { User } from '@core/types/user';
 
@@ -59,9 +59,16 @@ export function useAuth() {
           // one device, so a conditional write would leave the previous user's
           // id on the doc and old notifications would keep arriving. Never
           // blocks sign-in; no-ops on web/simulator (token is null).
+          //
+          // registerIfGranted, NOT registerForPushNotifications: the latter
+          // REQUESTS permission as a side effect, which put the iOS dialog here —
+          // on login and every cold launch, before the user had any reason to say
+          // yes. iOS shows that dialog once ever, so a decline here was permanent.
+          // Asking now happens at a moment of intent; this path only claims a
+          // token for users who already granted.
           void (async () => {
-            const token = await registerForPushNotifications();
-            console.log('[push] registerForPushNotifications returned:', token);
+            const token = await registerIfGranted();
+            console.log('[push] registerIfGranted returned:', token);
             if (!token) return;
             try {
               await setDocument(`pushTokens/${token}`, {

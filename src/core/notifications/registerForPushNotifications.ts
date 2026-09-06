@@ -64,6 +64,22 @@ export async function requestNotificationPermission(): Promise<NotifPermissionSt
   }
 }
 
+/**
+ * Claim the device token WITHOUT ever showing the OS prompt.
+ *
+ * `registerForPushNotifications` requests permission as a side effect, so it can
+ * never be used merely to "check and register" — calling it on app launch is what
+ * put the iOS dialog in front of users before they had a reason to say yes, and on
+ * iOS that dialog is spent after one showing. This is the variant the auth path
+ * uses: already-granted users keep registering, nobody new is prompted.
+ */
+export async function registerIfGranted(): Promise<string | null> {
+  if (!Device.isDevice) return null;
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') return null;
+  return fetchAndCacheToken();
+}
+
 export async function registerForPushNotifications(): Promise<string | null> {
   console.log('[push] isDevice:', Device.isDevice);
   if (!Device.isDevice) return null;
@@ -77,6 +93,11 @@ export async function registerForPushNotifications(): Promise<string | null> {
   console.log('[push] permission status:', finalStatus);
   if (finalStatus !== 'granted') return null;
 
+  return fetchAndCacheToken();
+}
+
+/** Token fetch + cache + Android channel. Assumes permission is already granted. */
+async function fetchAndCacheToken(): Promise<string | null> {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   console.log('[push] projectId:', projectId);
   if (!projectId) return null;

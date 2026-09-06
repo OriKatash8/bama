@@ -1,1 +1,2 @@
-﻿// hooks will be exported from here
+export { useNotifPermissionPrompt } from './useNotifPermissionPrompt';
+export { useNotifSoftAsk } from './useNotifSoftAsk';

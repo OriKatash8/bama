@@ -864,6 +864,18 @@
     "client_mode": "Client",
     "pro_mode": "Creator"
   },
+  "notif_prompt": {
+    "banner_title": "Notifications are off",
+    "banner_body_chats": "You have unread messages. Turn notifications on to know the moment someone replies.",
+    "banner_body_offers": "You have offers waiting on a reply. Turn notifications on to know the moment a client responds.",
+    "dismiss": "Dismiss",
+    "softask_title_offers": "Want to know when they reply?",
+    "softask_body_offers": "Your offer is in. We'll notify you the moment the client responds.",
+    "softask_title_client": "Want to know when offers arrive?",
+    "softask_body_client": "Your project is live. We'll notify you the moment an offer comes in.",
+    "softask_allow": "Turn on notifications",
+    "softask_not_now": "Not now"
+  },
   "settings": {
     "language": "Language",
     "appearance": "Appearance",
