@@ -50,7 +50,9 @@ interface Props {
   onRequestCommunity: () => void;
 }
 
-function CommunityAvatar({ community, size = 46 }: { community: Chat; size?: number }) {
+/** Exported so the community details page renders the SAME avatar — the gradient
+ *  fallback is hashed off the community id, so a second copy would drift. */
+export function CommunityAvatar({ community, size = 46 }: { community: Chat; size?: number }) {
   const radius = Math.round(size * 0.26);
   const marginStyle = {};
   if (community.photoURL) {

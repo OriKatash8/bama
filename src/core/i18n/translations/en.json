@@ -175,7 +175,8 @@
     "filter_open": "Active",
     "filter_completed": "Completed",
     "filter_marketplace": "Marketplace",
-    "empty_filter_title": "No chats match this filter"
+    "empty_filter_title": "No chats match this filter",
+    "click_for_community_info": "Tap for community details"
   },
   "project_details": {
     "header": "Project Details",
@@ -1017,5 +1018,19 @@
     "submit": "Submit & Complete",
     "required_stars": "Please select a rating",
     "required_text": "Please write at least 10 characters"
+  },
+  "community_details": {
+    "header": "Community details",
+    "about": "About",
+    "members": "Members",
+    "owner": "Owner",
+    "notifications": "Notifications",
+    "mute_label": "Mute this community",
+    "mute_note": "While muted you will not be notified about new messages in this community.",
+    "leave": "Leave community",
+    "leave_confirm_title": "Leave community",
+    "leave_confirm_body": "Leave this community? You will need to send a new join request to come back.",
+    "owner_cannot_leave": "The community owner cannot leave. Contact support to close the community or hand it over.",
+    "not_found": "Community not found"
   }
 }

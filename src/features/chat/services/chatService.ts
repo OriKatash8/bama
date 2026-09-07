@@ -178,6 +178,27 @@ export async function removeMemberFromGroup(chatId: string, userId: string): Pro
   });
 }
 
+/**
+ * Per-chat notification mute, stored on the USER doc rather than the chat.
+ *
+ * `users/{uid}.mutedChats` is a list of chat ids the user has silenced. The
+ * onNewCommunityMessage trigger reads it before creating a notification, so a mute
+ * suppresses the in-app bell as well as the push. Kept on the user doc because
+ * `users/{uid}` update is already permitted for its owner — putting it on the chat
+ * would need a new rule and would let every member read everyone else's choice.
+ */
+export async function muteChat(userId: string, chatId: string): Promise<void> {
+  await updateDoc(doc(db, 'users', userId), {
+    mutedChats: arrayUnion(chatId),
+  });
+}
+
+export async function unmuteChat(userId: string, chatId: string): Promise<void> {
+  await updateDoc(doc(db, 'users', userId), {
+    mutedChats: arrayRemove(chatId),
+  });
+}
+
 export function listenToUserChats(
   userId: string,
   callback: (chats: Chat[]) => void

@@ -24,6 +24,10 @@ export type User = {
   ageConfirmed?: boolean;
   /** Unix ms timestamp of the age confirmation. */
   ageConfirmedAt?: number | null;
+  /** Chat ids the user has silenced. Read by the onNewCommunityMessage trigger
+   *  before creating a notification, so a mute suppresses the in-app bell as
+   *  well as the push. Written by muteChat/unmuteChat. */
+  mutedChats?: string[];
 };
 
 /** Snapshot of the latest enforcement action against a user. `warned` is a

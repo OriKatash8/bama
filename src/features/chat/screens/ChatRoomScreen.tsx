@@ -1253,6 +1253,17 @@ export function ChatRoomScreen({ chatId }: Props) {
               </AppText>
               <AppText style={chatStyles.headerHint}>{t('chats.purchase_info_hint')}</AppText>
             </TouchableOpacity>
+          ) : chatType === 'community' ? (
+            <TouchableOpacity
+              style={styles.headerNameTouchable}
+              onPress={() => router.push(`/(client)/(tabs)/chats/community-details?chatId=${chatId}`)}
+              activeOpacity={0.8}
+            >
+              <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+                {chatName}
+              </AppText>
+              <AppText style={chatStyles.headerHint}>{t('chats.click_for_community_info')}</AppText>
+            </TouchableOpacity>
           ) : (
             <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}

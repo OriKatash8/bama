@@ -82,6 +82,93 @@ export const onNewChatMessage = functions.firestore
     );
   });
 
+/**
+ * Community messages live one level deeper than every other chat message —
+ * `chats/{chatId}/channels/{channelId}/messages/{messageId}` — because a community
+ * is split into channels (ChatRoomScreen `handleSend`). A `{chatId}` wildcard
+ * matches exactly one path segment, so onNewChatMessage above never sees them and
+ * communities notified nobody at all until this trigger existed.
+ *
+ * Kept deliberately parallel to onNewChatMessage: same sender lookup, same media
+ * body branches, same members fan-out from the PARENT chat doc. If you change the
+ * body wording there, change it here too.
+ */
+export const onNewCommunityMessage = functions.firestore
+  .document('chats/{chatId}/channels/{channelId}/messages/{messageId}')
+  .onCreate(async (snap, context) => {
+    const message = snap.data() as {
+      senderId?: string;
+      text?: string;
+      imageURL?: string;
+      audioUrl?: string;
+      videoUrl?: string;
+      system?: boolean;
+    };
+
+    if (!message.senderId) return;
+    if (message.system || message.senderId === 'system' || message.senderId === SYSTEM_USER_ID) return;
+
+    const { chatId, channelId } = context.params;
+    const db = admin.firestore();
+
+    const [senderDoc, chatDoc, channelDoc] = await Promise.all([
+      db.collection('users').doc(message.senderId).get(),
+      db.collection('chats').doc(chatId).get(),
+      db.collection('chats').doc(chatId).collection('channels').doc(channelId).get(),
+    ]);
+
+    if (!chatDoc.exists) return;
+    // The path is community-shaped, but guard on the type anyway so this can never
+    // double-fire alongside onNewChatMessage if channels are ever added elsewhere.
+    if (chatDoc.data()?.type !== 'community') return;
+
+    const senderName: string = (senderDoc.data()?.displayName as string | undefined) ?? 'BAMA';
+    const communityName: string = (chatDoc.data()?.name as string | undefined) ?? '';
+    const channelName: string = (channelDoc.data()?.name as string | undefined) ?? '';
+    const members: string[] = (chatDoc.data()?.members as string[] | undefined) ?? [];
+
+    let body: string;
+    if (message.imageURL) {
+      body = 'שלח לך תמונה';
+    } else if (message.audioUrl) {
+      body = 'שלח לך הודעה קולית';
+    } else if (message.videoUrl) {
+      body = 'שלח לך וידאו';
+    } else {
+      const text = message.text ?? '';
+      body = text.length > 100 ? text.slice(0, 97) + '...' : text;
+    }
+
+    // Unlike a DM, the sender's name alone does not say where the message came
+    // from, so the community (and channel, when named) leads the title.
+    const title = communityName
+      ? channelName
+        ? `${communityName} · ${channelName}`
+        : communityName
+      : senderName;
+    const bodyLine = communityName ? `${senderName}: ${body}` : body;
+
+    const recipients = members.filter((uid) => uid !== message.senderId);
+    await Promise.all(
+      recipients.map(async (userId) => {
+        // Per-community mute. Checked HERE rather than in onNotificationCreate so
+        // it suppresses the in-app bell as well as the push — "cancel notifications
+        // from this community" means both. Same reasoning as the 'project' pref
+        // gate below: no point writing a doc the sender would only read to discard.
+        const userDoc = await db.collection('users').doc(userId).get();
+        const muted = (userDoc.data()?.mutedChats as string[] | undefined) ?? [];
+        if (muted.includes(chatId)) return;
+
+        await createNotification(db, {
+          userId,
+          title,
+          message: bodyLine,
+          data: { type: 'message', chatId, channelId },
+        });
+      })
+    );
+  });
+
 export const onNewPriceOffer = functions.firestore
   .document('priceOffers/{offerId}')
   .onCreate(async (snap, context) => {

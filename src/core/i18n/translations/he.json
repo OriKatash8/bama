@@ -175,7 +175,8 @@
     "filter_open": "פעילים",
     "filter_completed": "הושלמו",
     "filter_marketplace": "שוק יד שנייה",
-    "empty_filter_title": "אין צ׳אטים בסינון הזה"
+    "empty_filter_title": "אין צ׳אטים בסינון הזה",
+    "click_for_community_info": "לחצו לפרטי הקהילה"
   },
   "project_details": {
     "header": "פרטי פרויקט",
@@ -1017,5 +1018,19 @@
     "submit": "שלח והשלם",
     "required_stars": "אנא בחר דירוג",
     "required_text": "אנא כתוב לפחות 10 תווים"
+  },
+  "community_details": {
+    "header": "פרטי הקהילה",
+    "about": "אודות",
+    "members": "חברי הקהילה",
+    "owner": "מנהל",
+    "notifications": "התראות",
+    "mute_label": "השתקת התראות מהקהילה",
+    "mute_note": "כשההשתקה פעילה לא יתקבלו התראות על הודעות חדשות בקהילה הזו.",
+    "leave": "יציאה מהקהילה",
+    "leave_confirm_title": "יציאה מהקהילה",
+    "leave_confirm_body": "לצאת מהקהילה? כדי לחזור יהיה צורך לשלוח בקשת הצטרפות חדשה.",
+    "owner_cannot_leave": "מנהל הקהילה לא יכול לצאת ממנה. לסגירת הקהילה או להעברת הניהול יש לפנות לתמיכה.",
+    "not_found": "הקהילה לא נמצאה"
   }
 }
