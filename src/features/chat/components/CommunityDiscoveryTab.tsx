@@ -169,13 +169,11 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
 
       {myCommunities.length === 0 ? (
         <>
-          <AppText weight="regular" style={[styles.empty, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
-            {t('communities.no_communities')}
-          </AppText>
           {/* Illustrative filler so the strip has the shape it will have once the
-              user joins something. Deliberately inert — plain Views, no press
-              handler — so a tap does nothing rather than failing to open a chat
-              that does not exist. */}
+              user joins something. Each tile is labelled "Example", which is what
+              now carries the "you are not in any yet" meaning — deliberately inert
+              too: plain Views, no press handler, so a tap does nothing rather than
+              failing to open a chat that does not exist. */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -183,7 +181,19 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
           >
             {Array.from({ length: PLACEHOLDER_COMMUNITY_COUNT }, (_, i) => (
               <View key={i} style={styles.stripItem} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                <View style={styles.placeholderSquare} />
+                <View style={styles.placeholderSquare}>
+                  {/* Where a real community shows its initial. Shrinks to fit so
+                      "Example" and "לדוגמה" both stay on one line inside 60pt. */}
+                  <AppText
+                    weight="semiBold"
+                    style={styles.placeholderSquareText}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
+                    {t('communities.placeholder_example')}
+                  </AppText>
+                </View>
                 {/* One row always. "Community 1" overflows the 64pt tile at the
                     shared size while "קהילה 1" does not, so the label shrinks to
                     fit rather than wrapping — the real strip titles keep two
@@ -391,7 +401,6 @@ const styles = StyleSheet.create({
   container: { padding: 16, paddingTop: 8 },
   sectionRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   sectionLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  empty: { fontSize: 14, marginBottom: 8 },
   card: { backgroundColor: '#ffffff', borderRadius: 16, padding: 13, marginBottom: 12 },
   cardRow: { alignItems: 'center', gap: 12 },
   textGroup: { flex: 1 },
@@ -454,7 +463,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
+  placeholderSquareText: { fontSize: 11, color: 'rgba(0,74,173,0.55)' },
   stripArrow: {
     position: 'absolute',
     top: 20,
