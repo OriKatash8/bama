@@ -3,8 +3,9 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, monthKey, parseDeadline, daysFromNow, requireAuth, feeRef } from './helpers';
 import { assignFilledCapability } from '../matching';
 import {
-  NON_SUBSCRIBER_SLOT_CAP, SUBSCRIBER_MONTHLY_LIMIT, PLATFORM_FEE_RATE, DEFAULT_PROJECT_DURATION_DAYS,
+  PLATFORM_FEE_RATE, DEFAULT_PROJECT_DURATION_DAYS, NON_SUBSCRIBER_SLOT_CAP,
   canHireOnStatus, isOfferPriceValid,
+  hireConsumesNewSlot, atSlotCap, atMonthlyLimit, monthCountFor,
 } from '../pricing';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
@@ -59,21 +60,30 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   // commitHire) so the immutable lock is decided before the batch runs.
   const existingFeeSnap = await feeRef(projectId, proId).get();
 
-  if (isSubscriber) {
-    const count = sub?.monthKey === thisMonth ? (Number(sub?.monthCount) || 0) : 0;
-    if (count >= SUBSCRIBER_MONTHLY_LIMIT) throw new HttpsError('resource-exhausted', 'monthly-limit-reached');
-  } else {
-    // Projects where THIS pro still occupies a slot. Per-pro: another pro settling
-    // their own fee must not free this pro's slot. Single-field array-contains —
-    // no composite index needed.
-    const active = await db
-      .collection('projects')
-      .where('slotHolders', 'array-contains', proId)
-      .limit(NON_SUBSCRIBER_SLOT_CAP + 1)
-      .get();
-    if (active.size >= NON_SUBSCRIBER_SLOT_CAP) throw new HttpsError('resource-exhausted', 'slot-cap-reached');
+  // A second role on a project this pro already holds a slot on consumes nothing —
+  // see hireConsumesNewSlot for why this must come BEFORE the cap query, and why
+  // it keys on slotHolders rather than professionalIds.
+  const consumesNewSlot = hireConsumesNewSlot(project.slotHolders as string[] | undefined, proId);
+
+  if (consumesNewSlot) {
+    if (isSubscriber) {
+      if (atMonthlyLimit(monthCountFor(sub, thisMonth))) {
+        throw new HttpsError('resource-exhausted', 'monthly-limit-reached');
+      }
+    } else {
+      // Projects where THIS pro still occupies a slot. Per-pro: another pro settling
+      // their own fee must not free this pro's slot. Single-field array-contains —
+      // no composite index needed. Not reached when the pro already holds a slot
+      // here, so the query never counts the project being hired onto.
+      const active = await db
+        .collection('projects')
+        .where('slotHolders', 'array-contains', proId)
+        .limit(NON_SUBSCRIBER_SLOT_CAP + 1)
+        .get();
+      if (atSlotCap(active.size)) throw new HttpsError('resource-exhausted', 'slot-cap-reached');
+    }
   }
-  return { projSnap, project, subSnap, sub, isSubscriber, thisMonth, existingFeeSnap };
+  return { projSnap, project, subSnap, sub, isSubscriber, thisMonth, existingFeeSnap, consumesNewSlot };
 }
 
 /**
@@ -95,13 +105,15 @@ async function commitHire(args: {
   isSubscriber: boolean;
   thisMonth: string;
   existingFeeSnap: admin.firestore.DocumentSnapshot;
+  /** False when the pro already held a slot here — see hireConsumesNewSlot. */
+  consumesNewSlot: boolean;
   filledEntries: Filled[];
   amount: number;
   acceptWrites: (batch: Batch) => void;
 }): Promise<string> {
   const {
     projSnap, project, proId, subSnap, sub, isSubscriber, thisMonth,
-    existingFeeSnap, filledEntries, amount, acceptWrites,
+    existingFeeSnap, consumesNewSlot, filledEntries, amount, acceptWrites,
   } = args;
   const batch = db.batch();
   acceptWrites(batch);
@@ -170,8 +182,12 @@ async function commitHire(args: {
   }
   batch.set(feeRef(projSnap.id, proId), feeUpdate, { merge: true });
 
-  if (isSubscriber) {
-    const base = sub?.monthKey === thisMonth ? (Number(sub?.monthCount) || 0) : 0;
+  // Only a hire that actually takes a new slot burns a monthly credit. A second
+  // role on a project already counted must not: without this a subscriber taking
+  // two roles on one project spent 2 of their 10, while the SAME work quoted as a
+  // bundle spent 1 — one commitHire either way. Identical work, identical cost.
+  if (isSubscriber && consumesNewSlot) {
+    const base = monthCountFor(sub, thisMonth);
     batch.set(subSnap.ref, { monthKey: thisMonth, monthCount: base + 1 }, { merge: true });
   }
 

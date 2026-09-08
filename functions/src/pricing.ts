@@ -75,6 +75,55 @@ export function isOfferPriceValid(price: unknown): price is number {
     && price <= MAX_OFFER_PRICE;
 }
 
+/**
+ * Does hiring this professional onto this project consume a NEW slot?
+ *
+ * No, when they already hold one here from an earlier role: `slotHolders` is a
+ * set maintained with arrayUnion, so a second role adds nothing. A slot means
+ * "one project this pro is engaged on", not "one role".
+ *
+ * This has to be consulted BEFORE the cap query, because that query counts
+ * `slotHolders array-contains proId` WITHOUT excluding the project being hired
+ * onto. A pro already holding a role here therefore counted themselves, and was
+ * effectively capped at NON_SUBSCRIBER_SLOT_CAP - 1 OTHER projects: at a cap of
+ * 2, being on one other project made a second different-category offer fail with
+ * `slot-cap-reached` even though the write would have changed nothing.
+ *
+ * Keyed on `slotHolders`, NOT `professionalIds`, deliberately. A pro who settled
+ * their fee early LEAVES slotHolders but stays in professionalIds; re-hiring them
+ * genuinely does need a slot again, and the fee branch in hire.ts already treats
+ * that as a real re-hire. Keying on professionalIds would hand every settled pro
+ * a free extra engagement.
+ */
+export function hireConsumesNewSlot(
+  slotHolders: readonly string[] | undefined,
+  proId: string,
+): boolean {
+  return !(slotHolders ?? []).includes(proId);
+}
+
+/** Non-subscriber: at the cap given the number of projects where they hold a slot. */
+export function atSlotCap(slotProjectCount: number): boolean {
+  return slotProjectCount >= NON_SUBSCRIBER_SLOT_CAP;
+}
+
+/** Subscriber: at the monthly free-project limit. */
+export function atMonthlyLimit(monthCount: number): boolean {
+  return monthCount >= SUBSCRIBER_MONTHLY_LIMIT;
+}
+
+/**
+ * This month's counter off a subscription doc, resetting on a month rollover.
+ * Shared by the pre-hire check and the post-hire increment so the two can never
+ * read it differently.
+ */
+export function monthCountFor(
+  sub: { monthKey?: unknown; monthCount?: unknown } | null | undefined,
+  thisMonth: string,
+): number {
+  return sub?.monthKey === thisMonth ? (Number(sub?.monthCount) || 0) : 0;
+}
+
 /** True when a project in this status may still be hired on. */
 export function canHireOnStatus(status: unknown): boolean {
   return typeof status === 'string' && (HIREABLE_STATUSES as readonly string[]).includes(status);
