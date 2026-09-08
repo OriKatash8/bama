@@ -151,6 +151,19 @@ function formatHebMeetingDetail(text: string): string {
 
 type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'neutral';
 
+/**
+ * Which section of project-details a system message opens. Keyed by the variant
+ * parseSystemMessage derives from the text, so no new field is needed on the
+ * message document and existing messages become tappable too.
+ *
+ * 'neutral' is absent on purpose: it has no section to open.
+ */
+const SYSTEM_SECTION: Partial<Record<SystemVariant, 'missions' | 'meetings' | 'payments'>> = {
+  mission: 'missions',
+  meeting: 'meetings',
+  price_change: 'payments',
+};
+
 function parseSystemMessage(text: string): { variant: SystemVariant; headline: string; detail: string } {
   if (text.startsWith('📅')) {
     return { variant: 'meeting', headline: 'פגישה חדשה נקבעה', detail: formatHebMeetingDetail(text) };
@@ -1386,27 +1399,46 @@ export function ChatRoomScreen({ chatId }: Props) {
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
               const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' ? '#1c9d63' : '#1e4fa3';
+              // Each known kind names a section of project-details. 'neutral' has
+              // nowhere to go — that is "X left the project" and the purchase-chat
+              // notices — and a chat with no projectId has no details screen at
+              // all, so both stay inert rather than navigating nowhere.
+              const targetSection = SYSTEM_SECTION[variant];
+              const canOpen = !!targetSection && !!chatProjectId;
+              const pill = (
+                <View style={[
+                  styles.systemPill,
+                  variant === 'mission' ? styles.systemPillMission : variant === 'price_change' ? styles.systemPillPrice : styles.systemPillMeeting,
+                  { flexDirection: rtl ? 'row-reverse' : 'row' },
+                ]}>
+                  {variant === 'mission'
+                    ? <CheckSquare size={16} color={accent} strokeWidth={2} />
+                    : variant === 'price_change'
+                      ? <Coins size={16} color={accent} strokeWidth={2} />
+                      : <Calendar size={16} color={accent} strokeWidth={2} />}
+                  <View style={{ flexShrink: 1 }}>
+                    <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
+                      {headline}
+                    </AppText>
+                    {!!detail && (
+                      <AppText weight="regular" style={styles.systemDetail}>{detail}</AppText>
+                    )}
+                  </View>
+                </View>
+              );
               return (
                 <View style={styles.systemWrapper}>
-                  <View style={[
-                    styles.systemPill,
-                    variant === 'mission' ? styles.systemPillMission : variant === 'price_change' ? styles.systemPillPrice : styles.systemPillMeeting,
-                    { flexDirection: rtl ? 'row-reverse' : 'row' },
-                  ]}>
-                    {variant === 'mission'
-                      ? <CheckSquare size={16} color={accent} strokeWidth={2} />
-                      : variant === 'price_change'
-                        ? <Coins size={16} color={accent} strokeWidth={2} />
-                        : <Calendar size={16} color={accent} strokeWidth={2} />}
-                    <View style={{ flexShrink: 1 }}>
-                      <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
-                        {headline}
-                      </AppText>
-                      {!!detail && (
-                        <AppText weight="regular" style={styles.systemDetail}>{detail}</AppText>
+                  {canOpen ? (
+                    <TouchableOpacity
+                      onPress={() => router.push(
+                        `/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}&section=${targetSection}`,
                       )}
-                    </View>
-                  </View>
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                    >
+                      {pill}
+                    </TouchableOpacity>
+                  ) : pill}
                 </View>
               );
             }

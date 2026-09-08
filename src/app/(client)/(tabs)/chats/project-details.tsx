@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -117,7 +117,9 @@ function formatShortDate(iso: string): string {
 }
 
 export default function ProjectDetailsScreen() {
-  const { projectId, chatId: chatIdParam } = useLocalSearchParams<{ projectId: string; chatId: string }>();
+  const { projectId, chatId: chatIdParam, section } = useLocalSearchParams<{
+    projectId: string; chatId: string; section?: string;
+  }>();
   const router = useRouter();
   const colors = useTheme();
   const font = useAppFont();
@@ -185,6 +187,39 @@ export default function ProjectDetailsScreen() {
     } catch (err) {
       console.error('[ProjectDetails] edit deadline failed:', err);
     }
+  }
+
+  /**
+   * Deep link from a system message in the chat: `?section=missions|meetings|payments`
+   * scrolls to that block once it has laid out.
+   *
+   * Sections report their own y through onLayout rather than being measured,
+   * because they render conditionally and at different times — missions and
+   * meetings stream in from listeners, and the payments block only exists while a
+   * request is pending. That also means a section arriving late still scrolls: the
+   * handler fires whenever it lands.
+   *
+   * `scrolledRef` makes it fire ONCE. Without it every re-render — a listener
+   * tick, a keystroke in a modal — would yank the view back.
+   */
+  const scrollRef = useRef<ScrollView>(null);
+  const scrolledRef = useRef(false);
+
+  function onSectionLayout(name: string) {
+    return (e: { nativeEvent: { layout: { y: number } } }) => {
+      if (scrolledRef.current || section !== name) return;
+      scrolledRef.current = true;
+      // Read y NOW, not inside the callback below. React Native releases the
+      // synthetic event as soon as this handler returns, so `e.nativeEvent` is
+      // null by the next frame — reaching into it there threw
+      // "Cannot read property 'layout' of null".
+      const y = e.nativeEvent.layout.y;
+      // A frame's grace so the block below the header has laid out too, otherwise
+      // the offset is measured against a half-built list.
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+      });
+    };
   }
 
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
@@ -899,7 +934,7 @@ export default function ProjectDetailsScreen() {
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
 
-      <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View style={[styles.header, { marginHorizontal: -16, marginTop: -16 }]}>
@@ -1087,7 +1122,7 @@ export default function ProjectDetailsScreen() {
 
         {/* SECTION 3 — Missions */}
         {(() => (
-          <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+          <View onLayout={onSectionLayout('missions')} style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
             <View style={[styles.sectionTitleGroup, { flexDirection: rowDirection }]}>
               <AppText weight="bold" style={styles.sectionTitle}>{t('project_details.missions')}</AppText>
               {missions.length > 0 && (
@@ -1231,7 +1266,7 @@ export default function ProjectDetailsScreen() {
 
         {/* SECTION 4 — Meetings */}
         {(() => (
-          <View style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
+          <View onLayout={onSectionLayout('meetings')} style={[styles.sectionHeaderRow, { flexDirection: rowDirection }]}>
             <View style={[styles.sectionTitleGroup, { flexDirection: rowDirection }]}>
               <AppText weight="bold" style={styles.sectionTitle}>{t('project_details.meetings')}</AppText>
               {meetings.length > 0 && (
@@ -1341,9 +1376,12 @@ export default function ProjectDetailsScreen() {
         {/* Pending payment-update requests */}
         {paymentRequests.length > 0 && (
           <>
-            <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 8, marginBottom: 4 }]}>
-              {t('project_details.price_requests')}
-            </AppText>
+            {/* Wrapper exists only to carry onLayout — a fragment cannot. */}
+            <View onLayout={onSectionLayout('payments')}>
+              <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 8, marginBottom: 4 }]}>
+                {t('project_details.price_requests')}
+              </AppText>
+            </View>
             {incomingRequests.map((req) => {
               const fromName = allMemberNames[req.fromUserId] ?? req.fromUserId;
               const isResponding = respondingId === req.id;
