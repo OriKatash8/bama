@@ -4,6 +4,7 @@ import { db, FieldValue, monthKey, parseDeadline, daysFromNow, requireAuth, feeR
 import { assignFilledCapability } from '../matching';
 import {
   NON_SUBSCRIBER_SLOT_CAP, SUBSCRIBER_MONTHLY_LIMIT, PLATFORM_FEE_RATE, DEFAULT_PROJECT_DURATION_DAYS,
+  canHireOnStatus, isOfferPriceValid,
 } from '../pricing';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
@@ -34,6 +35,18 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   // self-review and the subscriber monthCount increment intact.
   if (proId === project.clientId) {
     throw new HttpsError('failed-precondition', 'cannot-hire-yourself');
+  }
+
+  // A completed or cancelled project is closed to new hires. Without this a hire
+  // could land AFTER cancelProject had emptied `slotHolders`, re-occupying a slot
+  // that nothing will ever free again and minting a fee doc on a dead project —
+  // which is the state iE5bnmC138mftNwdYvyg is stuck in.
+  //
+  // `failed-precondition`, NOT `resource-exhausted`: that code belongs to the cap
+  // and the monthly limit, and the client's hireErrorMessage branches on the
+  // message. Deliberately distinct so the client can say what actually happened.
+  if (!canHireOnStatus(project.status)) {
+    throw new HttpsError('failed-precondition', 'project-not-hireable');
   }
 
   const subSnap = await db.doc(`subscriptions/${proId}`).get();
@@ -265,6 +278,14 @@ export const hireProfessional = onCall(async (request) => {
     return { chatId: (p.data()?.chatId as string) ?? null, alreadyAccepted: true };
   }
   if (src.status !== 'pending') throw new HttpsError('failed-precondition', 'Offer/bundle is not pending');
+
+  // Backstop behind the submission UI and the security rules. The amount here
+  // becomes the fee base, so a typo that slipped past the other two layers — or
+  // an offer written before they existed — must not be hireable.
+  const srcPrice = (offerId ? src.price : src.bundlePrice) as unknown;
+  if (!isOfferPriceValid(srcPrice)) {
+    throw new HttpsError('failed-precondition', 'offer-price-out-of-range');
+  }
 
   const ctx = await loadAndEnforce(uid, projectId, proId);
   const prepared = offerId

@@ -14,6 +14,7 @@ import { useHiddenProjects } from '@features/noticeboard/hooks/useHiddenProjects
 import type { PriceOffer, BundleOffer } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -79,6 +80,10 @@ export function NoticeHistorySheet({
   async function saveEdit(entry: SentOfferEntry) {
     const price = Number(editValue);
     if (!Number.isFinite(price) || price <= 0) { showToast(t('history.invalid_price'), 'error'); return; }
+    if (price < MIN_OFFER_PRICE || price > MAX_OFFER_PRICE) {
+      showToast(t('noticeboard.price_out_of_range', { min: MIN_OFFER_PRICE.toLocaleString(), max: MAX_OFFER_PRICE.toLocaleString() }), 'error');
+      return;
+    }
     setSavingId(entry.id);
     try {
       const path = entry.kind === 'bundle' ? `bundleOffers/${entry.id}` : `priceOffers/${entry.id}`;

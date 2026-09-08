@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import { FieldValue as AdminFieldValue, Timestamp as AdminTimestamp } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { PLATFORM_FEE_RATE, TIMEZONE } from '../pricing';
+import { sumProAmount, type AcceptedOffer, type BundleSummary } from './proAmount';
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -108,20 +109,21 @@ export async function computeProAmount(projectId: string, proId: string): Promis
     .where('professionalId', '==', proId)
     .where('status', '==', 'accepted')
     .get();
-  const seenBundles = new Set<string>();
-  let total = 0;
-  for (const d of offersSnap.docs) {
-    const o = d.data() as { price?: number; bundleId?: string };
-    if (o.bundleId) {
-      if (seenBundles.has(o.bundleId)) continue;
-      seenBundles.add(o.bundleId);
-      const b = await db.collection('bundleOffers').doc(o.bundleId).get();
-      total += (b.data()?.bundlePrice as number | undefined) ?? 0;
-    } else {
-      total += o.price ?? 0;
-    }
-  }
-  return total;
+
+  const offers = offersSnap.docs.map((d) => d.data() as AcceptedOffer);
+
+  // Each distinct parent bundle is fetched ONCE, and its status comes with it —
+  // the previous version read `bundlePrice` without ever looking at whether the
+  // bundle had been accepted. See sumProAmount for why that mispriced.
+  const bundleIds = [...new Set(offers.map((o) => o.bundleId).filter((id): id is string => !!id))];
+  const bundleDocs = await Promise.all(
+    bundleIds.map((id) => db.collection('bundleOffers').doc(id).get()),
+  );
+  const bundles = new Map<string, BundleSummary | undefined>(
+    bundleIds.map((id, i) => [id, bundleDocs[i].data() as BundleSummary | undefined]),
+  );
+
+  return sumProAmount(offers, bundles);
 }
 
 /** The fee a pro owes on their own amount, rounded to the nearest shekel. Pure. */

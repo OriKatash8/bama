@@ -21,6 +21,7 @@ import { isOfferedSlot } from '@features/noticeboard/unoffered';
 import { translateCity } from '@core/utils/cityTranslations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 
 type Translations = typeof en;
 
@@ -123,10 +124,20 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   }
 
   const validBids = bids.filter((b) => b.selected && Number(b.price) > 0);
+  // Out of range is reported, not silently dropped. `validBids` filters on > 0,
+  // so an un-priced bid already disappears quietly; a mistyped one must not.
+  const outOfRangeBid = bids.some(
+    (b) => b.selected && Number(b.price) > 0
+      && (Number(b.price) < MIN_OFFER_PRICE || Number(b.price) > MAX_OFFER_PRICE),
+  );
   const individualTotal = validBids.reduce((sum, b) => sum + Number(b.price), 0);
   const canSubmit = validBids.length > 0 && !isSubmitting;
 
   function handleBidSubmit() {
+    if (outOfRangeBid) {
+      setBundleError(t('noticeboard.price_out_of_range', { min: MIN_OFFER_PRICE.toLocaleString(), max: MAX_OFFER_PRICE.toLocaleString() }));
+      return;
+    }
     if (validBids.length >= 2) {
       setBundlePrice('');
       setBundleError('');
@@ -157,6 +168,10 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
     const bp = Number(bundlePrice);
     if (!bundlePrice || isNaN(bp) || bp <= 0) {
       setBundleError(t('noticeboard.bundle_price_required'));
+      return;
+    }
+    if (bp < MIN_OFFER_PRICE || bp > MAX_OFFER_PRICE) {
+      setBundleError(t('noticeboard.price_out_of_range', { min: MIN_OFFER_PRICE.toLocaleString(), max: MAX_OFFER_PRICE.toLocaleString() }));
       return;
     }
     if (bp >= individualTotal) {

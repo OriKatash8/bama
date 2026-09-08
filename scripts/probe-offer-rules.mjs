@@ -109,6 +109,29 @@ for (const [label, mkP, st] of CASES) {
 for (const tag of ['client', 'pro', 'third']) {
   await upd('priceOffers', 'priceOffers', CHILD, 'l. CHILD -> accepted while parent bundle pending', tag, { status: 'accepted' }, 'pending');
 }
+// ── Price bounds ─────────────────────────────────────────────────────────────
+// The row that matters most: an offer ALREADY out of range (production holds a
+// ₪10,000,000 one) must still be declinable. Bounds are checked only when the
+// amount changes, precisely so the existing data is not stranded.
+async function priced(group, col, docId, label, tag, payload, expectAllow, seedPrice, seedStatus = 'pending') {
+  await seed(seedStatus);
+  const field = col === 'bundleOffers' ? 'bundlePrice' : 'price';
+  await adminDb.collection(col).doc(docId).update({ [field]: seedPrice });
+  await as(tag);
+  let allowed = true;
+  try { await updateDoc(doc(db, col, docId), payload); } catch { allowed = false; }
+  rows.push({ group, label: `${label} [want ${expectAllow ? 'ALLOW' : 'deny'}]`, tag, allowed });
+}
+await priced('price', 'priceOffers', OFFER, 'P1. decline an EXISTING ₪10,000,000 offer', 'client', { status: 'rejected' }, true, 10_000_000);
+await priced('price', 'priceOffers', OFFER, 'P2. edit an out-of-range offer DOWN to ₪900', 'pro', { price: 900, editedAt: new Date(), editCount: 1 }, true, 10_000_000);
+await priced('price', 'priceOffers', OFFER, 'P3. edit an out-of-range offer to another out-of-range value', 'pro', { price: 9_000_000 }, false, 10_000_000);
+await priced('price', 'priceOffers', OFFER, 'P4. edit a normal offer UP to ₪554,545', 'pro', { price: 554_545 }, false, 1000);
+await priced('price', 'priceOffers', OFFER, 'P5. edit a normal offer to exactly ₪50,000', 'pro', { price: 50_000 }, true, 1000);
+await priced('price', 'priceOffers', OFFER, 'P6. edit a normal offer to ₪50,001', 'pro', { price: 50_001 }, false, 1000);
+await priced('price', 'priceOffers', OFFER, 'P7. edit a normal offer to ₪0', 'pro', { price: 0 }, false, 1000);
+await priced('price', 'bundleOffers', BUNDLE, 'P8. bundle repriced to ₪60,000', 'pro', { bundlePrice: 60_000 }, false, 1000);
+await priced('price', 'bundleOffers', BUNDLE, 'P9. decline an out-of-range BUNDLE', 'client', { status: 'rejected' }, true, 999_999);
+
 // bundleId backfill — usePriceOffer.ts:68-70, a real client update
 for (const tag of ['pro']) {
   await upd('priceOffers', 'priceOffers', OFFER, 'm. bundleId backfill (usePriceOffer.ts:68)', tag, { bundleId: BUNDLE }, 'pending');
@@ -130,6 +153,9 @@ await create('create', 'priceOffers', 'o. create ACCEPTED', 'pro', { ...base(), 
 await create('create', 'priceOffers', 'p. create with status omitted', 'pro', base());
 await create('create', 'priceOffers', 'q. create pending on a NONEXISTENT project', 'pro', { ...base(), projectId: 'no-such-project', status: 'pending' });
 await create('create', 'priceOffers', 'r. create impersonating another pro', 'client', { ...base(), status: 'pending' });
+await create('create', 'priceOffers', 'P10. create at ₪554,545', 'pro', { ...base(), price: 554_545, status: 'pending' }, );
+await create('create', 'priceOffers', 'P11. create at ₪50,000 (the ceiling)', 'pro', { ...base(), price: 50_000, status: 'pending' });
+await create('create', 'priceOffers', 'P12. create at ₪0', 'pro', { ...base(), price: 0, status: 'pending' });
 await create('create', 'bundleOffers', 's. bundle create pending on a real project', 'pro',
   { projectId: PRJ, professionalId: uid.pro, slots: [{ category: 'X' }], individualTotal: 1, bundlePrice: 1, offerIds: [], status: 'pending', createdAt: new Date() });
 await create('create', 'bundleOffers', 't. bundle created ACCEPTED', 'pro',
@@ -172,6 +198,7 @@ function table(group, title, tags = ['client', 'pro', 'third']) {
 table('priceOffers', 'priceOffers');
 table('bundleOffers', 'bundleOffers');
 table('create', 'CREATE', ['pro', 'client']);
+table('price', 'PRICE BOUNDS', ['client', 'pro']);
 table('projects', 'PROJECTS (client is the owner)', ['client']);
 
 const j = process.argv.indexOf('--json');

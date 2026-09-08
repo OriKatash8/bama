@@ -324,7 +324,9 @@
     "stat_execution": "ביצוע",
     "open_slot": "פתוח",
     "hire_self_error": "לא ניתן לשכור את עצמך לפרויקט שלך",
-    "hire_unavailable_error": "המקצוען לא יכול לקחת פרויקטים נוספים כרגע"
+    "hire_unavailable_error": "המקצוען לא יכול לקחת פרויקטים נוספים כרגע",
+    "hire_project_closed": "הפרויקט סגור ולא ניתן לצרף אליו בעלי מקצוע נוספים.",
+    "hire_price_invalid": "סכום ההצעה אינו תקין ולכן לא ניתן לאשר אותה."
   },
   "client_onboarding": {
     "title": "ברוכים הבאים! הגדירו את הפרופיל",
@@ -663,7 +665,8 @@
     "blocked_pitch_title": "עם מנוי אין מגבלת מקומות",
     "blocked_pitch_body": "עד {{limit}} פרויקטים בחודש, ללא עמלה. החל מ-₪{{monthly}} לחודש.",
     "blocked_pitch_cta": "לפרטים על המנוי",
-    "blocked_not_now": "לא עכשיו"
+    "blocked_not_now": "לא עכשיו",
+    "price_out_of_range": "המחיר חייב להיות בין ₪{{min}} ל-₪{{max}}. בדקו את הסכום."
   },
   "offers": {
     "bundle_badge": "עסקת חבילה",

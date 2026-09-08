@@ -101,7 +101,34 @@ service cloud.firestore {
       return request.resource.data.professionalId == request.auth.uid
         && request.resource.data.get('status', '') == 'pending'
         && request.resource.data.get('projectId', '') != ''
-        && exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId));
+        && exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId))
+        && offerPriceInRange();
+    }
+
+    // ── Offer price bounds ──────────────────────────────────────────────────
+    // A THIRD copy of MIN/MAX_OFFER_PRICE: rules files cannot import. KEEP IN
+    // SYNC with functions/src/pricing.ts (which enforces) and
+    // src/core/constants/pricing.ts (which drives the submission error).
+    //
+    // A typo catcher, not a business limit. Production held ₪554,545 and
+    // ₪10,000,000 offers against a ₪300 median; an accepted ₪10M offer would have
+    // carried a ₪300,000 platform fee.
+    function offerPriceInRange() {
+      return (!('price' in request.resource.data)
+              || (request.resource.data.price >= 1 && request.resource.data.price <= 50000))
+        && (!('bundlePrice' in request.resource.data)
+              || (request.resource.data.bundlePrice >= 1 && request.resource.data.bundlePrice <= 50000));
+    }
+
+    // On UPDATE the bounds are checked only when the amount actually changes.
+    // Checking unconditionally would judge a status-only write against the
+    // document's existing price — so the ₪10,000,000 offer already in production
+    // could never be declined, and the pro could never edit it back down. Editing
+    // such an offer DOWN stays allowed; leaving it out of range does not.
+    function offerPriceUnchangedOrInRange() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['price', 'bundlePrice'])
+        || offerPriceInRange();
     }
 
     // `status` is not server-only — clients set 'open' at create and when
@@ -478,6 +505,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(offerClientFields())
         && (offerStatusUnchanged() || offerClientDecline())
+        && offerPriceUnchangedOrInRange()
         && offerAmountFrozenOnceAccepted() && offerIdentityStable();
       allow delete: if false;
     }
@@ -496,6 +524,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(offerClientFields())
         && (offerStatusUnchanged() || offerClientDecline())
+        && offerPriceUnchangedOrInRange()
         && offerAmountFrozenOnceAccepted() && offerIdentityStable();
       allow delete: if false;
     }

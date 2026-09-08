@@ -324,7 +324,9 @@
     "stat_execution": "Execution",
     "open_slot": "Open",
     "hire_self_error": "You cannot hire yourself onto your own project",
-    "hire_unavailable_error": "This professional cannot take on additional projects right now"
+    "hire_unavailable_error": "This professional cannot take on additional projects right now",
+    "hire_project_closed": "This project is closed, so no one else can be added to it.",
+    "hire_price_invalid": "This offer's amount is not valid, so it can't be accepted."
   },
   "client_onboarding": {
     "title": "Welcome! Set up your profile",
@@ -663,7 +665,8 @@
     "blocked_pitch_title": "No slot limit with a subscription",
     "blocked_pitch_body": "Up to {{limit}} projects a month, no fee. From ₪{{monthly}} a month.",
     "blocked_pitch_cta": "See subscription details",
-    "blocked_not_now": "Not now"
+    "blocked_not_now": "Not now",
+    "price_out_of_range": "Price must be between ₪{{min}} and ₪{{max}}. Check the amount."
   },
   "offers": {
     "bundle_badge": "Bundle deal",

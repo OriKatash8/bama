@@ -166,6 +166,11 @@ export default function ProjectsPage() {
     if (msg.includes('slot-cap-reached') || msg.includes('monthly-limit-reached')) {
       return t('chats_page.hire_unavailable_error');
     }
+    // The project is the CLIENT's own, so naming the reason discloses nothing
+    // about the professional — §6 governs the pro's slot and subscription state,
+    // not the client's own project status.
+    if (msg.includes('project-not-hireable')) return t('chats_page.hire_project_closed');
+    if (msg.includes('offer-price-out-of-range')) return t('chats_page.hire_price_invalid');
     return t('chats_page.failed_accept');
   }
 
