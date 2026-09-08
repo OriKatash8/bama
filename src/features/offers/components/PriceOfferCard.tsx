@@ -69,7 +69,16 @@ export function PriceOfferCard({
             <AppText weight="regular" style={styles.forLabel}>
               {t('offers.for_project')}
             </AppText>
-            <AppText weight="bold" style={styles.projectName} numberOfLines={1}>
+            {/* textAlign follows the app MODE, never the title's own script.
+                `projectName` is flex:1 so it fills the band and can truncate, and
+                React Native's default `textAlign: 'auto'` then aligns by the
+                CONTENT's direction — an English title in Hebrew mode drifted to
+                the far left of that wide box, stranded away from "עבור:". */}
+            <AppText
+              weight="bold"
+              style={[styles.projectName, { textAlign: rtl ? 'right' : 'left' }]}
+              numberOfLines={1}
+            >
               {projectTitle}
             </AppText>
           </View>
