@@ -1104,7 +1104,12 @@ function createStyles(
     s3Card: {
       backgroundColor: '#ffffff',
       borderRadius: 18,
-      padding: 15,
+      padding: 13,
+      // Was edge-to-edge: this card had no horizontal margin while every sibling
+      // on the step — stepLabel, progressRow, backArrow — is inset 16, and step
+      // 2's equivalent card (rolesCard) is too. It was the only thing touching
+      // the screen edges.
+      marginHorizontal: 16,
       marginTop: 14,
       shadowColor: '#6c5ce0',
       shadowOpacity: 0.07,
@@ -1113,7 +1118,9 @@ function createStyles(
       elevation: 2,
     },
     s3Header: { alignItems: 'center', gap: 12, marginBottom: 4 },
-    s3Avatar: { width: 80, height: 80, borderRadius: 40 },
+    // borderRadius stays half the size so this remains a circle, not a
+    // rounded square — at 80 it dominated the role header.
+    s3Avatar: { width: 56, height: 56, borderRadius: 28 },
     s3RoleName: { fontSize: 16, color: '#2a2f5a' },
     s3RoleNeed: { fontSize: 12, color: '#9aa0b8', marginTop: 1 },
     s3Slot: { backgroundColor: '#faf9fe', borderRadius: 13, padding: 11, marginTop: 10, gap: 8 },
