@@ -13,7 +13,9 @@ import { useGenerateTitle } from '@features/projects/hooks/useGenerateTitle';
 import { MiniCalendar } from '@features/crew/components';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { addDocument, getDocument } from '@core/firebase/firestore';
-import { ROLE_TO_LEGACY_CATEGORY, categoryLabel } from '@features/crew/data/categories';
+import {
+  ROLE_TO_LEGACY_CATEGORY, categoryLabel, getSpecializations, labelOf, capabilityOf,
+} from '@features/crew/data/categories';
 import type { CrewRequestSlot } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -49,7 +51,25 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
 
   const { generateTitle, isGenerating } = useGenerateTitle();
 
-  const [categories, setCategories] = useState<string[]>([]);
+  /**
+   * One entry per SKILL this professional actually lists, not per role.
+   *
+   * Asking for "Videographer" when the pro's profile says drone and music video
+   * throws away the detail the client came here for. Each row is a
+   * (role, specialization) pair, so the slot it produces carries the exact
+   * requiredCapability — which is also what professionalMatchesSlot keys on.
+   */
+  type SkillOption = {
+    /** Stable key: role + specialization. */
+    id: string;
+    /** Legacy category string stored on CrewRequestSlot.category. */
+    category: string;
+    /** Specialization id, or undefined for 'general' — see capabilityOf. */
+    requiredCapability?: string;
+    roleLabel: string;
+    skillLabel: string;
+  };
+  const [skillOptions, setSkillOptions] = useState<SkillOption[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(false);
 
   const [description, setDescription] = useState('');
@@ -69,15 +89,36 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
   useEffect(() => {
     if (!visible || !professionalId) return;
     setSkillsLoading(true);
-    getDocument<{ roleSkills?: { role: string }[] }>(`users/${professionalId}/profile/data`)
-      .then((profile) =>
-        setCategories([
-          ...new Set((profile?.roleSkills ?? []).map((r) => ROLE_TO_LEGACY_CATEGORY[r.role]).filter(Boolean)),
-        ]),
-      )
-      .catch(() => setCategories([]))
+    getDocument<{ roleSkills?: { role: string; specializations?: string[] }[] }>(
+      `users/${professionalId}/profile/data`,
+    )
+      .then((profile) => {
+        const lang = rtl ? 'he' : 'en';
+        const options: SkillOption[] = [];
+        for (const entry of profile?.roleSkills ?? []) {
+          const category = ROLE_TO_LEGACY_CATEGORY[entry.role];
+          if (!category) continue;
+          const defs = getSpecializations(entry.role);
+          const roleLabel = categoryLabel(category, lang);
+          for (const specId of entry.specializations ?? []) {
+            const def = defs.find((d) => d.id === specId);
+            if (!def) continue; // retired specialization — nothing to label it with
+            options.push({
+              id: `${entry.role}:${specId}`,
+              category,
+              // 'general' is the ABSENCE of a requirement, never a requirement
+              // named 'general'. capabilityOf is the single funnel for that.
+              requiredCapability: capabilityOf(specId),
+              roleLabel,
+              skillLabel: labelOf(def, lang),
+            });
+          }
+        }
+        setSkillOptions(options);
+      })
+      .catch(() => setSkillOptions([]))
       .finally(() => setSkillsLoading(false));
-  }, [visible, professionalId]);
+  }, [visible, professionalId, rtl]);
 
   function reset() {
     setDescription('');
@@ -96,21 +137,30 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
     onClose();
   }
 
-  function setQty(category: string, delta: number) {
+  // Keyed by SkillOption.id, so asking for two different specializations of the
+  // same role stays two independent counts.
+  function setQty(optionId: string, delta: number) {
     setQuantities((prev) => {
-      const next = Math.max(0, (prev[category] ?? 0) + delta);
-      return { ...prev, [category]: next };
+      const next = Math.max(0, (prev[optionId] ?? 0) + delta);
+      return { ...prev, [optionId]: next };
     });
   }
 
-  function getQty(category: string) {
-    return quantities[category] ?? 0;
+  function getQty(optionId: string) {
+    return quantities[optionId] ?? 0;
   }
 
   function buildSlots(): CrewRequestSlot[] {
-    return categories
-      .filter((c) => getQty(c) > 0)
-      .map((c) => ({ category: c, quantity: getQty(c) }));
+    return skillOptions
+      .filter((o) => getQty(o.id) > 0)
+      .map((o) => ({
+        category: o.category,
+        quantity: getQty(o.id),
+        // Spread so the key is ABSENT for a general slot rather than written as
+        // undefined — a slot with requiredCapability: 'general' could never be
+        // filled, since assignFilledCapability yields undefined for it.
+        ...(o.requiredCapability ? { requiredCapability: o.requiredCapability } : {}),
+      }));
   }
 
   function validate(): boolean {
@@ -273,33 +323,43 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             </Text>
             {skillsLoading ? (
               <ActivityIndicator color="#cb6ce6" style={{ marginVertical: 12 }} />
-            ) : categories.length === 0 ? (
+            ) : skillOptions.length === 0 ? (
               <Text style={[styles.emptySkills, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-                No skills listed for this professional.
+                {t('builder.no_skills_listed')}
               </Text>
             ) : (
               <View style={styles.skillsGrid}>
-                {categories.map((c) => {
-                  const qty = getQty(c);
+                {skillOptions.map((o, i) => {
+                  const qty = getQty(o.id);
+                  // Role header whenever the role changes, so several skills of
+                  // one role read as a block rather than a flat list.
+                  const showRole = i === 0 || skillOptions[i - 1].roleLabel !== o.roleLabel;
                   return (
-                    <View key={c} style={[styles.skillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.skillLabel, { ...font.medium, color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
-                        {categoryLabel(c, rtl ? 'he' : 'en')}
-                      </Text>
-                      <View style={[styles.qtyControls, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                        {qty > 0 && (
-                          <TouchableOpacity style={styles.qtyBtn} onPress={() => setQty(c, -1)} hitSlop={8} activeOpacity={0.7}>
-                            <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
+                    <View key={o.id}>
+                      {showRole && (
+                        <Text style={[styles.skillGroupLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
+                          {o.roleLabel}
+                        </Text>
+                      )}
+                      <View style={[styles.skillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                        <Text style={[styles.skillLabel, { ...font.medium, color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left' }]}>
+                          {o.skillLabel}
+                        </Text>
+                        <View style={[styles.qtyControls, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                          {qty > 0 && (
+                            <TouchableOpacity style={styles.qtyBtn} onPress={() => setQty(o.id, -1)} hitSlop={8} activeOpacity={0.7}>
+                              <Text style={[styles.qtyBtnText, { color: colors.textMuted }]}>−</Text>
+                            </TouchableOpacity>
+                          )}
+                          {qty > 0 && (
+                            <View style={styles.qtyBadge}>
+                              <Text style={styles.qtyBadgeText}>{qty}</Text>
+                            </View>
+                          )}
+                          <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => setQty(o.id, 1)} hitSlop={8} activeOpacity={0.7}>
+                            <Text style={[styles.qtyBtnText, { color: '#004aad' }]}>+</Text>
                           </TouchableOpacity>
-                        )}
-                        {qty > 0 && (
-                          <View style={styles.qtyBadge}>
-                            <Text style={styles.qtyBadgeText}>{qty}</Text>
-                          </View>
-                        )}
-                        <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => setQty(c, 1)} hitSlop={8} activeOpacity={0.7}>
-                          <Text style={[styles.qtyBtnText, { color: '#004aad' }]}>+</Text>
-                        </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
                   );
@@ -462,6 +522,7 @@ const styles = StyleSheet.create({
   },
   dateBtnText: { fontSize: 13, flex: 1 },
   skillsGrid: { gap: 4, marginTop: 4 },
+  skillGroupLabel: { fontSize: 12, color: '#8890b0', marginTop: 10, marginBottom: 2 },
   skillRow: {
     alignItems: 'center',
     justifyContent: 'space-between',

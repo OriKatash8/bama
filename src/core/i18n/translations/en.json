@@ -99,7 +99,8 @@
     "budget_high": "₪1,000–₪2,000",
     "budget_top": "₪2,000+",
     "error_budget": "Please select a budget range",
-    "vibe_label": "Vibe & Style"
+    "vibe_label": "Vibe & Style",
+    "no_skills_listed": "No skills listed for this professional."
   },
   "search": {
     "no_professionals_yet": "No professionals yet",
