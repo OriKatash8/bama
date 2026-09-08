@@ -6,6 +6,7 @@ import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { categoryLabel } from '@features/crew/data/categories';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -57,7 +58,16 @@ export function PriceOfferCard({
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
   const displayName = professionalProfile?.displayName ?? '…';
-  const role = offer.subcategory ?? offer.category;
+  const lang: 'he' | 'en' = rtl ? 'he' : 'en';
+  // categoryLabel, not the raw stored string — the same mapping project-details
+  // and NoticeHistorySheet already use, so the role reads in the app's language.
+  //
+  // Deliberately the CATEGORY, not `subcategory ?? category`. Stored
+  // subcategories are English display strings from a retired taxonomy: only 2 of
+  // the 16 distinct values in production still exist as specializations, so the
+  // other 14 would render untranslated in Hebrew regardless. A localized category
+  // beats a stale English subskill.
+  const role = categoryLabel(offer.category, lang);
 
   return (
     <View style={styles.card}>

@@ -8,6 +8,7 @@ import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { categoryLabel } from '@features/crew/data/categories';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -62,7 +63,11 @@ export function BundleOfferCard({
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
   const displayName = professionalProfile?.displayName ?? '…';
-  const rolesSummary = bundle.slots.map((s) => s.subcategory ?? s.category).join(' · ');
+  const lang: 'he' | 'en' = rtl ? 'he' : 'en';
+  // See PriceOfferCard: the CATEGORY through categoryLabel, because stored
+  // subcategories are stale English from a retired taxonomy and would not
+  // translate.
+  const rolesSummary = bundle.slots.map((s) => categoryLabel(s.category, lang)).join(' · ');
 
   useEffect(() => {
     if (!expanded || offerDetails.length > 0) return;
@@ -136,7 +141,11 @@ export function BundleOfferCard({
             onPress={() => setExpanded((v) => !v)}
             activeOpacity={0.7}
           >
-            <AppText weight="semiBold" style={styles.rolesToggleText} numberOfLines={1}>
+            <AppText
+              weight="semiBold"
+              style={[styles.rolesToggleText, { textAlign: rtl ? 'right' : 'left' }]}
+              numberOfLines={1}
+            >
               {rolesSummary}
             </AppText>
             {expanded ? (
@@ -166,7 +175,7 @@ export function BundleOfferCard({
             offerDetails.map((o, i) => (
               <View key={i} style={[styles.breakdownRow, { flexDirection: rowDir }]}>
                 <AppText weight="medium" style={styles.breakdownRole}>
-                  {o.subcategory ?? o.category}
+                  {categoryLabel(o.category, lang)}
                 </AppText>
                 <AppText weight="semiBold" style={styles.breakdownPrice}>
                   ₪{o.price.toLocaleString()}
@@ -309,10 +318,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  // flexShrink, NOT flex:1. `flex: 1` stretched this text to fill nameCol, and a
+  // stretched box aligns its content by RN's default textAlign:'auto' — i.e. by
+  // the roles string's own script — so the summary drifted away from the right
+  // edge in Hebrew mode. PriceOfferCard's roleText has no flex at all, which is
+  // why its role pill always sat correctly; flexShrink keeps that behaviour while
+  // still letting a long summary truncate instead of pushing out the chevron.
   rolesToggleText: {
     fontSize: 12,
     color: BLUE,
-    flex: 1,
+    flexShrink: 1,
   },
   priceSquare: {
     width: 72,
