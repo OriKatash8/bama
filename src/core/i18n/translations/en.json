@@ -100,7 +100,9 @@
     "budget_top": "₪2,000+",
     "error_budget": "Please select a budget range",
     "vibe_label": "Vibe & Style",
-    "no_skills_listed": "No skills listed for this professional."
+    "no_skills_listed": "No skills listed for this professional.",
+    "error_date_past": "You can't pick a date in the past.",
+    "error_deadline_order": "The deadline must be after the execution date."
   },
   "search": {
     "no_professionals_yet": "No professionals yet",

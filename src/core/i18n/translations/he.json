@@ -100,7 +100,9 @@
     "budget_top": "₪2,000+",
     "error_budget": "נא לבחור טווח תקציב",
     "vibe_label": "אווירה וסגנון",
-    "no_skills_listed": "לא רשומים כישורים לבעל המקצוע הזה."
+    "no_skills_listed": "לא רשומים כישורים לבעל המקצוע הזה.",
+    "error_date_past": "לא ניתן לבחור תאריך שעבר.",
+    "error_deadline_order": "תאריך הסיום חייב להיות אחרי תאריך הביצוע."
   },
   "search": {
     "no_professionals_yet": "אין אנשי מקצוע עדיין",
