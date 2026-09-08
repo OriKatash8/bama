@@ -250,7 +250,14 @@ export default function SearchScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.subFilterScroll}
-                style={[{ flexGrow: 0, marginBottom: 26 }, rtl && { transform: [{ scaleX: -1 }] }]}
+                // flexShrink:0 is the half that was missing. modalSheet is a
+                // flex:1 column inside a fixed 85%-height wrapper, so once the
+                // results FlatList below has content the column is
+                // over-constrained and RN shrinks whatever is shrinkable.
+                // flexGrow:0 stops this row growing but NOT shrinking, so its
+                // height collapsed and the chip labels were clipped — only ever
+                // visible once a user list had rendered.
+                style={[{ flexGrow: 0, flexShrink: 0, marginBottom: 26 }, rtl && { transform: [{ scaleX: -1 }] }]}
               >
                 {subskills.map((sp) => {
                   const on = selectedSub === sp.id;
@@ -288,6 +295,11 @@ export default function SearchScreen() {
                 data={filteredModalResults}
                 keyExtractor={(item) => item.user.id}
                 showsVerticalScrollIndicator={false}
+                // The list, not the chip row, is what absorbs the leftover
+                // height: flex:1 makes it take exactly what remains and scroll
+                // inside those bounds. Without it, now that the chip row refuses
+                // to shrink, a long result list would overflow the sheet instead.
+                style={{ flex: 1 }}
                 contentContainerStyle={{ paddingBottom: 32 }}
                 renderItem={({ item }) => (
                   <View style={styles.resultItem}>
