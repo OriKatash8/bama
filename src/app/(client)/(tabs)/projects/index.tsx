@@ -124,6 +124,11 @@ export default function ProjectsPage() {
   useEffect(() => {
     const ids = new Set<string>();
     offers.forEach((o) => ids.add(o.projectId));
+    // Bundles need their title too, now that the bundle card shows the project
+    // band. Their children are usually in `offers` and would have pulled the
+    // title incidentally — but that is a coincidence of the pending filter, not
+    // a guarantee, and a bundle whose title was missing rendered an empty band.
+    bundles.forEach((b) => ids.add(b.projectId));
 
     const toFetch = Array.from(ids).filter((id) => !fetchedProjectIds.current.has(id));
     if (toFetch.length === 0) return;
@@ -142,7 +147,7 @@ export default function ProjectsPage() {
         return next;
       });
     });
-  }, [offers]);
+  }, [offers, bundles]);
 
   function goToProfessionalProfile(professionalId: string) {
     router.push(`/${modeSegment}/(tabs)/browse/profile/${professionalId}` as never);
@@ -363,6 +368,7 @@ export default function ProjectsPage() {
                       key={`bundle-${item.data.id}`}
                       bundle={item.data}
                       professionalProfile={professionalProfiles[item.data.professionalId]}
+                      projectTitle={projectTitles[item.data.projectId]}
                       onPressProfile={() => goToProfessionalProfile(item.data.professionalId)}
                       onAccept={() => handleAcceptBundle(item.data)}
                       onReject={() => handleRejectBundle(item.data.id)}

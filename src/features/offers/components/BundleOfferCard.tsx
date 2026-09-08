@@ -28,6 +28,7 @@ const CARD_SHADOW = {
 } as const;
 
 const BLUE = '#1e4fa3';
+const MUTED = '#8890b0';
 const BORDER_LIGHT = 'rgba(30,79,163,0.12)';
 const REJECT_RED = '#e04b4b';
 const BUNDLE_PURPLE = '#cb6ce6';
@@ -37,6 +38,7 @@ type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 type Props = {
   bundle: BundleOffer;
   professionalProfile?: ProfessionalProfileSummary;
+  projectTitle?: string;
   onPressProfile: () => void;
   onAccept: () => void;
   onReject: () => void;
@@ -46,6 +48,7 @@ type Props = {
 export function BundleOfferCard({
   bundle,
   professionalProfile,
+  projectTitle,
   onPressProfile,
   onAccept,
   onReject,
@@ -74,7 +77,11 @@ export function BundleOfferCard({
 
   return (
     <View style={styles.card}>
-      {/* Zone 1 — Bundle badge band */}
+      {/* Zone 1 — Bundle badge + project band.
+          Mirrors PriceOfferCard's band so the two card types read alike: the
+          badge takes the place of its folder icon, then the same "for: <project>"
+          pair. The roles used to sit here; they are not lost, they are still the
+          expandable toggle under the name in Zone 2. */}
       <View style={{ gap: 8 }}>
         <View style={[styles.titleBand, { flexDirection: rowDir }]}>
           <View style={styles.bundleBadge}>
@@ -82,9 +89,23 @@ export function BundleOfferCard({
               {t('offers.bundle_badge')}
             </AppText>
           </View>
-          <AppText weight="regular" style={styles.rolesSummaryLabel} numberOfLines={1}>
-            {rolesSummary}
-          </AppText>
+          {projectTitle ? (
+            <>
+              <AppText weight="regular" style={styles.forLabel}>
+                {t('offers.for_project')}
+              </AppText>
+              {/* textAlign by app MODE, not by the title's own script — flex:1
+                  makes this box wide, and RN's default 'auto' would align an
+                  English title left inside it, stranding it from the label. */}
+              <AppText
+                weight="bold"
+                style={[styles.projectName, { textAlign: rtl ? 'right' : 'left' }]}
+                numberOfLines={1}
+              >
+                {projectTitle}
+              </AppText>
+            </>
+          ) : null}
         </View>
         <View style={styles.bandDivider} />
       </View>
@@ -243,9 +264,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  rolesSummaryLabel: {
+  forLabel: {
     fontSize: 11,
-    color: '#8890b0',
+    color: MUTED,
+  },
+  projectName: {
+    fontSize: 15,
+    color: BLUE,
     flex: 1,
   },
   bandDivider: {
