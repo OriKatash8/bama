@@ -1020,6 +1020,84 @@ export default function ProjectDetailsScreen() {
           </AppText>
         </View>
 
+        {/* Pending payment-update requests — ABOVE the team, so a request
+            waiting on someone is the first thing seen rather than something
+            found by scrolling past missions and meetings. */}
+        {paymentRequests.length > 0 && (
+          <>
+            {/* Wrapper exists only to carry onLayout — a fragment cannot. */}
+            <View onLayout={onSectionLayout('payments')}>
+              <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 8, marginBottom: 4 }]}>
+                {t('project_details.price_requests')}
+              </AppText>
+            </View>
+            {incomingRequests.map((req) => {
+              const fromName = allMemberNames[req.fromUserId] ?? req.fromUserId;
+              const isResponding = respondingId === req.id;
+              return (
+                <View
+                  key={req.id}
+                  style={[styles.pendingRequestCard, styles.pendingRequestCardIncoming]}
+                >
+                  <Text style={[styles.pendingRequestText, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                    <Text style={[styles.pendingRequestBold, { ...font.bold }]}>{fromName}</Text>
+                    {' ' + t('project_details.requests_to_change', {
+                      from: req.currentAmount.toLocaleString(),
+                      to: req.proposedAmount.toLocaleString(),
+                    })}
+                  </Text>
+                  {req.note ? (
+                    <Text style={[styles.pendingRequestNote, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                      "{req.note}"
+                    </Text>
+                  ) : null}
+                  <View style={[styles.pendingRequestActions, { flexDirection: rowDirection }]}>
+                    <TouchableOpacity
+                      style={[styles.pendingActionBtn, styles.pendingActionAccept, isResponding && styles.completeBtnDisabled]}
+                      onPress={() => handleRespondToRequest(req, true)}
+                      disabled={isResponding}
+                      activeOpacity={0.8}
+                    >
+                      {isResponding ? (
+                        <ActivityIndicator color="#ffffff" size="small" />
+                      ) : (
+                        <Text style={[styles.pendingActionBtnText, styles.pendingActionAcceptText, { ...font.bold }]}>{t('project_details.accept')}</Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.pendingActionBtn, styles.pendingActionReject, isResponding && styles.completeBtnDisabled]}
+                      onPress={() => handleRespondToRequest(req, false)}
+                      disabled={isResponding}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.pendingActionBtnText, styles.pendingActionRejectText, { ...font.bold }]}>{t('project_details.reject')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+
+            {outgoingRequests.map((req) => (
+              <View
+                key={req.id}
+                style={styles.pendingRequestCard}
+              >
+                <View style={[styles.pendingOutgoingRow, { flexDirection: rowDirection }]}>
+                  <Text style={[styles.pendingRequestText, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                    {t('project_details.awaiting', {
+                      from: req.currentAmount.toLocaleString(),
+                      to: req.proposedAmount.toLocaleString(),
+                    })}
+                  </Text>
+                  <View style={styles.pendingBadge}>
+                    <Text style={[styles.pendingBadgeText, { ...font.semiBold }]}>{t('project_details.pending')}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
         {/* SECTION 2 — Team Members */}
         {(() => {
           const uniqueProfCount = new Set(filledSlots.map(s => s.professionalId)).size;
@@ -1370,82 +1448,6 @@ export default function ProjectDetailsScreen() {
                 </TouchableOpacity>
               </View>
             )}
-          </>
-        )}
-
-        {/* Pending payment-update requests */}
-        {paymentRequests.length > 0 && (
-          <>
-            {/* Wrapper exists only to carry onLayout — a fragment cannot. */}
-            <View onLayout={onSectionLayout('payments')}>
-              <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left', marginTop: 8, marginBottom: 4 }]}>
-                {t('project_details.price_requests')}
-              </AppText>
-            </View>
-            {incomingRequests.map((req) => {
-              const fromName = allMemberNames[req.fromUserId] ?? req.fromUserId;
-              const isResponding = respondingId === req.id;
-              return (
-                <View
-                  key={req.id}
-                  style={[styles.pendingRequestCard, { backgroundColor: '#ffffff', borderColor: '#f59e0b' }]}
-                >
-                  <Text style={[styles.pendingRequestText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-                    <Text style={[styles.pendingRequestBold, { ...font.bold }]}>{fromName}</Text>
-                    {' ' + t('project_details.requests_to_change', {
-                      from: req.currentAmount.toLocaleString(),
-                      to: req.proposedAmount.toLocaleString(),
-                    })}
-                  </Text>
-                  {req.note ? (
-                    <Text style={[styles.pendingRequestNote, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-                      "{req.note}"
-                    </Text>
-                  ) : null}
-                  <View style={[styles.pendingRequestActions, { flexDirection: rowDirection }]}>
-                    <TouchableOpacity
-                      style={[styles.pendingActionBtn, styles.pendingActionAccept, isResponding && styles.completeBtnDisabled]}
-                      onPress={() => handleRespondToRequest(req, true)}
-                      disabled={isResponding}
-                      activeOpacity={0.8}
-                    >
-                      {isResponding ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                      ) : (
-                        <Text style={[styles.pendingActionBtnText, { ...font.bold }]}>{t('project_details.accept')}</Text>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.pendingActionBtn, styles.pendingActionReject, isResponding && styles.completeBtnDisabled]}
-                      onPress={() => handleRespondToRequest(req, false)}
-                      disabled={isResponding}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.pendingActionBtnText, { ...font.bold }]}>{t('project_details.reject')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-
-            {outgoingRequests.map((req) => (
-              <View
-                key={req.id}
-                style={[styles.pendingRequestCard, { backgroundColor: '#ffffff', borderColor: colors.border }]}
-              >
-                <View style={[styles.pendingOutgoingRow, { flexDirection: rowDirection }]}>
-                  <Text style={[styles.pendingRequestText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-                    {t('project_details.awaiting', {
-                      from: req.currentAmount.toLocaleString(),
-                      to: req.proposedAmount.toLocaleString(),
-                    })}
-                  </Text>
-                  <View style={styles.pendingBadge}>
-                    <Text style={[styles.pendingBadgeText, { ...font.semiBold, color: '#004aad99' }]}>{t('project_details.pending')}</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
           </>
         )}
 
@@ -2849,40 +2851,55 @@ const styles = StyleSheet.create({
   },
   pendingRemovalText: { color: '#ef4444', fontSize: 11, fontWeight: '600' },
   // ── Pending payment request cards ─────────────────────────────────────────────
+  // The memberCard idiom, so these read as the page's own cards: same radius,
+  // padding, hairline border and shadow. They were radius 12 with no shadow and
+  // an amber border, which made them look pasted in from another screen.
   pendingRequestCard: {
-    borderRadius: 12,
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    padding: 12,
+    borderColor: 'rgba(30,79,163,0.07)',
     gap: 8,
+    ...CARD_SHADOW,
   },
-  pendingRequestText: { fontSize: 14, lineHeight: 20 },
+  /** Incoming requests still need to stand out — but in the page's blue, as a
+   *  left/right accent rather than a full amber outline. */
+  pendingRequestCardIncoming: { borderColor: 'rgba(30,79,163,0.28)' },
+  pendingRequestText: { fontSize: 14, lineHeight: 20, color: '#1e4fa3' },
   pendingRequestBold: { fontWeight: '700' },
-  pendingRequestNote: { fontSize: 13, fontStyle: 'italic' },
+  pendingRequestNote: { fontSize: 13, fontStyle: 'italic', color: '#9aa0b8' },
   pendingRequestActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
   pendingActionBtn: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 38,
   },
-  pendingActionAccept: { backgroundColor: '#22c55e' },
-  pendingActionReject: { backgroundColor: '#ef4444' },
-  pendingActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  // Accept borrows payPill's solid blue; reject borrows removePill's soft red.
+  // The raw #22c55e / #ef4444 pair appeared nowhere else on this page.
+  pendingActionAccept: { backgroundColor: '#004aad' },
+  pendingActionReject: { backgroundColor: '#fdecec' },
+  pendingActionBtnText: { fontSize: 13, fontWeight: '700' },
+  pendingActionAcceptText: { color: '#ffffff' },
+  pendingActionRejectText: { color: '#e05656' },
   pendingOutgoingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
   },
+  // Same shape as pendingRemovalChip, the page's other "waiting" marker, in blue
+  // rather than the grey that matched nothing here.
   pendingBadge: {
-    backgroundColor: 'rgba(107,114,128,0.15)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(30,79,163,0.10)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  pendingBadgeText: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
+  pendingBadgeText: { color: '#1e4fa3', fontSize: 11, fontWeight: '600' },
 
   bottomPad: { height: 32 },
 
