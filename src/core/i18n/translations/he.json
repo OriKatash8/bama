@@ -326,7 +326,12 @@
     "hire_self_error": "לא ניתן לשכור את עצמך לפרויקט שלך",
     "hire_unavailable_error": "המקצוען לא יכול לקחת פרויקטים נוספים כרגע",
     "hire_project_closed": "הפרויקט סגור ולא ניתן לצרף אליו בעלי מקצוע נוספים.",
-    "hire_price_invalid": "סכום ההצעה אינו תקין ולכן לא ניתן לאשר אותה."
+    "hire_price_invalid": "סכום ההצעה אינו תקין ולכן לא ניתן לאשר אותה.",
+    "offer_count_badge": "{{n}} הצעות",
+    "new_offers_strip": "{{n}} הצעות חדשות",
+    "empty_offers_title": "אין הצעות מחיר עדיין",
+    "empty_offers_desc": "כשבעלי מקצוע ישלחו הצעה לפרויקטים שלכם, היא תופיע כאן",
+    "empty_offers_primary": "לפרויקטים שלי"
   },
   "client_onboarding": {
     "title": "ברוכים הבאים! הגדירו את הפרופיל",

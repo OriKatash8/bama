@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, ActivityIndicator, Platform, Dimensions } from 'react-native';
-import { ChevronLeft, ChevronRight, SlidersHorizontal, X, FolderPlus, Plus } from 'lucide-react-native';
+import { View, TouchableOpacity, Modal, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Animated } from 'react-native';
+import { SlidersHorizontal, X, FolderPlus, Plus, Inbox, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
-import { PageTitle } from '@components/ui/PageTitle';
 import { EmptyState } from '@components/ui/EmptyState';
 import { useTheme } from '@core/hooks/useTheme';
 import { ProjectRequestCard } from '@features/crew/components';
@@ -17,20 +16,21 @@ import { useAcceptOffer } from '@features/offers/hooks/useAcceptOffer';
 import { useAcceptBundleOffer } from '@features/offers/hooks/useAcceptBundleOffer';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { useAppFont } from '@core/hooks/useAppFont';
+import { useAuthStore } from '@core/stores/authStore';
+import { useOffersSeenStore } from '@core/stores/offersSeenStore';
 import { getDocument } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/project';
 import type { User, ProfessionalProfile } from '@core/types/user';
 
-const CARD_W = Dimensions.get('window').width - 104;
-const CARD_GAP = 40;
-
 /** `null` is the default: newest first. There is no separate 'date' member —
  *  date-descending IS the default order, so a chip for it would duplicate it. */
 type OfferSort = 'price_asc' | 'price_desc' | 'stars' | null;
 type ShowOnly = 'all' | 'bundle';
+/** Which list the single vertical column is showing. Projects is always the
+ *  default — deliberately NOT switched based on whether offers are pending. */
+type Segment = 'projects' | 'offers';
 
 type CombinedOffer =
   | { kind: 'bundle'; data: BundleOffer }
@@ -64,7 +64,6 @@ export default function ProjectsPage() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const font = useAppFont();
 
   const { requests, isLoading: requestsLoading } = useProjectRequests();
   const { offers, isLoading: offersLoading } = usePriceOffers();
@@ -77,8 +76,40 @@ export default function ProjectsPage() {
 
   const [projectTitles, setProjectTitles] = useState<Record<string, string>>({});
   const fetchedProjectIds = useRef<Set<string>>(new Set());
-  const [projectIndex, setProjectIndex] = useState(0);
-  const projectScrollRef = useRef<ScrollView>(null);
+  const userId = useAuthStore((s) => s.user?.id);
+  const [segment, setSegment] = useState<Segment>('projects');
+
+  // Pop the newly-selected segment, as the chats tabs and MarketplaceToggle do.
+  const segScales = useRef({
+    projects: new Animated.Value(1),
+    offers: new Animated.Value(1),
+  }).current;
+  useEffect(() => {
+    const val = segScales[segment];
+    val.setValue(0.9);
+    Animated.spring(val, { toValue: 1, useNativeDriver: true, friction: 4, tension: 120 }).start();
+  }, [segment, segScales]);
+
+  /**
+   * The "unseen offers" baseline, frozen during the FIRST render.
+   *
+   * (client)/(tabs)/_layout.tsx:71-74 calls markSeen the moment the route
+   * matches /projects, so by the time any effect here runs the stored lastSeenAt
+   * has already jumped to now and nothing looks unseen. Reading it in render
+   * beats that: parent effects run after children's, and a render-phase read
+   * beats both.
+   *
+   * The TIMESTAMP is frozen, not the count. On first render `offers` and
+   * `bundles` are still loading, so a frozen count would be 0 for reasons that
+   * have nothing to do with what the client has seen — the strip would never
+   * appear. Freezing the baseline lets offers arrive later and still be measured
+   * against the right moment.
+   */
+  const seenAtEntry = useRef<number | null>(null);
+  const lastSeenAt = useOffersSeenStore((s) => s.lastSeenAt);
+  if (seenAtEntry.current === null && userId) {
+    seenAtEntry.current = lastSeenAt[userId] ?? 0;
+  }
 
   const [offerSort, setOfferSort] = useState<OfferSort>(null);
   const [showOnly, setShowOnly] = useState<ShowOnly>('all');
@@ -90,8 +121,16 @@ export default function ProjectsPage() {
   function applySort() { setOfferSort(draftSort); setShowOnly(draftShowOnly); setSortModalVisible(false); }
   function clearSort() { setDraftSort(null); setDraftShowOnly('all'); setOfferSort(null); setShowOnly('all'); setSortModalVisible(false); }
 
-  function scrollToProject(index: number) {
-    projectScrollRef.current?.scrollTo({ x: index * (CARD_W + CARD_GAP), animated: true });
+  /**
+   * Switching segments RESETS the filter rather than persisting it. The sort
+   * control only renders in the Offers segment, so a filter left active while
+   * its control is off-screen is invisible state the client cannot undo.
+   */
+  function switchSegment(next: Segment) {
+    if (next === segment) return;
+    setOfferSort(null);
+    setShowOnly('all');
+    setSegment(next);
   }
 
   useEffect(() => {
@@ -251,6 +290,24 @@ export default function ProjectsPage() {
 
   const activeRequests = requests.filter((r) => r.status !== 'completed' && r.status !== 'cancelled');
 
+  /** Pending offers per project id, for the badge on each project card. Derived
+   *  from the two lists this screen already subscribes to — no extra query. */
+  const offerCountByProject = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const o of offers) counts[o.projectId] = (counts[o.projectId] ?? 0) + 1;
+    for (const b of bundles) counts[b.projectId] = (counts[b.projectId] ?? 0) + 1;
+    return counts;
+  }, [offers, bundles]);
+
+  /** Offers that arrived since the client last looked, measured against the
+   *  baseline frozen on entry (see seenAtEntry). Drives the strip only. */
+  const newOffersCount = useMemo(() => {
+    const since = seenAtEntry.current;
+    if (since === null) return 0;
+    return [...offers, ...bundles]
+      .filter((o) => (o.createdAt?.seconds ?? 0) * 1000 > since).length;
+  }, [offers, bundles]);
+
   return (
     <Screen scrollable={false}>
       <ScrollView
@@ -259,108 +316,121 @@ export default function ProjectsPage() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Title + current/total counter beside it (matches the in-progress header) */}
-        <View style={[styles.myProjectsHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <PageTitle>{t('chats_page.my_projects')}</PageTitle>
-          {!requestsLoading && activeRequests.length > 0 && (
-            <Text style={[styles.projectCounter, { ...font.regular, marginTop: 10 }]}>
-              {projectIndex + 1}/{activeRequests.length}
-            </Text>
-          )}
+        {/* Segmented control — the chats-page tab pills, two segments. The row
+            direction flips so the first segment sits on the leading edge. */}
+        <View style={[styles.segBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          {(['projects', 'offers'] as const).map((key) => {
+            const isActive = segment === key;
+            return (
+              <Animated.View key={key} style={{ transform: [{ scale: segScales[key] }] }}>
+                <TouchableOpacity
+                  style={[styles.segPill, isActive ? styles.segPillActive : styles.segPillInactive]}
+                  onPress={() => switchSegment(key)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <AppText
+                    weight="semiBold"
+                    style={[styles.segText, isActive ? styles.segTextActive : styles.segTextInactive]}
+                    numberOfLines={1}
+                  >
+                    {key === 'projects' ? t('chats_page.my_projects') : t('chats_page.price_offers')}
+                  </AppText>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
         </View>
 
         <View style={styles.content}>
-          {(() => {
-            const active = activeRequests;
-            return (
-              <View style={styles.section}>
-                {requestsLoading ? (
-                  <ActivityIndicator color={colors.accent} />
-                ) : active.length === 0 ? (
-                  <View style={{ minHeight: Dimensions.get('window').height * 0.6 }}>
-                    <EmptyState
-                      icon={FolderPlus}
-                      title={t('chats_page.empty_projects_title')}
-                      description={t('chats_page.empty_projects_desc')}
-                      primaryAction={{
-                        label: t('chats_page.empty_projects_primary'),
-                        icon: Plus,
-                        onPress: () => router.push('/(client)/(tabs)/home'),
-                      }}
-                      secondaryAction={{
-                        label: t('chats_page.empty_projects_secondary'),
-                        onPress: () => router.push('/(client)/(tabs)/browse'),
-                      }}
-                    />
-                  </View>
-                ) : (
-                  <View style={styles.carouselWrap}>
-                    <ScrollView
-                      ref={projectScrollRef}
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.projectsScroll}
-                      snapToInterval={CARD_W + CARD_GAP}
-                      decelerationRate="fast"
-                      scrollEventThrottle={16}
-                      onScroll={(e) => {
-                        const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + CARD_GAP));
-                        setProjectIndex(Math.max(0, Math.min(idx, active.length - 1)));
-                      }}
-                    >
-                      {active.map((item) => (
-                        <View key={item.id} style={{ width: CARD_W }}>
-                          <ProjectRequestCard request={item} />
-                        </View>
-                      ))}
-                    </ScrollView>
-                    {projectIndex > 0 && (
-                      <TouchableOpacity
-                        style={[styles.arrowBtn, { left: 0 }]}
-                        onPress={() => scrollToProject(projectIndex - 1)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.arrowCircle}>
-                          <ChevronLeft size={18} color="#004aad" strokeWidth={2.5} />
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                    {projectIndex < active.length - 1 && (
-                      <TouchableOpacity
-                        style={[styles.arrowBtn, { right: 0 }]}
-                        onPress={() => scrollToProject(projectIndex + 1)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.arrowCircle}>
-                          <ChevronRight size={18} color="#004aad" strokeWidth={2.5} />
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-              </View>
-            );
-          })()}
-
-          {(offers.length > 0 || bundles.length > 0) && (
-            <View style={[styles.section, { marginTop: 24 }]}>
-              <View style={[styles.sectionTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.sectionTitle, { color: '#004aad', ...font.bold }]}>
-                  {t('chats_page.price_offers')}
-                </Text>
+          {segment === 'projects' ? (
+            <View style={styles.section}>
+              {/* Awareness strip. Gated on the frozen baseline, so it survives
+                  _layout's markSeen-on-arrival and stays for the visit. */}
+              {newOffersCount > 0 && (
                 <TouchableOpacity
-                  style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
-                  onPress={openSortModal}
-                  activeOpacity={0.8}
+                  style={[styles.newOffersStrip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+                  onPress={() => switchSegment('offers')}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
                 >
-                  <SlidersHorizontal size={14} color='#1e4fa3' strokeWidth={2} />
-                  <AppText weight="semiBold" style={styles.sortBtnText}>
-                    {t('offers.filter')}
+                  <AppText weight="semiBold" style={styles.newOffersText} numberOfLines={1}>
+                    {t('chats_page.new_offers_strip', { n: String(newOffersCount) })}
                   </AppText>
+                  {rtl
+                    ? <ChevronLeft size={16} color="#004aad" strokeWidth={2.5} />
+                    : <ChevronRight size={16} color="#004aad" strokeWidth={2.5} />}
                 </TouchableOpacity>
-              </View>
+              )}
+
+              {requestsLoading ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : activeRequests.length === 0 ? (
+                <View style={{ minHeight: Dimensions.get('window').height * 0.6 }}>
+                  <EmptyState
+                    icon={FolderPlus}
+                    title={t('chats_page.empty_projects_title')}
+                    description={t('chats_page.empty_projects_desc')}
+                    primaryAction={{
+                      label: t('chats_page.empty_projects_primary'),
+                      icon: Plus,
+                      onPress: () => router.push('/(client)/(tabs)/home'),
+                    }}
+                    secondaryAction={{
+                      label: t('chats_page.empty_projects_secondary'),
+                      onPress: () => router.push('/(client)/(tabs)/browse'),
+                    }}
+                  />
+                </View>
+              ) : (
+                activeRequests.map((item) => (
+                  <ProjectRequestCard
+                    key={item.id}
+                    request={item}
+                    offerCount={offerCountByProject[item.id] ?? 0}
+                  />
+                ))
+              )}
+            </View>
+          ) : (
+            <View style={styles.section}>
+              {/* No heading — the active segment already says "price offers".
+                  The filter lives here ONLY: switchSegment resets it, so it can
+                  never stay active while its control is off-screen. */}
+              {combinedOffers.length > 0 && (
+                <View style={[styles.filterRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <TouchableOpacity
+                    style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
+                    onPress={openSortModal}
+                    activeOpacity={0.8}
+                  >
+                    <SlidersHorizontal size={14} color='#1e4fa3' strokeWidth={2} />
+                    <AppText weight="semiBold" style={styles.sortBtnText}>
+                      {t('offers.filter')}
+                    </AppText>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {(offersLoading || bundlesLoading) ? (
                 <ActivityIndicator color={colors.accent} />
+              ) : combinedOffers.length === 0 ? (
+                <View style={{ minHeight: Dimensions.get('window').height * 0.5 }}>
+                  <EmptyState
+                    icon={Inbox}
+                    title={t('chats_page.empty_offers_title')}
+                    description={t('chats_page.empty_offers_desc')}
+                    primaryAction={{
+                      label: t('chats_page.empty_offers_primary'),
+                      onPress: () => switchSegment('projects'),
+                    }}
+                    secondaryAction={{
+                      label: t('chats_page.empty_projects_secondary'),
+                      onPress: () => router.push('/(client)/(tabs)/browse'),
+                    }}
+                  />
+                </View>
               ) : (
                 combinedOffers.map((item) =>
                   item.kind === 'bundle' ? (
@@ -460,39 +530,49 @@ export default function ProjectsPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  projectsScroll: { paddingHorizontal: 36, paddingVertical: 4, gap: CARD_GAP },
-  headerWrap: {
-    alignSelf: 'stretch',
-    marginHorizontal: -16,
-    marginTop: -16,
-  },
   content: { padding: 16, gap: 20 },
   section: { gap: 10 },
-  sectionTitle: { fontSize: 20, fontWeight: '800' },
-  sectionTitleRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  projectTitleRow: { alignItems: 'center', justifyContent: 'flex-start', gap: 8, marginBottom: 8 },
-  myProjectsHeader: { alignItems: 'center' },
-  projectCounter: { fontSize: 13, color: '#8890b0' },
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { fontSize: 15 },
-  carouselWrap: { position: 'relative' },
-  arrowBtn: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
+  // The filter is alone on its row now that the heading is gone. flex-end puts
+  // it on the TRAILING edge in both directions — left under row-reverse, right
+  // under row — which is where it sat when the heading held the leading edge.
+  filterRow: { alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8 },
+  // ── Segmented control ── the chats-page tab pills, verbatim tokens.
+  segBar: {
+    width: '100%',
+    paddingHorizontal: 8,
+    // The segmented control is the first thing on the page now that the title is
+    // gone, so it carries the top spacing PageTitle used to contribute.
+    paddingTop: 16,
+    paddingBottom: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    width: 36,
-    zIndex: 10,
+    gap: 10,
   },
-  arrowCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,74,173,0.12)',
+  segPill: {
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    flexShrink: 1,
+  },
+  segPillActive: { backgroundColor: '#004aad', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
+  segPillInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
+  segText: { fontSize: 14, fontWeight: '600' },
+  segTextActive: { color: '#ffffff', fontSize: 16 },
+  segTextInactive: { color: '#004aad' },
+
+  // ── New-offers strip ──
+  newOffersStrip: {
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,74,173,0.08)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 2,
   },
+  newOffersText: { fontSize: 14, color: '#004aad', flexShrink: 1 },
+
   sortBtn: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -24,11 +24,13 @@ import he from '@core/i18n/translations/he.json';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
-  return (key: string): string => {
+  return (key: string, vars?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let result: unknown = translations;
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
+    if (typeof result !== 'string') return key;
+    if (!vars) return result;
+    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
   };
 }
 
@@ -49,7 +51,13 @@ const REJECT_RED = '#e04b4b';
 const STAT_BG = '#f5f6fb';
 const MENU_WIDTH = 130;
 
-type Props = { request: ProjectRequest };
+type Props = {
+  request: ProjectRequest;
+  /** Pending price offers on THIS project. Derived by the screen from the offer
+   *  lists it already subscribes to — no extra query. Omitted or 0 renders
+   *  nothing, so the card is unchanged wherever the count is not supplied. */
+  offerCount?: number;
+};
 
 function formatDateCompact(iso?: string, flexibleLabel?: string): string {
   if (!iso) return '—';
@@ -59,7 +67,7 @@ function formatDateCompact(iso?: string, flexibleLabel?: string): string {
   return `${d}/${m}/${y.slice(2)}`;
 }
 
-export function ProjectRequestCard({ request }: Props) {
+export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
   const [teamOpen, setTeamOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -142,6 +150,13 @@ export function ProjectRequestCard({ request }: Props) {
         >
           {request.title}
         </AppText>
+        {offerCount > 0 && (
+          <View style={styles.offerCountBadge}>
+            <AppText weight="bold" style={styles.offerCountBadgeText}>
+              {t('chats_page.offer_count_badge', { n: String(offerCount) })}
+            </AppText>
+          </View>
+        )}
       </View>
 
       {/* Zone 2 — Three stat squares: location / end date / execution */}
@@ -357,6 +372,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
   },
+  // Sits between the ⋯ and the title in the header row, which is reversed
+  // relative to rowDir — so it lands on the leading edge in both directions.
+  offerCountBadge: {
+    backgroundColor: BLUE,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    flexShrink: 0,
+  },
+  offerCountBadgeText: { color: '#ffffff', fontSize: 11 },
   title: {
     flex: 1,
     fontSize: 17,

@@ -326,7 +326,12 @@
     "hire_self_error": "You cannot hire yourself onto your own project",
     "hire_unavailable_error": "This professional cannot take on additional projects right now",
     "hire_project_closed": "This project is closed, so no one else can be added to it.",
-    "hire_price_invalid": "This offer's amount is not valid, so it can't be accepted."
+    "hire_price_invalid": "This offer's amount is not valid, so it can't be accepted.",
+    "offer_count_badge": "{{n}} offers",
+    "new_offers_strip": "{{n}} new offers",
+    "empty_offers_title": "No price offers yet",
+    "empty_offers_desc": "When professionals send an offer on your projects, it will appear here",
+    "empty_offers_primary": "Go to my projects"
   },
   "client_onboarding": {
     "title": "Welcome! Set up your profile",
