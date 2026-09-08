@@ -218,7 +218,11 @@ export default function SearchScreen() {
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeModal} />
           <View style={styles.modalSheetWrapper}>
-          <LinearGradient colors={['#efd4f6', '#b7cae6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalSheet}>
+          {/* Same surface as the page behind it: colors.bgGradient, running
+              vertically as Screen does. It was a hardcoded pastel pair running
+              horizontally, so the sheet read as a different surface from the
+              browse page — and, being hardcoded, ignored the theme entirely. */}
+          <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.modalSheet}>
             {/* Modal header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.modalTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{catLabel(selectedCategory ?? '', rtl)}</Text>
