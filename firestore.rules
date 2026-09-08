@@ -110,7 +110,107 @@ service cloud.firestore {
       allow create: if isAuth() && (
         request.resource.data.type != 'community' || isAdmin()
       );
-      allow update: if isAuth() && request.auth.uid in resource.data.members;
+      // ── Update guard ────────────────────────────────────────────────────
+      // Membership used to be the ONLY check, with no field restriction at all,
+      // so any member of a community could rename it, replace its photo, kick
+      // everyone else, forge `readOnly: true` (which the chat list reads as
+      // project completion), or reassign `ownerId` to themselves — a takeover.
+      // Same shape as the marketplace_listings hole.
+      //
+      // Everything is expressed as an allowlist over affectedKeys(), so a field
+      // that is not named below CANNOT be written by a client at all — including
+      // one added to the app later. That is deliberate: a new field is denied
+      // until someone adds it here, rather than silently inheriting write access.
+      //
+      // Dotted-path writes (`unreadCount.<uid>`) surface in affectedKeys() as the
+      // TOP-LEVEL key `unreadCount`. Verified on an emulator before this was
+      // written, because sendMessage uses that shape on every single message and
+      // a hasOnly() that rejected it would break all chat.
+
+      function touchedKeys() {
+        return request.resource.data.diff(resource.data).affectedKeys();
+      }
+      function isChatMember() {
+        return isAuth() && request.auth.uid in resource.data.members;
+      }
+      // ownerId exists on communities only. On a dm/group/purchase doc this is
+      // false, so the owner-only fields below are simply not client-writable
+      // there — intended, not an oversight.
+      function isChatOwner() {
+        return isAuth() && resource.data.get('ownerId', '') == request.auth.uid;
+      }
+
+      // Any member: the message hot path, plus the purchase handshake and
+      // archival, which marketplaceService writes from the client for BOTH
+      // parties (PurchaseBanner -> acceptDeal / cancelPurchase / confirmReceived).
+      function chatMemberFields() {
+        return [
+          'lastMessage', 'lastMessageAt', 'unreadCount', 'hiddenFor',
+          'sellerAgreed', 'buyerAgreed',
+          'archived', 'archiveReason', 'archivedAt'
+        ];
+      }
+      // Identity/branding fields, scoped by chat TYPE rather than by ownership
+      // alone — an owner-only rule across the board would deny these on groups,
+      // which have no ownerId, and group photo editing is shipped behaviour
+      // (ChatRoomScreen.tsx:965-967 gates only communities on ownership).
+      // Deliberately NOT keyed off `roles`: Phase 1 found it vestigial — written
+      // once at creation, never read for authorization, never verified.
+      function chatType() {
+        return resource.data.get('type', '');
+      }
+      // community: owner only.
+      function chatOwnerFields() {
+        return ['name', 'photoURL', 'description', 'category'];
+      }
+      // group: any member may change the PHOTO — that is shipped behaviour. `name`
+      // is deliberately absent: createProjectGroup sets it once and no client path
+      // ever updates it, so allowing it would be write surface with no feature
+      // behind it. `description`/`category` are community-only (0 group docs carry
+      // either) and stay out too.
+      function groupEditableFields() {
+        return ['photoURL'];
+      }
+      // dm and purchase get neither: no client path writes `name` or `photoURL`
+      // after creation, dm docs carry neither field at all, and purchase `name`
+      // is set once by createPurchaseChat.
+      function chatWritableFields() {
+        return chatType() == 'community'
+          ? chatMemberFields().concat(chatOwnerFields()).concat(['members'])
+          : chatType() == 'group'
+          ? chatMemberFields().concat(groupEditableFields()).concat(['members'])
+          : chatMemberFields().concat(['members']);
+      }
+      // NOT listed anywhere, therefore denied to every client:
+      //   ownerId, status                  -> takeover / moderation; callable only
+      //   readOnly, readOnlyReason, readOnlyAt -> written by confirmCompletion (Admin SDK)
+      //   type, createdAt, projectId, purchaseListingId, buyerName, roles
+      //                                    -> set at creation, never updated
+
+      // A member may remove ONLY themselves. The new list must equal the old one
+      // minus exactly the caller — so this cannot be used to kick anyone or to
+      // add a uid while dropping self. Adds and kicks are the owner's.
+      function isSelfRemoval() {
+        return request.resource.data.members == resource.data.members.removeAll([request.auth.uid])
+          && request.resource.data.members.size() == resource.data.members.size() - 1
+          && !(request.auth.uid in request.resource.data.members);
+      }
+
+      allow update: if isChatMember()
+        // 1. Nothing outside this type's client-writable union may be touched, so
+        //    an unrecognised field cannot ride along in an otherwise-legal write.
+        && touchedKeys().hasOnly(chatWritableFields())
+        // 2. On a COMMUNITY, the branding fields require the owner. On a group
+        //    they are member-editable and reach this clause already permitted by
+        //    (1); on dm/purchase (1) has denied them outright.
+        && (chatType() != 'community'
+            || !touchedKeys().hasAny(chatOwnerFields())
+            || isChatOwner())
+        // 3. members: self-removal by anyone, add/kick by the owner. Groups have
+        //    no ownerId, so client-side adds and kicks are denied there — correct,
+        //    since hire.ts and removal.ts do both through the Admin SDK.
+        && (!touchedKeys().hasAny(['members']) || isSelfRemoval() || isChatOwner());
+
       allow delete: if false;
 
       // direct messages
