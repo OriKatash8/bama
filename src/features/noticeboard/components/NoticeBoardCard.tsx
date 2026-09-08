@@ -183,15 +183,29 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             >
               {request.title}
             </Text>
-            {!!poster?.displayName && (
-              <AppText weight="semiBold" style={[styles.posterNameCompact, { color: statValueColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-                {poster.displayName}
-              </AppText>
-            )}
-            {!!timeAgo && (
-              <AppText weight="regular" style={[styles.timeAgoText, { color: timeColor }]}>
-                {timeAgo}
-              </AppText>
+            {/* Name and age share one line: "Dana Levi - 3d ago".
+                The separator is its OWN element rather than a "- " prefix on the
+                time string, so the row direction places it — a leading hyphen
+                inside an RTL run gets reordered by bidi and can end up on the
+                wrong side of the timestamp. */}
+            {(!!poster?.displayName || !!timeAgo) && (
+              <View style={[styles.posterLine, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                {!!poster?.displayName && (
+                  <AppText weight="semiBold" style={[styles.posterNameCompact, { color: statValueColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                    {poster.displayName}
+                  </AppText>
+                )}
+                {!!poster?.displayName && !!timeAgo && (
+                  <AppText weight="regular" style={[styles.posterLineDash, { color: timeColor }]}>
+                    -
+                  </AppText>
+                )}
+                {!!timeAgo && (
+                  <AppText weight="regular" style={[styles.timeAgoText, { color: timeColor }]} numberOfLines={1}>
+                    {timeAgo}
+                  </AppText>
+                )}
+              </View>
             )}
           </View>
 
@@ -444,13 +458,24 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 0,
   },
+  // One row, so the name must be the part that gives: flexShrink lets a long
+  // name truncate instead of pushing the timestamp off the card. maxWidth keeps
+  // the row inside headerContent, whose alignItems sizes children to content.
+  posterLine: {
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '100%',
+  },
   posterNameCompact: {
     fontSize: 12,
     marginTop: 0,
+    flexShrink: 1,
+  },
+  posterLineDash: {
+    fontSize: 11,
   },
   timeAgoText: {
     fontSize: 11,
-    marginTop: 1,
   },
 
   // --- Compact card: description + dates ---
