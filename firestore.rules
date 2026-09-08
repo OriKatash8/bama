@@ -62,11 +62,80 @@ service cloud.firestore {
         .hasAny(['projectId', 'professionalId']);
     }
 
+    // ── Offer status: a TRANSITION PAIR, not a field allowlist ──────────────
+    //
+    // Deliberately expressed as (old status -> new status) read off
+    // resource.data. A field allowlist would admit `accepted -> rejected`, and
+    // that is the leak: computeProAmount (functions/src/lifecycle/helpers.ts:104)
+    // derives the platform-fee base from `status == 'accepted'`, so a pro who
+    // flipped their own accepted offer to 'rejected' would zero their own 3% fee
+    // and still be counted settled at completion.
+    //
+    // Exactly ONE client transition survives: the receiving client declining a
+    // pending offer (useAcceptOffer.ts:29 / useAcceptBundleOffer.ts:28).
+    // Everything else — anything reaching 'accepted' or 'removed', and any move
+    // out of a terminal state — belongs to hireProfessional / freeSlot, which
+    // use the Admin SDK and bypass rules entirely.
+    function offerStatusUnchanged() {
+      return request.resource.data.get('status', '') == resource.data.get('status', '');
+    }
+    function offerClientDecline() {
+      return resource.data.get('status', '') == 'pending'
+        && request.resource.data.get('status', '') == 'rejected'
+        && projectDoc(resource.data.projectId).clientId == request.auth.uid;
+    }
+    // Every field a client legitimately writes to an offer AFTER creation.
+    // Pulled from the code, not guessed:
+    //   price / bundlePrice / editedAt / editCount — NoticeHistorySheet.tsx:84-86
+    //   bundleId                                   — usePriceOffer.ts:68-70 backfill
+    //   status                                     — the decline above
+    // Anything else, known or invented, is denied: `subcategory`, `createdAt`,
+    // `slots`, `offerIds`, `individualTotal` are all write-once at create.
+    function offerClientFields() {
+      return ['status', 'price', 'bundlePrice', 'editedAt', 'editCount', 'bundleId'];
+    }
+    // An offer must be born pending, on a project that actually exists. Without
+    // the first clause a professional could create an offer already 'accepted';
+    // without the second, one pointing at a project id that was never real.
+    function offerCreateValid() {
+      return request.resource.data.professionalId == request.auth.uid
+        && request.resource.data.get('status', '') == 'pending'
+        && request.resource.data.get('projectId', '') != ''
+        && exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId));
+    }
+
     // `status` is not server-only — clients set 'open' at create and when
-    // reposting roles. Only the TERMINAL transitions belong to the callables.
+    // reposting roles (project-details.tsx:625-628). Only the TERMINAL
+    // transitions belong to the callables.
+    //
+    // Terminal means terminal in BOTH directions. The previous version blocked
+    // only ENTERING completed/cancelled, which left completed -> open,
+    // completed -> in_progress and cancelled -> open all permitted: a client
+    // could reopen a closed job, and with it the offers and fee machinery that
+    // confirmCompletion had already settled. Reopening, if it is ever wanted,
+    // goes through a callable.
     function statusTransitionAllowed() {
       return request.resource.data.get('status', '') == resource.data.get('status', '') ||
-        !(request.resource.data.get('status', '') in ['completed', 'cancelled']);
+        (!(request.resource.data.get('status', '') in ['completed', 'cancelled']) &&
+         !(resource.data.get('status', '') in ['completed', 'cancelled']));
+    }
+
+    // Every field a client legitimately writes to a project AFTER creation.
+    // From the four client update sites:
+    //   useProjectRequests.ts:67        crewSlots + SubmitDetails (title,
+    //                                   description, exec, deadline, date,
+    //                                   budget, vibe, location,
+    //                                   targetProfessionalId, roleAnswers)
+    //   project-details.tsx:183         deadline
+    //   project-details.tsx:625-628     crewSlots, status
+    //   project-details.tsx:390-393 and ReviewFlow.tsx:126-129
+    //                                   reviewsCompleted, reviewsPending
+    function clientProjectFields() {
+      return [
+        'crewSlots', 'title', 'description', 'exec', 'deadline', 'date',
+        'budget', 'vibe', 'location', 'targetProfessionalId', 'roleAnswers',
+        'status', 'reviewsCompleted', 'reviewsPending'
+      ];
     }
 
     // True if the user is the project's client OR is in the project's group chat.
@@ -306,8 +375,14 @@ service cloud.firestore {
       // Only the client may update, and never a server-owned field. The former
       // "professionals may update filledSlots" branch is gone — removal now goes
       // through the freeSlot callable, which also maintains professionalIds.
+      // hasOnly() is the primary guard — an unrecognised or newly-invented field
+      // is denied rather than inherited. The serverOnly hasAny() below is kept
+      // deliberately: it is redundant today, but it fails loudly if a
+      // server-owned field is ever added to clientProjectFields() by mistake.
       allow update: if isAuth() &&
         resource.data.clientId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(clientProjectFields()) &&
         !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(serverOnlyProjectFields()) &&
         statusTransitionAllowed();
@@ -388,22 +463,28 @@ service cloud.firestore {
 
     // ─── priceOffers ────────────────────────────────────────────────
     match /priceOffers/{offerId} {
-      allow create: if isAuth() && request.resource.data.professionalId == request.auth.uid;
+      allow create: if isAuth() && offerCreateValid();
       allow read: if isAuth() && (
         resource.data.professionalId == request.auth.uid ||
         projectDoc(resource.data.projectId).clientId == request.auth.uid
       );
+      // offerAmountFrozenOnceAccepted() had a two-write bypass — accepted ->
+      // pending, then edit the price. offerStatusUnchanged/offerClientDecline
+      // close it: leaving 'accepted' is no longer a client transition at all.
       allow update: if isAuth() && (
         resource.data.professionalId == request.auth.uid ||
-        // Client accepts/rejects, including batch-rejecting competing offers
         projectDoc(resource.data.projectId).clientId == request.auth.uid
-      ) && offerAmountFrozenOnceAccepted() && offerIdentityStable();
+      )
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(offerClientFields())
+        && (offerStatusUnchanged() || offerClientDecline())
+        && offerAmountFrozenOnceAccepted() && offerIdentityStable();
       allow delete: if false;
     }
 
     // ─── bundleOffers ───────────────────────────────────────────────
     match /bundleOffers/{offerId} {
-      allow create: if isAuth() && request.resource.data.professionalId == request.auth.uid;
+      allow create: if isAuth() && offerCreateValid();
       allow read: if isAuth() && (
         resource.data.professionalId == request.auth.uid ||
         projectDoc(resource.data.projectId).clientId == request.auth.uid
@@ -411,7 +492,11 @@ service cloud.firestore {
       allow update: if isAuth() && (
         resource.data.professionalId == request.auth.uid ||
         projectDoc(resource.data.projectId).clientId == request.auth.uid
-      ) && offerAmountFrozenOnceAccepted() && offerIdentityStable();
+      )
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(offerClientFields())
+        && (offerStatusUnchanged() || offerClientDecline())
+        && offerAmountFrozenOnceAccepted() && offerIdentityStable();
       allow delete: if false;
     }
 
