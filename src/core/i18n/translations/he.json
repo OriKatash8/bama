@@ -102,7 +102,7 @@
     "vibe_label": "אווירה וסגנון",
     "no_skills_listed": "לא רשומים כישורים לבעל המקצוע הזה.",
     "error_date_past": "לא ניתן לבחור תאריך שעבר.",
-    "error_deadline_order": "תאריך הסיום חייב להיות אחרי תאריך הביצוע."
+    "error_deadline_order": "תאריך הסיום לא יכול להיות לפני תאריך הביצוע."
   },
   "search": {
     "no_professionals_yet": "אין אנשי מקצוע עדיין",

@@ -65,10 +65,6 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
   // 'YYYY-MM-DD' strings compare lexicographically, which is why every date in
   // this codebase is stored that way — no Date maths needed to order them.
   const todayISO = useMemo(() => isoOf(new Date()), []);
-  /** Both bounds are inclusive in MiniCalendar, so "strictly after" is expressed
-   *  by shifting a day rather than by a different comparison. */
-  const dayAfter = (iso: string) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + 1); return isoOf(d); };
-  const dayBefore = (iso: string) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() - 1); return isoOf(d); };
 
   /**
    * One entry per SKILL this professional actually lists, not per role.
@@ -214,7 +210,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
     // does not depend solely on the UI that happens to set it.
     if (exec && exec < todayISO) next.exec = t('builder.error_date_past');
     if (hasDeadlineDate && deadline < todayISO) next.deadline = t('builder.error_date_past');
-    if (exec && hasDeadlineDate && exec >= deadline) next.deadline = t('builder.error_deadline_order');
+    if (exec && hasDeadlineDate && exec > deadline) next.deadline = t('builder.error_deadline_order');
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -580,12 +576,13 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
           isFlexible={deadline === 'flexible'}
           onFlexible={() => { setDeadline(deadline === 'flexible' ? '' : 'flexible'); setCalOpen(null); }}
           flexibleLabel={t('builder.flexible')}
-          // Neither date may be in the past, and the deadline must fall strictly
-          // AFTER the execution date. Each picker bounds the other, so the pair
-          // cannot be put into an invalid order in the first place — whichever
-          // the client sets first constrains the second.
-          minDate={calOpen === 'exec' ? todayISO : (exec ? dayAfter(exec) : todayISO)}
-          maxDate={calOpen === 'exec' && hasDeadlineDate ? dayBefore(deadline) : undefined}
+          // Neither date may be in the past, and the deadline may not fall BEFORE
+          // the execution date. Both bounds are inclusive, so the two may be the
+          // same day — a shoot delivered the day it happens is a real case, and
+          // this matches the home builder (home/index.tsx:723-724). Each picker
+          // bounds the other, so the pair cannot be put out of order at all.
+          minDate={calOpen === 'exec' ? todayISO : (exec || todayISO)}
+          maxDate={calOpen === 'exec' && hasDeadlineDate ? deadline : undefined}
         />
       )}
     </Modal>
