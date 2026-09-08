@@ -16,7 +16,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { ROLES, ROLE_BY_ID, ROLE_TO_LEGACY_CATEGORY, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, X, MapPin, Lock } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, ChevronRight, X, MapPin, Lock } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -421,8 +421,15 @@ export default function HomeScreen() {
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
             </View>
 
-            <TouchableOpacity style={styles.backArrow} onPress={() => setStep(1)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+            <TouchableOpacity
+              style={[styles.backArrow, { alignSelf: rtl ? 'flex-end' : 'flex-start', flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={() => setStep(1)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              {rtl
+                ? <ChevronRight size={20} color="#004aad" strokeWidth={2.5} />
+                : <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />}
               <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
             </TouchableOpacity>
 
@@ -519,8 +526,15 @@ export default function HomeScreen() {
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
             </View>
 
-            <TouchableOpacity style={styles.backArrow} onPress={() => setStep(2)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+            <TouchableOpacity
+              style={[styles.backArrow, { alignSelf: rtl ? 'flex-end' : 'flex-start', flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={() => setStep(2)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              {rtl
+                ? <ChevronRight size={20} color="#004aad" strokeWidth={2.5} />
+                : <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />}
               <Text style={[styles.backArrowText, { color: '#004aad' }]}>{t('search.back').replace('← ', '')}</Text>
             </TouchableOpacity>
 
@@ -737,7 +751,11 @@ function createStyles(
     progressRow: { gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
     progressBar: { flex: 1, height: 4, borderRadius: 2 },
 
-    backArrow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, alignSelf: 'flex-start' },
+    // alignSelf and flexDirection are set INLINE per call site: a plain View does
+    // not flip with the app language, so a hardcoded 'flex-start' pins this to the
+    // LEFT in Hebrew too. The chevron is swapped for the same reason — back points
+    // right in RTL.
+    backArrow: { alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
     backArrowText: { color: '#004aad', fontSize: 15, fontWeight: '600', fontFamily: ffSemiBold },
 
     card: { margin: 16, marginTop: 10, padding: 20 },
