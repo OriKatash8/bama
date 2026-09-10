@@ -100,26 +100,37 @@ export default function AdminFeesScreen() {
   const textAlign = rtl ? ('right' as const) : ('left' as const);
 
   const [tab, setTab] = useState<Tab>('arrears');
-  const [arrears, setArrears] = useState<ArrearsRow[] | null>(null);
+  const [arrears, setArrears] = useState<ArrearsRow[]>([]);
   const [graceDays, setGraceDays] = useState(0);
-  const [flagged, setFlagged] = useState<FlaggedRow[] | null>(null);
+  const [flagged, setFlagged] = useState<FlaggedRow[]>([]);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
+  /**
+   * THREE states, not two, and the third is the point of this screen.
+   *
+   * 'error' must never render as an empty list. A failed query showing "nothing
+   * outstanding" is indistinguishable from the truth, and it is the reading that
+   * makes someone stop checking — the debt is still there, the screen just did
+   * not fetch it. A toast cannot carry this: it is transient, and the wrong
+   * conclusion outlives it.
+   */
+  const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
 
   const load = useCallback(async () => {
+    setState('loading');
     try {
       const [a, f] = await Promise.all([listArrears({}), listFlagged({})]);
       setArrears(a.rows);
       setGraceDays(a.graceDays);
       setFlagged(f.rows);
+      setState('ok');
     } catch (e) {
-      // Surfaced, never swallowed: an empty list and a failed call look identical
-      // on screen, and "no arrears" is the more dangerous of the two to believe.
+      // The lists are NOT cleared to [] here. Doing that was the bug: it rendered
+      // the empty-state copy, so a denied or failed call read as "no arrears".
+      // The screen goes to 'error' instead and says so until a retry succeeds.
       console.error('[admin/fees] load failed:', e);
-      showToast((e as { message?: string })?.message ?? t('admin_fees.action_failed'), 'error');
-      setArrears([]);
-      setFlagged([]);
+      setState('error');
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -147,7 +158,6 @@ export default function AdminFeesScreen() {
     }
   }
 
-  const loading = arrears === null || flagged === null;
   const TABS: Tab[] = ['arrears', 'flagged'];
 
   return (
@@ -176,7 +186,11 @@ export default function AdminFeesScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.filters, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {TABS.map((tb) => {
-            const count = tb === 'arrears' ? arrears?.length ?? 0 : flagged?.length ?? 0;
+            // '—' rather than '(0)' while the data is unknown: a zero here makes
+            // the same false claim the empty list did.
+            const count = state === 'ok'
+              ? String(tb === 'arrears' ? arrears.length : flagged.length)
+              : t('admin_fees.count_unknown');
             const active = tab === tb;
             return (
               <TouchableOpacity
@@ -195,8 +209,26 @@ export default function AdminFeesScreen() {
           })}
         </View>
 
-        {loading ? (
+        {state === 'loading' ? (
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+        ) : state === 'error' ? (
+          <View style={[styles.card, { borderColor: BLOCKED_RED, backgroundColor: colors.card }]}>
+            <Text style={[styles.name, { ...font.bold, color: BLOCKED_RED, textAlign }]}>
+              {t('admin_fees.load_failed_title')}
+            </Text>
+            <Text style={[styles.meta, { ...font.regular, color: colors.text, textAlign }]}>
+              {t('admin_fees.load_failed_body')}
+            </Text>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 6 }]}
+              onPress={() => void load()}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.actionText, { ...font.medium, color: '#ffffff' }]}>
+                {t('admin_fees.retry')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : tab === 'arrears' ? (
           arrears.length === 0 ? (
             <Text style={[styles.empty, { ...font.regular, color: colors.textMuted }]}>

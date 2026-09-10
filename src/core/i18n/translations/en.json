@@ -1072,6 +1072,10 @@
     "reason_completion_unanswered": "Completion request went unanswered",
     "flagged_at": "Flagged: {{date}}",
     "pro_label": "Professional: {{name}}",
-    "client_label": "Client: {{name}}"
+    "client_label": "Client: {{name}}",
+    "load_failed_title": "Could not load",
+    "load_failed_body": "The request failed, so this list does not reflect the real state. Do not read this screen as \"nothing outstanding\".",
+    "retry": "Retry",
+    "count_unknown": "—"
   }
 }

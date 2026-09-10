@@ -1072,6 +1072,10 @@
     "reason_completion_unanswered": "בקשת סיום ללא מענה מהלקוח",
     "flagged_at": "סומן: {{date}}",
     "pro_label": "בעל/ת מקצוע: {{name}}",
-    "client_label": "לקוח/ה: {{name}}"
+    "client_label": "לקוח/ה: {{name}}",
+    "load_failed_title": "לא ניתן לטעון את הנתונים",
+    "load_failed_body": "הבקשה נכשלה, ולכן הרשימה כאן אינה משקפת את המצב. אל תקראו את המסך הזה כ״אין חובות״.",
+    "retry": "נסו שוב",
+    "count_unknown": "—"
   }
 }

@@ -29,6 +29,7 @@ import {
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, deleteUser,
 } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 for (const line of readFileSync(new URL('../.env', import.meta.url), 'utf8').split('\n')) {
   const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
@@ -45,6 +46,9 @@ console.log(`\nproject: ${cfg.projectId}  (LIVE)\n`);
 const STAMP = `probe${Date.now()}`;
 const app = initializeApp(cfg, STAMP);
 const db = getFirestore(app), auth = getAuth(app);
+// The lifecycle callables are all us-central1 (only compressVideo and
+// onReviewCreate are europe-west1), which is getFunctions' default.
+const fns = getFunctions(app);
 
 const { initializeApp: ia } = await import('firebase-admin/app');
 const { getFirestore: gdb } = await import('firebase-admin/firestore');
@@ -69,6 +73,25 @@ async function allowed(fn) {
     throw e;
   }
 }
+/**
+ * Call an admin callable as the signed-in user. Resolves 'denied' when the
+ * function itself refused (requireAdmin), 'allowed' when it ran, and THROWS on
+ * anything else — a missing function returns 'internal', and scoring that as a
+ * pass would report a deployment gap as a security guarantee.
+ */
+async function callAs(name, data = {}) {
+  try {
+    await httpsCallable(fns, name)(data);
+    return 'allowed';
+  } catch (e) {
+    if (e?.code === 'functions/permission-denied') return 'denied';
+    if (e?.code === 'functions/not-found' || e?.code === 'functions/internal') {
+      throw new Error(`${name}: ${e.code} — not deployed, or it threw before requireAdmin`);
+    }
+    throw e;
+  }
+}
+
 async function mk(tag) {
   const email = `${STAMP}.${tag}@bama-invalid.test`;
   const c = await createUserWithEmailAndPassword(auth, email, PW);
@@ -191,6 +214,27 @@ try {
     await allowed(() => getDoc(doc(db, 'reviews', REVIEW_ID))) === true);
 
   // ── 4. runtime config ───────────────────────────────────────────────────
+  // ── 3b. admin-only callables ────────────────────────────────────────────
+  // The gate's other half. demandSentAt is unwritable through the rules (above),
+  // so the only way to set it is markDemandSent — which must refuse everyone who
+  // is not an admin, or a professional could start and stop their own clock.
+  console.log('\n3b. Admin-only callables refuse a non-admin:');
+  await as('pro');
+  const feeArgs = { projectId: PID, professionalId: PRO };
+  check('pro calls markDemandSent'.padEnd(52) + 'deny ',
+    await callAs('markDemandSent', feeArgs) === 'denied');
+  check('pro calls markFeePaid'.padEnd(52) + 'deny ',
+    await callAs('markFeePaid', feeArgs) === 'denied');
+  check('pro calls adminListArrears'.padEnd(52) + 'deny ',
+    await callAs('adminListArrears') === 'denied');
+  check('pro calls adminListFlaggedProjects'.padEnd(52) + 'deny ',
+    await callAs('adminListFlaggedProjects') === 'denied');
+  await as('client');
+  check('client calls adminListArrears'.padEnd(52) + 'deny ',
+    await callAs('adminListArrears') === 'denied');
+  check('client calls markDemandSent'.padEnd(52) + 'deny ',
+    await callAs('markDemandSent', feeArgs) === 'denied');
+
   console.log('\n4. Runtime config — readable by all, writable by none:');
   await as('pro');
   let cfgDoc = null;
