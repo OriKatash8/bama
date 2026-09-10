@@ -38,6 +38,9 @@ type CombinedOffer =
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string; rating?: number };
 
+/** This page carries its own background, not the app-wide one. */
+const PAGE_GRADIENT = ['#bccce8', '#efd5f7'] as const;
+
 type Translations = typeof en;
 
 function makeT(translations: Translations) {
@@ -309,7 +312,7 @@ export default function ProjectsPage() {
   }, [offers, bundles]);
 
   return (
-    <Screen scrollable={false}>
+    <Screen scrollable={false} gradient={PAGE_GRADIENT}>
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}

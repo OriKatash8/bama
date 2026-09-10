@@ -7,17 +7,21 @@ type ScreenProps = {
   scrollable?: boolean;
   style?: StyleProp<ViewStyle>;
   backgroundColor?: string;
+  /** Two-stop background gradient, painted top-to-bottom. Wins over `backgroundColor`. */
+  gradient?: readonly [string, string];
   keyboardShouldPersistTaps?: 'always' | 'handled' | 'never';
 };
 
-export function Screen({ children, scrollable = true, style, backgroundColor, keyboardShouldPersistTaps }: ScreenProps) {
+export function Screen({ children, scrollable = true, style, backgroundColor, gradient, keyboardShouldPersistTaps }: ScreenProps) {
   const colors = useTheme();
-  const gradient: readonly [string, string] = backgroundColor
-    ? [backgroundColor, backgroundColor]
-    : colors.bgGradient;
+  const bg: readonly [string, string] = gradient
+    ? gradient
+    : backgroundColor
+      ? [backgroundColor, backgroundColor]
+      : colors.bgGradient;
 
   return (
-    <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.safe}>
+    <LinearGradient colors={bg} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.safe}>
       <SafeAreaView style={styles.safe}>
         <KeyboardAvoidingView
           style={styles.flex}
