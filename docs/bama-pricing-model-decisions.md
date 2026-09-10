@@ -1,6 +1,40 @@
 # BAMA — Pricing & Project Lifecycle: Settled Decisions
 
-Status: decided, ready to build. Supersedes earlier drafts where they conflict.
+> ## ⚠️ PARTLY SUPERSEDED — 2026-09-10
+>
+> **Everything in this document that makes something depend on payment has been
+> removed from the product.** It is kept for the reasoning and the parts still in
+> force, not as a description of the build. Read this box before acting on anything below.
+>
+> Two rules now override it, for App Store compliance (Guideline 3.1.1 / 2.3.1):
+>
+> 1. **Reviews publish on completion, unconditionally.** Never held, delayed, or
+>    rating-neutral pending a fee. §6 in full is dead.
+> 2. **Nothing in the app is unlocked by a payment.** No slot, feature, placement,
+>    visibility or capability may become purchasable.
+>
+> What that removed, concretely:
+>
+> | Section | Said | Now |
+> |---|---|---|
+> | §1, §4 | Collection works by "gating" — unpaid keeps a slot and holds the review | Gone. Completion frees every slot and publishes every review, whatever is owed |
+> | §2.2 | ₪80/mo subscription, 10 free projects a month | Gone. No subscription product; one cap for everyone |
+> | §2.1 | Paying frees a slot so the pro can work again | Gone. Only completion or cancellation frees a slot |
+> | §5 | Early payment to free a slot | Gone. No in-app payment path at all |
+> | §6 | Review held until the fee is paid, 60-day release | Gone. Published on creation |
+> | §4.2 | Pro requested + client silent → auto-confirm at day 7 | Now flagged for admin review; silence never confirms |
+>
+> **Still in force:** BAMA is a broker and never holds funds (§1); the fee is 3% of
+> each professional's own amount, charged only on client-confirmed completion; the
+> rate is captured at hire and immutable; every rate and cap is config, never
+> hardcoded — now `config/pricing` rather than a constants file; cancellation means
+> no fee (§4.3); and the open-project cap of 2, which survives *only* because
+> completion frees a slot and payment never does.
+>
+> Settlement now happens off-platform: the professional sees a read-only balance,
+> and an admin records payment with `markFeePaid`.
+
+Status: partly superseded — see the box above.
 Related: `bama-pricing-enforcement-spec.md`, `bama-payments-accountant-brief.md`
 
 ---
@@ -31,7 +65,10 @@ All rates, caps, and grace periods are **config values**. Never hardcoded.
 
 The first two projects are effectively free — there is **no separate welcome-credit field**. The model's own shape is the welcome gift: a new pro can run two projects without paying anything. The fee only becomes unavoidable when they want a third slot, or when they want their review published.
 
-### 2.2 Subscriber
+### 2.2 Subscriber — DEAD, see the box at the top
+
+> There is no subscription product.
+
 
 | Rule | Value |
 |---|---|
@@ -101,7 +138,10 @@ Either side cancels before completion → **no fee, slot frees immediately**. A 
 
 ---
 
-## 5. Early payment
+## 5. Early payment — DEAD, see the box at the top
+
+> There is no in-app payment path, so nothing can be paid early.
+
 
 A non-subscriber may pay the fee on a project **before it completes**, to free a slot. Entry point: project detail screen, next to the "update price" button.
 
@@ -116,7 +156,11 @@ Refunds must be described in the תקנון as discretionary, **not as a right**
 
 ---
 
-## 6. Reviews
+## 6. Reviews — DEAD, see the box at the top
+
+> Reviews are never held. This section describes the removed mechanism and is
+> retained only to explain why it was built and why it is gone.
+
 
 The review lock is the second collection lever, and it is the one that reaches pros who are not currently trying to take new work.
 

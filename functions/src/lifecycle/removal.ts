@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { db, FieldValue, requireAuth, feeRef, type FeeDoc } from './helpers';
+import { db, FieldValue, requireAuth, feeRef } from './helpers';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
@@ -13,11 +13,10 @@ type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
  * `acceptRemoval` only rewrote `filledSlots`, so a removed pro stayed blocked
  * forever.
  *
- * Refuses once THIS PRO's own fee is owed and unpaid: otherwise a pro whose fee
- * is due accepts a removal, loses the slot occupation, and the fee is never
- * collectable (§4.4 — disputes and exits must not free the slot). The guard is
- * per-pro, not per-project: another professional owing money on the same project
- * is no reason to trap this one on it.
+ * Does NOT consult what this professional owes. It used to refuse while their own
+ * fee was outstanding, so that settling was what bought them their way off the
+ * project. What a professional owes BAMA is recorded on their fee document and
+ * stays recorded whether they are on the project or not.
  */
 export const freeSlot = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
@@ -47,13 +46,14 @@ export const freeSlot = onCall(async (request) => {
     myFeeRef.get(),
   ]);
 
-  // A missing fee doc is 'exempt' (pre-correction project) — nothing to collect,
-  // so leaving is always allowed there.
-  const fee = feeSnap.exists ? (feeSnap.data() as FeeDoc) : null;
-  const owesNow = !!fee && fee.feeStatus === 'owed' && fee.feePaid !== true;
-  if (owesNow && (project.completion as { state?: string } | undefined)?.state === 'confirmed') {
-    throw new HttpsError('failed-precondition', 'Cannot leave a confirmed project with a fee outstanding');
-  }
+  // No fee check here, deliberately. This used to refuse when the professional
+  // still owed on a confirmed project, which made settling the thing that bought
+  // them their way out — the same shape as paying to free a slot. What they owe
+  // BAMA is recorded on the fee document and stays recorded whether they are on
+  // the project or not; it does not gate leaving.
+  //
+  // It is also moot now: completion frees every slot, so a confirmed project
+  // holds nobody.
 
   const batch = db.batch();
 
@@ -72,7 +72,7 @@ export const freeSlot = onCall(async (request) => {
   // a pro must never pay for work that earned them nothing). Anything already
   // paid early stays recorded in paidAmount for the manual refund path.
   if (feeSnap.exists) {
-    batch.update(myFeeRef, { slotActive: false, feeDue: 0 } as Update);
+    batch.update(myFeeRef, { slotActive: false, feeDue: 0, status: 'not_owed' } as Update);
   }
 
   const chatId = project.chatId as string | undefined;

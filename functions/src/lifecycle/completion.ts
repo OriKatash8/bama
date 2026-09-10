@@ -1,10 +1,11 @@
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import {
-  db, FieldValue, requireAuth, requireAdmin, notify,
-  feeRef, feesCol, computeProAmount, computeFee, publishProReview, type FeeDoc,
+  db, FieldValue, Timestamp, requireAuth, requireAdmin, notify,
+  feeRef, feesCol, computeProAmount, computeFee, publishProReview,
+  type FeeDoc, type Ts,
 } from './helpers';
-import { PAYMENTS_ENABLED } from '../pricing';
+import { readConfig } from './config';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -50,12 +51,19 @@ export const requestCompletion = onCall(async (request) => {
 });
 
 /**
- * Confirm completion. Each professional settles INDEPENDENTLY: a pro who owes
- * keeps their own slot and holds their own review; a pro who is covered by their
- * subscription (or already paid early) frees theirs immediately. One pro paying
- * must never settle the project for the others.
+ * Confirm completion.
  *
- * Shared by the client callable and the cron auto-confirm.
+ * Completion is what ends a project, and it ends it for everyone at once:
+ * EVERY slot frees and EVERY review publishes, whatever anyone still owes.
+ * What a professional owes BAMA is settled between BAMA and that professional,
+ * and is recorded here as a fee record — it does not gate a slot, a review, or
+ * anything else inside the app.
+ *
+ * This used to keep the slot of any pro who still owed, and hold their review,
+ * until they paid. That is gone.
+ *
+ * Fee amounts are still computed PER PROFESSIONAL, on each pro's own accepted
+ * amount rather than the project total.
  */
 export async function confirmCompletionInternal(projectId: string, source: 'client' | 'auto'): Promise<void> {
   const { snap, project } = await loadProject(projectId);
@@ -71,42 +79,48 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
   const feeMap = new Map<string, FeeDoc>();
   feesSnap.docs.forEach((d) => feeMap.set(d.id, d.data() as FeeDoc));
 
+  const { disputeWindowDays } = await readConfig();
+  const disputeWindowEndsAt = Timestamp.fromMillis(Date.now() + disputeWindowDays * 86400_000);
+
   const batch = db.batch();
-  const stillOwing: string[] = [];   // keep their slot, hold their review
-  const settled: string[] = [];      // slot frees now, review publishes
   const owedByPro = new Map<string, number>();
 
   for (const proId of proIds) {
     const fee = feeMap.get(proId);
 
-    // Missing doc = exempt (permanent legacy fallback); 'included' = covered by
-    // this pro's own subscription. Either way nothing is due.
+    // Missing doc = exempt (the permanent fallback for pre-model projects);
+    // 'included' = a legacy subscription-covered hire. Either way nothing is due.
     if (!fee || fee.feeStatus !== 'owed') {
-      settled.push(proId);
-      if (fee) batch.update(feeRef(projectId, proId), { feeDue: 0, slotActive: false } as Update);
+      if (fee) {
+        batch.update(feeRef(projectId, proId), {
+          feeDue: 0, slotActive: false, status: 'not_owed', projectId,
+        } as Update);
+      }
       continue;
     }
 
-    // The fee is 3% of what this pro was ACTUALLY paid, so the base is the
-    // current accepted value — a genuine price reduction reduces the fee.
-    // §5's no-refund rule is carried by `outstanding` flooring at zero, not by
-    // pinning the base to its hire-time value: pinning would bill a pro ₪90 on
-    // work that was renegotiated down to ₪1,000 and never paid for.
+    // The fee is a percentage of what this pro was ACTUALLY paid, so the base is
+    // the current accepted value — a genuine price reduction reduces the fee.
+    // The no-refund rule is carried by `outstanding` flooring at zero, not by
+    // pinning the base to its hire-time value: pinning would bill a pro on work
+    // that was renegotiated down and never paid for.
     const baseAmount = await computeProAmount(projectId, proId);
     const outstanding = outstandingOf(fee, baseAmount);
 
+    // `slotActive: false` on every branch. The slot is released by completion,
+    // never by settlement — see the note on the project update below.
     if (outstanding > 0) {
-      stillOwing.push(proId);
       owedByPro.set(proId, outstanding);
       // feeDue is stored NET of paidAmount — it is what is left to pay.
       batch.update(feeRef(projectId, proId), {
-        baseAmount, feeDue: outstanding, feePaid: false, slotActive: true,
+        baseAmount, feeDue: outstanding, feePaid: false, slotActive: false,
+        status: 'pending', projectId,
       } as Update);
     } else {
-      // Paid early, in full — or the price fell far enough that nothing remains.
-      settled.push(proId);
+      // Already paid in full, or the price fell far enough that nothing remains.
       batch.update(feeRef(projectId, proId), {
         baseAmount, feeDue: 0, feePaid: true, slotActive: false,
+        status: 'paid', projectId,
       } as Update);
     }
   }
@@ -120,10 +134,16 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
       source,
       confirmedAt: FieldValue.serverTimestamp(),
     },
-    // Only the pros who still owe keep a slot. Full overwrite, so a pro who paid
-    // early and then owes again (price rose) is correctly re-added here.
-    slotHolders: stillOwing,
-    slotActive: stillOwing.length > 0,
+    // EVERY slot frees, whatever is still owed. An outstanding fee is a matter
+    // between BAMA and that professional; it must never hold capacity inside the
+    // app, because that would make paying the thing that unlocks working again.
+    slotHolders: [],
+    slotActive: false,
+    // The professional's window to dispute this confirmation. Stored on the
+    // project so the client can render the deadline without knowing the config,
+    // and so disputeFeeByPro has one uniform value to check rather than
+    // recomputing from a config that may have changed since.
+    disputeWindowEndsAt: disputeWindowEndsAt,
   } as Update);
 
   // The group chat becomes read-only once the work is done — the same flag the
@@ -139,8 +159,10 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
   }
   await batch.commit();
 
-  // Only the settled pros' reviews publish. A pro who still owes stays held.
-  for (const proId of settled) await publishProReview(projectId, proId);
+  // Every professional's review publishes, unconditionally. New reviews are
+  // already published by onReviewCreate; this is the backstop for any that were
+  // written before this ran, and it is idempotent.
+  for (const proId of proIds) await publishProReview(projectId, proId);
 
   // Built PER RECIPIENT: each pro owes a different amount, so one interpolated
   // string computed once would be wrong for everyone but one of them.
@@ -214,7 +236,7 @@ export const cancelProject = onCall(async (request) => {
   for (const d of feesSnap.docs) {
     const fee = d.data() as FeeDoc;
     const paid = fee.paidAmount ?? 0;
-    const update: Update = { slotActive: false, feeDue: 0 };
+    const update: Update = { slotActive: false, feeDue: 0, status: 'not_owed' };
     if (paid > 0) {
       update.refundReviewPending = true; // discretionary and manual, per §5
       refundPros.push(d.id);
@@ -232,13 +254,30 @@ export const cancelProject = onCall(async (request) => {
 });
 
 /**
- * Settle ONE professional's fee on ONE project: credit the payment, free that
- * pro's slot, publish that pro's held review. Shared by markFeePaid (admin) and
- * payFee (the pro themself) so the two can never drift apart.
+ * Record that ONE professional's fee on ONE project has been settled: credit the
+ * payment and mark the record paid. That is all it does.
  *
- * Runs in a transaction because it recomputes the project's derived `slotActive`
- * from `slotHolders`: a concurrent hire adding a pro must not be clobbered back
- * to false, which would strand the project outside lifecycleCron's sweeps.
+ * It deliberately does NOT free a slot or publish a review. Both of those used to
+ * happen here, which made paying the act that unlocked working again and released
+ * the client's review — the two things a payment must never buy. Completion
+ * releases both now, for everyone, whatever is owed.
+ *
+ * Reached only through markFeePaid (admin). There is no in-app payment path:
+ * settlement happens off-platform and an admin records it here.
+ *
+ * Still a transaction: `paidAmount` is credited with an increment against a
+ * freshly-read outstanding, so two concurrent settlements cannot both apply.
+ *
+ * REVIEWED EXCEPTION — the `nothing-owed` / `already-paid` throws below are the
+ * only place left in the codebase that reads fee state and then refuses. They were
+ * audited and deliberately kept: what they gate is the act of RECORDING a payment,
+ * reached only through the admin-only `markFeePaid`, and they exist to stop
+ * `paidAmount` being double-credited on a fee that is absent, exempt or settled.
+ * No slot, review, feature or visibility depends on them.
+ *
+ * Do not copy this shape into anything a user can reach. "Fee state may not decide
+ * what someone can do" has exactly this one carve-out, and it is a bookkeeping
+ * guard on the ledger itself.
  */
 async function settleFee(projectId: string, proId: string): Promise<{ paid: number }> {
   const projRef = db.doc(`projects/${projectId}`);
@@ -276,23 +315,22 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
       feePaid: true,
       feePaidAt: FieldValue.serverTimestamp(),
       slotActive: false,
+      status: 'paid',
+      projectId,
     };
     if (!confirmed) {
-      // Early payment: record what the fee was worth on the day they paid.
+      // Settled before completion: record what the fee was worth on that day.
       feeUpdate.baseAmount = baseAmount;
       feeUpdate.feeLockedAt = FieldValue.serverTimestamp();
       feeUpdate.feeLockedAmount = computeFee(baseAmount, fee.feeRate);
     }
     tx.update(fRef, feeUpdate);
 
-    const holders = ((project.slotHolders as string[]) ?? []).filter((id) => id !== proId);
-    tx.update(projRef, { slotHolders: holders, slotActive: holders.length > 0 } as Update);
+    // `project` is read for the not-found guard above and to price a pre-completion
+    // settlement. Nothing on the project changes here: slots are completion's.
+    void project;
 
     return { paid: outstanding };
-  }).then(async (result) => {
-    // Idempotent, and a no-op before completion — no held review exists yet.
-    await publishProReview(projectId, proId);
-    return result;
   });
 }
 
@@ -312,33 +350,76 @@ export const markFeePaid = onCall(async (request) => {
 });
 
 /**
- * The professional settles their OWN fee.
+ * The professional disputes a completion the client confirmed.
  *
- * GATED ON `PAYMENTS_ENABLED`. While it is false there is no real payment rail,
- * so this is a fake payment that makes the flow testable end to end. When Cardcom
- * ships and the flag flips to true, this callable MUST refuse every direct call —
- * settlement then happens only through the Cardcom webhook (which credits
- * paidAmount server-side) or the admin-only markFeePaid. The flag closes the hole
- * on its own; nobody has to remember to delete this.
+ * Protection, not a veto. The completion STANDS: the project stays completed,
+ * every slot stays free and every review stays published. What a dispute does is
+ * mark the fee record and put the project in front of a human.
  *
- * Authorization is not "any signed-in user with a project id": the caller must be
- * a hired professional ON THIS PROJECT, their own fee must be 'owed', and there
- * must be something actually outstanding.
+ * Silence is not a veto either — a window that simply expires leaves the
+ * completion standing, so nothing has to run when it closes and there is no
+ * scheduled job behind this.
+ *
+ * Distinct from `disputeCompletion`, which is the CLIENT's pre-confirmation
+ * objection. Same word, opposite party, opposite side of the confirmation.
  */
-export const payFee = onCall(async (request) => {
+export const disputeFeeByPro = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
-  if (PAYMENTS_ENABLED) {
-    throw new HttpsError('failed-precondition', 'payments-live-use-cardcom');
-  }
   const projectId = request.data?.projectId as string | undefined;
   if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
+  const rawReason = request.data?.reason;
+  // Bounded: this lands in a document an admin reads, not in a query.
+  const reason = typeof rawReason === 'string' ? rawReason.slice(0, 1000).trim() : '';
 
-  const { project } = await loadProject(projectId);
+  const { snap, project } = await loadProject(projectId);
   if (!((project.professionalIds as string[]) ?? []).includes(uid)) {
     throw new HttpsError('permission-denied', 'Not hired on this project');
   }
 
-  // Always the caller's own fee — never a professionalId from the request body.
-  const { paid } = await settleFee(projectId, uid);
-  return { ok: true, paid };
+  const completion = project.completion as { state?: string; confirmedAt?: Ts } | undefined;
+  if (completion?.state !== 'confirmed') {
+    throw new HttpsError('failed-precondition', 'not-confirmed');
+  }
+
+  // Prefer the deadline stamped at confirmation over recomputing from config:
+  // the window a professional was promised must not move because someone edited
+  // disputeWindowDays afterwards. The fallback covers projects confirmed before
+  // that field existed.
+  let endsAt = project.disputeWindowEndsAt as Ts | undefined;
+  if (!endsAt) {
+    const { disputeWindowDays } = await readConfig();
+    const confirmedAt = completion.confirmedAt;
+    if (!confirmedAt) throw new HttpsError('failed-precondition', 'no-confirmation-date');
+    endsAt = Timestamp.fromMillis(confirmedAt.toMillis() + disputeWindowDays * 86400_000);
+  }
+  if (Date.now() > endsAt.toMillis()) {
+    throw new HttpsError('failed-precondition', 'dispute-window-closed');
+  }
+
+  const batch = db.batch();
+
+  // Only the caller's OWN fee record, never a professionalId from the body.
+  // A missing record means there is no fee to dispute — the project is still
+  // flagged, because the objection is to the completion, not only to the amount.
+  const fSnap = await feeRef(projectId, uid).get();
+  if (fSnap.exists) {
+    batch.update(fSnap.ref, {
+      status: 'disputed',
+      disputedAt: FieldValue.serverTimestamp(),
+      ...(reason ? { disputeReason: reason } : {}),
+    } as Update);
+  }
+
+  batch.update(snap.ref, {
+    adminReviewPending: true,
+    adminReview: {
+      reason: 'fee_disputed',
+      proId: uid,
+      at: FieldValue.serverTimestamp(),
+      ...(reason ? { note: reason } : {}),
+    },
+  } as Update);
+
+  await batch.commit();
+  return { ok: true };
 });

@@ -5,8 +5,9 @@
  */
 import {
   isOfferPriceValid, canHireOnStatus, MIN_OFFER_PRICE, MAX_OFFER_PRICE, HIREABLE_STATUSES,
-  hireConsumesNewSlot, atSlotCap, atMonthlyLimit, monthCountFor,
-  NON_SUBSCRIBER_SLOT_CAP, SUBSCRIBER_MONTHLY_LIMIT,
+  hireConsumesNewSlot, atSlotCap,
+  resolveConfig, feeRateOf, withinDisputeWindow, CONFIG_DEFAULTS,
+  DEFAULT_MAX_OPEN_PROJECTS,
 } from '../pricing';
 
 describe('isOfferPriceValid', () => {
@@ -78,8 +79,12 @@ describe('canHireOnStatus', () => {
 
 /**
  * The slot cap means "one project the pro is engaged on", not "one role". These
- * mirror hire.ts's control flow: hireConsumesNewSlot gates whether the cap /
- * monthly checks run at all, and whether monthCount is incremented afterwards.
+ * mirror hire.ts's control flow: hireConsumesNewSlot gates whether the cap check
+ * runs at all.
+ *
+ * There is ONE cap and no tier that lifts it. The subscriber branch this table
+ * used to carry is gone: capacity is not purchasable, and the only things that
+ * free a slot are completing or cancelling a project.
  *
  * PRO and OTHER are two professionals; HERE is the project being hired onto.
  */
@@ -89,20 +94,16 @@ const OTHER = 'other-uid';
 /** The decision hire.ts makes, expressed exactly as its branches do. */
 function verdict(input: {
   slotHolders?: string[];
-  isSubscriber: boolean;
   /** What the cap query would return. Only consulted when a new slot is taken. */
   slotProjectCount: number;
-  monthCount: number;
-}): { allowed: boolean; reason?: string; monthCountDelta: number } {
-  const consumesNewSlot = hireConsumesNewSlot(input.slotHolders, PRO);
-  if (consumesNewSlot) {
-    if (input.isSubscriber) {
-      if (atMonthlyLimit(input.monthCount)) return { allowed: false, reason: 'monthly-limit-reached', monthCountDelta: 0 };
-    } else if (atSlotCap(input.slotProjectCount)) {
-      return { allowed: false, reason: 'slot-cap-reached', monthCountDelta: 0 };
-    }
+  /** `maxOpenProjects` from the runtime config. */
+  cap?: number;
+}): { allowed: boolean; reason?: string } {
+  const cap = input.cap ?? DEFAULT_MAX_OPEN_PROJECTS;
+  if (hireConsumesNewSlot(input.slotHolders, PRO) && atSlotCap(input.slotProjectCount, cap)) {
+    return { allowed: false, reason: 'slot-cap-reached' };
   }
-  return { allowed: true, monthCountDelta: input.isSubscriber && consumesNewSlot ? 1 : 0 };
+  return { allowed: true };
 }
 
 describe('hireConsumesNewSlot', () => {
@@ -119,117 +120,113 @@ describe('hireConsumesNewSlot', () => {
 });
 
 describe('slot cap: a slot is one PROJECT, not one role', () => {
+  const CAP = DEFAULT_MAX_OPEN_PROJECTS;
+
   it('pro AT the cap takes a second role on a project they already hold → ALLOW', () => {
     // The regression: the cap query counts the current project, so this used to
     // be refused with slot-cap-reached even though arrayUnion was a no-op.
-    const v = verdict({
-      slotHolders: [PRO], isSubscriber: false,
-      slotProjectCount: NON_SUBSCRIBER_SLOT_CAP, monthCount: 0,
-    });
+    const v = verdict({ slotHolders: [PRO], slotProjectCount: CAP });
     expect(v.allowed).toBe(true);
     expect(v.reason).toBeUndefined();
   });
 
   it('pro AT the cap takes a role on a NEW project → still denied', () => {
-    const v = verdict({
-      slotHolders: [OTHER], isSubscriber: false,
-      slotProjectCount: NON_SUBSCRIBER_SLOT_CAP, monthCount: 0,
-    });
+    const v = verdict({ slotHolders: [OTHER], slotProjectCount: CAP });
     expect(v.allowed).toBe(false);
     expect(v.reason).toBe('slot-cap-reached');
   });
 
   it('pro BELOW the cap on a new project → allowed', () => {
-    const v = verdict({
-      slotHolders: [], isSubscriber: false,
-      slotProjectCount: NON_SUBSCRIBER_SLOT_CAP - 1, monthCount: 0,
-    });
+    const v = verdict({ slotHolders: [], slotProjectCount: CAP - 1 });
     expect(v.allowed).toBe(true);
   });
 
-  it('a pro who SETTLED EARLY is re-hired on that same project → still denied at the cap', () => {
-    // They left slotHolders when their fee settled but remain in professionalIds.
-    // Re-hiring genuinely needs a slot again, so keying on professionalIds would
-    // have handed them a free engagement. slotHolders is what decides.
-    const settledSoNotHolding: string[] = [];
-    const v = verdict({
-      slotHolders: settledSoNotHolding, isSubscriber: false,
-      slotProjectCount: NON_SUBSCRIBER_SLOT_CAP, monthCount: 0,
-    });
+  it('a pro re-hired on a project they have left → denied at the cap', () => {
+    // They leave slotHolders when the project completes or is cancelled, but
+    // remain in professionalIds. Re-hiring genuinely needs a slot again, so
+    // keying on professionalIds would have handed them a free engagement.
+    // slotHolders is what decides.
+    const noLongerHolding: string[] = [];
+    const v = verdict({ slotHolders: noLongerHolding, slotProjectCount: CAP });
     expect(v.allowed).toBe(false);
     expect(v.reason).toBe('slot-cap-reached');
   });
-});
 
-describe('subscriber monthly counter', () => {
-  it('second role on the same project → monthCount UNCHANGED', () => {
-    const v = verdict({
-      slotHolders: [PRO], isSubscriber: true, slotProjectCount: 99, monthCount: 3,
-    });
-    expect(v.allowed).toBe(true);
-    expect(v.monthCountDelta).toBe(0);
+  it('follows the CONFIG cap, not a constant', () => {
+    // The whole point of the runtime config: raising maxOpenProjects admits a
+    // hire that the previous value refused, with no redeploy.
+    expect(verdict({ slotHolders: [], slotProjectCount: 3, cap: 3 }).allowed).toBe(false);
+    expect(verdict({ slotHolders: [], slotProjectCount: 3, cap: 4 }).allowed).toBe(true);
   });
 
-  it('first role on a NEW project → monthCount + 1', () => {
-    const v = verdict({
-      slotHolders: [], isSubscriber: true, slotProjectCount: 0, monthCount: 3,
-    });
-    expect(v.allowed).toBe(true);
-    expect(v.monthCountDelta).toBe(1);
-  });
-
-  it('AT the monthly limit, second role on a project they are on → ALLOW, still no charge', () => {
-    const v = verdict({
-      slotHolders: [PRO], isSubscriber: true,
-      slotProjectCount: 0, monthCount: SUBSCRIBER_MONTHLY_LIMIT,
-    });
-    expect(v.allowed).toBe(true);
-    expect(v.monthCountDelta).toBe(0);
-  });
-
-  it('AT the monthly limit, first role on a new project → denied', () => {
-    const v = verdict({
-      slotHolders: [], isSubscriber: true,
-      slotProjectCount: 0, monthCount: SUBSCRIBER_MONTHLY_LIMIT,
-    });
-    expect(v.allowed).toBe(false);
-    expect(v.reason).toBe('monthly-limit-reached');
-  });
-
-  it('a bundle and two separate offers cost the same', () => {
-    // Bundle: ONE commitHire, pro not yet holding -> 1 credit.
-    const bundle = verdict({ slotHolders: [], isSubscriber: true, slotProjectCount: 0, monthCount: 0 });
-    // Separate offers: two commitHires. The first is identical to the bundle; the
-    // second finds the pro already in slotHolders and costs nothing.
-    const first = verdict({ slotHolders: [], isSubscriber: true, slotProjectCount: 0, monthCount: 0 });
-    const second = verdict({ slotHolders: [PRO], isSubscriber: true, slotProjectCount: 0, monthCount: 1 });
-    expect(bundle.monthCountDelta).toBe(1);
-    expect(first.monthCountDelta + second.monthCountDelta).toBe(1);
+  it('there is no tier that lifts the cap', () => {
+    // Capacity is not purchasable. Whatever a professional has paid or not paid,
+    // the same cap applies — the decision depends only on slots held.
+    const atCap = verdict({ slotHolders: [OTHER], slotProjectCount: CAP });
+    expect(atCap.allowed).toBe(false);
+    expect(atCap.reason).toBe('slot-cap-reached');
   });
 });
 
-describe('monthCountFor', () => {
-  it('reads the counter within the same month', () => {
-    expect(monthCountFor({ monthKey: '2026-09', monthCount: 4 }, '2026-09')).toBe(4);
+describe('atSlotCap boundary', () => {
+  it('fires at the cap, not before', () => {
+    expect(atSlotCap(DEFAULT_MAX_OPEN_PROJECTS - 1, DEFAULT_MAX_OPEN_PROJECTS)).toBe(false);
+    expect(atSlotCap(DEFAULT_MAX_OPEN_PROJECTS, DEFAULT_MAX_OPEN_PROJECTS)).toBe(true);
   });
-  it('resets on a month rollover', () => {
-    expect(monthCountFor({ monthKey: '2026-08', monthCount: 9 }, '2026-09')).toBe(0);
-  });
-  it('treats a missing or malformed subscription as 0', () => {
-    expect(monthCountFor(null, '2026-09')).toBe(0);
-    expect(monthCountFor(undefined, '2026-09')).toBe(0);
-    expect(monthCountFor({ monthKey: '2026-09' }, '2026-09')).toBe(0);
-    expect(monthCountFor({ monthKey: '2026-09', monthCount: 'x' }, '2026-09')).toBe(0);
+  it('defaults to the fallback cap when none is supplied', () => {
+    expect(atSlotCap(DEFAULT_MAX_OPEN_PROJECTS)).toBe(true);
   });
 });
 
-describe('atSlotCap / atMonthlyLimit boundaries', () => {
-  it('atSlotCap fires at the cap, not before', () => {
-    expect(atSlotCap(NON_SUBSCRIBER_SLOT_CAP - 1)).toBe(false);
-    expect(atSlotCap(NON_SUBSCRIBER_SLOT_CAP)).toBe(true);
+/**
+ * Runtime config. The merge is what stands between a typo in the Firestore
+ * console and a commission rate of zero, so it is tested per field.
+ */
+describe('resolveConfig', () => {
+  it('returns the defaults for a missing or non-object document', () => {
+    expect(resolveConfig(null)).toEqual(CONFIG_DEFAULTS);
+    expect(resolveConfig(undefined)).toEqual(CONFIG_DEFAULTS);
+    expect(resolveConfig('nope')).toEqual(CONFIG_DEFAULTS);
   });
-  it('atMonthlyLimit fires at the limit, not before', () => {
-    expect(atMonthlyLimit(SUBSCRIBER_MONTHLY_LIMIT - 1)).toBe(false);
-    expect(atMonthlyLimit(SUBSCRIBER_MONTHLY_LIMIT)).toBe(true);
+
+  it('takes valid values from the document', () => {
+    const out = resolveConfig({ feePercent: 5, maxOpenProjects: 4, disputeWindowDays: 10 });
+    expect(out.feePercent).toBe(5);
+    expect(out.maxOpenProjects).toBe(4);
+    expect(out.disputeWindowDays).toBe(10);
+  });
+
+  it('falls back PER FIELD, so one bad key cannot revert the others', () => {
+    const out = resolveConfig({ feePercent: 5, maxOpenProjects: 'three' });
+    expect(out.feePercent).toBe(5);
+    expect(out.maxOpenProjects).toBe(CONFIG_DEFAULTS.maxOpenProjects);
+  });
+
+  it.each([['a string', 'x'], ['null', null], ['zero', 0], ['negative', -3], ['NaN', NaN], ['Infinity', Infinity]])(
+    'rejects %s and keeps the default',
+    (_label, value) => {
+      expect(resolveConfig({ feePercent: value }).feePercent).toBe(CONFIG_DEFAULTS.feePercent);
+    },
+  );
+});
+
+describe('feeRateOf', () => {
+  it('converts the config percent to the fraction a fee document stores', () => {
+    expect(feeRateOf({ ...CONFIG_DEFAULTS, feePercent: 3 })).toBeCloseTo(0.03);
+    expect(feeRateOf({ ...CONFIG_DEFAULTS, feePercent: 12.5 })).toBeCloseTo(0.125);
+  });
+});
+
+describe('withinDisputeWindow', () => {
+  it('is true up to and including the deadline', () => {
+    expect(withinDisputeWindow(1_000, 999)).toBe(true);
+    expect(withinDisputeWindow(1_000, 1_000)).toBe(true);
+  });
+  it('is false after it', () => {
+    expect(withinDisputeWindow(1_000, 1_001)).toBe(false);
+  });
+  it('is false with no deadline — the caller must not treat that as open', () => {
+    expect(withinDisputeWindow(undefined, 0)).toBe(false);
+    expect(withinDisputeWindow(NaN, 0)).toBe(false);
   });
 });

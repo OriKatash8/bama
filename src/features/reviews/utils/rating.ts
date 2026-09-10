@@ -6,7 +6,9 @@ export type AverageRating = {
 };
 
 /**
- * Drop reviews held pending fee settlement. A MISSING `published` field means
+ * Drop any review still marked unpublished. Reviews are no longer held for any
+ * reason — this is a defensive filter over a field that should always be true.
+ * A MISSING `published` field means
  * visible (legacy reviews predate the hold), so the test is `!== false` — never
  * a Firestore `where('published','!=',false)`, which would exclude every
  * field-less document and wipe out all existing ratings.

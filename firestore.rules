@@ -40,7 +40,14 @@ service cloud.firestore {
         'feeLockedAt', 'feeLockedAmount', 'slotActive', 'slotHolders',
         'completion', 'expectedEndDate', 'endDatePromptedAt',
         'archivedUnconfirmedAt', 'refundReviewPending',
-        'completedAt', 'cancelledAt'
+        'completedAt', 'cancelledAt',
+        // Admin-review flags, set by disputeFeeByPro and lifecycleCron. A client
+        // that could write these could clear a dispute raised against it, or
+        // flag a project to stall it — so they are server-only like the rest.
+        'adminReviewPending', 'adminReview',
+        // Stamped at confirmation; bounds the professional's dispute window. A
+        // client that could write it could close the window on the same day.
+        'disputeWindowEndsAt'
       ];
     }
 
@@ -617,8 +624,18 @@ service cloud.firestore {
 
     // ─── reviews ────────────────────────────────────────────────────
     match /reviews/{reviewId} {
-      // A held review must be invisible to the pro it is about — otherwise they
-      // read the rating straight from the SDK and the hold buys nothing.
+      // LATENT PLUMBING — READ THIS BEFORE WRITING `published: false` ANYWHERE.
+      //
+      // Reviews are never held. onReviewCreate writes `published: true` on every
+      // review, unconditionally; nothing in the codebase writes `false`. These two
+      // clauses are the surviving enforcement half of a removed mechanism that hid
+      // a client's review until the professional paid their commission.
+      //
+      // They are inert only because nothing sets the field to false. Any future
+      // writer of `published: false` silently re-creates a visibility gate with no
+      // change to this file — and the `list` clause below would hide such a review
+      // from EVERY query, including the professional's own profile. If you are
+      // about to write that value, you are re-introducing the thing we removed.
       //
       // GET and LIST are split because they are enforced differently.
       //
@@ -645,8 +662,9 @@ service cloud.firestore {
       // (scripts/backfill-review-published.mjs) — without the field the equality
       // is unsatisfiable and the document silently vanishes from every list.
       allow list: if isAuth() && resource.data.published == true;
-      // published/visibleAt are resolved by the onReviewCreate trigger from the
-      // project's feeStatus. A client that could set them would bypass the hold.
+      // published/visibleAt are resolved by the onReviewCreate trigger, which sets
+      // them unconditionally. Denied at create so a client cannot pre-set a review
+      // invisible — the one way the removed hold could come back from the outside.
       // You cannot review yourself. Nothing used to constrain professionalId, so
       // a self-review could be POSTed straight through the SDK — no project and
       // no hire needed — and it counted toward the author's own public rating.
@@ -725,9 +743,10 @@ service cloud.firestore {
     }
 
     // ─── subscriptions ──────────────────────────────────────────────
-    // Written ONLY by the Admin SDK (setSubscription today, Cardcom later). A pro
-    // who could write this would grant themselves 'included' fees and an
-    // unlimited slot cap. They may read their own to see plan, counter and dates.
+    // INERT. There is no subscription product: a paid tier used to lift the
+    // open-project cap, which made capacity purchasable. Nothing reads this
+    // collection any more — `hireProfessional` does not consult it. Kept
+    // Admin-SDK-only rather than deleted so the documents stay tamper-proof.
     match /subscriptions/{userId} {
       allow read: if isOwner(userId);
       allow write: if false;
@@ -744,6 +763,19 @@ service cloud.firestore {
       // bind {proId}, so the wildcard form would deny the very query this rule
       // exists to permit.
       allow read: if isAuth() && resource.data.professionalId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ─── config ──────────────────────────────────────────────────────
+    // Runtime pricing config (config/pricing): the platform fee percent, the
+    // open-project cap, the dispute window and the auto-close periods. Written
+    // ONLY by the Admin SDK / console — a client that could write this would set
+    // its own commission rate to zero and raise its own project cap.
+    //
+    // Readable by any signed-in user because the app must DISPLAY the rate and
+    // the cap rather than invent them; there is nothing private in it.
+    match /config/{docId} {
+      allow read: if isAuth();
       allow write: if false;
     }
 

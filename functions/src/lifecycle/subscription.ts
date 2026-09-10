@@ -2,8 +2,16 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, monthKey, requireAuth, requireAdmin } from './helpers';
 
 /**
- * FAKE subscription toggle for slice 1 (admin/dev) — exercises subscriber vs
- * non-subscriber modes before Cardcom. Cardcom replaces this later.
+ * INERT. Nothing reads `subscriptions/{uid}` any more.
+ *
+ * There is no subscription product: a paid tier used to lift the open-project cap
+ * from two to ten a month, which made capacity purchasable. `hireProfessional` no
+ * longer consults this collection, and the subscription screen is gone from the
+ * app.
+ *
+ * Left deployed rather than deleted so that removing a live callable is a
+ * deliberate, separate deploy rather than a side effect of this change. It writes
+ * a document no code reads. Delete it when the next functions deploy is planned.
  */
 export const setSubscription = onCall(async (request) => {
   requireAuth(request.auth?.uid);

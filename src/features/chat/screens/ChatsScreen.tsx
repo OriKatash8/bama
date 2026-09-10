@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-nati
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
-import { Users, Package, Trash2, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { Users, Package, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
@@ -183,8 +183,8 @@ export function ChatsScreen({
   //
   // NOT gated on mode. A project where you are the professional still appears in
   // your list while you browse as a client, and without the fee its row would
-  // render as settled — trash restored, nothing owed — to somebody who owes.
-  // The query is scoped to this user's own fee documents either way.
+  // tell somebody who owes that they are settled. The query is scoped to this
+  // user's own fee documents either way.
   useEffect(() => {
     if (!user?.id) { setFeesByProject(new Map()); return; }
     return listenToMyFees(user.id, setFeesByProject);
@@ -437,6 +437,9 @@ export function ChatsScreen({
 
     // This user's own fee on this project. Absent = exempt = nothing owed.
     const myFee = viewerIsPro && item.projectId ? feesByProject.get(item.projectId) : undefined;
+    // DISPLAY ONLY. This picks which sentence the row shows; it must never decide
+    // what the row can DO. See the branch further down that used to drop the
+    // trash button when this was true.
     const iOweOnThisProject = viewerIsPro && isCompletedProject && owesFee(myFee ?? null);
 
     // The client is asked for a review only while one is actually outstanding.
@@ -528,17 +531,13 @@ export function ChatsScreen({
             >
               {completedLine ?? item.lastMessage?.text ?? ''}
             </AppText>
-            {iOweOnThisProject ? (
-              // The professional still owes on this project: a chevron into the
-              // conversation, and NO trash — they should not get a one-tap way to
-              // dismiss the row that is asking them to settle. It returns the
-              // moment the fee is paid, via the live fee listener.
-              <View style={[styles.trashBtn, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
-                {rtl
-                  ? <ChevronLeft size={18} color={COMPLETED_LINE_COLOR} strokeWidth={2.2} />
-                  : <ChevronRight size={18} color={COMPLETED_LINE_COLOR} strokeWidth={2.2} />}
-              </View>
-            ) : (item.type === 'group' && (status === 'completed' || status === 'cancelled' || isCompletedProject)) || (item.type === 'purchase' && !!item.archived) ? (
+            {/* Owing money changes NOTHING about what this row can do. A
+                professional who owes used to lose the trash button here — an
+                inert chevron replaced it, so they could not dismiss the row that
+                was asking them to settle, and it came back the moment they paid.
+                That made leaving a conversation something a payment bought.
+                It also swallowed the unread badge on the same branch. */}
+            {(item.type === 'group' && (status === 'completed' || status === 'cancelled' || isCompletedProject)) || (item.type === 'purchase' && !!item.archived) ? (
               <TouchableOpacity
                 onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
                 hitSlop={8}

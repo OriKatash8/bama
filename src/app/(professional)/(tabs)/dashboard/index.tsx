@@ -14,8 +14,8 @@ import { useNotifSoftAsk } from '@features/notifications/hooks/useNotifSoftAsk';
 import { useSentOffers } from '@features/offers/hooks/useSentOffers';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
 import { SlotBlockedSheet } from '@features/pricing/components/SlotBlockedSheet';
+import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
-import { listenToSubscription, type SubscriptionState, deriveSubscriptionState } from '@features/pricing/services/subscriptionService';
 import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
 import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '@features/noticeboard/unoffered';
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
@@ -96,23 +96,19 @@ export default function DashboardScreen() {
   // Slot state, so a blocked professional is stopped BEFORE composing an offer
   // rather than by hireProfessional rejecting it afterwards. Same query the
   // server enforces with, so the two cannot disagree.
+  const pricing = usePricingConfig();
   const [slotUsage, setSlotUsage] = useState<SlotUsage | null>(null);
-  const [subState, setSubState] = useState<SubscriptionState>(() => deriveSubscriptionState(null));
   const [blockedFor, setBlockedFor] = useState<ProjectRequest | null>(null);
 
   useEffect(() => {
     if (!currentUserId) return;
-    return listenToSlotUsage(currentUserId, setSlotUsage);
-  }, [currentUserId]);
+    return listenToSlotUsage(currentUserId, setSlotUsage, pricing.maxOpenProjects);
+  }, [currentUserId, pricing.maxOpenProjects]);
 
-  useEffect(() => {
-    if (!currentUserId) return;
-    return listenToSubscription(currentUserId, setSubState);
-  }, [currentUserId]);
-
-  // Subscribers have no slot cap at all — only the monthly limit, which the
-  // server enforces and which is not this sheet's job.
-  const slotsBlocked = !subState.isSubscriber && slotUsage?.atCap === true;
+  // One cap for everyone. There is no tier that lifts it — capacity is not for
+  // sale — and the only things that free a slot are completing or cancelling a
+  // project.
+  const slotsBlocked = slotUsage?.atCap === true;
 
   /** Open a notice, unless every slot is taken. Returns true when blocked. */
   function guardSlots(request: ProjectRequest): boolean {

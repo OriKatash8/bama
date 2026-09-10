@@ -52,6 +52,7 @@ import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
+import { requestCompletion, disputeFeeByPro, canDispute } from '@features/projects/services/completionService';
 import { outstandingFee, feePercent } from '@features/pricing/utils/fee';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
@@ -138,6 +139,7 @@ export default function ProjectDetailsScreen() {
   const [feeData, setFeeData] = useState<ClientCostBreakdown | null>(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [proActionBusy, setProActionBusy] = useState(false);
   const [showReviewFlow, setShowReviewFlow] = useState(false);
 
   const [missions, setMissions] = useState<Mission[]>([]);
@@ -385,7 +387,7 @@ export default function ProjectDetailsScreen() {
       setFeeData(fee);
       setShowPaymentSummary(true);
     } catch {
-      Alert.alert('Error', t('project_details.error_payment'));
+      showToast(t('project_details.error_payment'), 'error');
     } finally {
       setIsCalculatingFee(false);
     }
@@ -405,9 +407,9 @@ export default function ProjectDetailsScreen() {
         await confirmCompletion({ projectId });
         setProject((prev) => (prev ? { ...prev, status: 'completed' } : prev));
         setShowPaymentSummary(false);
-        Alert.alert(t('project_details.success_complete'));
+        showToast(t('project_details.success_complete'), 'success');
       } catch {
-        Alert.alert('Error', t('project_details.error_complete'));
+        showToast(t('project_details.error_complete'), 'error');
       } finally {
         setIsConfirming(false);
       }
@@ -436,16 +438,74 @@ export default function ProjectDetailsScreen() {
       setShowReviewFlow(true);
     } catch (err) {
       console.error('[ReviewFlow] confirmCompletion failed:', err);
-      Alert.alert('Error', t('project_details.error_complete'));
+      showToast(t('project_details.error_complete'), 'error');
     } finally {
       setIsConfirming(false);
+    }
+  }
+
+  /**
+   * The professional asks the client to confirm the work is done.
+   *
+   * The counterpart to the client's "mark as complete". Without it the only way a
+   * project ever closed was the client remembering to close it — which is also
+   * the only way a professional's review ever gets written.
+   */
+  async function handleRequestCompletion() {
+    if (!projectId || proActionBusy) return;
+    const ok = await confirmDialog(
+      t('project_details.request_completion_title'),
+      t('project_details.request_completion_body'),
+      { confirm: t('common.confirm'), cancel: t('common.cancel'), destructive: false },
+    );
+    if (!ok) return;
+    setProActionBusy(true);
+    try {
+      await requestCompletion({ projectId });
+      setProject((prev) => (prev
+        ? { ...prev, completion: { ...(prev.completion ?? {}), state: 'requested' as const } }
+        : prev));
+      showToast(t('project_details.request_completion_sent'), 'success');
+    } catch (err) {
+      console.error('[completion] requestCompletion failed:', err);
+      showToast(t('project_details.request_completion_error'), 'error');
+    } finally {
+      setProActionBusy(false);
+    }
+  }
+
+  /**
+   * The professional disputes a confirmed completion, inside their window.
+   *
+   * Deliberately not framed as undoing anything: the project stays completed and
+   * the reviews stay published either way. The dialog says so, because a button
+   * that looks like it might reverse a completion would be read as one.
+   */
+  async function handleDispute() {
+    if (!projectId || proActionBusy) return;
+    const ok = await confirmDialog(
+      t('project_details.dispute_title'),
+      t('project_details.dispute_body'),
+      { confirm: t('common.confirm'), cancel: t('common.cancel') },
+    );
+    if (!ok) return;
+    setProActionBusy(true);
+    try {
+      await disputeFeeByPro({ projectId });
+      setMyFee((prev) => (prev ? { ...prev, status: 'disputed' as const } : prev));
+      showToast(t('project_details.dispute_sent'), 'success');
+    } catch (err) {
+      console.error('[completion] disputeFeeByPro failed:', err);
+      showToast(t('project_details.dispute_error'), 'error');
+    } finally {
+      setProActionBusy(false);
     }
   }
 
   function handleReviewsComplete() {
     setShowReviewFlow(false);
     setProject((prev) => (prev ? { ...prev, reviewsCompleted: true } : prev));
-    Alert.alert(t('project_details.success_complete'));
+    showToast(t('project_details.success_complete'), 'success');
   }
 
   /**
@@ -644,8 +704,9 @@ export default function ProjectDetailsScreen() {
       // professional has just been removed from and can no longer read.
       router.replace('/(professional)/(tabs)/chats');
     } catch (err) {
-      // freeSlot refuses deliberately when this pro owes on a confirmed project.
-      // Without logging, that reason never reaches anyone.
+      // freeSlot no longer refuses on an outstanding fee — leaving a project is
+      // not something a payment buys. Logged because a denial here is now always a
+      // real error rather than an expected refusal.
       console.error('[removal] acceptRemoval/freeSlot failed:', err);
       Alert.alert('Error', t('project_details.error_accept_removal'));
     } finally {
@@ -1475,6 +1536,56 @@ export default function ProjectDetailsScreen() {
               )}
             </TouchableOpacity>
           )}
+        </View>
+      )}
+
+      {/* The professional's half of the completion flow.
+          Before confirmation: ask the client to close the project — the only path
+          that does not depend on the client remembering. After confirmation:
+          raise an issue, for as long as the window stamped at confirmation is
+          open. Neither reverses anything; the project stays closed and the
+          reviews stay published. */}
+      {isTeamMember && !isClient && !isCancelled && (
+        <View style={styles.completeBar}>
+          {!isCompleted && project.completion?.state === 'requested' ? (
+            <View style={styles.completedBadge}>
+              <Text style={[styles.completedBadgeText, { ...font.bold }]}>
+                {t('project_details.completion_requested')}
+              </Text>
+            </View>
+          ) : !isCompleted ? (
+            <TouchableOpacity
+              style={[styles.completeBtn, proActionBusy && styles.completeBtnDisabled]}
+              onPress={handleRequestCompletion}
+              disabled={proActionBusy}
+              activeOpacity={0.8}
+            >
+              {proActionBusy
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={[styles.completeBtnText, { ...font.bold }]}>
+                    {t('project_details.request_completion')}
+                  </Text>}
+            </TouchableOpacity>
+          ) : myFee?.status === 'disputed' ? (
+            <View style={styles.disputeOpenBadge}>
+              <Text style={[styles.disputeOpenText, { ...font.bold }]}>
+                {t('project_details.dispute_open')}
+              </Text>
+            </View>
+          ) : canDispute(project) ? (
+            <TouchableOpacity
+              style={[styles.disputeBtn, proActionBusy && styles.completeBtnDisabled]}
+              onPress={handleDispute}
+              disabled={proActionBusy}
+              activeOpacity={0.8}
+            >
+              {proActionBusy
+                ? <ActivityIndicator color={DISPUTE_RED} size="small" />
+                : <Text style={[styles.disputeBtnText, { ...font.bold }]}>
+                    {t('project_details.dispute')}
+                  </Text>}
+            </TouchableOpacity>
+          ) : null}
         </View>
       )}
 
@@ -2322,6 +2433,10 @@ function MemberRow({
   );
 }
 
+/** Raising an issue is the one destructive-feeling action here; soft red marks
+ *  it without borrowing the removal palette's weight. */
+const DISPUTE_RED = '#b4453c';
+
 const CARD_SHADOW = {
   shadowColor: '#1e4fa3' as const,
   shadowOpacity: 0.06,
@@ -2774,6 +2889,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   completedBadgeText: { color: '#16a34a', fontSize: 16, fontWeight: '700' },
+  // Outlined, not filled: raising an issue is a secondary action next to the
+  // project's primary flow, and it must not read as "undo completion".
+  disputeBtn: {
+    borderWidth: 1.5,
+    borderColor: DISPUTE_RED,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  disputeBtnText: { color: DISPUTE_RED, fontSize: 16, fontWeight: '700' },
+  disputeOpenBadge: {
+    backgroundColor: '#f59e0b22',
+    borderWidth: 1,
+    borderColor: '#f59e0b55',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  disputeOpenText: { color: '#8a6100', fontSize: 16, fontWeight: '700' },
 
   // ── Modals ─────────────────────────────────────────────────────────────────────
   modalOverlay: {

@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
-import { useUiStore } from '@core/stores/uiStore';
 import { getDocument } from '@core/firebase/firestore';
-import { confirmDialog } from '@utils/confirmDialog';
-import { listenToProjectFee, paySlotFee } from '@features/pricing/services/feesService';
+import { listenToMyFees } from '@features/pricing/services/feesService';
 import { outstandingFee, feePercent } from '@features/pricing/utils/fee';
 import type { ProjectFee, ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
@@ -28,77 +26,86 @@ function makeT(translations: Translations) {
   };
 }
 
+type Row = {
+  projectId: string;
+  title: string;
+  fee: ProjectFee;
+  owed: number;
+};
+
 /**
- * Settle one professional's platform fee on one project.
+ * A professional's BAMA balance: what they owe in platform commission, per
+ * completed project, and how to settle it.
  *
- * Reached from three places — the project-detail pay action, the read-only chat
- * banner, and the blocked sheet — so it lives on its own route rather than
- * inside any of them.
+ * READ-ONLY. There is no charge button and no payment rail here — settlement
+ * happens outside the app, by bank transfer or Bit, and an admin records it.
+ * The screen must never claim a payment occurred, because nothing on it can
+ * make one occur.
  *
- * This is the ONLY screen besides the project-detail fee line where the amount
- * appears. The chat list never shows it.
+ * It also unlocks nothing. This used to be a pay screen that listed what the
+ * money bought — a free slot and the publication of the client's review. Both of
+ * those are now released by completing the project, for everyone, whatever is
+ * owed. What is left is a statement of account.
+ *
+ * `projectId` is optional and only decides which row is shown first; the screen
+ * always lists the full balance, because a professional who owes on three
+ * projects needs one number, not three visits.
  */
-export default function PaymentScreen() {
+export default function BalanceScreen() {
   const router = useRouter();
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
+  const align = rtl ? 'right' : ('left' as const);
   const userId = useAuthStore((s) => s.user?.id);
-  const showToast = useUiStore((s) => s.showToast);
 
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
 
-  const [project, setProject] = useState<ProjectRequest | null>(null);
-  const [fee, setFee] = useState<ProjectFee | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
+  const [rows, setRows] = useState<Row[] | null>(null);
 
+  // A listener, not a fetch: this screen is reached from the chat list and the
+  // project detail, and an admin recording a payment while it is open should
+  // settle the row rather than leave a stale amount on screen.
   useEffect(() => {
-    if (!projectId) { setLoading(false); return; }
+    if (!userId) { setRows([]); return; }
     let active = true;
-    getDocument<ProjectRequest>(`projects/${projectId}`)
-      .then((p) => { if (active) { setProject(p); setLoading(false); } })
-      .catch((err) => {
-        // Surfaced, not swallowed into a blank screen.
-        console.error('[payment] project load failed:', err?.code, err);
-        if (active) setLoading(false);
+
+    return listenToMyFees(userId, (byProjectId) => {
+      const owing = [...byProjectId.entries()]
+        .map(([id, fee]) => ({ projectId: id, fee, owed: outstandingFee(fee) }))
+        .filter((r) => r.owed > 0);
+
+      // Titles come from the project documents, which are world-readable to any
+      // signed-in user. A failed title read must not drop the row — the amount
+      // is the point, so it falls back to a generic label.
+      Promise.all(
+        owing.map(async (r) => {
+          let title = t('balance.project_fallback');
+          try {
+            const p = await getDocument<ProjectRequest>(`projects/${r.projectId}`);
+            if (p?.title) title = p.title;
+          } catch (err) {
+            console.error('[balance] project title load failed:', r.projectId, err);
+          }
+          return { ...r, title };
+        }),
+      ).then((withTitles) => {
+        if (!active) return;
+        // The project they arrived from goes first; the rest keep their order.
+        withTitles.sort((a, b) => {
+          if (a.projectId === projectId) return -1;
+          if (b.projectId === projectId) return 1;
+          return 0;
+        });
+        setRows(withTitles);
       });
-    return () => { active = false; };
-  }, [projectId]);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, projectId, language]);
 
-  // Live, so the screen settles itself the moment the fee clears — including
-  // when it is paid from another device.
-  useEffect(() => {
-    if (!projectId || !userId) return;
-    return listenToProjectFee(projectId, userId, setFee);
-  }, [projectId, userId]);
-
-  const owed = outstandingFee(fee);
-  const percent = feePercent(fee);
-  const base = fee?.baseAmount ?? 0;
-
-  async function handlePay() {
-    if (!projectId || owed <= 0) return;
-    const confirmed = await confirmDialog(
-      t('project_details.pay_confirm_title'),
-      t('project_details.pay_confirm_body', { amount: owed.toLocaleString() }),
-    );
-    if (!confirmed) return;
-    setPaying(true);
-    try {
-      await paySlotFee({ projectId });
-      showToast(t('project_details.pay_success'), 'success');
-      router.back();
-    } catch (err: unknown) {
-      const e = err as { code?: string; message?: string };
-      console.error('[payment] payFee failed:', e?.code, e?.message, err);
-      showToast(t('project_details.pay_error'), 'error');
-    } finally {
-      setPaying(false);
-    }
-  }
+  const total = (rows ?? []).reduce((sum, r) => sum + r.owed, 0);
 
   const back = (
     <TouchableOpacity
@@ -112,12 +119,12 @@ export default function PaymentScreen() {
         ? <ChevronRight size={22} color={colors.primary} strokeWidth={2} />
         : <ChevronLeft size={22} color={colors.primary} strokeWidth={2} />}
       <AppText weight="bold" style={styles.title}>
-        {t('project_details.pay_title')}
+        {t('balance.title')}
       </AppText>
     </TouchableOpacity>
   );
 
-  if (loading) {
+  if (rows === null) {
     return (
       <Screen style={styles.content}>
         {back}
@@ -126,74 +133,73 @@ export default function PaymentScreen() {
     );
   }
 
-  if (!projectId || !project) {
-    return (
-      <Screen style={styles.content}>
-        {back}
-        <AppText weight="regular" style={[styles.emptyNote, { color: colors.textMuted }]}>
-          {t('project_details.pay_not_found')}
-        </AppText>
-      </Screen>
-    );
-  }
-
   return (
     <Screen style={styles.content} scrollable>
       {back}
 
-      <AppText weight="semiBold" style={[styles.projectTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
-        {project.title}
-      </AppText>
-
-      {owed <= 0 ? (
+      {total <= 0 ? (
         <View style={styles.card}>
-          <AppText weight="semiBold" style={[styles.settled, { color: '#2d6a2d' }]}>
-            {t('project_details.pay_nothing_owed')}
+          <AppText weight="semiBold" style={[styles.settled, { color: SETTLED_GREEN }]}>
+            {t('balance.nothing_owed')}
           </AppText>
         </View>
       ) : (
         <>
-          {/* Amount, large — with the breakdown directly beneath it so the
-              number is never presented without saying what it is 3% of. */}
+          {/* One number first. A professional owing on three projects should not
+              have to add them up themselves. */}
           <View style={styles.card}>
             <AppText weight="regular" style={[styles.amountLabel, { color: colors.textMuted }]}>
-              {t('project_details.pay_amount_label')}
+              {t('balance.total_label')}
             </AppText>
             <AppText weight="bold" style={[styles.amount, { color: colors.primary }]}>
-              ₪{owed.toLocaleString()}
-            </AppText>
-            <AppText weight="regular" style={[styles.breakdown, { color: colors.textMuted }]}>
-              {t('project_details.pay_breakdown', { percent, base: base.toLocaleString() })}
+              ₪{total.toLocaleString()}
             </AppText>
           </View>
 
-          {/* What the money buys. Both levers from the spec, stated plainly. */}
-          <View style={styles.card}>
-            <AppText weight="semiBold" style={[styles.unlocksTitle, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
-              {t('project_details.pay_unlocks_title')}
-            </AppText>
-            {[t('project_details.pay_unlocks_slot'), t('project_details.pay_unlocks_review')].map((line) => (
-              <View key={line} style={[styles.unlockRow, { flexDirection: rowDir }]}>
-                <Check size={16} color="#2d6a2d" strokeWidth={2.5} />
-                <AppText weight="regular" style={[styles.unlockText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
-                  {line}
+          {rows.map((r) => (
+            <View key={r.projectId} style={[styles.card, styles.lineCard]}>
+              <View style={[styles.lineTop, { flexDirection: rowDir }]}>
+                <AppText
+                  weight="semiBold"
+                  style={[styles.lineTitle, { color: colors.text, textAlign: align }]}
+                  numberOfLines={1}
+                >
+                  {r.title}
+                </AppText>
+                <AppText weight="bold" style={[styles.lineAmount, { color: colors.text }]}>
+                  ₪{r.owed.toLocaleString()}
                 </AppText>
               </View>
-            ))}
-          </View>
+              {/* The amount is never shown without saying what it is a percentage
+                  of, and the percent comes from the rate stored on the fee record
+                  at hire — not from today's config. */}
+              <AppText weight="regular" style={[styles.lineBreakdown, { color: colors.textMuted, textAlign: align }]}>
+                {t('balance.line_breakdown', {
+                  percent: feePercent(r.fee),
+                  base: (r.fee.baseAmount ?? 0).toLocaleString(),
+                })}
+              </AppText>
+              {r.fee.status === 'disputed' && (
+                <AppText weight="semiBold" style={[styles.lineDisputed, { textAlign: align }]}>
+                  {t('balance.status_disputed')}
+                </AppText>
+              )}
+            </View>
+          ))}
 
-          <TouchableOpacity
-            style={[styles.payButton, paying && styles.payButtonDisabled]}
-            onPress={handlePay}
-            disabled={paying}
-            activeOpacity={0.85}
-          >
-            {paying
-              ? <ActivityIndicator color="#ffffff" size="small" />
-              : <AppText weight="bold" style={styles.payButtonText}>
-                  {t('project_details.pay_button', { amount: owed.toLocaleString() })}
-                </AppText>}
-          </TouchableOpacity>
+          {/* How the money actually moves. Stated plainly, and stated as being
+              outside the app, because it is. */}
+          <View style={[styles.card, styles.howCard]}>
+            <AppText weight="semiBold" style={[styles.howTitle, { color: colors.text, textAlign: align }]}>
+              {t('balance.how_title')}
+            </AppText>
+            <AppText weight="regular" style={[styles.howBody, { color: colors.text, textAlign: align }]}>
+              {t('balance.how_body')}
+            </AppText>
+            <AppText weight="regular" style={[styles.howNote, { color: colors.textMuted, textAlign: align }]}>
+              {t('balance.no_charge_note')}
+            </AppText>
+          </View>
         </>
       )}
     </Screen>
@@ -211,12 +217,14 @@ const CARD_SHADOW = {
 } as const;
 const CARD_BORDER = 'rgba(30,79,163,0.07)';
 const HEADING_BLUE = '#1e4fa3';
+/** Green marks affirmative STATE on this screen. There is no action to colour. */
+const SETTLED_GREEN = '#2d6a2d';
+const DISPUTED_AMBER = '#8a6100';
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16 },
   backRow: { alignItems: 'center', gap: 6, paddingVertical: 12 },
   title: { fontSize: 18, color: HEADING_BLUE },
-  projectTitle: { fontSize: 15, marginBottom: 12 },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -228,21 +236,17 @@ const styles = StyleSheet.create({
     borderColor: CARD_BORDER,
     ...CARD_SHADOW,
   },
+  lineCard: { alignItems: 'stretch', gap: 4 },
+  lineTop: { alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  lineTitle: { fontSize: 15, flex: 1 },
+  lineAmount: { fontSize: 16 },
+  lineBreakdown: { fontSize: 13 },
+  lineDisputed: { fontSize: 12, color: DISPUTED_AMBER, marginTop: 2 },
   amountLabel: { fontSize: 13 },
   amount: { fontSize: 40, lineHeight: 48 },
-  breakdown: { fontSize: 13 },
-  unlocksTitle: { fontSize: 14, alignSelf: 'stretch', marginBottom: 6 },
-  unlockRow: { alignItems: 'center', gap: 8, alignSelf: 'stretch', paddingVertical: 3 },
-  unlockText: { fontSize: 13, flex: 1 },
-  // Blue, not green: this is the pay ACTION. Green on this screen is reserved for
-  // affirmative state — "nothing owed", and the checkmarks listing what payment
-  // unlocks — so the button must not share it.
-  payButton: {
-    backgroundColor: '#004aad', borderRadius: 10,
-    paddingVertical: 12, alignItems: 'center', marginTop: 4,
-  },
-  payButtonDisabled: { opacity: 0.6 },
-  payButtonText: { fontSize: 16, color: '#ffffff' },
+  howCard: { alignItems: 'stretch', gap: 8 },
+  howTitle: { fontSize: 14 },
+  howBody: { fontSize: 13, lineHeight: 20 },
+  howNote: { fontSize: 12, lineHeight: 18 },
   settled: { fontSize: 15 },
-  emptyNote: { fontSize: 14, marginTop: 40, textAlign: 'center' },
 });

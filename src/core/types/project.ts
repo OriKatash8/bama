@@ -161,6 +161,21 @@ export type ProjectRequest = {
    *  serving them. */
   slotActive?: boolean;
   archivedUnconfirmedAt?: Timestamp;
+  /** Deadline for a hired professional to dispute a confirmed completion.
+   *  Stamped at confirmation from `config/pricing.disputeWindowDays`, so a later
+   *  config edit cannot shorten a window someone was already given.
+   *  The completion STANDS whether or not it is disputed, and whether or not the
+   *  window expires — silence is not a veto. */
+  disputeWindowEndsAt?: Timestamp;
+  /** Set when something needs a human: a professional disputed a confirmed
+   *  completion, or a completion request went unanswered. Server-only. */
+  adminReviewPending?: boolean;
+  adminReview?: {
+    reason: 'fee_disputed' | 'completion_unanswered';
+    proId?: ID | null;
+    at?: Timestamp;
+    note?: string;
+  };
   /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.refundReviewPending. */
   refundReviewPending?: boolean;
 };
@@ -176,12 +191,25 @@ export type ProjectRequest = {
  * every project created before the per-pro correction. Never infer a fee from the
  * project doc's legacy fields.
  */
+/** Settlement state of a fee record: where the money got to. Distinct from
+ *  `feeStatus`, which says whether a fee was ever owed and is fixed at hire.
+ *  NOTHING in the app is gated on either — no slot, no review, no feature. */
+export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
+
 export type ProjectFee = {
   professionalId: ID;
-  /** 'included' = covered by THIS pro's subscription at THEIR hire; 'owed' = fee
-   *  due on their own amount; 'exempt' = never charged or blocked. */
+  /** Denormalised so a collection-group read knows its project without walking
+   *  ref.parent.parent. Absent on records written before this field existed. */
+  projectId?: string;
+  /** 'owed' = a fee is due on their own amount; 'exempt' = never charged;
+   *  'included' = legacy, covered by a subscription that no longer exists. */
   feeStatus: 'included' | 'owed' | 'exempt';
-  /** Snapshot of PLATFORM_FEE_RATE at this pro's hire (immutable, for display). */
+  /** Settlement state. Absent on records written before this field existed —
+   *  derive from `feePaid`/`feeDue` in that case. */
+  status?: FeeSettlementStatus;
+  /** Snapshot of the commission rate at this pro's hire, as a FRACTION (0.03).
+   *  Captured from `config/pricing.feePercent` at hire and immutable after, so a
+   *  later config change never alters a fee that was already agreed. */
   feeRate: number;
   /** This pro's own accepted value — their offer price, or their bundle's
    *  bundlePrice counted once. Captured at hire; topped up (never reduced) at
@@ -202,8 +230,12 @@ export type ProjectFee = {
   feeLockedAt?: Timestamp;
   feeLockedAmount?: number;
   /** Whether THIS pro still occupies a slot. Mirrors their membership of the
-   *  project's `slotHolders`. */
+   *  project's `slotHolders`. Cleared by completion or cancellation — never by
+   *  settling a fee. */
   slotActive: boolean;
+  disputedAt?: Timestamp;
+  disputeReason?: string;
+  createdAt?: Timestamp;
   /** Set when a project this pro already paid for is cancelled — admin decides
    *  the refund (§5, discretionary). */
   refundReviewPending?: boolean;

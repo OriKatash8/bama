@@ -1,11 +1,12 @@
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { db, FieldValue, monthKey, parseDeadline, daysFromNow, requireAuth, feeRef } from './helpers';
+import { db, FieldValue, parseDeadline, daysFromNow, requireAuth, feeRef } from './helpers';
+import { readConfig, feeRateOf, type PricingConfig } from './config';
 import { assignFilledCapability } from '../matching';
 import {
-  PLATFORM_FEE_RATE, DEFAULT_PROJECT_DURATION_DAYS, NON_SUBSCRIBER_SLOT_CAP,
+  DEFAULT_PROJECT_DURATION_DAYS,
   canHireOnStatus, isOfferPriceValid,
-  hireConsumesNewSlot, atSlotCap, atMonthlyLimit, monthCountFor,
+  hireConsumesNewSlot, atSlotCap,
 } from '../pricing';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
@@ -13,10 +14,14 @@ type Batch = admin.firestore.WriteBatch;
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
 /**
- * Load the project, verify the caller is its client, read the pro's subscription,
- * and ENFORCE the cap (non-sub: slot-active projects) / monthly limit (sub).
- * Throws `resource-exhausted` when blocked. Single source of enforcement — every
- * hire (offer or bundle) goes through here.
+ * Load the project, verify the caller is its client, and ENFORCE the open-project
+ * cap. Throws `resource-exhausted` when blocked. Single source of enforcement —
+ * every hire (offer or bundle) goes through here.
+ *
+ * The cap is `maxOpenProjects` from the runtime config, and the ONLY things that
+ * free a slot are completion and cancellation. There is deliberately no way to
+ * buy past it: a subscription tier used to lift it to ten projects a month, which
+ * made capacity a thing you could purchase.
  */
 async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   const projSnap = await db.doc(`projects/${projectId}`).get();
@@ -50,10 +55,7 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
     throw new HttpsError('failed-precondition', 'project-not-hireable');
   }
 
-  const subSnap = await db.doc(`subscriptions/${proId}`).get();
-  const sub = subSnap.exists ? (subSnap.data() as Record<string, unknown>) : null;
-  const isSubscriber = sub?.status === 'active';
-  const thisMonth = monthKey();
+  const config = await readConfig();
 
   // This pro's existing fee record on THIS project, if any — a pro can be hired
   // for a second role on a project they are already on. Read here (never inside
@@ -66,44 +68,35 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   const consumesNewSlot = hireConsumesNewSlot(project.slotHolders as string[] | undefined, proId);
 
   if (consumesNewSlot) {
-    if (isSubscriber) {
-      if (atMonthlyLimit(monthCountFor(sub, thisMonth))) {
-        throw new HttpsError('resource-exhausted', 'monthly-limit-reached');
-      }
-    } else {
-      // Projects where THIS pro still occupies a slot. Per-pro: another pro settling
-      // their own fee must not free this pro's slot. Single-field array-contains —
-      // no composite index needed. Not reached when the pro already holds a slot
-      // here, so the query never counts the project being hired onto.
-      const active = await db
-        .collection('projects')
-        .where('slotHolders', 'array-contains', proId)
-        .limit(NON_SUBSCRIBER_SLOT_CAP + 1)
-        .get();
-      if (atSlotCap(active.size)) throw new HttpsError('resource-exhausted', 'slot-cap-reached');
+    // Projects where THIS pro still occupies a slot. Single-field array-contains —
+    // no composite index needed. Not reached when the pro already holds a slot
+    // here, so the query never counts the project being hired onto.
+    const active = await db
+      .collection('projects')
+      .where('slotHolders', 'array-contains', proId)
+      .limit(config.maxOpenProjects + 1)
+      .get();
+    if (atSlotCap(active.size, config.maxOpenProjects)) {
+      throw new HttpsError('resource-exhausted', 'slot-cap-reached');
     }
   }
-  return { projSnap, project, subSnap, sub, isSubscriber, thisMonth, existingFeeSnap, consumesNewSlot };
+  return { projSnap, project, config, existingFeeSnap, consumesNewSlot };
 }
 
 /**
- * Commit accept writes + chat + THIS pro's fee lock + subscriber counter, atomically.
+ * Commit accept writes + chat + THIS pro's fee record, atomically.
  *
- * The fee lock runs on EVERY hire, not just the first. It used to sit inside the
- * `isFirstHire` branch, so pros 2..n silently inherited pro #1's fee status — one
- * subscriber hired first made the project free for every non-subscriber added
- * after. Each pro now gets their own `fees/{proId}` doc from their own
- * subscription status, and only the genuinely project-level state (the group chat,
- * expectedEndDate, the completion machine) stays first-hire-gated.
+ * The fee record is written on EVERY hire, not just the first. It used to sit
+ * inside the `isFirstHire` branch, so pros 2..n silently inherited pro #1's fee
+ * status. Each pro now gets their own `fees/{proId}` doc, and only the genuinely
+ * project-level state (the group chat, expectedEndDate, the completion machine)
+ * stays first-hire-gated.
  */
 async function commitHire(args: {
   projSnap: admin.firestore.DocumentSnapshot;
   project: Record<string, unknown>;
   proId: string;
-  subSnap: admin.firestore.DocumentSnapshot;
-  sub: Record<string, unknown> | null;
-  isSubscriber: boolean;
-  thisMonth: string;
+  config: PricingConfig;
   existingFeeSnap: admin.firestore.DocumentSnapshot;
   /** False when the pro already held a slot here — see hireConsumesNewSlot. */
   consumesNewSlot: boolean;
@@ -112,8 +105,8 @@ async function commitHire(args: {
   acceptWrites: (batch: Batch) => void;
 }): Promise<string> {
   const {
-    projSnap, project, proId, subSnap, sub, isSubscriber, thisMonth,
-    existingFeeSnap, consumesNewSlot, filledEntries, amount, acceptWrites,
+    projSnap, project, proId, config,
+    existingFeeSnap, filledEntries, amount, acceptWrites,
   } = args;
   const batch = db.batch();
   acceptWrites(batch);
@@ -154,42 +147,37 @@ async function commitHire(args: {
   }
   batch.update(projSnap.ref, projUpdate);
 
-  // ── This pro's fee record — locked from THEIR subscription status ──
+  // ── This pro's fee record ──
   // `baseAmount` accumulates: a pro hired for a second role on the same project
   // owes on the sum of both. increment() treats a missing doc/field as 0.
   const feeUpdate: Record<string, unknown> = {
     professionalId: proId,
+    projectId: projSnap.id,
     baseAmount: FieldValue.increment(amount),
     slotActive: true,
   };
   if (!existingFeeSnap.exists) {
-    // Immutable, set once at this pro's FIRST hire on this project. A pro who
-    // subscribes between two hires on the same project keeps their original
-    // status — spec §3: fee status can never change under them.
-    feeUpdate.feeStatus = isSubscriber ? 'included' : 'owed';
-    feeUpdate.feeRate = PLATFORM_FEE_RATE;
+    // Written once, at this pro's FIRST hire on this project, and immutable
+    // afterwards. The RATE IS CAPTURED HERE, not at completion: a later edit to
+    // config/pricing.feePercent must never change a fee that was already agreed.
+    feeUpdate.feeStatus = 'owed';
+    feeUpdate.feeRate = feeRateOf(config);
+    feeUpdate.status = 'pending';
     feeUpdate.hiredAt = FieldValue.serverTimestamp();
+    feeUpdate.createdAt = FieldValue.serverTimestamp();
   } else if (existingFeeSnap.get('feePaid') === true) {
-    // Re-hire onto a project this pro ALREADY settled (they paid early per §5,
-    // freeing their slot, and were then hired for another role). The extra
-    // baseAmount is genuinely owed again, so the settled flag has to drop —
-    // otherwise they hold a slot that markFeePaid and payFee both refuse to
-    // settle as "already paid", and it can never be freed.
+    // Re-hire onto a project whose fee this pro has ALREADY settled, for a
+    // further role. The extra baseAmount is genuinely owed, so the settled flag
+    // has to drop — otherwise markFeePaid would refuse the new amount as
+    // "already paid" and it could never be recorded.
     // `paidAmount` is untouched and carries their earlier payment forward, so
     // they are charged only the delta, never twice for the first portion.
+    // Bookkeeping only: nothing here affects slots, reviews, or what they can do.
     feeUpdate.feePaid = false;
     feeUpdate.feePaidAt = FieldValue.delete();
+    feeUpdate.status = 'pending';
   }
   batch.set(feeRef(projSnap.id, proId), feeUpdate, { merge: true });
-
-  // Only a hire that actually takes a new slot burns a monthly credit. A second
-  // role on a project already counted must not: without this a subscriber taking
-  // two roles on one project spent 2 of their 10, while the SAME work quoted as a
-  // bundle spent 1 — one commitHire either way. Identical work, identical cost.
-  if (isSubscriber && consumesNewSlot) {
-    const base = monthCountFor(sub, thisMonth);
-    batch.set(subSnap.ref, { monthKey: thisMonth, monthCount: base + 1 }, { merge: true });
-  }
 
   await batch.commit();
   return chatId as string;

@@ -77,9 +77,18 @@ export function feesCol(projectId: string) {
   return db.collection(`projects/${projectId}/fees`);
 }
 
+/** Settlement state of a fee record. Distinct from `feeStatus`, which says
+ *  whether a fee was ever owed and is fixed at hire; this says where the money
+ *  got to. Nothing in the app is gated on either. */
+export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
+
 export type FeeDoc = {
   professionalId: string;
+  /** Denormalised so a collection-group read knows its project without walking
+   *  ref.parent.parent. Absent on records written before this field existed. */
+  projectId?: string;
   feeStatus: 'included' | 'owed' | 'exempt';
+  status?: FeeSettlementStatus;
   feeRate: number;
   baseAmount: number;
   feeDue?: number;
@@ -132,27 +141,13 @@ export function computeFee(baseAmount: number, feeRate = PLATFORM_FEE_RATE): num
 }
 
 /**
- * Read one pro's fee record. A MISSING doc means 'exempt' — the permanent
- * fallback for every project created before the per-pro correction. Those can
- * never owe, never hold a slot, and their reviews publish immediately.
- */
-export async function readFee(projectId: string, proId: string): Promise<FeeDoc> {
-  const snap = await feeRef(projectId, proId).get();
-  if (!snap.exists) {
-    return {
-      professionalId: proId,
-      feeStatus: 'exempt',
-      feeRate: PLATFORM_FEE_RATE,
-      baseAmount: 0,
-      slotActive: false,
-    };
-  }
-  return snap.data() as FeeDoc;
-}
-
-/**
- * Publish the held client→pro review(s) for ONE professional on a project
- * (idempotent). Per-pro: pro A paying must not publish pro B's held review.
+ * Force any unpublished client→pro review for ONE professional to published
+ * (idempotent).
+ *
+ * A BACKSTOP, not a mechanism. Reviews publish on creation via onReviewCreate, so
+ * this normally matches nothing; it exists to catch a document written before that
+ * trigger existed. It used to be the lever that released a review when the pro
+ * paid — that is gone, and no caller passes payment state any more.
  */
 export async function publishProReview(projectId: string, proId: string): Promise<void> {
   const snap = await db

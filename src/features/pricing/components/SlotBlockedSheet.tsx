@@ -1,13 +1,8 @@
 import { Modal, View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import {
-  NON_SUBSCRIBER_SLOT_CAP,
-  SUBSCRIBER_MONTHLY_LIMIT,
-  SUB_PRICE_MONTHLY,
-} from '@core/constants/pricing';
+import { usePricingConfig } from '../hooks/usePricingConfig';
 import type { ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -25,11 +20,16 @@ function makeT(translations: Translations) {
 }
 
 /**
- * Shown when a non-subscriber at the slot cap taps a noticeboard notice —
+ * Shown when a professional at the open-project cap taps a noticeboard notice —
  * BEFORE the price offer is composed, so they never fill in a price only to be
  * rejected by `hireProfessional` with `slot-cap-reached`.
  *
- * Every number comes from the pricing config; none is written into a string.
+ * An EXPLAINER, with no way to buy past it. It used to offer two: settle the fee
+ * on an occupied project, or take a subscription that lifted the cap. Both are
+ * gone — a slot is freed by finishing or cancelling the work, and by nothing
+ * else. The sheet's job is now to say which projects hold the slots.
+ *
+ * Every number comes from the runtime config; none is written into a string.
  */
 export function SlotBlockedSheet({
   visible,
@@ -45,15 +45,13 @@ export function SlotBlockedSheet({
   occupied: ProjectRequest[];
   onClose: () => void;
 }) {
-  const router = useRouter();
   const colors = useTheme();
+  const pricing = usePricingConfig();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
   const align = rtl ? 'right' : 'left';
-
-  const go = (href: string) => { onClose(); router.push(href as never); };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -67,62 +65,30 @@ export function SlotBlockedSheet({
               {t('noticeboard.blocked_body', { project: targetProject?.title ?? '' })}
             </AppText>
             <AppText weight="semiBold" style={[styles.slotCount, { color: colors.textMuted, textAlign: align }]}>
-              {t('noticeboard.blocked_slots', { used: occupied.length, cap: NON_SUBSCRIBER_SLOT_CAP })}
+              {t('noticeboard.blocked_slots', { used: occupied.length, cap: pricing.maxOpenProjects })}
             </AppText>
 
-            {/* Each occupied slot with the action that frees it. A completed
-                project is settled; an active one is closed early (§5) — the
-                same payment screen either way, and the chat stays open. */}
-            {occupied.map((p) => {
-              const isCompleted = p.status === 'completed';
-              return (
-                <View key={p.id} style={[styles.slotRow, { flexDirection: rowDir }]}>
-                  <View style={styles.slotInfo}>
-                    <AppText weight="semiBold" style={[styles.slotTitle, { color: colors.text, textAlign: align }]} numberOfLines={1}>
-                      {p.title}
-                    </AppText>
-                    <AppText weight="regular" style={[styles.slotStatus, { color: colors.textMuted, textAlign: align }]}>
-                      {isCompleted
-                        ? t('noticeboard.blocked_status_completed')
-                        : t('noticeboard.blocked_status_active')}
-                    </AppText>
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.slotAction, { backgroundColor: isCompleted ? PRIMARY_BLUE : 'transparent', borderColor: PRIMARY_BLUE }]}
-                    onPress={() => go(`/settings/payment?projectId=${p.id}`)}
-                    activeOpacity={0.85}
-                  >
-                    <AppText weight="semiBold" style={[styles.slotActionText, { color: isCompleted ? '#ffffff' : PRIMARY_BLUE }]}>
-                      {isCompleted
-                        ? t('noticeboard.blocked_close')
-                        : t('noticeboard.blocked_close_early')}
-                    </AppText>
-                  </TouchableOpacity>
+            {/* Which projects hold the slots, and what state each is in. No
+                action button: nothing on this sheet frees a slot, because
+                nothing a professional can buy does. */}
+            {occupied.map((p) => (
+              <View key={p.id} style={[styles.slotRow, { flexDirection: rowDir }]}>
+                <View style={styles.slotInfo}>
+                  <AppText weight="semiBold" style={[styles.slotTitle, { color: colors.text, textAlign: align }]} numberOfLines={1}>
+                    {p.title}
+                  </AppText>
+                  <AppText weight="regular" style={[styles.slotStatus, { color: colors.textMuted, textAlign: align }]}>
+                    {p.status === 'completed'
+                      ? t('noticeboard.blocked_status_completed')
+                      : t('noticeboard.blocked_status_active')}
+                  </AppText>
                 </View>
-              );
-            })}
+              </View>
+            ))}
 
-            {/* Pitch last: the way out that is not "pay now". */}
-            <View style={[styles.pitch, { borderColor: colors.border }]}>
-              <AppText weight="bold" style={[styles.pitchTitle, { color: colors.text, textAlign: align }]}>
-                {t('noticeboard.blocked_pitch_title')}
-              </AppText>
-              <AppText weight="regular" style={[styles.pitchBody, { color: colors.textMuted, textAlign: align }]}>
-                {t('noticeboard.blocked_pitch_body', {
-                  limit: SUBSCRIBER_MONTHLY_LIMIT,
-                  monthly: SUB_PRICE_MONTHLY,
-                })}
-              </AppText>
-              <TouchableOpacity
-                style={[styles.pitchCta, { backgroundColor: colors.primary }]}
-                onPress={() => go('/settings/subscription')}
-                activeOpacity={0.85}
-              >
-                <AppText weight="bold" style={styles.pitchCtaText}>
-                  {t('noticeboard.blocked_pitch_cta')}
-                </AppText>
-              </TouchableOpacity>
-            </View>
+            <AppText weight="regular" style={[styles.howBody, { color: colors.textMuted, textAlign: align }]}>
+              {t('noticeboard.blocked_how')}
+            </AppText>
 
             <TouchableOpacity style={styles.notNow} onPress={onClose} activeOpacity={0.7}>
               <AppText weight="regular" style={[styles.notNowText, { color: colors.textMuted }]}>
@@ -139,9 +105,6 @@ export function SlotBlockedSheet({
 // The app's card convention, hardcoded per screen rather than themed — see the
 // note on `card` in src/core/hooks/useTheme.tsx for why the token is not used.
 const CARD_BORDER = 'rgba(30,79,163,0.07)';
-/** Pay actions are blue. Green marks state elsewhere in the app, never an action. */
-const PRIMARY_BLUE = '#004aad';
-
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
@@ -162,13 +125,7 @@ const styles = StyleSheet.create({
   slotInfo: { flex: 1, gap: 2 },
   slotTitle: { fontSize: 14 },
   slotStatus: { fontSize: 12 },
-  slotAction: { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 15, paddingVertical: 7 },
-  slotActionText: { fontSize: 13 },
-  pitch: { borderWidth: 1, borderRadius: 16, padding: 16, marginTop: 10, gap: 6 },
-  pitchTitle: { fontSize: 15 },
-  pitchBody: { fontSize: 13, lineHeight: 19 },
-  pitchCta: { borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
-  pitchCtaText: { fontSize: 15, color: '#ffffff' },
+  howBody: { fontSize: 13, lineHeight: 19, marginTop: 10 },
   notNow: { alignItems: 'center', paddingVertical: 16 },
   notNowText: { fontSize: 14 },
 });

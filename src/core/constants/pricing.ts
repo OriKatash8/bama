@@ -1,15 +1,36 @@
 /**
- * BAMA pricing & project-lifecycle config. Single source of truth for every
- * rate, cap, and grace period — per the spec (docs/bama-pricing-model-decisions.md),
- * these are NEVER hardcoded in business logic.
+ * BAMA pricing & project-lifecycle FALLBACK defaults.
+ *
+ * These are no longer the source of truth. Every rate, cap and grace period now
+ * lives in the runtime config document `config/pricing`, read through
+ * `@features/pricing/services/configService`. What is here is what the app runs
+ * on when that document is missing or unreachable — nothing more.
  *
  * Mirrored on the server in functions/src/pricing.ts — keep the two in sync.
- * The client uses these for display; the Cloud Functions enforce with their copy.
  */
 
 /** Platform fee charged to the PROFESSIONAL on client-confirmed completion.
- *  Taken on EACH pro's own accepted amount, not on the project total. */
+ *  Taken on EACH pro's own accepted amount, not on the project total.
+ *  FALLBACK ONLY — the live rate is `config/pricing.feePercent`. */
 export const PLATFORM_FEE_RATE = 0.03; // 3% of what each professional is paid
+
+// ── Runtime config defaults (config/pricing) ───────────────────────────────
+// Mirrors functions/src/pricing.ts. Used only when the config doc is unreachable.
+
+/** Commission rate as a percent. Mirrors PLATFORM_FEE_RATE * 100. */
+export const DEFAULT_FEE_PERCENT = 3;
+/** Concurrent projects a professional may hold a slot on. */
+export const DEFAULT_MAX_OPEN_PROJECTS = 2;
+/** The professional's window to dispute a client-confirmed completion. */
+export const DEFAULT_DISPUTE_WINDOW_DAYS = 4;
+/** After the deadline -> first reminder. */
+export const DEFAULT_AUTO_CLOSE_REMINDER_DAYS = 3;
+/** After the reminder -> final prompt. */
+export const DEFAULT_AUTO_CLOSE_FINAL_DAYS = 7;
+/** After the deadline -> auto-close. */
+export const DEFAULT_AUTO_CLOSE_DAYS = 14;
+/** Reserved; nothing reads this in this build. */
+export const DEFAULT_PAYMENT_FAILURE_GRACE_DAYS = 7;
 
 /**
  * Real payments (Cardcom) are live. FALSE until Cardcom ships.
@@ -21,16 +42,6 @@ export const PLATFORM_FEE_RATE = 0.03; // 3% of what each professional is paid
  * The flag closes the hole on its own — do not rely on remembering.
  */
 export const PAYMENTS_ENABLED = false;
-
-/** Non-subscriber: max simultaneously slot-active projects before hiring is blocked. */
-export const NON_SUBSCRIBER_SLOT_CAP = 2;
-
-/** Subscriber: free projects per calendar month (NOT 120/yr on the annual plan). */
-export const SUBSCRIBER_MONTHLY_LIMIT = 10;
-
-/** Subscription launch pricing (₪). */
-export const SUB_PRICE_MONTHLY = 80;
-export const SUB_PRICE_ANNUAL = 800;
 
 /** Completion / confirmation timeouts (days). */
 export const AUTO_CONFIRM_DAYS = 7;            // pro requested, client silent → auto-confirm

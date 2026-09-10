@@ -72,11 +72,11 @@ if (bd.status !== 'cancelled') {
   console.error(`\nREFUSING: expected status 'cancelled', found '${bd.status}'. Nothing written.`);
   process.exit(1);
 }
-const owing = feesSnap.docs.filter((f) => (f.data().feeDue ?? 0) > 0);
-if (owing.length) {
-  console.error(`\nREFUSING: ${owing.length} fee doc(s) still owe money. Freeing a slot would strand it.`);
-  process.exit(1);
-}
+// No fee check here, deliberately. This used to refuse while any fee doc still
+// showed feeDue > 0 ("freeing a slot would strand it") — the same pattern removed
+// from freeSlot and confirmCompletion, and for the same reason: money owed must
+// never decide whether a slot is occupied. A cancelled project holds nobody, paid
+// or not. The status guard above is the real precondition.
 
 if (APPLY) {
   const batch = db.batch();

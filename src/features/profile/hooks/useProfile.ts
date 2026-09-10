@@ -42,7 +42,7 @@ export function useProfile() {
     );
     // One-shot fetch intentional: review submission is out of scope, so cards won't change
     // during a session. The profile sub-doc (rating/reviewCount) stays live-subscribed above.
-    // Held reviews are invisible to the pro until the fee settles — filter before
+    // Defence in depth over a field that is now always true — filter before
     // they reach any render path, not just the average.
     // Published only, enforced by the rules. An unconstrained query here used to
     // return this professional their own HELD reviews — rating and body — with

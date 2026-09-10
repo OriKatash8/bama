@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db, FieldValue, daysAgo, notify, feesCol } from './helpers';
-import { confirmCompletionInternal } from './completion';
 import {
   AUTO_CONFIRM_DAYS, COMPLETION_REMINDER_DAYS, END_DATE_PROMPT_GRACE_DAYS,
   ARCHIVE_UNCONFIRMED_DAYS, REVIEW_FORCE_PUBLISH_DAYS, TIMEZONE,
@@ -48,7 +47,14 @@ export const lifecycleCron = onSchedule(
       },
     );
 
-    // 2) Completion reminders (day 3/6) + auto-confirm (day 7) for pro-requested projects.
+    // 2) Completion reminders (day 3/6) for pro-requested projects, then hand an
+    //    unanswered request to a human on day 7.
+    //
+    //    This used to AUTO-CONFIRM on day 7. It no longer does. Confirming a
+    //    completion the client never answered also mints a fee record the client
+    //    never agreed to, and marks work delivered on the strength of silence.
+    //    An unanswered request is now flagged for admin review instead; the
+    //    project stays as it is until someone looks at it.
     await paginate(
       db.collection('projects')
         .where('completion.state', '==', 'requested')
@@ -59,7 +65,15 @@ export const lifecycleCron = onSchedule(
         const requestedAt: admin.firestore.Timestamp | undefined = p.completion?.requestedAt;
         if (!requestedAt) return;
         if (requestedAt.toMillis() <= daysAgo(AUTO_CONFIRM_DAYS).toMillis()) {
-          await confirmCompletionInternal(doc.id, 'auto'); // idempotent
+          if (p.adminReviewPending === true) return; // already flagged (idempotent)
+          await doc.ref.update({
+            adminReviewPending: true,
+            adminReview: {
+              reason: 'completion_unanswered',
+              proId: p.completion?.requestedBy ?? null,
+              at: FieldValue.serverTimestamp(),
+            },
+          });
           return;
         }
         const reminded: number[] = p.completion?.remindedDays ?? [];
@@ -95,7 +109,11 @@ export const lifecycleCron = onSchedule(
       },
     );
 
-    // 4) Force-publish held reviews after 60 days, even if never paid.
+    // 4) Backstop: publish anything still marked held.
+    //
+    //    Nothing should ever be held now — onReviewCreate publishes every review
+    //    on creation. This stays as a safety net for a document written before
+    //    that change, or by some path nobody anticipated. It is not a lever.
     await paginate(
       db.collection('reviews')
         .where('published', '==', false)

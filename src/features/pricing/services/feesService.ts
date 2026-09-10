@@ -7,24 +7,22 @@ import {
   where,
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
-import { callFunction } from '@core/firebase/functions';
 import type { ProjectFee } from '@core/types/project';
 
 /**
  * A professional's platform fee lives at `projects/{projectId}/fees/{proId}`,
  * where the document id IS their uid. Admin-SDK-written only; the professional
- * may read their own, and the CLIENT may not read any (spec §6 — the client is
- * never told that a professional owes BAMA money).
+ * may read their own, and the CLIENT may not read any — the client is never told
+ * that a professional owes BAMA money.
+ *
+ * READ-ONLY from the app. There is no settle-your-own-fee call: money moves off
+ * the platform and an admin records it with `markFeePaid`. Nothing in the app is
+ * gated on the result, so these listeners exist purely to show a balance.
  *
  * A MISSING fee document means 'exempt' — the permanent fallback for every
  * project created before the per-pro correction. Callers get `null` and must
  * treat it as "nothing owed", never as an error.
  */
-
-/** The professional settles their own fee. Gated server-side on PAYMENTS_ENABLED. */
-export const paySlotFee = callFunction<{ projectId: string }, { ok: boolean; paid: number }>(
-  'payFee',
-);
 
 /** One professional's fee on one project. Document listener — a collection query
  *  here would be a `list`, and the rules are written for the document read. */

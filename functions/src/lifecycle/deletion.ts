@@ -18,11 +18,12 @@ const BATCH_LIMIT = 400; // Firestore's hard limit is 500 — leave headroom.
  *     platform fee off them, so an orphan pointing at a deleted project is a fee
  *     base with no project behind it.
  *
- * Deleting a HIRED project is refused outright. Otherwise "delete" would be a
- * cleaner escape from an owed fee than anything the gating model contemplates:
- * it would erase the debt, free the slot, and drop the held review in one call.
- * Ending a hired project goes through `cancelProject`, which frees slots without
- * destroying the record.
+ * Deleting a HIRED project is refused outright — for the professionals on it, not
+ * for the fee. Real work, a group chat, accepted offers and reviews hang off it,
+ * and none of that should vanish because the client pressed delete. The refusal is
+ * NOT fee-conditioned: a fully settled hired project is refused just the same, and
+ * an unpaid un-hired one still deletes. Ending a hired project goes through
+ * `cancelProject`.
  */
 export const deleteProject = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
