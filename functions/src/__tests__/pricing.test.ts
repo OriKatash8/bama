@@ -9,6 +9,7 @@ import {
   resolveConfig, feeRateOf, withinDisputeWindow, CONFIG_DEFAULTS,
   DEFAULT_MAX_OPEN_PROJECTS,
 } from '../pricing';
+import { computeFee } from '../lifecycle/helpers';
 
 describe('isOfferPriceValid', () => {
   it('rejects the two real production typos', () => {
@@ -208,6 +209,68 @@ describe('resolveConfig', () => {
       expect(resolveConfig({ feePercent: value }).feePercent).toBe(CONFIG_DEFAULTS.feePercent);
     },
   );
+});
+
+describe('computeFee — the commission floor (Terms 12.4.1)', () => {
+  it('takes the percentage when it clears the floor', () => {
+    expect(computeFee(5000, 0.03, 6)).toBe(150);
+    expect(computeFee(1000, 0.03, 6)).toBe(30);
+  });
+
+  it('takes the floor when the percentage falls short', () => {
+    expect(computeFee(100, 0.03, 6)).toBe(6);   // 3
+    expect(computeFee(20, 0.03, 6)).toBe(6);    // 1
+    expect(computeFee(1, 0.03, 6)).toBe(6);     // 0
+  });
+
+  it('holds at the exact boundary — 200 x 3% is 6, not 5.99 or 6.0000001', () => {
+    expect(200 * 0.03).toBe(6);                 // no float drift at the boundary
+    expect(computeFee(200, 0.03, 6)).toBe(6);
+    expect(computeFee(199, 0.03, 6)).toBe(6);   // 5.97 rounds up to 6 anyway
+    expect(computeFee(201, 0.03, 6)).toBe(6);   // 6.03 rounds down to 6
+    expect(computeFee(234, 0.03, 6)).toBe(7);   // first base that clears it
+  });
+
+  it('stays whole for a non-integer base — a live bundle is priced 1799.9', () => {
+    const fee = computeFee(1799.9, 0.03, 6);
+    expect(fee).toBe(54);
+    expect(Number.isInteger(fee)).toBe(true);
+  });
+
+  it('charges the floor on a zero base — under-reporting cannot reach zero', () => {
+    expect(computeFee(0, 0.03, 6)).toBe(6);
+  });
+
+  it('DEFAULTS TO NO FLOOR, which is what makes old records need no backfill', () => {
+    // A fee written before the floor existed carries no minFeeApplied, so callers
+    // pass `?? 0` and the amount is arithmetically what it always was. A real
+    // production record sits at baseAmount 123 -> 4; it must stay 4.
+    expect(computeFee(123, 0.03)).toBe(4);
+    expect(computeFee(123, 0.03, 0)).toBe(4);
+    expect(computeFee(100, 0.03)).toBe(3);
+  });
+
+  it('honours a floor that is not the current default — it is per record', () => {
+    expect(computeFee(100, 0.03, 10)).toBe(10);
+    expect(computeFee(500, 0.03, 10)).toBe(15);
+  });
+});
+
+describe('minFeeAmount config key', () => {
+  it('defaults to 6', () => {
+    expect(CONFIG_DEFAULTS.minFeeAmount).toBe(6);
+  });
+
+  it('is runtime-tunable', () => {
+    expect(resolveConfig({ minFeeAmount: 10 }).minFeeAmount).toBe(10);
+  });
+
+  it('CANNOT be switched off with a 0 — resolveConfig takes only v > 0', () => {
+    // Documented, not accidental: removing the floor is a code change.
+    expect(resolveConfig({ minFeeAmount: 0 }).minFeeAmount).toBe(6);
+    expect(resolveConfig({ minFeeAmount: -1 }).minFeeAmount).toBe(6);
+    expect(resolveConfig({ minFeeAmount: 'six' }).minFeeAmount).toBe(6);
+  });
 });
 
 describe('feeRateOf', () => {

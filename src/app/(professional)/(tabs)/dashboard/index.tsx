@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
-import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, Inbox, History, Briefcase, LayoutGrid } from 'lucide-react-native';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, Inbox, History, Briefcase, LayoutGrid, Percent } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
@@ -327,6 +327,23 @@ export default function DashboardScreen() {
         {notifPrompt.visible && pendingCount > 0 && (
           <NotifPermissionBanner context="offers" onDismiss={notifPrompt.dismiss} />
         )}
+
+        {/* The commission, stated on the surface where work is picked up, and the
+            second route into the full terms. Deliberately the SHORT form: it names
+            the minimum alongside the rate, which is the pairing that stops a ₪6
+            fee on a small job reading as a bug. Live config, interpolated. */}
+        <TouchableOpacity
+          style={[styles.feeLinkRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+          onPress={() => router.push('/settings/pricing')}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('pricing.title')}
+        >
+          <Percent size={13} color={colors.textMuted} strokeWidth={2} />
+          <AppText weight="regular" style={[styles.feeLinkText, { color: colors.textMuted }]}>
+            {t('pricing.fee_short', { rate: pricing.feePercent, min: pricing.minFeeAmount })}
+          </AppText>
+        </TouchableOpacity>
 
         {/* ── Notice board ── */}
         <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -670,6 +687,13 @@ const styles = StyleSheet.create({
   // ("In progress" <-> "Notice board") and must not resize, or the page title
   // would reflow every time the view changes. A column, so nothing inside needs
   // a direction.
+  feeLinkRow: {
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+  },
+  feeLinkText: { fontSize: 12 },
   navBtn: {
     // Explicit width AND height. English labels differ in line count — "Filter"
     // and "History" are one line, "In progress" and "Notice board" are two — so

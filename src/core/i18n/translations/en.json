@@ -287,7 +287,8 @@
     "dispute_body": "Raise an issue with this completion? The project stays closed and reviews stay published — it goes to our team to look at.",
     "dispute_sent": "Issue raised. We will get back to you.",
     "dispute_error": "Could not raise the issue. Please try again.",
-    "dispute_open": "Issue open"
+    "dispute_open": "Issue open",
+    "fee_line_min": "BAMA fee · ₪{{amount}} (minimum fee)"
   },
   "chats_page": {
     "title": "Chats",
@@ -907,7 +908,8 @@
     "notif_type_meeting": "Meetings",
     "notif_type_offer": "Price offers",
     "notif_type_offer_accepted": "Offer accepted",
-    "notif_type_purchase": "Marketplace purchases"
+    "notif_type_purchase": "Marketplace purchases",
+    "pricing": "Pricing"
   },
   "communities": {
     "request_create": "Request Community",
@@ -1021,6 +1023,21 @@
     "project_fallback": "Project",
     "how_title": "How to settle",
     "how_body": "Payment details are sent with the payment demand. Questions: bama.app.hk@gmail.com",
-    "no_charge_note": "The app charges nothing. An outstanding balance blocks nothing — your projects, reviews and slots stay available as normal."
+    "no_charge_note": "The app charges nothing. An outstanding balance blocks nothing — your projects, reviews and slots stay available as normal.",
+    "line_min": "Minimum fee ({{rate}}% of ₪{{base}} = ₪{{calculated}})"
+  },
+  "pricing": {
+    "title": "Pricing",
+    "fee_headline": "Platform fee: {{rate}}% of your earnings on the project",
+    "fee_minimum": "Minimum fee: ₪{{min}} per project",
+    "fee_minimum_explain": "If {{rate}}% of your earnings comes to less than ₪{{min}}, a minimum fee of ₪{{min}} applies. On small projects the fee is ₪{{min}}, never less.",
+    "fee_when": "The fee is created only when a project is marked complete. Cancelled projects carry no fee.",
+    "fee_short": "{{rate}}% (min ₪{{min}})",
+    "fee_base_note": "The fee is calculated on your own earnings, not on the project total."
+  },
+  "hire": {
+    "fee_notice": "Platform fee for this project: ₪{{amount}}",
+    "fee_notice_min": "Platform fee for this project: ₪{{amount}} (minimum fee)",
+    "fee_notice_sub": "Charged only after the project is marked complete."
   }
 }

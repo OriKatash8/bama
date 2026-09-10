@@ -29,6 +29,7 @@ const SEED = {
   autoCloseFinalDays: 7,
   autoCloseDays: 14,
   paymentFailureGraceDays: 7,
+  minFeeAmount: 6,
 };
 
 // ── args ───────────────────────────────────────────────────────────────────

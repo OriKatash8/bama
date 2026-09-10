@@ -22,7 +22,12 @@ async function loadProject(projectId: string) {
  * early payments non-refundable.
  */
 function outstandingOf(fee: FeeDoc, baseAmount: number): number {
-  return Math.max(0, computeFee(baseAmount, fee.feeRate) - (fee.paidAmount ?? 0));
+  // `minFeeApplied ?? 0` — THIS pro's locked floor, never the live config. A
+  // record predating the floor has none and prices exactly as it always did.
+  return Math.max(
+    0,
+    computeFee(baseAmount, fee.feeRate, fee.minFeeApplied ?? 0) - (fee.paidAmount ?? 0),
+  );
 }
 
 /** Pro requests completion → client gets a confirm/dispute prompt. */
@@ -290,6 +295,14 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
   if (!preSnap.exists) throw new HttpsError('failed-precondition', 'nothing-owed');
   const preFee = preSnap.data() as FeeDoc;
   if (preFee.feeStatus !== 'owed') throw new HttpsError('failed-precondition', 'nothing-owed');
+  // `feeStatus` alone is NOT enough. cancelProject, freeSlot and the archive sweep
+  // all void a fee with `status: 'not_owed'` + `feeDue: 0` and deliberately leave
+  // `feeStatus` at 'owed' (it records what was agreed at hire, and is immutable).
+  // Before the commission floor existed that gap was harmless: the pre-completion
+  // branch below priced a dead project at 0 and fell out on 'already-paid'. With a
+  // floor it prices at the minimum instead, so an admin could record — and the
+  // ledger would assert — a fee on a project the rest of the code calls not-owed.
+  if (preFee.status === 'not_owed') throw new HttpsError('failed-precondition', 'nothing-owed');
   const currentAmount = await computeProAmount(projectId, proId);
 
   return db.runTransaction(async (tx) => {
@@ -298,6 +311,9 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
     const project = pSnap.data() as Record<string, unknown>;
     const fee = fSnap.data() as FeeDoc;
     if (fee.feeStatus !== 'owed') throw new HttpsError('failed-precondition', 'nothing-owed');
+    // Re-checked inside the transaction, like feeStatus above: the project could
+    // have been cancelled between the pre-read and here.
+    if (fee.status === 'not_owed') throw new HttpsError('failed-precondition', 'nothing-owed');
 
     const confirmed = (project.completion as { state?: string } | undefined)?.state === 'confirmed';
     // Early: price it now off the pro's current accepted amount, and lock that
@@ -322,7 +338,7 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
       // Settled before completion: record what the fee was worth on that day.
       feeUpdate.baseAmount = baseAmount;
       feeUpdate.feeLockedAt = FieldValue.serverTimestamp();
-      feeUpdate.feeLockedAmount = computeFee(baseAmount, fee.feeRate);
+      feeUpdate.feeLockedAmount = computeFee(baseAmount, fee.feeRate, fee.minFeeApplied ?? 0);
     }
     tx.update(fRef, feeUpdate);
 

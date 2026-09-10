@@ -9,15 +9,48 @@ import type { ProjectFee } from '@core/types/project';
  *
  * All of it derives from one expression:
  *
- *   outstanding = max(0, round(baseAmount * feeRate) - paidAmount)
+ *   outstanding = max(0, max(round(baseAmount * feeRate), minFeeApplied) - paidAmount)
  *
  * which covers §5's top-up rule (a price rise after an early payment charges
  * only the delta), a price fall (no refund — the floor at zero does that), a
  * re-hire onto the same project, and ordinary settlement, with no branching.
+ *
+ * MIRRORS computeFee() in functions/src/lifecycle/helpers.ts. The server ENFORCES
+ * with its copy; this one only displays. They are two implementations of one
+ * formula and will drift if either is changed alone — change both.
  */
 
-/** The full fee on this professional's own accepted amount, before anything paid. */
-export function grossFee(fee: Pick<ProjectFee, 'baseAmount' | 'feeRate'>): number {
+/**
+ * The full fee on this professional's own accepted amount, before anything paid,
+ * never below the commission floor this fee was hired under.
+ *
+ * `minFeeApplied ?? 0` is deliberate and load-bearing: a record written before the
+ * floor existed carries no value and therefore floors at zero, so its amount is
+ * exactly what it always was. Never substitute the live config value here — that
+ * would reprice every historical fee the moment the minimum changed.
+ */
+export function grossFee(
+  fee: Pick<ProjectFee, 'baseAmount' | 'feeRate' | 'minFeeApplied'>,
+): number {
+  return Math.max(
+    Math.round((fee.baseAmount ?? 0) * (fee.feeRate ?? PLATFORM_FEE_RATE)),
+    fee.minFeeApplied ?? 0,
+  );
+}
+
+/** True when the floor, not the percentage, is what set this fee's amount. */
+export function isMinimumFee(
+  fee: Pick<ProjectFee, 'baseAmount' | 'feeRate' | 'minFeeApplied'> | null | undefined,
+): boolean {
+  if (!fee?.minFeeApplied) return false;
+  return calculatedFee(fee) < fee.minFeeApplied;
+}
+
+/** The percentage alone, floor NOT applied — shown beside the minimum so a
+ *  professional can see the arithmetic rather than being handed a number. */
+export function calculatedFee(
+  fee: Pick<ProjectFee, 'baseAmount' | 'feeRate'>,
+): number {
   return Math.round((fee.baseAmount ?? 0) * (fee.feeRate ?? PLATFORM_FEE_RATE));
 }
 

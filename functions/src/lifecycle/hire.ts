@@ -162,6 +162,10 @@ async function commitHire(args: {
     // config/pricing.feePercent must never change a fee that was already agreed.
     feeUpdate.feeStatus = 'owed';
     feeUpdate.feeRate = feeRateOf(config);
+    // The commission FLOOR, locked here for the same reason as the rate: raising
+    // config/pricing.minFeeAmount later must never reprice a project that was
+    // already agreed. Absent on pre-floor records, which read it as 0.
+    feeUpdate.minFeeApplied = config.minFeeAmount;
     feeUpdate.status = 'pending';
     feeUpdate.hiredAt = FieldValue.serverTimestamp();
     feeUpdate.createdAt = FieldValue.serverTimestamp();

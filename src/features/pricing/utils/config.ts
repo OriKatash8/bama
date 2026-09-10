@@ -2,6 +2,7 @@ import {
   DEFAULT_FEE_PERCENT, DEFAULT_MAX_OPEN_PROJECTS, DEFAULT_DISPUTE_WINDOW_DAYS,
   DEFAULT_AUTO_CLOSE_REMINDER_DAYS, DEFAULT_AUTO_CLOSE_FINAL_DAYS,
   DEFAULT_AUTO_CLOSE_DAYS, DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
+  DEFAULT_MIN_FEE_AMOUNT,
 } from '@core/constants/pricing';
 
 /**
@@ -24,6 +25,11 @@ export type PricingConfig = {
   autoCloseDays: number;
   /** Reserved; nothing reads this in this build. */
   paymentFailureGraceDays: number;
+  /** Floor under every commission, in whole shekels. DISPLAY ONLY here: it is what
+   *  the pricing screen quotes to a professional who has not been hired yet. Once
+   *  they are hired, the value that prices their fee is `minFeeApplied` on their own
+   *  fee record, snapshotted at that moment — read that, never this. */
+  minFeeAmount: number;
 };
 
 export const PRICING_CONFIG_DEFAULTS: PricingConfig = {
@@ -34,6 +40,7 @@ export const PRICING_CONFIG_DEFAULTS: PricingConfig = {
   autoCloseFinalDays: DEFAULT_AUTO_CLOSE_FINAL_DAYS,
   autoCloseDays: DEFAULT_AUTO_CLOSE_DAYS,
   paymentFailureGraceDays: DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
+  minFeeAmount: DEFAULT_MIN_FEE_AMOUNT,
 };
 
 /**

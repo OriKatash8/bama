@@ -31,15 +31,18 @@ export const DEFAULT_AUTO_CLOSE_FINAL_DAYS = 7;
 export const DEFAULT_AUTO_CLOSE_DAYS = 14;
 /** Reserved; nothing reads this in this build. */
 export const DEFAULT_PAYMENT_FAILURE_GRACE_DAYS = 7;
+/** Floor under every commission, in whole shekels (Terms 12.4.1). FALLBACK ONLY —
+ *  the live value is `config/pricing.minFeeAmount`, and the value that actually
+ *  prices a fee is `minFeeApplied`, snapshotted onto the fee record at hire. */
+export const DEFAULT_MIN_FEE_AMOUNT = 6;
 
 /**
- * Real payments (Cardcom) are live. FALSE until Cardcom ships.
+ * DEAD. Nothing reads this.
  *
- * While false, `payFee` lets the owning professional settle their own project's
- * fee directly — a fake payment, so the flow is testable before Cardcom exists.
- * When this flips to true, `payFee` MUST reject direct calls: settlement then
- * happens only via the Cardcom webhook or the admin-only `markFeePaid`.
- * The flag closes the hole on its own — do not rely on remembering.
+ * It gated `payFee`, an in-app "settle my own fee" callable that no longer exists:
+ * there is no payment rail in the app at all. Settlement happens off-platform and
+ * an admin records it with `markFeePaid`. Mirrors the server copy in
+ * functions/src/pricing.ts; delete both if Cardcom never arrives.
  */
 export const PAYMENTS_ENABLED = false;
 

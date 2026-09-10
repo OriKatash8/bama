@@ -98,6 +98,10 @@ export type FeeDoc = {
   paidAmount?: number;
   feePaid?: boolean;
   slotActive: boolean;
+  /** The commission floor in force when this pro was hired, snapshotted like
+   *  `feeRate`. ABSENT on every record written before the floor existed, and read
+   *  as 0 there — that is what keeps historical amounts unchanged. */
+  minFeeApplied?: number;
 };
 
 /**
@@ -135,9 +139,25 @@ export async function computeProAmount(projectId: string, proId: string): Promis
   return sumProAmount(offers, bundles);
 }
 
-/** The fee a pro owes on their own amount, rounded to the nearest shekel. Pure. */
-export function computeFee(baseAmount: number, feeRate = PLATFORM_FEE_RATE): number {
-  return Math.round(baseAmount * feeRate);
+/**
+ * The fee a pro owes on their own amount, rounded to the nearest shekel, never
+ * below `minFee`. Pure.
+ *
+ * `minFee` DEFAULTS TO 0, and that default is the whole no-backfill mechanism: a
+ * fee record written before the minimum existed carries no `minFeeApplied`, so it
+ * floors at zero and its amount is arithmetically unchanged. Callers pass
+ * `fee.minFeeApplied ?? 0` — never the live config value, which would reprice
+ * every historical fee the moment the floor was raised.
+ *
+ * Math.max sits OUTSIDE Math.round so the result stays a whole shekel even for a
+ * non-integer base (a live bundle is priced 1799.9).
+ */
+export function computeFee(
+  baseAmount: number,
+  feeRate = PLATFORM_FEE_RATE,
+  minFee = 0,
+): number {
+  return Math.max(Math.round(baseAmount * feeRate), minFee);
 }
 
 /**

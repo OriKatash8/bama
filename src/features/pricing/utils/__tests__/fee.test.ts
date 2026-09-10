@@ -1,4 +1,4 @@
-import { grossFee, outstandingFee, owesFee, feePercent } from '../fee';
+import { grossFee, outstandingFee, owesFee, feePercent, isMinimumFee, calculatedFee } from '../fee';
 import type { ProjectFee } from '@core/types/project';
 
 const fee = (over: Partial<ProjectFee> = {}): ProjectFee => ({
@@ -22,6 +22,74 @@ describe('grossFee', () => {
 
   it('uses the fee doc own rate, not the current constant', () => {
     expect(grossFee(fee({ baseAmount: 1000, feeRate: 0.05 }))).toBe(50);
+  });
+});
+
+describe('grossFee — the commission floor, mirroring the server', () => {
+  it('takes the floor when the percentage falls short', () => {
+    expect(grossFee(fee({ baseAmount: 100, minFeeApplied: 6 }))).toBe(6); // 3
+    expect(grossFee(fee({ baseAmount: 20, minFeeApplied: 6 }))).toBe(6);  // 1
+  });
+
+  it('takes the percentage when it clears the floor', () => {
+    expect(grossFee(fee({ baseAmount: 5000, minFeeApplied: 6 }))).toBe(150);
+  });
+
+  it('holds at the exact boundary', () => {
+    expect(grossFee(fee({ baseAmount: 200, minFeeApplied: 6 }))).toBe(6);
+    expect(grossFee(fee({ baseAmount: 234, minFeeApplied: 6 }))).toBe(7);
+  });
+
+  it('charges the floor on a zero base', () => {
+    expect(grossFee(fee({ baseAmount: 0, minFeeApplied: 6 }))).toBe(6);
+  });
+
+  it('leaves a record with NO minFeeApplied exactly as it was — no backfill', () => {
+    // The real production record at baseAmount 123 must stay 4, not become 6.
+    expect(grossFee(fee({ baseAmount: 123 }))).toBe(4);
+    expect(grossFee(fee({ baseAmount: 100 }))).toBe(3);
+  });
+
+  it('uses the record own floor, not a current constant', () => {
+    expect(grossFee(fee({ baseAmount: 100, minFeeApplied: 10 }))).toBe(10);
+  });
+});
+
+describe('isMinimumFee / calculatedFee — so the pro sees the arithmetic', () => {
+  it('is true only when the floor is what set the amount', () => {
+    expect(isMinimumFee(fee({ baseAmount: 100, minFeeApplied: 6 }))).toBe(true);
+    expect(isMinimumFee(fee({ baseAmount: 5000, minFeeApplied: 6 }))).toBe(false);
+  });
+
+  it('is false at the boundary, where the percentage reaches the floor on its own', () => {
+    expect(isMinimumFee(fee({ baseAmount: 200, minFeeApplied: 6 }))).toBe(false);
+  });
+
+  it('is false for a record with no floor, whatever the amount', () => {
+    expect(isMinimumFee(fee({ baseAmount: 1 }))).toBe(false);
+    expect(isMinimumFee(null)).toBe(false);
+  });
+
+  it('calculatedFee reports the percentage alone, floor NOT applied', () => {
+    expect(calculatedFee(fee({ baseAmount: 100, minFeeApplied: 6 }))).toBe(3);
+  });
+});
+
+describe('the floor never CREATES a fee', () => {
+  it('exempt owes nothing even with a floor on the record', () => {
+    expect(outstandingFee(fee({ feeStatus: 'exempt', baseAmount: 100, minFeeApplied: 6 }))).toBe(0);
+  });
+
+  it('a voided fee (cancelled / removed) owes nothing — feeDue 0 wins', () => {
+    // cancelProject and freeSlot write a literal feeDue: 0 and leave feeStatus
+    // at 'owed'. The floor must not resurrect those.
+    const voided = fee({ feeStatus: 'owed', baseAmount: 100, minFeeApplied: 6, feeDue: 0 });
+    expect(outstandingFee(voided)).toBe(0);
+    expect(owesFee(voided)).toBe(false);
+  });
+
+  it('a paid fee stays paid', () => {
+    expect(outstandingFee(fee({ baseAmount: 100, minFeeApplied: 6, feePaid: true }))).toBe(0);
   });
 });
 

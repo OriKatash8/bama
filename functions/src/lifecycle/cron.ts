@@ -104,7 +104,12 @@ export const lifecycleCron = onSchedule(
           slotActive: false,
           archivedUnconfirmedAt: FieldValue.serverTimestamp(),
         });
-        feesSnap.docs.forEach((f) => batch.update(f.ref, { slotActive: false, feeDue: 0 }));
+        // `status: 'not_owed'` alongside feeDue, matching cancelProject and freeSlot.
+      // Without it this sweep left a voided fee that still read as settleable —
+      // the one terminal path of the three that did not say so explicitly.
+      feesSnap.docs.forEach((f) => batch.update(f.ref, {
+        slotActive: false, feeDue: 0, status: 'not_owed',
+      }));
         await batch.commit();
       },
     );

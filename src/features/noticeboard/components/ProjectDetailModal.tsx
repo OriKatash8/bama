@@ -22,6 +22,8 @@ import { translateCity } from '@core/utils/cityTranslations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
+import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
+import { grossFee, isMinimumFee } from '@features/pricing/utils/fee';
 
 type Translations = typeof en;
 
@@ -84,6 +86,7 @@ type Props = {
 
 export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories, roleSkills, offeredCategories }: Props) {
   const { submit, submitWithBundle, isSubmitting } = usePriceOffer();
+  const pricing = usePricingConfig();
   const colors = useTheme();
   const { height: screenHeight } = useWindowDimensions();
   const language = useSettingsStore((s) => s.language);
@@ -132,6 +135,48 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
   );
   const individualTotal = validBids.reduce((sum, b) => sum + Number(b.price), 0);
   const canSubmit = validBids.length > 0 && !isSubmitting;
+
+  /**
+   * The platform fee on what is being offered, shown BEFORE the price is
+   * committed to. This is the only moment a professional can price around the
+   * minimum, so it is the only place naming it is any use — by the time the
+   * client accepts, the number is fixed.
+   *
+   * Uses the LIVE config rather than a fee record, correctly: no fee record
+   * exists yet, and the values locked at hire are whatever the config holds then.
+   *
+   * On a multi-slot bid this is the fee if EVERY offer is accepted. A partial
+   * accept is recomputed server-side from the accepted offers alone, so the real
+   * fee can come out lower — never higher — than what is shown here.
+   */
+  function feeOn(base: number): { amount: number; isMin: boolean } {
+    // Shaped like a fee record and run through the SAME helpers the balance screen
+    // uses, rather than repeating the formula here — a third copy of
+    // `max(round(base * rate), min)` would be a third thing to keep in step.
+    const shape = {
+      baseAmount: base,
+      feeRate: pricing.feePercent / 100,
+      minFeeApplied: pricing.minFeeAmount,
+    };
+    return { amount: grossFee(shape), isMin: isMinimumFee(shape) };
+  }
+
+  function FeeNotice({ base }: { base: number }) {
+    if (!(base > 0)) return null;
+    const fee = feeOn(base);
+    return (
+      <View style={styles.feeNotice}>
+        <AppText weight="semiBold" style={[styles.feeNoticeText, { color: colors.text }]}>
+          {t(fee.isMin ? 'hire.fee_notice_min' : 'hire.fee_notice', {
+            amount: fee.amount.toLocaleString(),
+          })}
+        </AppText>
+        <AppText style={[styles.feeNoticeSub, { color: colors.textMuted }]}>
+          {t('hire.fee_notice_sub')}
+        </AppText>
+      </View>
+    );
+  }
 
   function handleBidSubmit() {
     if (outOfRangeBid) {
@@ -347,6 +392,8 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                 </View>
               ))}
 
+              <FeeNotice base={individualTotal} />
+
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={[styles.applyBtn, !canSubmit && styles.disabled]}
@@ -393,6 +440,10 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               {bundleError ? (
                 <AppText style={styles.bundleErrorText}>{bundleError}</AppText>
               ) : null}
+
+              {/* The bundle price is ONE amount covering every slot, so unlike the
+                  individual view this fee is exact. */}
+              <FeeNotice base={Number(bundlePrice) || 0} />
 
               <View style={styles.bundleRoles}>
                 {validBids.map((b, i) => (
@@ -501,6 +552,16 @@ const styles = StyleSheet.create({
   priceInput: { width: 72, borderWidth: 1, borderColor: 'rgba(0,74,173,0.3)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, textAlign: 'center', color: '#004aad', backgroundColor: 'rgba(0,74,173,0.04)' },
   // Bundle view
   bundleBody: { fontSize: 15, lineHeight: 22, marginBottom: 20 },
+  feeNotice: {
+    backgroundColor: 'rgba(0,74,173,0.06)',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.12)',
+  },
+  feeNoticeText: { fontSize: 13 },
+  feeNoticeSub: { fontSize: 11, marginTop: 4 },
   bundleTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,74,173,0.06)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(0,74,173,0.12)' },
   bundleTotalLabel: { fontSize: 13, fontWeight: '600' },
   bundleTotalValue: { fontSize: 16, fontWeight: '800', color: '#004aad' },

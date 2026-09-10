@@ -53,7 +53,7 @@ import { ReviewFlow, type ReviewProfessional } from '@features/reviews/component
 import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { requestCompletion, disputeFeeByPro, canDispute } from '@features/projects/services/completionService';
-import { outstandingFee, feePercent } from '@features/pricing/utils/fee';
+import { outstandingFee, feePercent, isMinimumFee } from '@features/pricing/utils/fee';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
@@ -2322,7 +2322,12 @@ function MemberRow({
     : fee.feeStatus === 'exempt'
     ? null
     : owed > 0
-    ? t('project_details.fee_line', { percent: String(feePercent(fee)), amount: owed.toLocaleString() })
+    ? isMinimumFee(fee)
+      // The percentage is deliberately dropped when the floor set the amount:
+      // "BAMA fee 3% · ₪6" on a ₪100 job reads as a bug. The full arithmetic is
+      // on the balance screen, which this row links to.
+      ? t('project_details.fee_line_min', { amount: owed.toLocaleString() })
+      : t('project_details.fee_line', { percent: String(feePercent(fee)), amount: owed.toLocaleString() })
     : t('project_details.fee_paid');
   // Deliberately NOT gated on isReadOnly: completion is exactly when the fee
   // falls due, so the pay action has to survive the read-only project state that

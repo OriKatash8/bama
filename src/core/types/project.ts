@@ -217,12 +217,13 @@ export type ProjectFee = {
   baseAmount: number;
   /** What is still owed, stored NET of `paidAmount`. Set when completion is
    *  confirmed; absent before that, so pre-completion display must derive
-   *  `round(baseAmount * feeRate) - paidAmount` itself. */
+   *  `max(round(baseAmount * feeRate), minFeeApplied) - paidAmount` itself. */
   feeDue?: number;
   /** Cumulative shekels already settled. Every amount derives from
-   *  `outstanding = max(0, round(baseAmount * feeRate) - paidAmount)`, which
-   *  covers §5's top-up rule, re-hire, and ordinary settlement without
-   *  branching. Written by the server; absent means nothing paid yet. */
+   *  `outstanding = max(0, max(round(baseAmount * feeRate), minFeeApplied) - paidAmount)`,
+   *  which covers §5's top-up rule, re-hire, the commission floor, and ordinary
+   *  settlement without branching. Written by the server; absent means nothing
+   *  paid yet. */
   paidAmount?: number;
   feePaid?: boolean;
   feePaidAt?: Timestamp;
@@ -233,6 +234,15 @@ export type ProjectFee = {
    *  project's `slotHolders`. Cleared by completion or cancellation — never by
    *  settling a fee. */
   slotActive: boolean;
+  /** The commission FLOOR in force when this pro was hired (Terms 12.4.1), in whole
+   *  shekels — snapshotted here exactly as `feeRate` is, so raising
+   *  `config/pricing.minFeeAmount` later cannot reprice a project already agreed.
+   *
+   *  ABSENT on every record written before the floor existed, and read as 0 there.
+   *  That is what makes the change need no backfill: an old fee floors at zero and
+   *  its amount is arithmetically identical to what it always was. Read THIS, never
+   *  the live config, when pricing an existing fee. */
+  minFeeApplied?: number;
   disputedAt?: Timestamp;
   disputeReason?: string;
   createdAt?: Timestamp;

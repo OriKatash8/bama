@@ -30,6 +30,10 @@ export const DEFAULT_AUTO_CLOSE_FINAL_DAYS = 7;
 export const DEFAULT_AUTO_CLOSE_DAYS = 14;
 /** Reserved; nothing reads this in this build. */
 export const DEFAULT_PAYMENT_FAILURE_GRACE_DAYS = 7;
+/** Floor under every commission, in whole shekels. Below it the fee costs more to
+ *  collect than it is worth, and a floor means under-reporting a project's value
+ *  cannot drive the fee to zero. Terms 12.4.1. */
+export const DEFAULT_MIN_FEE_AMOUNT = 6;
 
 /**
  * DEAD. Nothing reads this.
@@ -151,6 +155,14 @@ export type PricingConfig = {
   autoCloseDays: number;
   /** Reserved. Nothing reads this in this build. */
   paymentFailureGraceDays: number;
+  /** Floor under every commission, in whole shekels. Locked onto the fee record at
+   *  hire as `minFeeApplied`, exactly as the rate is — raising it later must never
+   *  reprice a project someone already agreed to.
+   *
+   *  NOTE: resolveConfig accepts only `v > 0`, so the floor cannot be switched off
+   *  by writing 0 here; a 0 falls back to this default. Removing the floor is a
+   *  code change, deliberately. */
+  minFeeAmount: number;
 };
 
 export const CONFIG_DEFAULTS: PricingConfig = {
@@ -161,6 +173,7 @@ export const CONFIG_DEFAULTS: PricingConfig = {
   autoCloseFinalDays: DEFAULT_AUTO_CLOSE_FINAL_DAYS,
   autoCloseDays: DEFAULT_AUTO_CLOSE_DAYS,
   paymentFailureGraceDays: DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
+  minFeeAmount: DEFAULT_MIN_FEE_AMOUNT,
 };
 
 /**

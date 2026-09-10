@@ -23,6 +23,7 @@ import {
   Globe,
   Info,
   LogOut,
+  Percent,
   Settings,
   Shield,
   User,
@@ -266,6 +267,25 @@ export function AppHeader() {
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
 
+
+            {/* Pricing — professionals only. A client is never charged a
+                commission, so the row would answer a question they do not have.
+                This is the ONLY standing route to the fee terms: the balance
+                screen opens solely from a project that already owes, so without
+                this a pro could not read the rate before their first job. */}
+            {!modeIsClient && (
+              <TouchableOpacity
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => { setSettingsVisible(false); router.push('/settings/pricing'); }}
+                activeOpacity={0.7}
+              >
+                <Percent size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.pricing')}
+                </AppText>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+              </TouchableOpacity>
+            )}
 
             {/* Information */}
             <TouchableOpacity

@@ -9,7 +9,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { getDocument } from '@core/firebase/firestore';
 import { listenToMyFees } from '@features/pricing/services/feesService';
-import { outstandingFee, feePercent } from '@features/pricing/utils/fee';
+import { outstandingFee, feePercent, isMinimumFee, calculatedFee } from '@features/pricing/utils/fee';
 import type { ProjectFee, ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -172,12 +172,23 @@ export default function BalanceScreen() {
               </View>
               {/* The amount is never shown without saying what it is a percentage
                   of, and the percent comes from the rate stored on the fee record
-                  at hire — not from today's config. */}
+                  at hire — not from today's config.
+
+                  When the MINIMUM set the amount, the percentage alone would
+                  contradict the number above it ("3% of ₪100" beside ₪6), so the
+                  minimum line names itself and shows the percentage result too.
+                  The professional sees the arithmetic, not just a figure. */}
               <AppText weight="regular" style={[styles.lineBreakdown, { color: colors.textMuted, textAlign: align }]}>
-                {t('balance.line_breakdown', {
-                  percent: feePercent(r.fee),
-                  base: (r.fee.baseAmount ?? 0).toLocaleString(),
-                })}
+                {isMinimumFee(r.fee)
+                  ? t('balance.line_min', {
+                      rate: feePercent(r.fee),
+                      base: (r.fee.baseAmount ?? 0).toLocaleString(),
+                      calculated: calculatedFee(r.fee).toLocaleString(),
+                    })
+                  : t('balance.line_breakdown', {
+                      percent: feePercent(r.fee),
+                      base: (r.fee.baseAmount ?? 0).toLocaleString(),
+                    })}
               </AppText>
               {r.fee.status === 'disputed' && (
                 <AppText weight="semiBold" style={[styles.lineDisputed, { textAlign: align }]}>
