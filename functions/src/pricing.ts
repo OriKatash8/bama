@@ -201,6 +201,67 @@ export function feeRateOf(config: PricingConfig): number {
   return config.feePercent / 100;
 }
 
+/**
+ * Does this fee record block the professional from taking on NEW work?
+ *
+ * The open-project cap limits how many projects a professional holds AT ONCE; it
+ * does not limit how many they complete. A fast editor can run five one-day jobs
+ * in a week, never exceed the cap, accrue five unpaid fees and take a sixth,
+ * because the only check at hire was the slot check. This is that missing check.
+ *
+ * WHY THIS IS NOT A PAYMENT GATE. A payment may never control anything inside the
+ * app — that is what keeps the commission outside Apple's IAP rules, because it
+ * buys real-world production work rather than app functionality. This withholds
+ * only the taking-on of new real-world work, from someone already in arrears on
+ * an invoice they were sent. Nobody with a clean account can reach it. The
+ * professional keeps their profile, chat, browsing, portfolio, applications,
+ * existing projects and published reviews throughout, and NOTHING they can do
+ * inside the app clears it: settlement happens off-platform and an admin records
+ * it. Never scale this ("pay more, take more") and never price it.
+ *
+ * Every clause is a refusal to block:
+ *  - not 'owed'          — exempt or legacy-subscription; no fee ever existed
+ *  - settled             — feePaid, or status 'paid'
+ *  - 'not_owed'          — voided by cancellation, removal or the archive sweep.
+ *                          Those paths leave feeStatus at 'owed' deliberately, so
+ *                          status is the only signal — the same reason settleFee
+ *                          checks both.
+ *  - 'disputed'          — contested in good faith; they keep working until a
+ *                          human resolves it
+ *  - no demandSentAt     — never invoiced, so the clock has not started. This is
+ *                          what stops a fee blocking the day after a job ends.
+ *  - inside the grace period
+ *
+ * `status` is ABSENT on every fee record written before that field existed, so
+ * absence must read as "not settled" and fall through to `feePaid` — the live
+ * production shape. Pure, so the whole table is unit-testable without Firestore.
+ */
+export function feeBlocksNewHire(
+  fee: {
+    feeStatus?: unknown;
+    status?: unknown;
+    feePaid?: unknown;
+    demandSentAt?: { toMillis?: () => number } | null;
+  },
+  graceDays: number,
+  now: number,
+): boolean {
+  if (fee.feeStatus !== 'owed') return false;
+  if (fee.feePaid === true) return false;
+  if (fee.status === 'paid' || fee.status === 'not_owed' || fee.status === 'disputed') return false;
+
+  const sentAt = typeof fee.demandSentAt?.toMillis === 'function'
+    ? fee.demandSentAt.toMillis()
+    : undefined;
+  if (typeof sentAt !== 'number' || !Number.isFinite(sentAt)) return false;
+
+  // Guard the config value too: a non-positive or unusable grace period must not
+  // silently mean "block immediately".
+  if (!Number.isFinite(graceDays) || graceDays <= 0) return false;
+
+  return now - sentAt > graceDays * 86400_000;
+}
+
 /** Is `now` still inside the dispute window that ended at `endsAtMs`? */
 export function withinDisputeWindow(endsAtMs: number | undefined, now: number): boolean {
   return typeof endsAtMs === 'number' && Number.isFinite(endsAtMs) && now <= endsAtMs;

@@ -468,7 +468,8 @@
     "title": "Operations",
     "courses": "Courses",
     "communities": "Communities",
-    "marketplace": "Marketplace"
+    "marketplace": "Marketplace",
+    "fees": "Fees & disputes"
   },
   "admin_users": {
     "greeting": "User management",
@@ -669,7 +670,13 @@
     "blocked_status_active": "Active",
     "blocked_not_now": "Not now",
     "price_out_of_range": "Price must be between ₪{{min}} and ₪{{max}}. Check the amount.",
-    "blocked_how": "A slot frees up when a project is completed or cancelled."
+    "blocked_how": "A slot frees up when a project is completed or cancelled.",
+    "arrears_title": "Your account has an outstanding balance",
+    "arrears_body": "A payment demand for ₪{{amount}} in platform fees was sent to you more than {{days}} days ago. New projects are unavailable until it is settled.",
+    "arrears_keeps": "Everything else stays open: your profile, chats, browsing, portfolio, reviews and existing projects.",
+    "arrears_how": "Settlement happens outside the app. Payment details were sent with the demand; questions: bama.app.hk@gmail.com",
+    "arrears_terms": "Fee terms",
+    "arrears_close": "Got it"
   },
   "offers": {
     "bundle_badge": "Bundle deal",
@@ -1039,5 +1046,32 @@
     "fee_notice": "Platform fee for this project: ₪{{amount}}",
     "fee_notice_min": "Platform fee for this project: ₪{{amount}} (minimum fee)",
     "fee_notice_sub": "Charged only after the project is marked complete."
+  },
+  "admin_fees": {
+    "greeting": "Admin",
+    "title": "Fees & disputes",
+    "tab_arrears": "Outstanding",
+    "tab_flagged": "Needs review",
+    "empty_arrears": "No outstanding balances.",
+    "empty_flagged": "Nothing waiting for review.",
+    "total_owed": "Total owed: ₪{{amount}}",
+    "oldest": "Oldest debt: {{date}}",
+    "demand_sent": "Demand sent: {{date}}",
+    "demand_none": "No payment demand sent",
+    "blocked": "Blocked from new projects",
+    "not_blocked": "Not blocked",
+    "grace_note": "The block takes effect {{days}} days after the demand is sent.",
+    "mark_demand": "Mark demand sent",
+    "mark_paid": "Mark paid",
+    "confirm_demand": "Record that the payment demand was sent? The grace period counts from here and cannot be reset.",
+    "confirm_paid": "Mark this fee as paid? This records a payment received outside the app.",
+    "demand_done": "Recorded: demand sent",
+    "paid_done": "Recorded: fee paid",
+    "action_failed": "Action failed",
+    "reason_fee_disputed": "Professional raised an issue with the fee",
+    "reason_completion_unanswered": "Completion request went unanswered",
+    "flagged_at": "Flagged: {{date}}",
+    "pro_label": "Professional: {{name}}",
+    "client_label": "Client: {{name}}"
   }
 }

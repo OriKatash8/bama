@@ -17,7 +17,9 @@ import type { ProjectFee } from '@core/types/project';
  *
  * READ-ONLY from the app. There is no settle-your-own-fee call: money moves off
  * the platform and an admin records it with `markFeePaid`. Nothing in the app is
- * gated on the result, so these listeners exist purely to show a balance.
+ * gated on the result, so these listeners exist purely to show a balance — and,
+ * via useFeeArrears, to warn a professional already past an invoice's grace period
+ * BEFORE they compose an offer the server would refuse.
  *
  * A MISSING fee document means 'exempt' — the permanent fallback for every
  * project created before the per-pro correction. Callers get `null` and must

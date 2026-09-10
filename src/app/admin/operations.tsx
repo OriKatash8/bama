@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BookOpen, MessagesSquare, ShoppingBag, ChevronRight, ChevronLeft } from 'lucide-react-native';
+import { BookOpen, MessagesSquare, ShoppingBag, ChevronRight, ChevronLeft, Percent } from 'lucide-react-native';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -32,10 +32,14 @@ export default function OperationsAdmin() {
   const textAlign = rtl ? 'right' : 'left';
   const Chevron = rtl ? ChevronLeft : ChevronRight;
 
-  const items: { label: string; route: '/admin/courses' | '/admin/communities' | '/admin/marketplace'; icon: typeof BookOpen }[] = [
+  const items: { label: string; route: '/admin/courses' | '/admin/communities' | '/admin/marketplace' | '/admin/fees'; icon: typeof BookOpen }[] = [
     { label: t('admin_operations.courses'), route: '/admin/courses', icon: BookOpen },
     { label: t('admin_operations.communities'), route: '/admin/communities', icon: MessagesSquare },
     { label: t('admin_operations.marketplace'), route: '/admin/marketplace', icon: ShoppingBag },
+    // Outstanding platform fees and anything flagged for a human. The only route
+    // in — fee records are readable by nobody but the pro who owes them, so there
+    // is no other surface this could hang off.
+    { label: t('admin_operations.fees'), route: '/admin/fees', icon: Percent },
   ];
 
   return (

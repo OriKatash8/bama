@@ -6,7 +6,7 @@
 import {
   isOfferPriceValid, canHireOnStatus, MIN_OFFER_PRICE, MAX_OFFER_PRICE, HIREABLE_STATUSES,
   hireConsumesNewSlot, atSlotCap,
-  resolveConfig, feeRateOf, withinDisputeWindow, CONFIG_DEFAULTS,
+  resolveConfig, feeRateOf, withinDisputeWindow, CONFIG_DEFAULTS, feeBlocksNewHire,
   DEFAULT_MAX_OPEN_PROJECTS,
 } from '../pricing';
 import { computeFee } from '../lifecycle/helpers';
@@ -270,6 +270,78 @@ describe('minFeeAmount config key', () => {
     expect(resolveConfig({ minFeeAmount: 0 }).minFeeAmount).toBe(6);
     expect(resolveConfig({ minFeeAmount: -1 }).minFeeAmount).toBe(6);
     expect(resolveConfig({ minFeeAmount: 'six' }).minFeeAmount).toBe(6);
+  });
+});
+
+describe('feeBlocksNewHire — arrears, not a payment gate', () => {
+  const DAY = 86400_000;
+  const now = Date.UTC(2026, 8, 11);
+  const stamp = (daysAgo: number) => ({ toMillis: () => now - daysAgo * DAY });
+  const owed = (over: Record<string, unknown> = {}) => ({
+    feeStatus: 'owed', ...over,
+  });
+
+  it('does NOT block an unpaid fee that was never invoiced', () => {
+    // The whole reason demandSentAt exists: finishing a job on Tuesday must not
+    // put you in arrears on Wednesday.
+    expect(feeBlocksNewHire(owed(), 7, now)).toBe(false);
+    expect(feeBlocksNewHire(owed({ demandSentAt: null }), 7, now)).toBe(false);
+  });
+
+  it('does NOT block inside the grace period', () => {
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(3) }), 7, now)).toBe(false);
+  });
+
+  it('BLOCKS once the grace period has passed', () => {
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(9) }), 7, now)).toBe(true);
+  });
+
+  it('holds at the boundary — the deadline day itself does not block', () => {
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(7) }), 7, now)).toBe(false);
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(7.5) }), 7, now)).toBe(true);
+  });
+
+  it('does NOT block a disputed fee — good faith keeps you working', () => {
+    expect(feeBlocksNewHire(
+      owed({ demandSentAt: stamp(30), status: 'disputed' }), 7, now,
+    )).toBe(false);
+  });
+
+  it('does NOT block once paid, by either signal', () => {
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(30), feePaid: true }), 7, now)).toBe(false);
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(30), status: 'paid' }), 7, now)).toBe(false);
+  });
+
+  it('does NOT block a fee voided by cancellation or removal', () => {
+    // Those paths leave feeStatus at 'owed' on purpose, so status is the only
+    // signal — the same asymmetry settleFee guards against.
+    expect(feeBlocksNewHire(
+      owed({ demandSentAt: stamp(30), status: 'not_owed' }), 7, now,
+    )).toBe(false);
+  });
+
+  it('does NOT block when no fee was ever owed', () => {
+    for (const feeStatus of ['exempt', 'included', undefined]) {
+      expect(feeBlocksNewHire({ feeStatus, demandSentAt: stamp(30) }, 7, now)).toBe(false);
+    }
+  });
+
+  it('reads a MISSING status as unsettled — the live production shape', () => {
+    // All 15 production fee records predate the status field.
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(9) }), 7, now)).toBe(true);
+    expect(feeBlocksNewHire(owed({ demandSentAt: stamp(9), feePaid: true }), 7, now)).toBe(false);
+  });
+
+  it('refuses to block on an unusable grace period rather than blocking at once', () => {
+    for (const bad of [0, -1, NaN, Infinity]) {
+      expect(feeBlocksNewHire(owed({ demandSentAt: stamp(999) }), bad as number, now)).toBe(false);
+    }
+  });
+
+  it('takes the grace period from its argument, so config drives it', () => {
+    const fee = owed({ demandSentAt: stamp(9) });
+    expect(feeBlocksNewHire(fee, 7, now)).toBe(true);
+    expect(feeBlocksNewHire(fee, 14, now)).toBe(false);
   });
 });
 

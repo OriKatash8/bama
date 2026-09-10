@@ -210,7 +210,12 @@ export default function ProjectsPage() {
   function hireErrorMessage(err: unknown): string {
     const msg = String((err as { message?: string })?.message ?? '');
     if (msg.includes('cannot-hire-yourself')) return t('chats_page.hire_self_error');
-    if (msg.includes('slot-cap-reached') || msg.includes('monthly-limit-reached')) {
+    // `fee-arrears` collapses into the SAME neutral line as the slot cap, and
+    // must stay that way: §6 forbids telling a client that a professional owes
+    // BAMA money. The professional gets the detailed explanation in their own
+    // app, where it is theirs to see.
+    if (msg.includes('slot-cap-reached') || msg.includes('monthly-limit-reached')
+      || msg.includes('fee-arrears')) {
       return t('chats_page.hire_unavailable_error');
     }
     // The project is the CLIENT's own, so naming the reason discloses nothing

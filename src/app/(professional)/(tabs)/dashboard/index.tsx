@@ -15,6 +15,8 @@ import { useSentOffers } from '@features/offers/hooks/useSentOffers';
 import { useNoticeboard } from '@features/noticeboard/hooks/useNoticeboard';
 import { SlotBlockedSheet } from '@features/pricing/components/SlotBlockedSheet';
 import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
+import { useFeeArrears } from '@features/pricing/hooks/useFeeArrears';
+import { FeeArrearsSheet } from '@features/pricing/components/FeeArrearsSheet';
 import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
 import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
 import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '@features/noticeboard/unoffered';
@@ -99,6 +101,8 @@ export default function DashboardScreen() {
   const pricing = usePricingConfig();
   const [slotUsage, setSlotUsage] = useState<SlotUsage | null>(null);
   const [blockedFor, setBlockedFor] = useState<ProjectRequest | null>(null);
+  const arrears = useFeeArrears();
+  const [arrearsOpen, setArrearsOpen] = useState(false);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -110,8 +114,24 @@ export default function DashboardScreen() {
   // project.
   const slotsBlocked = slotUsage?.atCap === true;
 
-  /** Open a notice, unless every slot is taken. Returns true when blocked. */
+  /**
+   * Open a notice, unless something stops this professional taking new work.
+   * Returns true when blocked.
+   *
+   * ARREARS ARE CHECKED FIRST, and the two are not the same kind of thing. The
+   * slot cap is a scheduling limit that a full calendar explains; arrears are an
+   * account-standing matter that an empty calendar does not fix. A professional
+   * in arrears with a free slot must still be told about the arrears, so testing
+   * slots first would show them the wrong sheet.
+   *
+   * Both are pre-emptive mirrors of what `hireProfessional` enforces server-side —
+   * they stop an offer being composed that the accept would reject.
+   */
   function guardSlots(request: ProjectRequest): boolean {
+    if (arrears.blocked) {
+      setArrearsOpen(true);
+      return true;
+    }
     if (!slotsBlocked) return false;
     setBlockedFor(request);
     return true;
@@ -553,6 +573,12 @@ export default function DashboardScreen() {
           />
         )}
       </ScrollView>
+
+      <FeeArrearsSheet
+        visible={arrearsOpen}
+        arrears={arrears}
+        onClose={() => setArrearsOpen(false)}
+      />
 
       <SlotBlockedSheet
         visible={blockedFor !== null}

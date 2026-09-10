@@ -142,6 +142,11 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
     // EVERY slot frees, whatever is still owed. An outstanding fee is a matter
     // between BAMA and that professional; it must never hold capacity inside the
     // app, because that would make paying the thing that unlocks working again.
+    //
+    // Still true after the arrears gate. That gate refuses a NEW engagement to
+    // someone past the grace period on an invoice they were actually sent; it
+    // never claws back a slot on work already agreed, and nothing done inside the
+    // app clears it. Completing a project always frees the slot.
     slotHolders: [],
     slotActive: false,
     // The professional's window to dispute this confirmation. Stored on the
@@ -273,16 +278,22 @@ export const cancelProject = onCall(async (request) => {
  * Still a transaction: `paidAmount` is credited with an increment against a
  * freshly-read outstanding, so two concurrent settlements cannot both apply.
  *
- * REVIEWED EXCEPTION — the `nothing-owed` / `already-paid` throws below are the
- * only place left in the codebase that reads fee state and then refuses. They were
- * audited and deliberately kept: what they gate is the act of RECORDING a payment,
- * reached only through the admin-only `markFeePaid`, and they exist to stop
- * `paidAmount` being double-credited on a fee that is absent, exempt or settled.
- * No slot, review, feature or visibility depends on them.
+ * REVIEWED EXCEPTION — the `nothing-owed` / `already-paid` throws below gate the
+ * act of RECORDING a payment, reached only through the admin-only `markFeePaid`,
+ * and they exist to stop `paidAmount` being double-credited on a fee that is
+ * absent, exempt or settled. No slot, review, feature or visibility depends on them.
  *
- * Do not copy this shape into anything a user can reach. "Fee state may not decide
- * what someone can do" has exactly this one carve-out, and it is a bookkeeping
- * guard on the ledger itself.
+ * THE RULE, in its current form: a fee never gates anything INSIDE the app — no
+ * slot, no review, no feature, no visibility, and nothing a payment could unlock.
+ * There are exactly two carve-outs, both audited:
+ *   1. this one, a bookkeeping guard on the ledger itself; and
+ *   2. `feeBlocksNewHire`, which withholds the taking-on of new REAL-WORLD work
+ *      from a professional past the grace period on an invoice an admin sent —
+ *      unreachable by anyone with a clean account, and unclearable from inside
+ *      the app.
+ *
+ * Do not copy either shape anywhere else. In particular, nothing that a payment
+ * inside the app could switch off may ever depend on fee state.
  */
 async function settleFee(projectId: string, proId: string): Promise<{ paid: number }> {
   const projRef = db.doc(`projects/${projectId}`);
@@ -353,6 +364,50 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
 /**
  * Admin settle (dev / support). Survives Cardcom: this stays the manual lever.
  */
+/**
+ * Admin records that the payment demand has been sent to this professional.
+ *
+ * This is what starts the arrears clock. Nothing else does: `feeDue` becoming a
+ * number means the fee fell due, not that anyone asked for it, and blocking on
+ * that would put a professional in arrears the day after they finished a job.
+ * The gate in `hireProfessional` counts `paymentFailureGraceDays` from here, and
+ * a fee with no stamp never blocks anything.
+ *
+ * IDEMPOTENT BY REFUSAL, not by overwrite: a second click must not restart the
+ * clock, because that would silently extend the grace period every time an admin
+ * re-sent a demand. Re-sending is a real thing to do; moving the deadline is not.
+ *
+ * Bookkeeping only, like markFeePaid — it moves no money and unlocks nothing.
+ */
+export const markDemandSent = onCall(async (request) => {
+  requireAuth(request.auth?.uid);
+  requireAdmin(request.auth?.token);
+  const projectId = request.data?.projectId as string | undefined;
+  const professionalId = request.data?.professionalId as string | undefined;
+  if (!projectId || !professionalId) {
+    throw new HttpsError('invalid-argument', 'projectId and professionalId required');
+  }
+
+  const fRef = feeRef(projectId, professionalId);
+  const snap = await fRef.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'no-fee-record');
+  const fee = snap.data() as FeeDoc;
+
+  // A demand for a fee that is not owed, already settled, or voided by a
+  // cancellation is a bookkeeping error, not a state to record.
+  if (fee.feeStatus !== 'owed') throw new HttpsError('failed-precondition', 'nothing-owed');
+  if (fee.status === 'not_owed') throw new HttpsError('failed-precondition', 'nothing-owed');
+  if (fee.feePaid === true || fee.status === 'paid') {
+    throw new HttpsError('failed-precondition', 'already-paid');
+  }
+  if (fee.demandSentAt) {
+    throw new HttpsError('failed-precondition', 'demand-already-sent');
+  }
+
+  await fRef.update({ demandSentAt: FieldValue.serverTimestamp() } as Update);
+  return { ok: true };
+});
+
 export const markFeePaid = onCall(async (request) => {
   requireAuth(request.auth?.uid);
   requireAdmin(request.auth?.token);

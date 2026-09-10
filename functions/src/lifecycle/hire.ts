@@ -6,7 +6,7 @@ import { assignFilledCapability } from '../matching';
 import {
   DEFAULT_PROJECT_DURATION_DAYS,
   canHireOnStatus, isOfferPriceValid,
-  hireConsumesNewSlot, atSlotCap,
+  hireConsumesNewSlot, atSlotCap, feeBlocksNewHire,
 } from '../pricing';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
@@ -80,6 +80,36 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
       throw new HttpsError('resource-exhausted', 'slot-cap-reached');
     }
   }
+
+  // ── Arrears ──
+  // The cap above limits concurrency; nothing limited throughput, so unpaid fees
+  // could accumulate without bound. This refuses a NEW engagement to a pro who is
+  // past the grace period on an invoice an admin actually sent — see
+  // feeBlocksNewHire for why this is not a payment gate.
+  //
+  // Checked even when the hire consumes no new slot: a second role is still new
+  // work, and an empty schedule is not a reason to extend more credit.
+  //
+  // `professionalId` ALONE, deliberately. The obvious query adds
+  // `where('feePaid','==',false)` and is served by an existing index — but
+  // `feePaid` is never written false anywhere in this codebase (it is absent or
+  // true), so that query matches nothing and would silently block nobody. Every
+  // other condition is filtered in memory instead; a pro has a handful of fees,
+  // and this needs no new index.
+  const feesSnap = await db
+    .collectionGroup('fees')
+    .where('professionalId', '==', proId)
+    .get();
+  const inArrears = feesSnap.docs.some(
+    (d) => feeBlocksNewHire(d.data(), config.paymentFailureGraceDays, Date.now()),
+  );
+  if (inArrears) {
+    // `resource-exhausted`, matching the cap: the client is told only that this
+    // professional cannot take on more work. Per §6 they are never told why —
+    // a client must not learn that a professional owes BAMA money.
+    throw new HttpsError('resource-exhausted', 'fee-arrears');
+  }
+
   return { projSnap, project, config, existingFeeSnap, consumesNewSlot };
 }
 

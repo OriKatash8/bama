@@ -148,6 +148,14 @@ try {
     await allowed(() => setDoc(doc(db, `projects/${PID}/fees/forged`), { professionalId: PRO, feeDue: 0 })) === false);
   check('pro DELETES their own fee record'.padEnd(52) + 'deny ',
     await allowed(() => deleteDoc(doc(db, feePath))) === false);
+  // The arrears gate counts from demandSentAt, so a pro who could write it could
+  // push their own deadline out indefinitely; one who could clear it would lift
+  // their own block. Both are the same `allow write: if false`, asserted because
+  // the gate's correctness rests entirely on this field being admin-only.
+  check('pro stamps their own demandSentAt'.padEnd(52) + 'deny ',
+    await allowed(() => updateDoc(doc(db, feePath), { demandSentAt: new Date() })) === false);
+  check('pro clears their own demandSentAt'.padEnd(52) + 'deny ',
+    await allowed(() => updateDoc(doc(db, feePath), { demandSentAt: null })) === false);
 
   // The exact shipped query. Asserted above, so it cannot drift from the code.
   const groupQ = query(collectionGroup(db, 'fees'), where('professionalId', '==', PRO));
@@ -189,10 +197,10 @@ try {
   const cfgOk = await allowed(async () => { cfgDoc = await getDoc(doc(db, 'config/pricing')); });
   check('signed-in user READS config/pricing'.padEnd(52) + 'ALLOW', cfgOk === true && cfgDoc?.exists());
   const keys = ['feePercent', 'maxOpenProjects', 'disputeWindowDays', 'autoCloseReminderDays',
-    'autoCloseFinalDays', 'autoCloseDays', 'paymentFailureGraceDays'];
+    'autoCloseFinalDays', 'autoCloseDays', 'paymentFailureGraceDays', 'minFeeAmount'];
   const data = cfgDoc?.exists() ? cfgDoc.data() : {};
   const missing = keys.filter((k) => typeof data[k] !== 'number');
-  check('all seven keys present and numeric', missing.length === 0, missing.join(',') || 'ok');
+  check(`all ${keys.length} keys present and numeric`, missing.length === 0, missing.join(',') || 'ok');
   check('user rewrites the commission rate'.padEnd(52) + 'deny ',
     await allowed(() => updateDoc(doc(db, 'config/pricing'), { feePercent: 0 })) === false);
 

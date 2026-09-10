@@ -15,3 +15,4 @@ export * from './lifecycle/removal';
 export * from './lifecycle/subscription';
 export * from './lifecycle/reviews';
 export * from './lifecycle/cron';
+export * from './lifecycle/adminViews';

@@ -193,7 +193,10 @@ export type ProjectRequest = {
  */
 /** Settlement state of a fee record: where the money got to. Distinct from
  *  `feeStatus`, which says whether a fee was ever owed and is fixed at hire.
- *  NOTHING in the app is gated on either — no slot, no review, no feature. */
+ *  NOTHING inside the app is gated on either — no slot, no review, no feature.
+ *  Fee state decides exactly one thing, server-side: whether a professional past
+ *  an invoice's grace period may take on NEW work (see feeBlocksNewHire). That is
+ *  withheld real-world work, and no in-app payment can clear it. */
 export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
 export type ProjectFee = {
@@ -243,6 +246,14 @@ export type ProjectFee = {
    *  its amount is arithmetically identical to what it always was. Read THIS, never
    *  the live config, when pricing an existing fee. */
   minFeeApplied?: number;
+  /** When an admin recorded that the payment demand went out. Admin-SDK-written
+   *  only (`markDemandSent`); the professional can neither set nor clear it.
+   *
+   *  The arrears grace period counts from HERE, not from when the fee fell due:
+   *  a professional who finishes a job on Tuesday must not be in arrears on
+   *  Wednesday before anyone invoiced them. A fee with no `demandSentAt` never
+   *  blocks anything, whatever its age or amount. */
+  demandSentAt?: Timestamp;
   disputedAt?: Timestamp;
   disputeReason?: string;
   createdAt?: Timestamp;

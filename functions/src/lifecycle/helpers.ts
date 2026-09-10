@@ -79,7 +79,9 @@ export function feesCol(projectId: string) {
 
 /** Settlement state of a fee record. Distinct from `feeStatus`, which says
  *  whether a fee was ever owed and is fixed at hire; this says where the money
- *  got to. Nothing in the app is gated on either. */
+ *  got to. Nothing INSIDE the app is gated on either — no slot, no review, no
+ *  feature. The one thing fee state now decides is whether a professional already
+ *  past an invoice's grace period may take on NEW work; see feeBlocksNewHire. */
 export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
 export type FeeDoc = {
@@ -102,6 +104,21 @@ export type FeeDoc = {
    *  `feeRate`. ABSENT on every record written before the floor existed, and read
    *  as 0 there — that is what keeps historical amounts unchanged. */
   minFeeApplied?: number;
+  /** Written at hire and at settlement respectively. Declared here because the
+   *  server writes them and admin reads need them — this type used to carry no
+   *  timestamps at all while the code stamped five of them. */
+  hiredAt?: admin.firestore.Timestamp;
+  createdAt?: admin.firestore.Timestamp;
+  feePaidAt?: admin.firestore.Timestamp;
+  disputedAt?: admin.firestore.Timestamp;
+  /** When an admin recorded that the payment demand went out. Set ONLY by
+   *  markDemandSent, never by a client, and never automatically.
+   *
+   *  It exists because debt alone must not block anything: a professional who
+   *  finishes a job on Tuesday cannot be in arrears on Wednesday before anyone
+   *  invoiced them. The arrears grace period counts from HERE, so a fee with no
+   *  `demandSentAt` never blocks a hire however old or large it is. */
+  demandSentAt?: admin.firestore.Timestamp;
 };
 
 /**
