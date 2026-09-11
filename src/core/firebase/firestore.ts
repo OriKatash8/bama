@@ -16,6 +16,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from './config';
+import { chunkIn, mergeById } from './chunkIn';
 
 export async function getDocument<T>(path: string): Promise<T | null> {
   const snap = await getDoc(doc(db, path));
@@ -50,9 +51,18 @@ export function subscribeToDocument<T>(
   path: string,
   callback: (data: T | null) => void
 ): () => void {
-  return onSnapshot(doc(db, path), (snap) => {
-    callback(snap.exists() ? (snap.data() as T) : null);
-  });
+  return onSnapshot(
+    doc(db, path),
+    (snap) => callback(snap.exists() ? (snap.data() as T) : null),
+    // Firestore logs "Uncaught Error in snapshot listener" with NO path when a
+    // listener has no error handler, which is unactionable across dozens of
+    // listeners. Name the path, and call back with null so a caller waiting on
+    // first data stops waiting — a permanent spinner reads as a hung app.
+    (err) => {
+      console.error(`[firestore] subscribeToDocument(${path}) failed:`, err?.code, err?.message);
+      callback(null);
+    },
+  );
 }
 
 export function subscribeToCollection<T>(
@@ -64,9 +74,61 @@ export function subscribeToCollection<T>(
     constraints.length > 0
       ? query(collection(db, collectionPath), ...constraints)
       : query(collection(db, collectionPath));
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T));
-  });
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T)),
+    // Same reason as above. Without this the failure is anonymous and the
+    // caller's isLoading never clears, because it is only cleared in the success
+    // path — the stuck-spinner shape.
+    (err) => {
+      console.error(`[firestore] subscribeToCollection(${collectionPath}) failed:`, err?.code, err?.message);
+      callback([]);
+    },
+  );
+}
+
+/**
+ * Firestore's `in` operator takes up to 30 values, but that is NOT the binding
+ * limit here. The rules for priceOffers/bundleOffers resolve the owning project
+ * with a `get()`, and the rules engine allows at most 20 document-access calls
+ * per query — so an `in` list longer than that is denied outright, with
+ * `permission-denied` rather than anything that names the real cause.
+ *
+ * Measured against production: 20 ids ALLOW, 26 ids permission-denied. A client
+ * who accumulated 22 projects therefore lost their ENTIRE offers page, silently,
+ * because the listener had no error handler and the caller only cleared its
+ * loading flag in the success path. That is a permanent spinner.
+ *
+ * So: split into chunks well under the budget, subscribe to each, and merge.
+ * Results are keyed by document id, so a document matching in two chunks (it
+ * cannot today, but `in` lists are caller-supplied) still appears once.
+ */
+export function subscribeToCollectionIn<T>(
+  collectionPath: string,
+  field: string,
+  values: string[],
+  callback: (data: T[]) => void,
+  ...constraints: QueryConstraint[]
+): () => void {
+  if (values.length === 0) {
+    callback([]);
+    return () => {};
+  }
+  const chunks = chunkIn(values);
+
+  // One bucket per chunk, merged on every update. A chunk that errors calls back
+  // with [] (see subscribeToCollection), so one denied chunk degrades that slice
+  // rather than hanging the whole page.
+  const buckets: T[][] = chunks.map(() => []);
+  const emit = () => callback(mergeById(buckets as (T & { id: string })[][]));
+
+  const unsubs = chunks.map((chunk, i) => subscribeToCollection<T>(
+    collectionPath,
+    (rows) => { buckets[i] = rows; emit(); },
+    where(field, 'in', chunk),
+    ...constraints,
+  ));
+  return () => unsubs.forEach((u) => u());
 }
 
 export async function mergeDocument<T extends DocumentData>(

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
-import { queryDocuments, subscribeToCollection, where } from '@core/firebase/firestore';
+import { queryDocuments, subscribeToCollectionIn, where } from '@core/firebase/firestore';
 import type { BundleOffer, ProjectRequest } from '@core/types/project';
 
 export function useBundleOffers() {
@@ -25,13 +25,17 @@ export function useBundleOffers() {
           return;
         }
         const ids = projects.map((p) => p.id);
-        unsubscribe = subscribeToCollection<BundleOffer>(
+        // Chunked: an `in` list longer than the rules' 20-get budget is denied
+        // outright, which used to blank this page for any client with more than
+        // ~20 projects. See subscribeToCollectionIn.
+        unsubscribe = subscribeToCollectionIn<BundleOffer>(
           'bundleOffers',
+          'projectId',
+          ids,
           (data) => {
             setBundles(data);
             setIsLoading(false);
           },
-          where('projectId', 'in', ids),
           where('status', '==', 'pending'),
         );
       })
