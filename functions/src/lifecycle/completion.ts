@@ -36,17 +36,32 @@ export const requestCompletion = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
   const projectId = request.data?.projectId as string | undefined;
   if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
-  const { snap, project } = await loadProject(projectId);
+  const { project } = await loadProject(projectId);
 
   const proIds = (project.professionalIds as string[]) ?? [];
   if (!proIds.includes(uid)) throw new HttpsError('permission-denied', 'Only a hired professional can request completion');
-  const state = (project.completion as { state?: string } | undefined)?.state;
-  if (state === 'confirmed') throw new HttpsError('failed-precondition', 'Already confirmed');
+  // Guarded on THIS engagement, not the project cache. Another professional's
+  // engagement being confirmed says nothing about whether this one may ask.
+  const mySnap = await feeRef(projectId, uid).get();
+  const mine = mySnap.data() as FeeDoc | undefined;
+  if (mine?.engagementStatus === 'completed') {
+    throw new HttpsError('failed-precondition', 'Already confirmed');
+  }
 
   const clientId = project.clientId as string;
   const batch = db.batch();
-  batch.update(snap.ref, {
-    completion: { state: 'requested', source: 'pro', requestedBy: uid, requestedAt: FieldValue.serverTimestamp(), remindedDays: [] },
+  // THE ENGAGEMENT, not the project. The project's copy is a cache written only
+  // by the derivation — see derive.ts. `remindedDays` lives here too, so one
+  // professional's reminder no longer marks the day sent for everyone.
+  batch.update(feeRef(projectId, uid), {
+    engagementStatus: 'end_requested_by_pro',
+    completion: {
+      state: 'requested',
+      source: 'pro',
+      requestedBy: uid,
+      requestedAt: FieldValue.serverTimestamp(),
+      remindedDays: [],
+    },
   } as Update);
 
   // The chat notice, ATOMIC with the state change — the same shape
@@ -177,12 +192,9 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
   batch.update(snap.ref, {
     status: 'completed',
     completedAt: FieldValue.serverTimestamp(),
-    completion: {
-      ...(project.completion as object ?? {}),
-      state: 'confirmed',
-      source,
-      confirmedAt: FieldValue.serverTimestamp(),
-    },
+    // No `completion` here. Every engagement above was stamped with its own, and
+    // applyDerivedProjectState below rolls them up into the project's cache.
+    // Two writers of one field is how the two drift.
     // EVERY slot frees, whatever is still owed. An outstanding fee is a matter
     // between BAMA and that professional; it must never hold capacity inside the
     // app, because that would make paying the thing that unlocks working again.
@@ -267,15 +279,33 @@ export const disputeCompletion = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
   const projectId = request.data?.projectId as string | undefined;
   if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
-  const { snap, project } = await loadProject(projectId);
+  const { project } = await loadProject(projectId);
   if (project.clientId !== uid) throw new HttpsError('permission-denied', 'Only the client can dispute');
-  if ((project.completion as { state?: string } | undefined)?.state === 'confirmed') {
-    throw new HttpsError('failed-precondition', 'Already confirmed');
+
+  // The client rejecting "I'm done" now lands on the ENGAGEMENTS that said it,
+  // not on the project. On a multi-professional project only the ones who
+  // actually asked are disputed; the rest carry on untouched, which the single
+  // project-level flag could not express.
+  const feesSnap = await feesCol(projectId).get();
+  const open = feesSnap.docs.filter((d) => {
+    const st = (d.data() as FeeDoc).engagementStatus;
+    return st === 'end_requested_by_pro' || st === 'end_requested_by_client';
+  });
+  if (open.length === 0) {
+    throw new HttpsError('failed-precondition', 'nothing-to-dispute');
   }
-  await snap.ref.update({
-    completion: { ...(project.completion as object ?? {}), state: 'disputed' },
-  } as Update);
-  return { ok: true };
+
+  const batch = db.batch();
+  for (const d of open) {
+    batch.update(d.ref, {
+      engagementStatus: 'disputed',
+      adminReviewPending: true,
+      adminReview: { reason: 'completion_unanswered', at: FieldValue.serverTimestamp() },
+    } as Update);
+  }
+  await batch.commit();
+  await applyDerivedProjectState(projectId);
+  return { ok: true, disputed: open.length };
 });
 
 /**

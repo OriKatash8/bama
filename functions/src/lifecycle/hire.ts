@@ -184,7 +184,6 @@ async function commitHire(args: {
     });
     projUpdate.chatId = chatId;
     projUpdate.expectedEndDate = parseDeadline(project.deadline) ?? daysFromNow(DEFAULT_PROJECT_DURATION_DAYS);
-    projUpdate.completion = { state: 'none' };
     // NOTE: no project-level feeStatus/feeRate is written any more. The fee is
     // per-pro (see below); a parallel project-level copy would be a second source
     // of truth a later reader could pick the wrong one from. Legacy docs keep

@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { db, FieldValue, daysAgo, notify, feesCol } from './helpers';
+import { db, FieldValue, daysAgo, notify, feesCol , type FeeDoc } from './helpers';
+import { remindersDueFor, applyDerivedProjectState } from './derive';
 import {
   AUTO_CONFIRM_DAYS, COMPLETION_REMINDER_DAYS, END_DATE_PROMPT_GRACE_DAYS,
   ARCHIVE_UNCONFIRMED_DAYS, REVIEW_FORCE_PUBLISH_DAYS, TIMEZONE,
@@ -62,27 +63,41 @@ export const lifecycleCron = onSchedule(
         .orderBy('completion.requestedAt'),
       async (doc) => {
         const p = doc.data();
-        const requestedAt: admin.firestore.Timestamp | undefined = p.completion?.requestedAt;
-        if (!requestedAt) return;
-        if (requestedAt.toMillis() <= daysAgo(AUTO_CONFIRM_DAYS).toMillis()) {
-          if (p.adminReviewPending === true) return; // already flagged (idempotent)
-          await doc.ref.update({
-            adminReviewPending: true,
-            adminReview: {
-              reason: 'completion_unanswered',
-              proId: p.completion?.requestedBy ?? null,
-              at: FieldValue.serverTimestamp(),
-            },
-          });
-          return;
-        }
-        const reminded: number[] = p.completion?.remindedDays ?? [];
-        for (const day of COMPLETION_REMINDER_DAYS) {
-          if (requestedAt.toMillis() <= daysAgo(day).toMillis() && !reminded.includes(day)) {
-            await doc.ref.update({ 'completion.remindedDays': FieldValue.arrayUnion(day) });
+        // The project-level cache SELECTED this project; it does not decide
+        // anything beyond that. Every judgement below is made on an engagement's
+        // own requestedAt and its own remindedDays, because the cache can be
+        // stale by the time the cron reads it — applyDerivedProjectState is
+        // deliberately not atomic with the transition that triggered it.
+        const feesSnap = await feesCol(doc.id).get();
+        const engagements = feesSnap.docs.map((d) => ({
+          ref: d.ref, ...(d.data() as FeeDoc),
+        }));
+        const actions = remindersDueFor(
+          engagements, Date.now(), COMPLETION_REMINDER_DAYS, AUTO_CONFIRM_DAYS,
+        );
+        if (actions.length === 0) return;   // stale cache, no live work — do nothing
+
+        const byPro = new Map(engagements.map((e) => [e.professionalId as string, e.ref]));
+        for (const a of actions) {
+          const ref = byPro.get(a.proId);
+          if (!ref) continue;
+          if (a.kind === 'escalate') {
+            // Flagged on the ENGAGEMENT. One professional's unanswered request no
+            // longer puts the whole project in front of a human on everyone else's
+            // behalf.
+            await ref.update({
+              adminReviewPending: true,
+              adminReview: {
+                reason: 'completion_unanswered',
+                at: FieldValue.serverTimestamp(),
+              },
+            });
+          } else {
+            await ref.update({ 'completion.remindedDays': FieldValue.arrayUnion(a.day) });
             await notify({ userId: p.clientId, title: 'BAMA', message: 'תזכורת: האם הפרויקט הסתיים?', data: { type: 'system', chatId: p.chatId ?? '' } });
           }
         }
+        await applyDerivedProjectState(doc.id);
       },
     );
 

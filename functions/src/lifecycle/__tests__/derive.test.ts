@@ -1,4 +1,4 @@
-import { deriveProjectState } from '../derive';
+import { deriveProjectState, remindersDueFor } from '../derive';
 
 const DAY = 86400_000;
 const now = Date.UTC(2026, 8, 12);
@@ -101,5 +101,138 @@ describe('adminReviewPending — any engagement raises it', () => {
     const d = deriveProjectState([e('disputed', { adminReviewPending: true })], now);
     expect(d.isComplete).toBe(false);
     expect(d.adminReviewPending).toBe(true);
+  });
+});
+
+// ── the project cache's completion state ──────────────────────────────────────
+
+describe('completionState + endRequestedAt — the cron cache', () => {
+  const req = (proId: string, at: number, over: Record<string, unknown> = {}) =>
+    e('end_requested_by_pro', {
+      professionalId: proId,
+      completion: { requestedAt: ts(at) },
+      ...over,
+    });
+
+  it('surfaces as requested while any end-request is open', () => {
+    // Without this the project is invisible to sweep 2 and the reminder never
+    // fires — the break that made option A necessary.
+    expect(deriveProjectState([req('a', now)], now).completionState).toBe('requested');
+  });
+
+  it('takes the MIN request, not the max — the oldest waiter sets the clock', () => {
+    const d = deriveProjectState([req('a', now - 5 * DAY), req('b', now - DAY)], now);
+    expect(d.endRequestedAt?.toMillis()).toBe(now - 5 * DAY);
+  });
+
+  it('is the OPPOSITE direction to disputeWindowEndsAt, deliberately', () => {
+    // Same two engagements, both fields, opposite ends. This test exists so the
+    // asymmetry is pinned rather than "corrected" later.
+    const d = deriveProjectState(
+      [
+        req('a', now - 5 * DAY, { disputeWindowEndsAt: ts(now + DAY) }),
+        req('b', now - DAY, { disputeWindowEndsAt: ts(now + 5 * DAY) }),
+      ],
+      now,
+    );
+    expect(d.endRequestedAt?.toMillis()).toBe(now - 5 * DAY);   // min
+    expect(d.disputeWindowEndsAt?.toMillis()).toBe(now + 5 * DAY); // max
+  });
+
+  it('falls back to none once every request is answered', () => {
+    expect(deriveProjectState([e('completed'), e('hired')], now).completionState).toBe('none');
+  });
+
+  it('is confirmed only when the whole project rolls up', () => {
+    expect(deriveProjectState([e('completed'), e('withdrawn')], now).completionState).toBe('confirmed');
+  });
+});
+
+// ── the stale-cache window ────────────────────────────────────────────────────
+
+describe('remindersDueFor — the cache selects, the engagement decides', () => {
+  const REMIND = [3, 6];
+  const AUTO = 7;
+  const req = (
+    proId: string,
+    at: number,
+    over: { remindedDays?: number[]; adminReviewPending?: boolean } = {},
+  ) => ({
+    professionalId: proId,
+    engagementStatus: 'end_requested_by_pro',
+    completion: {
+      requestedAt: ts(at),
+      ...(over.remindedDays ? { remindedDays: over.remindedDays } : {}),
+    },
+    ...(over.adminReviewPending !== undefined
+      ? { adminReviewPending: over.adminReviewPending }
+      : {}),
+  });
+
+  it('STALE-LOW: judges each engagement on its own timestamp, not the cache min', () => {
+    // The project was selected because the cache said requestedAt = now-6d,
+    // taken from A. A has since been confirmed by another path. B is still
+    // requested, but only 4 days old.
+    const actions = remindersDueFor(
+      [
+        { professionalId: 'a', engagementStatus: 'completed', completion: { requestedAt: ts(now - 6 * DAY) } },
+        req('b', now - 4 * DAY),
+      ],
+      now, REMIND, AUTO,
+    );
+    // A is terminal: nothing, however stale the cache that selected the project.
+    expect(actions.filter((x) => x.proId === 'a')).toEqual([]);
+    // B is judged on ITS OWN 4 days — day 3 only, not day 6.
+    expect(actions).toEqual([{ proId: 'b', kind: 'remind', day: 3 }]);
+  });
+
+  it('STALE-HIGH: does nothing at all when every engagement has gone terminal', () => {
+    // The cron selected a project whose work finished between the cache write
+    // and the sweep. It must do nothing rather than something wrong.
+    expect(remindersDueFor(
+      [
+        { professionalId: 'a', engagementStatus: 'completed', completion: { requestedAt: ts(now - 9 * DAY) } },
+        { professionalId: 'b', engagementStatus: 'withdrawn', completion: { requestedAt: ts(now - 9 * DAY) } },
+      ],
+      now, REMIND, AUTO,
+    )).toEqual([]);
+  });
+
+  it('IDEMPOTENCY IS PER ENGAGEMENT — the bug the project-level array had', () => {
+    // A was already reminded on day 3. Under the old single project-level
+    // remindedDays that suppressed B's day-3 reminder too. It must not.
+    const actions = remindersDueFor(
+      [
+        req('a', now - 4 * DAY, { remindedDays: [3] }),
+        req('b', now - 4 * DAY),
+      ],
+      now, REMIND, AUTO,
+    );
+    expect(actions).toEqual([{ proId: 'b', kind: 'remind', day: 3 }]);
+  });
+
+  it('escalates past the auto-confirm horizon instead of confirming', () => {
+    expect(remindersDueFor([req('a', now - 8 * DAY)], now, REMIND, AUTO))
+      .toEqual([{ proId: 'a', kind: 'escalate' }]);
+  });
+
+  it('does not re-escalate one already flagged', () => {
+    expect(remindersDueFor(
+      [req('a', now - 8 * DAY, { adminReviewPending: true })], now, REMIND, AUTO,
+    )).toEqual([]);
+  });
+
+  it('emits both due days when a request skipped a sweep', () => {
+    // The cron missed a day; day 3 and day 6 are both owed and neither is
+    // recorded. Both fire rather than only the latest.
+    expect(remindersDueFor([req('a', now - 6 * DAY)], now, REMIND, AUTO))
+      .toEqual([{ proId: 'a', kind: 'remind', day: 3 }, { proId: 'a', kind: 'remind', day: 6 }]);
+  });
+
+  it('ignores an end-request with no timestamp rather than reminding on NaN', () => {
+    expect(remindersDueFor(
+      [{ professionalId: 'a', engagementStatus: 'end_requested_by_pro', completion: {} }],
+      now, REMIND, AUTO,
+    )).toEqual([]);
   });
 });
