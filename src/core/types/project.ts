@@ -1,5 +1,4 @@
 import type { ID, Timestamp } from './common';
-import type { MediaRole } from './media';
 
 export type BookingStatus =
   | 'pending'
@@ -7,37 +6,6 @@ export type BookingStatus =
   | 'in_progress'
   | 'completed'
   | 'cancelled';
-
-export type CrewSlot = {
-  id: ID;
-  role: MediaRole;
-  professionalId: ID | null;
-  status: 'open' | 'filled';
-};
-
-export type Project = {
-  id: ID;
-  clientId: ID;
-  title: string;
-  description: string;
-  startDate: Timestamp;
-  endDate: Timestamp;
-  crew: CrewSlot[];
-  status: 'draft' | 'open' | 'in_progress' | 'completed' | 'cancelled';
-  createdAt: Timestamp;
-};
-
-export type Booking = {
-  id: ID;
-  projectId: ID;
-  clientId: ID;
-  professionalId: ID;
-  role: MediaRole;
-  status: BookingStatus;
-  rate: number;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-};
 
 export type PriceEntry = {
   service: string;
@@ -76,14 +44,6 @@ export type FilledSlot = {
   professionalId: string;
   /** The capability slot this fill consumed (undefined = a general slot). Set at accept time. */
   requiredCapability?: string;
-};
-
-export type ProjectApplication = {
-  id: ID;
-  projectId: ID;
-  professionalId: ID;
-  status: 'pending' | 'accepted' | 'rejected';
-  createdAt: Timestamp;
 };
 
 export type ProjectRequest = {
@@ -261,6 +221,65 @@ export type ProjectFee = {
    *  the refund (§5, discretionary). */
   refundReviewPending?: boolean;
   hiredAt?: Timestamp;
+
+  // ── Engagement lifecycle ────────────────────────────────────────────────
+  //
+  // THIS DOCUMENT IS THE ENGAGEMENT. `projects/{projectId}/fees/{professionalId}`
+  // was already per-(project, professional) and already carried `slotActive`,
+  // `hiredAt`, `disputedAt` and `disputeReason` — a lifecycle in everything but
+  // name. The fields below finish it rather than starting a parallel collection,
+  // which would have orphaned listenToMyFees, the collection-group rules, the
+  // composite index and nineteen Cloud Functions.
+  //
+  // Each field below has a project-level twin that is authoritative TODAY. The
+  // twins stay until the completion machine moves over, then become derived.
+
+  /** Where this ONE professional's engagement stands, independently of everyone
+   *  else's on the same project.
+   *
+   *  'withdrawn' is not a completion: the professional left before the work
+   *  closed, no fee is owed, and it is distinct from 'cancelled' (the whole
+   *  project ended) and from 'completed' (the work was delivered). */
+  engagementStatus?:
+    | 'hired'
+    | 'end_requested_by_pro'
+    | 'end_requested_by_client'
+    | 'completed'
+    | 'withdrawn'
+    | 'disputed'
+    | 'cancelled';
+
+  /** Per-engagement mirror of `ProjectRequest.completion`. `remindedDays` has to
+   *  live here rather than on the project: the cron's idempotency guard is
+   *  currently one array for everyone, so reminding one professional marks the
+   *  day sent for all of them. */
+  completion?: {
+    state: 'none' | 'requested' | 'confirmed' | 'disputed';
+    source?: 'pro' | 'client' | 'auto';
+    requestedBy?: ID;
+    requestedAt?: Timestamp;
+    confirmedAt?: Timestamp;
+    remindedDays?: number[];
+  };
+
+  /** This engagement's own dispute deadline, stamped at ITS confirmation. One
+   *  client action closing several engagements opens several independent
+   *  windows, which the single project-level field cannot express. */
+  disputeWindowEndsAt?: Timestamp;
+
+  /** Per-engagement admin escalation. The project-level pair cannot say WHICH
+   *  professional is in dispute when two are. */
+  adminReviewPending?: boolean;
+  adminReview?: {
+    reason: 'fee_disputed' | 'completion_unanswered' | 'withdrawal_rejected';
+    at?: Timestamp;
+    note?: string;
+  };
+
+  /** Per-engagement mirror of `ProjectRequest.endDatePromptedAt` — a single
+   *  project field today, so the "did this end?" prompt fires once for the whole
+   *  project however many professionals are on it. */
+  endDatePromptedAt?: Timestamp;
 };
 
 export type PriceOffer = {

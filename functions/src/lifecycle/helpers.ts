@@ -119,6 +119,29 @@ export type FeeDoc = {
    *  invoiced them. The arrears grace period counts from HERE, so a fee with no
    *  `demandSentAt` never blocks a hire however old or large it is. */
   demandSentAt?: admin.firestore.Timestamp;
+
+  // ── Engagement lifecycle — mirror of ProjectFee in src/core/types/project.ts.
+  // This document IS the engagement; see that file for why it was extended in
+  // place rather than replaced by a new collection.
+  engagementStatus?:
+    | 'hired' | 'end_requested_by_pro' | 'end_requested_by_client'
+    | 'completed' | 'withdrawn' | 'disputed' | 'cancelled';
+  completion?: {
+    state: 'none' | 'requested' | 'confirmed' | 'disputed';
+    source?: 'pro' | 'client' | 'auto';
+    requestedBy?: string;
+    requestedAt?: admin.firestore.Timestamp;
+    confirmedAt?: admin.firestore.Timestamp;
+    remindedDays?: number[];
+  };
+  disputeWindowEndsAt?: admin.firestore.Timestamp;
+  adminReviewPending?: boolean;
+  adminReview?: {
+    reason: 'fee_disputed' | 'completion_unanswered' | 'withdrawal_rejected';
+    at?: admin.firestore.Timestamp;
+    note?: string;
+  };
+  endDatePromptedAt?: admin.firestore.Timestamp;
 };
 
 /**

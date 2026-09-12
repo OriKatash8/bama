@@ -142,8 +142,24 @@ async function commitHire(args: {
   acceptWrites(batch);
 
   const isFirstHire = !project.chatId;
+  // `filledSlots` is APPENDED, not arrayUnion'd. arrayUnion compares objects by
+  // value, and a FilledSlot carries no identity — {category, professionalId} with
+  // no capability is byte-identical for the same pro hired twice into the same
+  // category. The second union was therefore a silent no-op, leaving the slot
+  // permanently vacant to getVacantSlots while `baseAmount` incremented for it
+  // anyway. Fee state and slot state diverged, and only the fee was right.
+  //
+  // Read-modify-write is what removal.ts already does on this field, for the
+  // mirror-image reason (arrayRemove needs exact equality). The trade it makes is
+  // real: two hires committing concurrently could drop one append, where
+  // arrayUnion would have merged them. Hires are client-initiated, one at a time,
+  // from a single accept action, and hireProfessional short-circuits a retry on
+  // `status === 'accepted'` before reaching here — so the race needs two
+  // different offers accepted in the same instant, against a duplicate-fill bug
+  // that is reachable by ordinary use.
+  const existingFilled = (project.filledSlots as Filled[] | undefined) ?? [];
   const projUpdate: Update = {
-    filledSlots: FieldValue.arrayUnion(...filledEntries),
+    filledSlots: [...existingFilled, ...filledEntries],
     professionalIds: FieldValue.arrayUnion(proId),
     // This pro now occupies a slot. Per-pro, so another pro settling later does
     // not free theirs. `slotActive` is the derived "anyone still unsettled" flag
