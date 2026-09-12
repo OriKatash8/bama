@@ -201,6 +201,12 @@ async function commitHire(args: {
     projectId: projSnap.id,
     baseAmount: FieldValue.increment(amount),
     slotActive: true,
+    // Set on EVERY hire, not just the first. Being hired is what makes an
+    // engagement live, and once completion is per-engagement a professional whose
+    // engagement already closed can be hired again onto the same still-open
+    // project — that re-hire has to pull them back out of 'completed'. The
+    // feePaid reset below is the money half of the same re-engagement.
+    engagementStatus: 'hired',
   };
   if (!existingFeeSnap.exists) {
     // Written once, at this pro's FIRST hire on this project, and immutable
