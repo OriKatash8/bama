@@ -1,4 +1,4 @@
-import { db, feesCol, type FeeDoc } from './helpers';
+import { db, feesCol, contestWindowEndsAt, type FeeDoc } from './helpers';
 import * as admin from 'firebase-admin';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
@@ -67,12 +67,16 @@ export type DerivedProjectState = {
  */
 export function deriveProjectState(
   engagements: readonly Pick<
-    FeeDoc, 'engagementStatus' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'completion'
+    FeeDoc,
+    'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'completion'
   >[],
   now: number = Date.now(),
 ): DerivedProjectState {
+  // Read through the accessor, never off either field: new engagements carry
+  // chargeDueAt, records from before the collapse carry disputeWindowEndsAt, and
+  // a project can hold both at once while the old ones age out.
   const openWindows = engagements
-    .map((e) => e.disputeWindowEndsAt)
+    .map((e) => contestWindowEndsAt(e))
     .filter((ts): ts is admin.firestore.Timestamp => !!ts && ts.toMillis() > now);
   const disputeWindowEndsAt = openWindows.length
     ? openWindows.reduce((a, b) => (a.toMillis() >= b.toMillis() ? a : b))
@@ -199,6 +203,18 @@ export type ReminderAction =
 
 /**
  * Which engagements on this project need a reminder or an escalation right now.
+ *
+ * TEMPORARY IN PART, and it dies with `requestCompletion`. Since the completion
+ * trigger moved to the professional, the client is no longer asked to confirm
+ * anything — so the `endKind: 'finished'` half of this reaches nothing except
+ * through that legacy alias, which installed builds still call. The
+ * `'withdrawing'` half is live and stays: a professional asking to leave still
+ * needs a client who answers, and a client who does not still needs chasing.
+ *
+ * When the alias goes, so do: the 'finished' branch here, COMPLETION_REMINDER_DAYS
+ * and AUTO_CONFIRM_DAYS as they apply to it, and the cron's finished-vs-leaving
+ * message split. Delete them together rather than letting the dead half outlive
+ * the thing that kept it alive.
  *
  * Pure, and separate from the sweep, because the interesting behaviour is what
  * happens when the project-level cache that SELECTED this project is already

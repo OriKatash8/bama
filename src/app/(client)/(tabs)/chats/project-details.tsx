@@ -1572,7 +1572,7 @@ export default function ProjectDetailsScreen() {
                 {t('project_details.dispute_open')}
               </Text>
             </View>
-          ) : canDispute(project) ? (
+          ) : canDispute(myFee) ? (
             <TouchableOpacity
               style={[styles.disputeBtn, proActionBusy && styles.completeBtnDisabled]}
               onPress={handleDispute}

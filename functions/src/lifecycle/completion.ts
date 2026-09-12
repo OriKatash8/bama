@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import {
   db, FieldValue, Timestamp, requireAuth, requireAdmin, notify,
-  feeRef, feesCol, computeProAmount, computeFee, publishProReview,
+  feeRef, feesCol, computeProAmount, computeFee, publishProReview, contestWindowEndsAt,
   type FeeDoc,
 } from './helpers';
 import { readConfig } from './config';
@@ -154,8 +154,12 @@ export async function confirmCompletionInternal(
   const feeMap = new Map<string, FeeDoc>();
   feesSnap.docs.forEach((d) => feeMap.set(d.id, d.data() as FeeDoc));
 
-  const { disputeWindowDays } = await readConfig();
-  const disputeWindowEndsAt = Timestamp.fromMillis(Date.now() + disputeWindowDays * 86400_000);
+  // ONE field now. This used to stamp `disputeWindowEndsAt`, which meant the same
+  // thing as `chargeDueAt` and was written by a different path — see
+  // contestWindowEndsAt for why that pair was dangerous rather than merely
+  // redundant.
+  const { chargeWindowDays } = await readConfig();
+  const chargeDueAt = Timestamp.fromMillis(Date.now() + chargeWindowDays * 86400_000);
 
   const batch = db.batch();
   const owedByPro = new Map<string, number>();
@@ -182,7 +186,7 @@ export async function confirmCompletionInternal(
           // Exempt or legacy-subscription: nothing was owed, but the engagement
           // still closed with the project. Terminal, so it does not hold the
           // derivation open.
-          engagementStatus: 'completed', disputeWindowEndsAt,
+          engagementStatus: 'completed', chargeDueAt,
         } as Update);
       }
       continue;
@@ -205,7 +209,7 @@ export async function confirmCompletionInternal(
     closedPros.push(proId);
     const engagementClose = {
       engagementStatus: 'completed' as const,
-      disputeWindowEndsAt,
+      chargeDueAt,
       completion: {
         state: 'confirmed' as const,
         source,
@@ -589,6 +593,18 @@ export const disputeFeeByPro = onCall(async (request) => {
   const eng = (await engRef.get()).data() as FeeDoc | undefined;
   if (!eng) throw new HttpsError('not-found', 'no-engagement');
 
+  // The SAME window contestEngagement enforces, through the same accessor. The
+  // first version of this alias checked no window at all, which would have let a
+  // professional on an old build dispute a fee indefinitely — the precise failure
+  // that having two fields invites.
+  const dueAt = contestWindowEndsAt(eng)?.toMillis();
+  if (typeof dueAt !== 'number') {
+    throw new HttpsError('failed-precondition', 'no-charge-window');
+  }
+  if (Date.now() > dueAt) {
+    throw new HttpsError('failed-precondition', 'contest-window-closed');
+  }
+
   const note = boundedReason(request.data?.reason);
   await engRef.update({
     engagementStatus: 'disputed',
@@ -872,7 +888,7 @@ export const contestEngagement = onCall(async (request) => {
 
   // The window is the charge date. Past it the money has moved (or would have),
   // and a contest becomes a support conversation rather than a state change.
-  const dueAt = eng.chargeDueAt?.toMillis();
+  const dueAt = contestWindowEndsAt(eng)?.toMillis();
   if (typeof dueAt !== 'number') {
     throw new HttpsError('failed-precondition', 'no-charge-window');
   }

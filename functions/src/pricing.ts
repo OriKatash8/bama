@@ -49,7 +49,13 @@ export const DEFAULT_CHARGE_WINDOW_DAYS = 4;
 export const PAYMENTS_ENABLED = false;
 
 
-/** Completion / confirmation timeouts (days). */
+/** Completion / confirmation timeouts (days).
+ *
+ *  AUTO_CONFIRM_DAYS and COMPLETION_REMINDER_DAYS are TEMPORARY IN PART and die
+ *  with the `requestCompletion` alias: they now govern only the withdrawal half
+ *  of the end-request flow, because the completion trigger moved to the
+ *  professional and no client is asked to confirm anything. Delete the
+ *  'finished' usages with the alias. */
 export const AUTO_CONFIRM_DAYS = 7;
 export const COMPLETION_REMINDER_DAYS = [3, 6];
 /** Days before endDate the client is nudged to move it if it is wrong. */

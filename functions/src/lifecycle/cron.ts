@@ -52,7 +52,16 @@ export const lifecycleCron = onSchedule(
       },
     );
 
-    // 2) Completion reminders (day 3/6) for pro-requested projects, then hand an
+    // 2) TEMPORARY IN PART — dies with the requestCompletion alias.
+    //
+    //    Since the completion trigger moved to the professional (sweep 5 below),
+    //    the client is no longer asked to confirm anything, so the 'finished'
+    //    half of this sweep is reachable only through that legacy alias. The
+    //    'withdrawing' half is live and stays — a professional asking to leave
+    //    still needs an answer, and a client who does not give one still needs
+    //    chasing. See remindersDueFor for what to delete alongside the alias.
+    //
+    //    Completion reminders (day 3/6) for pro-requested projects, then hand an
     //    unanswered request to a human on day 7.
     //
     //    This used to AUTO-CONFIRM on day 7. It no longer does. Confirming a

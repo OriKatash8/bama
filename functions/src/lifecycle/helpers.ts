@@ -140,12 +140,19 @@ export type FeeDoc = {
   releaseReason?: 'client_removed' | 'pro_withdrew';
   /** Auto-complete deadline, stamped from the project's endDate. Absent = never. */
   completionDueAt?: admin.firestore.Timestamp;
-  /** When the fee charges, and until when the professional may contest it. */
+  /** When the fee charges, and until when the professional may contest it.
+   *  THE window — `disputeWindowEndsAt` below is its predecessor, kept readable
+   *  for records written before the two collapsed. Read both through
+   *  `contestWindowEndsAt()`, never either one directly. */
   chargeDueAt?: admin.firestore.Timestamp;
   /** Stub-charge bookkeeping — see charge.ts. */
   chargeAttemptCount?: number;
   wouldFailCount?: number;
   lastChargeAttempt?: Record<string, unknown>;
+  /** @deprecated Superseded by `chargeDueAt`, which means the same thing and is
+   *  also the moment the fee charges. Still written on records that predate the
+   *  collapse and still read through `contestWindowEndsAt()`; never written by
+   *  new code. */
   disputeWindowEndsAt?: admin.firestore.Timestamp;
   adminReviewPending?: boolean;
   adminReview?: {
@@ -233,4 +240,23 @@ export async function publishProReview(projectId: string, proId: string): Promis
     batch.update(d.ref, { published: true, visibleAt: FieldValue.serverTimestamp() }),
   );
   if (!snap.empty) await batch.commit();
+}
+
+/**
+ * When this engagement's contest window closes — the ONE accessor for it.
+ *
+ * Two fields meant the same thing for one commit: `disputeWindowEndsAt`, stamped
+ * by the old confirmation path, and `chargeDueAt`, stamped by the new one. Both
+ * four days, both gating a professional contesting. That is the exact shape this
+ * refactor has been removing everywhere else (slotActive, baseAmount), and the
+ * danger is specific: one server path checking one field while another checks the
+ * other means a contest accepted by one and refused by the other.
+ *
+ * So nothing reads either field directly. New records carry `chargeDueAt`; the
+ * fallback exists only for records written before the collapse.
+ */
+export function contestWindowEndsAt(
+  fee: Pick<FeeDoc, 'chargeDueAt' | 'disputeWindowEndsAt'>,
+): admin.firestore.Timestamp | undefined {
+  return fee.chargeDueAt ?? fee.disputeWindowEndsAt;
 }
