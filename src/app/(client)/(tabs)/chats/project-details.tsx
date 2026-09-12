@@ -16,7 +16,7 @@ import {
 import { confirmDialog } from '@utils/confirmDialog';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, deleteField } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
@@ -53,6 +53,7 @@ import { ReviewFlow, type ReviewProfessional } from '@features/reviews/component
 import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { requestCompletion, disputeFeeByPro, canDispute } from '@features/projects/services/completionService';
+import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { outstandingFee, feePercent, isMinimumFee } from '@features/pricing/utils/fee';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
@@ -184,10 +185,32 @@ export default function ProjectDetailsScreen() {
   async function handleEditDeadline(iso: string) {
     setShowDeadlinePicker(false);
     try {
-      await updateDoc(doc(db, 'projects', projectId), { deadline: iso });
-      setProject((prev) => (prev ? { ...prev, deadline: iso } : prev));
+      // endDate moves WITH the deadline, from this one answer — the same picker,
+      // no second question. Choosing 'flexible' clears it, so the project stops
+      // having an auto-complete date rather than keeping a stale one.
+      //
+      // The server trigger re-stamps completionDueAt on every engagement still
+      // 'hired' and leaves the rest alone, so moving the date can never reach
+      // back and un-complete something that already closed.
+      const endDate = endDateFromDeadline(iso);
+      await updateDoc(doc(db, 'projects', projectId), {
+        deadline: iso,
+        endDate: endDate ?? deleteField(),
+      });
+      // Local state holds the app's own Timestamp shape ({seconds, nanoseconds}),
+      // not the JS Date the SDK converts on write — otherwise the optimistic
+      // value and the value that comes back from Firestore are different types
+      // for the same field.
+      setProject((prev) => (prev ? {
+        ...prev,
+        deadline: iso,
+        endDate: endDate
+          ? { seconds: Math.floor(endDate.getTime() / 1000), nanoseconds: 0 }
+          : undefined,
+      } : prev));
     } catch (err) {
       console.error('[ProjectDetails] edit deadline failed:', err);
+      showToast(t('project_details.edit_deadline_error'), 'error');
     }
   }
 

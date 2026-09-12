@@ -1,6 +1,12 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useProjectRequests } from '../useProjectRequests';
-import { addDocument, subscribeToCollection, where, updateDocument, deleteDocument } from '@core/firebase/firestore';
+import {
+  addDocument,
+  subscribeToCollection,
+  where,
+  updateDocument,
+  deleteDocument,
+} from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 
 jest.mock('@core/firebase/firestore', () => ({
@@ -9,6 +15,11 @@ jest.mock('@core/firebase/firestore', () => ({
   where: jest.fn(() => ({ type: 'where-constraint' })),
   updateDocument: jest.fn(),
   deleteDocument: jest.fn(),
+  // The sentinel that clears endDate when the deadline goes back to
+  // 'flexible'. A distinguishable value rather than jest.fn() alone, so the
+  // assertions below can see that the field was CLEARED and not overwritten
+  // with undefined — which firestore would reject.
+  deleteField: jest.fn(() => '__deleteField__'),
 }));
 
 // Deletion is now one server call: the cascade over priceOffers, bundleOffers,
@@ -162,5 +173,68 @@ describe('useProjectRequests', () => {
       } catch {}
     });
     expect(result.current.error).toBe('Delete failed');
+  });
+  // ── endDate: the machine twin of `deadline` ────────────────────────────────
+  // One date question in the builder, two fields on the document. `deadline`
+  // stays the string the client typed (an ISO day or the literal 'flexible');
+  // `endDate` is what the server's auto-complete backstop reads. These pin the
+  // WRITE path — endDateFromDeadline's own parsing is covered in
+  // src/features/crew/utils/__tests__/endDate.test.ts.
+
+  it('submit stamps endDate from the deadline the client picked', async () => {
+    mockAddDocument.mockResolvedValue('new-id');
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      await result.current.submit([], { deadline: '2026-07-15', location: 'Tel Aviv' });
+    });
+    const [, payload] = mockAddDocument.mock.calls.at(-1)!;
+    expect((payload as Record<string, unknown>).deadline).toBe('2026-07-15');
+    expect((payload as Record<string, unknown>).endDate).toBeInstanceOf(Date);
+  });
+
+  it('submit omits endDate entirely on a flexible deadline', async () => {
+    // Not null, not a sentinel — ABSENT. No endDate means no completionDueAt at
+    // hire, which means nothing ever auto-completes, which is exactly what
+    // "flexible" promises and what the builder now says out loud.
+    mockAddDocument.mockResolvedValue('new-id');
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      await result.current.submit([], { deadline: 'flexible', location: 'Tel Aviv' });
+    });
+    const [, payload] = mockAddDocument.mock.calls.at(-1)!;
+    expect(payload as Record<string, unknown>).not.toHaveProperty('endDate');
+  });
+
+  it('updateProject moves endDate with the deadline', async () => {
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      await result.current.updateProject('proj-1', [], { deadline: '2026-09-01', location: 'Tel Aviv' });
+    });
+    const [path, payload] = mockUpdateDocument.mock.calls.at(-1)!;
+    expect(path).toBe('projects/proj-1');
+    expect((payload as Record<string, unknown>).endDate).toBeInstanceOf(Date);
+  });
+
+  it('updateProject CLEARS endDate when the deadline goes back to flexible', async () => {
+    // The one case that needs a sentinel: leaving the old timestamp in place
+    // would keep auto-completing a project whose client has just said they do
+    // not know when it ends.
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      await result.current.updateProject('proj-1', [], { deadline: 'flexible', location: 'Tel Aviv' });
+    });
+    const [, payload] = mockUpdateDocument.mock.calls.at(-1)!;
+    expect((payload as Record<string, unknown>).endDate).toBe('__deleteField__');
+  });
+
+  it('updateProject leaves endDate untouched when the edit is not about the date', async () => {
+    // An edit that never mentions the deadline must not clear the date as a side
+    // effect — `clearing` only applies when a deadline was actually supplied.
+    const { result } = renderHook(() => useProjectRequests());
+    await act(async () => {
+      await result.current.updateProject('proj-1', [], { title: 'Renamed', location: 'Tel Aviv' });
+    });
+    const [, payload] = mockUpdateDocument.mock.calls.at(-1)!;
+    expect(payload as Record<string, unknown>).not.toHaveProperty('endDate');
   });
 });

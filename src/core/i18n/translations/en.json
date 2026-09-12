@@ -102,7 +102,9 @@
     "vibe_label": "Vibe & Style",
     "no_skills_listed": "No skills listed for this professional.",
     "error_date_past": "You can't pick a date in the past.",
-    "error_deadline_order": "The deadline can't be before the execution date."
+    "error_deadline_order": "The deadline can't be before the execution date.",
+    "flexible_no_autocomplete": "You chose a flexible date — the project has no end date, so it will not close on its own. Each professional marks when they have finished their part.",
+    "end_date_note": "On this date the project closes on its own, if the professionals have not already marked their parts finished."
   },
   "search": {
     "no_professionals_yet": "No professionals yet",
@@ -288,7 +290,8 @@
     "dispute_sent": "Issue raised. We will get back to you.",
     "dispute_error": "Could not raise the issue. Please try again.",
     "dispute_open": "Issue open",
-    "fee_line_min": "BAMA fee · ₪{{amount}} (minimum fee)"
+    "fee_line_min": "BAMA fee · ₪{{amount}} (minimum fee)",
+    "edit_deadline_error": "Could not update the date. Please try again."
   },
   "chats_page": {
     "title": "Chats",

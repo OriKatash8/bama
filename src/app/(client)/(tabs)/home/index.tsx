@@ -394,6 +394,24 @@ export default function HomeScreen() {
               </View>
             </View>
 
+            {/* What the date actually DOES, said out loud.
+                'flexible' is not a softer version of a date — it means the
+                project has no end date at all and never closes by itself, which
+                is a real consequence the client should meet here rather than
+                discover weeks later when nothing has happened. */}
+            {deadline ? (
+              <Text
+                style={[
+                  styles.dateConsequence,
+                  { textAlign: rtl ? 'right' : 'left', color: deadline === 'flexible' ? '#b7791f' : '#718096' },
+                ]}
+              >
+                {deadline === 'flexible'
+                  ? t('builder.flexible_no_autocomplete')
+                  : t('builder.end_date_note')}
+              </Text>
+            ) : null}
+
             <View style={styles.grow} />
             <View style={styles.submitWrap}>
               <TouchableOpacity
@@ -764,6 +782,7 @@ function createStyles(
     label: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
     input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: ff },
     error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: ff },
+    dateConsequence: { fontSize: 12, lineHeight: 18, marginTop: 12, paddingHorizontal: 20, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     tile: { borderRadius: 12, overflow: 'hidden', position: 'relative', alignItems: 'center' },
     tileImage: { width: '100%', height: 80 },

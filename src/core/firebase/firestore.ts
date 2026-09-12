@@ -12,6 +12,7 @@ import {
   where,
   writeBatch,
   arrayUnion,
+  deleteField,
   type QueryConstraint,
   type DocumentData,
 } from 'firebase/firestore';
@@ -164,4 +165,9 @@ export async function runBatchUpdates(
   await batch.commit();
 }
 
-export { where, arrayUnion };
+// Re-exported, not re-implemented: callers get the query and sentinel helpers
+// without importing `firebase/firestore` themselves. That import pulls the
+// SDK's ESM bundle into any jest suite that touches the module, and the suites
+// mock THIS path — so a feature hook reaching past the wrapper for a sentinel
+// silently takes its own tests down with it.
+export { where, arrayUnion, deleteField };

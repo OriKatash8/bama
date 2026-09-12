@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
-import { addDocument, subscribeToCollection, where, updateDocument } from '@core/firebase/firestore';
+import {
+  addDocument,
+  subscribeToCollection,
+  where,
+  updateDocument,
+  deleteField,
+} from '@core/firebase/firestore';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
+import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { deleteProjectAndOffers } from '@features/crew/services/projectDeletion';
 
 type SubmitDetails = {
@@ -16,6 +23,23 @@ type SubmitDetails = {
   targetProfessionalId?: string | null;
   roleAnswers?: Record<string, Record<string, string>>;
 };
+
+/**
+ * `endDate` for a write, or the field omitted / cleared.
+ *
+ * On CREATE an absent endDate is simply left out. On UPDATE it has to be actively
+ * cleared, because switching a dated project back to 'flexible' must remove the
+ * deadline rather than leave the old one standing.
+ */
+function withEndDate(
+  deadline: string | undefined,
+  opts: { clearing?: boolean } = {},
+): Record<string, unknown> {
+  const endDate = endDateFromDeadline(deadline);
+  if (endDate) return { endDate };
+  if (opts.clearing && deadline !== undefined) return { endDate: deleteField() };
+  return {};
+}
 
 export function useProjectRequests() {
   const user = useAuthStore((s) => s.user);
@@ -46,6 +70,7 @@ export function useProjectRequests() {
         crewSlots: slots,
         filledSlots: [],
         ...clean,
+        ...withEndDate(details.deadline),
         status: 'open' as const,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });
@@ -64,7 +89,13 @@ export function useProjectRequests() {
     setError(null);
     const clean = Object.fromEntries(Object.entries(details).filter(([, v]) => v !== undefined));
     try {
-      await updateDocument(`projects/${id}`, { crewSlots: slots, ...clean });
+      // endDate follows the deadline on every edit, including back to 'flexible'
+      // — which CLEARS it, so an engagement stops having an auto-complete date
+      // rather than keeping a stale one. The server trigger re-stamps every
+      // engagement still 'hired' and leaves the rest alone.
+      await updateDocument(`projects/${id}`, {
+        crewSlots: slots, ...clean, ...withEndDate(details.deadline, { clearing: true }),
+      });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to update project';
       setError(message);
