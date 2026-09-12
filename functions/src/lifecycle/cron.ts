@@ -2,9 +2,13 @@ import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db, FieldValue, daysAgo, notify, feesCol , type FeeDoc } from './helpers';
 import { remindersDueFor, applyDerivedProjectState } from './derive';
+import { completeEngagementInternal } from './completion';
+import { chargeEngagementFee } from './charge';
+import { readConfig } from './config';
 import {
   AUTO_CONFIRM_DAYS, COMPLETION_REMINDER_DAYS, END_DATE_PROMPT_GRACE_DAYS,
   ARCHIVE_UNCONFIRMED_DAYS, REVIEW_FORCE_PUBLISH_DAYS, TIMEZONE,
+  END_DATE_REMINDER_DAYS,
 } from '../pricing';
 
 const BATCH = 200;
@@ -139,6 +143,97 @@ export const lifecycleCron = onSchedule(
         slotActive: false, feeDue: 0, status: 'not_owed',
       }));
         await batch.commit();
+      },
+    );
+
+    // 4b) END-DATE REMINDERS to the CLIENT, 2 days and 1 day out. This is the
+    //     only completion-adjacent thing the client is asked to do now: not to
+    //     confirm, only to move the date if it is wrong. Once it passes, the
+    //     engagements auto-complete without them.
+    //
+    //     Guarded per project by endDateRemindedDays, not per engagement — the
+    //     date is a property of the project and the recipient is one person.
+    for (const daysOut of END_DATE_REMINDER_DAYS) {
+      const from = admin.firestore.Timestamp.fromMillis(Date.now() + (daysOut - 1) * 86400_000);
+      const to = admin.firestore.Timestamp.fromMillis(Date.now() + daysOut * 86400_000);
+      await paginate(
+        db.collection('projects')
+          .where('endDate', '>', from)
+          .where('endDate', '<=', to)
+          .orderBy('endDate'),
+        async (doc) => {
+          const p = doc.data();
+          if (p.status !== 'open' && p.status !== 'in_progress') return;
+          const sent: number[] = p.endDateRemindedDays ?? [];
+          if (sent.includes(daysOut)) return;
+          await doc.ref.update({
+            endDateRemindedDays: FieldValue.arrayUnion(daysOut),
+          });
+          await notify({
+            userId: p.clientId,
+            title: 'BAMA',
+            message: daysOut === 1
+              ? 'הפרויקט מסתיים מחר. אם התאריך אינו נכון, אפשר לעדכן אותו עכשיו.'
+              : `הפרויקט מסתיים בעוד ${daysOut} ימים. אם התאריך אינו נכון, אפשר לעדכן אותו עכשיו.`,
+            data: { type: 'end_date_soon', projectId: doc.id, chatId: p.chatId ?? '' },
+          });
+        },
+      );
+    }
+
+    // 5) AUTO-COMPLETE: the deadline backstop for a professional who never
+    //    marked their own engagement. Collection-group over engagements, because
+    //    completionDueAt lives on the engagement — the project has no single
+    //    deadline once each engagement carries its own.
+    //
+    //    An engagement with NO completionDueAt is never selected, which is every
+    //    engagement on a project with no endDate, including all of the ones that
+    //    predate this. Absent means "waits for the professional", forever.
+    await paginate(
+      db.collectionGroup('fees')
+        .where('engagementStatus', '==', 'hired')
+        .where('completionDueAt', '<', admin.firestore.Timestamp.now())
+        .orderBy('completionDueAt'),
+      async (doc) => {
+        const projectId = doc.ref.parent.parent?.id;
+        if (!projectId) return;
+        const res = await completeEngagementInternal(projectId, doc.id, 'auto');
+        if (!res.completed) return;
+        const { chargeWindowDays } = await readConfig();
+        await notify({
+          userId: doc.id,
+          title: 'BAMA',
+          message: `הפרויקט הסתיים. עמלת הפלטפורמה תיגבה בעוד ${chargeWindowDays} ימים — אם העבודה לא בוצעה, סמנו זאת עכשיו.`,
+          data: { type: 'engagement_completed', projectId },
+        });
+      },
+    );
+
+    // 6) CHARGE: the window has closed. chargeEngagementFee is a stub that takes
+    //    no money and records what it would have taken — and what would have
+    //    stopped it. The engagement is left alone by a failure; nothing here
+    //    changes state, because a charge that did not happen must not look like
+    //    one that did.
+    await paginate(
+      db.collectionGroup('fees')
+        .where('engagementStatus', '==', 'completed')
+        .where('chargeDueAt', '<', admin.firestore.Timestamp.now())
+        .orderBy('chargeDueAt'),
+      async (doc) => {
+        const fee = doc.data() as FeeDoc;
+        if (fee.feePaid === true || fee.status === 'paid') return;   // already settled
+        if (fee.chargeAttemptCount) return;                          // already attempted
+        const projectId = doc.ref.parent.parent?.id;
+        if (!projectId) return;
+        const attempt = await chargeEngagementFee(projectId, doc.id);
+        if (attempt.outcome === 'would_fail_no_card') {
+          await notify({
+            userId: doc.id,
+            title: 'BAMA',
+            message: 'לא הצלחנו לגבות את עמלת הפלטפורמה. יש להסדיר את אמצעי התשלום.',
+            data: { type: 'charge_failed', projectId },
+          });
+        }
       },
     );
 

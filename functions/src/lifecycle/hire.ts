@@ -72,6 +72,18 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
     // Projects where THIS pro still occupies a slot. Single-field array-contains —
     // no composite index needed. Not reached when the pro already holds a slot
     // here, so the query never counts the project being hired onto.
+    // Counts engagements that are HIRED or DISPUTED, via the project-level
+    // slotHolders array the derivation and completion keep in step.
+    //
+    // Disputed counts deliberately. Without it, contesting an engagement voids or
+    // holds the fee AND frees the slot — a standing evasion route with nothing
+    // behind it but an admin queue. A disputed engagement is unfinished business
+    // and keeps its slot until someone resolves it, which also puts the incentive
+    // the right way round: the professional now wants it settled.
+    //
+    // completed, withdrawn and cancelled correctly do not count. Nothing piles up
+    // waiting on a client any more, because engagements past completionDueAt
+    // auto-complete.
     const active = await db
       .collection('projects')
       .where('slotHolders', 'array-contains', proId)
@@ -207,6 +219,11 @@ async function commitHire(args: {
     // project — that re-hire has to pull them back out of 'completed'. The
     // feePaid reset below is the money half of the same re-engagement.
     engagementStatus: 'hired',
+    // Stamped from the project's endDate, or left absent when there is none —
+    // which is every project that predates this field, and every project whose
+    // client answered 'flexible'. Absent means this engagement never
+    // auto-completes; it waits for the professional to mark it.
+    ...(project.endDate ? { completionDueAt: project.endDate } : {}),
   };
   if (!existingFeeSnap.exists) {
     // Written once, at this pro's FIRST hire on this project, and immutable

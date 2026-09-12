@@ -16,3 +16,4 @@ export * from './lifecycle/subscription';
 export * from './lifecycle/reviews';
 export * from './lifecycle/cron';
 export * from './lifecycle/adminViews';
+export * from './lifecycle/endDate';

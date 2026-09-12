@@ -54,6 +54,18 @@ export type ProjectRequest = {
   description: string;
   exec?: string;
   deadline: string;
+  /**
+   * The real end date, as a Timestamp, and the thing automation runs on.
+   *
+   * `deadline` above stays exactly as it is — free text, either an ISO day or
+   * the literal 'flexible' — because it is what the client typed and 69 live
+   * projects carry it. This is set from the SAME picker when the answer is a
+   * date, and left absent when it is 'flexible'.
+   *
+   * Absent means "never auto-completes", which is deliberately also what every
+   * pre-existing project means. No backfill, no parsing `deadline` to guess one.
+   */
+  endDate?: Timestamp;
   location: string;
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: Timestamp;
@@ -97,6 +109,9 @@ export type ProjectRequest = {
   };
   /** Set once the cron has sent the "did the project finish?" prompt (idempotency). */
   endDatePromptedAt?: Timestamp;
+  /** Which end-date reminders (2/1 days out) the cron already sent. Per project:
+   *  the date is the project's and the recipient is one person. */
+  endDateRemindedDays?: number[];
   /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.feeDue. */
   feeDue?: number;
   /** @deprecated legacy pre-per-pro-fee. Use ProjectFee.feePaid. */
@@ -206,6 +221,23 @@ export type ProjectFee = {
    *  its amount is arithmetically identical to what it always was. Read THIS, never
    *  the live config, when pricing an existing fee. */
   minFeeApplied?: number;
+  /**
+   * When this engagement auto-completes if the professional has not marked it.
+   *
+   * Stamped from the project's `endDate` at hire, and RE-STAMPED whenever the
+   * client moves that date — but only while this engagement is still `hired`.
+   * An engagement that already completed is never re-stamped, so moving the date
+   * can never retroactively void a charge.
+   *
+   * Absent = never auto-completes. That is the state of every engagement on a
+   * project with no `endDate`, including all 69 that predate this.
+   */
+  completionDueAt?: Timestamp;
+  /**
+   * When the fee for this engagement is charged, and until when the professional
+   * may contest it. Set when the engagement completes, by either route.
+   */
+  chargeDueAt?: Timestamp;
   /** When an admin recorded that the payment demand went out. Admin-SDK-written
    *  only (`markDemandSent`); the professional can neither set nor clear it.
    *
@@ -292,7 +324,7 @@ export type ProjectFee = {
    *  professional is in dispute when two are. */
   adminReviewPending?: boolean;
   adminReview?: {
-    reason: 'fee_disputed' | 'completion_unanswered' | 'withdrawal_rejected';
+    reason: 'fee_disputed' | 'completion_unanswered' | 'withdrawal_rejected' | 'didnt_happen';
     at?: Timestamp;
     note?: string;
   };

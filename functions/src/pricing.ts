@@ -34,6 +34,9 @@ export const DEFAULT_PAYMENT_FAILURE_GRACE_DAYS = 7;
  *  collect than it is worth, and a floor means under-reporting a project's value
  *  cannot drive the fee to zero. Terms 12.4.1. */
 export const DEFAULT_MIN_FEE_AMOUNT = 6;
+/** Days between an engagement completing and its fee charging — and the window
+ *  in which the professional may say it did not happen. */
+export const DEFAULT_CHARGE_WINDOW_DAYS = 4;
 
 /**
  * DEAD. Nothing reads this.
@@ -49,6 +52,8 @@ export const PAYMENTS_ENABLED = false;
 /** Completion / confirmation timeouts (days). */
 export const AUTO_CONFIRM_DAYS = 7;
 export const COMPLETION_REMINDER_DAYS = [3, 6];
+/** Days before endDate the client is nudged to move it if it is wrong. */
+export const END_DATE_REMINDER_DAYS = [2, 1];
 export const END_DATE_PROMPT_GRACE_DAYS = 3;
 export const ARCHIVE_UNCONFIRMED_DAYS = 45;
 export const REVIEW_FORCE_PUBLISH_DAYS = 60;
@@ -163,6 +168,8 @@ export type PricingConfig = {
    *  by writing 0 here; a 0 falls back to this default. Removing the floor is a
    *  code change, deliberately. */
   minFeeAmount: number;
+  /** Days between completion and charge; also the contest window. */
+  chargeWindowDays: number;
 };
 
 export const CONFIG_DEFAULTS: PricingConfig = {
@@ -174,6 +181,7 @@ export const CONFIG_DEFAULTS: PricingConfig = {
   autoCloseDays: DEFAULT_AUTO_CLOSE_DAYS,
   paymentFailureGraceDays: DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
   minFeeAmount: DEFAULT_MIN_FEE_AMOUNT,
+  chargeWindowDays: DEFAULT_CHARGE_WINDOW_DAYS,
 };
 
 /**

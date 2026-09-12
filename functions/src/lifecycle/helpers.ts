@@ -138,10 +138,18 @@ export type FeeDoc = {
     endReason?: string;
   };
   releaseReason?: 'client_removed' | 'pro_withdrew';
+  /** Auto-complete deadline, stamped from the project's endDate. Absent = never. */
+  completionDueAt?: admin.firestore.Timestamp;
+  /** When the fee charges, and until when the professional may contest it. */
+  chargeDueAt?: admin.firestore.Timestamp;
+  /** Stub-charge bookkeeping — see charge.ts. */
+  chargeAttemptCount?: number;
+  wouldFailCount?: number;
+  lastChargeAttempt?: Record<string, unknown>;
   disputeWindowEndsAt?: admin.firestore.Timestamp;
   adminReviewPending?: boolean;
   adminReview?: {
-    reason: 'fee_disputed' | 'completion_unanswered' | 'withdrawal_rejected';
+    reason: 'fee_disputed' | 'completion_unanswered' | 'withdrawal_rejected' | 'didnt_happen';
     at?: admin.firestore.Timestamp;
     note?: string;
   };

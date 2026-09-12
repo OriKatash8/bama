@@ -104,6 +104,44 @@ export function useNotificationRouting(): void {
         await navigate('client', '/(client)/(tabs)/projects');
         return;
       }
+      // ── engagement lifecycle ──
+      // Each of these needs a case HERE as well as a writer and a prefs entry.
+      // Missing this switch is the failure that looks like success: the push
+      // lands, the professional taps it, and nothing happens.
+      case 'engagement_completed':
+      case 'charge_failed': {
+        // Both are the professional's own money. Project details carries the
+        // engagement's state and the contest action; the balance screen is where
+        // a failed charge is actionable.
+        if (data.type === 'charge_failed') {
+          await navigate('professional', '/settings/payment');
+          return;
+        }
+        if (data.projectId) {
+          await navigate(
+            'professional',
+            `/(client)/(tabs)/chats/project-details?projectId=${data.projectId}` +
+              (data.chatId ? `&chatId=${data.chatId}` : ''),
+          );
+          return;
+        }
+        await navigate('professional', '/(professional)/(tabs)/dashboard');
+        return;
+      }
+      case 'end_date_soon': {
+        // The CLIENT, and the only thing being asked is "move the date if it is
+        // wrong" — which is edited on project details.
+        if (data.projectId) {
+          await navigate(
+            'client',
+            `/(client)/(tabs)/chats/project-details?projectId=${data.projectId}` +
+              (data.chatId ? `&chatId=${data.chatId}` : ''),
+          );
+          return;
+        }
+        await navigate('client', '/(client)/(tabs)/projects');
+        return;
+      }
       case 'removal': {
         // Land on project-details, where the removal banner and its accept
         // button live — the chat room does not surface the request at all.

@@ -35,6 +35,8 @@ export const DEFAULT_PAYMENT_FAILURE_GRACE_DAYS = 7;
  *  the live value is `config/pricing.minFeeAmount`, and the value that actually
  *  prices a fee is `minFeeApplied`, snapshotted onto the fee record at hire. */
 export const DEFAULT_MIN_FEE_AMOUNT = 6;
+/** Days between completion and charge; also the contest window. */
+export const DEFAULT_CHARGE_WINDOW_DAYS = 4;
 
 /**
  * DEAD. Nothing reads this.

@@ -2,7 +2,7 @@ import {
   DEFAULT_FEE_PERCENT, DEFAULT_MAX_OPEN_PROJECTS, DEFAULT_DISPUTE_WINDOW_DAYS,
   DEFAULT_AUTO_CLOSE_REMINDER_DAYS, DEFAULT_AUTO_CLOSE_FINAL_DAYS,
   DEFAULT_AUTO_CLOSE_DAYS, DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
-  DEFAULT_MIN_FEE_AMOUNT,
+  DEFAULT_MIN_FEE_AMOUNT, DEFAULT_CHARGE_WINDOW_DAYS,
 } from '@core/constants/pricing';
 
 /**
@@ -30,6 +30,8 @@ export type PricingConfig = {
    *  they are hired, the value that prices their fee is `minFeeApplied` on their own
    *  fee record, snapshotted at that moment — read that, never this. */
   minFeeAmount: number;
+  /** Days between completion and charge; also the contest window. */
+  chargeWindowDays: number;
 };
 
 export const PRICING_CONFIG_DEFAULTS: PricingConfig = {
@@ -41,6 +43,7 @@ export const PRICING_CONFIG_DEFAULTS: PricingConfig = {
   autoCloseDays: DEFAULT_AUTO_CLOSE_DAYS,
   paymentFailureGraceDays: DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
   minFeeAmount: DEFAULT_MIN_FEE_AMOUNT,
+  chargeWindowDays: DEFAULT_CHARGE_WINDOW_DAYS,
 };
 
 /**

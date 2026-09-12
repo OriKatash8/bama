@@ -3,7 +3,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import {
   db, FieldValue, Timestamp, requireAuth, requireAdmin, notify,
   feeRef, feesCol, computeProAmount, computeFee, publishProReview,
-  type FeeDoc, type Ts,
+  type FeeDoc,
 } from './helpers';
 import { readConfig } from './config';
 import { applyDerivedProjectState } from './derive';
@@ -571,85 +571,47 @@ export const markFeePaid = onCall(async (request) => {
  * Distinct from `disputeCompletion`, which is the CLIENT's pre-confirmation
  * objection. Same word, opposite party, opposite side of the confirmation.
  */
+/**
+ * TEMPORARY ALIAS, kept only for installed builds — the same treatment
+ * `requestCompletion` got.
+ *
+ * Maps to `contestEngagement({ reason: 'amount_disputed' })`. A build that
+ * predates the split cannot have meant "it never happened", and
+ * `amount_disputed` is the branch that HOLDS the fee rather than voiding it, so
+ * an old client can never void a fee by accident. Delete once no build calls it.
+ */
 export const disputeFeeByPro = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
   const projectId = request.data?.projectId as string | undefined;
   if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
-  const rawReason = request.data?.reason;
-  // Bounded: this lands in a document an admin reads, not in a query.
-  const reason = typeof rawReason === 'string' ? rawReason.slice(0, 1000).trim() : '';
 
-  const { snap, project } = await loadProject(projectId);
-  if (!((project.professionalIds as string[]) ?? []).includes(uid)) {
-    throw new HttpsError('permission-denied', 'Not hired on this project');
-  }
+  const engRef = feeRef(projectId, uid);
+  const eng = (await engRef.get()).data() as FeeDoc | undefined;
+  if (!eng) throw new HttpsError('not-found', 'no-engagement');
 
-  const completion = project.completion as { state?: string; confirmedAt?: Ts } | undefined;
-  if (completion?.state !== 'confirmed') {
-    throw new HttpsError('failed-precondition', 'not-confirmed');
-  }
-
-  // Prefer the deadline stamped at confirmation over recomputing from config:
-  // the window a professional was promised must not move because someone edited
-  // disputeWindowDays afterwards. The fallback covers projects confirmed before
-  // that field existed.
-  // THIS engagement's own window first. The project-level field is now a cache —
-  // max() of whatever windows are still open — so on a multi-professional project
-  // it describes somebody else's deadline as often as it describes this one's.
-  // Order: the engagement's stamp, then the project's (pre-engagement records),
-  // then recomputed from confirmedAt.
-  const engagementSnap = await feeRef(projectId, uid).get();
-  const engagement = engagementSnap.data() as FeeDoc | undefined;
-  let endsAt = (engagement?.disputeWindowEndsAt as Ts | undefined)
-    ?? (project.disputeWindowEndsAt as Ts | undefined);
-  if (!endsAt) {
-    const { disputeWindowDays } = await readConfig();
-    const confirmedAt = engagement?.completion?.confirmedAt ?? completion.confirmedAt;
-    if (!confirmedAt) throw new HttpsError('failed-precondition', 'no-confirmation-date');
-    endsAt = Timestamp.fromMillis(confirmedAt.toMillis() + disputeWindowDays * 86400_000);
-  }
-  if (Date.now() > endsAt.toMillis()) {
-    throw new HttpsError('failed-precondition', 'dispute-window-closed');
-  }
-
-  const batch = db.batch();
-
-  // Only the caller's OWN fee record, never a professionalId from the body.
-  // A missing record means there is no fee to dispute — the project is still
-  // flagged, because the objection is to the completion, not only to the amount.
-  const fSnap = await feeRef(projectId, uid).get();
-  if (fSnap.exists) {
-    batch.update(fSnap.ref, {
-      status: 'disputed',
-      disputedAt: FieldValue.serverTimestamp(),
-      ...(reason ? { disputeReason: reason } : {}),
-      // The engagement leaves terminal state, which holds the whole project
-      // non-terminal through the derivation. A dispute is unfinished business.
-      engagementStatus: 'disputed',
-      // Per-engagement escalation: the project-level pair cannot say WHICH
-      // professional is in dispute when two of them are.
-      adminReviewPending: true,
-      adminReview: {
-        reason: 'fee_disputed',
-        at: FieldValue.serverTimestamp(),
-        ...(reason ? { note: reason } : {}),
-      },
-    } as Update);
-  }
-
-  batch.update(snap.ref, {
+  const note = boundedReason(request.data?.reason);
+  await engRef.update({
+    engagementStatus: 'disputed',
+    disputedAt: FieldValue.serverTimestamp(),
+    ...(note ? { disputeReason: note } : {}),
     adminReviewPending: true,
     adminReview: {
       reason: 'fee_disputed',
-      proId: uid,
       at: FieldValue.serverTimestamp(),
-      ...(reason ? { note: reason } : {}),
+      ...(note ? { note } : {}),
     },
   } as Update);
 
-  await batch.commit();
-  // A dispute pulls the engagement out of terminal state, which pulls the project
-  // back out of 'completed' if it had rolled up to it.
+  // THE SLOT COMES BACK. Completing released it (see completeEngagementInternal),
+  // so without this a professional could complete, contest, and walk away with
+  // both a freed slot and a voided fee — a standing evasion route with only an
+  // admin queue behind it. A disputed engagement is unfinished business and holds
+  // its capacity until someone resolves it, which also points the incentive the
+  // right way: the professional now wants it settled.
+  await db.doc(`projects/${projectId}`).update({
+    slotHolders: FieldValue.arrayUnion(uid),
+  } as Update);
+
   await applyDerivedProjectState(projectId);
   return { ok: true };
 });
@@ -804,4 +766,151 @@ export const completeAllEngagements = onCall(async (request) => {
   }
   await confirmCompletionInternal(projectId, 'client');
   return { ok: true };
+});
+
+// ── Phase 4: the professional marks, the deadline backstops ─────────────────
+
+/**
+ * Close ONE engagement and open its charge window. Shared by the professional
+ * marking it and the cron auto-completing it, so the two can never diverge on
+ * what completion means.
+ *
+ * `chargeDueAt` is both the moment the fee charges and the deadline for saying
+ * it did not happen — one date, so there is no gap in which a professional can
+ * be charged for something they were still entitled to contest.
+ */
+export async function completeEngagementInternal(
+  projectId: string,
+  proId: string,
+  source: 'pro' | 'auto' | 'client',
+): Promise<{ completed: boolean; reason?: string }> {
+  const engRef = feeRef(projectId, proId);
+  const eng = (await engRef.get()).data() as FeeDoc | undefined;
+  if (!eng) return { completed: false, reason: 'no-engagement' };
+  if (TERMINAL_ENGAGEMENT.has(eng.engagementStatus ?? '')) {
+    return { completed: false, reason: 'already-terminal' };
+  }
+
+  const { chargeWindowDays } = await readConfig();
+  const chargeDueAt = Timestamp.fromMillis(Date.now() + chargeWindowDays * 86400_000);
+
+  // The fee is priced HERE, from the accepted offers as they stand, exactly as
+  // the old confirmation path priced it. The floor and rate come off the
+  // engagement's own snapshot, never from live config.
+  const baseAmount = await computeProAmount(projectId, proId);
+  const outstanding = eng.feeStatus === 'owed' ? outstandingOf(eng, baseAmount) : 0;
+
+  await engRef.update({
+    engagementStatus: 'completed',
+    baseAmount,
+    feeDue: outstanding,
+    feePaid: outstanding <= 0,
+    status: eng.feeStatus === 'owed' ? (outstanding > 0 ? 'pending' : 'paid') : 'not_owed',
+    slotActive: false,
+    chargeDueAt,
+    completion: {
+      state: 'confirmed',
+      source,
+      confirmedAt: FieldValue.serverTimestamp(),
+    },
+    projectId,
+  } as Update);
+
+  // The slot goes back now, not at charge time. The work is done; holding
+  // capacity through the charge window would make the fee gate capacity, which
+  // is the thing that must never happen.
+  await db.doc(`projects/${projectId}`).update({
+    slotHolders: FieldValue.arrayRemove(proId),
+  } as Update);
+
+  await applyDerivedProjectState(projectId);
+  return { completed: true };
+}
+
+/**
+ * The professional marks their own engagement complete. This is now the primary
+ * trigger: the client has already paid them outside the app, so confirming
+ * bought the client nothing and the flow waited on the one party with no reason
+ * to act. The professional has reasons — reviews and capacity — and
+ * `completionDueAt` covers them not acting either.
+ */
+export const markEngagementComplete = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const projectId = request.data?.projectId as string | undefined;
+  if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
+  const { project } = await loadProject(projectId);
+  if (!((project.professionalIds as string[]) ?? []).includes(uid)) {
+    throw new HttpsError('permission-denied', 'Not hired on this project');
+  }
+  const res = await completeEngagementInternal(projectId, uid, 'pro');
+  if (!res.completed) throw new HttpsError('failed-precondition', res.reason ?? 'cannot-complete');
+  return { ok: true };
+});
+
+/**
+ * The professional contests their own engagement, before `chargeDueAt`.
+ *
+ * TWO REASONS, NO DEFAULT. `didnt_happen` voids the fee — the shoot was called
+ * off and charging for it would bill someone for work that never existed.
+ * `amount_disputed` holds it — the work happened, the number is wrong. An absent
+ * or unrecognised reason is rejected rather than defaulted, for the same reason
+ * requestEngagementEnd refuses to guess: defaulting hands the professional the
+ * cheaper branch without them having chosen it.
+ */
+export const contestEngagement = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const projectId = request.data?.projectId as string | undefined;
+  const reason = request.data?.reason as 'didnt_happen' | 'amount_disputed' | undefined;
+  if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
+  if (reason !== 'didnt_happen' && reason !== 'amount_disputed') {
+    throw new HttpsError('invalid-argument', 'reason must be didnt_happen or amount_disputed');
+  }
+
+  const engRef = feeRef(projectId, uid);
+  const eng = (await engRef.get()).data() as FeeDoc | undefined;
+  if (!eng) throw new HttpsError('not-found', 'no-engagement');
+
+  // The window is the charge date. Past it the money has moved (or would have),
+  // and a contest becomes a support conversation rather than a state change.
+  const dueAt = eng.chargeDueAt?.toMillis();
+  if (typeof dueAt !== 'number') {
+    throw new HttpsError('failed-precondition', 'no-charge-window');
+  }
+  if (Date.now() > dueAt) {
+    throw new HttpsError('failed-precondition', 'contest-window-closed');
+  }
+
+  const note = boundedReason(request.data?.note);
+  await engRef.update({
+    engagementStatus: 'disputed',
+    ...(reason === 'didnt_happen'
+      // Voided outright. A shoot that never happened owes nothing, and leaving
+      // the fee live would charge at chargeDueAt while an admin was still
+      // looking at it.
+      ? { feeDue: 0, status: 'not_owed' as const }
+      // Held, not voided: the work happened and something is owed; how much is
+      // what the admin decides.
+      : {}),
+    disputedAt: FieldValue.serverTimestamp(),
+    ...(note ? { disputeReason: note } : {}),
+    adminReviewPending: true,
+    adminReview: {
+      reason: reason === 'didnt_happen' ? 'didnt_happen' : 'fee_disputed',
+      at: FieldValue.serverTimestamp(),
+      ...(note ? { note } : {}),
+    },
+  } as Update);
+
+  // THE SLOT COMES BACK. Completing released it (see completeEngagementInternal),
+  // so without this a professional could complete, contest, and walk away with
+  // both a freed slot and a voided fee — a standing evasion route with only an
+  // admin queue behind it. A disputed engagement is unfinished business and holds
+  // its capacity until someone resolves it, which also points the incentive the
+  // right way: the professional now wants it settled.
+  await db.doc(`projects/${projectId}`).update({
+    slotHolders: FieldValue.arrayUnion(uid),
+  } as Update);
+
+  await applyDerivedProjectState(projectId);
+  return { ok: true, reason };
 });

@@ -167,6 +167,12 @@ service cloud.firestore {
     function clientProjectFields() {
       return [
         'crewSlots', 'title', 'description', 'exec', 'deadline', 'date',
+        // The Timestamp automation runs on. Client-editable like `deadline`,
+        // which it sits beside rather than replacing. Moving it re-stamps the
+        // auto-complete deadline on every engagement still `hired` — done by a
+        // server trigger, because rules cannot write and the re-stamp has to
+        // skip engagements that already completed.
+        'endDate',
         'budget', 'vibe', 'location', 'targetProfessionalId', 'roleAnswers',
         'status', 'reviewsCompleted', 'reviewsPending'
       ];

@@ -16,7 +16,15 @@ export const onNotificationCreate = functions.firestore
     // or missing key = enabled (opt-out model). One extra read at this single
     // choke point instead of per-trigger.
     const type: string | undefined = notification.data?.type;
-    const ESSENTIAL = ['offer', 'offer_accepted', 'purchase', 'system'];
+    // Essential = cannot be muted. The three engagement types are here because each
+// one carries money or a deadline the recipient must act on: a fee about to be
+// charged, a charge that failed, and the last chance to correct an end date
+// before engagements auto-complete against it. Muting any of them would let
+// someone be charged without warning.
+const ESSENTIAL = [
+  'offer', 'offer_accepted', 'purchase', 'system',
+  'engagement_completed', 'charge_failed', 'end_date_soon',
+];
     if (type && !ESSENTIAL.includes(type)) {
       const userDoc = await db.collection('users').doc(notification.userId).get();
       const prefs = userDoc.data()?.notifPrefs as Record<string, boolean> | undefined;

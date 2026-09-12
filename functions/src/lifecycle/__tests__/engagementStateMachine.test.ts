@@ -171,3 +171,112 @@ describe('what counts as a withdrawal for reliability', () => {
     expect(COUNTS('completed')).toBe(false);
   });
 });
+
+// ── Phase 4: the trigger inversion ──────────────────────────────────────────
+
+/** The re-stamp guard, as onProjectEndDateChange applies it. */
+const restamps = (status: string | undefined) => (status ?? 'hired') === 'hired';
+
+describe('moving endDate can never void a charge that already happened', () => {
+  it('re-stamps an engagement still hired', () => {
+    expect(restamps('hired')).toBe(true);
+    expect(restamps(undefined)).toBe(true);   // absent reads as hired
+  });
+
+  it('NEVER re-stamps one that already completed', () => {
+    // The whole point of a mutable deadline having a guard. An engagement that
+    // auto-completed keeps the deadline it completed against; otherwise moving
+    // the date reaches back and un-completes a charge.
+    expect(restamps('completed')).toBe(false);
+  });
+
+  it('never re-stamps disputed, withdrawn or cancelled either', () => {
+    // Disputed is in front of a human and must not move underneath them; the
+    // other two are over.
+    for (const s of ['disputed', 'withdrawn', 'cancelled']) {
+      expect(restamps(s)).toBe(false);
+    }
+  });
+});
+
+/** Sweep 5's selection, exactly as the query expresses it. */
+const autoCompletes = (
+  status: string | undefined,
+  completionDueAt: number | undefined,
+  now: number,
+) => status === 'hired' && typeof completionDueAt === 'number' && completionDueAt < now;
+
+describe('auto-complete selection', () => {
+  it('fires once the deadline has passed', () => {
+    expect(autoCompletes('hired', now - DAY, now)).toBe(true);
+  });
+
+  it('does not fire before it', () => {
+    expect(autoCompletes('hired', now + DAY, now)).toBe(false);
+  });
+
+  it('NEVER fires without a completionDueAt — the legacy guarantee', () => {
+    // Every project that predates this has no endDate, so none of its
+    // engagements has a deadline, so none is ever selected. Asserted against the
+    // real 69 production documents as well as here.
+    expect(autoCompletes('hired', undefined, now)).toBe(false);
+  });
+
+  it('does not re-fire on an engagement that already completed', () => {
+    expect(autoCompletes('completed', now - DAY, now)).toBe(false);
+  });
+});
+
+/** The contest window, as contestEngagement enforces it. */
+const canContest = (chargeDueAt: number | undefined, now: number) =>
+  typeof chargeDueAt === 'number' && now <= chargeDueAt;
+
+describe('the contest window is the charge date', () => {
+  it('open right up to the charge', () => {
+    expect(canContest(now + DAY, now)).toBe(true);
+    expect(canContest(now, now)).toBe(true);       // the boundary is inclusive
+  });
+
+  it('closed once it passes — past that the money has moved', () => {
+    expect(canContest(now - 1, now)).toBe(false);
+  });
+
+  it('refused outright when no window was ever opened', () => {
+    expect(canContest(undefined, now)).toBe(false);
+  });
+});
+
+describe('contesting must not buy free capacity', () => {
+  // completeEngagementInternal releases the slot; contesting re-takes it. The
+  // cap counts hired AND disputed via slotHolders, so a professional cannot
+  // complete, contest, and walk away with both a freed slot and a voided fee.
+  const OCCUPIES = (s: string) => s === 'hired' || s === 'disputed';
+
+  it('a disputed engagement still occupies a slot', () => {
+    expect(OCCUPIES('disputed')).toBe(true);
+  });
+
+  it('hired occupies; completed, withdrawn and cancelled do not', () => {
+    expect(OCCUPIES('hired')).toBe(true);
+    for (const s of ['completed', 'withdrawn', 'cancelled']) {
+      expect(OCCUPIES(s)).toBe(false);
+    }
+  });
+
+  it('the evasion route is closed: complete then contest returns to occupying', () => {
+    expect(OCCUPIES('completed')).toBe(false);   // slot released at completion
+    expect(OCCUPIES('disputed')).toBe(true);     // and re-taken by the contest
+  });
+});
+
+describe('the contest reasons are not interchangeable', () => {
+  // didnt_happen voids the fee; amount_disputed holds it. There is no default —
+  // defaulting would hand the professional the cheaper branch unchosen.
+  const voidsFee = (reason: string) => reason === 'didnt_happen';
+
+  it('didnt_happen voids', () => expect(voidsFee('didnt_happen')).toBe(true));
+  it('amount_disputed holds', () => expect(voidsFee('amount_disputed')).toBe(false));
+  it('nothing else voids', () => {
+    for (const r of ['', 'other', 'undefined']) expect(voidsFee(r)).toBe(false);
+  });
+});

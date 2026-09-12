@@ -27,6 +27,7 @@ describe('resolvePricingConfig', () => {
       autoCloseDays: 20,
       paymentFailureGraceDays: 9,
       minFeeAmount: 11,
+      chargeWindowDays: 5,
     };
     expect(resolvePricingConfig(raw)).toEqual(raw);
   });
