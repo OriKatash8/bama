@@ -42,12 +42,37 @@ export const requestCompletion = onCall(async (request) => {
   const state = (project.completion as { state?: string } | undefined)?.state;
   if (state === 'confirmed') throw new HttpsError('failed-precondition', 'Already confirmed');
 
-  await snap.ref.update({
+  const clientId = project.clientId as string;
+  const batch = db.batch();
+  batch.update(snap.ref, {
     completion: { state: 'requested', source: 'pro', requestedBy: uid, requestedAt: FieldValue.serverTimestamp(), remindedDays: [] },
   } as Update);
 
+  // The chat notice, ATOMIC with the state change — the same shape
+  // createPaymentRequest uses, and for the same reason: a request that landed
+  // with no heads-up leaves the counterparty waiting on something they cannot
+  // see. Completion was the only lifecycle event that posted nothing here, so a
+  // professional asking to close a project was invisible in the one place the
+  // client actually looks.
+  if (project.chatId) {
+    const proSnap = await db.doc(`users/${uid}`).get();
+    const proName = (proSnap.data()?.displayName as string | undefined) ?? '';
+    const text = proName
+      ? `🏁 בקשת סיום פרויקט: ${proName} מבקש/ת לסמן את הפרויקט כהושלם`
+      : '🏁 בקשת סיום פרויקט';
+    batch.set(db.collection(`chats/${project.chatId as string}/messages`).doc(), {
+      senderId: 'system', system: true, text,
+      timestamp: FieldValue.serverTimestamp(), readBy: [],
+    });
+    batch.update(db.doc(`chats/${project.chatId as string}`), {
+      lastMessage: { text, senderId: 'system', timestamp: FieldValue.serverTimestamp() },
+      [`unreadCount.${clientId}`]: FieldValue.increment(1),
+    });
+  }
+  await batch.commit();
+
   await notify({
-    userId: project.clientId as string,
+    userId: clientId,
     title: 'BAMA',
     message: 'האם הפרויקט הסתיים?',
     data: { type: 'system', chatId: (project.chatId as string) ?? '' },
@@ -161,10 +186,23 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
   // Read-only tracks COMPLETION only, never payment: a pro settling early does
   // not close the chat, and an unpaid completed chat still closes.
   if (project.chatId) {
+    // The closing notice, in the SAME write that closes the chat. readOnly gates
+    // the message-create RULE and the Admin SDK is not subject to it, so ordering
+    // is not a concern — but both land together or neither does. Without this the
+    // chat simply stopped, with nothing saying why.
+    const text = '🏁 הפרויקט הושלם';
+    batch.set(db.collection(`chats/${project.chatId as string}/messages`).doc(), {
+      senderId: 'system', system: true, text,
+      timestamp: FieldValue.serverTimestamp(), readBy: [],
+    });
+    // ONE update on the chat document, not two — a batch applies writes to the
+    // same document in order, but expressing it as a single write removes the
+    // question entirely.
     batch.update(db.doc(`chats/${project.chatId as string}`), {
       readOnly: true,
       readOnlyReason: 'completed',
       readOnlyAt: FieldValue.serverTimestamp(),
+      lastMessage: { text, senderId: 'system', timestamp: FieldValue.serverTimestamp() },
     });
   }
   await batch.commit();

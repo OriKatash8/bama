@@ -39,7 +39,7 @@ import {
   orderBy, deleteDoc,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -149,7 +149,7 @@ function formatHebMeetingDetail(text: string): string {
   return formattedDate || title || '';
 }
 
-type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'neutral';
+type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'completion' | 'neutral';
 
 /**
  * Which section of project-details a system message opens. Keyed by the variant
@@ -163,6 +163,14 @@ const SYSTEM_SECTION: Partial<Record<SystemVariant, 'missions' | 'meetings' | 'p
   meeting: 'meetings',
   price_change: 'payments',
 };
+
+/**
+ * Variants that open project-details with NO section. Completion is one: the
+ * complete / request / dispute bar is pinned to the bottom of that screen rather
+ * than living in the scroll, so there is nothing to scroll to — but opening the
+ * screen is still exactly what the reader wants to do next.
+ */
+const SYSTEM_OPENS_UNSECTIONED: Partial<Record<SystemVariant, true>> = { completion: true };
 
 function parseSystemMessage(text: string): { variant: SystemVariant; headline: string; detail: string } {
   if (text.startsWith('📅')) {
@@ -180,6 +188,16 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
   if (text.startsWith('💰') || text.includes('בקשת שינוי מחיר')) {
     const detail = text.replace(/^(?:💰\s*)?בקשת שינוי מחיר:?\s*/, '').trim();
     return { variant: 'price_change', headline: 'בקשה לשינוי מחיר', detail };
+  }
+  // Matched by phrase as well as emoji, for the same encoding reason as above.
+  if (text.startsWith('🏁') || text.includes('בקשת סיום פרויקט') || text.includes('הפרויקט הושלם')) {
+    const done = text.includes('הפרויקט הושלם');
+    const detail = text.replace(/^(?:🏁\s*)?(?:בקשת סיום פרויקט:?|הפרויקט הושלם)\s*/, '').trim();
+    return {
+      variant: 'completion',
+      headline: done ? 'הפרויקט הושלם' : 'בקשה לסיום הפרויקט',
+      detail,
+    };
   }
   return { variant: 'neutral', headline: text, detail: '' };
 }
@@ -1398,24 +1416,26 @@ export function ChatRoomScreen({ chatId }: Props) {
             const msg = item as Message;
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
-              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' ? '#1c9d63' : '#1e4fa3';
+              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' ? '#1c9d63' : variant === 'completion' ? '#004aad' : '#1e4fa3';
               // Each known kind names a section of project-details. 'neutral' has
               // nowhere to go — that is "X left the project" and the purchase-chat
               // notices — and a chat with no projectId has no details screen at
               // all, so both stay inert rather than navigating nowhere.
               const targetSection = SYSTEM_SECTION[variant];
-              const canOpen = !!targetSection && !!chatProjectId;
+              const canOpen = (!!targetSection || !!SYSTEM_OPENS_UNSECTIONED[variant]) && !!chatProjectId;
               const pill = (
                 <View style={[
                   styles.systemPill,
-                  variant === 'mission' ? styles.systemPillMission : variant === 'price_change' ? styles.systemPillPrice : styles.systemPillMeeting,
+                  variant === 'mission' ? styles.systemPillMission : variant === 'price_change' ? styles.systemPillPrice : variant === 'completion' ? styles.systemPillCompletion : styles.systemPillMeeting,
                   { flexDirection: rtl ? 'row-reverse' : 'row' },
                 ]}>
                   {variant === 'mission'
                     ? <CheckSquare size={16} color={accent} strokeWidth={2} />
                     : variant === 'price_change'
                       ? <Coins size={16} color={accent} strokeWidth={2} />
-                      : <Calendar size={16} color={accent} strokeWidth={2} />}
+                      : variant === 'completion'
+                        ? <Flag size={16} color={accent} strokeWidth={2} />
+                        : <Calendar size={16} color={accent} strokeWidth={2} />}
                   <View style={{ flexShrink: 1 }}>
                     <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
                       {headline}
@@ -1431,7 +1451,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                   {canOpen ? (
                     <TouchableOpacity
                       onPress={() => router.push(
-                        `/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}&section=${targetSection}`,
+                        targetSection
+                          ? `/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}&section=${targetSection}`
+                          : `/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}`,
                       )}
                       activeOpacity={0.75}
                       accessibilityRole="button"
@@ -2382,6 +2404,7 @@ const styles = StyleSheet.create({
   systemPillMeeting: { backgroundColor: 'rgba(30,79,163,0.08)' },
   systemPillMission: { backgroundColor: 'rgba(203,108,230,0.10)' },
   systemPillPrice: { backgroundColor: 'rgba(28,157,99,0.10)' },
+  systemPillCompletion: { backgroundColor: 'rgba(0,74,173,0.10)' },
   systemHeadline: {
     fontSize: 13,
     textAlign: 'center',
