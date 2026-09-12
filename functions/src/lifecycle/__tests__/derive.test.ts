@@ -186,6 +186,33 @@ describe('remindersDueFor — the cache selects, the engagement decides', () => 
     expect(actions).toEqual([{ proId: 'b', kind: 'remind', day: 3 }]);
   });
 
+  it('STALE-LATE: a request opened DURING the lag window is judged on its own, earlier, timestamp', () => {
+    // The direction min() can go stale that produces no visible error, only a
+    // late reminder. The cache was stamped from B at T1. A then opened an
+    // EARLIER request at T0 inside the lag window before the derivation re-ran,
+    // so projects/{id}.completion.requestedAt now points LATER than the oldest
+    // open request — and the outer query is a range filter on exactly that field.
+    //
+    // Consequence worth naming: the project surfaces to sweep 2 late, by however
+    // long the lag is. It self-heals, because requestCompletion calls
+    // applyDerivedProjectState immediately after committing, so the window is one
+    // round trip. What must NOT happen is A being judged on the stale T1 once the
+    // project is selected — that would compound a scheduling lag into a wrong
+    // decision.
+    const T1 = now - 2 * DAY;     // B, the value the cache holds
+    const T0 = now - 6 * DAY;     // A, older, opened during the lag
+    const actions = remindersDueFor([req('b', T1), req('a', T0)], now, REMIND, AUTO);
+
+    // A is 6 days old on its OWN clock: both reminder days are due.
+    expect(actions.filter((x) => x.proId === 'a')).toEqual([
+      { proId: 'a', kind: 'remind', day: 3 },
+      { proId: 'a', kind: 'remind', day: 6 },
+    ]);
+    // B is 2 days old: nothing yet. Had either been judged on the other's
+    // timestamp, A would be silently under-reminded or B over-reminded.
+    expect(actions.filter((x) => x.proId === 'b')).toEqual([]);
+  });
+
   it('STALE-HIGH: does nothing at all when every engagement has gone terminal', () => {
     // The cron selected a project whose work finished between the cache write
     // and the sweep. It must do nothing rather than something wrong.
