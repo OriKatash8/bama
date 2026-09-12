@@ -7,6 +7,7 @@ import {
 } from './helpers';
 import { readConfig } from './config';
 import { applyDerivedProjectState } from './derive';
+import { releaseEngagement } from './removal';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -31,7 +32,14 @@ function outstandingOf(fee: FeeDoc, baseAmount: number): number {
   );
 }
 
-/** Pro requests completion → client gets a confirm/dispute prompt. */
+/**
+ * LEGACY ALIAS for `requestEngagementEnd({ kind: 'finished' })`.
+ *
+ * Kept and kept working because installed app builds call this name. It is the
+ * 'finished' half only — a build that predates the split cannot have asked to
+ * withdraw, so mapping it there is the honest reading, and it is also the branch
+ * that charges, so an old client can never take the cheaper path by accident.
+ */
 export const requestCompletion = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
   const projectId = request.data?.projectId as string | undefined;
@@ -61,6 +69,7 @@ export const requestCompletion = onCall(async (request) => {
       requestedBy: uid,
       requestedAt: FieldValue.serverTimestamp(),
       remindedDays: [],
+      endKind: 'finished',
     },
   } as Update);
 
@@ -111,10 +120,30 @@ export const requestCompletion = onCall(async (request) => {
  * Fee amounts are still computed PER PROFESSIONAL, on each pro's own accepted
  * amount rather than the project total.
  */
-export async function confirmCompletionInternal(projectId: string, source: 'client' | 'auto'): Promise<void> {
+/** Engagement states that are finished and must never be re-processed. */
+const TERMINAL_ENGAGEMENT = new Set(['completed', 'withdrawn', 'cancelled']);
+
+export async function confirmCompletionInternal(
+  projectId: string,
+  source: 'client' | 'auto',
+  /** Confirm ONE engagement instead of every open one. The client gets both
+   *  actions — close one professional, or close them all — and they are the same
+   *  code path with a filter rather than two implementations of charging a fee. */
+  onlyProId?: string,
+): Promise<void> {
   const { snap, project } = await loadProject(projectId);
-  const state = (project.completion as { state?: string } | undefined)?.state;
-  if (state === 'confirmed') return; // idempotent
+
+  // The idempotency guard is PER ENGAGEMENT now, and the old project-level one
+  // was actively wrong once completion became per-engagement. It returned early
+  // on project.completion.state === 'confirmed' — but that field is a derived
+  // cache, so after one engagement closed on its own the project was still open,
+  // the guard passed, and the loop re-processed the engagement that had already
+  // finished, re-setting feePaid: false on a settled fee.
+  //
+  // Skipping terminal engagements below delivers three things at once: nothing
+  // is charged twice, withdrawn and cancelled engagements are never charged at
+  // all, and a disputed engagement holds only its own fee while its neighbours
+  // complete normally.
 
   const proIds = (project.professionalIds as string[]) ?? [];
 
@@ -130,14 +159,24 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
 
   const batch = db.batch();
   const owedByPro = new Map<string, number>();
+  /** Professionals whose engagement this run actually closes — the ones whose
+   *  slot must be given back. */
+  const closedPros: string[] = [];
 
   for (const proId of proIds) {
+    if (onlyProId && proId !== onlyProId) continue;
     const fee = feeMap.get(proId);
+
+    // Already finished — by an earlier single-engagement confirmation, by a
+    // withdrawal, or with the project. Skip it entirely: do not recompute, do not
+    // re-stamp, do not charge.
+    if (fee && TERMINAL_ENGAGEMENT.has(fee.engagementStatus ?? '')) continue;
 
     // Missing doc = exempt (the permanent fallback for pre-model projects);
     // 'included' = a legacy subscription-covered hire. Either way nothing is due.
     if (!fee || fee.feeStatus !== 'owed') {
       if (fee) {
+        closedPros.push(proId);
         batch.update(feeRef(projectId, proId), {
           feeDue: 0, slotActive: false, status: 'not_owed', projectId,
           // Exempt or legacy-subscription: nothing was owed, but the engagement
@@ -163,6 +202,7 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
     // engagement rather than per project: one client action closing four
     // engagements opens four independent windows, and the single project field
     // could only ever describe one of them.
+    closedPros.push(proId);
     const engagementClose = {
       engagementStatus: 'completed' as const,
       disputeWindowEndsAt,
@@ -189,28 +229,25 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
     }
   }
 
-  batch.update(snap.ref, {
-    status: 'completed',
-    completedAt: FieldValue.serverTimestamp(),
-    // No `completion` here. Every engagement above was stamped with its own, and
-    // applyDerivedProjectState below rolls them up into the project's cache.
-    // Two writers of one field is how the two drift.
-    // EVERY slot frees, whatever is still owed. An outstanding fee is a matter
-    // between BAMA and that professional; it must never hold capacity inside the
-    // app, because that would make paying the thing that unlocks working again.
-    //
-    // Still true after the arrears gate. That gate refuses a NEW engagement to
-    // someone past the grace period on an invoice they were actually sent; it
-    // never claws back a slot on work already agreed, and nothing done inside the
-    // app clears it. Completing a project always frees the slot.
-    slotHolders: [],
-    slotActive: false,
-    // The professional's window to dispute this confirmation. Stored on the
-    // project so the client can render the deadline without knowing the config,
-    // and so disputeFeeByPro has one uniform value to check rather than
-    // recomputing from a config that may have changed since.
-    disputeWindowEndsAt: disputeWindowEndsAt,
-  } as Update);
+  // THE PROJECT IS NOT SET COMPLETE HERE. Confirming one engagement must not
+  // close a project other people are still working on, and even confirming every
+  // open one leaves the question to the roll-up — a disputed engagement holds the
+  // project open however many others just finished. `status`, `completedAt`,
+  // `completion` and the project-level `disputeWindowEndsAt` are written by
+  // applyDerivedProjectState below, from the engagements this batch stamped.
+  //
+  // THE SLOT IS RELEASED HERE, though, per professional. `slotActive: false` on
+  // the engagement is not enough: the open-project cap counts
+  // `slotHolders array-contains proId` on the PROJECT, so a professional whose
+  // engagement finished while the project ran on would keep a slot consumed and
+  // be unable to take the work they just freed themselves up for.
+  if (closedPros.length > 0) {
+    batch.update(snap.ref, {
+      slotHolders: FieldValue.arrayRemove(...closedPros),
+      // `professionalIds` is deliberately NOT touched — it is the record of
+      // everyone ever hired, and finishing does not un-hire you.
+    } as Update);
+  }
 
   // The group chat becomes read-only once the work is done — the same flag the
   // BAMA System DMs use, so the message-create rule already enforces it.
@@ -614,5 +651,157 @@ export const disputeFeeByPro = onCall(async (request) => {
   // A dispute pulls the engagement out of terminal state, which pulls the project
   // back out of 'completed' if it had rolled up to it.
   await applyDerivedProjectState(projectId);
+  return { ok: true };
+});
+
+// ── Phase 3: the professional's own engagement ──────────────────────────────
+
+/** Bound free text that lands in a document an admin reads, not in a query. */
+const boundedReason = (raw: unknown): string =>
+  typeof raw === 'string' ? raw.slice(0, 1000).trim() : '';
+
+/**
+ * A professional ends their own engagement — and is made to say WHICH end.
+ *
+ * The two outcomes are opposite. "I finished my part" charges the commission and
+ * unlocks the mutual review; "I'm leaving" charges nothing and frees the slot.
+ * A professional who did the work and wants to avoid the 3% can only do it by
+ * claiming the second, so the choice is explicit, recorded, and answerable by the
+ * client — whose reject is the guard.
+ *
+ * Neither outcome happens here. This only asks; the client's response decides,
+ * and silence decides nothing at all.
+ */
+export const requestEngagementEnd = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const projectId = request.data?.projectId as string | undefined;
+  const kind = request.data?.kind as 'finished' | 'withdrawing' | undefined;
+  if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
+  if (kind !== 'finished' && kind !== 'withdrawing') {
+    // No default. Defaulting here would let a professional end up in the cheaper
+    // branch without having chosen it, which is the entire thing this guards.
+    throw new HttpsError('invalid-argument', 'kind must be finished or withdrawing');
+  }
+
+  const { project } = await loadProject(projectId);
+  if (!((project.professionalIds as string[]) ?? []).includes(uid)) {
+    throw new HttpsError('permission-denied', 'Not hired on this project');
+  }
+
+  const engRef = feeRef(projectId, uid);
+  const mine = (await engRef.get()).data() as FeeDoc | undefined;
+  if (mine && TERMINAL_ENGAGEMENT.has(mine.engagementStatus ?? '')) {
+    throw new HttpsError('failed-precondition', 'engagement-already-closed');
+  }
+
+  await engRef.update({
+    engagementStatus: 'end_requested_by_pro',
+    completion: {
+      state: 'requested',
+      source: 'pro',
+      requestedBy: uid,
+      requestedAt: FieldValue.serverTimestamp(),
+      remindedDays: [],
+      endKind: kind,
+      ...(boundedReason(request.data?.reason)
+        ? { endReason: boundedReason(request.data?.reason) } : {}),
+    },
+  } as Update);
+
+  await applyDerivedProjectState(projectId);
+  return { ok: true, kind };
+});
+
+/**
+ * The client answers one professional's request to end.
+ *
+ * Four outcomes, and the fee differs in every one:
+ *   accept + finished     -> completed, commission charged
+ *   accept + withdrawing  -> withdrawn, nothing charged, ever, slot released
+ *   reject (either)       -> disputed, fee held, a human decides
+ *   no answer             -> nothing here; the cron escalates and never withdraws
+ *
+ * The reject branch is the fee-evasion guard. A professional who delivered and
+ * then claimed to be withdrawing is caught precisely here, by the one party who
+ * knows whether the work happened.
+ */
+export const respondToEngagementEnd = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const projectId = request.data?.projectId as string | undefined;
+  const professionalId = request.data?.professionalId as string | undefined;
+  const accept = request.data?.accept;
+  if (!projectId || !professionalId) {
+    throw new HttpsError('invalid-argument', 'projectId and professionalId required');
+  }
+  if (typeof accept !== 'boolean') {
+    throw new HttpsError('invalid-argument', 'accept must be a boolean');
+  }
+
+  const { project } = await loadProject(projectId);
+  // Authorization: the CLIENT answers. The mirror flow (freeSlot) checks the
+  // opposite — that the caller is the professional — and calls the same
+  // mechanics. Neither check lives in releaseEngagement.
+  if (project.clientId !== uid) {
+    throw new HttpsError('permission-denied', 'Only the client can respond');
+  }
+
+  const engRef = feeRef(projectId, professionalId);
+  const eng = (await engRef.get()).data() as FeeDoc | undefined;
+  if (eng?.engagementStatus !== 'end_requested_by_pro') {
+    throw new HttpsError('failed-precondition', 'no-open-request');
+  }
+  const kind = eng.completion?.endKind ?? 'finished';
+
+  if (!accept) {
+    const note = boundedReason(request.data?.reason);
+    await engRef.update({
+      engagementStatus: 'disputed',
+      adminReviewPending: true,
+      adminReview: {
+        // A rejected withdrawal and a rejected completion are different claims
+        // for an admin to weigh, so they are labelled differently.
+        reason: kind === 'withdrawing' ? 'withdrawal_rejected' : 'fee_disputed',
+        at: FieldValue.serverTimestamp(),
+        ...(note ? { note } : {}),
+      },
+    } as Update);
+    await applyDerivedProjectState(projectId);
+    return { ok: true, outcome: 'disputed' };
+  }
+
+  if (kind === 'withdrawing') {
+    // NO FEE, by this route, ever. releaseEngagement voids it unconditionally.
+    await releaseEngagement(projectId, professionalId, 'pro_withdrew');
+    return { ok: true, outcome: 'withdrawn' };
+  }
+
+  // Finished: charge this engagement and only this one.
+  await confirmCompletionInternal(projectId, 'client', professionalId);
+  return { ok: true, outcome: 'completed' };
+});
+
+/**
+ * The client closes every engagement still open on the project, in one action.
+ *
+ * Idempotent, and skipping is the mechanism rather than a special case:
+ * confirmCompletionInternal passes over any engagement already terminal, so a
+ * completed one is not re-charged, a withdrawn one is not charged at all, and a
+ * disputed one is left for a human while its neighbours finish.
+ *
+ * Each engagement closed here gets its OWN dispute window from its own
+ * confirmedAt, so one press can open several independent ones.
+ *
+ * The single-engagement action stays: the client may close one professional or
+ * all of them.
+ */
+export const completeAllEngagements = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const projectId = request.data?.projectId as string | undefined;
+  if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
+  const { project } = await loadProject(projectId);
+  if (project.clientId !== uid) {
+    throw new HttpsError('permission-denied', 'Only the client can confirm');
+  }
+  await confirmCompletionInternal(projectId, 'client');
   return { ok: true };
 });

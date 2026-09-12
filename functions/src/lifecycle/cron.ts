@@ -94,7 +94,20 @@ export const lifecycleCron = onSchedule(
             });
           } else {
             await ref.update({ 'completion.remindedDays': FieldValue.arrayUnion(a.day) });
-            await notify({ userId: p.clientId, title: 'BAMA', message: 'תזכורת: האם הפרויקט הסתיים?', data: { type: 'system', chatId: p.chatId ?? '' } });
+            // "Did the project finish?" is the wrong question for a professional
+            // asking to LEAVE — the client is being asked to release them, not to
+            // confirm delivery, and answering the wrong question is how a
+            // withdrawal gets accepted as a completion.
+            const eng = engagements.find((x) => x.professionalId === a.proId);
+            const leaving = eng?.completion?.endKind === 'withdrawing';
+            await notify({
+              userId: p.clientId,
+              title: 'BAMA',
+              message: leaving
+                ? 'תזכורת: בעל/ת מקצוע ביקש/ה לפרוש מהפרויקט'
+                : 'תזכורת: האם הפרויקט הסתיים?',
+              data: { type: 'system', chatId: p.chatId ?? '' },
+            });
           }
         }
         await applyDerivedProjectState(doc.id);

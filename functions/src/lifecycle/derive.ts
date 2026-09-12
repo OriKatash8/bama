@@ -251,3 +251,48 @@ export function remindersDueFor(
   }
   return out;
 }
+
+// ── reliability ─────────────────────────────────────────────────────────────
+
+/**
+ * How many engagements this professional has actually withdrawn from.
+ *
+ * DERIVED, stored nowhere. The obvious home would be `users/{uid}/profile/data`,
+ * which is `allow write: if isOwner(userId)` — so a counter kept there is
+ * forgeable by the person it counts, and could be reset to zero from their own
+ * app. Counting the engagements instead cannot drift from them, needs no
+ * backfill, no rules change and no index: it is the same
+ * `collectionGroup('fees').where('professionalId','==',uid)` the arrears gate
+ * already runs, filtered in memory.
+ *
+ * ACCEPTED WITHDRAWALS ONLY. A professional who asked to withdraw and was
+ * rejected into dispute has not withdrawn — where that lands is the admin's
+ * resolution to make, and counting it early would punish the claim rather than
+ * the outcome. `end_requested_by_pro`, `disputed` and `cancelled` are all
+ * excluded; `cancelled` in particular is the project ending under them, which is
+ * nothing to do with reliability.
+ *
+ * ADMIN-VISIBLE ONLY for now. Not surfaced to clients, not gating anything.
+ * Thresholds and a client-facing reliability signal are a product decision that
+ * has not been made, and a derived count costs nothing to leave unused.
+ */
+export async function withdrawalCount(professionalId: string): Promise<{
+  withdrawn: number;
+  byClientRemoval: number;
+  byOwnChoice: number;
+}> {
+  const snap = await db.collectionGroup('fees')
+    .where('professionalId', '==', professionalId)
+    .get();
+  const withdrawn = snap.docs
+    .map((d) => d.data() as FeeDoc)
+    .filter((f) => f.engagementStatus === 'withdrawn');
+  return {
+    withdrawn: withdrawn.length,
+    // Split because the two are not the same signal. Being removed by a client
+    // you stopped answering and choosing to leave are both withdrawals; only one
+    // of them is a decision the professional made.
+    byClientRemoval: withdrawn.filter((f) => f.releaseReason === 'client_removed').length,
+    byOwnChoice: withdrawn.filter((f) => f.releaseReason === 'pro_withdrew').length,
+  };
+}

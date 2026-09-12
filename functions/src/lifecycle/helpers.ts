@@ -133,7 +133,11 @@ export type FeeDoc = {
     requestedAt?: admin.firestore.Timestamp;
     confirmedAt?: admin.firestore.Timestamp;
     remindedDays?: number[];
+    /** Which end was asked for — see ProjectFee in src/core/types/project.ts. */
+    endKind?: 'finished' | 'withdrawing';
+    endReason?: string;
   };
+  releaseReason?: 'client_removed' | 'pro_withdrew';
   disputeWindowEndsAt?: admin.firestore.Timestamp;
   adminReviewPending?: boolean;
   adminReview?: {

@@ -260,7 +260,28 @@ export type ProjectFee = {
     requestedAt?: Timestamp;
     confirmedAt?: Timestamp;
     remindedDays?: number[];
+    /**
+     * WHICH end the professional asked for. The two outcomes are opposite — one
+     * charges a fee and unlocks a review, the other charges nothing and frees a
+     * slot — so the professional is made to choose, and the choice is recorded
+     * here rather than inferred later.
+     *
+     * They share `engagementStatus: 'end_requested_by_pro'` because from the
+     * project's point of view both are "waiting on the client"; nothing decides
+     * from the status alone.
+     */
+    endKind?: 'finished' | 'withdrawing';
+    /** Free text the professional gave with a withdrawal. Bounded server-side. */
+    endReason?: string;
   };
+
+  /**
+   * WHY this engagement was released, when it was. Identical mechanics, two
+   * different events: a professional removed by a client they stopped answering
+   * is not the same as one who chose to leave, and the reliability count must
+   * not bucket them together.
+   */
+  releaseReason?: 'client_removed' | 'pro_withdrew';
 
   /** This engagement's own dispute deadline, stamped at ITS confirmation. One
    *  client action closing several engagements opens several independent

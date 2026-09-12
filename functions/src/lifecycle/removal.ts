@@ -19,28 +19,52 @@ type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
  * project. What a professional owes BAMA is recorded on their fee document and
  * stays recorded whether they are on the project or not.
  */
-export const freeSlot = onCall(async (request) => {
-  const uid = requireAuth(request.auth?.uid);
-  const projectId = request.data?.projectId as string | undefined;
-  if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
-
+/**
+ * Release ONE professional from a project: their slots, their chat membership,
+ * their accepted offers, their fee, and the notice to the crew.
+ *
+ * SHARED BY TWO OPPOSITE FLOWS, which is why it is extracted:
+ *   - the client asks someone to leave and the PROFESSIONAL accepts (freeSlot);
+ *   - the professional asks to leave and the CLIENT accepts
+ *     (respondToEngagementEnd).
+ * Identical mechanics, opposite permission checks.
+ *
+ * AUTHORIZATION IS NOT DONE HERE, deliberately. Each caller checks its own. If
+ * the check moved inside it would have to branch on `reason` — and a permission
+ * check that branches on a caller-supplied value is how an authorization bug is
+ * born. This assumes the caller has already earned the right.
+ *
+ * `reason` is recorded on the engagement because the two events are not the same
+ * thing even though the mechanics are: a professional removed by a client they
+ * stopped answering must not land in the same bucket as one who chose to leave.
+ * The reliability count reads it.
+ *
+ * The fee void is UNCONDITIONAL. A released engagement never charges, by either
+ * route.
+ *
+ * Errors propagate. The "X left" notice inside this batch was once a client
+ * write after the callable returned, which could never succeed and was swallowed
+ * by a `catch {}` marked non-fatal — so the crew were never told anyone had
+ * left. It is atomic here, and both entry points surface failure the same way
+ * because neither catches.
+ */
+export async function releaseEngagement(
+  projectId: string,
+  proId: string,
+  reason: 'client_removed' | 'pro_withdrew',
+): Promise<{ ok: boolean; chatId: string | null }> {
   const snap = await db.doc(`projects/${projectId}`).get();
   if (!snap.exists) throw new HttpsError('not-found', 'Project not found');
   const project = snap.data() as Record<string, unknown>;
-
   const filled = (project.filledSlots as Filled[]) ?? [];
-  const isOnProject =
-    ((project.professionalIds as string[]) ?? []).includes(uid) ||
-    filled.some((s) => s.professionalId === uid);
-  if (!isOnProject) throw new HttpsError('permission-denied', 'Not hired on this project');
 
-  const removalRef = db.doc(`projects/${projectId}/removalRequests/${uid}`);
-  const myFeeRef = feeRef(projectId, uid);
+  const removalRef = db.doc(`projects/${projectId}/removalRequests/${proId}`);
+  const myFeeRef = feeRef(projectId, proId);
   const [offersSnap, removalSnap, feeSnap] = await Promise.all([
     db
       .collection('priceOffers')
       .where('projectId', '==', projectId)
-      .where('professionalId', '==', uid)
+      .where('professionalId', '==', proId)
       .where('status', '==', 'accepted')
       .get(),
     removalRef.get(),
@@ -59,10 +83,10 @@ export const freeSlot = onCall(async (request) => {
   const batch = db.batch();
 
   // arrayRemove needs exact object equality, so filledSlots is read-modify-write.
-  const holders = ((project.slotHolders as string[]) ?? []).filter((id) => id !== uid);
+  const holders = ((project.slotHolders as string[]) ?? []).filter((id) => id !== proId);
   const update: Update = {
-    filledSlots: filled.filter((s) => s.professionalId !== uid),
-    professionalIds: FieldValue.arrayRemove(uid),
+    filledSlots: filled.filter((s) => s.professionalId !== proId),
+    professionalIds: FieldValue.arrayRemove(proId),
     // This pro stops occupying a slot; the others keep theirs.
     slotHolders: holders,
     slotActive: holders.length > 0,
@@ -75,6 +99,10 @@ export const freeSlot = onCall(async (request) => {
   if (feeSnap.exists) {
     batch.update(myFeeRef, {
       slotActive: false, feeDue: 0, status: 'not_owed',
+      // Which route released them. Identical mechanics, different events — the
+      // reliability count reads this to tell a professional who chose to leave
+      // from one removed by a client who stopped answering.
+      releaseReason: reason,
       // WITHDRAWN, not completed. They left before the work closed, so nothing
       // was delivered and nothing is owed — and the distinction has to survive,
       // because a project that completes later must not retroactively record
@@ -94,7 +122,7 @@ export const freeSlot = onCall(async (request) => {
     // never told anyone had left. Batched here it is atomic with the removal:
     // either both land or neither does, and the Admin SDK is not subject to the
     // membership rule.
-    const proSnap = await db.doc(`users/${uid}`).get();
+    const proSnap = await db.doc(`users/${proId}`).get();
     const proName = (proSnap.data()?.displayName as string | undefined) ?? 'בעל מקצוע';
     const text = `${proName} עזב את הפרויקט`;
 
@@ -107,10 +135,10 @@ export const freeSlot = onCall(async (request) => {
     });
 
     const remaining = ((project.professionalIds as string[]) ?? [])
-      .filter((id) => id !== uid)
+      .filter((id) => id !== proId)
       .concat(project.clientId ? [project.clientId as string] : []);
     const chatUpdate: Record<string, unknown> = {
-      members: FieldValue.arrayRemove(uid),
+      members: FieldValue.arrayRemove(proId),
       lastMessage: { text, senderId: 'system', timestamp: FieldValue.serverTimestamp() },
     };
     for (const memberId of remaining) {
@@ -135,4 +163,29 @@ export const freeSlot = onCall(async (request) => {
   // decides that, not this function.
   await applyDerivedProjectState(projectId);
   return { ok: true, chatId: chatId ?? null };
+}
+
+/**
+ * A professional accepts their own removal, requested by the client.
+ *
+ * Authorization lives here, not in releaseEngagement: the caller must BE the
+ * professional being removed. The mirror flow — the client accepting a
+ * professional's withdrawal request — checks the opposite and calls the same
+ * mechanics.
+ */
+export const freeSlot = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const projectId = request.data?.projectId as string | undefined;
+  if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
+
+  const snap = await db.doc(`projects/${projectId}`).get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Project not found');
+  const project = snap.data() as Record<string, unknown>;
+  const filled = (project.filledSlots as Filled[]) ?? [];
+  const isOnProject =
+    ((project.professionalIds as string[]) ?? []).includes(uid) ||
+    filled.some((s) => s.professionalId === uid);
+  if (!isOnProject) throw new HttpsError('permission-denied', 'Not hired on this project');
+
+  return releaseEngagement(projectId, uid, 'client_removed');
 });

@@ -2,6 +2,7 @@ import { onCall } from 'firebase-functions/v2/https';
 import { db, requireAuth, requireAdmin, computeFee, type FeeDoc } from './helpers';
 import { readConfig } from './config';
 import { feeBlocksNewHire } from '../pricing';
+import { withdrawalCount } from './derive';
 
 /**
  * Read-only admin views over state the app deliberately hides from everyone else.
@@ -112,9 +113,18 @@ export const adminListArrears = onCall(async (request) => {
   const nameOf = new Map(users.map((u) => [u.id, (u.data()?.displayName as string) ?? '']));
   const titleOf = new Map(projects.map((p) => [p.id, (p.data()?.title as string) ?? '']));
 
+  // Reliability is derived per row rather than stored — see withdrawalCount.
+  // Admin-visible only: it is not returned to any client surface and gates
+  // nothing.
+  const withdrawals = await Promise.all(
+    [...byPro.keys()].map((id) => withdrawalCount(id)),
+  );
+  const withdrawalOf = new Map([...byPro.keys()].map((id, i) => [id, withdrawals[i]]));
+
   const rows = [...byPro.values()].map((r) => ({
     ...r,
     displayName: nameOf.get(r.professionalId) ?? '',
+    withdrawals: withdrawalOf.get(r.professionalId) ?? { withdrawn: 0, byClientRemoval: 0, byOwnChoice: 0 },
     projects: r.projects.map((p) => ({ ...p, title: titleOf.get(p.projectId) ?? '' })),
   }));
 

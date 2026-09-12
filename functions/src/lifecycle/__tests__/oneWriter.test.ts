@@ -36,7 +36,7 @@ const PROJECT_TARGETS = [
 
 /** Tokens that identify an update target as an ENGAGEMENT (fee) document. */
 const ENGAGEMENT_TARGETS = [
-  'feeRef(', 'fRef', 'myFeeRef', 'f.ref', 'd.ref', 'ref.update', 'fSnap.ref',
+  'feeRef(', 'fRef', 'myFeeRef', 'engRef', 'f.ref', 'd.ref', 'ref.update', 'fSnap.ref',
 ];
 
 const GUARDED = ['completion', 'remindedDays'];
