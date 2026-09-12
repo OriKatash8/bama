@@ -183,6 +183,34 @@ service cloud.firestore {
       );
     }
 
+    /**
+     * Is this professional's OWN engagement still open?
+     *
+     * isProjectParticipant answers "are you on this project", which chat
+     * membership can say — and chat membership never expires. Once completion is
+     * per-engagement that is the wrong question for a WRITE: a professional whose
+     * engagement completed, or who withdrew, stays in the group chat forever and
+     * would keep write access to missions and meetings on work they have finished.
+     *
+     * Reads deliberately still use isProjectParticipant. Someone who finished a
+     * job should keep seeing what they did; they just should not keep editing it.
+     *
+     * Costs one extra document get, so it is applied to writes only.
+     */
+    function hasOpenEngagement(projectId) {
+      let path = /databases/$(database)/documents/projects/$(projectId)/fees/$(request.auth.uid);
+      return exists(path) && !(
+        get(path).data.get('engagementStatus', 'hired')
+          in ['completed', 'withdrawn', 'cancelled']
+      );
+    }
+
+    /** The client always may; a professional only while their engagement is open. */
+    function canWriteProjectSubdoc(projectId) {
+      return projectDoc(projectId).clientId == request.auth.uid
+        || hasOpenEngagement(projectId);
+    }
+
     // ─── users ──────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isAuth();
@@ -428,11 +456,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       match /meetings/{meetingId} {
-        allow read, create, update, delete: if isAuth() && isProjectParticipant(projectId);
+        allow read: if isAuth() && isProjectParticipant(projectId);
+        // Writes need an OPEN engagement — see hasOpenEngagement. A finished or
+        // withdrawn professional keeps read access and loses write access.
+        allow create, update, delete: if isAuth() && canWriteProjectSubdoc(projectId);
       }
 
       match /missions/{missionId} {
-        allow read, create, update, delete: if isAuth() && isProjectParticipant(projectId);
+        allow read: if isAuth() && isProjectParticipant(projectId);
+        // Writes need an OPEN engagement — see hasOpenEngagement. A finished or
+        // withdrawn professional keeps read access and loses write access.
+        allow create, update, delete: if isAuth() && canWriteProjectSubdoc(projectId);
       }
 
       // Payment renegotiation — only the two parties involved

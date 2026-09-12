@@ -6,6 +6,7 @@ import {
   type FeeDoc, type Ts,
 } from './helpers';
 import { readConfig } from './config';
+import { applyDerivedProjectState } from './derive';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -124,6 +125,10 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
       if (fee) {
         batch.update(feeRef(projectId, proId), {
           feeDue: 0, slotActive: false, status: 'not_owed', projectId,
+          // Exempt or legacy-subscription: nothing was owed, but the engagement
+          // still closed with the project. Terminal, so it does not hold the
+          // derivation open.
+          engagementStatus: 'completed', disputeWindowEndsAt,
         } as Update);
       }
       continue;
@@ -139,18 +144,32 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
 
     // `slotActive: false` on every branch. The slot is released by completion,
     // never by settlement — see the note on the project update below.
+    // THIS engagement's own closure. The dispute window is stamped per
+    // engagement rather than per project: one client action closing four
+    // engagements opens four independent windows, and the single project field
+    // could only ever describe one of them.
+    const engagementClose = {
+      engagementStatus: 'completed' as const,
+      disputeWindowEndsAt,
+      completion: {
+        state: 'confirmed' as const,
+        source,
+        confirmedAt: FieldValue.serverTimestamp(),
+      },
+    };
+
     if (outstanding > 0) {
       owedByPro.set(proId, outstanding);
       // feeDue is stored NET of paidAmount — it is what is left to pay.
       batch.update(feeRef(projectId, proId), {
         baseAmount, feeDue: outstanding, feePaid: false, slotActive: false,
-        status: 'pending', projectId,
+        status: 'pending', projectId, ...engagementClose,
       } as Update);
     } else {
       // Already paid in full, or the price fell far enough that nothing remains.
       batch.update(feeRef(projectId, proId), {
         baseAmount, feeDue: 0, feePaid: true, slotActive: false,
-        status: 'paid', projectId,
+        status: 'paid', projectId, ...engagementClose,
       } as Update);
     }
   }
@@ -206,6 +225,13 @@ export async function confirmCompletionInternal(projectId: string, source: 'clie
     });
   }
   await batch.commit();
+
+  // The project's own status is now DERIVED from the engagements this batch just
+  // closed, rather than asserted alongside them. It is written above too, so the
+  // common case needs no correction — this catches the case the direct write
+  // cannot see: an engagement left open or disputed by another path means the
+  // project is NOT complete, whatever this confirmation did.
+  await applyDerivedProjectState(projectId);
 
   // Every professional's review publishes, unconditionally. New reviews are
   // already published by onReviewCreate; this is the backstop for any that were
@@ -284,7 +310,12 @@ export const cancelProject = onCall(async (request) => {
   for (const d of feesSnap.docs) {
     const fee = d.data() as FeeDoc;
     const paid = fee.paidAmount ?? 0;
-    const update: Update = { slotActive: false, feeDue: 0, status: 'not_owed' };
+    // CANCELLED, distinct from withdrawn: the project ended under everyone, not
+    // this professional stepping away from it.
+    const update: Update = {
+      slotActive: false, feeDue: 0, status: 'not_owed',
+      engagementStatus: 'cancelled',
+    };
     if (paid > 0) {
       update.refundReviewPending = true; // discretionary and manual, per §5
       refundPros.push(d.id);
@@ -298,6 +329,7 @@ export const cancelProject = onCall(async (request) => {
     });
   }
   await batch.commit();
+  await applyDerivedProjectState(projectId);
   return { ok: true, refundReviewPending: refundPros };
 });
 
@@ -494,10 +526,18 @@ export const disputeFeeByPro = onCall(async (request) => {
   // the window a professional was promised must not move because someone edited
   // disputeWindowDays afterwards. The fallback covers projects confirmed before
   // that field existed.
-  let endsAt = project.disputeWindowEndsAt as Ts | undefined;
+  // THIS engagement's own window first. The project-level field is now a cache —
+  // max() of whatever windows are still open — so on a multi-professional project
+  // it describes somebody else's deadline as often as it describes this one's.
+  // Order: the engagement's stamp, then the project's (pre-engagement records),
+  // then recomputed from confirmedAt.
+  const engagementSnap = await feeRef(projectId, uid).get();
+  const engagement = engagementSnap.data() as FeeDoc | undefined;
+  let endsAt = (engagement?.disputeWindowEndsAt as Ts | undefined)
+    ?? (project.disputeWindowEndsAt as Ts | undefined);
   if (!endsAt) {
     const { disputeWindowDays } = await readConfig();
-    const confirmedAt = completion.confirmedAt;
+    const confirmedAt = engagement?.completion?.confirmedAt ?? completion.confirmedAt;
     if (!confirmedAt) throw new HttpsError('failed-precondition', 'no-confirmation-date');
     endsAt = Timestamp.fromMillis(confirmedAt.toMillis() + disputeWindowDays * 86400_000);
   }
@@ -516,6 +556,17 @@ export const disputeFeeByPro = onCall(async (request) => {
       status: 'disputed',
       disputedAt: FieldValue.serverTimestamp(),
       ...(reason ? { disputeReason: reason } : {}),
+      // The engagement leaves terminal state, which holds the whole project
+      // non-terminal through the derivation. A dispute is unfinished business.
+      engagementStatus: 'disputed',
+      // Per-engagement escalation: the project-level pair cannot say WHICH
+      // professional is in dispute when two of them are.
+      adminReviewPending: true,
+      adminReview: {
+        reason: 'fee_disputed',
+        at: FieldValue.serverTimestamp(),
+        ...(reason ? { note: reason } : {}),
+      },
     } as Update);
   }
 
@@ -530,5 +581,8 @@ export const disputeFeeByPro = onCall(async (request) => {
   } as Update);
 
   await batch.commit();
+  // A dispute pulls the engagement out of terminal state, which pulls the project
+  // back out of 'completed' if it had rolled up to it.
+  await applyDerivedProjectState(projectId);
   return { ok: true };
 });

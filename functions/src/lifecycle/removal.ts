@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, requireAuth, feeRef } from './helpers';
+import { applyDerivedProjectState } from './derive';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
@@ -72,7 +73,14 @@ export const freeSlot = onCall(async (request) => {
   // a pro must never pay for work that earned them nothing). Anything already
   // paid early stays recorded in paidAmount for the manual refund path.
   if (feeSnap.exists) {
-    batch.update(myFeeRef, { slotActive: false, feeDue: 0, status: 'not_owed' } as Update);
+    batch.update(myFeeRef, {
+      slotActive: false, feeDue: 0, status: 'not_owed',
+      // WITHDRAWN, not completed. They left before the work closed, so nothing
+      // was delivered and nothing is owed — and the distinction has to survive,
+      // because a project that completes later must not retroactively record
+      // this professional as having completed it.
+      engagementStatus: 'withdrawn',
+    } as Update);
   }
 
   const chatId = project.chatId as string | undefined;
@@ -123,5 +131,8 @@ export const freeSlot = onCall(async (request) => {
   if (removalSnap.exists) batch.delete(removalRef);
 
   await batch.commit();
+  // Withdrawing the last open engagement can complete the project. The derivation
+  // decides that, not this function.
+  await applyDerivedProjectState(projectId);
   return { ok: true, chatId: chatId ?? null };
 });

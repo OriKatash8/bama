@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, parseDeadline, daysFromNow, requireAuth, feeRef } from './helpers';
 import { readConfig, feeRateOf, type PricingConfig } from './config';
+import { applyDerivedProjectState } from './derive';
 import { assignFilledCapability } from '../matching';
 import {
   DEFAULT_PROJECT_DURATION_DAYS,
@@ -236,6 +237,10 @@ async function commitHire(args: {
   batch.set(feeRef(projSnap.id, proId), feeUpdate, { merge: true });
 
   await batch.commit();
+  // A hire onto a project that had rolled up to 'completed' reopens it — under
+  // per-engagement completion that is reachable, because one engagement closing
+  // no longer closes the project.
+  await applyDerivedProjectState(projSnap.id);
   return chatId as string;
 }
 
