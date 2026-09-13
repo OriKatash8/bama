@@ -37,10 +37,14 @@ function communities(n: number) {
   }));
 }
 
-function renderWith(myCommunities: unknown[], pageScrollRef: unknown = { current: null }) {
+function renderWith(
+  myCommunities: unknown[],
+  pageScrollRef: unknown = { current: null },
+  discover: unknown[] = [],
+) {
   mockDiscovery.mockReturnValue({
     myCommunities: myCommunities as never,
-    discover: [],
+    discover: discover as never,
     joinStatuses: {},
     requestToJoin: jest.fn(),
     cancelJoinRequest: jest.fn(),
@@ -95,4 +99,14 @@ it('a "+" tile scrolls the PAGE (the screen\'s ScrollView) to just above the fir
   anchor.measureLayout = (relativeTo, ok) => { if (relativeTo === content) ok(0, 456, 390, 0); };
   fireEvent.press(r.getAllByText('+')[0]);
   expect(pageScrollRef.current.scrollTo).toHaveBeenCalledWith({ y: 456 - 8, animated: true });
+});
+
+it('names the Discover category filters in the plural — a community is a group of them', () => {
+  const r = renderWith([], undefined, [
+    { id: 'd1', type: 'community', name: 'Cutting Room', members: [], category: 'Editor' },
+    { id: 'd2', type: 'community', name: 'Night Shoots', members: [], category: 'Video Photographer' },
+  ]);
+  expect(r.getByText('Editors')).toBeTruthy();
+  expect(r.getByText('Videographers')).toBeTruthy();
+  expect(r.queryByText('Editor')).toBeNull();
 });

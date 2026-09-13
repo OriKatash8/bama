@@ -21,7 +21,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { AppText } from '@components/ui/AppText';
-import { categoryLabel } from '@features/crew/data/categories';
+import { communityCategoryLabel } from '@features/crew/data/categories';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
 import {
   removeMemberFromGroup,
@@ -233,7 +233,7 @@ export default function CommunityDetailsScreen() {
           {community.category && (
             <View style={styles.categoryChip}>
               <AppText weight="semiBold" style={styles.categoryChipText}>
-                {categoryLabel(community.category, lang)}
+                {communityCategoryLabel(community.category, lang)}
               </AppText>
             </View>
           )}

@@ -183,5 +183,29 @@ export function categoryLabel(category: string, lang: 'he' | 'en'): string {
   return role ? labelOf(role, lang) : category;
 }
 
+/**
+ * Plural labels for community categories. A community is a group of these
+ * people, so it reads "Editors" / "עורכים" where a project slot or offer reads
+ * the singular `categoryLabel`. Labels that don't name a person stay as they are
+ * in English ("Social Media", "Studio & Audio").
+ */
+const COMMUNITY_CATEGORY_PLURAL: Record<string, { he: string; en: string }> = {
+  videographer:     { he: 'צלמי וידאו',    en: 'Videographers' },
+  photographer:     { he: 'צלמי תמונות',   en: 'Stills Photographers' },
+  editor:           { he: 'עורכים',        en: 'Editors' },
+  graphic_designer: { he: 'גרפיקאים',      en: 'Graphic Designers' },
+  social_media:     { he: 'אנשי סושיאל',   en: 'Social Media' },
+  studio_audio:     { he: 'אולפני הקלטות', en: 'Studio & Audio' },
+  sound:            { he: 'סאונדמנים',     en: 'Sound Recordists' },
+  lighting:         { he: 'תאורנים',       en: 'Lighting Techs' },
+};
+
+/** Community-facing label for a stored category (legacy string OR role id), in the
+ *  plural; falls back to the input like `categoryLabel`. */
+export function communityCategoryLabel(category: string, lang: 'he' | 'en'): string {
+  const plural = COMMUNITY_CATEGORY_PLURAL[LEGACY_CATEGORY_TO_ROLE[category] ?? category];
+  return plural ? plural[lang] : category;
+}
+
 /** Ordered legacy category strings for role pickers/filters (one per role, in ROLES order). */
 export const ROLE_CATEGORIES: string[] = ROLES.map((r) => ROLE_TO_LEGACY_CATEGORY[r.id]).filter(Boolean);

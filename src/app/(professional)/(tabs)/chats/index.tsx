@@ -29,7 +29,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { db } from '@core/firebase/config';
 import { setDocument } from '@core/firebase/firestore';
-import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
+import { ROLE_CATEGORIES, categoryLabel, communityCategoryLabel } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -627,7 +627,7 @@ export default function ProfessionalChatsScreen() {
                   activeOpacity={0.8}
                 >
                   <Text style={[{ ...font.regular, color: commCategory ? '#1a1a2e' : '#004aad80', textAlign: rtl ? 'right' : 'left' }]}>
-                    {commCategory || t('communities.select_category')}
+                    {commCategory ? communityCategoryLabel(commCategory, rtl ? 'he' : 'en') : t('communities.select_category')}
                   </Text>
                 </TouchableOpacity>
                 {commShowCategoryPicker && (
@@ -640,7 +640,7 @@ export default function ProfessionalChatsScreen() {
                           onPress={() => { setCommCategory(cat); setCommShowCategoryPicker(false); }}
                           activeOpacity={0.7}
                         >
-                          <Text style={[styles.commCategoryItemText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>{categoryLabel(cat, rtl ? 'he' : 'en')}</Text>
+                          <Text style={[styles.commCategoryItemText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>{communityCategoryLabel(cat, rtl ? 'he' : 'en')}</Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
