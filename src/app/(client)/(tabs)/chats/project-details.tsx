@@ -2470,11 +2470,11 @@ function MemberRow({
   const awaitingClient = engagementStatus === 'end_requested_by_pro';
   const isEngagementDone = engagementStatus === 'completed';
   const isContested = engagementStatus === 'disputed';
-  // Report moved into the top row, so it no longer keeps this bar alive. The
-  // client card passes none of the rest, so its action bar — and the separator
-  // line that was the bar's top border — simply stops rendering.
+  // Report lives in the action bar, under the separator line, so it keeps the bar
+  // alive on its own (the client's view of a professional often has nothing else).
+  // A card with no action and no report still renders no bar and no line.
   const showActions = canUpdate || canPay || canComplete || canContest || awaitingClient
-    || isEngagementDone || isContested || !!onRemove || isPendingRemoval;
+    || isEngagementDone || isContested || !!onRemove || isPendingRemoval || !!onReport;
   return (
     <View style={styles.memberCard}>
       {/* Top row: avatar + name/role + price */}
@@ -2529,14 +2529,6 @@ function MemberRow({
           </View>
         )}
 
-        {/* Report sits up here rather than in the action bar. On the CLIENT card
-            it was the only thing keeping that bar alive, so moving it up also
-            removes the bar and its separator line — the two were one change. */}
-        {onReport && (
-          <TouchableOpacity onPress={onReport} hitSlop={6} activeOpacity={0.7} style={styles.reportSquare}>
-            <Flag size={15} color="#9aa0b8" strokeWidth={1.9} />
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Action bar */}
@@ -2608,6 +2600,20 @@ function MemberRow({
             </TouchableOpacity>
           ) : null}
 
+          {/* Report, under the separator line, pushed to the far end of the row:
+              left in Hebrew (row-reverse), right in English. */}
+          {onReport && (
+            <TouchableOpacity
+              onPress={onReport}
+              hitSlop={6}
+              activeOpacity={0.7}
+              style={[styles.reportSquare, { alignSelf: 'center', [rtl ? 'marginRight' : 'marginLeft']: 'auto' }]}
+              accessibilityRole="button"
+              testID="member-report"
+            >
+              <Flag size={15} color="#9aa0b8" strokeWidth={1.9} />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
