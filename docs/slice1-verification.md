@@ -204,6 +204,14 @@ region migration is a coordinated change on both sides — `setGlobalOptions` in
 functions *and* `getFunctions(app, 'europe-west1')` in `config.ts` — affecting all
 five pre-existing callables.
 
+**This is about MOVING existing callables, not about using `europe-west1`.** Adding
+a *new* function in `europe-west1` is fine and needs no migration: declare
+`region: 'europe-west1'` on that function only, and call it through a second client
+instance (`getFunctions(app, 'europe-west1')`) while the default instance keeps
+serving the existing us-central1 callables. Never `setGlobalOptions` a region, since
+that would move everything. The community invite functions (2026-09-13) are placed
+this way.
+
 ---
 
 # Per-professional fee correction — verification record
