@@ -178,8 +178,12 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
 
   return (
-    <>
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={() => (pickerOpen ? setPickerOpen(false) : onClose())}
+    >
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
 
@@ -336,75 +340,76 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             )
           )}
         </LinearGradient>
-      </View>
-    </Modal>
 
-    {/* Community picker */}
-    <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
-      <View style={styles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setPickerOpen(false)} />
-        <View style={styles.pickerCard}>
-          <View style={[styles.pickerHeader, { flexDirection: rowDir }]}>
-            <AppText weight="bold" style={styles.pickerTitle}>{t('marketplace.share_picker_title')}</AppText>
-            <TouchableOpacity onPress={() => setPickerOpen(false)} hitSlop={10} activeOpacity={0.7}>
-              <X size={20} color="#004aad" strokeWidth={2.5} />
-            </TouchableOpacity>
+        {/* Community picker — an overlay inside this modal, not a second Modal: iOS
+            can't present a sibling Modal while this one is up, so it silently never
+            appeared on the phone. */}
+        {pickerOpen && (
+          <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setPickerOpen(false)} />
+            <View style={styles.pickerCard}>
+              <View style={[styles.pickerHeader, { flexDirection: rowDir }]}>
+                <AppText weight="bold" style={styles.pickerTitle}>{t('marketplace.share_picker_title')}</AppText>
+                <TouchableOpacity onPress={() => setPickerOpen(false)} hitSlop={10} activeOpacity={0.7}>
+                  <X size={20} color="#004aad" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+
+              {loadingCommunities ? (
+                <ActivityIndicator color="#004aad" style={{ marginVertical: 28 }} />
+              ) : communities.length === 0 ? (
+                <AppText weight="regular" style={[styles.pickerEmpty, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('marketplace.share_no_communities')}
+                </AppText>
+              ) : (
+                <ScrollView style={{ maxHeight: screenHeight * 0.45 }} showsVerticalScrollIndicator={false}>
+                  {communities.map((c) => {
+                    const shared = alreadyShared.has(c.id);
+                    const on = selected.has(c.id);
+                    return (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={[styles.commRow, { flexDirection: rowDir }, shared && { opacity: 0.5 }]}
+                        onPress={() => !shared && toggleCommunity(c.id)}
+                        disabled={shared}
+                        activeOpacity={0.75}
+                      >
+                        {c.photoURL ? (
+                          <Image source={{ uri: c.photoURL }} style={styles.commAvatar} contentFit="cover" cachePolicy="memory-disk" />
+                        ) : (
+                          <View style={[styles.commAvatar, styles.commAvatarFallback]}>
+                            <AppText weight="bold" style={styles.commAvatarInitial}>{(c.name ?? '?').charAt(0).toUpperCase()}</AppText>
+                          </View>
+                        )}
+                        <AppText weight="semiBold" numberOfLines={1} style={[styles.commName, { textAlign: rtl ? 'right' : 'left' }]}>{c.name}</AppText>
+                        {shared ? (
+                          <AppText weight="semiBold" style={styles.commShared}>{t('marketplace.already_shared')}</AppText>
+                        ) : (
+                          <View style={[styles.commCheckbox, on && styles.commCheckboxOn]}>
+                            {on && <Text style={styles.commCheckMark}>✓</Text>}
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
+              <TouchableOpacity
+                style={[styles.shareSubmitBtn, (selected.size === 0 || sharing) && styles.buyBtnDisabled]}
+                onPress={handleShare}
+                disabled={selected.size === 0 || sharing}
+                activeOpacity={0.85}
+              >
+                {sharing
+                  ? <ActivityIndicator color="#fff" />
+                  : <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_submit', { count: selected.size })}</AppText>}
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {loadingCommunities ? (
-            <ActivityIndicator color="#004aad" style={{ marginVertical: 28 }} />
-          ) : communities.length === 0 ? (
-            <AppText weight="regular" style={[styles.pickerEmpty, { textAlign: rtl ? 'right' : 'left' }]}>
-              {t('marketplace.share_no_communities')}
-            </AppText>
-          ) : (
-            <ScrollView style={{ maxHeight: screenHeight * 0.45 }} showsVerticalScrollIndicator={false}>
-              {communities.map((c) => {
-                const shared = alreadyShared.has(c.id);
-                const on = selected.has(c.id);
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    style={[styles.commRow, { flexDirection: rowDir }, shared && { opacity: 0.5 }]}
-                    onPress={() => !shared && toggleCommunity(c.id)}
-                    disabled={shared}
-                    activeOpacity={0.75}
-                  >
-                    {c.photoURL ? (
-                      <Image source={{ uri: c.photoURL }} style={styles.commAvatar} contentFit="cover" cachePolicy="memory-disk" />
-                    ) : (
-                      <View style={[styles.commAvatar, styles.commAvatarFallback]}>
-                        <AppText weight="bold" style={styles.commAvatarInitial}>{(c.name ?? '?').charAt(0).toUpperCase()}</AppText>
-                      </View>
-                    )}
-                    <AppText weight="semiBold" numberOfLines={1} style={[styles.commName, { textAlign: rtl ? 'right' : 'left' }]}>{c.name}</AppText>
-                    {shared ? (
-                      <AppText weight="semiBold" style={styles.commShared}>{t('marketplace.already_shared')}</AppText>
-                    ) : (
-                      <View style={[styles.commCheckbox, on && styles.commCheckboxOn]}>
-                        {on && <Text style={styles.commCheckMark}>✓</Text>}
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-
-          <TouchableOpacity
-            style={[styles.shareSubmitBtn, (selected.size === 0 || sharing) && styles.buyBtnDisabled]}
-            onPress={handleShare}
-            disabled={selected.size === 0 || sharing}
-            activeOpacity={0.85}
-          >
-            {sharing
-              ? <ActivityIndicator color="#fff" />
-              : <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_submit', { count: selected.size })}</AppText>}
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
     </Modal>
-    </>
   );
 }
 
