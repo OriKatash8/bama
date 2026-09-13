@@ -6,7 +6,6 @@ import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
-import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useUiStore } from '@core/stores/uiStore';
@@ -187,12 +186,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
 
-        <LinearGradient
-          colors={['#efd4f6', '#b7cae6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.card, { height: screenHeight * 0.82 }]}
-        >
+        <View testID="listing-card" style={styles.card}>
           {/* Header */}
           <View style={[styles.header, { flexDirection: rowDir }]}>
             <AppText
@@ -292,12 +286,13 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
           {/* Owner actions: share + edit + delete */}
           {isOwnListing && !readOnly && (
             <>
-              <TouchableOpacity style={styles.buyBtn} onPress={openPicker} activeOpacity={0.85}>
+              <TouchableOpacity testID="listing-primary-btn" style={styles.buyBtn} onPress={openPicker} activeOpacity={0.85}>
                 <AppText weight="bold" style={styles.buyText}>{t('marketplace.share_to_communities')}</AppText>
               </TouchableOpacity>
               {!isUnavailable && (
                 <View style={[styles.ownerActionsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <TouchableOpacity
+                    testID="listing-edit-btn"
                     style={[styles.ownerActionBtn, styles.editBtn]}
                     onPress={() => onEdit?.(listing)}
                     activeOpacity={0.85}
@@ -306,6 +301,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                     <AppText weight="bold" style={styles.editBtnText}>{t('marketplace.edit_listing')}</AppText>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    testID="listing-delete-btn"
                     style={[styles.ownerActionBtn, styles.deleteBtn]}
                     onPress={() => handleDelete(listing)}
                     activeOpacity={0.85}
@@ -330,6 +326,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
               </View>
             ) : (
               <TouchableOpacity
+                testID="listing-primary-btn"
                 style={[styles.buyBtn, isBuying && styles.buyBtnDisabled]}
                 onPress={handleTalkWithSeller}
                 activeOpacity={0.8}
@@ -339,7 +336,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
               </TouchableOpacity>
             )
           )}
-        </LinearGradient>
+        </View>
 
         {/* Community picker — an overlay inside this modal, not a second Modal: iOS
             can't present a sibling Modal while this one is up, so it silently never
@@ -417,7 +414,7 @@ const styles = StyleSheet.create({
   pickerCard: {
     width: '88%',
     maxWidth: 420,
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 18,
     backgroundColor: '#ffffff',
   },
@@ -436,21 +433,29 @@ const styles = StyleSheet.create({
   shareSubmitBtn: {
     marginTop: 16,
     backgroundColor: '#004aad',
-    borderRadius: 14,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
+  // Shell, colours and buttons match PostListingSheet ("add a listing"): white
+  // 24-radius card up to 85% of the screen, muted grey secondary text, 15%-blue
+  // borders, radius-16 buttons. KEEP IN SYNC with PostListingSheet.tsx.
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   card: {
-    width: '90%',
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    backgroundColor: '#ffffff',
     borderRadius: 24,
-    padding: 24,
-    overflow: 'hidden',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 20,
@@ -476,19 +481,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 8 },
+  scroll: { flexShrink: 1 },
+  scrollContent: { paddingBottom: 4 },
 
   imageWrap: {
     height: 180,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(0,74,173,0.04)',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.1)',
+    borderColor: 'rgba(0,74,173,0.15)',
   },
   image: { width: '100%', height: 180 },
   imagePlaceholder: { fontSize: 52 },
@@ -497,24 +502,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 12,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.1)',
+    borderColor: 'rgba(0,74,173,0.15)',
   },
   price: { fontSize: 18, fontWeight: '700', color: '#004aad' },
   locationRow: { flexDirection: 'row', alignItems: 'center' },
   locationIcon: { width: 14, height: 14 },
-  location: { fontSize: 14, color: '#004aad99', flex: 1 },
+  location: { fontSize: 14, color: 'rgba(15,15,31,0.4)', flex: 1 },
 
   detailsBox: {
     backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 12,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.1)',
+    borderColor: 'rgba(0,74,173,0.15)',
   },
   detailRow: {
     flexDirection: 'row',
@@ -523,17 +528,18 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 13,
-    color: '#004aad99',
+    color: 'rgba(15,15,31,0.4)',
   },
   detailValue: {
     fontSize: 13,
     color: '#004aad',
     flexShrink: 1,
   },
+  // Condition keeps its per-value colour (it carries meaning), as in the add sheet.
   conditionBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   conditionText: {
     color: '#fff',
@@ -544,43 +550,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 10,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 4,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.1)',
+    borderColor: 'rgba(0,74,173,0.15)',
   },
-  poster: { fontSize: 13, color: '#004aad99' },
+  poster: { fontSize: 13, color: 'rgba(15,15,31,0.4)' },
   posterName: { color: '#004aad', fontWeight: '600' },
 
+  // Primary: PostListingSheet's submitBtn.
   buyBtn: {
     backgroundColor: '#004aad',
-    borderRadius: 12,
-    paddingVertical: 15,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 18,
   },
-  buyBtnDisabled: { opacity: 0.6 },
-  buyText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  buyBtnDisabled: { opacity: 0.4 },
+  buyText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
-  ownerActionsRow: { gap: 10, marginTop: 8 },
+  // Secondary: the add sheet's pill outline, full width.
+  ownerActionsRow: { gap: 8, marginTop: 10 },
   ownerActionBtn: {
     flex: 1,
-    borderRadius: 12,
-    paddingVertical: 13,
+    borderRadius: 16,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
   },
-  editBtn: { backgroundColor: '#fff', borderColor: '#004aad' },
-  editBtnText: { color: '#004aad', fontSize: 15, fontWeight: '700' },
-  deleteBtn: { backgroundColor: '#fff', borderColor: '#e53935' },
-  deleteBtnText: { color: '#e53935', fontSize: 15, fontWeight: '700' },
+  editBtn: { borderColor: 'rgba(0,74,173,0.2)' },
+  editBtnText: { color: '#004aad', fontSize: 15, fontWeight: '600' },
+  deleteBtn: { borderColor: 'rgba(229,57,53,0.35)' },
+  deleteBtnText: { color: '#e53935', fontSize: 15, fontWeight: '600' },
 
   reservedBtn: {
-    backgroundColor: 'rgba(0,0,0,0.08)',
-    borderRadius: 12,
-    paddingVertical: 15,
+    backgroundColor: 'rgba(0,74,173,0.06)',
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 18,
   },
-  reservedText: { color: '#004aad99', fontSize: 16, fontWeight: '700' },
+  reservedText: { color: 'rgba(15,15,31,0.4)', fontSize: 15, fontWeight: '700' },
 });
