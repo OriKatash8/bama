@@ -391,11 +391,31 @@ service cloud.firestore {
         // write `status: 'approved'` (hiding themselves from the owner's pending
         // list), a forged userId, extra fields, or a backdated requestedAt.
         function isOwnPendingRequest() {
-          return request.resource.data.keys().hasOnly(['userId', 'displayName', 'requestedAt', 'status'])
-            && request.resource.data.userId == request.auth.uid
-            && request.resource.data.displayName is string
-            && request.resource.data.requestedAt == request.time
-            && request.resource.data.status == 'pending';
+          let d = request.resource.data;
+          return d.keys().hasOnly(['userId', 'displayName', 'requestedAt', 'status', 'via', 'inviteToken'])
+            && d.userId == request.auth.uid
+            && d.displayName is string
+            && d.requestedAt == request.time
+            && d.status == 'pending'
+            && hasValidInviteOrigin(d);
+        }
+        // A request that came through an invite link carries `via: 'invite'` and the
+        // token. Same doc, same pending list, same approval: it is still an ordinary
+        // join request, just labelled. Both fields or neither, and the token must name
+        // a live invite FOR THIS community. That stops a label borrowed from another
+        // community's invite, or a revoked one, from making it look vouched for.
+        // communityInvites is client-denied, but rules get() is not subject to rules.
+        // The token shape is checked before it is ever spliced into a path.
+        function hasValidInviteOrigin(d) {
+          let token = d.get('inviteToken', null);
+          let invitePath = /databases/$(database)/documents/communityInvites/$(token);
+          return (!('via' in d) && !('inviteToken' in d))
+            || (d.get('via', null) == 'invite'
+                && token is string
+                && token.matches('^[A-Za-z0-9_-]{22}$')
+                && exists(invitePath)
+                && get(invitePath).data.communityId == chatId
+                && get(invitePath).data.revoked == false);
         }
         allow create: if isAuth() && request.auth.uid == requestId && isOwnPendingRequest();
         allow read: if isAuth() && (
@@ -837,6 +857,19 @@ service cloud.firestore {
     //
     // Readable by any signed-in user because the app must DISPLAY the rate and
     // the cap rather than invent them; there is nothing private in it.
+    // ─── Community invites ──────────────────────────────────────────
+    // Function-only, in both directions. Tokens are bearer secrets and codes are
+    // guessable by design, so no client may list, read or write either; creation,
+    // resolution and revocation all go through the invite Cloud Functions (Admin
+    // SDK). The catch-all below would deny these anyway. They are spelled out so
+    // the denial reads as intended rather than as an accident of the fallback.
+    match /communityInvites/{token} {
+      allow read, write: if false;
+    }
+    match /communityInviteCodes/{code} {
+      allow read, write: if false;
+    }
+
     match /config/{docId} {
       allow read: if isAuth();
       allow write: if false;
