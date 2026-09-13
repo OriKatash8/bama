@@ -14,7 +14,9 @@ Users invite people into a community with a share link (`<baseUrl>/c/<token>`) o
 | Step 0: deep-link intent layer | `9131e12`, pushed (client code, no deploy) |
 | Step 1: invite index | `335c0ad`, deployed, READY |
 | Step 1: invite rules | `5fe615c`, deployed and verified in production |
-| Step 2: functions | built and tested on the emulator, **not deployed** (see "Step 2 deploy") |
+| Step 2: functions | `2f5ec79`, built and emulator-tested, **not deployed** |
+| Drift-checker allowlist + seed script | built and tested locally (see below) |
+| Step 2 deploy | **waiting on budget alert + Monitoring policy**; don't start (b) until confirmed |
 | Steps 3–7 | not started |
 
 Live versions are recorded in `docs/production-deploys.md`.
@@ -80,7 +82,7 @@ Live versions are recorded in `docs/production-deploys.md`.
   - transaction contention under load;
   - `Retry-After` / `no-store` surviving the front end.
 
-## Step 2: build and test locally (done)
+## Step 2: build and test locally (done, `2f5ec79`)
 **Files** (`functions/src/communities/`):
 - **`inviteCore.ts`** (pure):
   - `generateToken`, `generateShortCode`;
@@ -136,23 +138,100 @@ Live versions are recorded in `docs/production-deploys.md`.
 
 Then commit, push and report. **No deploy.**
 
-## Step 2 deploy (separate, after approval)
-1. **Budget alert and Monitoring policy:** you're configuring these now.
-2. **TTL policy on `rateLimits.expireAt`. It IS needed for step 2,** because `getCommunityInvite` writes rate-limit docs.
-   - **When:** immediately **before** the functions deploy. A TTL policy can be created on a collection group with no docs yet.
-   - **How:** `gcloud firestore fields ttls update expireAt --collection-group=rateLimits --enable-ttl --project bama-af0a0`.
-   - **Wait until it shows ACTIVE** (`gcloud firestore fields ttls list`) before deploying, so the first docs written are covered.
-3. **Seed `config/appLinks`:** `scripts/seed-app-links.mjs --dry-run`, then a real run once you confirm.
-4. **Deploy exactly:** `firebase deploy --only functions:createCommunityInvite,functions:getCommunityInvite,functions:revokeCommunityInvite,functions:onCommunityInviteJoinRequest,functions:onCommunityDeleted`. Named, never `--only functions`, and **not** `resolveCommunityInvite`.
-5. **Verify in production** with throwaway fixtures, cleaned up (as done for rules):
-   - create/reuse/revoke;
-   - `getCommunityInvite` states;
-   - the `useCount` trigger;
-   - the delete-cleanup trigger;
-   - the rate-limit doc appearing, and TTL applying.
-6. **Record** in `docs/production-deploys.md`.
+## Drift-checker allowlist and seed script (done)
+- **Why:** `scripts/check-deploy-drift.mjs` requires every exported function to be deployed. `resolveCommunityInvite` is exported but intentionally not deployed, so the gate would fail permanently until the web task.
+- **The list:** `scripts/deploy-drift-allowlist.json`, holding `{ "functionsNotDeployed": [ { "name", "reason", "addedOn": "YYYY-MM-DD" } ] }`.
+  - Today's only entry: `resolveCommunityInvite`, reason "public invite resolver; deploys with the web landing task (waiting on the real domain)", added 2026-09-13.
+- **Guards.** Each of these makes the checker exit non-zero, reported under its own heading:
+  1. **Malformed entry:** missing or empty `name` or `reason`; `addedOn` not a real `YYYY-MM-DD` date; `addedOn` in the future; a duplicate `name`. A bare name string is rejected as malformed.
+  2. **Expired:** `addedOn` more than 60 days before today. The message says deploy it, delete it, or re-justify with a new `addedOn` (visible in git history).
+  3. **Stale:** the name isn't an exported function any more (a typo or a removed function).
+  4. **Stale:** the name is now deployed. Remove the entry so the list stays honest.
+- **Output when the list is valid:** an allowlisted, undeployed function prints as `ok`, e.g. `ok    resolveCommunityInvite not deployed, allowed (added 2026-09-13, day 0 of 60): <reason>`. Any other undeployed export is still DRIFT.
+- **Where the logic lives:** a pure module, `scripts/lib/driftAllowlist.mjs`, exporting `evaluateAllowlist({ entries, exported, deployed, today })`.
+- **Tests:** `node --test scripts/__tests__/driftAllowlist.test.mjs`, using Node's built-in runner, since the root jest (jest-expo) doesn't run `.mjs` scripts. It covers each guard, the 60-day boundary (day 60 ok, day 61 fails), a future date, a bare-string entry, and an allowlisted function correctly passing. Mutation-check the expiry and the "now deployed" guards.
+- **Live run:** the drift checker against production should then show rules ok, indexes ok, and functions: 5 invite functions listed as not deployed (DRIFT, expected until step 2 deploy) plus `resolveCommunityInvite` ok (allowlisted).
+- **Also built now, before any deploy:** `scripts/seed-app-links.mjs`, with three modes:
+  - `--dry-run`: print the doc that would be written, write nothing;
+  - default: write, but refuse to overwrite an existing doc unless `--force`;
+  - `--verify`: a read-only read-back with assertions.
 
-## Steps 3–7 (after step 2 deploy)
+  The bare-https-origin check has its own tests. It's run against the Firestore emulator first, so every mode is exercised before production.
+- **Commit and push.**
+
+## `onCommunityDeleted` on non-community deletes (answer)
+- **Yes, it exits cheaply.** The first statement is `if (event.data?.get('type') !== 'community') return;`. The deleted document's data arrives **in the event payload**, so that check does **no Firestore read and no query**; a group or DM delete returns immediately.
+- **The one unavoidable cost:** a function **invocation** per `chats/{id}` delete. Firestore triggers can only filter on document path, never on field values, so the function can't avoid being called.
+- **How often that happens:** clients can't delete chats at all (`allow delete: if false`). The only server-side deleter is `deleteProject` (`functions/src/lifecycle/deletion.ts:59`), which deletes the project's group chat. So it's roughly one invocation per deleted project, plus any console deletes.
+- **The same early-exit pattern holds for `onCommunityInviteJoinRequest`.** It only matches `chats/{chatId}/joinRequests/{uid}` writes, and returns before any read unless the new doc is `pending` with a token-shaped `inviteToken`.
+- **Removing the invocations entirely** would mean moving cleanup into the future admin delete callable (backlog #12). Not worth doing now.
+
+## Step 2 deploy runbook
+**Don't start (b) until you confirm the budget alert and Monitoring policy are live.**
+
+**Rollback (have this ready before starting).** Functions don't revert with a click; deleting them is the kill switch. Always pass `--region europe-west1` and `--project`.
+- **Triggers only** (these fire on real user activity even though no one uses invites):
+  `npx firebase functions:delete onCommunityInviteJoinRequest onCommunityDeleted --region europe-west1 --project bama-af0a0 --force`
+- **All five:**
+  `npx firebase functions:delete createCommunityInvite getCommunityInvite revokeCommunityInvite onCommunityInviteJoinRequest onCommunityDeleted --region europe-west1 --project bama-af0a0 --force`
+- **What to expect:**
+  - deletion takes about 1–2 minutes;
+  - events that arrive while it's in progress may still run;
+  - events that arrive after deletion are **dropped, not queued**.
+- **Consequences of rolling back (both safe):**
+  - `useCount` stops counting, which is cosmetic;
+  - community deletes stop cleaning up invites. Orphaned invites still resolve as `{ exists: false }`, because a missing community is already a miss.
+  - Deleting the callables affects nothing, since nothing in the app calls them yet.
+- **After a rollback:**
+  - `npx firebase functions:list --project bama-af0a0 | grep -i invite` should show none of the rolled-back functions;
+  - the drift checker lists them as not deployed;
+  - **write the rollback window** into `docs/production-deploys.md`: the UTC start (delete issued) and end (redeployed, or "open"), plus which functions were rolled back;
+  - if `onCommunityInviteJoinRequest` was down, **record that `useCount` is under-counted for invites during that window.** Cosmetic, but it must be recorded, not silently wrong.
+- **To restore:** re-run the named deploy in (d).
+
+**(a) Budget alert + Monitoring policy.** You set these up; I wait for your confirmation.
+
+**(b) TTL policy** on `rateLimits.expireAt`. It's needed because `getCommunityInvite` writes rate-limit docs.
+- `gcloud firestore fields ttls update expireAt --collection-group=rateLimits --enable-ttl --project bama-af0a0`
+- Poll `gcloud firestore fields ttls list --project bama-af0a0` until it shows ACTIVE. Don't continue until it does.
+
+**(c) Seed `config/appLinks`:** `node scripts/seed-app-links.mjs --project bama-af0a0 --dry-run` prints the exact doc: `{ baseUrl: 'https://bama-af0a0.web.app', iosUrl: '', androidUrl: '' }`. It refuses to overwrite an existing doc unless `--force`. Real run only after you confirm.
+
+**(c2) Read it back from production** with `node scripts/seed-app-links.mjs --project bama-af0a0 --verify`, a read-only Admin SDK read that asserts:
+- the doc exists;
+- `baseUrl` is a bare https origin, using the same rule as `buildInviteUrl`: https, path `/`, no query, fragment or credentials;
+- `iosUrl` and `androidUrl` are strings.
+
+It prints the stored values. **Stop if it fails:** a half-seeded config would show up as `failed-precondition` and look like a code bug.
+
+**(d) Deploy exactly the five, by name:**
+- Pre-flight: `npm --prefix functions run build`, then the drift check showing only the expected functions missing.
+- `npx firebase deploy --only functions:createCommunityInvite,functions:getCommunityInvite,functions:revokeCommunityInvite,functions:onCommunityInviteJoinRequest,functions:onCommunityDeleted --project bama-af0a0`
+- Never `--only functions`, and **not** `resolveCommunityInvite`.
+
+**(e) Verify in production** with throwaway accounts, a throwaway `type: 'group'` chat (kept out of Discover) and throwaway invites, all cleaned up and the cleanup confirmed. Covers:
+- create/reuse/revoke permissions;
+- `getCommunityInvite` returning none, pending, member, revoked and unknown;
+- `useCount` incrementing once on an invite-originated request;
+- deleting the throwaway community removing its invites and code docs;
+- a `rateLimits` doc appearing with `expireAt`;
+- `functions:list` showing exactly the 5 new functions in europe-west1, and **no** `resolveCommunityInvite`;
+- the drift check clean, with `resolveCommunityInvite` shown as allowlisted.
+
+Record in `docs/production-deploys.md`: time, commit, the function list, and how it was verified.
+
+**(f) Soak: deployed but unused, before step 4 wires any UI.**
+- **Duration:** 48 hours, **or** until both deliberate exercises below pass cleanly and the logs are quiet, **whichever is longer**.
+- **Deliberate exercises** (observed by design, not by luck), all in production with throwaway data, cleaned up:
+  1. **`onCommunityDeleted` on a non-community chat:** create a throwaway project with its group chat, then delete it through `deleteProject`. The logs must show the trigger invoked and exiting early, with no reads, writes or errors.
+  2. **`onCommunityInviteJoinRequest` on an ordinary join request:** if no real Discover request happens during the soak, send one from a throwaway account to a throwaway `type: 'group'` chat, with no `inviteToken`. The logs must show an early exit and no `useCount` write.
+- **Keep watching:**
+  - no errors in either trigger's logs;
+  - no budget or Monitoring alerts;
+  - zero invocations of the callables.
+- **Step 3 (client plumbing) may be built during the soak, only while nothing imports `inviteService` (or the EU functions instance) from a rendered path.** If testing it would mean wiring it into a screen, **stop**: that's step 4. Step 3 is covered by unit tests with mocks only.
+
+## Steps 3–7 (step 3 may be built during the soak; steps 4+ after it)
 - **3. Client plumbing:**
   - `functionsEU` instance in `config.ts`, and a region option on `callFunction`;
   - `inviteService` with `createInvite`, `revokeInvite`, `getInvite` only (**no public resolver method**);
