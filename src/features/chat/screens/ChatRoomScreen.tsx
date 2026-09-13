@@ -53,7 +53,7 @@ import { auth, db } from '@core/firebase/config';
 import { listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
-import { outstandingFee } from '@features/pricing/utils/fee';
+import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
 import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
@@ -928,7 +928,10 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Independent of isReadOnly by design: an early payment on an ACTIVE project
   // frees the slot while the chat stays open, and a completed chat is read-only
   // whether or not anything is owed.
-  const feeOutstanding = outstandingFee(myProjectFee);
+  // The SECOND door to the balance screen, and it had the same amount-shaped
+  // gate (`outstandingFee(...) > 0`) as the first. Same predicate as the
+  // screen's own row filter, so the door and the room cannot disagree.
+  const balanceReachable = showsOnBalance(myProjectFee);
   const readOnlyLabel = chatReadOnlyReason === 'completed' || projectCompleted
     ? t('chats.completed_read_only')
     : t('chats.system_read_only');
@@ -1639,7 +1642,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           </AppText>
           {/* The composer is gone, so the pay action lives here — a completed
               chat is precisely when the fee is due, and it must stay reachable. */}
-          {feeOutstanding > 0 && chatProjectId && (
+          {balanceReachable && chatProjectId && (
             <TouchableOpacity
               style={chatStyles.payFromChatBtn}
               onPress={() => router.push(`/settings/payment?projectId=${chatProjectId}` as never)}

@@ -62,6 +62,7 @@ import {
 } from '@features/projects/components/ContestEngagementSheet';
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { outstandingFee, feePercent, isMinimumFee } from '@features/pricing/utils/fee';
+import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
@@ -2435,7 +2436,14 @@ function MemberRow({
   // Deliberately NOT gated on isReadOnly: completion is exactly when the fee
   // falls due, so the pay action has to survive the read-only project state that
   // hides "update price".
-  const canPay = !!onPay && owed > 0;
+  //
+  // And NOT gated on the amount. `owed > 0` was the door to the balance screen
+  // testing a number to answer a question about lifecycle — the same bug the
+  // screen's own row filter had, one layer up. A `didnt_happen` contest zeroes
+  // the fee, so the only way in vanished at the exact moment the professional
+  // needed to look. showsOnBalance is the predicate the screen filters its rows
+  // with, so the door and the room now agree by construction.
+  const canPay = !!onPay && showsOnBalance(fee ?? null);
   // Also deliberately NOT gated on isReadOnly: the project-level read-only state
   // is a roll-up of everyone's engagement, and this professional's own may still
   // be open inside a project that already reads closed.

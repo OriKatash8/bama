@@ -378,3 +378,67 @@ describe('the client accelerator does not read as an approval', () => {
     }
   });
 });
+
+/**
+ * THE DOOR TO THE BALANCE SCREEN.
+ *
+ * Step 4 fixed that screen's row filter and left both entry points to it gated on
+ * `owed > 0`. A `didnt_happen` contest zeroes the fee, so the row was correctly
+ * kept and there was no longer any way to reach it — a filter fixed one layer in
+ * while the layer outside kept the old predicate, which is worse than not fixing
+ * it: the data is right and unreachable.
+ *
+ * Asserted at the SCREEN, not on showsOnBalance. A unit test on the predicate
+ * cannot see a call site that stopped calling it — verified by reverting this
+ * exact line to `owed > 0` and watching every unit test still pass.
+ */
+describe('the balance screen stays reachable after a contest', () => {
+  /** Contested with didnt_happen: fee voided to zero, still open business. */
+  const contested = {
+    professionalId: 'pro-1', feeStatus: 'owed', feeRate: 0.03,
+    baseAmount: 4000, minFeeApplied: 6, slotActive: true,
+    engagementStatus: 'disputed', feeDue: 0, status: 'not_owed',
+  };
+
+  async function renderAsPro(f: unknown) {
+    mockViewer.uid = 'pro-1';
+    mockListenToProjectFee.mockImplementation((_p, _u, callback) => {
+      callback(f as never);
+      return () => {};
+    });
+    const r = render(<ProjectDetailsScreen />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    return r;
+  }
+
+  it('offers the balance entry on a contested engagement worth ₪0', async () => {
+    const { queryAllByText } = await renderAsPro(contested);
+    expect(queryAllByText(en.project_details.pay_fee)).toHaveLength(1);
+  });
+
+  it('offers it on a completed engagement awaiting charge with nothing owed', async () => {
+    const { queryAllByText } = await renderAsPro({
+      ...contested,
+      engagementStatus: 'completed', feeDue: 0, feePaid: true, status: 'paid',
+      chargeDueAt: { seconds: Math.floor(Date.now() / 1000) + 3 * 86400, nanoseconds: 0 },
+    });
+    expect(queryAllByText(en.project_details.pay_fee)).toHaveLength(1);
+  });
+
+  it('still hides it once the engagement is genuinely settled and closed', async () => {
+    // The gate must not become "always on" — that would be a different bug with
+    // the same shape, and this suite would otherwise not notice.
+    const { queryByText } = await renderAsPro({
+      ...contested,
+      engagementStatus: 'completed', feeDue: 0, feePaid: true, status: 'paid',
+    });
+    expect(queryByText(en.project_details.pay_fee)).toBeNull();
+  });
+
+  it('never offers it to the client', async () => {
+    mockViewer.uid = 'client-1';
+    const r = render(<ProjectDetailsScreen />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(r.queryByText(en.project_details.pay_fee)).toBeNull();
+  });
+});
