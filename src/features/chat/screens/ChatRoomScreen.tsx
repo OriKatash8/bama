@@ -34,9 +34,9 @@ const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
 const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
 import {
   getDoc, updateDoc, doc, Timestamp,
-  collection, onSnapshot, query, where,
-  arrayUnion, arrayRemove, addDoc, setDoc, serverTimestamp,
-  orderBy, deleteDoc,
+  collection, onSnapshot, query,
+  addDoc, setDoc, serverTimestamp,
+  orderBy,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown } from 'lucide-react-native';
@@ -67,6 +67,7 @@ import type { MarketplaceListing } from '@features/marketplace/types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Chat, Message } from '../types';
+import { GENERAL_CHANNEL_NAMES, type Channel } from '../communityChannels';
 import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
 import type { MediaAsset } from '@core/types/media';
 
@@ -74,7 +75,6 @@ type Translations = typeof en;
 
 /** Names the General channel has shipped under. Matched language-agnostically so
  *  a community created in one language still resolves in the other. */
-const GENERAL_CHANNEL_NAMES = ['כללי', 'General'];
 function makeT(translations: Translations) {
   return (key: string): string => {
     const keys = key.split('.');
@@ -83,16 +83,6 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
-
-type Channel = {
-  id: string;
-  name: string;
-  createdAt: Timestamp | null;
-  createdBy: string;
-  lastMessage: { text: string; senderId: string; timestamp: Timestamp } | null;
-  /** Stable identity for special channels. Absent = legacy/normal channel. */
-  kind?: 'general' | 'market';
-};
 
 const USER_COLORS = [
   '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab', '#1e88e5',
@@ -535,13 +525,9 @@ export function ChatRoomScreen({ chatId }: Props) {
   // mode picks the tab, it does not decide your role on a given project.
   const [projectClientId, setProjectClientId] = useState<string | undefined>(undefined);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
-  const [communityPhotoURL, setCommunityPhotoURL] = useState<string | undefined>(undefined);
-  const [communityPhotoUploading, setCommunityPhotoUploading] = useState(false);
   const [chatPhotoURL, setChatPhotoURL] = useState<string | null>(null);
   const [chatPhotoModalOpen, setChatPhotoModalOpen] = useState(false);
   const [chatPhotoUploading, setChatPhotoUploading] = useState(false);
-  const [manageVisible, setManageVisible] = useState(false);
-  const [pendingRequests, setPendingRequests] = useState<{ userId: string; displayName: string }[]>([]);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [chatMembers, setChatMembers] = useState<string[]>([]);
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
@@ -561,8 +547,6 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Channel state
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string>('');
-  const [newChannelName, setNewChannelName] = useState('');
-  const [addingChannel, setAddingChannel] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // ── Market channel: post one of my own listings ──
@@ -690,7 +674,6 @@ export function ChatRoomScreen({ chatId }: Props) {
       setChatProjectId(data.projectId);
       if (data.ownerId) setChatOwnerId(data.ownerId);
       if (data.members) setChatMembers(data.members as string[]);
-      setCommunityPhotoURL(data.photoURL);
       setChatPhotoURL(data.photoURL ?? null);
 
       if (!nameResolved) {
@@ -863,21 +846,6 @@ export function ChatRoomScreen({ chatId }: Props) {
     });
   }, [chatId, chatType, activeChannelId]);
 
-  // Join request listener (owner only)
-  useEffect(() => {
-    if (chatType !== 'community' || currentUserId !== chatOwnerId || !chatOwnerId) return;
-    const q = query(
-      collection(db, 'chats', chatId, 'joinRequests'),
-      where('status', '==', 'pending'),
-    );
-    return onSnapshot(q, (snap) => {
-      setPendingRequests(snap.docs.map((d) => ({
-        userId: d.data().userId as string,
-        displayName: d.data().displayName as string,
-      })));
-    });
-  }, [chatId, chatType, chatOwnerId, currentUserId]);
-
   // Load the linked project's end date so mission/meeting dates can be
   // constrained to the project window (today → project end).
   useEffect(() => {
@@ -977,25 +945,6 @@ export function ChatRoomScreen({ chatId }: Props) {
   }, [messages]);
 
 
-  async function handleChangeCommunityPhoto() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'] as const,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-    setCommunityPhotoUploading(true);
-    try {
-      const blob = await fetch(result.assets[0].uri).then((r) => r.blob());
-      const url = await uploadFile(`community-images/${chatId}.jpg`, blob);
-      await updateDoc(doc(db, 'chats', chatId), { photoURL: url });
-      setCommunityPhotoURL(url);
-    } finally {
-      setCommunityPhotoUploading(false);
-    }
-  }
-
   async function handleChangeChatPhoto() {
     // Only the community owner may change a community's photo.
     if (chatType === 'community' && currentUserId !== chatOwnerId) return;
@@ -1015,44 +964,6 @@ export function ChatRoomScreen({ chatId }: Props) {
       setChatPhotoModalOpen(false);
     } finally {
       setChatPhotoUploading(false);
-    }
-  }
-
-  async function handleApproveRequest(userId: string) {
-    await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'approved' });
-    await updateDoc(doc(db, 'chats', chatId), { members: arrayUnion(userId) });
-  }
-
-  async function handleRejectRequest(userId: string) {
-    await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'rejected' });
-  }
-
-  async function handleRemoveMember(userId: string) {
-    if (userId === chatOwnerId) return;
-    await updateDoc(doc(db, 'chats', chatId), { members: arrayRemove(userId) });
-    setChatMembers((prev) => prev.filter((id) => id !== userId));
-  }
-
-  async function handleAddChannel() {
-    const name = newChannelName.trim();
-    if (!name || !currentUserId) return;
-    await addDoc(collection(db, 'chats', chatId, 'channels'), {
-      name,
-      createdAt: serverTimestamp(),
-      createdBy: currentUserId,
-      lastMessage: null,
-    });
-    setNewChannelName('');
-    setAddingChannel(false);
-  }
-
-  async function handleDeleteChannel(channelId: string, channelName: string) {
-    const confirmed = await confirmDialog(t('community.delete_channel'), channelName);
-    if (!confirmed) return;
-    await deleteDoc(doc(db, 'chats', chatId, 'channels', channelId));
-    if (activeChannelId === channelId) {
-      const remaining = channels.filter((c) => c.id !== channelId);
-      setActiveChannelId(remaining[0]?.id ?? '');
     }
   }
 
@@ -1247,11 +1158,6 @@ export function ChatRoomScreen({ chatId }: Props) {
     setRecordingDuration(0);
   }
 
-  const isGeneralChannel = (name: string) =>
-    name === 'כללי' || name === 'General' || name === t('community.default_channel');
-  const isMarketChannel = (ch: Channel) =>
-    ch.kind === 'market' || ch.name === t('community.market_channel');
-
   return (
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
     <KeyboardAvoidingView
@@ -1305,13 +1211,6 @@ export function ChatRoomScreen({ chatId }: Props) {
           )}
         </View>
         <View style={[styles.headerRight, { alignItems: 'flex-start', justifyContent: 'center' }]}>
-          {chatType === 'community' && currentUserId === chatOwnerId && (
-            <TouchableOpacity onPress={() => setManageVisible(true)} style={{ padding: 4 }}>
-              <AppText weight="semiBold" style={{ color: colors.accent, fontSize: 13 }}>
-                {t('communities.manage')}
-              </AppText>
-            </TouchableOpacity>
-          )}
           {(() => {
             // For purchase chats, the header avatar is the product image, and
             // tapping it opens the product notice instead of the change-photo sheet.
@@ -2041,168 +1940,6 @@ export function ChatRoomScreen({ chatId }: Props) {
       />
     )}
 
-    {/* Manage modal */}
-    <Modal visible={manageVisible} transparent animationType="fade" onRequestClose={() => setManageVisible(false)}>
-      <TouchableOpacity style={manageStyles.overlay} activeOpacity={1} onPress={() => setManageVisible(false)}>
-        <TouchableOpacity activeOpacity={1} style={{ width: '90%', maxHeight: '85%' }}>
-          <LinearGradient colors={['#1a237e', '#004aad']} style={manageStyles.modal}>
-            <View style={[manageStyles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <AppText weight="bold" style={manageStyles.modalTitle}>
-                {t('communities.manage')}
-              </AppText>
-              <TouchableOpacity onPress={() => setManageVisible(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 22 }}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-
-              {/* Community avatar — editable by owner */}
-              {chatType === 'community' && (
-                <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                  <TouchableOpacity
-                    onPress={currentUserId === chatOwnerId ? handleChangeCommunityPhoto : undefined}
-                    activeOpacity={currentUserId === chatOwnerId ? 0.8 : 1}
-                    style={{ position: 'relative' }}
-                  >
-                    {communityPhotoURL ? (
-                      <Image
-                        source={{ uri: communityPhotoURL }}
-                        style={{ width: 72, height: 72, borderRadius: 16 }}
-                      />
-                    ) : (
-                      <LinearGradient
-                        colors={['#1e4fa3', '#cb6ce6']}
-                        style={{ width: 72, height: 72, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <AppText weight="bold" style={{ color: '#fff', fontSize: 28 }}>
-                          {(chatName ?? '?').charAt(0).toUpperCase()}
-                        </AppText>
-                      </LinearGradient>
-                    )}
-                    {currentUserId === chatOwnerId && !communityPhotoUploading && (
-                      <View style={{
-                        position: 'absolute', bottom: -4, right: -4,
-                        width: 24, height: 24, borderRadius: 12,
-                        backgroundColor: 'rgba(255,255,255,0.25)',
-                        alignItems: 'center', justifyContent: 'center',
-                        borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
-                      }}>
-                        <Camera size={12} color="#fff" strokeWidth={2} />
-                      </View>
-                    )}
-                    {communityPhotoUploading && (
-                      <View style={{
-                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                        borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.45)',
-                        alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <ActivityIndicator size="small" color="#fff" />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                  <AppText weight="semiBold" style={{ color: '#fff', marginTop: 8, fontSize: 15 }}>
-                    {chatName}
-                  </AppText>
-                </View>
-              )}
-
-              {/* Pending Requests */}
-              <AppText weight="semiBold" style={manageStyles.sectionTitle}>
-                {t('communities.pending_requests')} ({pendingRequests.length})
-              </AppText>
-              {pendingRequests.length === 0 ? (
-                <AppText weight="regular" style={manageStyles.emptyText}>—</AppText>
-              ) : (
-                pendingRequests.map((req) => (
-                  <View key={req.userId} style={[manageStyles.requestRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <AppText weight="regular" style={manageStyles.requestName} numberOfLines={1}>
-                      {req.displayName}
-                    </AppText>
-                    <TouchableOpacity
-                      style={[manageStyles.actionBtn, { backgroundColor: '#16a34a' }]}
-                      onPress={() => handleApproveRequest(req.userId)}
-                    >
-                      <AppText weight="semiBold" style={manageStyles.actionBtnText}>
-                        {t('communities.approve')}
-                      </AppText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[manageStyles.actionBtn, { backgroundColor: '#dc2626' }]}
-                      onPress={() => handleRejectRequest(req.userId)}
-                    >
-                      <AppText weight="semiBold" style={manageStyles.actionBtnText}>
-                        {t('communities.reject')}
-                      </AppText>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              )}
-
-              {/* Members */}
-              <AppText weight="semiBold" style={[manageStyles.sectionTitle, { marginTop: 20 }]}>
-                {t('communities.members')} ({chatMembers.length})
-              </AppText>
-              {chatMembers.map((uid) => (
-                <View key={uid} style={[manageStyles.memberRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <View style={manageStyles.memberAvatar}>
-                    <AppText weight="bold" style={manageStyles.memberInitial}>
-                      {(memberNames[uid] ?? uid).charAt(0).toUpperCase()}
-                    </AppText>
-                  </View>
-                  <AppText weight="regular" style={manageStyles.memberName} numberOfLines={1}>
-                    {memberNames[uid] ?? uid}
-                    {uid === chatOwnerId ? ' ★' : ''}
-                  </AppText>
-                  {uid !== chatOwnerId && (
-                    <TouchableOpacity onPress={() => handleRemoveMember(uid)} style={{ padding: 4 }}>
-                      <Text style={{ color: '#dc2626', fontSize: 18 }}>✕</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-
-              {/* Channels */}
-              <AppText weight="semiBold" style={[manageStyles.sectionTitle, { marginTop: 20 }]}>
-                {t('community.channels')} ({channels.length})
-              </AppText>
-              {channels.map((ch) => (
-                <View key={ch.id} style={[manageStyles.channelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <AppText weight="regular" style={manageStyles.channelName}># {ch.name}</AppText>
-                  {currentUserId === chatOwnerId && !isGeneralChannel(ch.name) && !isMarketChannel(ch) && (
-                    <TouchableOpacity onPress={() => handleDeleteChannel(ch.id, ch.name)} style={{ padding: 4 }}>
-                      <Text style={{ color: '#dc2626', fontSize: 16 }}>✕</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-              {addingChannel ? (
-                <View style={[manageStyles.addChannelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <TextInput
-                    value={newChannelName}
-                    onChangeText={setNewChannelName}
-                    placeholder={t('community.channel_name')}
-                    placeholderTextColor="rgba(255,255,255,0.4)"
-                    style={[manageStyles.channelInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                    autoFocus
-                  />
-                  <TouchableOpacity style={manageStyles.addBtn} onPress={handleAddChannel}>
-                    <Text style={[{ color: '#004aad', ...font.bold, fontSize: 15 }]}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity onPress={() => setAddingChannel(true)} style={manageStyles.addChannelTrigger}>
-                  <AppText weight="semiBold" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
-                    {t('community.add_channel')}
-                  </AppText>
-                </TouchableOpacity>
-              )}
-
-              <View style={{ height: 16 }} />
-            </ScrollView>
-          </LinearGradient>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
     </LinearGradient>
   );
 }
@@ -2505,85 +2242,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 10,
     overflow: 'hidden',
-  },
-});
-
-const manageStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modal: { borderRadius: 24, padding: 24 },
-  modalHeader: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
-  sectionTitle: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-  emptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 8 },
-  requestRow: { alignItems: 'center', gap: 8, marginBottom: 10 },
-  requestName: { flex: 1, color: '#fff', fontSize: 14 },
-  actionBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  actionBtnText: { color: '#fff', fontSize: 12 },
-  memberRow: {
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
-  },
-  memberAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memberInitial: { color: '#fff', fontSize: 14 },
-  memberName: { flex: 1, color: '#fff', fontSize: 14 },
-  channelRow: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  channelName: { color: '#fff', fontSize: 14, flex: 1 },
-  addChannelRow: {
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  channelInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    color: '#fff',
-    fontSize: 14,
-  },
-  addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addChannelTrigger: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 10,
-    marginTop: 8,
   },
 });
 

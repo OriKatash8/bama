@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LogOut, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LogOut, Settings, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -25,6 +25,7 @@ import { AppText } from '@components/ui/AppText';
 import { ToggleSwitch } from '@components/ui/ToggleSwitch';
 import { communityCategoryLabel } from '@features/crew/data/categories';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
+import { CommunityManageModal } from '@features/chat/components/CommunityManageModal';
 import {
   removeMemberFromGroup,
   muteChat,
@@ -80,6 +81,7 @@ export default function CommunityDetailsScreen() {
   const [muted, setMuted] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [membersExpanded, setMembersExpanded] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
 
   // Live, not a one-shot read: the member list changes when the owner approves a
   // join request while this page is open, and leaving has to be reflected too.
@@ -242,19 +244,33 @@ export default function CommunityDetailsScreen() {
           </AppText>
         </View>
 
-        {/* Identity card — photo, name, category */}
+        {/* Identity card — photo, name, and under the name: the owner's manage
+            button, or the category for everyone else. */}
         <View style={styles.identityCard}>
           <CommunityAvatar community={community} size={96} />
           <AppText weight="bold" style={styles.communityName} numberOfLines={2}>
             {community.name}
           </AppText>
-          {community.category && (
+          {isOwner ? (
+            <TouchableOpacity
+              style={[styles.manageBtn, { flexDirection: rowDir, backgroundColor: colors.primary }]}
+              onPress={() => setManageOpen(true)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('community_details.manage')}
+            >
+              <Settings size={15} color="#ffffff" strokeWidth={2.2} />
+              <AppText weight="semiBold" style={styles.manageBtnText}>
+                {t('community_details.manage')}
+              </AppText>
+            </TouchableOpacity>
+          ) : community.category ? (
             <View style={styles.categoryChip}>
               <AppText weight="semiBold" style={styles.categoryChipText}>
                 {communityCategoryLabel(community.category, lang)}
               </AppText>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* Bio */}
@@ -382,6 +398,23 @@ export default function CommunityDetailsScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {isOwner && chatId && (
+        <CommunityManageModal
+          visible={manageOpen}
+          onClose={() => setManageOpen(false)}
+          chatId={chatId}
+          chatName={community.name ?? ''}
+          ownerId={community.ownerId ?? ''}
+          photoURL={community.photoURL ?? null}
+          members={members}
+          memberNames={Object.fromEntries(
+            Object.entries(memberUsers)
+              .filter(([, u]) => typeof u?.displayName === 'string' && u.displayName)
+              .map(([uid, u]) => [uid, u.displayName as string]),
+          )}
+        />
+      )}
     </LinearGradient>
   );
 }
@@ -438,6 +471,14 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   categoryChipText: { fontSize: 12, color: '#1e4fa3' },
+  manageBtn: {
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  manageBtnText: { fontSize: 14, color: '#ffffff' },
 
   // ── Bio ─────────────────────────────────────────────────────────────────────
   descriptionCard: {

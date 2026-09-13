@@ -52,6 +52,7 @@ jest.mock('@features/chat/services/chatService', () => ({
   unmuteChat: jest.fn(() => Promise.resolve()),
 }));
 jest.mock('@features/chat/components/CommunityDiscoveryTab', () => ({ CommunityAvatar: () => null }));
+jest.mock('@features/chat/components/CommunityManageModal', () => ({ CommunityManageModal: () => null }));
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn() }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLanguage }),

@@ -1004,6 +1004,7 @@
   },
   "community_details": {
     "header": "Community details",
+    "manage": "Manage community",
     "about": "About",
     "members": "Members",
     "owner": "Owner",
