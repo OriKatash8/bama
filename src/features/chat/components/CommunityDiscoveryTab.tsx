@@ -27,9 +27,6 @@ function makeT(translations: Translations) {
   };
 }
 
-/** Filler shown in place of an empty "my communities" strip. */
-const PLACEHOLDER_COMMUNITY_COUNT = 5;
-
 
 const GRADIENTS: [string, string][] = [
   ['#1e4fa3', '#cb6ce6'],
@@ -162,112 +159,70 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-      {/* My Communities — label */}
-      <View style={[styles.sectionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad' }]}>
-          {t('communities.my_communities')}
-        </AppText>
-      </View>
-
-      {myCommunities.length === 0 ? (
+      {/* My Communities — only for someone who is in at least one. */}
+      {myCommunities.length > 0 && (
         <>
-          {/* Illustrative filler so the strip has the shape it will have once the
-              user joins something. Each tile is labelled "Example", which is what
-              now carries the "you are not in any yet" meaning — deliberately inert
-              too: plain Views, no press handler, so a tap does nothing rather than
-              failing to open a chat that does not exist. */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.stripScroll, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
-          >
-            {Array.from({ length: PLACEHOLDER_COMMUNITY_COUNT }, (_, i) => (
-              <View key={i} style={styles.stripItem} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                <View style={styles.placeholderSquare}>
-                  {/* Where a real community shows its initial. Shrinks to fit so
-                      "Example" and "לדוגמה" both stay on one line inside 60pt. */}
-                  <AppText
-                    weight="semiBold"
-                    style={styles.placeholderSquareText}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.7}
-                  >
-                    {t('communities.placeholder_example')}
-                  </AppText>
-                </View>
-                {/* One row always. "Community 1" overflows the 64pt tile at the
-                    shared size while "קהילה 1" does not, so the label shrinks to
-                    fit rather than wrapping — the real strip titles keep two
-                    lines, since actual community names need them. */}
-                <AppText
-                  weight="regular"
-                  style={styles.stripTitle}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.8}
-                >
-                  {t('communities.placeholder_name', { n: i + 1 })}
-                </AppText>
-              </View>
-            ))}
-          </ScrollView>
-        </>
-      ) : (
-        <View style={styles.stripWrap}>
-        <ScrollView
-          ref={stripRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={(e) => setStripX(e.nativeEvent.contentOffset.x)}
-          onLayout={(e) => setStripViewW(e.nativeEvent.layout.width)}
-          onContentSizeChange={(w) => setStripContentW(w)}
-          contentContainerStyle={styles.stripScroll}
-          style={[styles.stripOuter, rtl && { transform: [{ scaleX: -1 }] }]}
-        >
-          {myCommunities.map((c) => {
-            const unread = c.unreadCount?.[user?.id ?? ''] ?? 0;
-            return (
-              <TouchableOpacity
-                key={c.id}
-                style={[styles.stripItem, rtl && { transform: [{ scaleX: -1 }] }]}
-                onPress={() => navigateToCommunity(c.id)}
-                activeOpacity={0.75}
-              >
-                <View style={styles.stripIconWrap}>
-                  <CommunityAvatar community={c} size={60} />
-                  {unread > 0 && (
-                    <View style={[styles.stripBadge, styles.stripBadgeRight]}>
-                      <AppText weight="bold" style={styles.stripBadgeText}>
-                        {unread > 99 ? '99+' : String(unread)}
-                      </AppText>
-                    </View>
-                  )}
-                </View>
-                <AppText weight="regular" style={styles.stripTitle} numberOfLines={2}>
-                  {c.name ?? ''}
-                </AppText>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <View style={[styles.sectionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad' }]}>
+              {t('communities.my_communities')}
+            </AppText>
+          </View>
 
-        {canScrollLeft && (
-          <TouchableOpacity style={[styles.stripArrow, styles.stripArrowLeft]} onPress={() => scrollStrip('left')} activeOpacity={0.8}>
-            <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
-          </TouchableOpacity>
-        )}
-        {canScrollRight && (
-          <TouchableOpacity style={[styles.stripArrow, styles.stripArrowRight]} onPress={() => scrollStrip('right')} activeOpacity={0.8}>
-            <ChevronRight size={20} color="#004aad" strokeWidth={2.5} />
-          </TouchableOpacity>
-        )}
-        </View>
+          <View style={styles.stripWrap}>
+            <ScrollView
+              ref={stripRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              onScroll={(e) => setStripX(e.nativeEvent.contentOffset.x)}
+              onLayout={(e) => setStripViewW(e.nativeEvent.layout.width)}
+              onContentSizeChange={(w) => setStripContentW(w)}
+              contentContainerStyle={styles.stripScroll}
+              style={[styles.stripOuter, rtl && { transform: [{ scaleX: -1 }] }]}
+            >
+              {myCommunities.map((c) => {
+                const unread = c.unreadCount?.[user?.id ?? ''] ?? 0;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[styles.stripItem, rtl && { transform: [{ scaleX: -1 }] }]}
+                    onPress={() => navigateToCommunity(c.id)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.stripIconWrap}>
+                      <CommunityAvatar community={c} size={60} />
+                      {unread > 0 && (
+                        <View style={[styles.stripBadge, styles.stripBadgeRight]}>
+                          <AppText weight="bold" style={styles.stripBadgeText}>
+                            {unread > 99 ? '99+' : String(unread)}
+                          </AppText>
+                        </View>
+                      )}
+                    </View>
+                    <AppText weight="regular" style={styles.stripTitle} numberOfLines={2}>
+                      {c.name ?? ''}
+                    </AppText>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {canScrollLeft && (
+              <TouchableOpacity style={[styles.stripArrow, styles.stripArrowLeft]} onPress={() => scrollStrip('left')} activeOpacity={0.8}>
+                <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
+            {canScrollRight && (
+              <TouchableOpacity style={[styles.stripArrow, styles.stripArrowRight]} onPress={() => scrollStrip('right')} activeOpacity={0.8}>
+                <ChevronRight size={20} color="#004aad" strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
       )}
 
       {/* Discover */}
-      <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad', marginTop: 20, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad', marginTop: myCommunities.length > 0 ? 20 : 0, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
       </AppText>
 
@@ -451,25 +406,6 @@ const styles = StyleSheet.create({
   stripOuter: { marginHorizontal: -16, marginBottom: 8 },
   stripScroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 12 },
   stripItem: { alignItems: 'center', width: 68 },
-  // Matches CommunityAvatar's geometry at size 60 (radius = size * 0.26), so the
-  // filler occupies exactly the space a real community will.
-  //
-  // Border strong enough to read as a tile rather than a skeleton, and the title
-  // keeps the real strip colour: a greyed-out version made the strip look
-  // disabled, which is the opposite of filling the page. Nothing here is
-  // tappable, and the Discover list directly below carries the real communities.
-  placeholderSquare: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  placeholderSquareText: { fontSize: 11, color: 'rgba(0,74,173,0.55)' },
   stripArrow: {
     position: 'absolute',
     top: 20,
