@@ -185,6 +185,8 @@
     "completed_pro_review": "החלק שלך בבדיקת הצוות"
   },
   "project_details": {
+    "media": "מדיה",
+    "media_close": "סגירה",
     "header": "פרטי פרויקט",
     "execution": "ביצוע",
     "tbd": "לא נקבע",

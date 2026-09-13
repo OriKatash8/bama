@@ -185,6 +185,8 @@
     "completed_pro_review": "Your part is with our team"
   },
   "project_details": {
+    "media": "Media",
+    "media_close": "Close",
     "header": "Project Details",
     "execution": "Execution",
     "tbd": "TBD",

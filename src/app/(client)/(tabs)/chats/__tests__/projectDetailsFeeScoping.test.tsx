@@ -78,6 +78,7 @@ jest.mock('@features/projects/services/completionService', () => ({
   canMarkComplete: jest.requireActual('@features/projects/utils/completion').canMarkComplete,
 }));
 jest.mock('@features/reviews/components/ReviewFlow', () => ({ ReviewFlow: () => null }));
+jest.mock('@features/chat/components/ChatMediaSection', () => ({ ChatMediaSection: () => null }));
 jest.mock('@features/crew/components', () => ({
   MiniCalendar: () => null, MiniTimePicker: () => null, RolePickerModal: () => null,
 }));
