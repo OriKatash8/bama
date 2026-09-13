@@ -298,7 +298,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               <View style={styles.dateCol}>
                 <View style={[styles.dateLabelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text
-                    style={[styles.label, styles.labelFill, { ...font.semiBold, marginTop: 0, marginBottom: 6, fontSize: 13, lineHeight: 17, textAlign: rtl ? 'right' : 'left' }]}
+                    style={[styles.label, styles.labelFill, { ...font.semiBold, marginTop: 0, marginBottom: 6, textAlign: rtl ? 'right' : 'left' }]}
                     numberOfLines={2}
                   >
                     {t('builder.execution')} <Text style={{ fontWeight: '400', color: 'rgba(0,74,173,0.55)' }}>({t('builder.optional')})</Text>
@@ -323,7 +323,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
               <View style={styles.dateCol}>
                 <View style={[styles.dateLabelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text
-                    style={[styles.label, styles.labelFill, { ...font.semiBold, marginTop: 0, marginBottom: 6, fontSize: 13, lineHeight: 17, textAlign: rtl ? 'right' : 'left' }]}
+                    style={[styles.label, styles.labelFill, { ...font.semiBold, marginTop: 0, marginBottom: 6, textAlign: rtl ? 'right' : 'left' }]}
                     numberOfLines={2}
                   >
                     {t('builder.deadline')}
@@ -637,7 +637,8 @@ const styles = StyleSheet.create({
   // Section titles are BLUE here rather than the marketplace sheet's muted grey —
   // this form is longer and denser, and the blue is what separates one section
   // from the next. Colour lives here, not inline at each call site.
-  label: { fontSize: 12, color: BLUE, marginTop: 10, marginBottom: 8 },
+  // One size for every section title (description, dates, location, roles).
+  label: { fontSize: 13, lineHeight: 17, color: BLUE, marginTop: 10, marginBottom: 8 },
   input: {
     backgroundColor: '#ffffff',
     borderRadius: 10,
