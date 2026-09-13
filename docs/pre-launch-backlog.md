@@ -139,7 +139,38 @@ Declared in `firestore.rules` with no code and no data — the subscription feat
 was removed in the compliance reversal. A rule granting access to a collection
 nothing writes is attack surface with no purpose.
 
-## 9. Smaller, previously noted
+## 9. Deploy drift — CLOSED by `scripts/check-deploy-drift.mjs`
+
+Kept as the record of why the check exists.
+
+On 2026-09-13 a client could not edit a project deadline:
+`Missing or insufficient permissions`. `firestore.rules` had carried `endDate` in
+`clientProjectFields()` since `952f5d6` and had never been deployed — the live
+ruleset was `d881c201`, created 2026-09-10T11:41:21Z, three days and two commits
+behind.
+
+The permissions error was the cheap part. The same stale ruleset was also missing
+`hasOpenEngagement()` and `canWriteProjectSubdoc()`, so `meetings` and `missions`
+writes were still gated on `isProjectParticipant` — and chat membership never
+expires. Every professional whose engagement had completed or who had withdrawn
+retained write access to missions and meetings on finished work, for three days,
+with nothing surfacing it.
+
+THREE DEPLOY SURFACES, THREE SEPARATE COMMANDS, and only the functions list was
+ever spot-checked. Rules and indexes had no check at all, and a green
+`firebase deploy` message is not evidence a release moved — it says the upload
+succeeded, not that what is live matches the file.
+
+`scripts/check-deploy-drift.mjs --project bama-af0a0` now fetches all three and
+compares: the deployed ruleset source byte-for-byte, composite indexes as a set of
+(collectionGroup, fields) since the API assigns its own names and order, and every
+`export const <name> = onCall/onSchedule/onDocument...` in `functions/src` against
+the deployed function list. Exits non-zero on drift so it can gate a release.
+Verified by injecting drift on each surface in turn.
+
+Run it before any release, and after any deploy.
+
+## 10. Smaller, previously noted
 
 - The INTERIM `paymentRequests` rule, and `repricing.ts:200`'s `< 0` vs `<= 0`.
 - Raise `MIN_OFFER_PRICE` above the commission floor so the 600% case is
