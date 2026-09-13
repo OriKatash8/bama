@@ -13,6 +13,27 @@ import type { ProjectFee } from '@core/types/project';
  * Pure, and in utils rather than the service, so it can be tested without pulling
  * in the Firebase SDK (the convention utils/fee.ts already follows).
  */
+/**
+ * When this professional's contest window closes — the ONE place the client
+ * reads it, mirroring `contestWindowEndsAt()` on the server.
+ *
+ * `chargeDueAt` IS the window: past it the money has moved (or would have) and a
+ * contest becomes a support conversation. `disputeWindowEndsAt` is its
+ * predecessor, still carried by records written before the two collapsed into
+ * one field, so it is the fallback and never the preference.
+ *
+ * Returns ms, or null when no window was ever stamped — which is not the same as
+ * a closed one. The server falls back to confirmedAt plus the configured window
+ * in that case; the client cannot know that window, so callers defer to the
+ * callable rather than guessing.
+ */
+export function contestWindowEndsAt(
+  engagement: Pick<ProjectFee, 'chargeDueAt' | 'disputeWindowEndsAt'> | null | undefined,
+): number | null {
+  const endsAt = engagement?.chargeDueAt ?? engagement?.disputeWindowEndsAt;
+  return endsAt?.seconds ? endsAt.seconds * 1000 : null;
+}
+
 export function canDispute(
   /** THIS professional's engagement. The window is per engagement now — the
    *  project-level field is a roll-up of everyone's and describes somebody else's
@@ -22,16 +43,9 @@ export function canDispute(
 ): boolean {
   if (!engagement) return false;
   if (engagement.engagementStatus !== 'completed') return false;
-  // chargeDueAt is THE window; disputeWindowEndsAt is its predecessor, still
-  // present on records written before the two collapsed. Mirrors
-  // contestWindowEndsAt() on the server — if these two disagree, the button
-  // appears when the call will refuse, or hides while it would succeed.
-  const endsAt = engagement.chargeDueAt ?? engagement.disputeWindowEndsAt;
-  // No stamp means the project was confirmed before the field existed. The server
-  // falls back to confirmedAt + the configured window; the client cannot know that
-  // window, so it defers rather than guessing — the callable is the authority.
-  if (!endsAt?.seconds) return false;
-  return now <= endsAt.seconds * 1000;
+  const endsAt = contestWindowEndsAt(engagement);
+  if (endsAt === null) return false;
+  return now <= endsAt;
 }
 
 /**

@@ -1022,7 +1022,10 @@
     "how_title": "איך משלמים",
     "how_body": "פרטי התשלום נשלחים יחד עם דרישת התשלום. לשאלות: bama.app.hk@gmail.com",
     "no_charge_note": "האפליקציה אינה גובה תשלום. יתרה פתוחה אינה חוסמת דבר — הפרויקטים, הביקורות והמקומות שלכם זמינים כרגיל.",
-    "line_min": "עמלת מינימום ({{rate}}% מתוך ₪{{base}} = ₪{{calculated}})"
+    "line_min": "עמלת מינימום ({{rate}}% מתוך ₪{{base}} = ₪{{calculated}})",
+    "status_pending_charge": "תיגבה בתאריך {{date}}",
+    "row_no_amount": "אין מה לשלם כל עוד הפנייה פתוחה",
+    "nothing_owed_but_open": "אין יתרה לתשלום"
   },
   "pricing": {
     "title": "תעריפים",

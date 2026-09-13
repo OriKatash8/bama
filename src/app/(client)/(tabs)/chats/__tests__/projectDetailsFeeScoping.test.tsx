@@ -272,10 +272,14 @@ describe('the contest is offered to one professional and to nobody else', () => 
     return r;
   }
 
-  it('offers it to the professional whose engagement it is', async () => {
+  it('offers it to the professional whose engagement it is, with the deadline', async () => {
     mockViewer.uid = 'pro-1';
     const { queryAllByText } = await renderScreen();
     expect(queryAllByText(en.engagement.contest)).toHaveLength(1);
+    // The deadline is spelled out rather than left to be inferred from a button
+    // that will one day quietly stop appearing.
+    const prefix = en.engagement.contest_window.split('{{')[0].trim();
+    expect(queryAllByText(new RegExp(prefix))).toHaveLength(1);
   });
 
   it('offers the CLIENT nothing, on any row, even though a fee is live', async () => {
@@ -284,6 +288,7 @@ describe('the contest is offered to one professional and to nobody else', () => 
     // rather than at the prop, which is the point.
     const { queryByText } = await renderScreen();
     expect(queryByText(en.engagement.contest)).toBeNull();
+    expect(queryByText(new RegExp(en.engagement.contest_window.split('{{')[0].trim()))).toBeNull();
     expect(queryByText(/BAMA fee/)).toBeNull();
   });
 });

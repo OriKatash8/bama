@@ -1022,7 +1022,10 @@
     "how_title": "How to settle",
     "how_body": "Payment details are sent with the payment demand. Questions: bama.app.hk@gmail.com",
     "no_charge_note": "The app charges nothing. An outstanding balance blocks nothing — your projects, reviews and slots stay available as normal.",
-    "line_min": "Minimum fee ({{rate}}% of ₪{{base}} = ₪{{calculated}})"
+    "line_min": "Minimum fee ({{rate}}% of ₪{{base}} = ₪{{calculated}})",
+    "status_pending_charge": "Charges on {{date}}",
+    "row_no_amount": "Nothing to pay while this is open",
+    "nothing_owed_but_open": "Nothing outstanding"
   },
   "pricing": {
     "title": "Pricing",

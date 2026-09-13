@@ -10,6 +10,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { getDocument } from '@core/firebase/firestore';
 import { listenToMyFees } from '@features/pricing/services/feesService';
 import { outstandingFee, feePercent, isMinimumFee, calculatedFee } from '@features/pricing/utils/fee';
+import { showsOnBalance, balanceRowNote } from '@features/pricing/utils/balance';
 import type { ProjectFee, ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -26,11 +27,24 @@ function makeT(translations: Translations) {
   };
 }
 
+/** The charge date as the professional's own locale writes it. Read through the
+ *  same precedence the server enforces the window with: `chargeDueAt` is the
+ *  window, `disputeWindowEndsAt` only the predecessor field. */
+function chargeDate(fee: ProjectFee, locale = 'en-US'): string {
+  const ts = fee.chargeDueAt ?? fee.disputeWindowEndsAt;
+  if (!ts?.seconds) return '';
+  return new Date(ts.seconds * 1000)
+    .toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+}
+
 type Row = {
   projectId: string;
   title: string;
   fee: ProjectFee;
   owed: number;
+  /** Why this row is here beyond its amount — a row showing ₪0 with nothing
+   *  said about it reads as a bug. */
+  note: 'disputed' | 'pending_charge' | null;
 };
 
 /**
@@ -73,9 +87,15 @@ export default function BalanceScreen() {
     let active = true;
 
     return listenToMyFees(userId, (byProjectId) => {
+      // FILTERED ON LIFECYCLE, NOT ON THE AMOUNT. `owed > 0` hid a contested
+      // engagement the moment `didnt_happen` zeroed its fee, and hid a completed
+      // one awaiting charge — the two rows a professional most needs to see. See
+      // showsOnBalance.
       const owing = [...byProjectId.entries()]
-        .map(([id, fee]) => ({ projectId: id, fee, owed: outstandingFee(fee) }))
-        .filter((r) => r.owed > 0);
+        .map(([id, fee]) => ({
+          projectId: id, fee, owed: outstandingFee(fee), note: balanceRowNote(fee),
+        }))
+        .filter((r) => showsOnBalance(r.fee));
 
       // Titles come from the project documents, which are world-readable to any
       // signed-in user. A failed title read must not drop the row — the amount
@@ -137,7 +157,7 @@ export default function BalanceScreen() {
     <Screen style={styles.content} scrollable>
       {back}
 
-      {total <= 0 ? (
+      {rows.length === 0 ? (
         <View style={styles.card}>
           <AppText weight="semiBold" style={[styles.settled, { color: SETTLED_GREEN }]}>
             {t('balance.nothing_owed')}
@@ -146,15 +166,28 @@ export default function BalanceScreen() {
       ) : (
         <>
           {/* One number first. A professional owing on three projects should not
-              have to add them up themselves. */}
-          <View style={styles.card}>
-            <AppText weight="regular" style={[styles.amountLabel, { color: colors.textMuted }]}>
-              {t('balance.total_label')}
-            </AppText>
-            <AppText weight="bold" style={[styles.amount, { color: colors.primary }]}>
-              ₪{total.toLocaleString()}
-            </AppText>
-          </View>
+              have to add them up themselves.
+
+              Gated on the TOTAL, while the list is gated on the rows: an
+              engagement can be on this screen with nothing owed on it — a contest
+              that voided the fee is the case — and a "Total due ₪0" heading over
+              it would say the opposite of what the row below is for. */}
+          {total > 0 ? (
+            <View style={styles.card}>
+              <AppText weight="regular" style={[styles.amountLabel, { color: colors.textMuted }]}>
+                {t('balance.total_label')}
+              </AppText>
+              <AppText weight="bold" style={[styles.amount, { color: colors.primary }]}>
+                ₪{total.toLocaleString()}
+              </AppText>
+            </View>
+          ) : (
+            <View style={styles.card}>
+              <AppText weight="semiBold" style={[styles.settled, { color: SETTLED_GREEN }]}>
+                {t('balance.nothing_owed_but_open')}
+              </AppText>
+            </View>
+          )}
 
           {rows.map((r) => (
             <View key={r.projectId} style={[styles.card, styles.lineCard]}>
@@ -190,9 +223,23 @@ export default function BalanceScreen() {
                       base: (r.fee.baseAmount ?? 0).toLocaleString(),
                     })}
               </AppText>
-              {r.fee.status === 'disputed' && (
+              {/* Why this row is here, when its amount does not say so. Reads
+                  `engagementStatus` through balanceRowNote — a contest writes
+                  that field, not the older `status` enum this line used to
+                  check, so a new contest never showed up here at all. */}
+              {r.note === 'disputed' && (
                 <AppText weight="semiBold" style={[styles.lineDisputed, { textAlign: align }]}>
                   {t('balance.status_disputed')}
+                </AppText>
+              )}
+              {r.note === 'pending_charge' && (
+                <AppText weight="semiBold" style={[styles.linePending, { color: colors.textMuted, textAlign: align }]}>
+                  {t('balance.status_pending_charge', { date: chargeDate(r.fee, rtl ? 'he-IL' : 'en-US') })}
+                </AppText>
+              )}
+              {r.owed <= 0 && r.note === 'disputed' && (
+                <AppText weight="regular" style={[styles.lineBreakdown, { color: colors.textMuted, textAlign: align }]}>
+                  {t('balance.row_no_amount')}
                 </AppText>
               )}
             </View>
@@ -234,6 +281,7 @@ const DISPUTED_AMBER = '#8a6100';
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16 },
+  linePending: { fontSize: 12, marginTop: 2 },
   backRow: { alignItems: 'center', gap: 6, paddingVertical: 12 },
   title: { fontSize: 18, color: HEADING_BLUE },
   card: {

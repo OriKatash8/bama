@@ -55,6 +55,7 @@ import { listenToProjectFee } from '@features/pricing/services/feesService';
 import {
   canDispute, markEngagementComplete, canMarkComplete, contestEngagement,
 } from '@features/projects/services/completionService';
+import { contestWindowEndsAt } from '@features/projects/utils/completion';
 import { CompleteEngagementSheet } from '@features/projects/components/CompleteEngagementSheet';
 import {
   ContestEngagementSheet, type ContestReason,
@@ -1287,6 +1288,11 @@ export default function ProjectDetailsScreen() {
                   ? () => setContestSheetOpen(true)
                   : undefined
               }
+              contestWindowEndsAt={
+                !isClient && professionalId === currentUserId && canDispute(myFee)
+                  ? contestWindowEndsAt(myFee) ?? undefined
+                  : undefined
+              }
               // NOT gated on isReadOnly: a completed project is precisely when
               // the fee is due, and that is the state that hides "update price".
               onPay={!isClient && professionalId === currentUserId
@@ -2329,6 +2335,7 @@ function MemberRow({
   engagementStatus,
   onMarkComplete,
   onContest,
+  contestWindowEndsAt,
 }: {
   displayName: string;
   photoURL: string | null;
@@ -2354,6 +2361,10 @@ function MemberRow({
   /** Opens the contest sheet. Same scoping, and only inside the window that ends
    *  when the fee is charged. */
   onContest?: () => void;
+  /** When that window closes, in ms. Read from the engagement's own `chargeDueAt`
+   *  — the field the server enforces against — so the deadline shown is the
+   *  deadline applied. Same scoping again. */
+  contestWindowEndsAt?: number;
 }) {
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
@@ -2529,6 +2540,24 @@ function MemberRow({
           ) : null}
 
         </View>
+      )}
+
+      {/* The deadline, spelled out rather than left to be inferred from a button
+          that will quietly stop appearing. It is the engagement's own
+          `chargeDueAt` — the same value the callable refuses past — so what the
+          row promises and what the server allows cannot drift apart. */}
+      {canContest && contestWindowEndsAt !== undefined && (
+        <AppText
+          weight="regular"
+          style={[styles.contestWindow, { textAlign: rtl ? 'right' : 'left' }]}
+        >
+          {t('engagement.contest_window', {
+            date: new Date(contestWindowEndsAt).toLocaleDateString(
+              lang === 'he' ? 'he-IL' : 'en-US',
+              { day: 'numeric', month: 'short' },
+            ),
+          })}
+        </AppText>
       )}
     </View>
   );
@@ -2766,6 +2795,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, paddingVertical: 6,
   },
   contestPillText: { fontSize: 13, color: DISPUTE_RED },
+  contestWindow: { fontSize: 11, color: '#8890b0', paddingHorizontal: 14, paddingBottom: 10 },
   memberPrice: { fontSize: 16, fontWeight: '700', color: '#7d5fd0' },
   clientBadge: {
     backgroundColor: '#1e4fa3',
