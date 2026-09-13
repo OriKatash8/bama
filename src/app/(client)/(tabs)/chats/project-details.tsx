@@ -2751,8 +2751,16 @@ const styles = StyleSheet.create({
   },
   memberTopRow: { alignItems: 'center', gap: 12 },
   memberActionBar: {
+    // WRAPS. The professional's own row can carry four pills at once — mark
+    // complete, contest, pay and update — and on a narrow screen in Hebrew that
+    // ran off the edge and squeezed every label. Shorter labels alone only
+    // postpone it: the COUNT is what varies, and a longer translation or a larger
+    // font setting brings the overflow straight back. rowGap keeps a wrapped
+    // second line off the first.
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
+    rowGap: 8,
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
@@ -2760,6 +2768,7 @@ const styles = StyleSheet.create({
   },
   memberSubtitle: { fontSize: 12, color: '#9aa0b8' },
   updatePill: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -2770,6 +2779,7 @@ const styles = StyleSheet.create({
   },
   updatePillText: { fontSize: 13, color: '#ffffff' },
   removePill: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -2803,6 +2813,7 @@ const styles = StyleSheet.create({
   // action bar — three pills in one row should not be three shapes. Green is
   // reserved for project state elsewhere in the app; this is an action.
   payPill: {
+    flexShrink: 0,
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: '#004aad', borderRadius: 10,
     paddingHorizontal: 15, paddingVertical: 7,
@@ -2811,6 +2822,7 @@ const styles = StyleSheet.create({
   // The payPill idiom exactly — same radius, padding and text size — so the two
   // read as the same class of action in the same bar, differing only in colour.
   completePill: {
+    flexShrink: 0,
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: COMPLETE_GREEN, borderRadius: 10,
     paddingHorizontal: 15, paddingVertical: 7,
@@ -2834,6 +2846,7 @@ const styles = StyleSheet.create({
   // Outlined rather than filled: raising an issue is a quieter act than the two
   // filled pills beside it, and must not compete with them for the tap.
   contestPill: {
+    flexShrink: 0,
     borderWidth: 1, borderColor: DISPUTE_RED, borderRadius: 10,
     paddingHorizontal: 15, paddingVertical: 6,
   },

@@ -1089,7 +1089,7 @@
     "complete_not_now": "לא עכשיו",
     "complete_done": "חלקך בפרויקט סומן כהושלם.",
     "complete_error": "לא הצלחנו לסמן את חלקך כמושלם. נסה שוב.",
-    "mark_complete": "סיימתי את חלקי בפרויקט",
+    "mark_complete": "סיימתי את חלקי",
     "awaiting_client": "ממתין ללקוח",
     "contest_title": "משהו לא תקין בעמלה",
     "contest_body": "ספר לנו מה קרה בפרויקט “{{project}}”. לא נגבה דבר בזמן שאנחנו בודקים.",
