@@ -240,26 +240,33 @@ export default function SummaryScreen() {
   return (
     <Screen scrollable={false}>
       {/* Back shares the title's row and stays on the left in both languages —
-          it points out of the flow, not into the RTL text. */}
+          it points out of the flow, not into the RTL text. The title sits in the
+          CENTRE of the line: the back slot and an empty slot on the right take
+          equal flexible widths, so the centre stays centred whatever the back
+          label's length in either language. */}
       <View style={styles.headerRow}>
-        <TouchableOpacity
-          style={styles.backRow}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-          hitSlop={12}
-        >
-          <ChevronLeft size={20} color="#004aad" strokeWidth={2} />
-          <Text style={[styles.backText, { ...font.semiBold }]}>{t('builder.back_to_edit')}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerSide}>
+          <TouchableOpacity
+            style={styles.backRow}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+            hitSlop={12}
+          >
+            <ChevronLeft size={20} color="#004aad" strokeWidth={2} />
+            <Text style={[styles.backText, { ...font.semiBold }]}>{t('builder.back_to_edit')}</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.headerBlock}>
-          <Text style={[styles.screenTitle, { ...font.medium, textAlign }]} numberOfLines={1}>
+          <Text style={[styles.screenTitle, { ...font.medium }]} numberOfLines={1}>
             {t('builder.summary_title')}
           </Text>
-          <Text style={[styles.screenSubtitle, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
+          <Text style={[styles.screenSubtitle, { ...font.regular, color: BLUE_MUTED }]}>
             {t('builder.summary_subtitle')}
           </Text>
         </View>
+
+        <View style={styles.headerSide} />
       </View>
 
       <ScrollView
@@ -418,9 +425,11 @@ const styles = StyleSheet.create({
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backText: { fontSize: 15, color: '#004aad' },
 
-  headerBlock: { flex: 1 },
-  screenTitle: { fontSize: 19, fontWeight: '500', color: '#004aad' },
-  screenSubtitle: { fontSize: 12, marginTop: 2 },
+  // Equal flexible sides keep headerBlock centred on the line.
+  headerSide: { flex: 1, alignItems: 'flex-start' },
+  headerBlock: { flexShrink: 1, alignItems: 'center' },
+  screenTitle: { fontSize: 19, fontWeight: '500', color: '#004aad', textAlign: 'center' },
+  screenSubtitle: { fontSize: 12, marginTop: 2, textAlign: 'center' },
 
   card: {
     backgroundColor: '#ffffff',
