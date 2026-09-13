@@ -212,7 +212,39 @@ doing in one pass with screen tests already in place — which they now are:
 `projectDetailsFeeScoping`, `ChatsScreenFeeCopy` and `balance.test.ts` between
 them pin the behaviour the accessor would have to preserve.
 
-## 11. Smaller, previously noted
+## 11. Join-request approval is two non-atomic writes
+
+`ChatRoomScreen.handleApproveRequest` (`ChatRoomScreen.tsx:1021`) does
+`joinRequests/{uid}.status = 'approved'` and then, as a separate write,
+`chats/{id}.members arrayUnion(uid)`. If the second write fails, the request
+says approved but the user isn't a member. Nobody is told, and the owner believes
+they approved.
+
+Since `c9e13e4` the user isn't stuck: the rules let them reset a settled request
+to pending while not a member, and Discover shows Join again. But recovery depends
+on them noticing.
+
+WORTH DOING BEFORE LAUNCH, and small: both writes are the owner's under rules
+that already allow each, so a single `writeBatch` makes approval atomic and
+removes the failure outright. Keep the rules unchanged; add a screen or service test that
+the batch carries both writes.
+
+## 12. Admin "delete community" is broken, and nothing cascades
+
+- `src/app/admin/communities.tsx:98` calls client `deleteDoc(chats/{id})`, which
+  the rules deny (`chats` has `allow delete: if false`). It throws, the success
+  toast never shows, and its `Alert.alert` confirm does nothing on web.
+- Any real deletion (console or Admin SDK) leaves `joinRequests`, `messages`
+  and `channels` (with their `messages`) behind. Community invites and their
+  code docs ARE cleaned up, by the `onCommunityDeleted` trigger
+  (`functions/src/communities/invites.ts`).
+
+A fix has to decide: an admin callable that deletes the community and
+recursively deletes its subcollections (Admin SDK `recursiveDelete`), or
+extending `onCommunityDeleted` to cascade. Either way, use `confirmDialog`, not
+`Alert`, for the confirm.
+
+## 13. Smaller, previously noted
 
 - The INTERIM `paymentRequests` rule, and `repricing.ts:200`'s `< 0` vs `<= 0`.
 - Raise `MIN_OFFER_PRICE` above the commission floor so the 600% case is
