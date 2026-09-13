@@ -1118,6 +1118,30 @@ export default function ProjectDetailsScreen() {
           </View>
         </View>
 
+        {/* WHAT THAT DATE DOES, in the same words the builder used when it was
+            chosen. The end-date reminder tells the client "the project ends in
+            two days, change the date if it is wrong" and lands them here; a card
+            showing a date and a pencil, with nothing about what the date causes,
+            leaves them to guess what they are being warned about.
+
+            Client only. The date is theirs to move and nobody else's, and a
+            professional reading "it will close on its own" as an instruction
+            would be reading someone else's control. */}
+        {isProjectClient && !isReadOnly && (
+          <AppText
+            weight="regular"
+            style={[
+              styles.dateConsequence,
+              project.deadline === 'flexible' && styles.dateConsequenceFlexible,
+              { textAlign: rtl ? 'right' : 'left' },
+            ]}
+          >
+            {project.deadline === 'flexible'
+              ? t('builder.flexible_no_autocomplete')
+              : t('builder.end_date_note')}
+          </AppText>
+        )}
+
         {/* Description card */}
         <View style={styles.descriptionCard}>
           <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.description')}</AppText>
@@ -2796,6 +2820,10 @@ const styles = StyleSheet.create({
   },
   contestPillText: { fontSize: 13, color: DISPUTE_RED },
   contestWindow: { fontSize: 11, color: '#8890b0', paddingHorizontal: 14, paddingBottom: 10 },
+  dateConsequence: { fontSize: 12, color: '#8890b0', lineHeight: 17, paddingHorizontal: 4 },
+  /** Amber, as in the builder: "no end date" is the answer with a consequence
+   *  worth noticing, not the neutral one. */
+  dateConsequenceFlexible: { color: '#8a6100' },
   memberPrice: { fontSize: 16, fontWeight: '700', color: '#7d5fd0' },
   clientBadge: {
     backgroundColor: '#1e4fa3',

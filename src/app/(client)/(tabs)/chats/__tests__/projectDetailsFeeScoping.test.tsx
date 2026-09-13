@@ -292,3 +292,43 @@ describe('the contest is offered to one professional and to nobody else', () => 
     expect(queryByText(/BAMA fee/)).toBeNull();
   });
 });
+
+/**
+ * Where the end-date reminder lands. Sweep 4b tells the client "the project ends
+ * in two days — change the date if it is wrong" and routes them to this screen;
+ * these assert that what it asks for is actually possible when they arrive.
+ */
+describe('the end-date reminder has somewhere to land', () => {
+  async function renderScreen() {
+    const r = render(<ProjectDetailsScreen />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    return r;
+  }
+
+  it('shows the client what the date will do', async () => {
+    const { queryByText } = await renderScreen();
+    expect(queryByText(en.builder.end_date_note)).toBeTruthy();
+  });
+
+  it('says plainly that a flexible project never closes on its own', async () => {
+    mockGetDocument.mockImplementation(async (path: string) => {
+      if (path === 'projects/p1') return { ...project, deadline: 'flexible' } as never;
+      if (path.startsWith('users/')) {
+        const id = path.split('/')[1];
+        return { id, displayName: `Name ${id}`, photoURL: null } as never;
+      }
+      return null;
+    });
+    const { queryByText } = await renderScreen();
+    expect(queryByText(en.builder.flexible_no_autocomplete)).toBeTruthy();
+    expect(queryByText(en.builder.end_date_note)).toBeNull();
+  });
+
+  it('does not put the client’s date control in front of a professional', async () => {
+    // The date is the client's to move. A professional reading "it will close on
+    // its own" as an instruction would be reading someone else's control.
+    mockViewer.uid = 'pro-1';
+    const { queryByText } = await renderScreen();
+    expect(queryByText(en.builder.end_date_note)).toBeNull();
+  });
+});
