@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  LayoutAnimation,
+  Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -12,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { BellOff, LogOut } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LogOut, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -21,6 +22,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { AppText } from '@components/ui/AppText';
+import { ToggleSwitch } from '@components/ui/ToggleSwitch';
 import { communityCategoryLabel } from '@features/crew/data/categories';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
 import {
@@ -77,6 +79,7 @@ export default function CommunityDetailsScreen() {
   const [memberUsers, setMemberUsers] = useState<Record<string, MemberInfo>>({});
   const [muted, setMuted] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [membersExpanded, setMembersExpanded] = useState(false);
 
   // Live, not a one-shot read: the member list changes when the owner approves a
   // join request while this page is open, and leaving has to be reflected too.
@@ -179,6 +182,13 @@ export default function CommunityDetailsScreen() {
     }
   }
 
+  function toggleMembers() {
+    // New Architecture only: setLayoutAnimationEnabledExperimental is a no-op there,
+    // so Android needs no flag. On web this does not animate, it just opens.
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setMembersExpanded((open) => !open);
+  }
+
   async function handleLeave() {
     if (!currentUserId || !chatId) return;
     const confirmed = await confirmDialog(
@@ -204,7 +214,10 @@ export default function CommunityDetailsScreen() {
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
-        <View style={[styles.header, { marginHorizontal: -16, marginTop: -16 }]}>
+        <View
+          testID="details-header"
+          style={[styles.header, { flexDirection: rowDir, marginHorizontal: -16, marginTop: -16 }]}
+        >
           <TouchableOpacity
             onPress={() =>
               chatId
@@ -213,15 +226,20 @@ export default function CommunityDetailsScreen() {
             }
             style={styles.headerBack}
             activeOpacity={0.7}
+            accessibilityRole="button"
           >
-            <AppText weight="regular" style={styles.headerBackText}>{'‹'}</AppText>
+            {/* Back sits on the reading-start side and points outward: right in Hebrew. */}
+            {rtl
+              ? <ChevronRight size={28} color={colors.primary} strokeWidth={2.2} />
+              : <ChevronLeft size={28} color={colors.primary} strokeWidth={2.2} />}
           </TouchableOpacity>
-          <View style={styles.headerCenter} pointerEvents="none">
-            <AppText weight="semiBold" style={styles.headerLabel}>
-              {t('community_details.header')}
-            </AppText>
-          </View>
-          <View style={styles.headerRight} />
+          <AppText
+            weight="semiBold"
+            style={[styles.headerTitle, { color: colors.text, textAlign: align }]}
+            numberOfLines={1}
+          >
+            {t('community_details.header')}
+          </AppText>
         </View>
 
         {/* Identity card — photo, name, category */}
@@ -242,71 +260,97 @@ export default function CommunityDetailsScreen() {
         {/* Bio */}
         {community.description ? (
           <View style={styles.descriptionCard}>
-            <AppText weight="semiBold" style={styles.cardLabel}>{t('community_details.about')}</AppText>
+            <AppText weight="semiBold" style={[styles.cardLabel, { textAlign: align }]}>{t('community_details.about')}</AppText>
             <AppText weight="regular" style={[styles.descriptionText, { textAlign: align }]}>
               {community.description}
             </AppText>
           </View>
         ) : null}
 
-        {/* Members */}
-        <View style={[styles.sectionHeaderRow, { flexDirection: rowDir }]}>
-          <View style={[styles.sectionTitleGroup, { flexDirection: rowDir }]}>
-            <AppText weight="bold" style={styles.sectionTitle}>{t('community_details.members')}</AppText>
-            <AppText weight="regular" style={styles.sectionCount}>{String(members.length)}</AppText>
-          </View>
-        </View>
+        {/* Members — one card; the header row folds the list open in place. */}
+        <View style={styles.membersCard}>
+          <Pressable
+            onPress={toggleMembers}
+            style={({ pressed }) => [styles.membersHeader, { flexDirection: rowDir }, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('community_details.members')} ${members.length}`}
+            accessibilityState={{ expanded: membersExpanded }}
+          >
+            <Users size={18} color={colors.primary} strokeWidth={2} />
+            <AppText weight="semiBold" style={[styles.membersLabel, { color: colors.text, textAlign: align }]}>
+              {t('community_details.members')}
+            </AppText>
+            <AppText weight="regular" style={[styles.membersCount, { color: colors.textMuted }]}>
+              {String(members.length)}
+            </AppText>
+            {membersExpanded
+              ? <ChevronUp size={18} color={colors.textMuted} strokeWidth={2} />
+              : <ChevronDown size={18} color={colors.textMuted} strokeWidth={2} />}
+          </Pressable>
 
-        {members.map((uid) => {
-          const member = memberUsers[uid];
-          const name = member?.displayName ?? '…';
-          return (
-            <View key={uid} style={styles.memberCard}>
-              <View style={[styles.memberTopRow, { flexDirection: rowDir }]}>
-                {member?.photoURL ? (
-                  <Image source={{ uri: member.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarFallback]}>
-                    <AppText weight="bold" style={styles.avatarInitial}>
-                      {name.charAt(0).toUpperCase()}
-                    </AppText>
-                  </View>
-                )}
-                <View style={[styles.memberNameRow, { flexDirection: rowDir }]}>
-                  <AppText weight="bold" style={[styles.memberName, { textAlign: align }]} numberOfLines={1}>
-                    {name}
-                  </AppText>
-                  {uid === community.ownerId && (
-                    <View style={styles.ownerBadge}>
-                      <AppText weight="bold" style={styles.ownerBadgeText}>
-                        {t('community_details.owner')}
-                      </AppText>
+          {membersExpanded && (
+            <>
+              <View testID="members-header-divider" style={styles.hairline} />
+              {members.map((uid, i) => {
+                const member = memberUsers[uid];
+                const name = member?.displayName ?? '…';
+                return (
+                  <View key={uid}>
+                    {i > 0 && (
+                      // Inset past the avatar, WhatsApp-style — on whichever side the
+                      // avatar is, which is the right in Hebrew.
+                      <View
+                        testID="member-divider"
+                        style={[styles.hairline, rtl ? { marginRight: MEMBER_DIVIDER_INSET } : { marginLeft: MEMBER_DIVIDER_INSET }]}
+                      />
+                    )}
+                    <View testID={`member-row-${uid}`} style={[styles.memberRow, { flexDirection: rowDir }]}>
+                      {member?.photoURL ? (
+                        <Image source={{ uri: member.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
+                      ) : (
+                        <View style={[styles.avatar, styles.avatarFallback]}>
+                          <AppText weight="bold" style={styles.avatarInitial}>
+                            {name.charAt(0).toUpperCase()}
+                          </AppText>
+                        </View>
+                      )}
+                      <View style={[styles.memberNameRow, { flexDirection: rowDir }]}>
+                        <AppText weight="semiBold" style={[styles.memberName, { textAlign: align }]} numberOfLines={1}>
+                          {name}
+                        </AppText>
+                        {uid === community.ownerId && (
+                          <View style={styles.ownerBadge}>
+                            <AppText weight="bold" style={styles.ownerBadgeText}>
+                              {t('community_details.owner')}
+                            </AppText>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  )}
-                </View>
-              </View>
-            </View>
-          );
-        })}
+                  </View>
+                );
+              })}
+            </>
+          )}
+        </View>
 
         {/* Notifications */}
-        <View style={[styles.sectionHeaderRow, { flexDirection: rowDir }]}>
-          <AppText weight="bold" style={styles.sectionTitle}>{t('community_details.notifications')}</AppText>
-        </View>
         <View style={styles.settingCard}>
           <View style={[styles.settingRow, { flexDirection: rowDir }]}>
-            <BellOff size={18} color="#8890b0" strokeWidth={1.8} />
+            {muted
+              ? <BellOff size={18} color={colors.textMuted} strokeWidth={1.8} />
+              : <Bell size={18} color={colors.primary} strokeWidth={1.8} />}
             <AppText weight="semiBold" style={[styles.settingLabel, { textAlign: align }]}>
               {t('community_details.mute_label')}
             </AppText>
-            <Switch
+            <ToggleSwitch
               value={muted}
               onValueChange={handleToggleMute}
-              trackColor={{ true: '#1e4fa3', false: colors.borderMuted }}
+              accessibilityLabel={t('community_details.mute_label')}
             />
           </View>
           <AppText weight="regular" style={[styles.settingNote, { textAlign: align }]}>
-            {t('community_details.mute_note')}
+            {t(muted ? 'community_details.mute_note_muted' : 'community_details.mute_note_unmuted')}
           </AppText>
         </View>
 
@@ -342,6 +386,12 @@ export default function CommunityDetailsScreen() {
   );
 }
 
+/** Member row horizontal padding + avatar + gap: where a member divider starts. */
+const MEMBER_ROW_PAD = 14;
+const MEMBER_AVATAR = 40;
+const MEMBER_GAP = 12;
+const MEMBER_DIVIDER_INSET = MEMBER_ROW_PAD + MEMBER_AVATAR + MEMBER_GAP;
+
 const CARD_SHADOW = {
   shadowColor: '#1e4fa3' as const,
   shadowOpacity: 0.06,
@@ -360,22 +410,14 @@ const styles = StyleSheet.create({
 
   // ── Header ──────────────────────────────────────────────────────────────────
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
     paddingTop: 52,
     paddingBottom: 20,
     paddingHorizontal: 8,
   },
-  headerBack: { width: 40, alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
-  headerBackText: { fontSize: 36, color: '#1e4fa3', lineHeight: 44 },
-  headerRight: { width: 40 },
-  headerCenter: { flex: 1, alignItems: 'center', gap: 4 },
-  headerLabel: {
-    fontSize: 11,
-    color: '#8890b0',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
+  headerBack: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, fontSize: 20, lineHeight: 26 },
 
   // ── Identity ────────────────────────────────────────────────────────────────
   identityCard: {
@@ -415,33 +457,28 @@ const styles = StyleSheet.create({
   },
   descriptionText: { fontSize: 14, lineHeight: 20, color: '#3a4266' },
 
-  // ── Section headers ─────────────────────────────────────────────────────────
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  sectionTitleGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e4fa3' },
-  sectionCount: { fontSize: 13, color: '#8890b0' },
-
-  // ── Member cards ────────────────────────────────────────────────────────────
-  memberCard: {
-    padding: 13,
-    borderRadius: 16,
+  // ── Members card ────────────────────────────────────────────────────────────
+  membersCard: {
     backgroundColor: '#ffffff',
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(30,79,163,0.07)',
+    overflow: 'hidden',
     ...CARD_SHADOW,
   },
-  memberTopRow: { alignItems: 'center', gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
+  membersHeader: { alignItems: 'center', gap: 10, paddingHorizontal: MEMBER_ROW_PAD, paddingVertical: 14 },
+  pressed: { opacity: 0.7 },
+  membersLabel: { flex: 1, fontSize: 15 },
+  membersCount: { fontSize: 14 },
+  // 0.5, not hairlineWidth: the spec is 0.5px on every screen density.
+  hairline: { height: 0.5, backgroundColor: '#c8ccd8' },
+  memberRow: { alignItems: 'center', gap: MEMBER_GAP, paddingHorizontal: MEMBER_ROW_PAD, paddingVertical: 10 },
+  avatar: { width: MEMBER_AVATAR, height: MEMBER_AVATAR, borderRadius: MEMBER_AVATAR / 2 },
   avatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  memberNameRow: { flex: 1, alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  memberNameRow: { flex: 1, alignItems: 'center', gap: 8 },
   // flexShrink so a long name truncates instead of pushing the owner badge out of the row.
-  memberName: { flexShrink: 1, fontSize: 15, fontWeight: '600', color: '#1e4fa3' },
+  memberName: { flexShrink: 1, fontSize: 15, color: '#1e4fa3' },
   ownerBadge: {
     backgroundColor: '#1e4fa3',
     borderRadius: 10,
