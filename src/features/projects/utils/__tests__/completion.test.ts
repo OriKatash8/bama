@@ -1,4 +1,4 @@
-import { canDispute } from '../completion';
+import { canDispute, canMarkComplete } from '../completion';
 import type { ProjectFee } from '@core/types/project';
 
 const ts = (ms: number) => ({ seconds: Math.floor(ms / 1000), nanoseconds: 0 });
@@ -69,5 +69,54 @@ describe('canDispute', () => {
     expect(canDispute(
       engagement({ chargeDueAt: undefined, disputeWindowEndsAt: undefined }), 1_000,
     )).toBe(false);
+  });
+});
+
+/**
+ * Mirrors `completeEngagementInternal`'s guard, which refuses only when the
+ * engagement is already terminal. If these drift the button either appears when
+ * the callable will refuse, or hides while it would accept.
+ */
+describe('canMarkComplete', () => {
+  const eng = (engagementStatus?: string) => ({ engagementStatus } as never);
+
+  it('allows a hired engagement', () => {
+    expect(canMarkComplete(eng('hired'))).toBe(true);
+  });
+
+  it('reads a missing status as hired — the pre-Phase-1 records', () => {
+    // Thousands of fee documents predate `engagementStatus`. The server and the
+    // derivation both default them to 'hired'; a UI that defaulted the other way
+    // would leave every one of them with no way to complete.
+    expect(canMarkComplete(eng(undefined))).toBe(true);
+  });
+
+  it('allows one the CLIENT has asked to end', () => {
+    expect(canMarkComplete(eng('end_requested_by_client'))).toBe(true);
+  });
+
+  it.each(['completed', 'withdrawn', 'cancelled'] as const)(
+    'refuses %s — the server calls it terminal and would reject the call',
+    (status) => expect(canMarkComplete(eng(status))).toBe(false),
+  );
+
+  it('refuses while the professional has an end request of their own open', () => {
+    // The server would accept it — `end_requested_by_pro` is not in its TERMINAL
+    // set — but offering "I finished my part" beside their own pending request
+    // to leave asks them to contradict themselves in one screen.
+    expect(canMarkComplete(eng('end_requested_by_pro'))).toBe(false);
+  });
+
+  it('refuses a DISPUTED engagement, deliberately narrower than the server', () => {
+    // The server's TERMINAL set excludes 'disputed', so the callable would let a
+    // re-completion through. That contest is in front of an admin; offering to
+    // complete around it is incoherent. Narrower than the server is the safe
+    // direction — the reverse shows a button the callable then refuses.
+    expect(canMarkComplete(eng('disputed'))).toBe(false);
+  });
+
+  it('refuses when there is no engagement at all', () => {
+    expect(canMarkComplete(null)).toBe(false);
+    expect(canMarkComplete(undefined)).toBe(false);
   });
 });

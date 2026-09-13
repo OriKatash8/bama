@@ -33,3 +33,26 @@ export function canDispute(
   if (!endsAt?.seconds) return false;
   return now <= endsAt.seconds * 1000;
 }
+
+/**
+ * May this professional mark their own engagement finished?
+ *
+ * MIRRORS the server's guard in `completeEngagementInternal`, which refuses only
+ * when the engagement is already terminal. Deliberately NARROWER in one place:
+ * the server's TERMINAL set does not include `disputed`, so it would accept a
+ * re-completion, but offering "I finished my part" on an engagement the
+ * professional has just contested is incoherent — that one is in front of an
+ * admin. Narrower than the server is the safe direction; the reverse shows a
+ * button the callable then refuses.
+ *
+ * A fee document with no `engagementStatus` reads as `hired` — the same default
+ * the server and the derivation use, so the thousands of pre-Phase-1 records
+ * behave as the live ones do.
+ */
+export function canMarkComplete(
+  engagement: Pick<ProjectFee, 'engagementStatus'> | null | undefined,
+): boolean {
+  if (!engagement) return false;
+  const status = engagement.engagementStatus ?? 'hired';
+  return status === 'hired' || status === 'end_requested_by_client';
+}

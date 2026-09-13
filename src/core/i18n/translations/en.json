@@ -1080,5 +1080,21 @@
     "load_failed_body": "The request failed, so this list does not reflect the real state. Do not read this screen as \"nothing outstanding\".",
     "retry": "Retry",
     "count_unknown": "—"
+  },
+  "engagement": {
+    "complete_title": "Mark your part as finished",
+    "complete_body": "You are saying your own work on “{{project}}” is done. This is your decision alone — nobody has to approve it.",
+    "complete_fee": "BAMA fee · ₪{{amount}}",
+    "complete_fee_rate": "{{percent}}% of your agreed amount.",
+    "complete_fee_min": "{{percent}}% comes to ₪{{calculated}}, so the minimum fee applies.",
+    "complete_charge_when": "Charged in {{days}} days.",
+    "complete_contest_note": "If the project did not happen, or the amount is wrong, you have {{days}} days to say so.",
+    "complete_others_note": "This closes your part only. Everyone else on the project stands where they are.",
+    "complete_confirm": "I have finished my part",
+    "complete_not_now": "Not now",
+    "complete_done": "Your part is marked as finished.",
+    "complete_error": "Could not mark your part as finished. Please try again.",
+    "mark_complete": "I finished my part",
+    "awaiting_client": "Waiting for the client"
   }
 }
