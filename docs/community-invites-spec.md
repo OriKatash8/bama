@@ -156,7 +156,7 @@ Then commit, push and report. **No deploy.**
   - default: write, but refuse to overwrite an existing doc unless `--force`;
   - `--verify`: a read-only read-back with assertions.
 
-  The bare-https-origin check has its own tests. It's run against the Firestore emulator first, so every mode is exercised before production.
+  There is no separate origin check: `scripts/lib/appLinks.mjs` imports the real `buildInviteUrl` from `functions/src/communities/inviteCore.ts` as TypeScript source (Node type stripping). It doesn't use a copy or the possibly-stale `functions/lib`. Every mode was exercised against the Firestore emulator.
 - **Commit and push.**
 
 ## `onCommunityDeleted` on non-community deletes (answer)
@@ -199,7 +199,7 @@ Then commit, push and report. **No deploy.**
 
 **(c2) Read it back from production** with `node scripts/seed-app-links.mjs --project bama-af0a0 --verify`, a read-only Admin SDK read that asserts:
 - the doc exists;
-- `baseUrl` is a bare https origin, using the same rule as `buildInviteUrl`: https, path `/`, no query, fragment or credentials;
+- `baseUrl` passes the real `buildInviteUrl` (imported from source, so verify and the deployed function can't disagree): https, path `/`, no query, fragment or credentials;
 - `iosUrl` and `androidUrl` are strings.
 
 It prints the stored values. **Stop if it fails:** a half-seeded config would show up as `failed-precondition` and look like a code bug.

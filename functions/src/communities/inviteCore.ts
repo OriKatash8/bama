@@ -195,7 +195,13 @@ export function buildInviteUrl(baseUrl: unknown, token: string): string | null {
  */
 export class SlidingWindowCounter {
   private hits = new Map<string, number[]>();
-  constructor(private opts: { limit: number; windowMs: number; maxKeys: number }) {}
+  private opts: { limit: number; windowMs: number; maxKeys: number };
+  // A plain field rather than a constructor parameter property: this file is also
+  // imported as TypeScript source by Node's type stripping (scripts/lib/appLinks.mjs),
+  // and parameter properties need a transform that type stripping doesn't do.
+  constructor(opts: { limit: number; windowMs: number; maxKeys: number }) {
+    this.opts = opts;
+  }
 
   get size() { return this.hits.size; }
 
