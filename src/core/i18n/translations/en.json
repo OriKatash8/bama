@@ -203,7 +203,7 @@
     "update": "Update",
     "total": "Total",
     "completed": "✓ Completed",
-    "mark_complete": "Mark as Complete",
+    "mark_complete": "Close the project now",
     "mission_todo": "To Do",
     "mission_in_progress": "In Progress",
     "mission_done": "Done",
@@ -211,7 +211,7 @@
     "mission_uploaded": "Uploaded: ",
     "project_not_found": "Project not found",
     "error_payment": "Could not load payment details. Please try again.",
-    "success_complete": "Project marked as complete!",
+    "success_complete": "Project closed.",
     "error_complete": "Could not complete the project. Please try again.",
     "error_payment_request": "Could not send payment request. Please try again.",
     "error_accept_reject": "Could not {{action}} request. Please try again.",
@@ -231,12 +231,12 @@
     "due_date": "Due date",
     "add_due_date": "Add due date (optional)",
     "cancel": "Cancel",
-    "payment_summary_title": "Project Complete — Payment Summary",
+    "payment_summary_title": "Close the project now",
     "pay_crew": "Pay directly to your crew",
     "subtotal": "Subtotal",
     "platform_fee": "Platform fee",
     "paid_to_bama": "Paid to BAMA for platform services",
-    "confirm_complete": "Confirm & Complete Project",
+    "confirm_complete": "Close it now",
     "agreement": "By confirming, you agree to pay the platform fee of ₪{{amount}}",
     "request_payment_update": "Request Payment Update",
     "price_requests": "Price change requests",
@@ -279,7 +279,9 @@
     "reprice_no_offer": "There is no accepted offer to reprice on this project",
     "reprice_not_a_party": "You are not a party to this project",
     "fee_line_min": "BAMA fee · ₪{{amount}} (minimum fee)",
-    "edit_deadline_error": "Could not update the date. Please try again."
+    "edit_deadline_error": "Could not update the date. Please try again.",
+    "close_now_body": "You don’t have to do this. Each professional closes their own part when they finish, and on {{date}} anything still open closes by itself. This just does it now, for everyone.",
+    "close_now_body_flexible": "You don’t have to do this. Each professional closes their own part when they finish. This project has no end date, so nothing closes by itself — use this when the work is over."
   },
   "chats_page": {
     "title": "Chats",
@@ -1032,14 +1034,14 @@
     "fee_headline": "Platform fee: {{rate}}% of your earnings on the project",
     "fee_minimum": "Minimum fee: ₪{{min}} per project",
     "fee_minimum_explain": "If {{rate}}% of your earnings comes to less than ₪{{min}}, a minimum fee of ₪{{min}} applies. On small projects the fee is ₪{{min}}, never less.",
-    "fee_when": "The fee is created only when a project is marked complete. Cancelled projects carry no fee.",
+    "fee_when": "The fee is created when you mark your own part of a project finished, or on the project’s end date if you have not by then. You then have a few days to tell us if the project never happened, or if the amount is wrong. Cancelled projects carry no fee.",
     "fee_short": "{{rate}}% (min ₪{{min}})",
     "fee_base_note": "The fee is calculated on your own earnings, not on the project total."
   },
   "hire": {
     "fee_notice": "Platform fee for this project: ₪{{amount}}",
     "fee_notice_min": "Platform fee for this project: ₪{{amount}} (minimum fee)",
-    "fee_notice_sub": "Charged only after the project is marked complete."
+    "fee_notice_sub": "Applies once you mark your part of the project finished — or on the project’s end date, if you have not by then."
   },
   "admin_fees": {
     "greeting": "Admin",

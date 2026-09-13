@@ -332,3 +332,49 @@ describe('the end-date reminder has somewhere to land', () => {
     expect(queryByText(en.builder.end_date_note)).toBeNull();
   });
 });
+
+/**
+ * The client's accelerator. The Phase 4 inversion took the gate away from them —
+ * each professional closes their own part, and the end date closes the rest — so
+ * the one thing this copy must never do is imply their approval is required.
+ */
+describe('the client accelerator does not read as an approval', () => {
+  async function renderScreen() {
+    const r = render(<ProjectDetailsScreen />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    return r;
+  }
+
+  it('offers the action in terms of closing, not of confirming', async () => {
+    const { queryByText } = await renderScreen();
+    expect(queryByText(en.project_details.mark_complete)).toBeTruthy();
+    // The words that would reintroduce the gate. "Confirm" and "approve" describe
+    // answering somebody's request; nobody is requesting anything of the client.
+    expect(queryByText(/\bConfirm\b/)).toBeNull();
+    expect(queryByText(/\bapprove\b/i)).toBeNull();
+  });
+
+  it('never shows the accelerator to a professional', async () => {
+    mockViewer.uid = 'pro-1';
+    const { queryByText } = await renderScreen();
+    expect(queryByText(en.project_details.mark_complete)).toBeNull();
+  });
+
+  it('states plainly that it is optional, and what happens otherwise', () => {
+    // Asserted on the strings rather than by opening the modal, which needs the
+    // fee calculation to resolve: the invariant is the WORDING, and it is the
+    // thing a future copy pass could quietly undo.
+    expect(en.project_details.close_now_body).toMatch(/don’t have to/i);
+    expect(en.project_details.close_now_body).toContain('{{date}}');
+    // The flexible case is a different sentence, not the same one with a blank:
+    // with no end date nothing closes by itself, so promising a date would be a
+    // promise the project cannot keep.
+    expect(en.project_details.close_now_body_flexible).not.toContain('{{date}}');
+    expect(en.project_details.close_now_body_flexible).toMatch(/no end date/i);
+    // And neither may mention a fee — the client is never told a professional
+    // owes BAMA money (§6).
+    for (const copy of [en.project_details.close_now_body, en.project_details.close_now_body_flexible]) {
+      expect(copy).not.toMatch(/fee|commission|₪/i);
+    }
+  });
+});

@@ -2102,6 +2102,25 @@ export default function ProjectDetailsScreen() {
               {t('project_details.payment_summary_title')}
             </Text>
 
+            {/* THIS IS AN ACCELERATOR, NOT A GATE, and it has to say so before
+                the client reads a list of amounts and concludes they are being
+                asked to approve something. Since the Phase 4 inversion each
+                professional closes their own part and the end date closes the
+                rest; the client pressing this only brings that forward.
+
+                The flexible variant is a different sentence, not the same one
+                with a blank in it: with no end date nothing closes by itself, so
+                "anything still open closes on {{date}}" would be a promise the
+                project cannot keep. */}
+            <AppText
+              weight="regular"
+              style={[styles.closeNowBody, { textAlign: rtl ? 'right' : 'left' }]}
+            >
+              {projectEndDate
+                ? t('project_details.close_now_body', { date: formatShortDate(projectEndDate) })
+                : t('project_details.close_now_body_flexible')}
+            </AppText>
+
             {feeData && (
               <>
                 <Text style={[styles.modalSectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
@@ -2821,6 +2840,7 @@ const styles = StyleSheet.create({
   contestPillText: { fontSize: 13, color: DISPUTE_RED },
   contestWindow: { fontSize: 11, color: '#8890b0', paddingHorizontal: 14, paddingBottom: 10 },
   dateConsequence: { fontSize: 12, color: '#8890b0', lineHeight: 17, paddingHorizontal: 4 },
+  closeNowBody: { fontSize: 13, color: '#004aad99', lineHeight: 19, marginBottom: 4 },
   /** Amber, as in the builder: "no end date" is the answer with a consequence
    *  worth noticing, not the neutral one. */
   dateConsequenceFlexible: { color: '#8a6100' },
