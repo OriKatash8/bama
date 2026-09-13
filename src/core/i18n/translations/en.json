@@ -85,7 +85,7 @@
     "title_ai_hint": "Generated from your description — edit if you'd like",
     "confirm_submit": "Confirm & Post",
     "back_to_edit": "Back",
-    "help_execution": "If there is a specific date for the event or the project's shoot, please specify it here. Otherwise, you can leave this blank, and we will look for flexibility.",
+    "help_execution": "If there's an exact date the service should take place (like a shoot day, a studio session or a meeting), it's best to add it here. If you're flexible, you can leave it blank.",
     "help_deadline": "Specify the date by which the project must be ready. This will help us match you with creators who are available during the relevant timeframe.",
     "help_location": "Enter the city or location where the work will be performed. Please note: This refers to the location where the professionals will need to work or arrive—not necessarily your home address.",
     "vibe_title": "How do you see the final product?",
