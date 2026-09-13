@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@core/stores/authStore';
 import { getDocument } from '@core/firebase/firestore';
+import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
 import type { ActiveMode, ProfessionalProfile } from '@core/types/user';
 
 export function useSwitchMode() {
@@ -10,6 +11,16 @@ export function useSwitchMode() {
 
   async function switchMode(mode: ActiveMode) {
     setActiveMode(mode);
+    // Every sign-in path ends here (sign-in -> mode-select -> switchMode), so this
+    // is where a deep link opened while signed out picks back up. The saved href is
+    // allowlist-checked and TTL-checked inside takeResume, and wins over the mode's
+    // home in either mode: the routes it can hold live outside the mode groups and
+    // do their own gating (the invite preview renders even for an incomplete pro).
+    const resume = usePendingIntentStore.getState().takeResume();
+    if (resume) {
+      router.replace(resume as never);
+      return;
+    }
     if (mode === 'client') {
       router.replace('/(client)/(tabs)/home');
     } else {

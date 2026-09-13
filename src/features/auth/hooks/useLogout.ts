@@ -4,6 +4,7 @@ import { signOut } from '@core/firebase/auth';
 import { deleteDocument } from '@core/firebase/firestore';
 import { getCachedPushToken } from '@core/notifications/registerForPushNotifications';
 import { useUiStore } from '@core/stores/uiStore';
+import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
 
 export function useLogout() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +22,9 @@ export function useLogout() {
         try { await deleteDocument(`pushTokens/${token}`); } catch { /* non-blocking */ }
       }
       await signOut();
+      // A saved deep link belongs to the person who tapped it; never hand it to
+      // whoever signs in next on this device.
+      usePendingIntentStore.getState().clearAll();
       router.replace('/(auth)');
     } catch {
       showToast('Failed to sign out. Please try again.', 'error');

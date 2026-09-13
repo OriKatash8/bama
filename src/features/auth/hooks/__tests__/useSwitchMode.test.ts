@@ -2,12 +2,16 @@ import { renderHook, act } from '@testing-library/react-native';
 import { useSwitchMode } from '../useSwitchMode';
 import { useAuthStore } from '@core/stores/authStore';
 import { getDocument } from '@core/firebase/firestore';
+import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
 
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 jest.mock('@core/firebase/firestore', () => ({ getDocument: jest.fn() }));
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
 
 const mockGetDocument = getDocument as jest.MockedFunction<typeof getDocument>;
 
@@ -22,6 +26,7 @@ const mockUser = {
 beforeEach(() => {
   jest.clearAllMocks();
   useAuthStore.setState({ user: mockUser, activeMode: null, isLoading: false });
+  usePendingIntentStore.setState({ resume: null, afterProfile: null });
 });
 
 async function switchTo(mode: 'client' | 'professional') {
@@ -69,5 +74,46 @@ describe('useSwitchMode', () => {
     await switchTo('professional');
     expect(mockGetDocument).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith('/(professional)/(tabs)/profile');
+  });
+});
+
+/**
+ * switchMode is where every signed-out deep link resumes: all sign-in paths go
+ * through mode-select, and mode-select ends in switchMode. A saved destination
+ * wins over the mode's home, in either mode and whatever the profile state —
+ * the invite preview lives outside the mode groups and does its own gating.
+ */
+describe('useSwitchMode — resuming a saved deep link', () => {
+  const INVITE = '/c/K7MX9P';
+
+  it.each(['client', 'professional'] as const)('in %s mode, lands on the saved link instead of home', async (mode) => {
+    usePendingIntentStore.getState().saveResume(INVITE);
+    await switchTo(mode);
+    expect(useAuthStore.getState().activeMode).toBe(mode);
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith(INVITE);
+  });
+
+  it('resumes for an incomplete pro too, without the profile lookup deciding the route', async () => {
+    mockGetDocument.mockResolvedValue({ proProfileCompleted: false });
+    usePendingIntentStore.getState().saveResume(INVITE);
+    await switchTo('professional');
+    expect(mockReplace).toHaveBeenCalledWith(INVITE);
+    expect(mockReplace).not.toHaveBeenCalledWith('/(professional)/(tabs)/profile');
+  });
+
+  it('uses the saved link once: the next switch goes home as usual', async () => {
+    usePendingIntentStore.getState().saveResume(INVITE);
+    await switchTo('client');
+    mockReplace.mockClear();
+    await switchTo('client');
+    expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
+  });
+
+  it('ignores a stored href that is not an allowed deep link and routes normally', async () => {
+    usePendingIntentStore.setState({ resume: { href: '/admin', savedAt: Date.now() } });
+    await switchTo('client');
+    expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
+    expect(mockReplace).not.toHaveBeenCalledWith('/admin');
   });
 });
