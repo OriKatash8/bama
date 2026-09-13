@@ -121,6 +121,10 @@ const HEADER_TOP = Platform.OS === 'web'
   ? 52
   : Math.max(64, (initialWindowMetrics?.insets.top ?? 0) + 16);
 
+/** The tab bar is hidden on this route (it matches /chats/…), so the pinned
+ *  close-project bar only needs to clear the home indicator. */
+const BOTTOM_BAR_PAD = (initialWindowMetrics?.insets.bottom ?? 0) + 16;
+
 const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
   open: '#1c9d63',
   in_progress: '#3b82f6',
@@ -3116,7 +3120,7 @@ const styles = StyleSheet.create({
   completeBar: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 90,
+    paddingBottom: BOTTOM_BAR_PAD,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(255,255,255,0.2)',
   },
