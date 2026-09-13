@@ -70,6 +70,7 @@ import { callFunction } from '@core/firebase/functions';
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
 import { Calendar, CalendarDays, Check, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 
 type Translations = typeof en;
 
@@ -111,6 +112,14 @@ function formatDueDate(iso: string, prefix: string): string {
 type MemberInfo = Pick<User, 'displayName' | 'photoURL'>;
 
 const MAX_EVIDENCE = 3;
+
+/** The tabs layout zeroes the safe-area context for its screens, so the real top
+ *  inset comes from the window metrics (same as ChatRoomScreen). On a phone the header
+ *  sits at least 16 below the status bar / Dynamic Island and never higher than 64;
+ *  web keeps its 52. */
+const HEADER_TOP = Platform.OS === 'web'
+  ? 52
+  : Math.max(64, (initialWindowMetrics?.insets.top ?? 0) + 16);
 
 const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
   open: '#1c9d63',
@@ -2645,7 +2654,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 52,
+    paddingTop: HEADER_TOP,
     paddingBottom: 20,
     paddingHorizontal: 8,
   },
