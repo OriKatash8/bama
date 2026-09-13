@@ -53,10 +53,12 @@ import { ReviewFlow, type ReviewProfessional } from '@features/reviews/component
 import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import {
-  disputeFeeByPro, canDispute,
-  markEngagementComplete, canMarkComplete,
+  canDispute, markEngagementComplete, canMarkComplete, contestEngagement,
 } from '@features/projects/services/completionService';
 import { CompleteEngagementSheet } from '@features/projects/components/CompleteEngagementSheet';
+import {
+  ContestEngagementSheet, type ContestReason,
+} from '@features/projects/components/ContestEngagementSheet';
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { outstandingFee, feePercent, isMinimumFee } from '@features/pricing/utils/fee';
 import type { ProjectFee } from '@core/types/project';
@@ -278,6 +280,7 @@ export default function ProjectDetailsScreen() {
   // where a professional accepts a charge, and confirmDialog is window.confirm
   // on web — unlocalisable, and with nowhere to put the amount.
   const [completeSheetOpen, setCompleteSheetOpen] = useState(false);
+  const [contestSheetOpen, setContestSheetOpen] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   // Report user
@@ -507,28 +510,37 @@ export default function ProjectDetailsScreen() {
   }
 
   /**
-   * The professional disputes a confirmed completion, inside their window.
+   * The professional contests their own completed engagement, inside the window
+   * that ends when the fee is charged.
    *
-   * Deliberately not framed as undoing anything: the project stays completed and
-   * the reviews stay published either way. The dialog says so, because a button
-   * that looks like it might reverse a completion would be read as one.
+   * Not framed as undoing anything: the project stays closed and the reviews stay
+   * published either way. What the two reasons change is the FEE — `didnt_happen`
+   * voids it, `amount_disputed` holds it for an admin — and the sheet says which
+   * beside each option, because a choice whose consequences are off screen is not
+   * one the professional actually made.
    */
-  async function handleDispute() {
+  async function handleContest(reason: ContestReason, note: string) {
     if (!projectId || proActionBusy) return;
-    const ok = await confirmDialog(
-      t('project_details.dispute_title'),
-      t('project_details.dispute_body'),
-      { confirm: t('common.confirm'), cancel: t('common.cancel') },
-    );
-    if (!ok) return;
     setProActionBusy(true);
     try {
-      await disputeFeeByPro({ projectId });
-      setMyFee((prev) => (prev ? { ...prev, status: 'disputed' as const } : prev));
-      showToast(t('project_details.dispute_sent'), 'success');
+      await contestEngagement({ projectId, reason, ...(note ? { note } : {}) });
+      // The contest RE-TAKES the slot the completion released, server-side. The
+      // optimistic write mirrors only what this screen renders; the slot count
+      // comes from the project document and arrives on its own.
+      setMyFee((prev) => (prev
+        ? {
+            ...prev,
+            engagementStatus: 'disputed' as const,
+            // didnt_happen voids the fee outright. Showing the old amount beside
+            // "with our team" would say the opposite of what just happened.
+            ...(reason === 'didnt_happen' ? { feeDue: 0, status: 'not_owed' as const } : {}),
+          }
+        : prev));
+      setContestSheetOpen(false);
+      showToast(t('engagement.contest_sent'), 'success');
     } catch (err) {
-      console.error('[completion] disputeFeeByPro failed:', err);
-      showToast(t('project_details.dispute_error'), 'error');
+      console.error('[completion] contestEngagement failed:', err);
+      showToast(t('engagement.contest_error'), 'error');
     } finally {
       setProActionBusy(false);
     }
@@ -1270,6 +1282,11 @@ export default function ProjectDetailsScreen() {
                   ? () => setCompleteSheetOpen(true)
                   : undefined
               }
+              onContest={
+                !isClient && professionalId === currentUserId && canDispute(myFee)
+                  ? () => setContestSheetOpen(true)
+                  : undefined
+              }
               // NOT gated on isReadOnly: a completed project is precisely when
               // the fee is due, and that is the state that hides "update price".
               onPay={!isClient && professionalId === currentUserId
@@ -1585,41 +1602,6 @@ export default function ProjectDetailsScreen() {
         </View>
       )}
 
-      {/* What is left of the professional's screen-level completion bar.
-          The TRIGGER has moved: "ask the client to close the project" is gone,
-          because the professional now closes their own engagement from their own
-          row — see MemberRow's onMarkComplete. Shipping both would have offered
-          two buttons for one intent, one of which waits on the party the Phase 4
-          inversion removed from the flow.
-          What remains is the contest, for as long as the window stamped at
-          completion is open. It moves into MemberRow in the next step; until then
-          it stays here rather than being rebuilt twice. It reverses nothing — the
-          project stays closed and the reviews stay published. */}
-      {isTeamMember && !isClient && !isCancelled && (
-        <View style={styles.completeBar}>
-          {myFee?.status === 'disputed' ? (
-            <View style={styles.disputeOpenBadge}>
-              <Text style={[styles.disputeOpenText, { ...font.bold }]}>
-                {t('project_details.dispute_open')}
-              </Text>
-            </View>
-          ) : canDispute(myFee) ? (
-            <TouchableOpacity
-              style={[styles.disputeBtn, proActionBusy && styles.completeBtnDisabled]}
-              onPress={handleDispute}
-              disabled={proActionBusy}
-              activeOpacity={0.8}
-            >
-              {proActionBusy
-                ? <ActivityIndicator color={DISPUTE_RED} size="small" />
-                : <Text style={[styles.disputeBtnText, { ...font.bold }]}>
-                    {t('project_details.dispute')}
-                  </Text>}
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      )}
-
       {/* Mounted only for a professional. A client has no engagement to complete,
           and mounting it anyway would subscribe them to the pricing config for a
           sheet they can never open. */}
@@ -1631,6 +1613,16 @@ export default function ProjectDetailsScreen() {
         submitting={proActionBusy}
         onConfirm={handleMarkEngagementComplete}
         onClose={() => setCompleteSheetOpen(false)}
+      />
+      )}
+
+      {!isClient && (
+      <ContestEngagementSheet
+        visible={contestSheetOpen}
+        projectTitle={project.title ?? ''}
+        submitting={proActionBusy}
+        onConfirm={handleContest}
+        onClose={() => setContestSheetOpen(false)}
       />
       )}
 
@@ -2336,6 +2328,7 @@ function MemberRow({
   onPay,
   engagementStatus,
   onMarkComplete,
+  onContest,
 }: {
   displayName: string;
   photoURL: string | null;
@@ -2358,6 +2351,9 @@ function MemberRow({
   /** Opens the mark-complete sheet. Passed only on the viewing professional's own
    *  row, and only while their engagement can still be completed. */
   onMarkComplete?: () => void;
+  /** Opens the contest sheet. Same scoping, and only inside the window that ends
+   *  when the fee is charged. */
+  onContest?: () => void;
 }) {
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
@@ -2390,13 +2386,15 @@ function MemberRow({
   // is a roll-up of everyone's engagement, and this professional's own may still
   // be open inside a project that already reads closed.
   const canComplete = !!onMarkComplete;
+  const canContest = !!onContest;
   const awaitingClient = engagementStatus === 'end_requested_by_pro';
   const isEngagementDone = engagementStatus === 'completed';
+  const isContested = engagementStatus === 'disputed';
   // Report moved into the top row, so it no longer keeps this bar alive. The
   // client card passes none of the rest, so its action bar — and the separator
   // line that was the bar's top border — simply stops rendering.
-  const showActions = canUpdate || canPay || canComplete || awaitingClient
-    || isEngagementDone || !!onRemove || isPendingRemoval;
+  const showActions = canUpdate || canPay || canComplete || canContest || awaitingClient
+    || isEngagementDone || isContested || !!onRemove || isPendingRemoval;
   return (
     <View style={styles.memberCard}>
       {/* Top row: avatar + name/role + price */}
@@ -2479,6 +2477,12 @@ function MemberRow({
                 {t('engagement.awaiting_client')}
               </AppText>
             </View>
+          ) : isContested ? (
+            <View style={styles.engagementContestedChip}>
+              <AppText weight="semiBold" style={styles.engagementContestedText}>
+                {t('engagement.contest_open')}
+              </AppText>
+            </View>
           ) : isEngagementDone ? (
             <View style={styles.engagementDoneChip}>
               <AppText weight="semiBold" style={styles.engagementDoneText}>
@@ -2486,6 +2490,16 @@ function MemberRow({
               </AppText>
             </View>
           ) : null}
+          {/* Beside the done chip, not instead of it: the engagement IS complete
+              and the contest does not undo that — it only puts the fee in front
+              of a human before it is charged. */}
+          {canContest && (
+            <TouchableOpacity style={styles.contestPill} onPress={onContest} activeOpacity={0.85}>
+              <AppText weight="semiBold" style={styles.contestPillText}>
+                {t('engagement.contest')}
+              </AppText>
+            </TouchableOpacity>
+          )}
           {canPay && (
             <TouchableOpacity style={styles.payPill} onPress={() => onPay!()} activeOpacity={0.85}>
               <AppText weight="semiBold" style={styles.payPillText}>{t('project_details.pay_fee')}</AppText>
@@ -2740,6 +2754,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 4,
   },
   engagementDoneText: { color: COMPLETE_GREEN, fontSize: 11 },
+  engagementContestedChip: {
+    backgroundColor: 'rgba(180,69,60,0.1)', borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 4,
+  },
+  engagementContestedText: { color: DISPUTE_RED, fontSize: 11 },
+  // Outlined rather than filled: raising an issue is a quieter act than the two
+  // filled pills beside it, and must not compete with them for the tap.
+  contestPill: {
+    borderWidth: 1, borderColor: DISPUTE_RED, borderRadius: 10,
+    paddingHorizontal: 15, paddingVertical: 6,
+  },
+  contestPillText: { fontSize: 13, color: DISPUTE_RED },
   memberPrice: { fontSize: 16, fontWeight: '700', color: '#7d5fd0' },
   clientBadge: {
     backgroundColor: '#1e4fa3',
@@ -3000,23 +3026,6 @@ const styles = StyleSheet.create({
   completedBadgeText: { color: '#16a34a', fontSize: 16, fontWeight: '700' },
   // Outlined, not filled: raising an issue is a secondary action next to the
   // project's primary flow, and it must not read as "undo completion".
-  disputeBtn: {
-    borderWidth: 1.5,
-    borderColor: DISPUTE_RED,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  disputeBtnText: { color: DISPUTE_RED, fontSize: 16, fontWeight: '700' },
-  disputeOpenBadge: {
-    backgroundColor: '#f59e0b22',
-    borderWidth: 1,
-    borderColor: '#f59e0b55',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  disputeOpenText: { color: '#8a6100', fontSize: 16, fontWeight: '700' },
 
   // ── Modals ─────────────────────────────────────────────────────────────────────
   modalOverlay: {

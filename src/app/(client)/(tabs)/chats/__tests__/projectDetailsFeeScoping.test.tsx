@@ -73,8 +73,7 @@ jest.mock('@features/chat/services/removalService', () => ({
   listenToRemovalRequests: jest.fn(noop), listenToMyRemovalRequest: jest.fn(noop),
 }));
 jest.mock('@features/projects/services/completionService', () => ({
-  requestCompletion: jest.fn(), disputeFeeByPro: jest.fn(),
-  markEngagementComplete: jest.fn(),
+  markEngagementComplete: jest.fn(), contestEngagement: jest.fn(),
   canDispute: jest.requireActual('@features/projects/utils/completion').canDispute,
   canMarkComplete: jest.requireActual('@features/projects/utils/completion').canMarkComplete,
 }));
@@ -148,6 +147,8 @@ const FEE_STRINGS = [
   en.project_details.pay_fee,
   en.engagement.mark_complete,
   en.engagement.awaiting_client,
+  en.engagement.contest,
+  en.engagement.contest_open,
 ];
 
 describe('§6 — the client is never shown a professional’s fee', () => {
@@ -202,6 +203,8 @@ describe('§6 — the client is never shown a professional’s fee', () => {
     const { queryByText } = await renderLoaded();
     expect(queryByText(en.engagement.mark_complete)).toBeNull();
     expect(queryByText(en.engagement.awaiting_client)).toBeNull();
+    expect(queryByText(en.engagement.contest)).toBeNull();
+    expect(queryByText(en.engagement.contest_open)).toBeNull();
   });
 });
 
@@ -244,5 +247,43 @@ describe('the professional sees their OWN engagement and nobody else’s', () =>
     // amount may appear on pro-1's screen.
     const { queryAllByText } = await renderAsPro();
     expect(queryAllByText(/BAMA fee/)).toHaveLength(1);
+  });
+});
+
+describe('the contest is offered to one professional and to nobody else', () => {
+  /** Completed, inside the charge window — the only state that offers a contest. */
+  const completed = {
+    professionalId: 'pro-1', feeStatus: 'owed', feeRate: 0.03,
+    baseAmount: 4000, minFeeApplied: 6, slotActive: false,
+    engagementStatus: 'completed',
+    chargeDueAt: { seconds: Math.floor(Date.now() / 1000) + 3 * 86400, nanoseconds: 0 },
+  };
+
+  beforeEach(() => {
+    mockListenToProjectFee.mockImplementation((_projectId, _proId, callback) => {
+      callback(completed as never);
+      return () => {};
+    });
+  });
+
+  async function renderScreen() {
+    const r = render(<ProjectDetailsScreen />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    return r;
+  }
+
+  it('offers it to the professional whose engagement it is', async () => {
+    mockViewer.uid = 'pro-1';
+    const { queryAllByText } = await renderScreen();
+    expect(queryAllByText(en.engagement.contest)).toHaveLength(1);
+  });
+
+  it('offers the CLIENT nothing, on any row, even though a fee is live', async () => {
+    // mockViewer stays 'client-1'. The fee listener never runs for a client, so
+    // there is nothing in state to leak — and the assertion holds at the screen
+    // rather than at the prop, which is the point.
+    const { queryByText } = await renderScreen();
+    expect(queryByText(en.engagement.contest)).toBeNull();
+    expect(queryByText(/BAMA fee/)).toBeNull();
   });
 });

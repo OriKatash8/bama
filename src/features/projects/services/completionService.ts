@@ -51,4 +51,24 @@ export const markEngagementComplete = callFunction<
   { ok: boolean }
 >('markEngagementComplete');
 
+/**
+ * The professional contests their own completed engagement, before `chargeDueAt`.
+ *
+ * TWO REASONS, NO DEFAULT — the caller must have chosen. `didnt_happen` voids
+ * the fee outright: a shoot that was called off owes nothing, and billing for it
+ * would charge someone for work that never existed. `amount_disputed` holds it:
+ * the work happened and something is owed, and how much is what an admin
+ * decides. They route to different admin buckets.
+ *
+ * The server rejects an absent or unrecognised reason rather than defaulting,
+ * for the reason `requestEngagementEnd` refuses to guess: a default hands the
+ * professional the cheaper branch without them having chosen it, which is the
+ * one thing the split exists to prevent. The UI must not paper over that by
+ * preselecting one.
+ */
+export const contestEngagement = callFunction<
+  { projectId: string; reason: 'didnt_happen' | 'amount_disputed'; note?: string },
+  { ok: boolean }
+>('contestEngagement');
+
 export { canDispute, canMarkComplete } from '../utils/completion';
