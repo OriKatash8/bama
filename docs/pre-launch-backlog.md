@@ -84,7 +84,62 @@ and a third, `status: 'paid'` against a non-terminal engagement:
 Whatever collapses item 3 has to decide what an early payment means for
 `engagementStatus`, and these are the real shapes it must account for.
 
-## 5. Smaller, previously noted
+## 5. One relationship, two fields, no declared owner — project ↔ chat
+
+`chat.projectId` and `project.chatId` both describe the same link, and nothing
+says which is authoritative. Same shape as item 3 and as
+`slotActive`/`slotHolders`: a duplicated fact with no owner.
+
+Caught by the 2026-09-13 wipe, which followed `project.chatId` only. Three group
+chats survived it — `IVC1nsvxw02u0R8aKg2c`, `qTPHwFdLzsPwu8q7Mq5f`,
+`twfUQ1WnltLCHnb2fAuI` — each carrying a `projectId` for a project that was
+already deleted, because their projects had no back-reference. They were found
+only because the follow-up survey counted the `chats` collection instead of
+trusting the wipe's own "42 of 42 referenced" figure, which counted reachability
+rather than existence.
+
+The next cascade misses the same way. A fix has to pick one direction as the
+truth and derive or drop the other.
+
+## 6. `deleteProject`'s cascade is incomplete — the general form of item 5
+
+`functions/src/lifecycle/deletion.ts` deletes `priceOffers`, `bundleOffers`,
+`fees`, the chat document and the project. It does NOT delete:
+
+- `reviews` carrying the projectId;
+- `projectApplications` carrying it (a collection the cascade never knew about);
+- `notifications` whose `data.projectId` points at it;
+- the chat's `messages` — Firestore subcollections do not die with their parent;
+- four of the five project subcollections: `meetings`, `missions`,
+  `paymentRequests`, `removalRequests`.
+
+Every un-hired project deleted through the app has been leaving residue. The
+2026-09-13 sweep measured it: 13 priceOffers, 3 bundleOffers, 2
+projectApplications and 102 notifications were already orphaned before that wipe
+ran, from projects deleted in earlier sessions.
+
+`scripts/wipe-projects.mjs` covers all of it and uses `recursiveDelete`; the
+callable should be brought up to the same coverage rather than the script staying
+the only complete path.
+
+## 7. `communities` has no rule at all
+
+Live with 1 document ("צלמי sony", a different shape from the community chats:
+`status`, `members`, `ownerId`, no subcollections) and absent from
+`firestore.rules`, so default-deny makes it unreachable from any client. The app's
+discovery reads `chats where type == 'community'` instead — a community IS a chat
+document, and this collection appears to be an earlier representation.
+
+Either the document is vestigial and should go, or the collection is real and
+needs a rule. It cannot be both, and right now it is data no code can reach.
+
+## 8. A dead `subscriptions` rule
+
+Declared in `firestore.rules` with no code and no data — the subscription feature
+was removed in the compliance reversal. A rule granting access to a collection
+nothing writes is attack surface with no purpose.
+
+## 9. Smaller, previously noted
 
 - The INTERIM `paymentRequests` rule, and `repricing.ts:200`'s `< 0` vs `<= 0`.
 - Raise `MIN_OFFER_PRICE` above the commission floor so the 600% case is

@@ -140,15 +140,28 @@ async function collateral(liveProjectIds, chatIds) {
  */
 async function findOrphanedOffers(liveProjectIds) {
   const out = {};
-  for (const name of ['priceOffers', 'bundleOffers']) {
+  for (const name of ['priceOffers', 'bundleOffers', 'projectApplications']) {
     const snap = await db.collection(name).get();
     out[name] = snap.docs.filter((d) => {
       const pid = d.data().projectId;
       return pid && !liveProjectIds.has(pid);
     });
   }
+  // Notifications keep the id one level down, under `data`, which is also why
+  // they cannot be queried for it — no index reaches a nested field across the
+  // collection, so this scans. Their routing cases (end_date_soon,
+  // engagement_completed, charge_failed) all push to a project screen, so an
+  // orphan is a push that opens a page which fails to load.
+  const notifs = await db.collection('notifications').get();
+  out.notifications = notifs.docs.filter((d) => {
+    const pid = d.data()?.data?.projectId;
+    return pid && !liveProjectIds.has(pid);
+  });
   return out;
 }
+
+/** The collections the orphan sweep covers, in deletion order. */
+const ORPHAN_COLLECTIONS = ['priceOffers', 'bundleOffers', 'projectApplications', 'notifications'];
 
 /**
  * Writes nothing when there is nothing to write.
@@ -189,7 +202,7 @@ const orphans = await findOrphanedOffers(liveProjectIds);
 
 // Written BEFORE any count is printed, so an interrupted run has still saved it.
 const ledgerFile = exportLedger(feeDocs);
-const orphanCount = orphans.priceOffers.length + orphans.bundleOffers.length;
+const orphanCount = ORPHAN_COLLECTIONS.reduce((t, k) => t + orphans[k].length, 0);
 const orphanFile = exportJson('orphaned-offers', Object.fromEntries(
   Object.entries(orphans).map(([k, docs]) => [k, docs.map((d) => ({ id: d.id, ...d.data() }))]),
 ), orphanCount);
@@ -226,9 +239,10 @@ log(`      messages        ${n(extra.chats.messages)}   <- NOT deleted by the pr
 log(`      channel msgs    ${n(extra.chats.channelMessages)}`);
 log(`    notifications     ${n(extra.notifications.matching)} of ${n(extra.notifications.total)}`);
 log('');
-log('  ALREADY-ORPHANED OFFERS (pre-existing; swept too)');
-log(`    priceOffers       ${n(orphans.priceOffers.length)}`);
-log(`    bundleOffers      ${n(orphans.bundleOffers.length)}`);
+log('  ALREADY ORPHANED — point at a project that is ALREADY gone (swept too)');
+for (const name of ORPHAN_COLLECTIONS) {
+  log(`    ${name.padEnd(20)}${n(orphans[name].length)}`);
+}
 log('');
 log('  THE IRREVERSIBLE PART');
 log(`    fees recording a payment   ${n(money.paid)}   (₪${n(money.shekels)} collected)`);
@@ -253,9 +267,11 @@ for (const name of ['priceOffers', 'bundleOffers', 'reviews']) {
   deleted += refs.length;
   log(`    ${name}: ${n(refs.length)}`);
 }
-// The pre-existing orphans, swept in the same pass so the collection is actually
-// empty of project-linked offers rather than merely of live-project ones.
-for (const name of ['priceOffers', 'bundleOffers']) {
+// The pre-existing orphans, swept in the same pass so these collections are
+// actually empty of project-linked residue rather than merely of live-project
+// residue. `projectApplications` and the nested-id notifications are here because
+// deleteProject's cascade never covered them — see docs/pre-launch-backlog.md.
+for (const name of ORPHAN_COLLECTIONS) {
   const refs = orphans[name].map((d) => d.ref);
   for (let i = 0; i < refs.length; i += 400) {
     const batch = db.batch();
