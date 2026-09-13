@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
   // this form is longer and denser, and the blue is what separates one section
   // from the next. Colour lives here, not inline at each call site.
   // One size for every section title (description, dates, location, roles).
-  label: { fontSize: 13, lineHeight: 17, color: BLUE, marginTop: 10, marginBottom: 8 },
+  label: { fontSize: 15, lineHeight: 20, color: BLUE, marginTop: 10, marginBottom: 8 },
   input: {
     backgroundColor: '#ffffff',
     borderRadius: 10,
