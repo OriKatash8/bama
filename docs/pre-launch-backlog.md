@@ -170,7 +170,49 @@ Verified by injecting drift on each surface in turn.
 
 Run it before any release, and after any deploy.
 
-## 10. Smaller, previously noted
+## 10. Five instances of one bug — the fee shape invites it
+
+Note, do not build yet.
+
+The same defect has now been found and fixed in five places, across four layers:
+
+1. the balance screen's ROW filter — `.filter((r) => r.owed > 0)`;
+2. that screen's EMPTY STATE — gated on the total, so a professional whose only
+   row was a voided contest was told "nothing outstanding";
+3. the two NAV ENTRIES to that screen — MemberRow's balance pill and the
+   read-only chat's button, both `owed > 0`, so the row was correctly kept and
+   unreachable;
+4. the chat list's "Paid" pill — `outstandingFee(fee) === 0`, which a voided fee
+   satisfies, stamping Paid on money nobody paid;
+5. the chat list's completed line — keyed on `isCompletedProject`, a
+   project-level roll-up that a contest reopens.
+
+Every one is a call site reaching for an AMOUNT, or for a PROJECT-LEVEL ROLL-UP,
+to answer a question about one engagement's lifecycle. That is not five careless
+authors; it is the shape of the data. `ProjectFee` exposes `feeDue`,
+`paidAmount`, `feePaid`, `status`, `feeStatus` and `engagementStatus` side by
+side with nothing saying which answers what, so `=== 0` is always the nearest
+thing to hand and is usually almost right.
+
+What exists so far is five ad-hoc predicates in
+`src/features/pricing/utils/balance.ts` — `showsOnBalance`, `balanceRowNote`,
+`slotReason`, `engagementStanding`, `feePaidEarly` — each added when its own call
+site broke. They work, and adding a sixth when the sixth call site breaks is the
+same treatment rather than a fix.
+
+WORTH DOING: one accessor that answers lifecycle questions about an engagement,
+so no call site has a reason to reach for an amount. Something like
+`engagementView(fee, now)` returning a single object — `{ standing, owes,
+amountOwed, paidEarly, showsOnBalance, contestWindowEndsAt, note }` — with the
+raw fields treated as private to it. Then the compiler stops the next
+`fee.feeDue === 0`, rather than a code review or a bug report.
+
+Not built now because it touches every fee-reading surface at once and wants
+doing in one pass with screen tests already in place — which they now are:
+`projectDetailsFeeScoping`, `ChatsScreenFeeCopy` and `balance.test.ts` between
+them pin the behaviour the accessor would have to preserve.
+
+## 11. Smaller, previously noted
 
 - The INTERIM `paymentRequests` rule, and `repricing.ts:200`'s `< 0` vs `<= 0`.
 - Raise `MIN_OFFER_PRICE` above the commission floor so the 600% case is

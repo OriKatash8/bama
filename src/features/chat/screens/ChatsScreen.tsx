@@ -18,7 +18,8 @@ import type { Chat } from '../types';
 import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import type { MarketplaceListingType } from '@features/marketplace/types';
 import { listenToMyFees } from '@features/pricing/services/feesService';
-import { owesFee, outstandingFee } from '@features/pricing/utils/fee';
+import { owesFee } from '@features/pricing/utils/fee';
+import { engagementStanding, feePaidEarly } from '@features/pricing/utils/balance';
 import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 
@@ -437,10 +438,21 @@ export function ChatsScreen({
 
     // This user's own fee on this project. Absent = exempt = nothing owed.
     const myFee = viewerIsPro && item.projectId ? feesByProject.get(item.projectId) : undefined;
+    // Where MY part stands — asked of my own engagement, not of the project.
+    // `isCompletedProject` is a roll-up over everyone, and a contest reopens the
+    // project, so keying the professional's copy on it made the row change
+    // character the moment they raised an issue.
+    //
+    // The project is consulted ONLY when there is no engagement record at all
+    // ('unknown' — exempt, or a row predating engagements), because then it is
+    // the only signal there is.
+    const standing = engagementStanding(myFee ?? null);
+    const myPartFinished = standing === 'unknown' ? isCompletedProject : standing === 'finished';
+
     // DISPLAY ONLY. This picks which sentence the row shows; it must never decide
     // what the row can DO. See the branch further down that used to drop the
     // trash button when this was true.
-    const iOweOnThisProject = viewerIsPro && isCompletedProject && owesFee(myFee ?? null);
+    const iOweOnThisProject = viewerIsPro && myPartFinished && owesFee(myFee ?? null);
 
     // The client is asked for a review only while one is actually outstanding.
     // `=== false` is deliberate and matches ReviewFlowGate: undefined means the
@@ -449,27 +461,30 @@ export function ChatsScreen({
     // never consulted review state at all.
     const clientOwesReview = viewerIsClient && info?.reviewsCompleted === false;
 
-    // Early payment: a real chargeable fee ('owed') with nothing left outstanding,
-    // on a project still running. Mirrors MemberRow's fee_paid line exactly.
+    // Early payment (§5): money actually recorded, on work still running.
     //
-    // NOT `!owesFee(myFee)`: that is also false for a MISSING fee doc (exempt) and
-    // for feeStatus 'included' (subscriber), so it would stamp "paid" on every
-    // subscriber and every legacy row where nothing was ever charged.
-    const feeSettledEarly =
-      viewerIsPro &&
-      !isCompletedProject &&
-      myFee?.feeStatus === 'owed' &&
-      outstandingFee(myFee) === 0;
+    // This used to ask `outstandingFee(myFee) === 0` on `!isCompletedProject`,
+    // and both halves were the wrong question. A didnt_happen contest zeroes the
+    // fee AND reopens the project, so every clause passed and the row stamped
+    // "Paid" on a voided fee nobody had paid. feePaidEarly asks whether money was
+    // recorded, of an engagement that is still open.
+    const feeSettledEarly = viewerIsPro && feePaidEarly(myFee ?? null);
 
     // Role-aware completed line. No amount appears anywhere in this list.
     // Three states, not two: a professional who owes is told to settle, but a
     // SUBSCRIBER (feeStatus 'included') or an exempt legacy project has nothing
     // to settle, so "tap to close" would be a lie — they just get the fact.
-    const completedLine = !isCompletedProject
-      ? null
-      : viewerIsPro
-      ? (iOweOnThisProject ? t('chats.completed_pro') : t('chats.completed_pro_settled'))
-      : clientOwesReview
+    const completedLine = viewerIsPro
+      // A contest is its own state and gets its own sentence. Falling through to
+      // "Project complete" would tell a professional their part is settled while
+      // an admin is still looking at it; falling through to null would drop the
+      // row's line the moment they raised the issue, which is what it did.
+      ? (standing === 'under_review'
+        ? t('chats.completed_pro_review')
+        : myPartFinished
+        ? (iOweOnThisProject ? t('chats.completed_pro') : t('chats.completed_pro_settled'))
+        : null)
+      : isCompletedProject && clientOwesReview
       ? t('chats.completed_client')
       : null;
 
@@ -478,7 +493,7 @@ export function ChatsScreen({
     // so once they have written it and the row reverts, the badge is the only
     // thing still marking the project finished. Cancelled keeps it for both.
     const showStatusBadge =
-      status != null && !(isCompletedProject && viewerIsPro);
+      status != null && !(myPartFinished && viewerIsPro);
     return (
       <TouchableOpacity
         key={item.id}

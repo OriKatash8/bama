@@ -92,3 +92,52 @@ export function slotReason(
   if (project?.status === 'completed') return 'completed';
   return 'active';
 }
+
+/**
+ * Where this professional's OWN engagement stands.
+ *
+ * The question the chat list and the row copy actually need, and the one they
+ * were not asking. They read the PROJECT's status instead — a roll-up over
+ * everyone — and a contest reopens a completed project (derive.ts:187), so a
+ * professional who raised an issue silently stopped being "on a completed
+ * project" and the row changed character underneath them.
+ *
+ * `unknown` is a real answer and not an error: a fee document that does not exist
+ * means exempt, or a record from before engagements existed. Callers fall back to
+ * the project only in that case, because it is the only signal there is.
+ */
+export type EngagementStanding = 'open' | 'finished' | 'under_review' | 'ended' | 'unknown';
+
+export function engagementStanding(
+  fee: Pick<ProjectFee, 'engagementStatus'> | null | undefined,
+): EngagementStanding {
+  if (!fee) return 'unknown';
+  switch (fee.engagementStatus ?? 'hired') {
+    case 'disputed': return 'under_review';
+    case 'completed': return 'finished';
+    case 'withdrawn':
+    case 'cancelled': return 'ended';
+    default: return 'open';
+  }
+}
+
+/**
+ * Did this professional actually PAY, on work that is still running? (§5)
+ *
+ * "Actually paid" means money was recorded — `feePaid` or `status: 'paid'`, both
+ * written by settleFee. It is NOT `outstandingFee(fee) === 0`, and that
+ * difference is the whole bug: a `didnt_happen` contest sets `feeDue: 0` and
+ * `status: 'not_owed'` without anyone paying anything, so an amount-shaped test
+ * stamped a "Paid" pill on a voided fee that is still in front of an admin.
+ *
+ * `feeStatus === 'owed'` stays: exempt and legacy 'included' records never owed
+ * anything, so "paid early" is meaningless for them.
+ */
+export function feePaidEarly(
+  fee: Pick<ProjectFee, 'feeStatus' | 'feePaid' | 'status' | 'engagementStatus'> | null | undefined,
+): boolean {
+  if (!fee) return false;
+  if (fee.feeStatus !== 'owed') return false;
+  if (!(fee.feePaid === true || fee.status === 'paid')) return false;
+  return engagementStanding(fee) === 'open';
+}

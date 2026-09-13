@@ -181,7 +181,8 @@
     "filter_completed": "Completed",
     "filter_marketplace": "Marketplace",
     "empty_filter_title": "No chats match this filter",
-    "click_for_community_info": "Tap for community details"
+    "click_for_community_info": "Tap for community details",
+    "completed_pro_review": "Your part is with our team"
   },
   "project_details": {
     "header": "Project Details",
