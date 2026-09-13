@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { CommunityDiscoveryTab } from '../CommunityDiscoveryTab';
 import { useCommunityDiscovery } from '../../hooks/useCommunityDiscovery';
 import en from '@core/i18n/translations/en.json';
@@ -7,8 +7,10 @@ import en from '@core/i18n/translations/en.json';
 /**
  * "MY COMMUNITIES" ONLY EXISTS FOR SOMEONE WHO HAS ONE.
  *
- * A user in no communities gets no heading and no strip — not a strip of
- * "Example" filler tiles — so the tab opens straight on Discover.
+ * A user in no communities gets no heading and no strip, so the tab opens
+ * straight on Discover. A user in fewer than five gets "+" tiles filling the
+ * strip up to five, numbered after their real ones; a "+" tile takes them down
+ * to the Discover cards, where the communities to join are.
  */
 
 jest.mock('expo-router', () => ({
@@ -29,7 +31,13 @@ jest.mock('@core/stores/authStore', () => ({
 
 const mockDiscovery = useCommunityDiscovery as jest.MockedFunction<typeof useCommunityDiscovery>;
 
-function withMyCommunities(myCommunities: unknown[]) {
+function communities(n: number) {
+  return Array.from({ length: n }, (_, i) => ({
+    id: `c${i + 1}`, type: 'community', name: `Guild ${i + 1}`, members: ['u1'],
+  }));
+}
+
+function renderWith(myCommunities: unknown[], pageScrollRef: unknown = { current: null }) {
   mockDiscovery.mockReturnValue({
     myCommunities: myCommunities as never,
     discover: [],
@@ -37,19 +45,54 @@ function withMyCommunities(myCommunities: unknown[]) {
     requestToJoin: jest.fn(),
     cancelJoinRequest: jest.fn(),
   } as never);
+  return render(
+    <CommunityDiscoveryTab onRequestCommunity={jest.fn()} pageScrollRef={pageScrollRef as never} />,
+  );
 }
 
+const placeholderName = (n: number) => en.communities.placeholder_name.replace('{{n}}', String(n));
+
 it('hides the whole "My Communities" section when the user is in none', () => {
-  withMyCommunities([]);
-  const r = render(<CommunityDiscoveryTab onRequestCommunity={jest.fn()} />);
+  const r = renderWith([]);
   expect(r.queryByText(en.communities.my_communities)).toBeNull();
-  expect(r.queryByText('Example')).toBeNull();
+  expect(r.queryAllByText('+')).toHaveLength(0);
   expect(r.getByText(en.communities.discover)).toBeTruthy();
 });
 
-it('shows the section with the user\'s communities when they have one', () => {
-  withMyCommunities([{ id: 'c1', type: 'community', name: 'Gaffers Guild', members: ['u1'] }]);
-  const r = render(<CommunityDiscoveryTab onRequestCommunity={jest.fn()} />);
+it('fills the strip up to five with "+" tiles numbered after the real communities', () => {
+  const r = renderWith(communities(1));
   expect(r.getByText(en.communities.my_communities)).toBeTruthy();
-  expect(r.getByText('Gaffers Guild')).toBeTruthy();
+  expect(r.getByText('Guild 1')).toBeTruthy();
+  expect(r.getAllByText('+')).toHaveLength(4);
+  [2, 3, 4, 5].forEach((n) => expect(r.getByText(placeholderName(n))).toBeTruthy());
+  expect(r.queryByText(placeholderName(1))).toBeNull();
+});
+
+it('shows only the tiles still missing — three communities leave two', () => {
+  const r = renderWith(communities(3));
+  expect(r.getAllByText('+')).toHaveLength(2);
+  expect(r.getByText(placeholderName(4))).toBeTruthy();
+  expect(r.getByText(placeholderName(5))).toBeTruthy();
+});
+
+it.each([5, 7])('shows no "+" tiles once the user is in %i communities', (n) => {
+  const r = renderWith(communities(n));
+  expect(r.queryAllByText('+')).toHaveLength(0);
+});
+
+it('a "+" tile scrolls the PAGE (the screen\'s ScrollView) to just above the first Discover card', () => {
+  // The tab sits inside the chats screen's scrolling <Screen>; its own ScrollView
+  // grows to full height and never scrolls, so scrolling it does nothing on a
+  // phone. The scroll must go to the page ScrollView handed in from the screen.
+  const content = { contentView: true };
+  const pageScrollRef = { current: { scrollTo: jest.fn(), getInnerViewRef: () => content } };
+  const r = renderWith(communities(2), pageScrollRef);
+  // jest-expo's View is a mock whose measureLayout never calls back; give the
+  // anchor one that reports its offset within the page's content view.
+  const anchor = r.UNSAFE_getByProps({ testID: 'discover-cards-anchor' }).instance as {
+    measureLayout: (rel: unknown, ok: (x: number, y: number, w: number, h: number) => void) => void;
+  };
+  anchor.measureLayout = (relativeTo, ok) => { if (relativeTo === content) ok(0, 456, 390, 0); };
+  fireEvent.press(r.getAllByText('+')[0]);
+  expect(pageScrollRef.current.scrollTo).toHaveBeenCalledWith({ y: 456 - 8, animated: true });
 });

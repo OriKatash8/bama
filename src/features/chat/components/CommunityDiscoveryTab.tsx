@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, type RefObject } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Users, Search, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
@@ -28,6 +28,13 @@ function makeT(translations: Translations) {
 }
 
 
+/** The "my communities" strip is filled up to this many tiles with "+" tiles
+ *  that lead to Discover. */
+const STRIP_FILL_COUNT = 5;
+
+/** How far above the first Discover card a "+" tile's scroll stops. */
+const CARDS_SCROLL_INSET = 8;
+
 const GRADIENTS: [string, string][] = [
   ['#1e4fa3', '#cb6ce6'],
   ['#0ea5e9', '#6366f1'],
@@ -45,6 +52,9 @@ function communityGradient(id: string): [string, string] {
 
 interface Props {
   onRequestCommunity: () => void;
+  /** The screen's scrolling ScrollView. This tab renders inside it, so its own
+   *  ScrollView grows to full height and never scrolls — the page is what moves. */
+  pageScrollRef: RefObject<ScrollView | null>;
 }
 
 /** Exported so the community details page renders the SAME avatar — the gradient
@@ -74,7 +84,7 @@ export function CommunityAvatar({ community, size = 46 }: { community: Chat; siz
   );
 }
 
-export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
+export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Props) {
   const colors = useTheme();
   const font = useAppFont();
   const router = useRouter();
@@ -87,6 +97,23 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
 
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+
+  // ── Page scroll: a "+" tile in the strip takes the user down to the Discover
+  //    cards themselves — past the heading, search and chips — so the next tap
+  //    can be a Join. ──
+  const cardsAnchorRef = useRef<View>(null);
+  function scrollToDiscover() {
+    const page = pageScrollRef.current;
+    // getInnerViewRef is on ScrollView at runtime but missing from its TS types.
+    const content = (page as unknown as { getInnerViewRef?: () => View | null } | null)?.getInnerViewRef?.();
+    const anchor = cardsAnchorRef.current;
+    if (!page || !content || !anchor) return;
+    // Measured against the page's content view, which is the space scrollTo offsets
+    // are in — however much header sits above this tab.
+    anchor.measureLayout(content, (_x, y) => {
+      page.scrollTo({ y: Math.max(0, y - CARDS_SCROLL_INSET), animated: true });
+    });
+  }
 
   // ── My-communities strip scroll (arrows) ──
   const stripRef = useRef<ScrollView>(null);
@@ -205,6 +232,38 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
                   </TouchableOpacity>
                 );
               })}
+
+              {/* Fill the strip up to STRIP_FILL_COUNT, numbered after the real
+                  communities. Each "+" is an invitation, not a community: it
+                  scrolls down to Discover, where the communities to join are. */}
+              {Array.from({ length: Math.max(0, STRIP_FILL_COUNT - myCommunities.length) }, (_, i) => {
+                const n = myCommunities.length + i + 1;
+                return (
+                  <TouchableOpacity
+                    key={`fill-${n}`}
+                    style={[styles.stripItem, rtl && { transform: [{ scaleX: -1 }] }]}
+                    onPress={scrollToDiscover}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('communities.discover')}
+                  >
+                    <View style={styles.placeholderSquare}>
+                      <AppText weight="semiBold" style={styles.placeholderPlus}>+</AppText>
+                    </View>
+                    {/* One row always: "Community 5" overflows the 68pt tile at the
+                        shared size while "קהילה 5" does not, so it shrinks to fit. */}
+                    <AppText
+                      weight="regular"
+                      style={styles.stripTitle}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.8}
+                    >
+                      {t('communities.placeholder_name', { n })}
+                    </AppText>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
             {canScrollLeft && (
@@ -222,7 +281,9 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
       )}
 
       {/* Discover */}
-      <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad', marginTop: myCommunities.length > 0 ? 20 : 0, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText
+        weight="semiBold"
+        style={[styles.sectionLabel, { color: '#004aad', marginTop: myCommunities.length > 0 ? 20 : 0, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
       </AppText>
 
@@ -274,6 +335,9 @@ export function CommunityDiscoveryTab({ onRequestCommunity }: Props) {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Where the Discover cards begin — a "+" tile scrolls the page to here. */}
+      <View ref={cardsAnchorRef} testID="discover-cards-anchor" collapsable={false} />
 
       {filteredDiscover.length === 0 ? (
         <View style={styles.emptyState}>
@@ -406,6 +470,19 @@ const styles = StyleSheet.create({
   stripOuter: { marginHorizontal: -16, marginBottom: 8 },
   stripScroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 12 },
   stripItem: { alignItems: 'center', width: 68 },
+  // Matches CommunityAvatar's geometry at size 60 (radius = size * 0.26), so a
+  // "+" tile occupies exactly the space a real community does.
+  placeholderSquare: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,74,173,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderPlus: { fontSize: 26, lineHeight: 30, color: 'rgba(0,74,173,0.55)' },
   stripArrow: {
     position: 'absolute',
     top: 20,

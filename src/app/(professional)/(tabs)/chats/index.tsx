@@ -120,6 +120,8 @@ export default function ProfessionalChatsScreen() {
   // Category pills: horizontal scroll ref + captured x offsets to scroll the
   // selected category into view.
   const categoryScrollRef = useRef<ScrollView>(null);
+  // The page's own ScrollView — the communities tab scrolls it down to Discover.
+  const pageScrollRef = useRef<ScrollView>(null);
   /** Per-pill layout within the content container, plus the viewport width —
    *  both are needed to anchor a pill to the correct edge in each direction. */
   const categoryOffsets = useRef<Record<string, { x: number; width: number }>>({});
@@ -263,7 +265,7 @@ export default function ProfessionalChatsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <Screen style={{ padding: 0, paddingBottom: 100 }}>
+    <Screen scrollRef={pageScrollRef} style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
       <View style={styles.headerWrap}>
         <View style={[styles.gradient, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
@@ -347,7 +349,7 @@ export default function ProfessionalChatsScreen() {
 
       {/* Communities tab */}
       {active === 'communities' && (
-        <CommunityDiscoveryTab onRequestCommunity={() => setCommModal(true)} />
+        <CommunityDiscoveryTab onRequestCommunity={() => setCommModal(true)} pageScrollRef={pageScrollRef} />
       )}
 
       {/* Courses tab */}

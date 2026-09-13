@@ -933,6 +933,7 @@
     "approve": "אשר",
     "reject": "דחה",
     "members": "חברים",
+    "placeholder_name": "קהילה {{n}}",
     "no_discover": "אין קהילות לגילוי",
     "add_photo": "הוסף תמונה",
     "change_photo": "שנה תמונה",
