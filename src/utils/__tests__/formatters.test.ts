@@ -1,4 +1,5 @@
-import { formatCurrency, formatDate, formatDuration, formatRelativeTime } from '../formatters';
+import { execFileSync } from 'child_process';
+import { formatCurrency, formatDate, formatDuration, formatRelativeTime, formatIsoDay } from '../formatters';
 
 describe('formatCurrency', () => {
   it('formats USD by default', () => {
@@ -52,5 +53,39 @@ describe('formatRelativeTime', () => {
   it('returns days ago', () => {
     const seconds = Math.floor(Date.now() / 1000) - 172800;
     expect(formatRelativeTime({ seconds })).toBe('2d ago');
+  });
+});
+
+/**
+ * Project dates are stored as ISO day strings ('2026-09-14') and shown as DD/MM/YYYY.
+ * The string is reformatted directly, never through `new Date(iso)`, which reads an
+ * ISO day as UTC midnight and shows the PREVIOUS day in any timezone west of UTC.
+ */
+describe('formatIsoDay', () => {
+  it('shows an ISO day as DD/MM/YYYY', () => {
+    expect(formatIsoDay('2026-09-14')).toBe('14/09/2026');
+    expect(formatIsoDay('2027-01-05')).toBe('05/01/2027');
+    expect(formatIsoDay('2026-12-31')).toBe('31/12/2026');
+  });
+
+  it('never shifts the day, whatever the timezone', () => {
+    // A timezone can't be changed inside a running jest process, so run the real
+    // function in fresh node processes started with TZ set. West of UTC is where a
+    // `new Date(iso)` implementation shows the previous day.
+    const fn = formatIsoDay.toString();
+    for (const tz of ['America/Los_Angeles', 'UTC', 'Asia/Jerusalem', 'Pacific/Kiritimati']) {
+      const out = execFileSync(process.execPath, ['-e', `const f = (${fn}); process.stdout.write(f('2026-03-01'))`], {
+        env: { ...process.env, TZ: tz },
+        encoding: 'utf8',
+      });
+      expect({ tz, out }).toEqual({ tz, out: '01/03/2026' });
+    }
+  });
+
+  it('leaves anything that is not an ISO day unchanged', () => {
+    expect(formatIsoDay('')).toBe('');
+    expect(formatIsoDay('flexible')).toBe('flexible');
+    expect(formatIsoDay('14/09/2026')).toBe('14/09/2026');
+    expect(formatIsoDay('2026-09-14T10:00:00Z')).toBe('2026-09-14T10:00:00Z');
   });
 });

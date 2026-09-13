@@ -25,6 +25,7 @@ import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest, FilledSlot } from '@core/types/project';
 import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@features/projects/constants/roleQuestions';
 import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
+import { formatIsoDay } from '@utils/formatters';
 
 // Role tile images, keyed by RoleDef id.
 const ROLE_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -331,7 +332,7 @@ export default function HomeScreen() {
                     ) : null}
                     <CalendarDays size={exec ? 20 : 28} color="#004aad" strokeWidth={1.8} />
                     <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                      {exec || t('builder.placeholder_date')}
+                      {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -358,7 +359,7 @@ export default function HomeScreen() {
                     ) : null}
                     <CalendarDays size={deadline ? 20 : 28} color="#004aad" strokeWidth={1.8} />
                     <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                      {deadline === 'flexible' ? t('builder.flexible') : (deadline || t('builder.placeholder_deadline'))}
+                      {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
                     </Text>
                   </TouchableOpacity>
 {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}

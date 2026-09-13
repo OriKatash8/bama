@@ -12,6 +12,19 @@ export function formatDate(timestamp: Pick<Timestamp, 'seconds'>): string {
   });
 }
 
+/**
+ * An ISO day string ('2026-09-14') shown as DD/MM/YYYY ('14/09/2026').
+ *
+ * Reformats the string itself. `new Date('2026-09-14')` is UTC midnight, which is
+ * the previous day in any timezone west of UTC. The stored value stays ISO:
+ * the calendar, the date-order checks and the server's parseDeadline all read it.
+ * Anything that is not exactly an ISO day (e.g. 'flexible') is returned unchanged.
+ */
+export function formatIsoDay(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
 export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);

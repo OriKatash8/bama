@@ -18,6 +18,7 @@ import { CalendarCheck, CalendarDays, ChevronLeft, MapPin, Users, X } from 'luci
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
+import { formatIsoDay } from '@utils/formatters';
 
 type Translations = typeof en;
 
@@ -284,11 +285,11 @@ export default function SummaryScreen() {
         {/* ── Card 2: when & where ── */}
         <View style={styles.card}>
           {renderCardHeader(t('builder.section_when_where'), 1)}
-          {renderMetaRow(CalendarDays, t('builder.execution'), exec)}
+          {renderMetaRow(CalendarDays, t('builder.execution'), formatIsoDay(exec))}
           {renderMetaRow(
             CalendarCheck,
             t('builder.deadline'),
-            deadline === 'flexible' ? t('builder.flexible') : deadline,
+            deadline === 'flexible' ? t('builder.flexible') : formatIsoDay(deadline),
             deadline === 'flexible',
           )}
           {renderMetaRow(MapPin, t('builder.location'), location)}
