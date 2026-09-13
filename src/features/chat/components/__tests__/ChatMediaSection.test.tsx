@@ -6,9 +6,9 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
 /**
- * WhatsApp-style media on project details: a card with the count and the latest
- * four thumbnails, which opens a pop-up grid of every photo and video in the
- * project's chat; tapping one opens the full-screen viewer at that item.
+ * WhatsApp-style media on project details: a one-line card with the title and the
+ * count, and NO thumbnails on the page. The photos and videos only appear in the
+ * pop-up grid it opens; tapping one opens the full-screen viewer at that item.
  */
 
 const mockViewer = jest.fn();
@@ -45,15 +45,13 @@ it('renders nothing without a chat id', () => {
   expect(r.toJSON()).toBeNull();
 });
 
-it('shows the title, the count and the latest four thumbnails', () => {
+it('on the page: only the title and the count, no media items', () => {
   mockUseChatMedia.mockReturnValue([item(1), item(2, 'video'), item(3), item(4), item(5), item(6)]);
   const r = render(<ChatMediaSection chatId="c1" />);
   expect(r.getByText(en.project_details.media)).toBeTruthy();
   expect(r.getByText('6')).toBeTruthy();
-  expect(r.getAllByTestId(/^media-strip-m\d+$/).map((n) => n.props.testID)).toEqual([
-    'media-strip-m1', 'media-strip-m2', 'media-strip-m3', 'media-strip-m4',
-  ]);
-  expect(r.getByTestId('media-strip-m2-play')).toBeTruthy();
+  expect(r.queryAllByTestId(/^media-(strip|grid-item)-/)).toHaveLength(0);
+  expect(mockViewer).not.toHaveBeenCalledWith(expect.objectContaining({ visible: true }));
 });
 
 it('opens a pop-up grid with every item, then the viewer at the tapped one', () => {
@@ -65,6 +63,7 @@ it('opens a pop-up grid with every item, then the viewer at the tapped one', () 
   fireEvent.press(r.getByRole('button', { name: `${en.project_details.media} 6` }));
   expect(r.getAllByTestId(/^media-grid-item-m\d+$/)).toHaveLength(6);
 
+  expect(r.getByTestId('media-grid-item-m2-play')).toBeTruthy();
   fireEvent.press(r.getByTestId('media-grid-item-m5'));
   const props = mockViewer.mock.calls[mockViewer.mock.calls.length - 1][0];
   expect(props.visible).toBe(true);
@@ -72,15 +71,6 @@ it('opens a pop-up grid with every item, then the viewer at the tapped one', () 
   expect(props.assets).toEqual(all);
 
   props.onClose();
-});
-
-it('a thumbnail in the strip opens the viewer straight at that item', () => {
-  const all = [item(1), item(2), item(3)];
-  mockUseChatMedia.mockReturnValue(all);
-  const r = render(<ChatMediaSection chatId="c1" />);
-  fireEvent.press(r.getByTestId('media-strip-m3'));
-  const props = mockViewer.mock.calls[mockViewer.mock.calls.length - 1][0];
-  expect(props).toEqual(expect.objectContaining({ visible: true, initialIndex: 2 }));
 });
 
 it('closes the pop-up', () => {

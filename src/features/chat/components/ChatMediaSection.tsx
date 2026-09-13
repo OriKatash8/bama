@@ -20,7 +20,6 @@ function makeT(translations: Translations) {
   };
 }
 
-const STRIP_COUNT = 4;
 const GRID_COLUMNS = 3;
 const GRID_GAP = 2;
 
@@ -42,10 +41,10 @@ function Thumb({ asset, size, testID }: { asset: MediaAsset; size: number; testI
 }
 
 /**
- * WhatsApp-style media for a project's chat: a card with the count and the latest
- * four thumbnails. It opens a pop-up grid of every photo and video; any item opens
- * the full-screen viewer there, with swipe, pinch-zoom and video playback.
- * Renders nothing when there's no chat or no media.
+ * WhatsApp-style media for a project's chat: a one-line card with the title and the
+ * count. The items themselves only appear in the pop-up grid it opens, where any item
+ * opens the full-screen viewer (swipe, pinch-zoom, video playback). Renders nothing when
+ * there's no chat or no media.
  */
 export function ChatMediaSection({ chatId }: { chatId: string | undefined }) {
   const language = useSettingsStore((s) => s.language);
@@ -82,29 +81,16 @@ export function ChatMediaSection({ chatId }: { chatId: string | undefined }) {
           <Chevron size={18} color="rgba(15,15,31,0.4)" strokeWidth={2} />
         </TouchableOpacity>
 
-        <View style={[styles.strip, { flexDirection: rowDir }]}>
-          {media.slice(0, STRIP_COUNT).map((asset, i) => (
-            <TouchableOpacity
-              key={asset.id}
-              testID={`media-strip-${asset.id}`}
-              style={styles.stripItem}
-              onPress={() => setViewerIndex(i)}
-              activeOpacity={0.85}
-            >
-              <Thumb asset={asset} size={72} testID={`media-strip-${asset.id}`} />
-            </TouchableOpacity>
-          ))}
-        </View>
       </View>
 
-      <Modal visible={gridOpen} animationType="slide" onRequestClose={() => setGridOpen(false)}>
+      <Modal visible={gridOpen} animationType="slide" onRequestClose={() => { setViewerIndex(null); setGridOpen(false); }}>
         <View style={styles.gridScreen} testID="media-grid">
           <View style={[styles.gridHeader, { flexDirection: rowDir }]}>
             <AppText weight="bold" style={styles.gridTitle}>
               {`${t('project_details.media')} · ${media.length}`}
             </AppText>
             <TouchableOpacity
-              onPress={() => setGridOpen(false)}
+              onPress={() => { setViewerIndex(null); setGridOpen(false); }}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel={t('project_details.media_close')}
@@ -129,26 +115,15 @@ export function ChatMediaSection({ chatId }: { chatId: string | undefined }) {
             )}
           />
         </View>
-        {/* Inside the grid's Modal while it's open, so iOS can present the viewer
-            over it (a sibling Modal can't be presented over another). */}
-        {gridOpen && (
-          <PortfolioViewer
-            assets={media}
-            initialIndex={viewerIndex ?? 0}
-            visible={viewerIndex !== null}
-            onClose={() => setViewerIndex(null)}
-          />
-        )}
-      </Modal>
-
-      {!gridOpen && (
+        {/* Inside the grid's Modal, so iOS can present the viewer over it (a
+            sibling Modal can't be presented over another). */}
         <PortfolioViewer
           assets={media}
           initialIndex={viewerIndex ?? 0}
           visible={viewerIndex !== null}
           onClose={() => setViewerIndex(null)}
         />
-      )}
+      </Modal>
     </>
   );
 }
@@ -166,7 +141,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 14,
     padding: 14,
-    gap: 10,
     borderWidth: 1,
     borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
@@ -174,8 +148,6 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 8 },
   title: { flex: 1, fontSize: 15, color: '#004aad' },
   count: { fontSize: 14, color: 'rgba(15,15,31,0.4)' },
-  strip: { gap: 8 },
-  stripItem: { borderRadius: 10, overflow: 'hidden' },
   playBadge: {
     position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)',
