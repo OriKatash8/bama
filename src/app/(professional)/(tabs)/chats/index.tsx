@@ -820,7 +820,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.2)',
+    // A real blue outline, like the chats filter chips (ChatsScreen filterChip):
+    // at 20% opacity the unselected pills read as grey and borderless.
+    borderColor: '#004aad',
     backgroundColor: '#ffffff',
   },
   catPillActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
