@@ -6,7 +6,7 @@ import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
-import { useOffersSeenStore } from '@core/stores/offersSeenStore';
+import { useOffersSeenStore, unseenOfferCount } from '@core/stores/offersSeenStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { listenToUserChats } from '@features/chat/services/chatService';
 import { usePriceOffers } from '@features/offers/hooks/usePriceOffers';
@@ -58,20 +58,15 @@ export default function ClientTabsLayout() {
   const inProjectReview = pathname.includes('/home/summary');
   const hideTabBar = inChatRoom || inProjectReview;
 
-  // Badge the Projects tab for price offers newer than the client last viewed
-  // it. Offers have no seen flag, so "last seen" is tracked per device.
+  // Badge the Projects tab for price offers the client hasn't seen. "Seen" means
+  // they opened the price offers tab on the Projects page (which calls markSeen);
+  // merely arriving on Projects doesn't clear it. Offers have no seen flag, so
+  // "last seen" is tracked per device.
   const { offers } = usePriceOffers();
   const { bundles } = useBundleOffers();
   const lastSeenAt = useOffersSeenStore((s) => s.lastSeenAt);
-  const markSeen = useOffersSeenStore((s) => s.markSeen);
   const seenTs = userId ? (lastSeenAt[userId] ?? 0) : 0;
-  const offerTimes = [...offers, ...bundles].map((o) => (o.createdAt?.seconds ?? 0) * 1000);
-  const newOffers = offerTimes.filter((ts) => ts > seenTs).length;
-  const maxOfferTs = offerTimes.length ? Math.max(...offerTimes) : 0;
-  const onProjects = pathname.includes('/projects');
-  useEffect(() => {
-    if (onProjects && userId && maxOfferTs > 0) markSeen(userId, maxOfferTs);
-  }, [onProjects, userId, maxOfferTs, markSeen]);
+  const newOffers = unseenOfferCount([...offers, ...bundles], seenTs);
 
   const router = useRouter();
   const pathnameRef = useRef(pathname);

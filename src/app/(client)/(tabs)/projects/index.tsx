@@ -17,7 +17,7 @@ import { useAcceptBundleOffer } from '@features/offers/hooks/useAcceptBundleOffe
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
-import { useOffersSeenStore } from '@core/stores/offersSeenStore';
+import { useOffersSeenStore, unseenOfferCount, newestOfferMs } from '@core/stores/offersSeenStore';
 import { getDocument } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -92,27 +92,6 @@ export default function ProjectsPage() {
     val.setValue(0.9);
     Animated.spring(val, { toValue: 1, useNativeDriver: true, friction: 4, tension: 120 }).start();
   }, [segment, segScales]);
-
-  /**
-   * The "unseen offers" baseline, frozen during the FIRST render.
-   *
-   * (client)/(tabs)/_layout.tsx:71-74 calls markSeen the moment the route
-   * matches /projects, so by the time any effect here runs the stored lastSeenAt
-   * has already jumped to now and nothing looks unseen. Reading it in render
-   * beats that: parent effects run after children's, and a render-phase read
-   * beats both.
-   *
-   * The TIMESTAMP is frozen, not the count. On first render `offers` and
-   * `bundles` are still loading, so a frozen count would be 0 for reasons that
-   * have nothing to do with what the client has seen — the strip would never
-   * appear. Freezing the baseline lets offers arrive later and still be measured
-   * against the right moment.
-   */
-  const seenAtEntry = useRef<number | null>(null);
-  const lastSeenAt = useOffersSeenStore((s) => s.lastSeenAt);
-  if (seenAtEntry.current === null && userId) {
-    seenAtEntry.current = lastSeenAt[userId] ?? 0;
-  }
 
   const [offerSort, setOfferSort] = useState<OfferSort>(null);
   const [showOnly, setShowOnly] = useState<ShowOnly>('all');
@@ -307,14 +286,22 @@ export default function ProjectsPage() {
     return counts;
   }, [offers, bundles]);
 
-  /** Offers that arrived since the client last looked, measured against the
-   *  baseline frozen on entry (see seenAtEntry). Drives the strip only. */
-  const newOffersCount = useMemo(() => {
-    const since = seenAtEntry.current;
-    if (since === null) return 0;
-    return [...offers, ...bundles]
-      .filter((o) => (o.createdAt?.seconds ?? 0) * 1000 > since).length;
-  }, [offers, bundles]);
+  /**
+   * Unseen offers: created after the last time this client OPENED the price offers
+   * tab. Drives the purple circle on the "הצעות מחיר" pill and the new-offers strip,
+   * counted exactly like the bottom Projects tab badge (shared helpers).
+   */
+  const lastSeenAt = useOffersSeenStore((s) => s.lastSeenAt);
+  const markSeen = useOffersSeenStore((s) => s.markSeen);
+  const allOffers = useMemo(() => [...offers, ...bundles], [offers, bundles]);
+  const newOffersCount = userId ? unseenOfferCount(allOffers, lastSeenAt[userId] ?? 0) : 0;
+  const newestMs = newestOfferMs(allOffers);
+
+  // Being on the price offers tab is what "seen" means: opening it clears the circle
+  // (and the bottom tab badge), and an offer that arrives while it's open is seen too.
+  useEffect(() => {
+    if (segment === 'offers' && userId && newestMs > 0) markSeen(userId, newestMs);
+  }, [segment, userId, newestMs, markSeen]);
 
   return (
     <Screen scrollable={false} gradient={PAGE_GRADIENT}>
@@ -346,6 +333,14 @@ export default function ProjectsPage() {
                     {key === 'projects' ? t('chats_page.my_projects') : t('chats_page.price_offers')}
                   </AppText>
                 </TouchableOpacity>
+                {/* Unseen offers, top-left of the pill, until the tab is opened. */}
+                {key === 'offers' && newOffersCount > 0 && (
+                  <View style={styles.offersBadge} pointerEvents="none" testID="offers-badge">
+                    <AppText weight="bold" style={styles.offersBadgeText}>
+                      {newOffersCount > 99 ? '99+' : String(newOffersCount)}
+                    </AppText>
+                  </View>
+                )}
               </Animated.View>
             );
           })}
@@ -354,8 +349,8 @@ export default function ProjectsPage() {
         <View style={styles.content}>
           {segment === 'projects' ? (
             <View style={styles.section}>
-              {/* Awareness strip. Gated on the frozen baseline, so it survives
-                  _layout's markSeen-on-arrival and stays for the visit. */}
+              {/* Awareness strip: the same unseen count as the pill's circle, gone
+                  once the price offers tab has been opened. */}
               {newOffersCount > 0 && (
                 <TouchableOpacity
                   style={[styles.newOffersStrip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
@@ -567,6 +562,23 @@ const styles = StyleSheet.create({
   segText: { fontSize: 14, fontWeight: '600' },
   segTextActive: { color: '#ffffff', fontSize: 16 },
   segTextInactive: { color: '#004aad' },
+  // Purple count circle on the top-left of the price offers pill (same purple as
+  // the bottom tab badges).
+  offersBadge: {
+    position: 'absolute',
+    top: -7,
+    left: -7,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 5,
+    backgroundColor: '#cb6ce6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  offersBadgeText: { color: '#ffffff', fontSize: 11, lineHeight: 14 },
 
   // ── New-offers strip ──
   newOffersStrip: {
