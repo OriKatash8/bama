@@ -383,7 +383,7 @@ export default function SummaryScreen() {
       </ScrollView>
 
       {/* ── Pinned publish bar — the tab bar is hidden on this route ── */}
-      <View style={[styles.footer, { borderTopColor: colors.border }]}>
+      <View style={[styles.footer, { backgroundColor: colors.bg }]}>
         <TouchableOpacity
           style={[styles.publishBtn, !canConfirm && styles.publishBtnDisabled]}
           onPress={() => void handleConfirm()}
@@ -464,9 +464,14 @@ const styles = StyleSheet.create({
 
   error: { fontSize: 12, color: '#e53935', paddingVertical: 4 },
 
+  // The page's own colour (colors.bg, applied inline), lifted by a soft upward
+  // shadow instead of a white strip that clashed with the lavender page.
   footer: {
-    backgroundColor: '#ffffff',
-    borderTopWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#1e4fa3',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
     paddingHorizontal: 12,
     paddingTop: 14,
     paddingBottom: 14 + BOTTOM_INSET,
