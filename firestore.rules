@@ -385,7 +385,19 @@ service cloud.firestore {
         // owner gate is ever removed, the listener will be denied in production
         // and (unless its error handler logs) will look like "no pending
         // requests". Same failure that hid the removal-request bug.
-        allow create: if isAuth() && request.auth.uid == requestId;
+        // A request as the app writes it (useCommunityDiscovery.requestToJoin):
+        // the caller's own uid, a name, the server's clock, and `pending`. Nothing
+        // else. Before this, create checked only the doc id, so a requester could
+        // write `status: 'approved'` (hiding themselves from the owner's pending
+        // list), a forged userId, extra fields, or a backdated requestedAt.
+        function isOwnPendingRequest() {
+          return request.resource.data.keys().hasOnly(['userId', 'displayName', 'requestedAt', 'status'])
+            && request.resource.data.userId == request.auth.uid
+            && request.resource.data.displayName is string
+            && request.resource.data.requestedAt == request.time
+            && request.resource.data.status == 'pending';
+        }
+        allow create: if isAuth() && request.auth.uid == requestId && isOwnPendingRequest();
         allow read: if isAuth() && (
           request.auth.uid == requestId  // requester can read their own join status
           || get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
@@ -394,6 +406,17 @@ service cloud.firestore {
         allow update: if isAuth() && (
           get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
           || isAdmin()
+          // Asking again. The doc id is the requester's uid, so a second request
+          // reuses the doc and `setDoc` lands here as an UPDATE — which used to be
+          // owner-only, so anyone rejected once, or who had left, could never ask
+          // again (a silent permission error from Discover). Allowed only when the
+          // old request is settled (not pending) and they are not a member now.
+          // This also recovers an approval whose members write failed: the doc says
+          // approved but they are not in `members`, so they can ask again.
+          || (request.auth.uid == requestId
+              && resource.data.status != 'pending'
+              && !(request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members)
+              && isOwnPendingRequest())
         );
         // The requester may withdraw their own request while it is still
         // pending — never once the owner has approved or rejected it.
