@@ -216,10 +216,41 @@ describe('auto-complete selection', () => {
   });
 
   it('NEVER fires without a completionDueAt — the legacy guarantee', () => {
-    // Every project that predates this has no endDate, so none of its
-    // engagements has a deadline, so none is ever selected. Asserted against the
-    // real 69 production documents as well as here.
-    expect(autoCompletes('hired', undefined, now)).toBe(false);
+    // An engagement with no deadline is never selected by sweep 5. Absent means
+    // "waits for the professional", indefinitely.
+    //
+    // THIS USED TO BE ASSERTED AGAINST PRODUCTION, and deliberately is not any
+    // more. The original claim was "0 of 69 live projects carry an endDate, so
+    // none of their engagements can be auto-completed" — a measurement of real
+    // data, which is what made it worth having: a fixture can only prove the
+    // predicate agrees with itself.
+    //
+    // Why it was dropped rather than kept: on 2026-09-13 the projects collection
+    // was emptied (71 documents by then, and their 17 engagements; ledger exported
+    // to ~/bama-backups/fee-ledger-bama-af0a0-*.json). Every project created from
+    // now on goes through a builder that writes `endDate` from the same picker as
+    // `deadline`, so the no-`endDate` population is empty and cannot grow. A
+    // production assertion over it would pass forever by having nothing to look
+    // at — the failure mode where a green test means "no data" rather than "no
+    // bug", which is worse than no test because it reads as coverage.
+    //
+    // What survives it is the behaviour, pinned on a fixture: a deadline-less
+    // engagement is not selected. That still matters, because 'flexible' projects
+    // reach exactly this state by design and there is no backstop behind them.
+    const noDeadline = { engagementStatus: 'hired', completionDueAt: undefined };
+    expect(autoCompletes(noDeadline.engagementStatus, noDeadline.completionDueAt, now))
+      .toBe(false);
+  });
+
+  it('and a FLEXIBLE project reaches that state on purpose, not by omission', () => {
+    // The live reason the branch above is not dead code. endDateFromDeadline
+    // returns undefined for 'flexible', hire stamps no completionDueAt, and the
+    // engagement waits on its professional with nothing behind it — which the
+    // builder now states out loud rather than leaving to be discovered.
+    const flexibleEngagement = { engagementStatus: 'hired', completionDueAt: undefined };
+    expect(autoCompletes(
+      flexibleEngagement.engagementStatus, flexibleEngagement.completionDueAt, now,
+    )).toBe(false);
   });
 
   it('does not re-fire on an engagement that already completed', () => {
