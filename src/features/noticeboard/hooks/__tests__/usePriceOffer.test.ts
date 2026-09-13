@@ -6,6 +6,9 @@ import { useAuthStore } from '@core/stores/authStore';
 jest.mock('@core/firebase/firestore', () => ({
   addDocument: jest.fn(),
 }));
+jest.mock('firebase/firestore', () => ({
+  serverTimestamp: jest.fn(() => 'SERVER_TS'),
+}));
 
 const mockAddDocument = addDocument as jest.MockedFunction<typeof addDocument>;
 
@@ -42,6 +45,7 @@ describe('usePriceOffer', () => {
         category: 'Video Production',
         price: 800,
         status: 'pending',
+        createdAt: 'SERVER_TS',
       })
     );
     expect(mockAddDocument).toHaveBeenCalledWith(

@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { initializeAuth, GoogleAuthProvider } from 'firebase/auth';
+import { initializeAuth, getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -18,7 +18,9 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-function createAuth() {
+// Typed explicitly: the require() below is `any`, and without this annotation it
+// widened the exported `auth` to `any` for the whole app.
+function createAuth(): Auth {
   try {
     // getReactNativePersistence lives in @firebase/auth's react-native bundle
     // (resolved by Metro at runtime) but not in its default TS types.
@@ -29,8 +31,7 @@ function createAuth() {
     });
   } catch {
     // Auth already initialized (Fast Refresh / module re-import) — reuse it
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('firebase/auth').getAuth(app);
+    return getAuth(app);
   }
 }
 
