@@ -1037,7 +1037,6 @@
     "fee_minimum": "Minimum fee: ₪{{min}} per project",
     "fee_minimum_explain": "If {{rate}}% of your earnings comes to less than ₪{{min}}, a minimum fee of ₪{{min}} applies. On small projects the fee is ₪{{min}}, never less.",
     "fee_when": "The fee is created when you mark your own part of a project finished, or on the project’s end date if you have not by then. You then have a few days to tell us if the project never happened, or if the amount is wrong. Cancelled projects carry no fee.",
-    "fee_short": "{{rate}}% (min ₪{{min}})",
     "fee_base_note": "The fee is calculated on your own earnings, not on the project total."
   },
   "hire": {
