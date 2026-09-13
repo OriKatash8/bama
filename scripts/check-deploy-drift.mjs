@@ -22,6 +22,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { GoogleAuth } from 'google-auth-library';
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { evaluateAllowlist, todayUtc, ALLOWLIST_MAX_AGE_DAYS } from './lib/driftAllowlist.mjs';
 
 const args = process.argv.slice(2);
 const projectId = args[args.indexOf('--project') + 1];
@@ -90,9 +91,25 @@ const fns = await get(
   `https://cloudfunctions.googleapis.com/v2/projects/${projectId}/locations/-/functions?pageSize=300`,
 );
 const deployedFns = new Set((fns.functions ?? []).map((f) => f.name.split('/').pop()));
-const missingFns = [...new Set(grepped)].filter((n) => !deployedFns.has(n));
-if (missingFns.length === 0) ok(`all ${new Set(grepped).size} exported functions are deployed`);
-else {
+
+// Exported but INTENTIONALLY not deployed (scripts/deploy-drift-allowlist.json).
+// Every entry has a reason and a date and expires; a problem with the list is drift.
+const allowlistFile = JSON.parse(readFileSync('scripts/deploy-drift-allowlist.json', 'utf8'));
+const allow = evaluateAllowlist({
+  entries: allowlistFile.functionsNotDeployed,
+  exported: grepped,
+  deployed: deployedFns,
+  today: todayUtc(),
+});
+allow.problems.forEach((p) => bad(`allowlist ${p.kind}: ${p.message}`));
+allow.allowed.forEach((a) =>
+  ok(`${a.name} not deployed, allowed (added ${a.addedOn}, day ${a.ageDays} of ${ALLOWLIST_MAX_AGE_DAYS}): ${a.reason}`));
+
+const exportedFns = new Set(grepped);
+const missingFns = [...exportedFns].filter((n) => !deployedFns.has(n) && !allow.allowedNames.has(n));
+if (missingFns.length === 0) {
+  ok(`all ${exportedFns.size - allow.allowedNames.size} exported functions that should be deployed are deployed`);
+} else {
   bad(`${missingFns.length} exported function(s) are NOT deployed`);
   missingFns.forEach((m) => console.log(`        ${m}`));
   console.log('        run: firebase deploy --only functions:<name>');

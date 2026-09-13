@@ -1,0 +1,10 @@
+{
+  "_readme": "Functions exported from functions/src but intentionally NOT deployed. Each entry needs name, reason and addedOn (YYYY-MM-DD). check-deploy-drift.mjs fails on a malformed entry, one older than 60 days, a name that is no longer exported, or a name that is now deployed. See scripts/lib/driftAllowlist.mjs.",
+  "functionsNotDeployed": [
+    {
+      "name": "resolveCommunityInvite",
+      "reason": "Public, unauthenticated invite resolver. Deploys with the web landing task (waiting on the real domain); nothing in the app calls it. Its IP rate key is unverified until deployed.",
+      "addedOn": "2026-09-13"
+    }
+  ]
+}
