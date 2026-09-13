@@ -669,7 +669,9 @@
     "arrears_keeps": "Everything else stays open: your profile, chats, browsing, portfolio, reviews and existing projects.",
     "arrears_how": "Settlement happens outside the app. Payment details were sent with the demand; questions: bama.app.hk@gmail.com",
     "arrears_terms": "Fee terms",
-    "arrears_close": "Got it"
+    "arrears_close": "Got it",
+    "blocked_status_under_review": "With BAMA — under review",
+    "blocked_under_review_note": "One of these is with our team. Nothing for you to do on it — the slot frees when we have resolved it."
   },
   "offers": {
     "bundle_badge": "Bundle deal",

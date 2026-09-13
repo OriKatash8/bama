@@ -67,3 +67,28 @@ export function balanceRowNote(
   }
   return null;
 }
+
+/**
+ * Why one of this professional's capacity slots is occupied.
+ *
+ * THE POINT IS 'under_review'. A contested engagement deliberately keeps holding
+ * its slot — releasing it would let a professional contest their way to free
+ * capacity, which is the evasion route `contestEngagement` re-takes the slot to
+ * close. But the cap view presented that slot as one more project he was failing
+ * to close, under copy telling him a slot frees when a project is completed or
+ * cancelled. He cannot do either: it is waiting on a BAMA decision. The state is
+ * correct; saying he should act on it is not.
+ *
+ * Read from HIS OWN engagement, never from the project's `adminReviewPending`
+ * roll-up — that flag is true when ANY engagement on the project is in review,
+ * including another professional's, which is both none of his business and not
+ * the reason his slot is held.
+ */
+export function slotReason(
+  project: { status?: string } | null | undefined,
+  myEngagement: Pick<ProjectFee, 'engagementStatus'> | null | undefined,
+): 'under_review' | 'completed' | 'active' {
+  if (myEngagement?.engagementStatus === 'disputed') return 'under_review';
+  if (project?.status === 'completed') return 'completed';
+  return 'active';
+}

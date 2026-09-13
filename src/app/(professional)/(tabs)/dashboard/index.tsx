@@ -18,6 +18,7 @@ import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import { useFeeArrears } from '@features/pricing/hooks/useFeeArrears';
 import { FeeArrearsSheet } from '@features/pricing/components/FeeArrearsSheet';
 import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
+import { listenToMyFees } from '@features/pricing/services/feesService';
 import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
 import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '@features/noticeboard/unoffered';
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
@@ -31,7 +32,7 @@ import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { where } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { ProjectRequest } from '@core/types/project';
+import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import type { Chat } from '@features/chat/types';
 
 type Translations = typeof en;
@@ -100,6 +101,9 @@ export default function DashboardScreen() {
   // server enforces with, so the two cannot disagree.
   const pricing = usePricingConfig();
   const [slotUsage, setSlotUsage] = useState<SlotUsage | null>(null);
+  // This professional's own engagements, so the blocked sheet can say WHY each
+  // slot is held. A slot held by a contested engagement is not one he can close.
+  const [myFees, setMyFees] = useState<Map<string, ProjectFee> | null>(null);
   const [blockedFor, setBlockedFor] = useState<ProjectRequest | null>(null);
   const arrears = useFeeArrears();
   const [arrearsOpen, setArrearsOpen] = useState(false);
@@ -109,9 +113,19 @@ export default function DashboardScreen() {
     return listenToSlotUsage(currentUserId, setSlotUsage, pricing.maxOpenProjects);
   }, [currentUserId, pricing.maxOpenProjects]);
 
+  // Only to explain the slots, never to gate anything: the cap is counted from
+  // `slotHolders` on the projects above, and a fee record must not decide
+  // capacity. This says which of those slots is held by a contest he cannot
+  // close, so the sheet stops asking him to close it.
+  useEffect(() => {
+    if (!currentUserId) return;
+    return listenToMyFees(currentUserId, setMyFees);
+  }, [currentUserId]);
+
   // One cap for everyone. There is no tier that lifts it — capacity is not for
-  // sale — and the only things that free a slot are completing or cancelling a
-  // project.
+  // sale. A slot frees when the project completes or is cancelled, and a slot
+  // held by a CONTESTED engagement frees when BAMA resolves it — which is a
+  // third case the professional cannot act on, named as such in the sheet.
   const slotsBlocked = slotUsage?.atCap === true;
 
   /**
@@ -584,6 +598,7 @@ export default function DashboardScreen() {
         visible={blockedFor !== null}
         targetProject={blockedFor}
         occupied={slotUsage?.projects ?? []}
+        myFees={myFees ?? undefined}
         onClose={() => setBlockedFor(null)}
       />
 
