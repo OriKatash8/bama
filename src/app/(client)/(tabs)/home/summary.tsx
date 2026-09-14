@@ -87,7 +87,19 @@ export default function SummaryScreen() {
   /** Pop back to the wizard (still mounted, so the draft survives) at a step. */
   function editStep(step: 1 | 2 | 3) {
     requestBuilderStep(step);
-    router.back();
+    backToWizard();
+  }
+
+  /**
+   * Back to the wizard. Normally it's right under this screen in the home stack,
+   * still mounted, so the draft survives. But when this page is the FIRST screen
+   * (a web refresh, or opened from its URL), there's nothing to go back to and
+   * router.back() throws "The action 'GO_BACK' was not handled by any navigator".
+   * Then open the wizard instead; the requested step is still honoured.
+   */
+  function backToWizard() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(client)/(tabs)/home' as never);
   }
 
   async function confirmRemoveCategory(category: string) {
@@ -254,7 +266,7 @@ export default function SummaryScreen() {
         <View style={styles.headerSide}>
           <TouchableOpacity
             style={styles.backRow}
-            onPress={() => router.back()}
+            onPress={backToWizard}
             activeOpacity={0.7}
             hitSlop={12}
           >
