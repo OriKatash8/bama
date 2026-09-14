@@ -6,7 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, Flag, X } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Flag, X } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
@@ -189,18 +189,23 @@ export default function PublicProfileScreen() {
 
   return (
     <Screen scrollable style={styles.screenContent} backgroundColor={colors.bg}>
-      {/* ── Title row: back + report ── */}
-      <View style={styles.titleRow}>
+      {/* ── Title row: back + report. In Hebrew the row mirrors: back on the right
+          (pointing right), report on the left. ── */}
+      <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <TouchableOpacity
           onPress={goToBrowse}
           style={styles.backBtn}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          testID="profile-back"
         >
-          <ChevronLeft size={24} color="#004aad" strokeWidth={2.5} />
+          {rtl
+            ? <ChevronRight size={24} color="#004aad" strokeWidth={2.5} />
+            : <ChevronLeft size={24} color="#004aad" strokeWidth={2.5} />}
         </TouchableOpacity>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={() => setReportVisible(true)} activeOpacity={0.7} hitSlop={8}>
+        <TouchableOpacity onPress={() => setReportVisible(true)} activeOpacity={0.7} hitSlop={8} accessibilityRole="button" testID="profile-report">
           <Flag size={18} color="#ff4d6d" strokeWidth={2} />
         </TouchableOpacity>
       </View>
@@ -353,7 +358,7 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, fontWeight: '500' },
   backFallback: { paddingVertical: 8 },
 
-  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  titleRow: { alignItems: 'center' },
   backBtn: { paddingHorizontal: 4 },
 
   portfolioSection: {},
