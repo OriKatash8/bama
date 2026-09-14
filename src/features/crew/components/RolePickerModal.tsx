@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions,
+  ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react-native';
@@ -31,7 +31,7 @@ type Props = {
   isPosting?: boolean;
 };
 
-const COLUMNS = 3;
+const COLUMNS = 2; // same as the home builder's role step
 const GAP = 8;
 const SHEET_PADDING = 16;
 const ACCENT = '#cb6ce6';
@@ -48,14 +48,14 @@ export function RolePickerModal({ visible, onDismiss, onPost, isPosting = false 
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
-  const { width } = useWindowDimensions();
 
   const { slots, totalCount, roleQuantity, setQuantity, slotCaps, setSlotCapability, reset } = useCrewBuilder();
   const [step, setStep] = useState<1 | 2>(1);
 
   const rowDir = rtl ? 'row-reverse' : 'row';
   const textAlign = rtl ? 'right' : 'left';
-  const tileWidth = Math.floor((Math.min(width, 520) - SHEET_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS);
+  const [gridWidth, setGridWidth] = useState(0);
+  const tileWidth = gridWidth > 0 ? Math.floor((gridWidth - GAP * (COLUMNS - 1)) / COLUMNS) : undefined;
   const BackChevron = rtl ? ChevronRight : ChevronLeft;
 
   function handleDismiss() {
@@ -111,14 +111,17 @@ export function RolePickerModal({ visible, onDismiss, onPost, isPosting = false 
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             {step === 1 ? (
               /* ── Step 1: roles + quantity (home step 2, compact) ── */
-              <View style={[styles.grid, { flexDirection: rowDir }]}>
+              <View
+                style={[styles.grid, { flexDirection: rowDir }]}
+                onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
+              >
                 {CATEGORIES.map((cat) => {
                   const q = roleQuantity(cat.key);
                   return (
                     <TouchableOpacity
                       key={cat.key}
                       testID={`role-tile-${cat.key}`}
-                      style={[styles.tile, { width: tileWidth }, q > 0 && styles.tileOn]}
+                      style={[styles.tile, { width: tileWidth ?? '48%' }, q > 0 && styles.tileOn]}
                       onPress={() => { if (q === 0) setQuantity(cat.key, 1); }}
                       activeOpacity={0.85}
                     >
@@ -293,13 +296,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     alignItems: 'center',
-    backgroundColor: '#f7f7fc',
     borderWidth: 2,
     borderColor: 'transparent',
   },
   tileOn: { borderColor: ACCENT },
-  tileImage: { width: '100%', height: 56 },
-  tileLabel: { fontSize: 12, fontWeight: '700', color: '#004aad', textAlign: 'center', paddingHorizontal: 4, paddingVertical: 4 },
+  tileImage: { width: '100%', height: 80 },
+  tileLabel: { fontSize: 14, fontWeight: '700', color: '#004aad', textAlign: 'center', paddingHorizontal: 4, paddingVertical: 4 },
   tileControls: {
     width: '100%', height: 26, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
   },
