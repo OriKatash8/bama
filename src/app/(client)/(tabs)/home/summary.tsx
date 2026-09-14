@@ -205,8 +205,14 @@ export default function SummaryScreen() {
           {label}
         </Text>
         {step !== undefined && (
-          <TouchableOpacity onPress={() => editStep(step)} hitSlop={10} activeOpacity={0.7}>
-            <Text style={[styles.editLink, { ...font.medium }]}>{t('builder.edit')}</Text>
+          <TouchableOpacity
+            onPress={() => editStep(step)}
+            hitSlop={8}
+            activeOpacity={0.8}
+            style={styles.editBtn}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.editBtnText, { ...font.semiBold }]}>{t('builder.edit')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -439,7 +445,14 @@ const styles = StyleSheet.create({
   },
   cardHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   cardTitle: { fontSize: 13, fontWeight: '500', flex: 1 },
-  editLink: { fontSize: 12, color: '#004aad' },
+  // Rounded-square blue button with white text (was a plain blue text link).
+  editBtn: {
+    backgroundColor: '#004aad',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  editBtnText: { fontSize: 12, color: '#ffffff' },
 
   fieldLabel: { fontSize: 11 },
   value: { fontSize: 14, marginTop: 2 },
