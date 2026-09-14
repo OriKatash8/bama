@@ -185,6 +185,13 @@
     "completed_pro_review": "החלק שלך בבדיקת הצוות"
   },
   "project_details": {
+    "add_pro_step_roles": "בחירת תפקידים",
+    "add_pro_step_subskills": "התאמת התמחויות",
+    "add_pro_step_of": "שלב {{n}} מתוך 2",
+    "add_pro_continue": "המשך",
+    "add_pro_back": "חזור",
+    "add_pro_needed": "{{n}} דרושים",
+    "add_pro_close": "סגירה",
     "media": "מדיה",
     "media_close": "סגירה",
     "header": "פרטי פרויקט",

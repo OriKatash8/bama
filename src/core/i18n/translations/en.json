@@ -185,6 +185,13 @@
     "completed_pro_review": "Your part is with our team"
   },
   "project_details": {
+    "add_pro_step_roles": "Choose roles",
+    "add_pro_step_subskills": "Match subskills",
+    "add_pro_step_of": "Step {{n}} of 2",
+    "add_pro_continue": "Continue",
+    "add_pro_back": "Back",
+    "add_pro_needed": "{{n}} needed",
+    "add_pro_close": "Close",
     "media": "Media",
     "media_close": "Close",
     "header": "Project Details",
