@@ -667,7 +667,8 @@ export function ChatsScreen({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  listContent: { paddingTop: 8, paddingBottom: 16 },
+  // No top padding: the search bar sits right above and carries the gap.
+  listContent: { paddingTop: 0, paddingBottom: 16 },
   // One row that scrolls, never a wrapping block: in English the four labels
   // exceed a phone's width and used to spill onto a second line, pushing the
   // list down. flexGrow keeps a short row aligned to the reading edge, since
