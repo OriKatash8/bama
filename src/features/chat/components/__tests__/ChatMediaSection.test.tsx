@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ChatMediaSection } from '../ChatMediaSection';
 import { useChatMedia } from '../../hooks/useChatMedia';
@@ -88,4 +89,15 @@ it('Hebrew: the header row runs right-to-left', () => {
   const header = r.getByTestId('media-header');
   expect([header.props.style].flat().find((s: { flexDirection?: string }) => s?.flexDirection)?.flexDirection).toBe('row-reverse');
   expect(r.getByText(he.project_details.media)).toBeTruthy();
+});
+
+it('pop-up title: centred across the header line, a little lower than the old 52pt top', () => {
+  mockUseChatMedia.mockReturnValue([item(1), item(2)]);
+  const r = render(<ChatMediaSection chatId="c1" />);
+  fireEvent.press(r.getByRole('button', { name: `${en.project_details.media} 2` }));
+  const title = StyleSheet.flatten(r.getByTestId('media-grid-title').props.style);
+  // Centred on the whole line, not squeezed beside the close button.
+  expect(title).toEqual(expect.objectContaining({ position: 'absolute', left: 0, right: 0, textAlign: 'center' }));
+  const screen = StyleSheet.flatten(r.getByTestId('media-grid').props.style);
+  expect(screen.paddingTop).toBeGreaterThan(52);
 });

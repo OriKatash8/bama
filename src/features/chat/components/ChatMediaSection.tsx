@@ -86,7 +86,8 @@ export function ChatMediaSection({ chatId }: { chatId: string | undefined }) {
       <Modal visible={gridOpen} animationType="slide" onRequestClose={() => { setViewerIndex(null); setGridOpen(false); }}>
         <View style={styles.gridScreen} testID="media-grid">
           <View style={[styles.gridHeader, { flexDirection: rowDir }]}>
-            <AppText weight="bold" style={styles.gridTitle}>
+            {/* Centred on the whole line; the close button sits at the end. */}
+            <AppText weight="bold" style={styles.gridTitle} testID="media-grid-title" pointerEvents="none">
               {`${t('project_details.media')} · ${media.length}`}
             </AppText>
             <TouchableOpacity
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
     position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
     alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)',
   },
-  gridScreen: { flex: 1, backgroundColor: '#ffffff', paddingTop: 52 },
-  gridHeader: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12 },
-  gridTitle: { fontSize: 18, color: '#004aad' },
+  gridScreen: { flex: 1, backgroundColor: '#ffffff', paddingTop: 64 },
+  gridHeader: { alignItems: 'center', justifyContent: 'flex-end', minHeight: 28, paddingHorizontal: 16, paddingBottom: 12 },
+  gridTitle: { position: 'absolute', left: 0, right: 0, textAlign: 'center', fontSize: 18, color: '#004aad' },
 });
