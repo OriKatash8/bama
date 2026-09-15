@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {
   View, Image, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator,
+  ActivityIndicator, TextInput,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
+import { useAppFont } from '@core/hooks/useAppFont';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -13,7 +14,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { MediaAsset } from '@core/types/media';
+import { CAPTION_MAX_LENGTH, type MediaAsset } from '@core/types/media';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -49,11 +50,15 @@ function VideoThumbTile({ uri }: { uri: string }) {
 type PortfolioGridProps = {
   assets: MediaAsset[];
   isEditing: boolean;
-  onAdd?: (uri: string) => Promise<void>;
-  onAddVideo?: (url: string) => Promise<void>;
+  onAdd?: (uri: string, caption: string | null) => Promise<void>;
+  onAddVideo?: (url: string, caption: string | null) => Promise<void>;
   onRemove?: (assetId: string) => Promise<void>;
   onError?: (message: string) => void;
 };
+
+// What the picker handed back, held whole while the author writes its caption —
+// uploadVideo reads more than the uri off it.
+type PendingMedia = { asset: ImagePicker.ImagePickerAsset; isVideo: boolean };
 
 export function PortfolioGrid({
   assets, isEditing, onAdd, onAddVideo, onRemove, onError,
@@ -61,9 +66,14 @@ export function PortfolioGrid({
   const user = useAuthStore((s) => s.user);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
+  const rtl = language === 'he';
+  const font = useAppFont();
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [tileSize, setTileSize] = useState(0);
+  const [pending, setPending] = useState<PendingMedia | null>(null);
+  const [caption, setCaption] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const videoActive = videoUploading || videoProcessing;
@@ -109,22 +119,31 @@ export function PortfolioGrid({
     }
     if (result.canceled) return;
 
+    // Hold the pick and ask for a caption first — this is the only moment the
+    // author gets to describe the work for the clients who will open it.
     const asset = result.assets[0];
+    setCaption('');
+    setPending({ asset, isVideo: asset.type === 'video' });
+  }
 
-    if (asset.type === 'video') {
-      try {
-        const url = await uploadVideo('portfolio', user.id, asset);
-        if (url && onAddVideo) await onAddVideo(url);
-      } catch (e: unknown) {
-        onError?.((e instanceof Error ? e.message : null) ?? t('media.video_error'));
+  async function commitPending(withCaption: string | null) {
+    if (!user || !pending) return;
+    setSaving(true);
+    try {
+      if (pending.isVideo) {
+        const url = await uploadVideo('portfolio', user.id, pending.asset);
+        if (url && onAddVideo) await onAddVideo(url, withCaption);
+      } else if (onAdd) {
+        await onAdd(pending.asset.uri, withCaption);
       }
-    } else {
-      if (!onAdd) return;
-      try {
-        await onAdd(asset.uri);
-      } catch (e: unknown) {
-        onError?.((e instanceof Error ? e.message : null) ?? 'Failed to upload photo');
-      }
+      setPending(null);
+      setCaption('');
+    } catch (e: unknown) {
+      const fallback = pending.isVideo ? t('media.video_error') : 'Failed to upload photo';
+      onError?.((e instanceof Error ? e.message : null) ?? fallback);
+      // Keep the sheet open so the typed caption survives a retry
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -189,6 +208,60 @@ export function PortfolioGrid({
         visible={viewerIndex !== null}
         onClose={() => setViewerIndex(null)}
       />
+
+      {/* Caption sheet — the one moment the author can describe this piece. */}
+      {pending && (
+        <View style={styles.captionOverlay}>
+          <View style={styles.captionSheet}>
+            <AppText weight="bold" style={[styles.captionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('media.caption_title')}
+            </AppText>
+            <AppText weight="regular" style={[styles.captionBody, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('media.caption_body')}
+            </AppText>
+            <TextInput
+              value={caption}
+              onChangeText={setCaption}
+              placeholder={t('media.caption_placeholder')}
+              placeholderTextColor="#9aa0b8"
+              maxLength={CAPTION_MAX_LENGTH}
+              multiline
+              editable={!saving}
+              style={[styles.captionInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
+              textAlign={rtl ? 'right' : 'left'}
+              testID="caption-input"
+            />
+            <View style={[styles.captionActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <TouchableOpacity
+                style={[styles.captionBtn, styles.captionBtnSkip]}
+                onPress={() => commitPending(null)}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityLabel={t('media.caption_skip')}
+              >
+                <AppText weight="semiBold" style={styles.captionBtnSkipText}>
+                  {t('media.caption_skip')}
+                </AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.captionBtn, styles.captionBtnSave]}
+                onPress={() => commitPending(caption.trim() || null)}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityLabel={t('media.caption_save')}
+              >
+                {saving
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : (
+                    <AppText weight="semiBold" style={styles.captionBtnSaveText}>
+                      {t('media.caption_save')}
+                    </AppText>
+                  )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -239,4 +312,54 @@ const styles = StyleSheet.create({
     color: '#cb6ce6',
     fontWeight: '500',
   },
+  captionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(10,10,26,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  captionSheet: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(30,79,163,0.07)',
+    shadowColor: '#1e4fa3',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  captionTitle: { fontSize: 17, color: '#004aad' },
+  captionBody: { fontSize: 13, color: '#6b7280', marginTop: 6 },
+  captionInput: {
+    marginTop: 12,
+    minHeight: 84,
+    borderWidth: 1,
+    borderColor: '#e3e7f2',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    color: '#1a1a2e',
+    textAlignVertical: 'top',
+  },
+  captionActions: { marginTop: 14, gap: 10 },
+  captionBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  captionBtnSkip: { backgroundColor: '#f1f3f9' },
+  captionBtnSkipText: { color: '#6b7280', fontSize: 15 },
+  captionBtnSave: { backgroundColor: '#004aad' },
+  captionBtnSaveText: { color: '#fff', fontSize: 15 },
 });

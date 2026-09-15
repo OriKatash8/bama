@@ -26,7 +26,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 
 const mockUseChatMedia = useChatMedia as jest.MockedFunction<typeof useChatMedia>;
 const item = (i: number, type: 'image' | 'video' = 'image') => ({
-  id: `m${i}`, url: `https://x/${i}`, type, thumbnailUrl: null, uploadedAt: { seconds: 100 - i, nanoseconds: 0 },
+  id: `m${i}`, url: `https://x/${i}`, type, thumbnailUrl: null, caption: null, uploadedAt: { seconds: 100 - i, nanoseconds: 0 },
 });
 
 beforeEach(() => {

@@ -25,6 +25,8 @@ export function mergeChatMedia(imageDocs: RawDoc[], videoDocs: RawDoc[]): MediaA
       url: (video ?? image) as string,
       type: video ? 'video' : 'image',
       thumbnailUrl: null,
+      // Captions are a portfolio idea; media shared in a chat never carries one.
+      caption: null,
       uploadedAt: (timestamp ?? { seconds: 0, nanoseconds: 0 }) as MediaAsset['uploadedAt'],
       sortKey: timestamp ? timestamp.seconds + timestamp.nanoseconds / 1e9 : Number.POSITIVE_INFINITY,
     });

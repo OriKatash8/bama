@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import {
-  View, FlatList, Modal, StyleSheet, Platform, Dimensions,
+  View, FlatList, Modal, StyleSheet, Platform, useWindowDimensions,
 } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { X } from 'lucide-react-native';
@@ -10,17 +10,25 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, runOnJS,
 } from 'react-native-reanimated';
 import type { ViewToken } from 'react-native';
+import { AppText } from '@components/ui/AppText';
 import type { MediaAsset } from '@core/types/media';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Slide size is measured live rather than captured once at module load: the pager
+// is vertical, so a stale viewport height would settle every page mid-item after
+// any resize or rotation.
+type SlideSize = { width: number; height: number };
 
-type ImageSlideProps = {
+// Rough height of expo-video's nativeControls bar; the caption clears it on video
+// slides so the scrubber stays reachable.
+const VIDEO_CONTROLS_HEIGHT = 64;
+
+type ImageSlideProps = SlideSize & {
   asset: MediaAsset;
   onZoomChange: (zoomed: boolean) => void;
   onClose: () => void;
 };
 
-function ZoomableImageSlide({ asset, onZoomChange, onClose }: ImageSlideProps) {
+function ZoomableImageSlide({ asset, width, height, onZoomChange, onClose }: ImageSlideProps) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const tx = useSharedValue(0);
@@ -87,8 +95,8 @@ function ZoomableImageSlide({ asset, onZoomChange, onClose }: ImageSlideProps) {
   const panZoomed = Gesture.Pan()
     .enabled(isZoomed)
     .onUpdate((e) => {
-      const maxX = (SCREEN_WIDTH * (scale.value - 1)) / 2;
-      const maxY = (SCREEN_HEIGHT * (scale.value - 1)) / 2;
+      const maxX = (width * (scale.value - 1)) / 2;
+      const maxY = (height * (scale.value - 1)) / 2;
       tx.value = Math.max(-maxX, Math.min(maxX, savedTx.value + e.translationX));
       ty.value = Math.max(-maxY, Math.min(maxY, savedTy.value + e.translationY));
     })
@@ -113,11 +121,11 @@ function ZoomableImageSlide({ asset, onZoomChange, onClose }: ImageSlideProps) {
   }));
 
   return (
-    <View style={slide.container}>
+    <View style={[slide.container, { width, height }]}>
       <GestureDetector gesture={composed}>
         <Animated.Image
           source={{ uri: asset.url }}
-          style={[slide.fill, imageStyle]}
+          style={[{ width, height }, imageStyle]}
           resizeMode="contain"
         />
       </GestureDetector>
@@ -127,32 +135,15 @@ function ZoomableImageSlide({ asset, onZoomChange, onClose }: ImageSlideProps) {
 
 // ── Video slides ──────────────────────────────────────────────────────────────
 
-function NativeVideoSlide({ asset, isActive, onClose }: { asset: MediaAsset; isActive: boolean; onClose: () => void }) {
+// No gesture of its own. Swipe-down-to-dismiss used to live here, but on a vertical
+// pager that is the same motion as paging to the previous item — the two raced on
+// every downward swipe. Paging owns it; the close button, Android back and the
+// image slides' tap-to-close remain the ways out.
+function NativeVideoSlide({ asset, isActive, width, height }: SlideSize & { asset: MediaAsset; isActive: boolean }) {
   const { VideoView, useVideoPlayer } = require('expo-video') as typeof import('expo-video');
   const player = useVideoPlayer(asset.url, (p: import('expo-video').VideoPlayer) => {
     p.loop = true;
   });
-
-  const translateY = useSharedValue(0);
-
-  const pan = Gesture.Pan()
-    .activeOffsetY([-10, 10])
-    .failOffsetX([-10, 10])
-    .onUpdate((e) => {
-      translateY.value = e.translationY;
-    })
-    .onEnd((e) => {
-      const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX) * 1.5;
-      if (Math.abs(e.translationY) > 80 && isVertical) {
-        runOnJS(onClose)();
-      } else {
-        translateY.value = withSpring(0);
-      }
-    });
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
 
   useEffect(() => {
     if (isActive) player.play();
@@ -160,15 +151,13 @@ function NativeVideoSlide({ asset, isActive, onClose }: { asset: MediaAsset; isA
   }, [isActive, player]);
 
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={[slide.container, animStyle]}>
-        <VideoView player={player} style={slide.fill} contentFit="contain" nativeControls />
-      </Animated.View>
-    </GestureDetector>
+    <View style={[slide.container, { width, height }]}>
+      <VideoView player={player} style={{ width, height }} contentFit="contain" nativeControls />
+    </View>
   );
 }
 
-function WebVideoSlide({ asset, isActive }: { asset: MediaAsset; isActive: boolean }) {
+function WebVideoSlide({ asset, isActive, width, height }: SlideSize & { asset: MediaAsset; isActive: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -179,7 +168,7 @@ function WebVideoSlide({ asset, isActive }: { asset: MediaAsset; isActive: boole
   }, [isActive]);
 
   return (
-    <View style={[slide.container, { alignItems: 'center', justifyContent: 'center' }]}>
+    <View style={[slide.container, { width, height, alignItems: 'center', justifyContent: 'center' }]}>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video
         ref={videoRef}
@@ -195,25 +184,32 @@ function WebVideoSlide({ asset, isActive }: { asset: MediaAsset; isActive: boole
 
 // ── Slide dispatcher ──────────────────────────────────────────────────────────
 
-type SlideProps = {
+type SlideProps = SlideSize & {
   asset: MediaAsset;
   isActive: boolean;
   onZoomChange: (zoomed: boolean) => void;
   onClose: () => void;
 };
 
-function Slide({ asset, isActive, onZoomChange, onClose }: SlideProps) {
+function Slide({ asset, isActive, width, height, onZoomChange, onClose }: SlideProps) {
   if (asset.type === 'video') {
     return Platform.OS === 'web'
-      ? <WebVideoSlide asset={asset} isActive={isActive} />
-      : <NativeVideoSlide asset={asset} isActive={isActive} onClose={onClose} />;
+      ? <WebVideoSlide asset={asset} isActive={isActive} width={width} height={height} />
+      : <NativeVideoSlide asset={asset} isActive={isActive} width={width} height={height} />;
   }
-  return <ZoomableImageSlide asset={asset} onZoomChange={onZoomChange} onClose={onClose} />;
+  return (
+    <ZoomableImageSlide
+      asset={asset}
+      width={width}
+      height={height}
+      onZoomChange={onZoomChange}
+      onClose={onClose}
+    />
+  );
 }
 
 const slide = StyleSheet.create({
-  container: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, backgroundColor: '#000' },
-  fill: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT },
+  container: { backgroundColor: '#000' },
 });
 
 // ── Viewer ────────────────────────────────────────────────────────────────────
@@ -227,6 +223,7 @@ type Props = {
 
 export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const flatListRef = useRef<FlatList<MediaAsset>>(null);
@@ -248,24 +245,36 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
     if (viewableItems[0]) setActiveIndex(viewableItems[0].index ?? 0);
   }).current;
 
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+  // 80, not 50: below ~80% two neighbours both qualify mid-swipe, so a video the
+  // user is only swiping past would start playing before the page settles.
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current;
 
-  const getItemLayout = (_: ArrayLike<MediaAsset> | null | undefined, index: number) => ({
-    length: SCREEN_WIDTH,
-    offset: SCREEN_WIDTH * index,
-    index,
-  });
+  // Vertical pager: the paging axis is height, so that is what the layout measures.
+  const getItemLayout = useCallback(
+    (_: ArrayLike<MediaAsset> | null | undefined, index: number) => ({
+      length: height,
+      offset: height * index,
+      index,
+    }),
+    [height],
+  );
+
+  const activeAsset = assets[activeIndex];
+  const activeCaption = activeAsset?.caption?.trim() || null;
+  const activeIsVideo = activeAsset?.type === 'video';
 
   const renderItem = useCallback(
     ({ item, index }: { item: MediaAsset; index: number }) => (
       <Slide
         asset={item}
         isActive={index === activeIndex}
+        width={width}
+        height={height}
         onZoomChange={handleZoomChange}
         onClose={onClose}
       />
     ),
-    [activeIndex, handleZoomChange, onClose],
+    [activeIndex, width, height, handleZoomChange, onClose],
   );
 
   return (
@@ -283,10 +292,9 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
             data={assets}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
-            horizontal
             pagingEnabled
             scrollEnabled={scrollEnabled}
-            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
             getItemLayout={getItemLayout}
@@ -295,11 +303,33 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
             windowSize={3}
           />
 
+          {/* What the professional wrote about this piece, for the client viewing it.
+              One overlay driven by activeIndex rather than one per slide, so it can
+              clear expo-video's nativeControls on video slides. */}
+          {activeCaption && (
+            <View
+              testID="viewer-caption"
+              style={[
+                styles.caption,
+                { bottom: Math.max(insets.bottom, 16) + (activeIsVideo ? VIDEO_CONTROLS_HEIGHT : 0) },
+              ]}
+              pointerEvents="none"
+            >
+              <AppText weight="regular" style={styles.captionText}>{activeCaption}</AppText>
+            </View>
+          )}
+
+          {/* Counter, not dots: one View per asset stops scaling past a dozen items.
+              Hidden for a single asset — ChatRoomScreen passes a 1-element array. */}
           {assets.length > 1 && (
-            <View style={styles.dots} pointerEvents="none">
-              {assets.map((_, i) => (
-                <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
-              ))}
+            <View
+              testID="viewer-counter"
+              style={[styles.counter, { top: Math.max(insets.top, 20) + 8 }]}
+              pointerEvents="none"
+            >
+              <AppText weight="semiBold" style={styles.counterText}>
+                {`${activeIndex + 1} / ${assets.length}`}
+              </AppText>
             </View>
           )}
 
@@ -307,6 +337,9 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
           <TouchableOpacity
             style={[styles.closeBtn, { top: Math.max(insets.top, 20) + 8 }]}
             onPress={onClose}
+            // Label only, no accessibilityRole: RNGH's TouchableOpacity already
+            // renders a <button> on web, and a role here nests a second one inside it.
+            accessibilityLabel="close"
             hitSlop={{ top: 20, right: 20, bottom: 20, left: 20 }}
             activeOpacity={0.7}
           >
@@ -332,26 +365,38 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  dots: {
+  // Mirrors closeBtn on the opposite edge, same baseline, so the two read as a pair.
+  // Left-anchored in both languages: the glyphs are digits and the layout is forced
+  // LTR app-wide (src/app/_layout.tsx calls I18nManager.allowRTL(false)).
+  counter: {
     position: 'absolute',
-    bottom: 36,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    left: 16,
+    height: 48,
+    minWidth: 48,
+    paddingHorizontal: 14,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+  counterText: {
+    color: '#fff',
+    fontSize: 15,
   },
-  dotActive: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#fff',
+  caption: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  captionText: {
+    color: '#fff',
+    fontSize: 15,
+    lineHeight: 21,
   },
 });

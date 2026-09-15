@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
 import { subscribeToCollection, setDocument, deleteDocument } from '@core/firebase/firestore';
 import { uploadFile, deleteFile } from '@core/firebase/storage';
-import type { MediaAsset } from '@core/types/media';
+import { CAPTION_MAX_LENGTH, type MediaAsset } from '@core/types/media';
+
+// A skipped caption and a whitespace-only one are the same thing: store null, so the
+// viewer's `caption &&` check is the only rule anyone has to remember.
+function normalizeCaption(caption: string | null | undefined): string | null {
+  const trimmed = caption?.trim();
+  return trimmed ? trimmed.slice(0, CAPTION_MAX_LENGTH) : null;
+}
 
 export function usePortfolio() {
   const user = useAuthStore((s) => s.user);
@@ -21,7 +28,7 @@ export function usePortfolio() {
     return unsub;
   }, [user?.id]);
 
-  async function upload(uri: string): Promise<void> {
+  async function upload(uri: string, caption: string | null = null): Promise<void> {
     if (!user) return;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const storagePath = `portfolio/${user.id}/${id}`;
@@ -51,6 +58,7 @@ export function usePortfolio() {
       url,
       thumbnailUrl: null as string | null,
       type: 'image' as const,
+      caption: normalizeCaption(caption),
       uploadedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
     };
     try {
@@ -64,13 +72,14 @@ export function usePortfolio() {
     }
   }
 
-  async function addVideoUrl(url: string): Promise<void> {
+  async function addVideoUrl(url: string, caption: string | null = null): Promise<void> {
     if (!user) return;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     await setDocument(`users/${user.id}/portfolio/${id}`, {
       url,
       thumbnailUrl: null as string | null,
       type: 'video' as const,
+      caption: normalizeCaption(caption),
       uploadedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
     });
   }

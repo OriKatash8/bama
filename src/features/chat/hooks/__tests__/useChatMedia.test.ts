@@ -45,5 +45,9 @@ it('ignores empty or non-string urls, and never lists one message twice', () => 
 
 it('shapes items for the full-screen viewer', () => {
   const [item] = mergeChatMedia([{ id: 'p', data: { imageURL: 'https://x/p.jpg', timestamp: ts(7) } }], []);
-  expect(item).toEqual({ id: 'p', url: 'https://x/p.jpg', type: 'image', thumbnailUrl: null, uploadedAt: ts(7) });
+  // caption is a portfolio field; chat media always carries null so the viewer's
+  // caption bar stays off for media opened from a chat
+  expect(item).toEqual({
+    id: 'p', url: 'https://x/p.jpg', type: 'image', thumbnailUrl: null, caption: null, uploadedAt: ts(7),
+  });
 });

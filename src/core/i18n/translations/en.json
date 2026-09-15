@@ -881,7 +881,12 @@
     "add_video": "Add Video",
     "send_video": "Sending video...",
     "video_error": "Video processing failed",
-    "video_pick_error": "Couldn't read the selected video. Make sure it's downloaded from iCloud (not stored in the cloud only) and try again."
+    "video_pick_error": "Couldn't read the selected video. Make sure it's downloaded from iCloud (not stored in the cloud only) and try again.",
+    "caption_title": "Add a caption",
+    "caption_body": "Clients see this when they open the item in your portfolio.",
+    "caption_placeholder": "What is this work? Where was it shot?",
+    "caption_save": "Save",
+    "caption_skip": "Skip"
   },
   "header": {
     "client_mode": "Client",
