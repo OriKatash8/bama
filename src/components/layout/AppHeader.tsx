@@ -27,6 +27,7 @@ import {
   Settings,
   Shield,
   User,
+  Wallet,
   X,
 } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
@@ -149,6 +150,8 @@ export function AppHeader() {
           <TouchableOpacity
             style={styles.gearBtn}
             onPress={() => setSettingsVisible(true)}
+            testID="settings-gear"
+            accessibilityRole="button"
             activeOpacity={0.7}
           >
             <Settings size={22} color={colors.text} strokeWidth={1.5} />
@@ -270,9 +273,8 @@ export function AppHeader() {
 
             {/* Pricing — professionals only. A client is never charged a
                 commission, so the row would answer a question they do not have.
-                This is the ONLY standing route to the fee terms: the balance
-                screen opens solely from a project that already owes, so without
-                this a pro could not read the rate before their first job. */}
+                This is the standing route to the fee terms, so a pro can read the
+                rate before their first job. */}
             {!modeIsClient && (
               <TouchableOpacity
                 style={[styles.menuRow, { borderBottomColor: colors.border }]}
@@ -282,6 +284,23 @@ export function AppHeader() {
                 <Percent size={18} color={colors.textMuted} strokeWidth={1.5} />
                 <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                   {t('settings.pricing')}
+                </AppText>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+              </TouchableOpacity>
+            )}
+
+            {/* BAMA balance — professionals only, for the same reason as Pricing.
+                The one standing door to the balance screen: every project's
+                commission, whatever state its engagement is in. */}
+            {!modeIsClient && (
+              <TouchableOpacity
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => { setSettingsVisible(false); router.push('/settings/payment'); }}
+                activeOpacity={0.7}
+              >
+                <Wallet size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('balance.title')}
                 </AppText>
                 <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
               </TouchableOpacity>

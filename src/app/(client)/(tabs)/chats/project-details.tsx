@@ -62,13 +62,11 @@ import {
   ContestEngagementSheet, type ContestReason,
 } from '@features/projects/components/ContestEngagementSheet';
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
-import { outstandingFee, feePercent, isMinimumFee } from '@features/pricing/utils/fee';
-import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
-import { Calendar, CalendarDays, Check, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -1309,21 +1307,12 @@ export default function ProjectDetailsScreen() {
               onRemove={isClient && !isReadOnly ? () => handleRequestRemoval(professionalId) : undefined}
               onReport={professionalId !== currentUserId ? () => { setReportedUserId(professionalId); setReportedUserName(member?.displayName ?? ''); setReportVisible(true); } : undefined}
               payment={(isClient || professionalId === currentUserId) ? payment : undefined}
-              // Only the viewing professional's OWN row carries the fee — the
-              // client cannot read fee docs by rule and is never told (§6).
-              fee={!isClient && professionalId === currentUserId ? myFee : undefined}
-              // Per-engagement state goes through the SAME predicate as the fee,
-              // for the same reason: completion is one professional's own act on
-              // their own engagement. A client must never be offered it, and one
-              // professional must never be offered another's.
+              // Per-engagement state is the viewing professional's OWN only: the
+              // client cannot read fee docs by rule and is never told (§6), and
+              // one professional must never see another's.
               engagementStatus={
                 !isClient && professionalId === currentUserId
                   ? myFee?.engagementStatus ?? undefined
-                  : undefined
-              }
-              onMarkComplete={
-                !isClient && professionalId === currentUserId && !isCancelled && canMarkComplete(myFee)
-                  ? () => setCompleteSheetOpen(true)
                   : undefined
               }
               onContest={
@@ -1336,11 +1325,6 @@ export default function ProjectDetailsScreen() {
                   ? contestWindowEndsAt(myFee) ?? undefined
                   : undefined
               }
-              // NOT gated on isReadOnly: a completed project is precisely when
-              // the fee is due, and that is the state that hides "update price".
-              onPay={!isClient && professionalId === currentUserId
-                ? () => router.push(`/settings/payment?projectId=${projectId}` as never)
-                : undefined}
               onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly && (payment?.individualOffer || payment?.bundleId)
                 ? () => {
                     if (!payment) return;
@@ -1648,6 +1632,22 @@ export default function ProjectDetailsScreen() {
               )}
             </TouchableOpacity>
           )}
+        </View>
+      )}
+
+      {/* The professional's "finish my part": the same full-width button as the
+          client's close-project button, for their own engagement only. */}
+      {!isClient && !isCancelled && canMarkComplete(myFee) && (
+        <View style={styles.completeBar} testID="pro-complete-bar">
+          <TouchableOpacity
+            style={styles.completeBtn}
+            onPress={() => setCompleteSheetOpen(true)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            testID="pro-complete-btn"
+          >
+            <Text style={[styles.completeBtnText, { ...font.bold }]}>{t('engagement.mark_complete')}</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -2392,10 +2392,7 @@ function MemberRow({
   onReport,
   payment,
   onUpdate,
-  fee,
-  onPay,
   engagementStatus,
-  onMarkComplete,
   onContest,
   contestWindowEndsAt,
 }: {
@@ -2410,16 +2407,9 @@ function MemberRow({
   onReport?: () => void;
   payment?: { price: number; hasBundle: boolean; individualOffer: PriceOffer | null; bundleId: string | null };
   onUpdate?: () => void;
-  /** THIS professional's platform fee. Passed only when the viewer IS this
-   *  professional — the client must never see it (spec §6). */
-  fee?: ProjectFee | null;
-  onPay?: () => void;
-  /** THIS engagement's status, scoped exactly as `fee` is. Absent on every row
-   *  but the viewing professional's own. */
+  /** THIS engagement's status. Absent on every row but the viewing
+   *  professional's own — the client must never see it (spec §6). */
   engagementStatus?: ProjectFee['engagementStatus'];
-  /** Opens the mark-complete sheet. Passed only on the viewing professional's own
-   *  row, and only while their engagement can still be completed. */
-  onMarkComplete?: () => void;
   /** Opens the contest sheet. Same scoping, and only inside the window that ends
    *  when the fee is charged. */
   onContest?: () => void;
@@ -2435,37 +2425,6 @@ function MemberRow({
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   const isClient = badge !== undefined;
   const canUpdate = !!onUpdate && (!!payment?.individualOffer || !!payment?.bundleId);
-  // The fee line is the ONLY place an amount appears before the payment screen.
-  const owed = outstandingFee(fee ?? null);
-  const feeLine = !fee
-    ? null
-    : fee.feeStatus === 'included'
-    ? t('project_details.fee_included')
-    : fee.feeStatus === 'exempt'
-    ? null
-    : owed > 0
-    ? isMinimumFee(fee)
-      // The percentage is deliberately dropped when the floor set the amount:
-      // "BAMA fee 3% · ₪6" on a ₪100 job reads as a bug. The full arithmetic is
-      // on the balance screen, which this row links to.
-      ? t('project_details.fee_line_min', { amount: owed.toLocaleString() })
-      : t('project_details.fee_line', { percent: String(feePercent(fee)), amount: owed.toLocaleString() })
-    : t('project_details.fee_paid');
-  // Deliberately NOT gated on isReadOnly: completion is exactly when the fee
-  // falls due, so the pay action has to survive the read-only project state that
-  // hides "update price".
-  //
-  // And NOT gated on the amount. `owed > 0` was the door to the balance screen
-  // testing a number to answer a question about lifecycle — the same bug the
-  // screen's own row filter had, one layer up. A `didnt_happen` contest zeroes
-  // the fee, so the only way in vanished at the exact moment the professional
-  // needed to look. showsOnBalance is the predicate the screen filters its rows
-  // with, so the door and the room now agree by construction.
-  const canPay = !!onPay && showsOnBalance(fee ?? null);
-  // Also deliberately NOT gated on isReadOnly: the project-level read-only state
-  // is a roll-up of everyone's engagement, and this professional's own may still
-  // be open inside a project that already reads closed.
-  const canComplete = !!onMarkComplete;
   const canContest = !!onContest;
   const awaitingClient = engagementStatus === 'end_requested_by_pro';
   const isEngagementDone = engagementStatus === 'completed';
@@ -2473,7 +2432,7 @@ function MemberRow({
   // Report lives in the action bar, under the separator line, so it keeps the bar
   // alive on its own (the client's view of a professional often has nothing else).
   // A card with no action and no report still renders no bar and no line.
-  const showActions = canUpdate || canPay || canComplete || canContest || awaitingClient
+  const showActions = canUpdate || canContest || awaitingClient
     || isEngagementDone || isContested || !!onRemove || isPendingRemoval || !!onReport;
   return (
     <View style={styles.memberCard}>
@@ -2521,11 +2480,6 @@ function MemberRow({
                 </View>
               )}
             </View>
-            {feeLine && (
-              <AppText weight="regular" style={styles.memberFeeLine} numberOfLines={1}>
-                {feeLine}
-              </AppText>
-            )}
           </View>
         )}
 
@@ -2534,16 +2488,10 @@ function MemberRow({
       {/* Action bar */}
       {showActions && (
         <View style={[styles.memberActionBar, { flexDirection: rowDir }]}>
-          {/* The professional's own engagement. One of three mutually exclusive
-              states, and only ever on their own row. */}
-          {canComplete ? (
-            <TouchableOpacity style={styles.completePill} onPress={onMarkComplete} activeOpacity={0.85}>
-              <Check size={13} color="#ffffff" strokeWidth={2.4} />
-              <AppText weight="semiBold" style={styles.completePillText}>
-                {t('engagement.mark_complete')}
-              </AppText>
-            </TouchableOpacity>
-          ) : awaitingClient ? (
+          {/* The professional's own engagement state, only ever on their own row.
+              The action that ends it ("finish my part") is the full-width button
+              in the bottom bar, like the client's close-project button. */}
+          {awaitingClient ? (
             <View style={styles.engagementChip}>
               <AppText weight="semiBold" style={styles.engagementChipText}>
                 {t('engagement.awaiting_client')}
@@ -2570,11 +2518,6 @@ function MemberRow({
               <AppText weight="semiBold" style={styles.contestPillText}>
                 {t('engagement.contest')}
               </AppText>
-            </TouchableOpacity>
-          )}
-          {canPay && (
-            <TouchableOpacity style={styles.payPill} onPress={() => onPay!()} activeOpacity={0.85}>
-              <AppText weight="semiBold" style={styles.payPillText}>{t('project_details.pay_fee')}</AppText>
             </TouchableOpacity>
           )}
           {canUpdate && (
@@ -2838,28 +2781,6 @@ const styles = StyleSheet.create({
   },
   rolePillText: { fontSize: 12, color: '#5c6180' },
   memberPriceGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  // #9aa0b8 is this file's muted tone (memberSubtitle, in the same card). The
-  // previous #6b7280 was a one-off that appeared nowhere else here.
-  memberFeeLine: { fontSize: 11, color: '#9aa0b8' },
-  // Blue and radius 10, matching updatePill and removePill beside it in the same
-  // action bar — three pills in one row should not be three shapes. Green is
-  // reserved for project state elsewhere in the app; this is an action.
-  payPill: {
-    flexShrink: 0,
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#004aad', borderRadius: 10,
-    paddingHorizontal: 15, paddingVertical: 7,
-  },
-  payPillText: { fontSize: 13, color: '#ffffff' },
-  // The payPill idiom exactly — same radius, padding and text size — so the two
-  // read as the same class of action in the same bar, differing only in colour.
-  completePill: {
-    flexShrink: 0,
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: COMPLETE_GREEN, borderRadius: 10,
-    paddingHorizontal: 15, paddingVertical: 7,
-  },
-  completePillText: { fontSize: 13, color: '#ffffff' },
   engagementChip: {
     backgroundColor: 'rgba(30,79,163,0.08)', borderRadius: 6,
     paddingHorizontal: 8, paddingVertical: 4,
@@ -3253,7 +3174,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 38,
   },
-  // Accept borrows payPill's solid blue; reject borrows removePill's soft red.
+  // Accept is the page's solid blue; reject borrows removePill's soft red.
   // The raw #22c55e / #ef4444 pair appeared nowhere else on this page.
   pendingActionAccept: { backgroundColor: '#004aad' },
   pendingActionReject: { backgroundColor: '#fdecec' },

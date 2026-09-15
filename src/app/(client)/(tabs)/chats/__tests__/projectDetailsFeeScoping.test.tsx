@@ -237,17 +237,27 @@ describe('the professional sees their OWN engagement and nobody else’s', () =>
     expect(queryAllByText(en.engagement.mark_complete)).toHaveLength(1);
   });
 
+  it('puts it in the bottom bar as a full button, like the client’s close button', async () => {
+    const { getByTestId } = await renderAsPro();
+    const bar = getByTestId('pro-complete-bar');
+    expect(bar).toHaveTextContent(en.engagement.mark_complete);
+    expect(getByTestId('pro-complete-btn').props.accessibilityRole).toBe('button');
+  });
+
   it('subscribes to exactly one fee document — their own', async () => {
     await renderAsPro();
     expect(mockListenToProjectFee).toHaveBeenCalledTimes(1);
     expect(mockListenToProjectFee).toHaveBeenCalledWith('p1', 'pro-1', expect.any(Function));
   });
 
-  it('shows one fee line, not three', async () => {
-    // pro-2 and pro-3 are on the same project and owe their own fees. Neither
-    // amount may appear on pro-1's screen.
-    const { queryAllByText } = await renderAsPro();
-    expect(queryAllByText(/BAMA fee/)).toHaveLength(1);
+  it('shows no fee line under the price, not even their own', async () => {
+    // The fee lives on the balance screen (settings menu) and in the completion
+    // sheet. The project page shows the price and nothing about the commission.
+    const { queryAllByText, queryByText } = await renderAsPro();
+    expect(queryByText('₪4,000')).toBeTruthy();
+    expect(queryAllByText(/BAMA fee/)).toHaveLength(0);
+    expect(queryByText(en.project_details.fee_paid)).toBeNull();
+    expect(queryByText(en.project_details.fee_included)).toBeNull();
   });
 });
 
@@ -381,20 +391,11 @@ describe('the client accelerator does not read as an approval', () => {
 });
 
 /**
- * THE DOOR TO THE BALANCE SCREEN.
- *
- * Step 4 fixed that screen's row filter and left both entry points to it gated on
- * `owed > 0`. A `didnt_happen` contest zeroes the fee, so the row was correctly
- * kept and there was no longer any way to reach it — a filter fixed one layer in
- * while the layer outside kept the old predicate, which is worse than not fixing
- * it: the data is right and unreachable.
- *
- * Asserted at the SCREEN, not on showsOnBalance. A unit test on the predicate
- * cannot see a call site that stopped calling it — verified by reverting this
- * exact line to `owed > 0` and watching every unit test still pass.
+ * The balance screen is opened from the settings menu (AppHeader), where it is
+ * always reachable for a professional, whatever state any engagement is in.
+ * The project page no longer carries its own entry.
  */
-describe('the balance screen stays reachable after a contest', () => {
-  /** Contested with didnt_happen: fee voided to zero, still open business. */
+describe('the balance entry is not on the project page', () => {
   const contested = {
     professionalId: 'pro-1', feeStatus: 'owed', feeRate: 0.03,
     baseAmount: 4000, minFeeApplied: 6, slotActive: true,
@@ -412,34 +413,17 @@ describe('the balance screen stays reachable after a contest', () => {
     return r;
   }
 
-  it('offers the balance entry on a contested engagement worth ₪0', async () => {
-    const { queryAllByText } = await renderAsPro(contested);
-    expect(queryAllByText(en.project_details.pay_fee)).toHaveLength(1);
-  });
-
-  it('offers it on a completed engagement awaiting charge with nothing owed', async () => {
-    const { queryAllByText } = await renderAsPro({
-      ...contested,
-      engagementStatus: 'completed', feeDue: 0, feePaid: true, status: 'paid',
-      chargeDueAt: { seconds: Math.floor(Date.now() / 1000) + 3 * 86400, nanoseconds: 0 },
-    });
-    expect(queryAllByText(en.project_details.pay_fee)).toHaveLength(1);
-  });
-
-  it('still hides it once the engagement is genuinely settled and closed', async () => {
-    // The gate must not become "always on" — that would be a different bug with
-    // the same shape, and this suite would otherwise not notice.
-    const { queryByText } = await renderAsPro({
-      ...contested,
-      engagementStatus: 'completed', feeDue: 0, feePaid: true, status: 'paid',
-    });
-    expect(queryByText(en.project_details.pay_fee)).toBeNull();
-  });
-
-  it('never offers it to the client', async () => {
-    mockViewer.uid = 'client-1';
-    const r = render(<ProjectDetailsScreen />);
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
-    expect(r.queryByText(en.project_details.pay_fee)).toBeNull();
+  it('is absent for a professional in every state that used to show it', async () => {
+    for (const f of [
+      contested,
+      { ...contested, engagementStatus: 'completed', feeDue: 0, feePaid: true, status: 'paid',
+        chargeDueAt: { seconds: Math.floor(Date.now() / 1000) + 3 * 86400, nanoseconds: 0 } },
+      { ...contested, engagementStatus: 'hired', feeStatus: 'owed' },
+    ]) {
+      const r = await renderAsPro(f);
+      expect(r.queryByText('Name pro-1')).toBeTruthy();
+      expect(r.queryByText(en.project_details.pay_fee)).toBeNull();
+      r.unmount();
+    }
   });
 });
