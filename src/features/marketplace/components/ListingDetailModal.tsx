@@ -209,12 +209,24 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             keyboardShouldPersistTaps="handled"
           >
             {/* Image */}
-            <View style={styles.imageWrap}>
+            <View style={styles.imageWrap} testID="listing-image">
               {listing.imageUrl ? (
                 <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
               ) : (
                 <Text style={styles.imagePlaceholder}>📦</Text>
               )}
+            </View>
+
+            {/* Product name, right under the picture */}
+            <View style={styles.detailsBox} testID="listing-name-box">
+              <View style={[styles.detailRow, { flexDirection: rowDir }]}>
+                <AppText weight="regular" style={styles.detailLabel}>
+                  {`${t('marketplace.product_name')}:`}
+                </AppText>
+                <AppText weight="semiBold" style={[styles.detailValue, { textAlign: rtl ? 'left' : 'right' }]}>
+                  {listing.productName}
+                </AppText>
+              </View>
             </View>
 
             {/* Condition / Brand / Category */}
