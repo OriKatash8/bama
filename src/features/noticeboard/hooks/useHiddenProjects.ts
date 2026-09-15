@@ -7,7 +7,7 @@ import type { ProjectRequest } from '@core/types/project';
 /**
  * Projects the professional dismissed (users/{uid}.dismissedNotices) that are
  * still restorable — i.e. the doc exists and is still open. `enabled` gates the
- * subscription so it only runs while the History sheet is visible.
+ * subscription; the noticeboard keeps it on so it knows whether to show History.
  */
 export function useHiddenProjects(enabled: boolean) {
   const uid = useAuthStore((s) => s.user?.id);

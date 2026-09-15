@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MapPin, Calendar, Clock, X, ChevronDown, ChevronUp, Send } from 'lucide-react-native';
+import { MapPin, Calendar, Clock, X, ChevronDown, ChevronUp, Send, RotateCcw } from 'lucide-react-native';
 
 import type { ProjectRequest } from '@core/types/project';
 import type { PosterInfo } from '@features/noticeboard/hooks/useNoticeboard';
@@ -53,9 +53,12 @@ type Props = {
   directInviteLabel?: string;
   compact?: boolean;
   cardWidth?: number;
+  /** History's hidden notices: the action becomes "Restore" instead of "Make
+   *  offer", and there is no ✕ (the notice is already hidden). */
+  onRestore?: () => void;
 };
 
-export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth }: Props) {
+export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, onMakeOffer, isApplying, isDirectInvite, directInviteLabel, compact, cardWidth, onRestore }: Props) {
   const allRoles = [...new Set(request.crewSlots.map((s) => s.category))];
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
@@ -209,15 +212,18 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             )}
           </View>
 
-          {/* ✕ dismiss — trailing corner (left in RTL) */}
-          <TouchableOpacity
-            onPress={(e) => { e.stopPropagation?.(); setConfirmingDismiss(true); }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            activeOpacity={0.7}
-            style={styles.dismissInline}
-          >
-            <X size={15} color={colors.textMuted} />
-          </TouchableOpacity>
+          {/* ✕ dismiss — trailing corner (left in RTL). Not on an already-hidden notice. */}
+          {!onRestore && (
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation?.(); setConfirmingDismiss(true); }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              activeOpacity={0.7}
+              style={styles.dismissInline}
+              testID="notice-dismiss"
+            >
+              <X size={15} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Description — tinted box */}
@@ -275,13 +281,26 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
 
         {/* Bottom: make-offer button + skills toggle */}
         <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
-          <TouchableOpacity
-            style={[styles.offerPill, { backgroundColor: offerBg }]}
-            onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
-            activeOpacity={0.8}
-          >
-            <AppText weight="bold" style={styles.offerPillText}>{t('noticeboard.make_offer')}</AppText>
-          </TouchableOpacity>
+          {onRestore ? (
+            <TouchableOpacity
+              style={[styles.offerPill, styles.restorePill, { backgroundColor: offerBg, flexDirection: rowDir }]}
+              onPress={(e) => { e.stopPropagation?.(); onRestore(); }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t('history.restore')}
+            >
+              <RotateCcw size={13} color="#ffffff" strokeWidth={2.2} />
+              <AppText weight="bold" style={styles.offerPillText}>{t('history.restore')}</AppText>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.offerPill, { backgroundColor: offerBg }]}
+              onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
+              activeOpacity={0.8}
+            >
+              <AppText weight="bold" style={styles.offerPillText}>{t('noticeboard.make_offer')}</AppText>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.skillsBtn, { flexDirection: rowDir }]}
             onPress={(e) => { e.stopPropagation?.(); setSkillsOpen((v) => !v); }}
@@ -533,6 +552,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexShrink: 0,
   },
+  restorePill: { alignItems: 'center', gap: 6 },
   offerPillText: {
     fontSize: 13,
     color: '#ffffff',

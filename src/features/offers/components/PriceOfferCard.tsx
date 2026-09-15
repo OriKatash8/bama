@@ -60,7 +60,7 @@ export function PriceOfferCard({
   const displayName = professionalProfile?.displayName ?? '…';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   // categoryLabel, not the raw stored string — the same mapping project-details
-  // and NoticeHistorySheet already use, so the role reads in the app's language.
+  // and NoticeHistoryView already use, so the role reads in the app's language.
   //
   // Deliberately the CATEGORY, not `subcategory ?? category`. Stored
   // subcategories are English display strings from a retired taxonomy: only 2 of

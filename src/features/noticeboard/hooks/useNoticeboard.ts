@@ -51,9 +51,9 @@ export function useNoticeboard(
   /**
    * Drop a project from the local dismissed set, without touching Firestore.
    *
-   * The History sheet owns the WRITE (`useHiddenProjects.restore` does the
+   * History owns the WRITE (`useHiddenProjects.restore` does the
    * arrayRemove) and is live-subscribed, so it updates itself. This hook is not:
-   * it reads dismissedNotices once, and the sheet is an in-page Modal, so no
+   * it reads dismissedNotices once, and History is a view in the same page, so no
    * navigation ever occurs to trigger a refetch. Without this the restored
    * project stays hidden from the board until the tab remounts.
    */

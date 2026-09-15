@@ -6,7 +6,9 @@ import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
-import { NoticeHistorySheet } from '@features/noticeboard/components/NoticeHistorySheet';
+import { NoticeHistoryView } from '@features/noticeboard/components/NoticeHistoryView';
+import { useHiddenProjects } from '@features/noticeboard/hooks/useHiddenProjects';
+import { hasNoticeHistory } from '@features/noticeboard/history';
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 import { NotifSoftAskModal } from '@features/notifications/components/NotifSoftAskModal';
 import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
@@ -158,10 +160,12 @@ export default function DashboardScreen() {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sortModalVisible, setSortModalVisible] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  // The board shows the noticeboard by default; in-progress projects are a
-  // deliberate detour, not something competing for the same screen.
-  const [showInProgress, setShowInProgress] = useState(false);
+  // The board shows the noticeboard by default; in-progress projects and history
+  // are deliberate detours in the same page, not something competing for it.
+  const [view, setView] = useState<'board' | 'in_progress' | 'history'>('board');
+  const onBoard = view === 'board';
+  const showInProgress = view === 'in_progress';
+  const showHistory = view === 'history';
 
   // Opening a project's chat leaves the screen; coming back should land on the
   // board, not on whatever detour you were in. The toggle is view state, not a
@@ -170,13 +174,17 @@ export default function DashboardScreen() {
   // fires once per focus.
   useFocusEffect(
     useCallback(() => {
-      setShowInProgress(false);
+      setView('board');
     }, []),
   );
 
   // Same hook instance the history badge already used — `offers` comes free, so
   // the "have I bid on this?" check costs no extra query or listener.
-  const { pendingCount, offers: sentOffers } = useSentOffers();
+  const { pendingCount, offers: sentOffers, loading: sentOffersLoading } = useSentOffers();
+  // Restorable hidden notices. Always on for this page: the History button only
+  // shows when there is something in it, so the page needs the count up front.
+  const { projects: hiddenProjects, loading: hiddenLoading, restore: restoreHidden } = useHiddenProjects(true);
+  const historyAvailable = hasNoticeHistory(sentOffers.length, hiddenProjects.length);
   const notifPrompt = useNotifPermissionPrompt();
   const softAsk = useNotifSoftAsk();
   const [draftSort, setDraftSort] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
@@ -367,27 +375,33 @@ export default function DashboardScreen() {
         <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <View style={{ flex: 1 }}>
             <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-              {showInProgress ? t('noticeboard.projects_in_progress') : t('noticeboard.notice_board')}
+              {showInProgress ? t('noticeboard.projects_in_progress') : showHistory ? t('history.title') : t('noticeboard.notice_board')}
             </AppText>
-            {!showInProgress && !isLoading && (
+            {onBoard && !isLoading && (
               <AppText weight="regular" style={[styles.sectionCount, { textAlign: rtl ? 'right' : 'left' }]}>
                 {openProjectsLabel}
               </AppText>
             )}
           </View>
-          {/* History — always available (sent offers + hidden projects) */}
+          {/* History — only when there is some (a sent offer or a restorable hidden
+              notice). Like in-progress it names its destination: while in history
+              it offers the board back, so it stays visible there. */}
+          {(showHistory || historyAvailable) && (
           <TouchableOpacity
             style={styles.navBtn}
-            onPress={() => setHistoryOpen(true)}
+            onPress={() => setView((v) => (v === 'history' ? 'board' : 'history'))}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel={t('history.title')}
+            accessibilityLabel={showHistory ? t('noticeboard.notice_board') : t('history.title')}
+            testID="noticeboard-history-btn"
           >
-            <History size={15} color="#004aad" strokeWidth={2.2} />
+            {showHistory
+              ? <LayoutGrid size={15} color="#004aad" strokeWidth={2.5} />
+              : <History size={15} color="#004aad" strokeWidth={2.2} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
-              {t('history.title')}
+              {showHistory ? t('noticeboard.notice_board') : t('history.title')}
             </AppText>
-            {pendingCount > 0 && (
+            {!showHistory && pendingCount > 0 && (
               <View
                 style={[
                   styles.historyBadge,
@@ -399,6 +413,7 @@ export default function DashboardScreen() {
               </View>
             )}
           </TouchableOpacity>
+          )}
           {/* Names its DESTINATION, not its state: on the board it offers
               in-progress, on in-progress it offers the board. A toggle whose label
               stays put leaves you guessing whether it is on or where it goes —
@@ -406,7 +421,7 @@ export default function DashboardScreen() {
               it navigates rather than filtering. */}
           <TouchableOpacity
             style={styles.navBtn}
-            onPress={() => setShowInProgress((v) => !v)}
+            onPress={() => setView((v) => (v === 'in_progress' ? 'board' : 'in_progress'))}
             activeOpacity={0.8}
             accessibilityRole="button"
           >
@@ -417,7 +432,7 @@ export default function DashboardScreen() {
               {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
             </AppText>
           </TouchableOpacity>
-          {!showInProgress && !isLoading && biddable.length > 0 && (
+          {onBoard && !isLoading && biddable.length > 0 && (
             <TouchableOpacity
               style={[styles.navBtn, filterActive && styles.navBtnActive]}
               onPress={openSortModal}
@@ -501,7 +516,23 @@ export default function DashboardScreen() {
           <ActivityIndicator color="#004aad" style={{ marginVertical: 24 }} />
         )}
 
-        {!showInProgress && !isLoading && biddable.length > 0 && (
+        {/* ── History — shown only while that detour is on ── */}
+        {showHistory && (
+          <NoticeHistoryView
+            offers={sentOffers}
+            offersLoading={sentOffersLoading}
+            hidden={hiddenProjects}
+            hiddenLoading={hiddenLoading}
+            // The write is useHiddenProjects' (arrayRemove on dismissedNotices);
+            // the board reads dismissedNotices once, so drop it locally too.
+            onRestore={(id) => { void restoreHidden(id); undismiss(id); }}
+            onOpenProject={(p) => { if (guardSlots(p)) return; setSelectedView('details'); setSelected(p); }}
+            posters={posters}
+            cardWidth={cardWidth}
+          />
+        )}
+
+        {onBoard && !isLoading && biddable.length > 0 && (
           <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
             <TextInput
@@ -520,7 +551,7 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {showInProgress ? null : isLoading ? (
+        {!onBoard ? null : isLoading ? (
           <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
         ) : displayed.length === 0 ? (
           <View style={[styles.center, { minHeight: screenHeight * 0.6 }]}>
@@ -667,8 +698,6 @@ export default function DashboardScreen() {
         </View>
       </Modal>
 
-      {/* Sent-offers + hidden-projects history */}
-      <NoticeHistorySheet visible={historyOpen} onClose={() => setHistoryOpen(false)} onRestored={undismiss} />
 
       <NotifSoftAskModal context={softAsk.context} onClose={softAsk.close} />
     </Screen>
