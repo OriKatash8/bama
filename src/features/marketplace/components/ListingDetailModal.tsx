@@ -262,31 +262,33 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
               </View>
             )}
 
-            {/* Price & location */}
-            <View style={styles.infoBox}>
-              <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>{priceLabel}</Text>
-              <View style={[styles.locationRow, { flexDirection: rowDir }]}>
-                <Image
-                  source={LOCATION_ICON}
-                  style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
-                  contentFit="contain" cachePolicy="memory-disk"
-                />
-                <AppText
-                  weight="regular"
-                  style={[styles.location, { textAlign: rtl ? 'right' : 'left' }]}
-                  numberOfLines={1}
-                >
-                  {listing.location}
-                </AppText>
+            {/* Location & price: a label on one side, the value on the other */}
+            <View style={styles.detailsBox} testID="listing-info-box">
+              <View style={[styles.detailRow, { flexDirection: rowDir }]}>
+                <AppText weight="regular" style={styles.detailLabel}>{`${t('marketplace.location')}:`}</AppText>
+                <View style={[styles.locationRow, { flexDirection: rowDir, flexShrink: 1 }]}>
+                  <Image
+                    source={LOCATION_ICON}
+                    style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
+                    contentFit="contain" cachePolicy="memory-disk"
+                  />
+                  <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>
+                    {listing.location}
+                  </AppText>
+                </View>
+              </View>
+              <View style={[styles.detailRow, { flexDirection: rowDir }]}>
+                <AppText weight="regular" style={styles.detailLabel}>{`${t('marketplace.price')}:`}</AppText>
+                <Text style={styles.price}>{priceLabel}</Text>
               </View>
             </View>
 
-            {/* Seller */}
+            {/* Seller: the label on one side, the name on the other */}
             <View style={styles.sellerBox}>
-              <AppText weight="regular" style={[styles.poster, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('marketplace.posted_by')}{' '}
-                <AppText weight="semiBold" style={styles.posterName}>{listing.posterName}</AppText>
-              </AppText>
+              <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-seller-row">
+                <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.posted_by')}</AppText>
+                <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>{listing.posterName}</AppText>
+              </View>
             </View>
           </ScrollView>
 
@@ -498,19 +500,9 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: 180 },
   imagePlaceholder: { fontSize: 52 },
 
-  infoBox: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
-  },
   price: { fontSize: 18, fontWeight: '700', color: '#004aad' },
   locationRow: { flexDirection: 'row', alignItems: 'center' },
   locationIcon: { width: 14, height: 14 },
-  location: { fontSize: 14, color: 'rgba(15,15,31,0.4)', flex: 1 },
 
   detailsBox: {
     backgroundColor: '#ffffff',
@@ -554,8 +546,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.15)',
   },
-  poster: { fontSize: 13, color: 'rgba(15,15,31,0.4)' },
-  posterName: { color: '#004aad', fontWeight: '600' },
 
   // Primary: PostListingSheet's submitBtn.
   buyBtn: {

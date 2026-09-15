@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { render, within } from '@testing-library/react-native';
 import { ListingDetailModal } from '../ListingDetailModal';
 import en from '@core/i18n/translations/en.json';
@@ -59,4 +60,29 @@ it('the header has only the close button, not the name', () => {
   expect(r.getAllByText('Tripod')).toHaveLength(1);
   expect(within(r.getByTestId('listing-name-box')).getByText('Tripod')).toBeTruthy();
   expect(r.getByTestId('listing-close')).toBeTruthy();
+});
+
+it('the location and price box labels each row: "Location:" and "Price:"', () => {
+  mockUid = 'buyer-1';
+  const r = render(<ListingDetailModal listing={listing} onClose={jest.fn()} />);
+  const box = r.getByTestId('listing-info-box');
+  expect(within(box).getByText(`${en.marketplace.location}:`)).toBeTruthy();
+  expect(within(box).getByText('Tel Aviv')).toBeTruthy();
+  expect(within(box).getByText(`${en.marketplace.price}:`)).toBeTruthy();
+  expect(within(box).getByText('₪200')).toBeTruthy();
+  // Location first, then price.
+  const tree = JSON.stringify(r.toJSON());
+  expect(tree.indexOf('Tel Aviv')).toBeLessThan(tree.indexOf('₪200'));
+});
+
+it('posted by: the label on one side, the seller name on the other', () => {
+  mockUid = 'buyer-1';
+  const r = render(<ListingDetailModal listing={listing} onClose={jest.fn()} />);
+  const row = r.getByTestId('listing-seller-row');
+  expect(StyleSheet.flatten(row.props.style)).toEqual(expect.objectContaining({ justifyContent: 'space-between' }));
+  // Two separate texts, not the name tucked inside the label's sentence.
+  const label = within(row).getByText(en.marketplace.posted_by);
+  const name = within(row).getByText('Owner');
+  expect(label).not.toBe(name);
+  expect(within(label).queryByText('Owner')).toBeNull();
 });
