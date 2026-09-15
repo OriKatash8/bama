@@ -821,7 +821,8 @@ export default function ProjectDetailsScreen() {
   }
 
   function getMeetingUrgency(date: string, time: string): 'past' | 'imminent' | 'soon' | 'normal' {
-    const meetingAt = new Date(`${date}T${time}`);
+    // The hour is optional. With none, the meeting counts until the end of its day.
+    const meetingAt = new Date(`${date}T${time || '23:59'}`);
     const now = new Date();
     if (meetingAt <= now) return 'past';
     const diffDays = (meetingAt.getTime() - now.getTime()) / 86_400_000;
@@ -853,8 +854,6 @@ export default function ProjectDetailsScreen() {
       !projectId ||
       !newMeetingTitle.trim() ||
       !newMeetingDate ||
-      !newMeetingTime.trim() ||
-      !newMeetingLocation.trim() ||
       newMeetingInvitedIds.length === 0
     ) return;
     const currentUserId = auth.currentUser?.uid;
@@ -865,6 +864,8 @@ export default function ProjectDetailsScreen() {
         title: newMeetingTitle.trim(),
         description: newMeetingDescription.trim() || undefined,
         date: newMeetingDate,
+        // Optional, but always written: the meetings listener orders by `time`,
+        // and Firestore leaves out any document missing an orderBy field.
         time: newMeetingTime.trim(),
         location: newMeetingLocation.trim(),
         invitedIds: newMeetingInvitedIds,
@@ -1509,7 +1510,7 @@ export default function ProjectDetailsScreen() {
               )}
             </View>
             {(isClient || isTeamMember) && !isReadOnly && (
-              <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMeeting(true)} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMeeting(true)} activeOpacity={0.8} testID="add-meeting-pill">
                 <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
               </TouchableOpacity>
             )}
@@ -1570,12 +1571,14 @@ export default function ProjectDetailsScreen() {
                       {meeting.title}
                     </AppText>
                     <View style={styles.cardDivider} />
-                    <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                      <Clock size={12} color="#8890b0" strokeWidth={1.5} />
-                      <AppText weight="regular" style={styles.missionDue}>{meeting.time}</AppText>
-                    </View>
+                    {!!meeting.time && (
+                      <View style={[styles.missionDueRow, { flexDirection: rowDirection }]} testID="meeting-time-row">
+                        <Clock size={12} color="#8890b0" strokeWidth={1.5} />
+                        <AppText weight="regular" style={styles.missionDue}>{meeting.time}</AppText>
+                      </View>
+                    )}
                     {!!meeting.location && (
-                      <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
+                      <View style={[styles.missionDueRow, { flexDirection: rowDirection }]} testID="meeting-location-row">
                         <MapPin size={12} color="#8890b0" strokeWidth={1.5} />
                         <AppText weight="regular" style={styles.missionDue} numberOfLines={1}>{meeting.location}</AppText>
                       </View>
@@ -1869,7 +1872,7 @@ export default function ProjectDetailsScreen() {
             )}
 
             <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-              {t('project_details.meeting_time')}
+              {t('project_details.meeting_time_optional')}
             </Text>
             {newMeetingTime ? (
               <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
@@ -1895,7 +1898,7 @@ export default function ProjectDetailsScreen() {
             )}
 
             <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-              {t('project_details.meeting_location')}
+              {t('project_details.meeting_location_optional')}
             </Text>
             <TextInput
               style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
@@ -1943,10 +1946,12 @@ export default function ProjectDetailsScreen() {
                 style={[
                   styles.modalBtn,
                   styles.modalBtnConfirm,
-                  (!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting) && styles.completeBtnDisabled,
+                  (!newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting) && styles.completeBtnDisabled,
                 ]}
                 onPress={handleAddMeeting}
-                disabled={!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting}
+                disabled={!newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting}
+                accessibilityState={{ disabled: !newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting }}
+                testID="add-meeting-confirm"
                 activeOpacity={0.8}
               >
                 {isAddingMeeting ? (
@@ -2079,10 +2084,12 @@ export default function ProjectDetailsScreen() {
                     <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_date')}</Text>
                     <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{formatDueDate(detailMeeting.date, '')}</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_time')}</Text>
-                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{detailMeeting.time}</Text>
-                  </View>
+                  {!!detailMeeting.time && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_time')}</Text>
+                      <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{detailMeeting.time}</Text>
+                    </View>
+                  )}
                 </View>
 
                 {!!detailMeeting.location && (

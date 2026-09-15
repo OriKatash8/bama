@@ -57,6 +57,7 @@ import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
 import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
+import { formatHebMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
@@ -126,18 +127,6 @@ function formatRecordingTime(seconds: number): string {
 }
 
 // ── System messages (new mission/meeting) ──────────────────────────────────
-const HE_MONTHS_ABBR = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
-
-/** Turn a "…{title} · YYYY-MM-DD HH:MM" system text into a nice Hebrew detail line. */
-function formatHebMeetingDetail(text: string): string {
-  const m = text.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}:\d{2})/);
-  const formattedDate = m
-    ? `${parseInt(m[3], 10)} ב${HE_MONTHS_ABBR[parseInt(m[2], 10) - 1] ?? ''}, ${m[4]}`
-    : '';
-  const title = text.replace(/^📅\s*פגישה חדשה:\s*/, '').split(' · ')[0]?.trim();
-  if (title && formattedDate) return `${title} · ${formattedDate}`;
-  return formattedDate || title || '';
-}
 
 type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'completion' | 'neutral';
 

@@ -278,6 +278,8 @@
     "meeting_time_placeholder": "HH:MM",
     "meeting_location": "Location",
     "meeting_location_placeholder": "e.g. Studio / Zoom link",
+    "meeting_time_optional": "Time (optional)",
+    "meeting_location_optional": "Location (optional)",
     "meeting_invitees": "Invitees",
     "error_add_meeting": "Could not add meeting. Please try again.",
     "fee_line": "BAMA fee {{percent}}% · ₪{{amount}}",

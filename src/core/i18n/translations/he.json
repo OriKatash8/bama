@@ -278,6 +278,8 @@
     "meeting_time_placeholder": "HH:MM",
     "meeting_location": "מיקום",
     "meeting_location_placeholder": "לדוגמה: סטודיו / קישור זום",
+    "meeting_time_optional": "שעה (אופציונלי)",
+    "meeting_location_optional": "מיקום (אופציונלי)",
     "meeting_invitees": "מוזמנים",
     "error_add_meeting": "לא ניתן להוסיף פגישה. נסה שוב.",
     "fee_line": "עמלת BAMA {{percent}}% · ₪{{amount}}",
