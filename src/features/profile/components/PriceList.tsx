@@ -32,7 +32,7 @@ export function PriceList({ items, isEditing, onChange }: PriceListProps) {
         <View key={`${item.service}-${index}`} style={styles.row}>
           <AppText style={styles.service}>{item.service}</AppText>
           <View style={styles.right}>
-            <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.price}>₪{item.price.toFixed(2)}</Text>
             {isEditing && (
               <TouchableOpacity onPress={() => remove(index)} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                 <Text style={styles.remove}>×</Text>

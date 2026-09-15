@@ -68,7 +68,7 @@ export function ProjectDetailsForm({ onSubmit, isSubmitting }: Props) {
       />
       {errors.location && <Text style={styles.error}>{errors.location}</Text>}
 
-      <Text style={styles.label}>Budget ($)</Text>
+      <Text style={styles.label}>Budget (₪)</Text>
       <TextInput
         style={styles.input}
         value={budget}

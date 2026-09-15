@@ -2233,7 +2233,7 @@ export default function ProjectDetailsScreen() {
                     {t('project_details.current_amount')}
                   </Text>
                   <Text style={[styles.requestModalValue, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
-                    ${selectedPrice.currentAmount.toLocaleString()}
+                    ₪{selectedPrice.currentAmount.toLocaleString()}
                   </Text>
                 </View>
               </>

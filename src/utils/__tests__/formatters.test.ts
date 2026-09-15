@@ -2,12 +2,12 @@ import { execFileSync } from 'child_process';
 import { formatCurrency, formatDate, formatDuration, formatRelativeTime, formatIsoDay } from '../formatters';
 
 describe('formatCurrency', () => {
-  it('formats USD by default', () => {
-    expect(formatCurrency(1000)).toBe('$1,000.00');
-    expect(formatCurrency(99.5)).toBe('$99.50');
+  it('formats shekels by default', () => {
+    expect(formatCurrency(1000)).toBe('₪1,000.00');
+    expect(formatCurrency(99.5)).toBe('₪99.50');
   });
   it('formats zero', () => {
-    expect(formatCurrency(0)).toBe('$0.00');
+    expect(formatCurrency(0)).toBe('₪0.00');
   });
 });
 

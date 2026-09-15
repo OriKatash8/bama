@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act } from '@testing-library/react-native';
+import { render, act, fireEvent } from '@testing-library/react-native';
 import ProjectDetailsScreen from '../project-details';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
@@ -425,5 +425,17 @@ describe('the balance entry is not on the project page', () => {
       expect(r.queryByText(en.project_details.pay_fee)).toBeNull();
       r.unmount();
     }
+  });
+});
+
+describe('the request payment update popup', () => {
+  it('shows the current amount in shekels, not dollars', async () => {
+    const r = render(<ProjectDetailsScreen />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    fireEvent.press(r.getAllByText(en.project_details.update)[0]);
+    expect(r.getByText(en.project_details.request_payment_update)).toBeTruthy();
+    // ₪4,000 is also on the member card; the popup adds a second one.
+    expect(r.getAllByText('₪4,000')).toHaveLength(2);
+    expect(r.queryByText(/\$4,000/)).toBeNull();
   });
 });
