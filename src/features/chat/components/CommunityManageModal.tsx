@@ -28,6 +28,9 @@ function makeT(translations: Translations) {
   };
 }
 
+/** Enough to say why, short enough not to be a chore. */
+const ASK_DELETE_MIN_CHARS = 10;
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -49,6 +52,10 @@ type Props = {
  * doesn't depend on the chat screen being mounted. Channel creation of General and
  * Market stays in ChatRoomScreen, which creates them when the chat is opened.
  *
+ * At the bottom, "ask to delete the community": the owner can't delete a community
+ * themselves. They write why, and the request is saved as a `reports` doc with
+ * `type: 'community_deletion'`, which the admin Reports page lists for BAMA.
+ *
  * Owner only. The pending-requests query is only provable in the rules for the owner
  * (see the LOAD-BEARING comment on joinRequests in firestore.rules), so nothing here
  * listens unless the signed-in user is the owner.
@@ -66,6 +73,11 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
   const [addingChannel, setAddingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const [askReason, setAskReason] = useState('');
+  const [askSending, setAskSending] = useState(false);
+  const [askFailed, setAskFailed] = useState(false);
+  const [askSent, setAskSent] = useState(false);
 
   useEffect(() => {
     if (!visible || !isOwner) return;
@@ -137,6 +149,34 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
       await updateDoc(doc(db, 'chats', chatId), { photoURL: url });
     } finally {
       setPhotoUploading(false);
+    }
+  }
+
+  const askReady = askReason.trim().length >= ASK_DELETE_MIN_CHARS && !askSending;
+
+  async function handleSendDeleteRequest() {
+    if (!askReady) return;
+    setAskSending(true);
+    setAskFailed(false);
+    try {
+      await addDoc(collection(db, 'reports'), {
+        type: 'community_deletion',
+        reporterId: currentUserId,
+        communityId: chatId,
+        communityName: chatName,
+        reason: askReason.trim(),
+        evidenceURLs: [],
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+      setAskOpen(false);
+      setAskReason('');
+      setAskSent(true);
+    } catch {
+      // Keep the sheet and the text so nothing the owner wrote is lost.
+      setAskFailed(true);
+    } finally {
+      setAskSending(false);
     }
   }
 
@@ -262,11 +302,76 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
                 </TouchableOpacity>
               )}
 
+              {/* Ask BAMA to delete the community */}
+              {askSent ? (
+                <AppText weight="regular" style={[styles.askSentText, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('communities.ask_delete_sent')}
+                </AppText>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => { setAskOpen(true); setAskFailed(false); }}
+                  style={styles.askDeleteBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('communities.ask_delete')}
+                  testID="manage-ask-delete"
+                >
+                  <AppText weight="semiBold" style={styles.askDeleteText}>{t('communities.ask_delete')}</AppText>
+                </TouchableOpacity>
+              )}
+
               <View style={{ height: 16 }} />
             </ScrollView>
           </LinearGradient>
         </TouchableOpacity>
       </TouchableOpacity>
+
+      {/* Inside the same Modal: iOS can't present a second Modal over this one. */}
+      {askOpen && (
+        <View style={styles.askOverlay}>
+          <View style={styles.askSheet}>
+            <AppText weight="bold" style={[styles.askTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('communities.ask_delete_title')}
+            </AppText>
+            <AppText weight="regular" style={[styles.askBody, { textAlign: rtl ? 'right' : 'left' }]}>
+              {`${chatName} · ${t('communities.ask_delete_body')}`}
+            </AppText>
+            <TextInput
+              value={askReason}
+              onChangeText={(v) => { setAskReason(v); setAskFailed(false); }}
+              placeholder={t('communities.ask_delete_placeholder')}
+              placeholderTextColor="#9aa0b8"
+              multiline
+              style={[styles.askInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
+              testID="manage-ask-delete-input"
+            />
+            <AppText weight="regular" style={[styles.askHint, { textAlign: rtl ? 'right' : 'left' }]}>
+              {askFailed ? t('communities.ask_delete_failed') : t('communities.ask_delete_min')}
+            </AppText>
+            <View style={[styles.askActions, { flexDirection: rowDir }]}>
+              <TouchableOpacity
+                style={[styles.askBtn, styles.askBtnCancel]}
+                onPress={() => { setAskOpen(false); setAskFailed(false); }}
+                accessibilityRole="button"
+                accessibilityLabel={t('communities.ask_delete_cancel')}
+              >
+                <AppText weight="semiBold" style={styles.askBtnCancelText}>{t('communities.ask_delete_cancel')}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.askBtn, styles.askBtnSend, !askReady && { opacity: 0.45 }]}
+                onPress={handleSendDeleteRequest}
+                disabled={!askReady}
+                accessibilityRole="button"
+                accessibilityLabel={t('communities.ask_delete_send')}
+                accessibilityState={{ disabled: !askReady }}
+              >
+                {askSending
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <AppText weight="semiBold" style={styles.askBtnSendText}>{t('communities.ask_delete_send')}</AppText>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </Modal>
   );
 }
@@ -297,6 +402,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
   },
+  askDeleteBtn: {
+    marginTop: 24, paddingVertical: 12, alignItems: 'center', borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(255,138,138,0.8)', backgroundColor: 'rgba(220,38,38,0.12)',
+  },
+  askDeleteText: { color: '#ffc9c9', fontSize: 14 },
+  askSentText: { marginTop: 24, color: 'rgba(255,255,255,0.85)', fontSize: 13 },
+  askOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center',
+  },
+  askSheet: { width: '88%', backgroundColor: '#ffffff', borderRadius: 20, padding: 20, gap: 10 },
+  askTitle: { fontSize: 17, color: '#004aad' },
+  askBody: { fontSize: 13, color: '#5c6180', lineHeight: 19 },
+  askInput: {
+    minHeight: 96, borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', borderRadius: 12,
+    padding: 12, fontSize: 14, color: '#004aad', textAlignVertical: 'top',
+  },
+  askHint: { fontSize: 12, color: '#9aa0b8' },
+  askActions: { gap: 10, marginTop: 4 },
+  askBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  askBtnCancel: { borderWidth: 1, borderColor: 'rgba(0,74,173,0.25)' },
+  askBtnCancelText: { color: '#004aad', fontSize: 14 },
+  askBtnSend: { backgroundColor: '#dc2626' },
+  askBtnSendText: { color: '#ffffff', fontSize: 14 },
   photoUploading: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16,
     backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center',

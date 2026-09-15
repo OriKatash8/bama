@@ -37,6 +37,11 @@ const moderateUser = callFunction<
 
 type Report = {
   id: string;
+  /** Absent on user reports. 'community_deletion' is a community owner asking BAMA
+   *  to delete their community (CommunityManageModal); it has no reported user. */
+  type?: 'community_deletion';
+  communityId?: string;
+  communityName?: string;
   reporterId: string;
   reportedUserId: string;
   reportedUserName: string;
@@ -119,6 +124,9 @@ export default function ReportsAdmin() {
   }, [reports, resolvedNames]);
 
   function reportedName(r: Report): string {
+    if (r.type === 'community_deletion') {
+      return `${t('admin_reports.community_deletion')} · ${r.communityName || r.communityId || '—'}`;
+    }
     if (r.reportedUserName && r.reportedUserName !== r.reportedUserId) return r.reportedUserName;
     return resolvedNames[r.reportedUserId] || r.reportedUserName || t('admin_reports.unknown_user');
   }
@@ -214,7 +222,7 @@ export default function ReportsAdmin() {
               </Text>
 
               {/* Evidence */}
-              {report.evidenceURLs.length > 0 && (
+              {(report.evidenceURLs?.length ?? 0) > 0 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbScroll}>
                   {report.evidenceURLs.map((url, i) => (
                     <Image key={i} source={{ uri: url }} style={styles.thumb} resizeMode="cover" />
@@ -222,7 +230,8 @@ export default function ReportsAdmin() {
                 </ScrollView>
               )}
 
-              {/* Moderate the reported user */}
+              {/* Moderate the reported user. A deletion request has no user to act on. */}
+              {report.type !== 'community_deletion' && (
               <View style={[styles.actions, { flexDirection: rowDir }]}>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.modBtn, { flexDirection: rowDir, borderColor: '#ff9800' }]}
@@ -241,6 +250,7 @@ export default function ReportsAdmin() {
                   <Text style={[styles.actionText, { ...font.semiBold, color: '#e53935' }]}>{t('admin_reports.suspend')}</Text>
                 </TouchableOpacity>
               </View>
+              )}
 
               {/* Report status */}
               <View style={[styles.actions, { flexDirection: rowDir }]}>

@@ -515,6 +515,7 @@
     "msg_failed": "השליחה נכשלה"
   },
   "admin_reports": {
+    "community_deletion": "בקשה למחיקת קהילה",
     "greeting": "תור מודרציה",
     "title": "דיווחים",
     "filter_all": "הכול",
@@ -926,6 +927,15 @@
     "pricing": "תעריפים"
   },
   "communities": {
+    "ask_delete": "בקשה למחיקת הקהילה",
+    "ask_delete_title": "בקשה מ-BAMA למחוק את הקהילה",
+    "ask_delete_body": "ספרו לנו למה תרצו לסגור את הקהילה. צוות BAMA יבדוק את הבקשה ויחזור אליכם.",
+    "ask_delete_placeholder": "למה תרצו לסגור את הקהילה?",
+    "ask_delete_min": "לפחות 10 תווים",
+    "ask_delete_send": "שליחה ל-BAMA",
+    "ask_delete_cancel": "ביטול",
+    "ask_delete_sent": "הבקשה נשלחה ל-BAMA. נחזור אליכם בהקדם.",
+    "ask_delete_failed": "לא הצלחנו לשלוח את הבקשה. נסו שוב.",
     "request_create": "צור קהילה",
     "request_sent": "הבקשה שלך נשלחה לבדיקה",
     "empty": "אין קהילות עדיין",

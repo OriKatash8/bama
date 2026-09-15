@@ -132,3 +132,57 @@ it('does not listen while closed', () => {
   render(<CommunityManageModal {...baseProps} visible={false} />);
   expect(onSnapshot).not.toHaveBeenCalled();
 });
+
+describe('ask BAMA to delete the community', () => {
+  const c = en.communities;
+
+  it('the owner writes why; the request is saved for BAMA with the community and the reason', async () => {
+    const r = render(<CommunityManageModal {...baseProps} />);
+    fireEvent.press(r.getByRole('button', { name: c.ask_delete }));
+    expect(r.getByText(c.ask_delete_title)).toBeTruthy();
+
+    const send = () => r.getByRole('button', { name: c.ask_delete_send });
+    // Too short to send.
+    fireEvent.changeText(r.getByPlaceholderText(c.ask_delete_placeholder), 'bye');
+    expect(send().props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+
+    fireEvent.changeText(r.getByPlaceholderText(c.ask_delete_placeholder), '  We finished the season  ');
+    await act(async () => { fireEvent.press(send()); });
+
+    expect(addDoc).toHaveBeenCalledWith(
+      { path: 'reports' },
+      {
+        type: 'community_deletion',
+        reporterId: 'owner-1',
+        communityId: 'c1',
+        communityName: 'Gaffers Guild',
+        reason: 'We finished the season',
+        evidenceURLs: [],
+        status: 'pending',
+        createdAt: 'ts',
+      },
+    );
+    // The sheet closes and the panel says it was sent.
+    expect(r.queryByText(c.ask_delete_title)).toBeNull();
+    expect(r.getByText(c.ask_delete_sent)).toBeTruthy();
+  });
+
+  it('cancel sends nothing', () => {
+    const r = render(<CommunityManageModal {...baseProps} />);
+    fireEvent.press(r.getByRole('button', { name: c.ask_delete }));
+    fireEvent.changeText(r.getByPlaceholderText(c.ask_delete_placeholder), 'We finished the season');
+    fireEvent.press(r.getByRole('button', { name: c.ask_delete_cancel }));
+    expect(r.queryByText(c.ask_delete_title)).toBeNull();
+    expect(addDoc).not.toHaveBeenCalledWith({ path: 'reports' }, expect.anything());
+  });
+
+  it('a failed send keeps the sheet open with the text, and says so', async () => {
+    (addDoc as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('offline')));
+    const r = render(<CommunityManageModal {...baseProps} />);
+    fireEvent.press(r.getByRole('button', { name: c.ask_delete }));
+    fireEvent.changeText(r.getByPlaceholderText(c.ask_delete_placeholder), 'We finished the season');
+    await act(async () => { fireEvent.press(r.getByRole('button', { name: c.ask_delete_send })); });
+    expect(r.getByText(c.ask_delete_failed)).toBeTruthy();
+    expect(r.getByDisplayValue('We finished the season')).toBeTruthy();
+  });
+});

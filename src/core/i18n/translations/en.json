@@ -515,6 +515,7 @@
     "msg_failed": "Failed to send"
   },
   "admin_reports": {
+    "community_deletion": "Community deletion request",
     "greeting": "Moderation queue",
     "title": "Reports",
     "filter_all": "All",
@@ -926,6 +927,15 @@
     "pricing": "Pricing"
   },
   "communities": {
+    "ask_delete": "Ask to delete the community",
+    "ask_delete_title": "Ask BAMA to delete this community",
+    "ask_delete_body": "Tell us why you want to close the community. The BAMA team will review it and get back to you.",
+    "ask_delete_placeholder": "Why do you want to close it?",
+    "ask_delete_min": "At least 10 characters",
+    "ask_delete_send": "Send to BAMA",
+    "ask_delete_cancel": "Cancel",
+    "ask_delete_sent": "Your request was sent to BAMA. We'll get back to you.",
+    "ask_delete_failed": "Couldn't send the request. Try again.",
     "request_create": "Request Community",
     "request_sent": "Your request has been submitted for review",
     "empty": "No communities yet",
