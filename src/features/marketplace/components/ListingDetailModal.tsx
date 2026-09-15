@@ -188,15 +188,10 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
 
         <View testID="listing-card" style={styles.card}>
           {/* Header */}
-          <View style={[styles.header, { flexDirection: rowDir }]}>
-            <AppText
-              weight="bold"
-              style={[styles.headerTitle, { textAlign: rtl ? 'right' : 'left' }]}
-              numberOfLines={2}
-            >
-              {listing.productName}
-            </AppText>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+          {/* Just the close button: the name is in the box under the picture.
+              Pushed to the same end as before (left in Hebrew, right in English). */}
+          <View style={[styles.header, { flexDirection: rowDir, justifyContent: 'flex-end' }]}>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7} testID="listing-close">
               <X size={20} color="#004aad" />
             </TouchableOpacity>
           </View>
@@ -478,13 +473,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004aad',
-    paddingRight: 8,
   },
   closeBtn: {
     width: 32,

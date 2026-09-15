@@ -5,7 +5,8 @@ import en from '@core/i18n/translations/en.json';
 
 /**
  * Viewing a marketplace item: right under the picture, a box reads
- * "Product name:" and the item's name.
+ * "Product name:" and the item's name. The header no longer repeats the name;
+ * it only has the close button.
  */
 
 jest.mock('expo-router', () => ({
@@ -49,4 +50,13 @@ it('shows a "Product name:" box with the name, right under the picture', () => {
   expect(imageAt).toBeGreaterThan(-1);
   expect(boxAt).toBeGreaterThan(imageAt);
   expect(priceAt).toBeGreaterThan(boxAt);
+});
+
+it('the header has only the close button, not the name', () => {
+  mockUid = 'buyer-1';
+  const r = render(<ListingDetailModal listing={listing} onClose={jest.fn()} />);
+  // The name appears exactly once: inside the box.
+  expect(r.getAllByText('Tripod')).toHaveLength(1);
+  expect(within(r.getByTestId('listing-name-box')).getByText('Tripod')).toBeTruthy();
+  expect(r.getByTestId('listing-close')).toBeTruthy();
 });
