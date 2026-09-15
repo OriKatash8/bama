@@ -886,7 +886,8 @@
     "caption_body": "לקוחות יראו את הכיתוב כשיפתחו את הפריט בתיק העבודות.",
     "caption_placeholder": "מה רואים כאן? איפה זה צולם?",
     "caption_save": "שמירה",
-    "caption_skip": "דילוג"
+    "caption_skip": "דילוג",
+    "info_label": "מידע"
   },
   "header": {
     "client_mode": "לקוח/ה",

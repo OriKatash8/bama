@@ -886,7 +886,8 @@
     "caption_body": "Clients see this when they open the item in your portfolio.",
     "caption_placeholder": "What is this work? Where was it shot?",
     "caption_save": "Save",
-    "caption_skip": "Skip"
+    "caption_skip": "Skip",
+    "info_label": "Information"
   },
   "header": {
     "client_mode": "Client",

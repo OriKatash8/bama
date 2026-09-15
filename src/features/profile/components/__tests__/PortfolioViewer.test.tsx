@@ -2,6 +2,10 @@ import React from 'react';
 import { FlatList, Modal, StyleSheet, Dimensions } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { PortfolioViewer } from '../PortfolioViewer';
+import { MEDIA_VIEWER_CHROME_BG } from '@core/constants/mediaViewer';
+import { LIGHT, ThemeProvider } from '@core/hooks/useTheme';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import type { MediaAsset } from '@core/types/media';
 
 /**
@@ -75,14 +79,20 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 
+// RN's Modal renders outside the SafeAreaProvider on iOS, so useSafeAreaInsets()
+// reports zeros in there. Mocked that way on purpose — it is the real modal case.
+let mockWindowMetrics: { insets: { top: number; bottom: number } } | null = null;
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  get initialWindowMetrics() { return mockWindowMetrics; },
 }));
 
-jest.mock('lucide-react-native', () => ({ X: 'X' }));
+jest.mock('lucide-react-native', () => ({ X: 'X', Info: 'InfoIcon' }));
+jest.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
 
+let mockLang: 'he' | 'en' = 'en';
 jest.mock('@core/stores/settingsStore', () => ({
-  useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
+  useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
 }));
 
 const asset = (
@@ -100,14 +110,43 @@ const asset = (
 
 const twelve = Array.from({ length: 12 }, (_, i) => asset(i));
 
+// Wrapped in ThemeProvider like the real app: ThemeContext's bare default is DARK,
+// but every rendered screen sits inside the provider, which supplies LIGHT.
 const open = (assets: MediaAsset[], initialIndex = 0, onClose = jest.fn()) =>
   render(
-    <PortfolioViewer assets={assets} initialIndex={initialIndex} visible onClose={onClose} />,
+    <ThemeProvider>
+      <PortfolioViewer assets={assets} initialIndex={initialIndex} visible onClose={onClose} />
+    </ThemeProvider>,
   );
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockPlayers.clear();
+  mockLang = 'en';
+  mockWindowMetrics = null;
+});
+
+it('keeps the close button clear of the notch when the modal reports no insets', () => {
+  // The bug: inside RN's Modal useSafeAreaInsets() returns 0, so a bare insets.top
+  // put the whole 56px bar — and the X inside it — underneath the notch, leaving
+  // no way out of the viewer on iPhone.
+  const top = StyleSheet.flatten(open(twelve, 0).getByTestId('viewer-topbar').props.style).top;
+  expect(top).toBeGreaterThanOrEqual(44);
+});
+
+it('prefers the real device inset over the fallback floor', () => {
+  // initialWindowMetrics is captured natively at startup and stays correct inside
+  // a modal, so it is the trustworthy source when it is there.
+  mockWindowMetrics = { insets: { top: 59, bottom: 34 } };
+  const top = StyleSheet.flatten(open(twelve, 0).getByTestId('viewer-topbar').props.style).top;
+  expect(top).toBe(59);
+});
+
+it('keeps the caption clear of the home indicator with no insets either', () => {
+  const pad = StyleSheet.flatten(
+    open([asset(0, 'image', 'a caption'), asset(1)], 0).getByTestId('viewer-caption').props.style,
+  ).paddingBottom;
+  expect(pad).toBeGreaterThanOrEqual(20);
 });
 
 it('pages vertically, one full viewport height per item', () => {
@@ -241,20 +280,83 @@ it('lifts the caption above the video scrubber on video slides', () => {
   const onImage = open([asset(0, 'image', 'still'), asset(1)], 0);
   const onVideo = open([asset(0, 'video', 'clip'), asset(1)], 0);
 
-  const imageBottom = StyleSheet.flatten(onImage.getByTestId('viewer-caption').props.style).bottom;
-  const videoBottom = StyleSheet.flatten(onVideo.getByTestId('viewer-caption').props.style).bottom;
+  // The band is pinned to the bottom edge and lifts its text with padding, so the
+  // gradient still reaches the screen edge instead of floating above it
+  const imagePad = StyleSheet.flatten(onImage.getByTestId('viewer-caption').props.style).paddingBottom;
+  const videoPad = StyleSheet.flatten(onVideo.getByTestId('viewer-caption').props.style).paddingBottom;
 
   // expo-video's nativeControls own the bottom of a video slide
-  expect(videoBottom).toBeGreaterThan(imageBottom);
+  expect(videoPad).toBeGreaterThan(imagePad);
 });
 
-it('the counter sits opposite the close button on the same baseline', () => {
-  const r = open(twelve, 0);
-  const counter = StyleSheet.flatten(r.getByTestId('viewer-counter').props.style);
-  const close = StyleSheet.flatten(r.getByLabelText('close').props.style);
+it('the top bar holds the counter and close as a flex row, not absolute corners', () => {
+  // Normal-flow children matter beyond looks: the close button used to be
+  // absolutely positioned inside RNGH's zero-height web wrapper, which pushed it
+  // off-screen on web and made the viewer impossible to dismiss there.
+  const bar = StyleSheet.flatten(open(twelve, 0).getByTestId('viewer-topbar').props.style);
 
-  expect(counter.position).toBe('absolute');
-  expect(counter.left).toBe(16);
-  expect(close.right).toBe(16);
-  expect(counter.top).toBe(close.top);
+  expect(bar.justifyContent).toBe('space-between');
+  expect(bar.paddingHorizontal).toBe(14);
+  expect(StyleSheet.flatten(open(twelve, 0).getByLabelText('close').props.style).position)
+    .not.toBe('absolute');
+});
+
+it('the top bar leads with the counter, and flips in Hebrew', () => {
+  // I18nManager.allowRTL(false) app-wide, so the row cannot flip on its own
+  expect(StyleSheet.flatten(open(twelve, 0).getByTestId('viewer-topbar').props.style).flexDirection)
+    .toBe('row');
+
+  mockLang = 'he';
+  expect(StyleSheet.flatten(open(twelve, 0).getByTestId('viewer-topbar').props.style).flexDirection)
+    .toBe('row-reverse');
+});
+
+it('heads the caption with one label, the same for photos and videos', () => {
+  expect(open([asset(0, 'image', 'a still'), asset(1)], 0).getByText(en.media.info_label)).toBeTruthy();
+  expect(open([asset(0, 'video', 'a clip'), asset(1)], 0).getByText(en.media.info_label)).toBeTruthy();
+});
+
+it('Hebrew: the label and caption read right-to-left', () => {
+  mockLang = 'he';
+  const r = open([asset(0, 'image', 'כיתוב'), asset(1)], 0);
+
+  expect(r.getByText(he.media.info_label)).toBeTruthy();
+  expect(StyleSheet.flatten(r.getByTestId('viewer-caption-text').props.style).textAlign).toBe('right');
+});
+
+it('clamps a long caption to three lines rather than covering the photo', () => {
+  const long = 'A very long caption '.repeat(40);
+  const text = open([asset(0, 'image', long), asset(1)], 0).getByTestId('viewer-caption-text');
+
+  expect(text.props.numberOfLines).toBe(3);
+});
+
+it('sits on the same background as the profile page behind it', () => {
+  // Screen paints every page with colors.bgGradient; the viewer reads the same
+  // token rather than copying the values, so a theme change carries over.
+  expect(open(twelve, 0).getByTestId('viewer-root').props.colors).toEqual(LIGHT.bgGradient);
+});
+
+it('keeps the chrome readable against that light background', () => {
+  // White-on-white would vanish: the pills carry their own dark ground so they
+  // read over the pale backdrop AND over a dark photo.
+  const r = open(twelve, 0);
+  const pill = StyleSheet.flatten(r.getByTestId('viewer-counter').props.style).backgroundColor;
+  const close = StyleSheet.flatten(r.getByLabelText('close').props.style).backgroundColor;
+
+  expect(pill).toBe(MEDIA_VIEWER_CHROME_BG);
+  expect(close).toBe(MEDIA_VIEWER_CHROME_BG);
+  expect(MEDIA_VIEWER_CHROME_BG).toMatch(/^rgba\(0,\s*0,\s*0,/);
+});
+
+it('lets the page background show through the letterbox bars', () => {
+  // An opaque slide would cover the gradient wherever the media does not fill
+  const slideBg = StyleSheet.flatten(
+    open(twelve, 0).getByTestId('viewer-slide-a0').props.style,
+  ).backgroundColor;
+  expect(slideBg == null || slideBg === 'transparent').toBe(true);
+});
+
+it('renders no dot row — position lives in the counter on a vertical pager', () => {
+  expect(open(twelve, 0).queryByTestId('viewer-dots')).toBeNull();
 });
