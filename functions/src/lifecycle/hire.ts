@@ -11,8 +11,21 @@ import {
 } from '../pricing';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
-type Batch = admin.firestore.WriteBatch;
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
+
+/**
+ * What the per-type `acceptWrites` closures write through. A WriteBatch and a
+ * Transaction both satisfy it, so the accept/reject writes did not have to change
+ * when the commit moved from one to the other.
+ */
+type Writer = {
+  set(
+    ref: admin.firestore.DocumentReference,
+    data: admin.firestore.DocumentData,
+    options?: admin.firestore.SetOptions,
+  ): unknown;
+  update(ref: admin.firestore.DocumentReference, data: Update): unknown;
+};
 
 /**
  * Load the project, verify the caller is its client, and ENFORCE the open-project
@@ -145,16 +158,36 @@ async function commitHire(args: {
   consumesNewSlot: boolean;
   filledEntries: Filled[];
   amount: number;
-  acceptWrites: (batch: Batch) => void;
+  acceptWrites: (writer: Writer) => void;
 }): Promise<string> {
+  // `project` stays on the args for the callers' sake but is deliberately NOT
+  // destructured here: every read inside the commit must come from `fresh`, the
+  // copy the transaction itself read.
   const {
-    projSnap, project, proId, config,
+    projSnap, proId, config,
     existingFeeSnap, filledEntries, amount, acceptWrites,
   } = args;
-  const batch = db.batch();
-  acceptWrites(batch);
 
-  const isFirstHire = !project.chatId;
+  /**
+   * A TRANSACTION, not a batch. A batch is atomic but not isolated: it never
+   * re-reads, so the `chatId` and `filledSlots` decisions below were made from
+   * `project`, captured before any of this ran.
+   *
+   * Two `hireProfessional` calls that overlap — one professional with two offers
+   * on one project leaves two live Accept buttons — both saw `chatId` absent,
+   * each created a group chat, and the later `projUpdate.chatId` won. The loser
+   * kept the client in `members`, so the client ended up with two chats for one
+   * project and nothing failed. The transaction re-reads the project and retries
+   * on contention, so the second hire sees the first one's chat.
+   */
+  const chatId = await db.runTransaction(async (tx) => {
+  // Reads first: Firestore forbids a read after a write inside a transaction.
+  const freshSnap = await tx.get(projSnap.ref);
+  const fresh = (freshSnap.data() ?? {}) as Record<string, unknown>;
+
+  acceptWrites(tx);
+
+  const isFirstHire = !fresh.chatId;
   // `filledSlots` is APPENDED, not arrayUnion'd. arrayUnion compares objects by
   // value, and a FilledSlot carries no identity — {category, professionalId} with
   // no capability is byte-identical for the same pro hired twice into the same
@@ -163,14 +196,11 @@ async function commitHire(args: {
   // anyway. Fee state and slot state diverged, and only the fee was right.
   //
   // Read-modify-write is what removal.ts already does on this field, for the
-  // mirror-image reason (arrayRemove needs exact equality). The trade it makes is
-  // real: two hires committing concurrently could drop one append, where
-  // arrayUnion would have merged them. Hires are client-initiated, one at a time,
-  // from a single accept action, and hireProfessional short-circuits a retry on
-  // `status === 'accepted'` before reaching here — so the race needs two
-  // different offers accepted in the same instant, against a duplicate-fill bug
-  // that is reachable by ordinary use.
-  const existingFilled = (project.filledSlots as Filled[] | undefined) ?? [];
+  // mirror-image reason (arrayRemove needs exact equality). It used to carry the
+  // risk of two concurrent hires dropping one append; reading inside the
+  // transaction removes that — the losing attempt retries against the winner's
+  // value instead of overwriting it.
+  const existingFilled = (fresh.filledSlots as Filled[] | undefined) ?? [];
   const projUpdate: Update = {
     filledSlots: [...existingFilled, ...filledEntries],
     professionalIds: FieldValue.arrayUnion(proId),
@@ -180,30 +210,30 @@ async function commitHire(args: {
     slotHolders: FieldValue.arrayUnion(proId),
     slotActive: true,
   };
-  let chatId = project.chatId as string | undefined;
+  let thisChatId = fresh.chatId as string | undefined;
 
   if (isFirstHire) {
     const chatRef = db.collection('chats').doc();
-    chatId = chatRef.id;
-    batch.set(chatRef, {
+    thisChatId = chatRef.id;
+    tx.set(chatRef, {
       type: 'group',
-      name: (project.title as string) ?? '',
+      name: (fresh.title as string) ?? '',
       projectId: projSnap.id,
-      members: [project.clientId, proId],
-      roles: { [project.clientId as string]: 'admin' },
+      members: [fresh.clientId, proId],
+      roles: { [fresh.clientId as string]: 'admin' },
       lastMessage: null,
       createdAt: FieldValue.serverTimestamp(),
     });
-    projUpdate.chatId = chatId;
-    projUpdate.expectedEndDate = parseDeadline(project.deadline) ?? daysFromNow(DEFAULT_PROJECT_DURATION_DAYS);
+    projUpdate.chatId = thisChatId;
+    projUpdate.expectedEndDate = parseDeadline(fresh.deadline) ?? daysFromNow(DEFAULT_PROJECT_DURATION_DAYS);
     // NOTE: no project-level feeStatus/feeRate is written any more. The fee is
     // per-pro (see below); a parallel project-level copy would be a second source
     // of truth a later reader could pick the wrong one from. Legacy docs keep
     // theirs, and a MISSING fee doc is read as 'exempt'.
   } else {
-    batch.update(db.doc(`chats/${chatId}`), { members: FieldValue.arrayUnion(proId) });
+    tx.update(db.doc(`chats/${thisChatId}`), { members: FieldValue.arrayUnion(proId) });
   }
-  batch.update(projSnap.ref, projUpdate);
+  tx.update(projSnap.ref, projUpdate);
 
   // ── This pro's fee record ──
   // `baseAmount` accumulates: a pro hired for a second role on the same project
@@ -223,7 +253,7 @@ async function commitHire(args: {
     // which is every project that predates this field, and every project whose
     // client answered 'flexible'. Absent means this engagement never
     // auto-completes; it waits for the professional to mark it.
-    ...(project.endDate ? { completionDueAt: project.endDate } : {}),
+    ...(fresh.endDate ? { completionDueAt: fresh.endDate } : {}),
   };
   if (!existingFeeSnap.exists) {
     // Written once, at this pro's FIRST hire on this project, and immutable
@@ -250,14 +280,20 @@ async function commitHire(args: {
     feeUpdate.feePaidAt = FieldValue.delete();
     feeUpdate.status = 'pending';
   }
-  batch.set(feeRef(projSnap.id, proId), feeUpdate, { merge: true });
+  tx.set(feeRef(projSnap.id, proId), feeUpdate, { merge: true });
 
-  await batch.commit();
+  return thisChatId as string;
+  });
+
+  // Outside the transaction on purpose: it queries the fees collection, and
+  // Firestore transactions cannot query. Already documented as a cache that may
+  // lag one round trip.
+  //
   // A hire onto a project that had rolled up to 'completed' reopens it — under
   // per-engagement completion that is reachable, because one engagement closing
   // no longer closes the project.
   await applyDerivedProjectState(projSnap.id);
-  return chatId as string;
+  return chatId;
 }
 
 // ── Per-type accept preparation (which docs to accept/reject + the filled slots) ──
@@ -284,7 +320,7 @@ async function prepareOffer(offerSnap: admin.firestore.DocumentSnapshot, project
   const staleBundles = await db.collection('bundleOffers')
     .where('projectId', '==', projectId).where('professionalId', '==', proId).where('status', '==', 'pending').get();
 
-  const acceptWrites = (batch: Batch) => {
+  const acceptWrites = (batch: Writer) => {
     competing.docs.forEach((d) => { if (d.id !== offerSnap.id) batch.update(d.ref, { status: 'rejected' }); });
     staleBundles.docs.forEach((d) => batch.update(d.ref, { status: 'rejected' }));
     batch.update(offerSnap.ref, { status: 'accepted' });
@@ -325,7 +361,7 @@ async function prepareBundle(bSnap: admin.firestore.DocumentSnapshot, project: R
     .filter((d) => d.id !== bSnap.id && ((d.data().slots as { category: string }[]) ?? []).some((bs) => slots.some((s) => s.category === bs.category)))
     .map((d) => d.id);
 
-  const acceptWrites = (batch: Batch) => {
+  const acceptWrites = (batch: Writer) => {
     batch.update(bSnap.ref, { status: 'accepted' });
     offerIds.forEach((id) => batch.update(db.doc(`priceOffers/${id}`), { status: 'accepted' }));
     competingOfferIds.forEach((id) => batch.update(db.doc(`priceOffers/${id}`), { status: 'rejected' }));
