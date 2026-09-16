@@ -10,6 +10,15 @@ import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
+import { PressableScale } from '@components/ui/PressableScale';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { commitFeedback, warnFeedback } from '@core/haptics';
 import { useCrewBuilder } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
 import { useTheme } from '@core/hooks/useTheme';
@@ -30,6 +39,19 @@ import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
 
 const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as object;
 
+/** Apple's pair: `duration` is the response, `dampingRatio` the damping. 1.0 —
+ *  critically damped — because a button press carries no momentum, and an
+ *  overshoot on a transition nobody threw reads as wobble. */
+const STEP_SPRING = { duration: 400, dampingRatio: 1 } as const;
+
+/** How far a step travels. A hint of direction, not a full-width push: the
+ *  content is a tall form, and shoving it a whole screen sideways reads as a
+ *  page turn rather than a step. */
+const STEP_SLIDE = 40;
+
+/** Top-to-bottom, so "the first error" means the highest one on the page. */
+const ERROR_FIELDS = ['title', 'description', 'deadline'] as const;
+
 
 export default function HomeScreen() {
   const { slots, totalCount, roleQuantity, setQuantity, slotCaps, setSlotCapability, removeCategory, loadSlots } = useCrewBuilder();
@@ -49,9 +71,32 @@ export default function HomeScreen() {
     return typeof result === 'string' ? result : key;
   };
   const rtl = language === 'he';
+  /**
+   * Type overrides for the page title, passed through PageTitle's `style` prop —
+   * PageTitle is shared by every tab page, so this stays on home.
+   *
+   * Leading first: 26pt display text on RN's default leading sits too loose.
+   * 30/26 ≈ 1.15 is the tight end the skill asks for at display size.
+   *
+   * Tracking is ENGLISH ONLY. Latin display type reads too loose as it grows,
+   * so it wants negative tracking; Heebo does not tolerate it — Hebrew letters
+   * carry their own spacing and pulling them together cramps the joins. The
+   * uppercase transform on this title is a no-op in Hebrew anyway, so tracking
+   * tuned for the Latin caps would not correspond to anything there.
+   */
+  const titleType = { lineHeight: 30, letterSpacing: rtl ? 0 : -0.5 };
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
   const scrollRef = useRef<ScrollView>(null);
+  /** Armed at a swap, disarmed the moment it fires. Entering step 2 wants the
+   *  END of the content, which needs the final height of an 8-tile image grid —
+   *  the one case a timer could never reliably wait for. */
+  const scrollToEndArmed = useRef(false);
+  /** y of the card, and of each error-bearing field within it. Summed, they give
+   *  a scroll offset; onLayout alone is parent-relative and would be short by
+   *  the height of everything above the card. */
+  const cardY = useRef(0);
+  const fieldY = useRef<Record<string, number>>({});
   const font = useAppFont();
   const styles = useMemo(
     () => createStyles(font.regular.fontFamily, font.bold.fontFamily, font.semiBold.fontFamily, font.medium.fontFamily),
@@ -60,6 +105,10 @@ export default function HomeScreen() {
 
   // ── Form state (single source of truth for all steps + summary) ──
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  // What is actually on screen. It lags `step` by one exit spring, because the
+  // swap has to happen BETWEEN the two springs — at the one instant when the
+  // old step has left and the new one has not arrived, so nothing visibly jumps.
+  const [renderedStep, setRenderedStep] = useState<1 | 2 | 3>(1);
   const [description, setDescription] = useState('');
   const [exec, setExec] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -86,6 +135,7 @@ export default function HomeScreen() {
     if (projectSubmittedNonce === seenSubmitNonce.current) return;
     seenSubmitNonce.current = projectSubmittedNonce;
     setStep(1);
+    setRenderedStep(1);
     setTitle('');
     setDescription('');
     setExec('');
@@ -108,8 +158,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (builderStepNonce === seenStepNonce.current) return;
     seenStepNonce.current = builderStepNonce;
-    setStep(builderStep);
-    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
+    goToStep(builderStep);
   }, [builderStepNonce, builderStep]);
 
   const todayISO = useMemo(() => {
@@ -150,6 +199,65 @@ export default function HomeScreen() {
       .finally(() => setIsLoadingProject(false));
   }, [projectId, loadSlots]);
 
+  const tx = useSharedValue(0);
+  const stepOpacity = useSharedValue(1);
+  const reduceMotion = useReducedMotion();
+  const stepStyle = useAnimatedStyle(() => ({
+    opacity: stepOpacity.value,
+    transform: [{ translateX: tx.value }],
+  }));
+
+  /**
+   * Exit spring → swap → enter spring. The swap is also where scroll resets,
+   * which is what retired the three setTimeout(…, 50) guesses: at that instant
+   * the content is off screen, so there is no layout race left to lose.
+   */
+  function goToStep(next: 1 | 2 | 3, opts?: { scrollToEnd?: boolean }) {
+    // The review screen can ask for the step it is already on — that is what the
+    // nonce is for. Nothing to animate, but the scroll reset still applies.
+    if (next === step) {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      return;
+    }
+    // I18nManager is not used anywhere in this app, so translateX is always
+    // screen-left-origin and nothing mirrors by itself. Forward enters from the
+    // right in English and from the LEFT in Hebrew, by hand.
+    const dir = (next > step ? 1 : -1) * (rtl ? -1 : 1);
+    setStep(next);
+
+    const swap = () => {
+      setRenderedStep(next);
+      if (opts?.scrollToEnd) scrollToEndArmed.current = true;
+      else scrollRef.current?.scrollTo({ y: 0, animated: false });
+      if (reduceMotion) return;
+      tx.value = dir * STEP_SLIDE;
+      tx.value = withSpring(0, STEP_SPRING);
+      stepOpacity.value = withSpring(1, STEP_SPRING);
+    };
+
+    // Reduced motion is about vestibular motion, not about feedback: the step
+    // still changes and the scroll still resets, it just never travels.
+    if (reduceMotion) { swap(); return; }
+
+    stepOpacity.value = withSpring(0, STEP_SPRING);
+    tx.value = withSpring(-dir * STEP_SLIDE, STEP_SPRING, (finished) => {
+      if (finished) runOnJS(swap)();
+    });
+  }
+
+  /** Take the user to the problem. A warning haptic on its own says "no" without
+   *  saying "where", which is the defect this pairs with. */
+  function scrollToFirstError(errs: Record<string, string>) {
+    for (const key of ERROR_FIELDS) {
+      if (!errs[key]) continue;
+      const y = fieldY.current[key];
+      if (y === undefined) break;
+      scrollRef.current?.scrollTo({ y: Math.max(0, cardY.current + y - 24), animated: true });
+      return;
+    }
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }
+
   // ── Step 1 → Step 2 ──
   function handleNext() {
     const next: Record<string, string> = {};
@@ -157,25 +265,35 @@ export default function HomeScreen() {
     if (description.trim().length < 10) next.description = rtl ? 'נא לרשום לפחות 10 תווים' : 'Please write at least 10 characters';
     if (!deadline) next.deadline = t('builder.error_required');
     setErrors(next);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      warnFeedback();
+      scrollToFirstError(next);
+      return;
+    }
 
-    setStep(2);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
+    commitFeedback();
+    goToStep(2, { scrollToEnd: true });
   }
 
   // ── Step 2 (roles + quantity) → Step 3 (per-slot subskill) ──
   function handleGoStep3() {
     if (totalCount === 0) {
       setErrors({ slots: t('builder.error_role') });
+      warnFeedback();
+      // errors.slots renders at the TOP of the roles card, and step 2 is entered
+      // scrolled to the bottom — so without this the message lands above the
+      // fold and the press reads as doing nothing. STATUS.md open item 12.
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
       return;
     }
     setErrors({});
-    setStep(3);
-    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
+    commitFeedback();
+    goToStep(3);
   }
 
   // ── Step 3 → Summary screen ──
   function handleReview() {
+    commitFeedback();
     router.push({
       pathname: '/(client)/(tabs)/home/summary' as never,
       params: {
@@ -212,11 +330,25 @@ export default function HomeScreen() {
 
   return (
     <Screen scrollable={false}>
-      <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => {
+          // Fires when the new step's content has actually been measured — which
+          // is the thing the old setTimeout(…, 50) was guessing at, and got wrong
+          // whenever step 2's image grid was slow.
+          if (!scrollToEndArmed.current) return;
+          scrollToEndArmed.current = false;
+          scrollRef.current?.scrollToEnd({ animated: false });
+        }}
+      >
+      <Animated.View style={[styles.stepWrap, stepStyle]}>
         {/* ══════════════ STEP 1: Project details ══════════════ */}
-        {step === 1 && (
+        {renderedStep === 1 && (
           <>
-            <PageTitle>{rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}</PageTitle>
+            <PageTitle style={titleType}>{rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 1 מתוך 3` : `Step 1 of 3`}</Text>
             <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -224,11 +356,12 @@ export default function HomeScreen() {
               <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
             </View>
 
-            <View style={styles.card}>
+            <View style={styles.card} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
               <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>{t('builder.title')}</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow, errors.title ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
                 value={title}
+                onLayout={(e) => { fieldY.current.title = e.nativeEvent.layout.y; }}
                 onChangeText={setTitle}
                 placeholder={t('builder.placeholder_title')}
                 placeholderTextColor="#004aad99"
@@ -247,6 +380,7 @@ export default function HomeScreen() {
                   errors.description ? { borderWidth: 1.5, borderColor: '#fc8181' } : null,
                 ]}
                 value={description}
+                onLayout={(e) => { fieldY.current.description = e.nativeEvent.layout.y; }}
                 onChangeText={setDescription}
                 placeholder={t('builder.tell_us_placeholder')}
                 placeholderTextColor="#004aad99"
@@ -281,83 +415,92 @@ export default function HomeScreen() {
               </View>
 
               {/* Squares row — exec / deadline / location */}
-              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 }}>
+              <View
+                style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 }}
+                onLayout={(e) => { fieldY.current.deadline = e.nativeEvent.layout.y; }}
+              >
                 {/* Execution square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <TouchableOpacity style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeOpacity={0.8}>
+                  <PressableScale style={styles.dateSquare} onPress={() => setCalOpen('exec')} activeScale={0.96}>
                     <View style={{ position: 'absolute', top: -8, [rtl ? 'right' : 'left']: -8 }}>
                       <HelpTooltip text={t('builder.help_execution')} />
                     </View>
                     {exec ? (
-                      <TouchableOpacity
+                      <PressableScale
                         style={styles.dateSquareClear}
                         onPress={(e) => { e.stopPropagation?.(); setExec(''); }}
                         hitSlop={8}
-                        activeOpacity={0.7}
+                        activeScale={0.85}
+                        haptic="commit"
+                        testID="clear-exec"
                       >
                         <X size={12} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
+                      </PressableScale>
                     ) : null}
                     <CalendarDays size={exec ? 20 : 28} color="#004aad" strokeWidth={1.8} />
                     <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 </View>
 
                 {/* Deadline square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <TouchableOpacity
+                  <PressableScale
                     style={[styles.dateSquare, errors.deadline ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
                     onPress={() => setCalOpen('deadline')}
-                    activeOpacity={0.8}
+                    activeScale={0.96}
                   >
                     <View style={{ position: 'absolute', top: -8, [rtl ? 'right' : 'left']: -8 }}>
                       <HelpTooltip text={t('builder.help_deadline')} />
                     </View>
                     {deadline ? (
-                      <TouchableOpacity
+                      <PressableScale
                         style={styles.dateSquareClear}
                         onPress={(e) => { e.stopPropagation?.(); setDeadline(''); }}
                         hitSlop={8}
-                        activeOpacity={0.7}
+                        activeScale={0.85}
+                        haptic="commit"
+                        testID="clear-deadline"
                       >
                         <X size={12} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
+                      </PressableScale>
                     ) : null}
                     <CalendarDays size={deadline ? 20 : 28} color="#004aad" strokeWidth={1.8} />
                     <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
 {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
 
                 {/* Location square */}
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <TouchableOpacity
+                  <PressableScale
                     style={[styles.dateSquare, errors.location ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
                     onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
-                    activeOpacity={0.8}
+                    activeScale={0.96}
                   >
                     <View style={{ position: 'absolute', top: -8, [rtl ? 'right' : 'left']: -8 }}>
                       <HelpTooltip text={t('builder.help_location')} />
                     </View>
                     {location ? (
-                      <TouchableOpacity
+                      <PressableScale
                         style={styles.dateSquareClear}
                         onPress={(e) => { e.stopPropagation?.(); setLocation(''); }}
                         hitSlop={8}
-                        activeOpacity={0.7}
+                        activeScale={0.85}
+                        haptic="commit"
+                        testID="clear-location"
                       >
                         <X size={12} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
+                      </PressableScale>
                     ) : null}
                     <MapPin size={location ? 20 : 28} color="#004aad" strokeWidth={1.8} />
                     <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {location || t('builder.placeholder_location')}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                   {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
                 </View>
               </View>
@@ -383,24 +526,24 @@ export default function HomeScreen() {
 
             <View style={styles.grow} />
             <View style={styles.submitWrap}>
-              <TouchableOpacity
+              <PressableScale
                 style={[
                   styles.submitBtn,
                   Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
                 ]}
                 onPress={handleNext}
-                activeOpacity={0.8}
+                activeScale={0.98}
               >
                 <Text style={styles.submitText}>{t('builder.next_step')}</Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </>
         )}
 
         {/* ══════════════ STEP 2: Roles + quantity ══════════════ */}
-        {step === 2 && (
+        {renderedStep === 2 && (
           <>
-            <PageTitle>{rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}</PageTitle>
+            <PageTitle style={titleType}>{rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 2 מתוך 3` : `Step 2 of 3`}</Text>
             <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -410,7 +553,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.backArrow, { alignSelf: rtl ? 'flex-end' : 'flex-start', flexDirection: rtl ? 'row-reverse' : 'row' }]}
-              onPress={() => setStep(1)}
+              onPress={() => goToStep(1)}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
@@ -440,14 +583,18 @@ export default function HomeScreen() {
                   // added above it, but never reduce below the occupied count.
                   const locked = q <= (occupiedByCategory[cat.key] ?? 0);
                   return (
-                    <TouchableOpacity
+                    <PressableScale
                       style={[
                         styles.tile,
                         { width: tileSize },
                         q > 0 && { borderWidth: 2, borderColor: colors.accent },
                       ]}
                       onPress={() => { if (q === 0) setQuantity(cat.key, 1); }}
-                      activeOpacity={0.85}
+                      // Only the press that actually seats a role is worth a
+                      // buzz. Once the tile has seats it is inert — the −/+ row
+                      // owns the count from then on — so a haptic here would be
+                      // feedback for nothing.
+                      haptic={q === 0 ? 'commit' : undefined}
                     >
                       {cat.image ? (
                         <Image source={cat.image} style={styles.tileImage} contentFit="cover" cachePolicy="memory-disk" />
@@ -457,30 +604,32 @@ export default function HomeScreen() {
                       </View>
                       {q > 0 && (
                         <View style={styles.tileControls}>
-                          <TouchableOpacity
+                          <PressableScale
                             style={[styles.tileControlBtnRemove, locked && styles.tileControlBtnLocked]}
                             onPress={(e) => { e.stopPropagation?.(); if (!locked) setQuantity(cat.key, q - 1); }}
                             disabled={locked}
                             accessibilityLabel={locked ? t('builder.role_locked_a11y') : undefined}
                             hitSlop={6}
-                            activeOpacity={0.7}
+                            activeScale={0.88}
+                            haptic="commit"
                           >
                             {locked
                               ? <Lock size={11} color="#ffffff" strokeWidth={2.5} />
                               : <Text style={styles.tileControlText}>−</Text>}
-                          </TouchableOpacity>
+                          </PressableScale>
                           <Text style={styles.tileCountText}>{q}</Text>
-                          <TouchableOpacity
+                          <PressableScale
                             style={styles.tileControlBtnAdd}
                             onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q + 1); }}
                             hitSlop={6}
-                            activeOpacity={0.7}
+                            activeScale={0.88}
+                            haptic="commit"
                           >
                             <Text style={styles.tileControlText}>+</Text>
-                          </TouchableOpacity>
+                          </PressableScale>
                         </View>
                       )}
-                    </TouchableOpacity>
+                    </PressableScale>
                   );
                 }}
               />
@@ -488,24 +637,24 @@ export default function HomeScreen() {
 
             <View style={styles.grow} />
             <View style={styles.submitWrap}>
-              <TouchableOpacity
+              <PressableScale
                 style={[
                   styles.submitBtn,
                   Platform.OS === 'web' && ({ background: 'linear-gradient(to right, #004aad, #cb6ce6)' } as object),
                 ]}
                 onPress={handleGoStep3}
-                activeOpacity={0.8}
+                activeScale={0.98}
               >
                 <Text style={styles.submitText}>{t('builder.next_step')}</Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </>
         )}
 
         {/* ══════════════ STEP 3: Per-slot subskill ══════════════ */}
-        {step === 3 && (
+        {renderedStep === 3 && (
           <>
-            <PageTitle>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
+            <PageTitle style={titleType}>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
             <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
             <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -515,7 +664,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.backArrow, { alignSelf: rtl ? 'flex-end' : 'flex-start', flexDirection: rtl ? 'row-reverse' : 'row' }]}
-              onPress={() => setStep(2)}
+              onPress={() => goToStep(2)}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
@@ -569,16 +718,17 @@ export default function HomeScreen() {
                           {subskills.map((sp) => {
                             const on = selectedId === sp.id;
                             return (
-                              <TouchableOpacity
+                              <PressableScale
                                 key={sp.id}
                                 style={[styles.s3Pill, on ? styles.s3PillSel : styles.s3PillUnsel]}
                                 onPress={() => setSlotCapability(category, i, sp.id === 'general' ? undefined : sp.id)}
-                                activeOpacity={0.7}
+                                activeScale={0.94}
+                                haptic="tap"
                               >
                                 <AppText weight="semiBold" style={on ? styles.s3PillTextSel : styles.s3PillTextUnsel}>
                                   {labelOf(sp, lang)}
                                 </AppText>
-                              </TouchableOpacity>
+                              </PressableScale>
                             );
                           })}
                         </View>
@@ -591,7 +741,7 @@ export default function HomeScreen() {
 
             <View style={styles.grow} />
             <View style={styles.submitWrap}>
-              <TouchableOpacity onPress={handleReview} activeOpacity={0.85}>
+              <PressableScale onPress={handleReview} activeScale={0.98}>
                 <LinearGradient
                   colors={['#004aad', '#cb6ce6']}
                   start={{ x: 0, y: 0 }}
@@ -602,11 +752,12 @@ export default function HomeScreen() {
                     {rtl ? 'המשך לסקירה' : 'Continue to review'}
                   </AppText>
                 </LinearGradient>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </>
         )}
 
+      </Animated.View>
       </ScrollView>
 
 
@@ -727,10 +878,14 @@ function createStyles(
     // push the next-step button to the bottom instead of leaving dead space under
     // it. Short screens still scroll normally.
     scrollContent: { paddingBottom: 56, flexGrow: 1 },
+    /** Carries the step transition. flexGrow so the `grow` spacer inside each
+     *  step still reaches the bottom of a tall screen — the wrapper sits between
+     *  the content container and the step, and would otherwise break that chain. */
+    stepWrap: { flexGrow: 1 },
     /** Eats the leftover height on tall screens, pushing the button down. Used
      *  by all three steps so the button lands in the same place throughout. */
     grow: { flexGrow: 1 },
-    stepLabel: { fontSize: 13, fontWeight: '500', fontFamily: ffMedium, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
+    stepLabel: { fontSize: 13, lineHeight: 18, fontWeight: '500', fontFamily: ffMedium, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
 
     // Direction is set inline per render: the three segments are equal-flex
     // siblings coloured in order, so the row's direction IS the fill direction.
@@ -748,9 +903,12 @@ function createStyles(
     card: { margin: 16, marginTop: 10, padding: 20 },
     rolesCard: { marginHorizontal: 16, marginTop: 4, padding: 10 },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
-    label: { fontSize: 18, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
+    label: { fontSize: 18, lineHeight: 24, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
+    // No lineHeight here on purpose: on a single-line TextInput it fights RN's
+    // own vertical centring, and the one place leading actually matters — the
+    // multiline description — already sets 21 inline at its own 15pt size.
     input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: ff },
-    error: { fontSize: 12, color: '#fc8181', marginTop: 4, fontFamily: ff },
+    error: { fontSize: 12, lineHeight: 16, color: '#fc8181', marginTop: 4, fontFamily: ff },
     dateConsequence: { fontSize: 12, lineHeight: 18, marginTop: 12, paddingHorizontal: 20, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     tile: { borderRadius: 12, overflow: 'hidden', position: 'relative', alignItems: 'center' },
@@ -769,7 +927,7 @@ function createStyles(
     submitWrap: { paddingTop: 4, paddingHorizontal: 36, paddingBottom: 12 },
     submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginTop: 4 },
     disabled: { backgroundColor: '#555' },
-    submitText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: ffBold },
+    submitText: { color: '#fff', fontSize: 16, lineHeight: 21, fontWeight: '700', fontFamily: ffBold },
     cancelBtn: { alignItems: 'center', paddingVertical: 12 },
     cancelText: { fontSize: 15, fontFamily: ff },
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
@@ -885,12 +1043,14 @@ function createStyles(
     },
     dateSquarePlaceholder: {
       fontSize: 11,
+      lineHeight: 14,
       color: '#004aad66',
       textAlign: 'center',
       fontFamily: ff,
     },
     dateSquareValue: {
       fontSize: 13,
+      lineHeight: 17,
       fontWeight: 'bold',
       color: '#004aad',
       textAlign: 'center',
@@ -974,6 +1134,7 @@ function createStyles(
     },
     locationNavTitle: {
       fontSize: 16,
+      lineHeight: 21,
       fontWeight: '700',
       color: '#004aad',
     },
@@ -998,6 +1159,7 @@ function createStyles(
     },
     locationRowText: {
       fontSize: 14,
+      lineHeight: 18,
       fontWeight: '500',
       flex: 1,
       color: '#004aad',
@@ -1015,6 +1177,7 @@ function createStyles(
     },
     locationAddText: {
       fontSize: 14,
+      lineHeight: 18,
       flex: 1,
       color: '#004aad',
     },
@@ -1109,21 +1272,21 @@ function createStyles(
     // borderRadius stays half the size so this remains a circle, not a
     // rounded square — at 80 it dominated the role header.
     s3Avatar: { width: 56, height: 56, borderRadius: 28 },
-    s3RoleName: { fontSize: 16, color: '#2a2f5a' },
-    s3RoleNeed: { fontSize: 12, color: '#9aa0b8', marginTop: 1 },
+    s3RoleName: { fontSize: 16, lineHeight: 21, color: '#2a2f5a' },
+    s3RoleNeed: { fontSize: 12, lineHeight: 16, color: '#9aa0b8', marginTop: 1 },
     s3Slot: { backgroundColor: '#faf9fe', borderRadius: 13, padding: 11, marginTop: 10, gap: 8 },
     s3SlotHead: { alignItems: 'center', gap: 8 },
     s3Num: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#ece9fb', alignItems: 'center', justifyContent: 'center' },
     s3NumText: { fontSize: 12, color: '#6c5ce0' },
-    s3SlotLabel: { fontSize: 12, color: '#9aa0b8' },
-    s3SelLabel: { fontSize: 13, color: '#6c5ce0' },
+    s3SlotLabel: { fontSize: 12, lineHeight: 16, color: '#9aa0b8' },
+    s3SelLabel: { fontSize: 13, lineHeight: 17, color: '#6c5ce0' },
     s3PillRow: { flexWrap: 'wrap', gap: 8 },
     s3Pill: { borderRadius: 16, paddingHorizontal: 13, paddingVertical: 7 },
     s3PillSel: { backgroundColor: '#004aad' },
     s3PillUnsel: { backgroundColor: '#f0f0f7' },
-    s3PillTextSel: { color: '#ffffff', fontSize: 13 },
-    s3PillTextUnsel: { color: '#5c6180', fontSize: 13 },
+    s3PillTextSel: { color: '#ffffff', fontSize: 13, lineHeight: 17 },
+    s3PillTextUnsel: { color: '#5c6180', fontSize: 13, lineHeight: 17 },
     s3Footer: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
-    s3FooterText: { color: '#ffffff', fontSize: 16 },
+    s3FooterText: { color: '#ffffff', fontSize: 16, lineHeight: 21 },
   });
 }
