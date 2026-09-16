@@ -3,6 +3,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, parseDeadline, daysFromNow, requireAuth, feeRef } from './helpers';
 import { readConfig, feeRateOf, type PricingConfig } from './config';
 import { applyDerivedProjectState } from './derive';
+import { slotCapBlocksHire } from './slotCap';
 import { assignFilledCapability } from '../matching';
 import {
   DEFAULT_PROJECT_DURATION_DAYS,
@@ -82,6 +83,10 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   const consumesNewSlot = hireConsumesNewSlot(project.slotHolders as string[] | undefined, proId);
 
   if (consumesNewSlot) {
+    // FAST FAIL ONLY. This read is outside the transaction, so two concurrent
+    // hires can both pass it; commitHire re-runs the same query under the
+    // transaction's lock and that is the check that actually holds.
+    //
     // Projects where THIS pro still occupies a slot. Single-field array-contains —
     // no composite index needed. Not reached when the pro already holds a slot
     // here, so the query never counts the project being hired onto.
@@ -184,6 +189,27 @@ async function commitHire(args: {
   // Reads first: Firestore forbids a read after a write inside a transaction.
   const freshSnap = await tx.get(projSnap.ref);
   const fresh = (freshSnap.data() ?? {}) as Record<string, unknown>;
+
+  // ── Slot cap, re-checked under the transaction's lock ──
+  // loadAndEnforce's check ran before this transaction and is only a fast fail.
+  // Two hires of one pro onto two different projects both passed it and both
+  // committed. This read is locked: a concurrent commit that adds proId to
+  // another project's slotHolders aborts one side, and Firestore re-runs this
+  // whole function — so the retry re-reads the count rather than reusing it.
+  // Throwing an HttpsError here is not retried; it aborts and surfaces as-is.
+  const capBlocked = await slotCapBlocksHire({
+    freshSlotHolders: fresh.slotHolders as string[] | undefined,
+    proId,
+    cap: config.maxOpenProjects,
+    readCount: async () => (await tx.get(
+      db.collection('projects')
+        .where('slotHolders', 'array-contains', proId)
+        .limit(config.maxOpenProjects + 1),
+    )).size,
+  });
+  if (capBlocked) {
+    throw new HttpsError('resource-exhausted', 'slot-cap-reached');
+  }
 
   acceptWrites(tx);
 
