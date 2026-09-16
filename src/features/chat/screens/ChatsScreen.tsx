@@ -63,18 +63,19 @@ function makeT(translations: Translations) {
 // The paid pill is blue, and is outlined rather than filled so it cannot be
 // mistaken for a fifth status badge. See `paidPill` in the stylesheet.
 
-/** Tint for a completed project's row — same family as the `completed` badge,
- *  light enough to read as a state rather than a highlight. */
-const COMPLETED_ROW_BG = '#f4faea';
 /** Completed-line text and chevron — the same green as the `completed` badge. */
 const COMPLETED_LINE_COLOR = '#2d6a2d';
 
-const STATUS_CONFIG: Record<ProjectStatus, { bg: string; text: string }> = {
-  open:        { bg: '#c1ecf9', text: '#004aad' },
-  in_progress: { bg: '#f59e0b', text: '#fff' },
-  completed:   { bg: '#ecf9c1', text: '#2d6a2d' },
-  cancelled:   { bg: '#ef4444', text: '#fff' },
+/** The viewer's role on a project row. Deliberately neither green (project
+ *  state) nor red (cancelled) — a role is not a point on the status scale.
+ *  Text colours are the mode colours from AppHeader's mode badge. */
+type ProjectRole = 'client' | 'creator';
+const ROLE_CONFIG: Record<ProjectRole, { bg: string; text: string }> = {
+  client:  { bg: '#c1ecf9', text: '#004aad' },
+  creator: { bg: '#ede9fe', text: '#8b5cf6' },
 };
+/** A completed project's badge replaces the role — green, because it is state. */
+const COMPLETED_BADGE = { bg: '#ecf9c1', text: '#2d6a2d' };
 
 function formatTimestamp(ts: { toDate(): Date } | null | undefined, language: string): string {
   if (!ts) return '';
@@ -280,16 +281,6 @@ export function ChatsScreen({
     });
   }, [chats]);
 
-  const statusLabel = (status: ProjectStatus): string => {
-    const map: Record<ProjectStatus, string> = {
-      open:        t('chats.status_open'),
-      in_progress: t('chats.status_in_progress'),
-      completed:   t('chats.status_completed'),
-      cancelled:   t('chats.status_cancelled'),
-    };
-    return map[status];
-  };
-
   async function handleLeaveChat(chatId: string) {
     const confirmed = await confirmDialog(
       rtl ? 'הסרת צ׳אט' : 'Remove chat',
@@ -488,19 +479,25 @@ export function ChatsScreen({
       ? t('chats.completed_client')
       : null;
 
-    // The badge is redundant for the professional — their line already says the
-    // project is complete. The client's line says what to DO ("leave a review"),
-    // so once they have written it and the row reverts, the badge is the only
-    // thing still marking the project finished. Cancelled keeps it for both.
-    const showStatusBadge =
-      status != null && !(myPartFinished && viewerIsPro);
+    // The badge says who I am on this project. Same derivation as the copy
+    // above, so self-hire reads as client in both. No project info yet (or not a
+    // member) means no badge rather than a guess.
+    const role: ProjectRole | null = viewerIsClient ? 'client' : viewerIsPro ? 'creator' : null;
+    // Once the project is complete the badge says so instead; the row itself
+    // stays white.
+    const badge = isCompletedProject
+      ? { label: t('chats.status_completed'), ...COMPLETED_BADGE }
+      : role != null
+      ? { label: role === 'client' ? t('chats.role_client') : t('chats.role_creator'), ...ROLE_CONFIG[role] }
+      : null;
     return (
       <TouchableOpacity
         key={item.id}
         style={[
           styles.card,
-          { backgroundColor: isCompletedProject ? COMPLETED_ROW_BG : '#ffffff', flexDirection: rowDir },
+          { backgroundColor: '#ffffff', flexDirection: rowDir },
         ]}
+        testID={`chat-row-${item.id}`}
         onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}` as never)}
         activeOpacity={0.75}
       >
@@ -519,9 +516,11 @@ export function ChatsScreen({
             <AppText weight="bold" style={[styles.name, { color: '#004aad', textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
               {chatName}
             </AppText>
-            {showStatusBadge && status != null && (
-              <View style={[styles.statusBadge, { backgroundColor: STATUS_CONFIG[status].bg }]}>
-                <AppText weight="bold" style={[styles.statusBadgeText, { color: STATUS_CONFIG[status].text }]}>{statusLabel(status)}</AppText>
+            {badge != null && (
+              <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                <AppText weight="bold" style={[styles.statusBadgeText, { color: badge.text }]}>
+                  {badge.label}
+                </AppText>
               </View>
             )}
             {item.type === 'purchase' && item.archived && (

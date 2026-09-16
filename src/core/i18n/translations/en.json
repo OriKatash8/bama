@@ -126,6 +126,8 @@
     "status_in_progress": "In Progress",
     "status_completed": "Completed",
     "status_cancelled": "Cancelled",
+    "role_client": "Client",
+    "role_creator": "Creator",
     "unknown": "Unknown",
     "no_conversations": "No conversations yet",
     "empty_client_title": "You don't have any chats yet",

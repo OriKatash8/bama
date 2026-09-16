@@ -126,6 +126,8 @@
     "status_in_progress": "בתהליך",
     "status_completed": "הושלם",
     "status_cancelled": "בוטל",
+    "role_client": "לקוח/ה",
+    "role_creator": "בעל/ת מקצוע",
     "unknown": "לא ידוע",
     "no_conversations": "אין שיחות עדיין",
     "empty_client_title": "עוד אין לך שיחות",
