@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { useUserChats } from '@features/chat/hooks/useUserChats';
 import { Screen } from '@components/layout/Screen';
+import { SURFACE } from '@core/constants/surface';
 import { PageTitle } from '@components/ui/PageTitle';
 import { EmptyState } from '@components/ui/EmptyState';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -50,7 +51,7 @@ export default function ChatsPage() {
   const hasChats = realChats.length > 0;
 
   return (
-    <Screen style={{ padding: 0, paddingBottom: 100 }} scrollable={hasChats}>
+    <Screen style={{ padding: 0, paddingBottom: 100 }} scrollable={hasChats} backgroundColor={SURFACE.canvas}>
       <PageTitle>{t(tr, 'chats_page.title')}</PageTitle>
 
       {loading ? (
