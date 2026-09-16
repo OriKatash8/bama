@@ -68,10 +68,11 @@ const COMPLETED_LINE_COLOR = '#2d6a2d';
 
 /** The viewer's role on a project row. Deliberately neither green (project
  *  state) nor red (cancelled) — a role is not a point on the status scale.
- *  Text colours are the mode colours from AppHeader's mode badge. */
+ *  Text colours are the mode colours from AppHeader's mode badge; each
+ *  background is a light tint of the same colour. */
 type ProjectRole = 'client' | 'creator';
 const ROLE_CONFIG: Record<ProjectRole, { bg: string; text: string }> = {
-  client:  { bg: '#c1ecf9', text: '#004aad' },
+  client:  { bg: '#e0e9f5', text: '#004aad' },
   creator: { bg: '#ede9fe', text: '#8b5cf6' },
 };
 /** A completed project's badge replaces the role — green, because it is state. */
@@ -517,7 +518,7 @@ export function ChatsScreen({
               {chatName}
             </AppText>
             {badge != null && (
-              <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+              <View testID={`project-badge-${item.id}`} style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
                 <AppText weight="bold" style={[styles.statusBadgeText, { color: badge.text }]}>
                   {badge.label}
                 </AppText>

@@ -84,6 +84,13 @@ describe('project row role badge', () => {
     expect(getByText(en.chats.role_creator)).toHaveStyle({ color: '#8b5cf6' });
   });
 
+  it('the client badge is the client mode blue, on a tint of the same blue', async () => {
+    withProject(project);
+    const { getByText, getByTestId } = await renderAs('client-1');
+    expect(getByText(en.chats.role_client)).toHaveStyle({ color: '#004aad' });
+    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#e0e9f5' });
+  });
+
   it('self-hire reads as client, matching the row copy', async () => {
     withProject({ ...project, professionalIds: ['client-1'] });
     const { queryByText } = await renderAs('client-1');
