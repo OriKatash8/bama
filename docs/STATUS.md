@@ -174,3 +174,28 @@ original line.
     not a regression; predates the press-feedback work. To be fixed in the
     step-transition round with scroll-to-first-error, which is also where a
     Warning haptic on the failure branch belongs.
+
+13. **`2faf44c` shipped a step transition that stranded on web, and the tests
+    could not see it.** `goToStep` put the content swap inside the `withSpring`
+    completion callback. Reanimated 4 never invokes that callback on web
+    (confirmed by probe: the callback log never fired — it was not a cancellation
+    reporting `finished: false`, it simply never ran), so the builder faded out,
+    slid, and stayed on step 1 forever. The screen was unusable past step 1 for
+    every web user.
+
+    **The lesson is the test, not the bug.** The reanimated mock did
+    `withSpring: (v, _cfg, cb) => { cb?.(true); return v; }` — firing the
+    callback synchronously and always with `true`. Eight transition tests passed
+    against behaviour no real platform exhibits. The mock was asserting itself.
+
+    Fixed by removing the dependency rather than adding a fallback: the step now
+    changes synchronously with the press and the animation is decorative, so no
+    animation outcome can gate content. Opacity is no longer animated at all —
+    a value stranded at 0 is an unusable screen, whereas `translateX` stranded at
+    40 is content that is merely off-centre. The failure mode has to stay
+    survivable.
+
+    **The mock now defaults to `'never'` calls back**, matching web, and can be
+    switched to `'finished'` or `'cancelled'` per test. Reintroducing the
+    original structure now fails 8 tests. Never verified on iPhone — the callback
+    may well fire there, and the fix is platform-independent either way.

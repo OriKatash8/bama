@@ -25,7 +25,20 @@ import en from '@core/i18n/translations/en.json';
 let mockLang: 'he' | 'en' = 'en';
 let mockHasRoles = true;
 let mockReducedMotion = false;
-const mockSprings: { to: number }[] = [];
+
+/**
+ * How withSpring reports completion. 'never' is the default because that is
+ * what Reanimated 4 does on web: the completion callback is simply not invoked.
+ * The old mock fired it synchronously with `true`, which is why eight tests
+ * passed while every web transition stranded at opacity 0.
+ */
+let mockSpringCallback: 'never' | 'finished' | 'cancelled' = 'never';
+
+/** Every value ever written to a shared value, in order. */
+type Recorded = { value: number; history: number[] };
+const mockSharedValues: Recorded[] = [];
+/** Every animated style this screen produces, so a test can see what is driven. */
+const mockAnimatedStyles: Record<string, unknown>[] = [];
 
 jest.mock('@features/crew/hooks', () => ({
   useCrewBuilder: () => ({
@@ -71,11 +84,24 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     default: { View: RN.View, createAnimatedComponent: (C: unknown) => C },
-    useSharedValue: (v: number) => ({ value: v }),
-    useAnimatedStyle: (fn: () => unknown) => fn(),
+    useSharedValue: (init: number) => {
+      const history = [init];
+      const sv = {
+        get value() { return history[history.length - 1]; },
+        set value(v: number) { history.push(v); },
+        history,
+      };
+      mockSharedValues.push(sv as unknown as Recorded);
+      return sv;
+    },
+    useAnimatedStyle: (fn: () => unknown) => {
+      const style = fn() as Record<string, unknown>;
+      mockAnimatedStyles.push(style);
+      return style;
+    },
     withSpring: (v: number, _cfg?: unknown, cb?: (f: boolean) => void) => {
-      mockSprings.push({ to: v });
-      cb?.(true);
+      if (mockSpringCallback === 'finished') cb?.(true);
+      else if (mockSpringCallback === 'cancelled') cb?.(false);
       return v;
     },
     runOnJS: (fn: unknown) => fn,
@@ -83,13 +109,19 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 
-/** Every translateX target the transition asked for, in order. */
-const slides = () => mockSprings.map((s) => s.to).filter((v) => v !== 0 && v !== 1);
+/**
+ * The step slide is the only value on this screen that is ever written at
+ * +/-STEP_SLIDE — PressableScale's own shared values live between 0.85 and 1 —
+ * so this finds it without depending on hook ordering.
+ */
+const STEP_SLIDE = 40;
+const slides = () =>
+  mockSharedValues.flatMap((s) => s.history).filter((v) => Math.abs(v) === STEP_SLIDE);
 
 function fillStepOne(r: ReturnType<typeof render>) {
   fireEvent.changeText(r.getByPlaceholderText(en.builder.placeholder_title), 'Music video');
   fireEvent.changeText(
-    r.getByPlaceholderText(en.builder.tell_us_placeholder),
+    r.getByTestId('description-input'),
     'A long enough description to pass validation',
   );
   fireEvent.press(r.getByText(en.builder.placeholder_deadline));
@@ -98,7 +130,9 @@ function fillStepOne(r: ReturnType<typeof render>) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockSprings.length = 0;
+  mockSharedValues.length = 0;
+  mockAnimatedStyles.length = 0;
+  mockSpringCallback = 'never';
   mockLang = 'en';
   mockHasRoles = true;
   mockReducedMotion = false;
@@ -128,6 +162,37 @@ describe('the steps actually change', () => {
   });
 });
 
+describe('the step swap never depends on the animation', () => {
+  // This is the regression 2faf44c shipped. On web, Reanimated 4 never invokes
+  // the withSpring completion callback, and the swap lived inside it — so the
+  // screen faded out, slid, and stayed on step 1 forever. Whatever the
+  // animation does or fails to do, the content must change.
+  it.each(['never', 'cancelled', 'finished'] as const)(
+    'advances with spring callback = %s',
+    (mode) => {
+      mockSpringCallback = mode;
+      const r = render(<HomeScreen />);
+      fillStepOne(r);
+      fireEvent.press(r.getByText(en.builder.next_step));
+      expect(r.getByText('Build Your Crew')).toBeTruthy();
+    },
+  );
+
+  it('never animates opacity, so a stalled animation cannot hide the screen', () => {
+    // Degrading to off-centre beats degrading to invisible. translateX can
+    // strand at 40pt and the page is still readable; opacity stranded at 0 is
+    // an unusable screen. So nothing on this screen may drive opacity at all.
+    const r = render(<HomeScreen />);
+    fillStepOne(r);
+    fireEvent.press(r.getByText(en.builder.next_step));
+
+    expect(mockAnimatedStyles.length).toBeGreaterThan(0);
+    expect(mockAnimatedStyles.some((st) => 'opacity' in st)).toBe(false);
+    // and the slide did happen, so this is not passing by animating nothing
+    expect(slides().length).toBeGreaterThan(0);
+  });
+});
+
 describe('direction is mirrored for Hebrew', () => {
   it('forward slides one way in English and the other in Hebrew', () => {
     const ltr = render(<HomeScreen />);
@@ -136,7 +201,9 @@ describe('direction is mirrored for Hebrew', () => {
     const english = slides();
     expect(english.length).toBeGreaterThan(0);
 
-    mockSprings.length = 0;
+    mockSharedValues.length = 0;
+  mockAnimatedStyles.length = 0;
+  mockSpringCallback = 'never';
     mockLang = 'he';
     const rtl = render(<HomeScreen />);
     act(() => useUiStore.getState().requestBuilderStep(2));

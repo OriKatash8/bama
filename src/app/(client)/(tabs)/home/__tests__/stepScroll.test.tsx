@@ -68,7 +68,8 @@ jest.mock('react-native-reanimated', () => {
     default: { View: RN.View, createAnimatedComponent: (C: unknown) => C },
     useSharedValue: (v: number) => ({ value: v }),
     useAnimatedStyle: (fn: () => unknown) => fn(),
-    withSpring: (v: number, _cfg?: unknown, cb?: (f: boolean) => void) => { cb?.(true); return v; },
+    // Never calls back — the web truth. Nothing here may depend on it.
+    withSpring: (v: number, _cfg?: unknown, cb?: (f: boolean) => void) => v,
     runOnJS: (fn: unknown) => fn,
     useReducedMotion: () => false,
   };
@@ -96,7 +97,7 @@ function renderWithScrollSpy(): Spies {
 function fillStepOne(r: ReturnType<typeof render>) {
   fireEvent.changeText(r.getByPlaceholderText(en.builder.placeholder_title), 'Music video');
   fireEvent.changeText(
-    r.getByPlaceholderText(en.builder.tell_us_placeholder),
+    r.getByTestId('description-input'),
     'A long enough description to pass validation',
   );
   fireEvent.press(r.getByText(en.builder.placeholder_deadline));

@@ -11,8 +11,8 @@ import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { PressableScale } from '@components/ui/PressableScale';
+import { TypingPlaceholder } from '@components/ui/TypingPlaceholder';
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -36,6 +36,7 @@ import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@fea
 import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
 import { formatIsoDay } from '@utils/formatters';
 import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
+import { RADIUS, SPACE, SURFACE, TEXT } from '@core/constants/surface';
 
 const webInputShadow = { boxShadow: '0 0 14px #7b4fd422, 0 0 28px #004aad14' } as object;
 
@@ -51,6 +52,30 @@ const STEP_SLIDE = 40;
 
 /** Top-to-bottom, so "the first error" means the highest one on the page. */
 const ERROR_FIELDS = ['title', 'description', 'deadline'] as const;
+
+/**
+ * Worked examples for the description field, typed out one at a time so a client
+ * can see the SHAPE of a useful brief rather than being told to write one.
+ *
+ * Each runs to about two lines, and each one demonstrates the same five things
+ * the static placeholder merely asks for: what the job is, where, at what scale,
+ * what is in scope, and what they expect to receive. The length IS the lesson —
+ * a one-line example teaches clients to write one line.
+ */
+const DESCRIPTION_EXAMPLES = {
+  he: [
+    'צילום חתונה בתל אביב, 150 אורחים, מהחופה ועד סוף הריקודים. צריך צלם סטילס וצלם וידאו, ובסוף סרטון ערוך של חמש דקות.',
+    'סרטון תדמית לחברת הייטק. יום צילום אחד במשרדים בהרצליה, ראיונות עם שלושה עובדים וצילומי אווירה. התוצר: דקה וחצי.',
+    'יש לי שעתיים של חומר גלם מכנס, ואני צריך שמונה קליפים קצרים לאינסטגרם עם כתוביות בעברית. עריכה בלבד, בלי צילום.',
+    'צילום מוצר לאתר מכירות: כארבעים פריטי תכשיטים על רקע לבן, בסטודיו עם תאורה, כולל ריטוש בסיסי לכל תמונה.',
+  ],
+  en: [
+    'Wedding in Tel Aviv, 150 guests. Stills and video from the ceremony on, plus a five-minute edit.',
+    'Brand film for a tech company. One day at our Herzliya office, three interviews, a 90-second cut.',
+    'Two hours of conference footage. I need eight short vertical clips for Instagram, with Hebrew subtitles.',
+    'Product photos for a web store: forty jewellery pieces on white, studio lighting, basic retouching.',
+  ],
+} as const;
 
 
 export default function HomeScreen() {
@@ -85,6 +110,16 @@ export default function HomeScreen() {
    * tuned for the Latin caps would not correspond to anything there.
    */
   const titleType = { lineHeight: 30, letterSpacing: rtl ? 0 : -0.5 };
+  /**
+   * The optional marker. Small text wants a little POSITIVE tracking to stay
+   * legible, and small caps is what makes a label of this size read as
+   * deliberate rather than leftover — but both are Latin devices. `uppercase` is
+   * a no-op on Hebrew, and Heebo does not take tracking, so Hebrew gets the size
+   * and colour and nothing else.
+   */
+  const optionalType = rtl
+    ? null
+    : { textTransform: 'uppercase' as const, letterSpacing: 0.6 };
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
   const scrollRef = useRef<ScrollView>(null);
@@ -105,11 +140,9 @@ export default function HomeScreen() {
 
   // ── Form state (single source of truth for all steps + summary) ──
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  // What is actually on screen. It lags `step` by one exit spring, because the
-  // swap has to happen BETWEEN the two springs — at the one instant when the
-  // old step has left and the new one has not arrived, so nothing visibly jumps.
-  const [renderedStep, setRenderedStep] = useState<1 | 2 | 3>(1);
   const [description, setDescription] = useState('');
+  /** Latches on first focus — the typed placeholder never resumes after that. */
+  const [descriptionTouched, setDescriptionTouched] = useState(false);
   const [exec, setExec] = useState('');
   const [deadline, setDeadline] = useState('');
   const [location, setLocation] = useState('');
@@ -135,7 +168,6 @@ export default function HomeScreen() {
     if (projectSubmittedNonce === seenSubmitNonce.current) return;
     seenSubmitNonce.current = projectSubmittedNonce;
     setStep(1);
-    setRenderedStep(1);
     setTitle('');
     setDescription('');
     setExec('');
@@ -200,17 +232,20 @@ export default function HomeScreen() {
   }, [projectId, loadSlots]);
 
   const tx = useSharedValue(0);
-  const stepOpacity = useSharedValue(1);
   const reduceMotion = useReducedMotion();
-  const stepStyle = useAnimatedStyle(() => ({
-    opacity: stepOpacity.value,
-    transform: [{ translateX: tx.value }],
-  }));
+  // translateX only. Opacity is deliberately NOT animated: a value stranded at 0
+  // is an unusable screen, whereas a translateX stranded at 40 is content that
+  // is merely off-centre. The failure mode has to stay survivable.
+  const stepStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }] }));
 
   /**
-   * Exit spring → swap → enter spring. The swap is also where scroll resets,
-   * which is what retired the three setTimeout(…, 50) guesses: at that instant
-   * the content is off screen, so there is no layout race left to lose.
+   * The step changes SYNCHRONOUSLY, and the animation is decorative.
+   *
+   * This used to be exit spring -> swap -> enter spring, with the swap inside
+   * the exit spring's completion callback. Reanimated 4 never invokes that
+   * callback on web, so the screen faded out, slid, and stayed on the old step
+   * forever — the builder could not be used past step 1. Nothing about which
+   * content is on screen may depend on an animation reporting anything.
    */
   function goToStep(next: 1 | 2 | 3, opts?: { scrollToEnd?: boolean }) {
     // The review screen can ask for the step it is already on — that is what the
@@ -223,26 +258,19 @@ export default function HomeScreen() {
     // screen-left-origin and nothing mirrors by itself. Forward enters from the
     // right in English and from the LEFT in Hebrew, by hand.
     const dir = (next > step ? 1 : -1) * (rtl ? -1 : 1);
-    setStep(next);
 
-    const swap = () => {
-      setRenderedStep(next);
-      if (opts?.scrollToEnd) scrollToEndArmed.current = true;
-      else scrollRef.current?.scrollTo({ y: 0, animated: false });
-      if (reduceMotion) return;
-      tx.value = dir * STEP_SLIDE;
-      tx.value = withSpring(0, STEP_SPRING);
-      stepOpacity.value = withSpring(1, STEP_SPRING);
-    };
+    setStep(next);
+    if (opts?.scrollToEnd) scrollToEndArmed.current = true;
+    else scrollRef.current?.scrollTo({ y: 0, animated: false });
 
     // Reduced motion is about vestibular motion, not about feedback: the step
     // still changes and the scroll still resets, it just never travels.
-    if (reduceMotion) { swap(); return; }
+    if (reduceMotion) return;
 
-    stepOpacity.value = withSpring(0, STEP_SPRING);
-    tx.value = withSpring(-dir * STEP_SLIDE, STEP_SPRING, (finished) => {
-      if (finished) runOnJS(swap)();
-    });
+    // Enter only. There is no exit phase, so nothing needs to tell us when one
+    // finished. Set the offset, spring it home.
+    tx.value = dir * STEP_SLIDE;
+    tx.value = withSpring(0, STEP_SPRING);
   }
 
   /** Take the user to the problem. A warning haptic on its own says "no" without
@@ -322,14 +350,14 @@ export default function HomeScreen() {
 
   if (isLoadingProject) {
     return (
-      <Screen scrollable={false}>
+      <Screen scrollable={false} backgroundColor={SURFACE.canvas}>
         <ActivityIndicator color={colors.accent} style={{ flex: 1, marginTop: 80 }} />
       </Screen>
     );
   }
 
   return (
-    <Screen scrollable={false}>
+    <Screen scrollable={false} backgroundColor={SURFACE.canvas}>
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
@@ -346,70 +374,81 @@ export default function HomeScreen() {
       >
       <Animated.View style={[styles.stepWrap, stepStyle]}>
         {/* ══════════════ STEP 1: Project details ══════════════ */}
-        {renderedStep === 1 && (
+        {step === 1 && (
           <>
             <PageTitle style={titleType}>{rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}</PageTitle>
-            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 1 מתוך 3` : `Step 1 of 3`}</Text>
             <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
-              <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressBar, { backgroundColor: SURFACE.pending }]} />
+              <View style={[styles.progressBar, { backgroundColor: SURFACE.pending }]} />
             </View>
 
             <View style={styles.card} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
-              <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>{t('builder.title')}</Text>
+              <Text style={[styles.label, { color: TEXT.primary, textAlign: rtl ? 'right' : 'left' }]}>{t('builder.title')}</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow, errors.title ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
+                style={[styles.input, { color: TEXT.primary, textAlign: rtl ? 'right' : 'left' }, Platform.OS === 'web' && webInputShadow, errors.title ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
                 value={title}
                 onLayout={(e) => { fieldY.current.title = e.nativeEvent.layout.y; }}
                 onChangeText={setTitle}
                 placeholder={t('builder.placeholder_title')}
-                placeholderTextColor="#004aad99"
+                placeholderTextColor={TEXT.hint}
                 returnKeyType="next"
               />
               {errors.title ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.title}</Text> : null}
 
-              <Text style={[styles.label, { color: '#004aad', textAlign: rtl ? 'right' : 'left', marginTop: 6 }]}>
+              <Text style={[styles.label, { color: TEXT.primary, textAlign: rtl ? 'right' : 'left', marginTop: SPACE.sm }]}>
                 {rtl ? 'ספר לנו על הפרויקט' : 'Tell us about your project'}
               </Text>
+              <View style={styles.descriptionWrap}>
               <TextInput
                 style={[
                   styles.input,
-                  { backgroundColor: '#ffffff', color: colors.text, textAlign: rtl ? 'right' : 'left', minHeight: 140, textAlignVertical: 'top', fontSize: 15, lineHeight: 21 },
+                  { color: TEXT.primary, textAlign: rtl ? 'right' : 'left', minHeight: 140, textAlignVertical: 'top', fontSize: 15, lineHeight: 21 },
                   Platform.OS === 'web' && webInputShadow,
                   errors.description ? { borderWidth: 1.5, borderColor: '#fc8181' } : null,
                 ]}
                 value={description}
+                // The animated placeholder replaced the `placeholder` prop, so
+                // there is no placeholder text left to find this input by.
+                testID="description-input"
                 onLayout={(e) => { fieldY.current.description = e.nativeEvent.layout.y; }}
                 onChangeText={setDescription}
-                placeholder={t('builder.tell_us_placeholder')}
-                placeholderTextColor="#004aad99"
+                onFocus={() => setDescriptionTouched(true)}
+                // No placeholder prop: the animated one is drawn behind this
+                // input instead, so typing it cannot re-render the field.
+                placeholderTextColor={TEXT.hint}
                 multiline
                 numberOfLines={6}
               />
+              <TypingPlaceholder
+                examples={DESCRIPTION_EXAMPLES[lang]}
+                fallback={t('builder.tell_us_placeholder')}
+                rtl={rtl}
+                stopped={descriptionTouched || description.length > 0}
+                hidden={description.length > 0}
+                style={[
+                  styles.typingPlaceholder,
+                  { textAlign: rtl ? 'right' : 'left', color: TEXT.hint },
+                ]}
+              />
+              </View>
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
               {/* Labels row — exec / deadline / location */}
               <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start', marginTop: 18 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
+                  <Text style={[styles.label, { color: TEXT.primary, marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
                     {t('builder.execution')}
-                  </Text>
-                  <Text style={{ fontSize: 9, color: colors.textMuted, textAlign: 'center', ...font.regular }}>
-                    ({t('builder.optional')})
                   </Text>
                 </View>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
+                  <Text style={[styles.label, { color: TEXT.primary, marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
                     {t('builder.deadline')}
                   </Text>
                 </View>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={[styles.label, { color: '#004aad', marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
+                  <Text style={[styles.label, { color: TEXT.primary, marginTop: 0, marginBottom: 0, textAlign: 'center' }]}>
                     {t('builder.location')}
-                  </Text>
-                  <Text style={{ fontSize: 9, color: colors.textMuted, textAlign: 'center', ...font.regular }}>
-                    ({t('builder.optional')})
                   </Text>
                 </View>
               </View>
@@ -442,6 +481,7 @@ export default function HomeScreen() {
                       {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                     </Text>
                   </PressableScale>
+                  <Text style={[styles.optionalTag, optionalType]}>{t('builder.optional')}</Text>
                 </View>
 
                 {/* Deadline square */}
@@ -501,6 +541,7 @@ export default function HomeScreen() {
                       {location || t('builder.placeholder_location')}
                     </Text>
                   </PressableScale>
+                  <Text style={[styles.optionalTag, optionalType]}>{t('builder.optional')}</Text>
                   {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
                 </View>
               </View>
@@ -541,14 +582,13 @@ export default function HomeScreen() {
         )}
 
         {/* ══════════════ STEP 2: Roles + quantity ══════════════ */}
-        {renderedStep === 2 && (
+        {step === 2 && (
           <>
             <PageTitle style={titleType}>{rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}</PageTitle>
-            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 2 מתוך 3` : `Step 2 of 3`}</Text>
             <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
-              <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressBar, { backgroundColor: SURFACE.pending }]} />
             </View>
 
             <TouchableOpacity
@@ -575,8 +615,8 @@ export default function HomeScreen() {
                 initialNumToRender={8}
                 maxToRenderPerBatch={8}
                 windowSize={3}
-                columnWrapperStyle={{ gap: 8, justifyContent: 'center' }}
-                ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+                columnWrapperStyle={{ gap: SPACE.sm, justifyContent: 'center' }}
+                ItemSeparatorComponent={() => <View style={{ height: SPACE.sm }} />}
                 renderItem={({ item: cat }) => {
                   const q = roleQuantity(cat.key);
                   // Locked only at/below the assigned count: you can trim seats
@@ -584,11 +624,7 @@ export default function HomeScreen() {
                   const locked = q <= (occupiedByCategory[cat.key] ?? 0);
                   return (
                     <PressableScale
-                      style={[
-                        styles.tile,
-                        { width: tileSize },
-                        q > 0 && { borderWidth: 2, borderColor: colors.accent },
-                      ]}
+                      style={[styles.tile, { width: tileSize }]}
                       onPress={() => { if (q === 0) setQuantity(cat.key, 1); }}
                       // Only the press that actually seats a role is worth a
                       // buzz. Once the tile has seats it is inert — the −/+ row
@@ -596,8 +632,21 @@ export default function HomeScreen() {
                       // feedback for nothing.
                       haptic={q === 0 ? 'commit' : undefined}
                     >
-                      {cat.image ? (
-                        <Image source={cat.image} style={styles.tileImage} contentFit="cover" cachePolicy="memory-disk" />
+                      {/* The clip is its own view so the selection ring can sit
+                          OUTSIDE it. overflow:'hidden' lives here, on the body,
+                          rather than on the tile — a ring at a negative offset on
+                          a clipping parent is simply cut away. */}
+                      <View style={styles.tileClip}>
+                      {cat.glyph ? (
+                        <View style={styles.tileGlyphWrap}>
+                          <Image
+                            source={cat.glyph}
+                            style={styles.tileGlyph}
+                            contentFit="contain"
+                            tintColor="#004aad"
+                            cachePolicy="memory-disk"
+                          />
+                        </View>
                       ) : null}
                       <View style={styles.tileOverlay}>
                         <Text style={styles.tileLabel} numberOfLines={1}>{labelOf(ROLE_BY_ID[cat.roleId], lang)}</Text>
@@ -629,6 +678,10 @@ export default function HomeScreen() {
                           </PressableScale>
                         </View>
                       )}
+                      </View>
+                      {/* Drawn over, not in the box model, so selecting a tile
+                          cannot nudge the grid the way borderWidth: 2 did. */}
+                      {q > 0 && <View style={styles.tileRing} pointerEvents="none" />}
                     </PressableScale>
                   );
                 }}
@@ -652,10 +705,9 @@ export default function HomeScreen() {
         )}
 
         {/* ══════════════ STEP 3: Per-slot subskill ══════════════ */}
-        {renderedStep === 3 && (
+        {step === 3 && (
           <>
             <PageTitle style={titleType}>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
-            <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{rtl ? `שלב 3 מתוך 3` : `Step 3 of 3`}</Text>
             <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
               <View style={[styles.progressBar, { backgroundColor: '#004aad' }]} />
@@ -882,40 +934,90 @@ function createStyles(
      *  step still reaches the bottom of a tall screen — the wrapper sits between
      *  the content container and the step, and would otherwise break that chain. */
     stepWrap: { flexGrow: 1 },
+    descriptionWrap: { position: 'relative' },
+    /** Under the square, centred on it. Out of the square entirely now, so it no
+     *  longer contends with the help "?" or the clear "x" for a corner, and it
+     *  can stay visible whether or not the field has been filled. */
+    optionalTag: {
+      marginTop: SPACE.xs,
+      fontSize: 9,
+      fontFamily: ffMedium,
+      color: TEXT.hint,
+      textAlign: 'center',
+    },
+    /** Aligned to the input's own text origin: same padding, same size and
+     *  leading, so the typed text sits exactly where the user's will. */
+    typingPlaceholder: {
+      paddingHorizontal: SPACE.md,
+      paddingVertical: SPACE.md,
+      fontSize: 15,
+      lineHeight: 21,
+      fontFamily: ff,
+    },
     /** Eats the leftover height on tall screens, pushing the button down. Used
      *  by all three steps so the button lands in the same place throughout. */
     grow: { flexGrow: 1 },
-    stepLabel: { fontSize: 13, lineHeight: 18, fontWeight: '500', fontFamily: ffMedium, color: '#004aad', opacity: 0.7, marginTop: 2, marginBottom: 2, paddingHorizontal: 16 },
 
     // Direction is set inline per render: the three segments are equal-flex
     // siblings coloured in order, so the row's direction IS the fill direction.
     // Hardcoded 'row' filled left-to-right in Hebrew, against the step label.
-    progressRow: { gap: 8, marginHorizontal: 16, marginTop: 4, marginBottom: 2 },
-    progressBar: { flex: 1, height: 4, borderRadius: 2 },
+    progressRow: { gap: SPACE.sm, marginHorizontal: SPACE.lg, marginTop: SPACE.md, marginBottom: SPACE.xs },
+    progressBar: { flex: 1, height: 3, borderRadius: 2 },
 
     // alignSelf and flexDirection are set INLINE per call site: a plain View does
     // not flip with the app language, so a hardcoded 'flex-start' pins this to the
     // LEFT in Hebrew too. The chevron is swapped for the same reason — back points
     // right in RTL.
-    backArrow: { alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
+    backArrow: { alignItems: 'center', gap: SPACE.xs, paddingHorizontal: SPACE.lg, paddingTop: SPACE.sm, paddingBottom: SPACE.xs },
     backArrowText: { color: '#004aad', fontSize: 15, fontWeight: '600', fontFamily: ffSemiBold },
 
-    card: { margin: 16, marginTop: 10, padding: 20 },
-    rolesCard: { marginHorizontal: 16, marginTop: 4, padding: 10 },
+    card: {
+      margin: SPACE.lg,
+      marginTop: SPACE.md,
+      padding: SPACE.xl,
+      backgroundColor: SURFACE.raised,
+      borderRadius: RADIUS.md,
+    },
+    rolesCard: { marginHorizontal: SPACE.lg, marginTop: SPACE.xs, padding: SPACE.sm },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
-    label: { fontSize: 18, lineHeight: 24, fontWeight: '600', fontFamily: ffSemiBold, marginTop: 16, marginBottom: 6 },
+    label: { fontSize: 18, lineHeight: 24, fontWeight: '600', fontFamily: ffSemiBold, marginTop: SPACE.lg, marginBottom: SPACE.sm },
     // No lineHeight here on purpose: on a single-line TextInput it fights RN's
     // own vertical centring, and the one place leading actually matters — the
     // multiline description — already sets 21 inline at its own 15pt size.
-    input: { borderWidth: 0, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, fontFamily: ff },
+    input: {
+      borderWidth: 0,
+      borderRadius: RADIUS.md,
+      backgroundColor: SURFACE.canvas,
+      paddingHorizontal: SPACE.md,
+      paddingVertical: SPACE.md,
+      fontSize: 16,
+      fontFamily: ff,
+    },
     error: { fontSize: 12, lineHeight: 16, color: '#fc8181', marginTop: 4, fontFamily: ff },
-    dateConsequence: { fontSize: 12, lineHeight: 18, marginTop: 12, paddingHorizontal: 20, fontFamily: ff },
+    dateConsequence: { fontSize: 12, lineHeight: 18, marginTop: SPACE.md, paddingHorizontal: SPACE.xl, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    tile: { borderRadius: 12, overflow: 'hidden', position: 'relative', alignItems: 'center' },
-    tileImage: { width: '100%', height: 80 },
-    tileOverlay: { width: '100%', paddingTop: 0, paddingBottom: 2, paddingHorizontal: 5 },
-    tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: '#004aad', textAlign: 'center', lineHeight: 17, includeFontPadding: false },
-    tileControls: { width: '100%', height: 28, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)' },
+    // No overflow here — the ring needs to escape. The tile is a positioning
+    // box; the surface and the clipping both live on tileClip.
+    tile: { position: 'relative', alignItems: 'center' },
+    tileClip: {
+      width: '100%',
+      borderRadius: RADIUS.md,
+      overflow: 'hidden',
+      alignItems: 'center',
+      backgroundColor: SURFACE.raised,
+    },
+    tileGlyphWrap: { width: '100%', height: 80, alignItems: 'center', justifyContent: 'center' },
+    tileGlyph: { width: 44, height: 44 },
+    tileRing: {
+      position: 'absolute',
+      top: -2, left: -2, right: -2, bottom: -2,
+      borderWidth: 2,
+      borderColor: '#cb6ce6',
+      borderRadius: RADIUS.md + 2,
+    },
+    tileOverlay: { width: '100%', paddingTop: 0, paddingBottom: SPACE.sm, paddingHorizontal: SPACE.xs },
+    tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: TEXT.primary, textAlign: 'center', lineHeight: 17, includeFontPadding: false },
+    tileControls: { width: '100%', height: 28, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: SPACE.sm, backgroundColor: SURFACE.canvas },
     tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
     tileControlBtnLocked: { backgroundColor: 'rgba(120,125,150,0.7)' },
     tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
@@ -924,8 +1026,8 @@ function createStyles(
     /** Shared by all three steps, so the next-step button is the same width
      *  throughout. The 36pt inset used to be inline on step 1 only, leaving
      *  steps 2 and 3 with the 16pt default and visibly wider buttons. */
-    submitWrap: { paddingTop: 4, paddingHorizontal: 36, paddingBottom: 12 },
-    submitBtn: { backgroundColor: '#004aad', borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginTop: 4 },
+    submitWrap: { paddingTop: SPACE.xs, paddingHorizontal: SPACE.xxl, paddingBottom: SPACE.md },
+    submitBtn: { backgroundColor: '#004aad', borderRadius: RADIUS.sm, paddingVertical: SPACE.md, alignItems: 'center', marginTop: SPACE.xs },
     disabled: { backgroundColor: '#555' },
     submitText: { color: '#fff', fontSize: 16, lineHeight: 21, fontWeight: '700', fontFamily: ffBold },
     cancelBtn: { alignItems: 'center', paddingVertical: 12 },
@@ -1027,24 +1129,20 @@ function createStyles(
     dateRow: { flexDirection: 'row', gap: 16, marginTop: 0 },
     dateCol: { flex: 1 },
     dateSquare: {
-      backgroundColor: '#ffffff',
-      borderRadius: 16,
+      backgroundColor: SURFACE.canvas,
+      borderRadius: RADIUS.md,
       width: '100%',
       maxWidth: 120,
       height: 100,
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 6,
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 3,
-      padding: 8,
+      gap: SPACE.sm,
+      padding: SPACE.sm,
     },
     dateSquarePlaceholder: {
       fontSize: 11,
       lineHeight: 14,
-      color: '#004aad66',
+      color: TEXT.hint,
       textAlign: 'center',
       fontFamily: ff,
     },
@@ -1052,7 +1150,7 @@ function createStyles(
       fontSize: 13,
       lineHeight: 17,
       fontWeight: 'bold',
-      color: '#004aad',
+      color: TEXT.primary,
       textAlign: 'center',
       fontFamily: ffBold,
     },
@@ -1253,40 +1351,35 @@ function createStyles(
     capRoleLabel: { fontSize: 13, fontWeight: '600', fontFamily: ffSemiBold, color: '#7b2fa8' },
     // ── Step 3: per-slot subskill cards (soft profile-editor aesthetic) ──
     s3Card: {
-      backgroundColor: '#ffffff',
-      borderRadius: 18,
-      padding: 13,
+      backgroundColor: SURFACE.raised,
+      borderRadius: RADIUS.md,
+      padding: SPACE.lg,
       // Was edge-to-edge: this card had no horizontal margin while every sibling
       // on the step — stepLabel, progressRow, backArrow — is inset 16, and step
       // 2's equivalent card (rolesCard) is too. It was the only thing touching
       // the screen edges.
-      marginHorizontal: 16,
-      marginTop: 14,
-      shadowColor: '#6c5ce0',
-      shadowOpacity: 0.07,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 2,
+      marginHorizontal: SPACE.lg,
+      marginTop: SPACE.lg,
     },
-    s3Header: { alignItems: 'center', gap: 12, marginBottom: 4 },
+    s3Header: { alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.xs },
     // borderRadius stays half the size so this remains a circle, not a
     // rounded square — at 80 it dominated the role header.
     s3Avatar: { width: 56, height: 56, borderRadius: 28 },
-    s3RoleName: { fontSize: 16, lineHeight: 21, color: '#2a2f5a' },
-    s3RoleNeed: { fontSize: 12, lineHeight: 16, color: '#9aa0b8', marginTop: 1 },
-    s3Slot: { backgroundColor: '#faf9fe', borderRadius: 13, padding: 11, marginTop: 10, gap: 8 },
-    s3SlotHead: { alignItems: 'center', gap: 8 },
-    s3Num: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#ece9fb', alignItems: 'center', justifyContent: 'center' },
-    s3NumText: { fontSize: 12, color: '#6c5ce0' },
-    s3SlotLabel: { fontSize: 12, lineHeight: 16, color: '#9aa0b8' },
-    s3SelLabel: { fontSize: 13, lineHeight: 17, color: '#6c5ce0' },
-    s3PillRow: { flexWrap: 'wrap', gap: 8 },
-    s3Pill: { borderRadius: 16, paddingHorizontal: 13, paddingVertical: 7 },
+    s3RoleName: { fontSize: 16, lineHeight: 21, color: TEXT.primary },
+    s3RoleNeed: { fontSize: 12, lineHeight: 16, color: TEXT.secondary, marginTop: 1 },
+    s3Slot: { backgroundColor: SURFACE.canvas, borderRadius: RADIUS.sm, padding: SPACE.md, marginTop: SPACE.md, gap: SPACE.sm },
+    s3SlotHead: { alignItems: 'center', gap: SPACE.sm },
+    s3Num: { width: 22, height: 22, borderRadius: 11, backgroundColor: SURFACE.raised, alignItems: 'center', justifyContent: 'center' },
+    s3NumText: { fontSize: 12, color: TEXT.secondary },
+    s3SlotLabel: { fontSize: 12, lineHeight: 16, color: TEXT.secondary },
+    s3SelLabel: { fontSize: 13, lineHeight: 17, color: TEXT.primary },
+    s3PillRow: { flexWrap: 'wrap', gap: SPACE.sm },
+    s3Pill: { borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
     s3PillSel: { backgroundColor: '#004aad' },
-    s3PillUnsel: { backgroundColor: '#f0f0f7' },
+    s3PillUnsel: { backgroundColor: SURFACE.raised },
     s3PillTextSel: { color: '#ffffff', fontSize: 13, lineHeight: 17 },
-    s3PillTextUnsel: { color: '#5c6180', fontSize: 13, lineHeight: 17 },
-    s3Footer: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
+    s3PillTextUnsel: { color: TEXT.primary, fontSize: 13, lineHeight: 17 },
+    s3Footer: { borderRadius: RADIUS.md, paddingVertical: SPACE.lg, alignItems: 'center' },
     s3FooterText: { color: '#ffffff', fontSize: 16, lineHeight: 21 },
   });
 }

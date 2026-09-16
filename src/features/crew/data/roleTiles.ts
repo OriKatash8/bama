@@ -17,6 +17,24 @@ export const ROLE_IMAGES: Record<string, ReturnType<typeof require>> = {
   sound:            require('../../../../assets/images/categories/sound-wide.png'),
 };
 
+/**
+ * The same eight marks with the gradient plate lifted off — a flat glyph on
+ * transparency, tinted in code. Added ALONGSIDE `ROLE_IMAGES` rather than
+ * replacing it: `RolePickerModal` (the "add professional" sheet on project
+ * details) renders `cat.image` from this same list, and that screen is not part
+ * of the home restyle.
+ */
+export const ROLE_GLYPHS: Record<string, ReturnType<typeof require>> = {
+  videographer:     require('../../../../assets/images/categories/videographer-glyph.png'),
+  photographer:     require('../../../../assets/images/categories/photographer-glyph.png'),
+  editor:           require('../../../../assets/images/categories/editor-glyph.png'),
+  graphic_designer: require('../../../../assets/images/categories/graphic_designer-glyph.png'),
+  social_media:     require('../../../../assets/images/categories/social_media-glyph.png'),
+  studio_audio:     require('../../../../assets/images/categories/studio_audio-glyph.png'),
+  lighting:         require('../../../../assets/images/categories/lighting-glyph.png'),
+  sound:            require('../../../../assets/images/categories/sound-glyph.png'),
+};
+
 // Round category icons — the same set the client browse (search) page uses,
 // keyed by the legacy category string stored on crewSlot.category.
 export const CATEGORY_ICON: Record<string, ReturnType<typeof require>> = {
@@ -36,4 +54,5 @@ export const CATEGORIES = ROLES.map((r) => ({
   key: ROLE_TO_LEGACY_CATEGORY[r.id],
   roleId: r.id,
   image: ROLE_IMAGES[r.id],
+  glyph: ROLE_GLYPHS[r.id],
 }));

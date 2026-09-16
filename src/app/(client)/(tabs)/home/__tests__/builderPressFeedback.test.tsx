@@ -75,9 +75,12 @@ jest.mock('react-native-reanimated', () => {
     default: { View: RN.View, createAnimatedComponent: (C: unknown) => C },
     useSharedValue: (v: number) => ({ value: v }),
     useAnimatedStyle: (fn: () => unknown) => fn(),
-    // The swap in goToStep lives in the completion callback, so the mock has to
-    // invoke it or no test ever reaches step 2.
-    withSpring: (v: number, _cfg?: unknown, cb?: (f: boolean) => void) => { cb?.(true); return v; },
+    // DEFAULT: the callback is NEVER invoked — which is what Reanimated 4
+    // actually does on web. The previous mock fired it synchronously with
+    // `true`, so eight transition tests passed against behaviour no real
+    // platform exhibits, and a screen that stranded on every web transition
+    // shipped green. Nothing may depend on this callback.
+    withSpring: (v: number) => v,
     runOnJS: (fn: unknown) => fn,
     useReducedMotion: () => false,
   };
@@ -157,7 +160,7 @@ describe('next-step buttons', () => {
     const r = goToStep(1);
     fireEvent.changeText(r.getByPlaceholderText(en.builder.placeholder_title), 'Music video');
     fireEvent.changeText(
-      r.getByPlaceholderText(en.builder.tell_us_placeholder),
+      r.getByTestId('description-input'),
       'A long enough description to pass validation',
     );
     fireEvent.press(r.getByText(en.builder.placeholder_deadline));
