@@ -43,7 +43,14 @@ type Props = {
   onPressProfile: () => void;
   onAccept: () => void;
   onReject: () => void;
+  /** This card's own hire is in flight — it shows the spinner. */
   isAccepting: boolean;
+  /**
+   * SOME hire is in flight, this card's or another's. Locks Accept everywhere:
+   * two accepts that overlap each create a group chat for the same project, so
+   * the client ends up with two. See hireAtomicity.test.ts.
+   */
+  busy?: boolean;
 };
 
 export function BundleOfferCard({
@@ -54,6 +61,7 @@ export function BundleOfferCard({
   onAccept,
   onReject,
   isAccepting,
+  busy = false,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [offerDetails, setOfferDetails] = useState<PriceOffer[]>([]);
@@ -216,9 +224,9 @@ export function BundleOfferCard({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionAccept, isAccepting && styles.actionDisabled]}
+          style={[styles.actionAccept, (isAccepting || busy) && styles.actionDisabled]}
           onPress={onAccept}
-          disabled={isAccepting}
+          disabled={isAccepting || busy}
           activeOpacity={0.85}
         >
           {isAccepting ? (

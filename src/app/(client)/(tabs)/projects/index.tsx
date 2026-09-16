@@ -73,6 +73,10 @@ export default function ProjectsPage() {
   const { bundles, isLoading: bundlesLoading } = useBundleOffers();
   const { accept, reject, isAccepting } = useAcceptOffer();
   const { acceptBundle, rejectBundle, isAccepting: isBundleAccepting } = useAcceptBundleOffer();
+  // Any hire in flight locks Accept on EVERY offer, not just the tapped one.
+  // Two overlapping hires each create a group chat for the same project — one
+  // professional with two offers here is what makes that easy to trigger.
+  const anyHireInFlight = isAccepting !== null || isBundleAccepting !== null;
 
   const [professionalProfiles, setProfessionalProfiles] = useState<Record<string, ProfessionalProfileSummary>>({});
   const fetchedProfileIds = useRef<Set<string>>(new Set());
@@ -446,6 +450,7 @@ export default function ProjectsPage() {
                       onAccept={() => handleAcceptBundle(item.data)}
                       onReject={() => handleRejectBundle(item.data.id)}
                       isAccepting={isBundleAccepting === item.data.id}
+                      busy={anyHireInFlight}
                     />
                   ) : (
                     <PriceOfferCard
@@ -457,6 +462,7 @@ export default function ProjectsPage() {
                       onAccept={() => handleAccept(item.data)}
                       onReject={() => handleReject(item.data.id)}
                       isAccepting={isAccepting === item.data.id}
+                      busy={anyHireInFlight}
                     />
                   )
                 )
