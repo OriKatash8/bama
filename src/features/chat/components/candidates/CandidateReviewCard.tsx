@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Image, PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from '@components/ui/AppText';
 import { useUiStore } from '@core/stores/uiStore';
@@ -17,6 +18,7 @@ import { RejectCandidateSheet } from './RejectCandidateSheet';
 import { PriceChangeSheet } from './PriceChangeSheet';
 import { chromeStyles } from './chromeStyles';
 import { ActionButton } from './ActionButton';
+import { resolveShownIndex, swipeStep } from './carousel';
 
 type Busy = 'confirm' | 'reject' | 'price';
 
@@ -43,7 +45,7 @@ export function CandidateReviewCard({
 }) {
   const router = useRouter();
   const showToast = useUiStore((s) => s.showToast);
-  const { t, lang, align, rowDir, money, dir } = useCandidateText();
+  const { t, lang, rtl, align, rowDir, money, dir } = useCandidateText();
 
   const [accepted, setAccepted] = useState<{ offers: PriceOffer[]; bundles: BundleOffer[] } | null>(null);
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
@@ -59,6 +61,33 @@ export function CandidateReviewCard({
     [accepted, lang],
   );
   const users = useUserBasics(candidates.map((c) => c.proId));
+
+  // ── Carousel (2+ pending) — one professional at a time ──────────────────
+  const [shownId, setShownId] = useState<string | null>(null);
+  const lastIndexRef = useRef(0);
+  const ids = candidates.map((c) => c.proId);
+  const shownIndex = resolveShownIndex(ids, shownId, lastIndexRef.current);
+  const carousel = candidates.length > 1;
+  useEffect(() => { lastIndexRef.current = shownIndex; }, [shownIndex]);
+
+  const go = (step: number) => {
+    const next = Math.max(0, Math.min(shownIndex + step, ids.length - 1));
+    if (next !== shownIndex) setShownId(ids[next]);
+  };
+  // Refs so the one PanResponder always sees the current list and direction.
+  const goRef = useRef(go);
+  goRef.current = go;
+  const rtlRef = useRef(rtl);
+  rtlRef.current = rtl;
+  const pan = useRef(PanResponder.create({
+    // Only claim clearly horizontal drags, so taps still reach the buttons and
+    // vertical drags still scroll the chat.
+    onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+    onPanResponderRelease: (_e, g) => {
+      const step = swipeStep(g.dx, rtlRef.current);
+      if (step !== 0) goRef.current(step);
+    },
+  })).current;
 
   if (candidates.length === 0) return null;
 
@@ -124,7 +153,30 @@ export function CandidateReviewCard({
     `/(client)/(tabs)/chats/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
   );
 
-  const rows = candidates.map((c) => {
+  // Chevrons mirror with the reading direction: "previous" sits on the leading
+  // edge (left in English, right in Hebrew) and points outward.
+  const PrevIcon = rtl ? ChevronRight : ChevronLeft;
+  const NextIcon = rtl ? ChevronLeft : ChevronRight;
+  const chevron = (which: 'prev' | 'next') => {
+    const off = which === 'prev' ? shownIndex === 0 : shownIndex === ids.length - 1;
+    const Icon = which === 'prev' ? PrevIcon : NextIcon;
+    return (
+      <TouchableOpacity
+        key={which}
+        testID={`carousel-${which}`}
+        onPress={() => go(which === 'prev' ? -1 : 1)}
+        disabled={off}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: off }}
+        style={[styles.chevron, off && styles.chevronOff]}
+      >
+        <Icon size={18} color="#004aad" strokeWidth={2.2} />
+      </TouchableOpacity>
+    );
+  };
+
+  const renderRow = (c: PendingCandidate) => {
     const user = users[c.proId];
     // Unresolved (absent key) and unusable (null) both lock the row. Acting on a
     // professional whose name is not on screen is how the wrong one gets confirmed.
@@ -138,8 +190,9 @@ export function CandidateReviewCard({
     const rowBusy = busy[c.proId];
     const canAct = !!resolved && !rowBusy;
     return (
-      <View key={c.proId} style={styles.row} testID={`candidate-row-${c.proId}`}>
+      <View key={c.proId} style={[styles.row, carousel && styles.rowCarousel]} testID={`candidate-row-${c.proId}`}>
         <View style={[styles.identity, { flexDirection: rowDir }]} testID={`candidate-identity-${c.proId}`}>
+          {carousel && chevron('prev')}
           {resolved?.photoURL
             ? <Image source={{ uri: resolved.photoURL }} style={styles.avatar} />
             : (
@@ -166,6 +219,7 @@ export function CandidateReviewCard({
             )}
           </View>
           <AppText weight="bold" style={styles.price}>{money(c.total)}</AppText>
+          {carousel && chevron('next')}
         </View>
 
         {waitingOnPro && (
@@ -209,14 +263,25 @@ export function CandidateReviewCard({
         </View>
       </View>
     );
-  });
+  };
 
   return (
     <View style={chromeStyles.strip} testID="candidate-review-card">
       <AppText weight="semiBold" style={[styles.title, { textAlign: align }]}>{t('candidate_review.title')}</AppText>
-      {candidates.length > 3
-        ? <ScrollView style={styles.scrollCap} nestedScrollEnabled>{rows}</ScrollView>
-        : rows}
+      {carousel ? (
+        <View {...pan.panHandlers} testID="candidate-carousel">
+          {renderRow(candidates[shownIndex])}
+          <View
+            style={[styles.dots, { flexDirection: rowDir }]}
+            testID="carousel-dots"
+            accessibilityLabel={`${shownIndex + 1}/${candidates.length}`}
+          >
+            {candidates.map((c, i) => (
+              <View key={c.proId} testID={`carousel-dot-${i}`} style={[styles.dot, i === shownIndex && styles.dotCurrent]} />
+            ))}
+          </View>
+        </View>
+      ) : renderRow(candidates[0])}
 
       <RejectCandidateSheet
         visible={!!rejecting}
@@ -239,8 +304,16 @@ export function CandidateReviewCard({
 
 const styles = StyleSheet.create({
   title: { fontSize: 12, color: 'rgba(15,15,31,0.5)', marginBottom: 6 },
-  scrollCap: { maxHeight: 330 },
   row: { paddingVertical: 8, gap: 6 },
+  // Carousel: the dots line (DOT + DOTS_MARGIN) is paid for by trimming the
+  // row's vertical padding by the same amount, so the card is no taller than a
+  // single-professional card. Asserted in CandidateReviewCard.test.tsx.
+  rowCarousel: { paddingVertical: 3 },
+  chevron: { width: 22, alignItems: 'center', justifyContent: 'center' },
+  chevronOff: { opacity: 0.25 },
+  dots: { justifyContent: 'center', alignItems: 'center', gap: 5, height: 6, marginTop: 4 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,74,173,0.2)' },
+  dotCurrent: { backgroundColor: '#004aad' },
   identity: { alignItems: 'center', gap: 10 },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarFallback: { backgroundColor: '#004aad22', alignItems: 'center', justifyContent: 'center' },
