@@ -85,12 +85,13 @@ export function feesCol(projectId: string) {
 export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
 /**
- * Why an engagement was released. `candidate_rejected` is the client deciding
- * during review (candidates.ts), before the work started: it is not a
- * withdrawal by or against the professional, so the project roll-up and the
- * reliability count both leave it out (derive.ts).
+ * Why an engagement was released. `candidate_rejected` (the client) and
+ * `candidate_declined` (the professional) are decisions taken during review
+ * (candidates.ts), before the work started: neither is a withdrawal by or
+ * against the professional, so the project roll-up and the reliability count
+ * both leave them out (derive.ts).
  */
-export type ReleaseReason = 'client_removed' | 'pro_withdrew' | 'candidate_rejected';
+export type ReleaseReason = 'client_removed' | 'pro_withdrew' | 'candidate_rejected' | 'candidate_declined';
 
 export type FeeDoc = {
   professionalId: string;

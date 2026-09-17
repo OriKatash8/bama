@@ -7,7 +7,7 @@
  *
  *  1 range 1–50000 on create (0, 50001 refused; 1, 50000 accepted)
  *  2 the counter sequence while under review, one pending per role
- *  3 a second role is independent; a pro cannot open a negotiation under review
+ *  3 a second role is independent; a pro under review gets one unprompted request, none after acknowledging
  *  4 two concurrent creates for one role: exactly one lands
  *  4b the same with no chat doc to collide on — isolates the transactional history read
  *  5 an out-of-range request written before the check cannot be accepted
@@ -16,7 +16,7 @@
  *  8 a push notification is written for the counterparty, both directions, and not on refusal
  */
 import { initializeApp as initAdmin } from 'firebase-admin/app';
-import { getFirestore as getAdminDb } from 'firebase-admin/firestore';
+import { getFirestore as getAdminDb, FieldValue } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';
 import {
   getFirestore, connectFirestoreEmulator, collection, addDoc, getDocs, query, where, setLogLevel,
@@ -149,7 +149,17 @@ try {
   for (const d of sdHistory.docs) await d.ref.delete();
   await as('pro');
   const unprompted = await proCreate(SD, 450);
-  check('pro cannot open a negotiation on a role under review', reason(unprompted) === 'counter-not-allowed', reason(unprompted));
+  check('pro may open ONE negotiation of his own on a role under review', unprompted.ok, reason(unprompted));
+  check('client rejects it', (await answerAs('client', unprompted.data.requestId, false)).ok);
+  await as('pro');
+  const secondUnprompted = await proCreate(SD, 460);
+  check('his unprompted request is used — a second is refused', reason(secondUnprompted) === 'counter-not-allowed', reason(secondUnprompted));
+  // After his רלוונטי he is respond-only even with the unprompted request unused.
+  for (const d of (await adb.collection(`projects/${PID}/paymentRequests`).where('category', '==', SD).get()).docs) await d.ref.delete();
+  await adb.doc('priceOffers/rp-sd').update({ proAccepted: true });
+  const afterAck = await proCreate(SD, 470);
+  check('after the pro acknowledges, an unprompted request is refused', reason(afterAck) === 'counter-not-allowed', reason(afterAck));
+  await adb.doc('priceOffers/rp-sd').update({ proAccepted: FieldValue.delete() });
 
   // ── 4 ─────────────────────────────────────────────────────────────────────
   console.log('\n=== 4. concurrent creates for one role ===');

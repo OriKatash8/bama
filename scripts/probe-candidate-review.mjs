@@ -13,6 +13,11 @@
  *  4 C6: a candidate who completed cannot be rejected; the completion is logged
  *  5 rules (C4) with positive controls
  *  6 a professional cannot call either decision
+ *  7 item 3: the pro acknowledges (proAccepted, review untouched; client cannot write it)
+ *  8 item 3: the pro's one unprompted price request; respond-only after acknowledging
+ *  9 item 3: sole pro declines → open project, own notice, client pushed, request closed
+ * 10 item 3: who may call the professional callables
+ * 11 a released BUNDLE candidate leaves the review (bundle 'removed', not stuck 'accepted')
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { initializeApp as initAdmin } from 'firebase-admin/app';
@@ -43,6 +48,8 @@ const call = (name) => async (data) => {
 const hire = call('hireProfessional');
 const confirm = call('confirmCandidate');
 const reject = call('rejectCandidate');
+const acknowledge = call('acknowledgeCandidacy');
+const decline = call('declineCandidacy');
 const createPR = call('createPaymentRequest');
 const respondPR = call('respondToPaymentRequest');
 const markComplete = call('markEngagementComplete');
@@ -232,6 +239,134 @@ try {
   check('pro calling confirmCandidate → permission-denied', !pc.ok && pc.code === 'functions/permission-denied', pc.code);
   check('pro calling rejectCandidate → permission-denied', !pr6.ok && pr6.code === 'functions/permission-denied', pr6.code);
   check('...and nothing changed', (await get('priceOffers/cr-o6')).review === 'pending' && (await get('priceOffers/cr-o6')).status === 'accepted');
+
+  // ── 7 ────────────────────────────────────────────────────────────────────
+  console.log('\n=== 7. pro acknowledges (Option A) ===');
+  await project('cr-p7', [{ category: 'Editor', quantity: 1 }]);
+  await offer('cr-o7', 'cr-p7', 'proA', 'Editor');
+  await as('client');
+  check('hire A', (await hire({ offerId: 'cr-o7' })).ok);
+  await as('proA');
+  const ack = await acknowledge({ projectId: 'cr-p7' });
+  check('pro acknowledges', ack.ok && ack.data.acknowledged === 1, JSON.stringify(ack.data ?? ack.msg));
+  const o7 = await get('priceOffers/cr-o7');
+  check('proAccepted recorded, review still pending', o7.proAccepted === true && !!o7.proAcceptedAt && o7.review === 'pending', JSON.stringify({ pa: o7.proAccepted, r: o7.review }));
+  check('acknowledging again is fine (idempotent)', (await acknowledge({ projectId: 'cr-p7' })).ok);
+  check('project did not activate from the pro side', (await get('projects/cr-p7')).status === 'open');
+  await as('client');
+  let clientWrite;
+  try { await updateDoc(doc(db, 'priceOffers', 'cr-o7'), { proAccepted: false }); clientWrite = 'allowed'; } catch (e) { clientWrite = e.code; }
+  check('client cannot write proAccepted', clientWrite === 'permission-denied', clientWrite);
+  await as('proA');
+  let proWrite;
+  try { await updateDoc(doc(db, 'priceOffers', 'cr-o7'), { proAccepted: false }); proWrite = 'allowed'; } catch (e) { proWrite = e.code; }
+  check('pro cannot write proAccepted directly either', proWrite === 'permission-denied', proWrite);
+  await as('client');
+  const c7 = await confirm({ projectId: 'cr-p7', professionalId: uids.proA });
+  check('client still confirms as before → activates', c7.ok && c7.data.activated === true, JSON.stringify(c7.data ?? c7.msg));
+  await wipe();
+
+  // ── 8 ────────────────────────────────────────────────────────────────────
+  console.log('\n=== 8. pro unprompted price request ===');
+  await project('cr-p8', [{ category: 'Editor', quantity: 1 }, { category: 'Sound Recordist', quantity: 1 }]);
+  await offer('cr-o8e', 'cr-p8', 'proA', 'Editor', 500);
+  await offer('cr-o8s', 'cr-p8', 'proA', 'Sound Recordist', 400);
+  await as('client');
+  check('hire A for Editor and Sound', (await hire({ offerId: 'cr-o8e' })).ok && (await hire({ offerId: 'cr-o8s' })).ok);
+  await as('proA');
+  const u1 = await createPR({ projectId: 'cr-p8', category: 'Editor', proposedAmount: 600 });
+  check('pro raises one unprompted Editor request', u1.ok, u1.msg);
+  const clientNote8 = (await adb.collection('notifications').where('userId', '==', uids.client).get()).docs
+    .some((d) => String(d.get('message')).startsWith('💰'));
+  check('client is pushed for it', clientNote8);
+  await as('client');
+  check('client rejects it', (await respondPR({ projectId: 'cr-p8', requestId: u1.data.requestId, accept: false })).ok);
+  await as('proA');
+  const u2 = await createPR({ projectId: 'cr-p8', category: 'Editor', proposedAmount: 620 });
+  check('a second unprompted Editor request is refused', !u2.ok && u2.msg.includes('counter-not-allowed'), u2.msg);
+  await as('client');
+  const cp8 = await createPR({ projectId: 'cr-p8', professionalId: uids.proA, category: 'Editor', proposedAmount: 450 });
+  check('client proposes', cp8.ok, cp8.msg);
+  await as('proA');
+  check('pro rejects the client proposal', (await respondPR({ projectId: 'cr-p8', requestId: cp8.data.requestId, accept: false })).ok);
+  const counter8 = await createPR({ projectId: 'cr-p8', category: 'Editor', proposedAmount: 550 });
+  check('…and may counter it', counter8.ok, counter8.msg);
+  await as('client');
+  check('client rejects the counter', (await respondPR({ projectId: 'cr-p8', requestId: counter8.data.requestId, accept: false })).ok);
+  await as('proA');
+  check('pro acknowledges', (await acknowledge({ projectId: 'cr-p8' })).ok);
+  const soundAfterAck = await createPR({ projectId: 'cr-p8', category: 'Sound Recordist', proposedAmount: 450 });
+  check('after acknowledging, his unused Sound unprompted request is refused', !soundAfterAck.ok && soundAfterAck.msg.includes('counter-not-allowed'), soundAfterAck.msg);
+  await wipe();
+
+  // ── 9 ────────────────────────────────────────────────────────────────────
+  console.log('\n=== 9. sole pro declines ===');
+  await project('cr-p9', [{ category: 'Editor', quantity: 1 }]);
+  await offer('cr-o9', 'cr-p9', 'proB', 'Editor');
+  await as('client');
+  check('hire B', (await hire({ offerId: 'cr-o9' })).ok);
+  const chatId9 = (await get('projects/cr-p9')).chatId;
+  await as('proB');
+  const pending9 = await createPR({ projectId: 'cr-p9', category: 'Editor', proposedAmount: 700 });
+  check('B has a pending unprompted request', pending9.ok, pending9.msg);
+  for (const n of (await adb.collection('notifications').where('userId', '==', uids.client).get()).docs) await n.ref.delete();
+  const d9 = await decline({ projectId: 'cr-p9' });
+  check('B declines', d9.ok && d9.data.activated === false, JSON.stringify(d9.data ?? d9.msg));
+  const p9 = await get('projects/cr-p9');
+  check('project stays OPEN', p9.status === 'open', p9.status);
+  check('B out of professionalIds / slotHolders / seat', !(p9.professionalIds ?? []).includes(uids.proB) && !(p9.slotHolders ?? []).includes(uids.proB) && !(p9.filledSlots ?? []).some((f) => f.professionalId === uids.proB));
+  const f9 = await get(`projects/cr-p9/fees/${uids.proB}`);
+  check('fee withdrawn / candidate_declined / not_owed', f9.engagementStatus === 'withdrawn' && f9.releaseReason === 'candidate_declined' && f9.status === 'not_owed', JSON.stringify({ e: f9.engagementStatus, r: f9.releaseReason, s: f9.status }));
+  check('offer removed', (await get('priceOffers/cr-o9')).status === 'removed');
+  check('his pending request was closed', (await get(`projects/cr-p9/paymentRequests/${pending9.data.requestId}`)).status === 'rejected');
+  const msgs9 = (await adb.collection(`chats/${chatId9}/messages`).get()).docs.map((d) => d.data()).filter((m) => m.system).map((m) => m.text);
+  check('chat notice says he chose not to continue', msgs9.some((t) => t === 'Beni Sound החליט/ה לא להמשיך בפרויקט'), JSON.stringify(msgs9));
+  const notes9 = (await adb.collection('notifications').where('userId', '==', uids.client).get()).docs.map((d) => d.data());
+  check('client got a system push', notes9.some((n) => n.data?.type === 'system' && String(n.message).includes('החליט/ה לא להמשיך בפרויקט') && n.data?.chatId === chatId9), JSON.stringify(notes9.map((n) => n.message)));
+  const again9 = await decline({ projectId: 'cr-p9' });
+  check('declining again is refused (no longer on the project)', !again9.ok && again9.msg.includes('permission-denied') || again9.msg?.includes('Only a professional'), again9.msg);
+  await wipe();
+
+  // ── 10 ───────────────────────────────────────────────────────────────────
+  console.log('\n=== 10. who may call the professional callables ===');
+  await project('cr-p10', [{ category: 'Editor', quantity: 1 }]);
+  await offer('cr-o10', 'cr-p10', 'proA', 'Editor');
+  await as('client');
+  await hire({ offerId: 'cr-o10' });
+  const byClientAck = await acknowledge({ projectId: 'cr-p10' });
+  const byClientDecline = await decline({ projectId: 'cr-p10' });
+  check('client calling acknowledgeCandidacy → permission-denied', !byClientAck.ok && byClientAck.msg.includes('Only a professional'), byClientAck.msg);
+  check('client calling declineCandidacy → permission-denied', !byClientDecline.ok && byClientDecline.msg.includes('Only a professional'), byClientDecline.msg);
+  await as('proC');
+  const outsider = await decline({ projectId: 'cr-p10' });
+  check('a professional not on the project → permission-denied', !outsider.ok && outsider.msg.includes('Only a professional'), outsider.msg);
+  await as('client');
+  check('client confirms A', (await confirm({ projectId: 'cr-p10', professionalId: uids.proA })).ok);
+  await as('proA');
+  const lateDecline = await decline({ projectId: 'cr-p10' });
+  check('after the client confirmed, decline → not-under-review', !lateDecline.ok && lateDecline.msg.includes('not-under-review'), lateDecline.msg);
+  check('…and nothing changed', (await get(`projects/cr-p10/fees/${uids.proA}`)).engagementStatus === 'hired');
+  await wipe();
+
+  // ── 11 ───────────────────────────────────────────────────────────────────
+  console.log('\n=== 11. a released bundle candidate leaves the review ===');
+  await project('cr-p11', [{ category: 'Editor', quantity: 1 }, { category: 'Sound Recordist', quantity: 1 }]);
+  await adb.doc('priceOffers/cr-b11a').set({ projectId: 'cr-p11', professionalId: uids.proB, category: 'Editor', price: 300, status: 'pending', bundleId: 'cr-bundle11', createdAt: new Date() });
+  await adb.doc('priceOffers/cr-b11b').set({ projectId: 'cr-p11', professionalId: uids.proB, category: 'Sound Recordist', price: 300, status: 'pending', bundleId: 'cr-bundle11', createdAt: new Date() });
+  await adb.doc('bundleOffers/cr-bundle11').set({ projectId: 'cr-p11', professionalId: uids.proB, slots: [{ category: 'Editor' }, { category: 'Sound Recordist' }], individualTotal: 600, bundlePrice: 550, offerIds: ['cr-b11a', 'cr-b11b'], status: 'pending', createdAt: new Date() });
+  await as('client');
+  check('hire B on the bundle', (await hire({ bundleId: 'cr-bundle11' })).ok);
+  check('bundle under review', (await get('bundleOffers/cr-bundle11')).review === 'pending');
+  const r11 = await reject({ projectId: 'cr-p11', professionalId: uids.proB });
+  check('client rejects B', r11.ok, r11.msg);
+  const b11 = await get('bundleOffers/cr-bundle11');
+  check('the BUNDLE is removed too (was left accepted + pending)', b11.status === 'removed', b11.status);
+  check('its component offers are removed', (await get('priceOffers/cr-b11a')).status === 'removed' && (await get('priceOffers/cr-b11b')).status === 'removed');
+  const still11 = [...(await adb.collection('priceOffers').where('projectId', '==', 'cr-p11').where('status', '==', 'accepted').get()).docs,
+    ...(await adb.collection('bundleOffers').where('projectId', '==', 'cr-p11').where('status', '==', 'accepted').get()).docs]
+    .filter((d) => d.get('review') === 'pending');
+  check('nothing on the project is still accepted + under review', still11.length === 0, `${still11.length}`);
+  await wipe();
 } catch (e) {
   console.error('\nprobe threw:', e); failures++;
 } finally {

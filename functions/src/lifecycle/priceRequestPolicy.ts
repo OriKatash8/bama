@@ -7,11 +7,14 @@
  *  - At most ONE pending request per (professional, role), either direction.
  *    Two live proposals for the same role would contradict each other, and the
  *    client's רלוונטי lock keys on "anything pending".
- *  - While the role is under the client's review, the professional may only
- *    COUNTER: raise a request right after rejecting the client's, once per client
- *    proposal. He cannot open a negotiation on his own; the client decides
- *    whether there is one. After the role is confirmed, repricing is unrestricted
- *    again, as it always was.
+ *  - While the role is under the client's review, the professional gets ONE
+ *    unprompted request for the role — unless he has already said רלוונטי
+ *    (acknowledgeCandidacy). Beyond that he may only COUNTER: raise a request
+ *    right after rejecting the client's, once per client proposal. After the
+ *    client confirms the role, repricing is unrestricted again, as it always was.
+ *
+ *    The unprompted request is counted over the role's whole history, never
+ *    reset: once he has raised any request of his own for this role, it is used.
  *
  * "Counter only after rejecting" already implies "the client's request is no
  * longer pending", which is why the pending check comes first and both live here.
@@ -50,6 +53,9 @@ export function decideNewPriceRequest(args: {
   callerIsClient: boolean;
   /** This role's accepted offer/bundle is still `review: 'pending'`. */
   underReview: boolean;
+  /** The professional has said רלוונטי on this role (offer `proAccepted`). From
+   *  then on, until the client confirms, he may only counter. */
+  proAccepted: boolean;
   /** Every request for this (project, professional, role), any order. */
   history: readonly PriceRequestHistoryItem[];
 }): PriceRequestDecision {
@@ -60,7 +66,11 @@ export function decideNewPriceRequest(args: {
   }
   if (args.callerIsClient || !args.underReview) return { allowed: true };
 
-  // Professional, under review: a counter to the client's latest proposal only.
+  // Professional, under review. His one unprompted request: only before he has
+  // acknowledged, and only if he has never raised one of his own for this role.
+  if (!args.proAccepted && !history.some((r) => !r.fromClient)) return { allowed: true };
+
+  // Otherwise a counter to the client's latest proposal only.
   let lastClient = -1;
   history.forEach((r, i) => { if (r.fromClient) lastClient = i; });
   if (lastClient === -1) return { allowed: false, reason: 'counter-not-allowed' };

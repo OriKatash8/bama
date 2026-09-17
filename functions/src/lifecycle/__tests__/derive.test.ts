@@ -338,3 +338,20 @@ describe('everCompleted', () => {
     expect(everCompleted(eng)).toBe(expected);
   });
 });
+
+describe('a professional declining during review is not an engagement outcome', () => {
+  const declined = () => e('withdrawn', { releaseReason: 'candidate_declined' });
+  it('never completes a project, even where someone else completed', () => {
+    // Without the review filter, [completed, declined] would already complete — the
+    // point is the reverse: a decline must not be what CLOSES a project.
+    expect(deriveProjectState([declined()], now).isComplete).toBe(false);
+    expect(deriveProjectState([e('hired'), declined()], now).isComplete).toBe(false);
+  });
+  it('is dropped even when an earlier engagement completed (unlike an ordinary withdrawal)', () => {
+    const past = ts(now - DAY);
+    // Only the declined engagement carries the stamp here: it completed a previous
+    // role, was re-hired into review, and declined. A declined candidacy is not
+    // delivered work, so it is filtered before the ever-completed rule looks.
+    expect(deriveProjectState([e('withdrawn', { releaseReason: 'candidate_declined', chargeDueAt: past })], now).isComplete).toBe(false);
+  });
+});

@@ -80,14 +80,16 @@ export const createPaymentRequest = onCall(async (request) => {
   // only while the client has not yet decided on this role.
   let currentAmount = 0;
   let underReview = false;
+  let proAccepted = false;
   if (bundleId) {
     const b = await db.doc(`bundleOffers/${bundleId}`).get();
-    const bd = b.data() as { projectId?: string; professionalId?: string; status?: string; bundlePrice?: number; review?: string } | undefined;
+    const bd = b.data() as { projectId?: string; professionalId?: string; status?: string; bundlePrice?: number; review?: string; proAccepted?: boolean } | undefined;
     if (!b.exists || bd?.projectId !== projectId || bd?.professionalId !== targetPro || bd?.status !== 'accepted') {
       throw new HttpsError('failed-precondition', 'no-accepted-bundle-to-reprice');
     }
     currentAmount = bd.bundlePrice ?? 0;
     underReview = isPendingReview(bd);
+    proAccepted = bd.proAccepted === true;
   } else {
     let q = db.collection('priceOffers')
       .where('projectId', '==', projectId)
@@ -98,6 +100,7 @@ export const createPaymentRequest = onCall(async (request) => {
     if (offers.empty) throw new HttpsError('failed-precondition', 'no-accepted-offer-to-reprice');
     currentAmount = (offers.docs[0].data().price as number | undefined) ?? 0;
     underReview = offers.docs.some((d) => isPendingReview(d.data()));
+    proAccepted = offers.docs.some((d) => d.data().proAccepted === true);
   }
 
   const roleKey = roleKeyOf({ bundleId, category });
@@ -120,7 +123,7 @@ export const createPaymentRequest = onCall(async (request) => {
         status: r.status as string,
         createdAtMs: typeof r.createdAt?.toMillis === 'function' ? r.createdAt.toMillis() : 0,
       }));
-    const decision = decideNewPriceRequest({ callerIsClient, underReview, history });
+    const decision = decideNewPriceRequest({ callerIsClient, underReview, proAccepted, history });
     if (!decision.allowed) {
       throw new HttpsError('failed-precondition', decision.reason);
     }

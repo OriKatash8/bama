@@ -27,6 +27,10 @@ type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 /** Statuses that mean this engagement will not change again by itself. */
 const TERMINAL = new Set(['completed', 'withdrawn', 'cancelled']);
 
+/** Releases decided during candidate review, before any work was agreed. They
+ *  are not engagement outcomes: excluded from completion and from reliability. */
+const REVIEW_RELEASES = new Set(['candidate_rejected', 'candidate_declined']);
+
 /** Statuses that mean nothing is owed and nothing is expected. A project may
  *  complete around them; they are not "done work", they are "not work". */
 const NON_CHARGING = new Set(['withdrawn', 'cancelled']);
@@ -93,7 +97,9 @@ export function deriveProjectState(
   // client cannot leave 'completed', so the seat could never be filled again.
   // Without them, a project whose only candidate was rejected is simply a
   // project nobody is hired on yet.
-  engagements = engagements.filter((e) => e.releaseReason !== 'candidate_rejected');
+  //
+  // The same holds for a professional who declined during review.
+  engagements = engagements.filter((e) => !REVIEW_RELEASES.has(e.releaseReason ?? ''));
 
   // Withdrawals only close a project that had real work in it. When nothing on
   // the project ever completed, withdrawn engagements are dropped: a project
@@ -336,12 +342,15 @@ export type WithdrawalCounts = {
    *  admin view but NOT part of `withdrawn`: a client choosing among candidates
    *  says nothing about this professional's reliability. */
   candidateRejections: number;
+  /** The professional declined during review, before anything was agreed. Not a
+   *  withdrawal for the same reason. */
+  candidateDeclines: number;
 };
 
 /** Pure half of withdrawalCount, so the buckets are testable without Firestore. */
 export function splitWithdrawals(fees: readonly Pick<FeeDoc, 'engagementStatus' | 'releaseReason'>[]): WithdrawalCounts {
   const released = fees.filter((f) => f.engagementStatus === 'withdrawn');
-  const withdrawn = released.filter((f) => f.releaseReason !== 'candidate_rejected');
+  const withdrawn = released.filter((f) => !REVIEW_RELEASES.has(f.releaseReason ?? ''));
   return {
     withdrawn: withdrawn.length,
     // Split because the two are not the same signal. Being removed by a client
@@ -349,7 +358,8 @@ export function splitWithdrawals(fees: readonly Pick<FeeDoc, 'engagementStatus' 
     // of them is a decision the professional made.
     byClientRemoval: withdrawn.filter((f) => f.releaseReason === 'client_removed').length,
     byOwnChoice: withdrawn.filter((f) => f.releaseReason === 'pro_withdrew').length,
-    candidateRejections: released.length - withdrawn.length,
+    candidateRejections: released.filter((f) => f.releaseReason === 'candidate_rejected').length,
+    candidateDeclines: released.filter((f) => f.releaseReason === 'candidate_declined').length,
   };
 }
 

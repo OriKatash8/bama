@@ -316,7 +316,10 @@ export type ProjectFee = {
   releaseReason?: 'client_removed' | 'pro_withdrew'
     /** The client decided against them during review, before work started.
      *  Not a withdrawal: excluded from project completion and reliability. */
-    | 'candidate_rejected';
+    | 'candidate_rejected'
+    /** They decided against the project themselves during review. Same
+     *  exclusions, same reason: nothing had been agreed yet. */
+    | 'candidate_declined';
 
   /** This engagement's own dispute deadline, stamped at ITS confirmation. One
    *  client action closing several engagements opens several independent
@@ -366,6 +369,10 @@ export type PriceOffer = {
   review?: OfferReview;
   /** When `review` left 'pending'. */
   reviewedAt?: Timestamp;
+  /** The professional's own רלוונטי (acknowledgeCandidacy). Informational for
+   *  the client; not a gate. Server-only, like `review`. */
+  proAccepted?: boolean;
+  proAcceptedAt?: Timestamp;
 };
 
 export type RemovalRequest = {
@@ -388,7 +395,9 @@ export type BundleOffer = {
   individualTotal: number;
   bundlePrice: number;
   offerIds: string[];
-  status: 'pending' | 'accepted' | 'rejected';
+  /** 'removed' when the professional is released from the project (as for a
+   *  PriceOffer) — written by releaseEngagement. */
+  status: 'pending' | 'accepted' | 'rejected' | 'removed';
   createdAt: Timestamp;
   /** Set when the professional edits a pending bundle's price. */
   editedAt?: Timestamp;
@@ -397,6 +406,10 @@ export type BundleOffer = {
    *  component offers, which are accepted together. */
   review?: OfferReview;
   reviewedAt?: Timestamp;
+  /** The professional's own רלוונטי (acknowledgeCandidacy). Informational for
+   *  the client; not a gate. Server-only, like `review`. */
+  proAccepted?: boolean;
+  proAcceptedAt?: Timestamp;
 };
 
 export type AcceptedMember = {

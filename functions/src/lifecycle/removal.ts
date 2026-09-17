@@ -1,9 +1,23 @@
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { db, FieldValue, requireAuth, feeRef, type ReleaseReason } from './helpers';
+import { db, FieldValue, requireAuth, feeRef, notify, type ReleaseReason } from './helpers';
 import { applyDerivedProjectState } from './derive';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
+
+/**
+ * The chat notice for a release, by reason. Pure.
+ *
+ * A professional who declined during review did not abandon anything — nothing
+ * had been agreed — so "left the project" misdescribes it. Everything else keeps
+ * the neutral line; in particular a candidate the CLIENT rejected gets it too,
+ * because why they were let go is private to them.
+ */
+export function releaseNotice(reason: ReleaseReason, name: string): string {
+  return reason === 'candidate_declined'
+    ? `${name} החליט/ה לא להמשיך בפרויקט`
+    : `${name} עזב את הפרויקט`;
+}
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
 /**
@@ -60,9 +74,19 @@ export async function releaseEngagement(
 
   const removalRef = db.doc(`projects/${projectId}/removalRequests/${proId}`);
   const myFeeRef = feeRef(projectId, proId);
-  const [offersSnap, removalSnap, feeSnap] = await Promise.all([
+  const [offersSnap, bundlesSnap, removalSnap, feeSnap] = await Promise.all([
     db
       .collection('priceOffers')
+      .where('projectId', '==', projectId)
+      .where('professionalId', '==', proId)
+      .where('status', '==', 'accepted')
+      .get(),
+    // Bundles too. Only the component priceOffers used to be released, which
+    // left the bundle itself 'accepted' — and, under candidate review, still
+    // `review: 'pending'`: the released professional stayed on the client's
+    // review card and the project could never activate.
+    db
+      .collection('bundleOffers')
       .where('projectId', '==', projectId)
       .where('professionalId', '==', proId)
       .where('status', '==', 'accepted')
@@ -112,6 +136,8 @@ export async function releaseEngagement(
   }
 
   const chatId = project.chatId as string | undefined;
+  const proSnap = await db.doc(`users/${proId}`).get();
+  const proName = (proSnap.data()?.displayName as string | undefined) ?? 'בעל מקצוע';
   if (chatId) {
     // The "X left" notice is posted HERE, in the same batch that removes them.
     //
@@ -122,9 +148,7 @@ export async function releaseEngagement(
     // never told anyone had left. Batched here it is atomic with the removal:
     // either both land or neither does, and the Admin SDK is not subject to the
     // membership rule.
-    const proSnap = await db.doc(`users/${proId}`).get();
-    const proName = (proSnap.data()?.displayName as string | undefined) ?? 'בעל מקצוע';
-    const text = `${proName} עזב את הפרויקט`;
+    const text = releaseNotice(reason, proName);
 
     batch.set(db.collection(`chats/${chatId}/messages`).doc(), {
       senderId: 'system',
@@ -148,6 +172,7 @@ export async function releaseEngagement(
   }
 
   offersSnap.docs.forEach((d) => batch.update(d.ref, { status: 'removed' }));
+  bundlesSnap.docs.forEach((d) => batch.update(d.ref, { status: 'removed' }));
 
   // DELETE, not mark-accepted. A request left behind is never removable
   // (`allow delete: if false` for clients), so if this professional is ever
@@ -159,6 +184,21 @@ export async function releaseEngagement(
   if (removalSnap.exists) batch.delete(removalRef);
 
   await batch.commit();
+
+  // A professional declining during review is news the client has to act on —
+  // the seat is open again — and the chat notice alone reaches no one
+  // (onNewChatMessage skips system messages). After the commit, so a failed
+  // release notifies nobody. 'system' is essential and routes to the chat.
+  if (reason === 'candidate_declined' && project.clientId) {
+    const title = typeof project.title === 'string' && project.title ? ` "${project.title}"` : '';
+    await notify({
+      userId: project.clientId as string,
+      title: 'BAMA',
+      message: `${releaseNotice(reason, proName)}${title}`,
+      data: { type: 'system', chatId: chatId ?? '', projectId },
+    });
+  }
+
   // Withdrawing the last open engagement can complete the project. The derivation
   // decides that, not this function.
   await applyDerivedProjectState(projectId);

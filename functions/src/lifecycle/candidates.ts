@@ -42,6 +42,52 @@ function requirePro(value: unknown): string {
   return value;
 }
 
+/**
+ * C6 guard. A candidate's engagement is live from the hire, so they can request
+ * an end, complete, or be disputed while still under review. Releasing any of
+ * those would void a fee for work that happened or is being contested. Only a
+ * plain 'hired' engagement can be released through the review.
+ */
+async function requirePlainHire(projectId: string, proId: string) {
+  const fee = await feeRef(projectId, proId).get();
+  const engagementStatus = fee.get('engagementStatus') ?? 'hired';
+  if (!fee.exists || engagementStatus !== 'hired') {
+    throw new HttpsError('failed-precondition', 'engagement-not-open');
+  }
+}
+
+/**
+ * A price change still pending for a released professional can never be
+ * answered — respondToPaymentRequest refuses once they are off the project — so
+ * close it rather than leave it hanging in both parties' lists.
+ */
+async function closePendingPriceChanges(projectId: string, proId: string) {
+  const open = await db.collection(`projects/${projectId}/paymentRequests`)
+    .where('professionalId', '==', proId)
+    .where('status', '==', 'pending')
+    .get();
+  if (open.empty) return;
+  const batch = db.batch();
+  open.docs.forEach((d) => batch.update(d.ref, { status: 'rejected' } as Update));
+  await batch.commit();
+}
+
+/** Load the project and require the caller to be a professional on it — not its client. */
+async function loadAsCandidate(uid: string, projectId: unknown) {
+  if (typeof projectId !== 'string' || !projectId) {
+    throw new HttpsError('invalid-argument', 'projectId required');
+  }
+  const snap = await db.doc(`projects/${projectId}`).get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Project not found');
+  const project = snap.data() as Record<string, unknown>;
+  // A self-hired client decides from the client side; the professional's
+  // surface is for professionals.
+  if (project.clientId === uid || !((project.professionalIds as string[] | undefined) ?? []).includes(uid)) {
+    throw new HttpsError('permission-denied', 'Only a professional on this project can do this');
+  }
+  return { projectId, project };
+}
+
 /** The professional's offers still under review; refuses when there are none. */
 async function requireUnderReview(projectId: string, proId: string) {
   const pending = await pendingReviewOffers(projectId, proId);
@@ -100,30 +146,10 @@ export const rejectCandidate = onCall(async (request) => {
 
   await requireUnderReview(projectId, proId);
 
-  // C6 guard. A candidate's engagement is live from the hire, so they can
-  // request an end, complete, or be disputed while still under review. Releasing
-  // any of those would void a fee for work that happened or is being contested.
-  // Only a plain 'hired' engagement can be rejected.
-  const fee = await feeRef(projectId, proId).get();
-  const engagementStatus = fee.get('engagementStatus') ?? 'hired';
-  if (!fee.exists || engagementStatus !== 'hired') {
-    throw new HttpsError('failed-precondition', 'engagement-not-open');
-  }
+  await requirePlainHire(projectId, proId);
 
   await releaseEngagement(projectId, proId, 'candidate_rejected');
-
-  // A price change still pending for them can never be answered now —
-  // respondToPaymentRequest refuses once the professional is off the project —
-  // so close it rather than leave it hanging in both parties' lists.
-  const openPriceChanges = await db.collection(`projects/${projectId}/paymentRequests`)
-    .where('professionalId', '==', proId)
-    .where('status', '==', 'pending')
-    .get();
-  if (!openPriceChanges.empty) {
-    const batch = db.batch();
-    openPriceChanges.docs.forEach((d) => batch.update(d.ref, { status: 'rejected' } as Update));
-    await batch.commit();
-  }
+  await closePendingPriceChanges(projectId, proId);
 
   const reason = typeof request.data?.reason === 'string'
     ? request.data.reason.trim().slice(0, REASON_MAX)
@@ -143,6 +169,51 @@ export const rejectCandidate = onCall(async (request) => {
 
   const activation = await maybeActivateProject(projectId);
   return { ok: true, dmSent, activated: activation.activate };
+});
+
+/**
+ * The professional's רלוונטי — "I'm in". Option A: an acknowledgement the client
+ * can see, NOT a gate. The client's review, confirmCandidate and activation are
+ * untouched by it.
+ *
+ * It does change what the professional may do next: once acknowledged, he may no
+ * longer open a price change of his own while the client is still deciding —
+ * only counter the client's (priceRequestPolicy). Idempotent.
+ */
+export const acknowledgeCandidacy = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { projectId } = await loadAsCandidate(uid, request.data?.projectId);
+  const pending = await requireUnderReview(projectId, uid);
+
+  const batch = db.batch();
+  for (const d of pending) {
+    batch.update(d.ref, { proAccepted: true, proAcceptedAt: FieldValue.serverTimestamp() } as Update);
+  }
+  await batch.commit();
+  return { ok: true, acknowledged: pending.length };
+});
+
+/**
+ * The professional's לא רלוונטי — he leaves before anything was agreed.
+ *
+ * Immediate, no client approval: this is the stage where the client can already
+ * let him go unilaterally, and the symmetry is the point. Once the client has
+ * confirmed him, leaving goes back through requestEngagementEnd, which the client
+ * answers. Same mechanics as a rejection (releaseEngagement), with its own
+ * reason: the chat notice says he chose not to continue, the client is pushed,
+ * and it counts toward neither completion nor reliability.
+ */
+export const declineCandidacy = onCall(async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { projectId } = await loadAsCandidate(uid, request.data?.projectId);
+  await requireUnderReview(projectId, uid);
+  await requirePlainHire(projectId, uid);
+
+  await releaseEngagement(projectId, uid, 'candidate_declined');
+  await closePendingPriceChanges(projectId, uid);
+
+  const activation = await maybeActivateProject(projectId);
+  return { ok: true, activated: activation.activate };
 });
 
 /**
