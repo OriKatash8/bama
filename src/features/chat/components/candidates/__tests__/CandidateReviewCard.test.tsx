@@ -397,3 +397,18 @@ describe('swipeStep', () => {
     expect(swipeStep(-39, true)).toBe(0);
   });
 });
+
+describe('instruction line', () => {
+  it.each([['en', en], ['he', he]])('%s: tells the client to talk with the crew before deciding, single and carousel', async (lang, tr) => {
+    mockLang = lang;
+    mockAccepted = { offers: [offer('pro-a')], bundles: [] };
+    const single = await renderCard();
+    expect(single.getByTestId('candidate-instruction').props.children).toBe(tr.candidate_review.client_instruction);
+    single.unmount();
+    mockAccepted = { offers: [offer('pro-a'), offer('pro-b', { category: 'Sound Recordist' })], bundles: [] };
+    const multi = await renderCard();
+    expect(multi.getByTestId('candidate-instruction').props.children).toBe(tr.candidate_review.client_instruction);
+    const align = StyleSheet.flatten(multi.getByTestId('candidate-instruction').props.style).textAlign;
+    expect(align).toBe(lang === 'he' ? 'right' : 'left');
+  });
+});

@@ -145,6 +145,11 @@ export function CandidateProCard({
 
   return (
     <View style={chromeStyles.strip} testID="candidate-pro-card">
+      {actionable && (
+        <AppText weight="regular" style={[styles.instruction, { textAlign: align }]} testID="pro-instruction">
+          {t('candidate_review.pro_instruction')}
+        </AppText>
+      )}
       <View style={[styles.line, { flexDirection: rowDir }]}>
         {!actionable && (
           <View style={[styles.pill, underReview ? styles.pillPending : styles.pillConfirmed]} testID={`chip-${state}`}>
@@ -220,6 +225,7 @@ export function CandidateProCard({
 
 const styles = StyleSheet.create({
   line: { alignItems: 'center', gap: 10, paddingVertical: 2 },
+  instruction: { fontSize: 12, color: 'rgba(15,15,31,0.45)', marginBottom: 4 },
   pill: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
   pillPending: { backgroundColor: '#fff3cd' },
   pillConfirmed: { backgroundColor: '#e3f5ea' },

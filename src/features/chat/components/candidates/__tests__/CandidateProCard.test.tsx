@@ -198,3 +198,21 @@ it.each([['he', 'row-reverse'], ['en', 'row']])('%s: rows flow %s', async (lang,
   const tr = lang === 'he' ? he : en;
   expect(getAllByText(tr.candidate_review.relevant)).toHaveLength(1);
 });
+
+describe('instruction line', () => {
+  it.each([['en', en], ['he', he]])('%s: shown while he still has a decision to make', async (lang, tr) => {
+    mockLang = lang;
+    const { getByTestId } = await renderCard();
+    expect(getByTestId('pro-instruction').props.children).toBe(tr.candidate_review.pro_instruction);
+    expect(StyleSheet.flatten(getByTestId('pro-instruction').props.style).textAlign).toBe(lang === 'he' ? 'right' : 'left');
+  });
+  it('gone once he acknowledged, and once the client confirmed', async () => {
+    mockAccepted = { offers: [offer({ review: 'pending', proAccepted: true })], bundles: [] };
+    const acked = await renderCard();
+    expect(acked.queryByTestId('pro-instruction')).toBeNull();
+    acked.unmount();
+    mockAccepted = { offers: [offer({ review: 'confirmed' })], bundles: [] };
+    const confirmed = await renderCard();
+    expect(confirmed.queryByTestId('pro-instruction')).toBeNull();
+  });
+});

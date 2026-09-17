@@ -268,6 +268,9 @@ export function CandidateReviewCard({
   return (
     <View style={chromeStyles.strip} testID="candidate-review-card">
       <AppText weight="semiBold" style={[styles.title, { textAlign: align }]}>{t('candidate_review.title')}</AppText>
+      <AppText weight="regular" style={[styles.instruction, { textAlign: align }]} testID="candidate-instruction">
+        {t('candidate_review.client_instruction')}
+      </AppText>
       {carousel ? (
         <View {...pan.panHandlers} testID="candidate-carousel">
           {renderRow(candidates[shownIndex])}
@@ -303,7 +306,8 @@ export function CandidateReviewCard({
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 12, color: 'rgba(15,15,31,0.5)', marginBottom: 6 },
+  title: { fontSize: 12, color: 'rgba(15,15,31,0.5)', marginBottom: 2 },
+  instruction: { fontSize: 12, color: 'rgba(15,15,31,0.45)', marginBottom: 4 },
   row: { paddingVertical: 8, gap: 6 },
   // Carousel: the dots line (DOT + DOTS_MARGIN) is paid for by trimming the
   // row's vertical padding by the same amount, so the card is no taller than a

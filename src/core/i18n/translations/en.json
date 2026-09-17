@@ -1187,6 +1187,8 @@
     "pro_err_not_under_review": "The client has already decided",
     "pro_err_engagement_not_open": "You can no longer leave from here",
     "pro_accepted_tag": "{{name}} confirmed",
-    "pro_client": "the client"
+    "pro_client": "the client",
+    "client_instruction": "Talk with the crew in the chat before you decide",
+    "pro_instruction": "Talk with the client in the chat and make sure the project suits you before you decide"
   }
 }
