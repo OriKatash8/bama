@@ -37,6 +37,7 @@ import {
   respondToPaymentRequest,
   type ClientCostBreakdown,
 } from '@features/chat/services/paymentService';
+import { repriceErrorKey } from '@features/chat/utils/repriceErrors';
 import { ChatMediaSection } from '@features/chat/components/ChatMediaSection';
 import {
   listenToMissions,
@@ -571,14 +572,7 @@ export default function ProjectDetailsScreen() {
    * collapsed them into one generic alert.
    */
   function repriceErrorMessage(err: unknown): string {
-    const msg = String((err as { message?: string })?.message ?? '');
-    if (msg.includes('no-accepted-offer-to-reprice') || msg.includes('no-accepted-bundle-to-reprice')) {
-      return t('project_details.reprice_no_offer');
-    }
-    if (msg.includes('professional-not-on-project') || msg.includes('not-a-party')) {
-      return t('project_details.reprice_not_a_party');
-    }
-    return t('project_details.error_payment_request');
+    return t(repriceErrorKey(err, 'create'));
   }
 
   async function handleSendPaymentRequest() {
@@ -647,8 +641,8 @@ export default function ProjectDetailsScreen() {
           );
         }
       }
-    } catch {
-      Alert.alert('Error', t('project_details.error_accept_reject', {
+    } catch (err) {
+      Alert.alert('Error', t(repriceErrorKey(err, 'respond'), {
         action: accept ? t('project_details.accept').toLowerCase() : t('project_details.reject').toLowerCase(),
       }));
     } finally {

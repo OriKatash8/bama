@@ -6,26 +6,17 @@
 > trigger that releases them. These are the ones that get dropped once the
 > immediate problem looks solved.
 >
-> ### 1. `paymentRequests` → `allow create: if false`
+> ### 1. `paymentRequests` → `allow create: if false` — CLOSED IN REPO, deploy pending
 >
-> **Trigger: deploy after the app build carrying the `createPaymentRequest`
-> callable ships.**
+> **Closed on branch `feat/candidate-review-v1` (V1 step c, 2026-09-17).** The interim
+> rule and its comment are gone; `firestore.rules` now has `allow create: if false;`.
+> Pre-launch with no public installs, so the only builds still writing directly
+> were the owner's own devices — accepted.
 >
-> Creation moved server-side, but the rule is currently the *interim* form:
->
-> ```
-> allow create: if isAuth()
->   && request.resource.data.fromUserId == request.auth.uid
->   && request.resource.data.toUserId != request.auth.uid;
-> ```
->
-> That already closes the self-addressing hole, and it keeps installed builds
-> working — they still create these documents directly. Once the new client is
-> out, replace it with `allow create: if false;` so the document is fully
-> server-owned. Verify afterwards that a direct client `addDoc` into
-> `projects/{id}/paymentRequests` is denied.
->
-> Deploy: `firebase deploy --only firestore:rules`.
+> **Still to do:** ships in the single V1 rules + functions deploy. Verified on the
+> emulator by `scripts/probe-repricing.mjs` §7 (direct client `addDoc` denied; a
+> client still reads its own requests). After the production deploy, repeat that
+> check live and then delete this item.
 
 
 Catch blocks and error handlers that discard the real failure. Each one turns a

@@ -1,5 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, requireAuth } from './helpers';
+import { isOfferPriceValid } from '../pricing';
+import { isPendingReview } from './review';
+import { decideNewPriceRequest, roleKeyOf, sameRole } from './priceRequestPolicy';
 
 
 type Party = { clientId: string; professionalIds: string[]; chatId?: string; title?: string };
@@ -50,8 +53,11 @@ export const createPaymentRequest = onCall(async (request) => {
   const projectId = request.data?.projectId as string | undefined;
   const proposedAmount = Number(request.data?.proposedAmount);
   if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
-  if (!Number.isFinite(proposedAmount) || proposedAmount <= 0) {
-    throw new HttpsError('invalid-argument', 'proposedAmount must be a positive number');
+  // The same 1–50000 bounds a hire enforces. An accepted request writes this
+  // amount onto the offer, which is the platform fee's base — an unbounded one
+  // would reprice past everything hireProfessional refuses.
+  if (!isOfferPriceValid(proposedAmount)) {
+    throw new HttpsError('invalid-argument', 'offer-price-out-of-range');
   }
 
   const { project, callerIsClient } = await loadParty(projectId, uid);
@@ -70,14 +76,18 @@ export const createPaymentRequest = onCall(async (request) => {
 
   // The current amount is read from the accepted offer, not supplied. This also
   // proves there is something repriceable before a request is raised.
+  // `underReview` comes off the same accepted doc(s): the counter rule applies
+  // only while the client has not yet decided on this role.
   let currentAmount = 0;
+  let underReview = false;
   if (bundleId) {
     const b = await db.doc(`bundleOffers/${bundleId}`).get();
-    const bd = b.data() as { projectId?: string; professionalId?: string; status?: string; bundlePrice?: number } | undefined;
+    const bd = b.data() as { projectId?: string; professionalId?: string; status?: string; bundlePrice?: number; review?: string } | undefined;
     if (!b.exists || bd?.projectId !== projectId || bd?.professionalId !== targetPro || bd?.status !== 'accepted') {
       throw new HttpsError('failed-precondition', 'no-accepted-bundle-to-reprice');
     }
     currentAmount = bd.bundlePrice ?? 0;
+    underReview = isPendingReview(bd);
   } else {
     let q = db.collection('priceOffers')
       .where('projectId', '==', projectId)
@@ -87,44 +97,66 @@ export const createPaymentRequest = onCall(async (request) => {
     const offers = await q.get();
     if (offers.empty) throw new HttpsError('failed-precondition', 'no-accepted-offer-to-reprice');
     currentAmount = (offers.docs[0].data().price as number | undefined) ?? 0;
+    underReview = offers.docs.some((d) => isPendingReview(d.data()));
   }
 
-  const batch = db.batch();
+  const roleKey = roleKeyOf({ bundleId, category });
+  const toSnap = project.chatId ? await db.doc(`users/${toUserId}`).get() : null;
   const reqRef = db.collection(`projects/${projectId}/paymentRequests`).doc();
-  batch.set(reqRef, {
-    projectId,
-    fromUserId: uid,
-    toUserId,
-    professionalId: targetPro,
-    ...(bundleId ? { bundleId } : {}),
-    ...(category ? { category } : {}),
-    currentAmount,
-    proposedAmount,
-    ...(request.data?.note ? { note: String(request.data.note).slice(0, 500) } : {}),
-    status: 'pending',
-    createdAt: FieldValue.serverTimestamp(),
+
+  // A TRANSACTION, so the check and the write see the same history. Two requests
+  // for one role raised at the same moment both passed a pre-read and both
+  // landed. The history is read through the transaction (server SDK queries
+  // lock), so the loser re-runs and finds the winner's pending request.
+  await db.runTransaction(async (tx) => {
+    const historySnap = await tx.get(
+      db.collection(`projects/${projectId}/paymentRequests`).where('professionalId', '==', targetPro),
+    );
+    const history = historySnap.docs
+      .map((d) => d.data())
+      .filter((r) => sameRole(roleKey, roleKeyOf(r)))
+      .map((r) => ({
+        fromClient: r.fromUserId === project.clientId,
+        status: r.status as string,
+        createdAtMs: typeof r.createdAt?.toMillis === 'function' ? r.createdAt.toMillis() : 0,
+      }));
+    const decision = decideNewPriceRequest({ callerIsClient, underReview, history });
+    if (!decision.allowed) {
+      throw new HttpsError('failed-precondition', decision.reason);
+    }
+
+    tx.set(reqRef, {
+      projectId,
+      fromUserId: uid,
+      toUserId,
+      professionalId: targetPro,
+      ...(bundleId ? { bundleId } : {}),
+      ...(category ? { category } : {}),
+      currentAmount,
+      proposedAmount,
+      ...(request.data?.note ? { note: String(request.data.note).slice(0, 500) } : {}),
+      status: 'pending',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    // The chat notice moves in here, atomic with the request — it was a client
+    // write wrapped in a swallow, so a failure left the counterparty with a pending
+    // request and no heads-up. No amount is named, only who must respond.
+    if (project.chatId) {
+      const toName = (toSnap?.data()?.displayName as string | undefined) ?? '';
+      const text = toName
+        ? `💰 בקשת שינוי מחיר: ממתין לאישור ${toName}`
+        : '💰 בקשת שינוי מחיר';
+      tx.set(db.collection(`chats/${project.chatId}/messages`).doc(), {
+        senderId: 'system', system: true, text,
+        timestamp: FieldValue.serverTimestamp(), readBy: [],
+      });
+      tx.update(db.doc(`chats/${project.chatId}`), {
+        lastMessage: { text, senderId: 'system', timestamp: FieldValue.serverTimestamp() },
+        [`unreadCount.${toUserId}`]: FieldValue.increment(1),
+      });
+    }
   });
-
-  // The chat notice moves in here, atomic with the request — it was a client
-  // write wrapped in a swallow, so a failure left the counterparty with a pending
-  // request and no heads-up. No amount is named, only who must respond.
-  if (project.chatId) {
-    const toSnap = await db.doc(`users/${toUserId}`).get();
-    const toName = (toSnap.data()?.displayName as string | undefined) ?? '';
-    const text = toName
-      ? `💰 בקשת שינוי מחיר: ממתין לאישור ${toName}`
-      : '💰 בקשת שינוי מחיר';
-    batch.set(db.collection(`chats/${project.chatId}/messages`).doc(), {
-      senderId: 'system', system: true, text,
-      timestamp: FieldValue.serverTimestamp(), readBy: [],
-    });
-    batch.update(db.doc(`chats/${project.chatId}`), {
-      lastMessage: { text, senderId: 'system', timestamp: FieldValue.serverTimestamp() },
-      [`unreadCount.${toUserId}`]: FieldValue.increment(1),
-    });
-  }
-
-  await batch.commit();
   return { ok: true, requestId: reqRef.id, currentAmount };
 });
 
@@ -198,8 +230,11 @@ export const respondToPaymentRequest = onCall(async (request) => {
   const proId = req.professionalId as string;
   const bundleId = req.bundleId as string | undefined;
   const newAmount = Number(req.proposedAmount);
-  if (!Number.isFinite(newAmount) || newAmount < 0) {
-    throw new HttpsError('invalid-argument', 'proposedAmount is not a valid amount');
+  // Re-checked on accept, not only at create: requests raised before the create
+  // check existed (and any written directly under the old interim rule) can
+  // carry an amount outside the bounds, and accepting writes it onto the offer.
+  if (!isOfferPriceValid(newAmount)) {
+    throw new HttpsError('failed-precondition', 'offer-price-out-of-range');
   }
 
   const batch = db.batch();
