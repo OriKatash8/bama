@@ -39,7 +39,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, Users } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -60,6 +60,8 @@ import { addMeeting } from '../services/meetingService';
 import { formatHebMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
+import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
+import { CandidateStatusChip } from '../components/candidates/CandidateStatusChip';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
@@ -128,7 +130,7 @@ function formatRecordingTime(seconds: number): string {
 
 // ── System messages (new mission/meeting) ──────────────────────────────────
 
-type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'completion' | 'neutral';
+type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'completion' | 'crew' | 'neutral';
 
 /**
  * Which section of project-details a system message opens. Keyed by the variant
@@ -177,6 +179,12 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
       headline: done ? 'הפרויקט הושלם' : 'בקשה לסיום הפרויקט',
       detail,
     };
+  }
+  // maybeActivateProject (functions/src/lifecycle/candidates.ts): every hired
+  // professional confirmed and no seat empty — the crew is set.
+  if (text.startsWith('🎬') || text.includes('הצוות נסגר')) {
+    const detail = text.replace(/^(?:🎬\s*)?הצוות נסגר:?\s*/, '').trim();
+    return { variant: 'crew', headline: 'הצוות נסגר', detail };
   }
   return { variant: 'neutral', headline: text, detail: '' };
 }
@@ -513,6 +521,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Who owns this project. The fee entry point keys off this, not activeMode —
   // mode picks the tab, it does not decide your role on a given project.
   const [projectClientId, setProjectClientId] = useState<string | undefined>(undefined);
+  const [projectStatus, setProjectStatus] = useState<string | undefined>(undefined);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [chatPhotoURL, setChatPhotoURL] = useState<string | null>(null);
   const [chatPhotoModalOpen, setChatPhotoModalOpen] = useState(false);
@@ -839,26 +848,29 @@ export function ChatRoomScreen({ chatId }: Props) {
   // constrained to the project window (today → project end).
   useEffect(() => {
     if (!chatProjectId) { setProjectDeadline(undefined); setProjectCompleted(false); return; }
-    let cancelled = false;
-    getDoc(doc(db, 'projects', chatProjectId))
-      .then((snap) => {
-        if (cancelled) return;
-        // Same read as before — clientId costs nothing extra.
+    // LIVE, not a one-time read: the candidate review card and the status chip
+    // follow the project's status, and a project going 'in_progress' (or
+    // completing) while the chat is open has to reach them without a reload.
+    return onSnapshot(
+      doc(db, 'projects', chatProjectId),
+      (snap) => {
+        // Same document as before — clientId and status cost nothing extra.
         const data = snap.exists()
           ? (snap.data() as { deadline?: string; status?: string; clientId?: string })
           : undefined;
         const dl = data?.deadline;
         setProjectDeadline(dl && dl !== 'flexible' ? dl : undefined);
         setProjectCompleted(data?.status === 'completed');
+        setProjectStatus(data?.status);
         setProjectClientId(data?.clientId);
-      })
-      .catch(() => {
-        if (cancelled) return;
+      },
+      () => {
         setProjectDeadline(undefined);
         setProjectCompleted(false);
+        setProjectStatus(undefined);
         setProjectClientId(undefined);
-      });
-    return () => { cancelled = true; };
+      },
+    );
   }, [chatProjectId]);
 
   // This professional's own fee on the linked project, so a completed-but-unpaid
@@ -1269,6 +1281,16 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
       )}
 
+      {/* Candidate review — pinned header chrome, above the message list so it
+          does not scroll. Role decides which side renders, never the mode: the
+          client decides, a professional sees where he stands. Both hide
+          themselves when there is nothing to show. */}
+      {chatType === 'group' && !!chatProjectId && !!projectClientId && !isReadOnly && !chatArchived && (
+        projectClientId === currentUserId
+          ? <CandidateReviewCard projectId={chatProjectId} chatId={chatId} clientId={currentUserId} />
+          : <CandidateStatusChip projectId={chatProjectId} chatId={chatId} proId={currentUserId} projectStatus={projectStatus} />
+      )}
+
       {/* Product notice opened by tapping the purchase-chat title */}
       <ListingDetailModal
         listing={showPurchaseNotice ? purchaseListing : null}
@@ -1307,7 +1329,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             const msg = item as Message;
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
-              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' ? '#1c9d63' : variant === 'completion' ? '#004aad' : '#1e4fa3';
+              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' || variant === 'crew' ? '#1c9d63' : variant === 'completion' ? '#004aad' : '#1e4fa3';
               // Each known kind names a section of project-details. 'neutral' has
               // nowhere to go — that is "X left the project" and the purchase-chat
               // notices — and a chat with no projectId has no details screen at
@@ -1317,7 +1339,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               const pill = (
                 <View style={[
                   styles.systemPill,
-                  variant === 'mission' ? styles.systemPillMission : variant === 'price_change' ? styles.systemPillPrice : variant === 'completion' ? styles.systemPillCompletion : styles.systemPillMeeting,
+                  variant === 'mission' ? styles.systemPillMission : variant === 'price_change' || variant === 'crew' ? styles.systemPillPrice : variant === 'completion' ? styles.systemPillCompletion : styles.systemPillMeeting,
                   { flexDirection: rtl ? 'row-reverse' : 'row' },
                 ]}>
                   {variant === 'mission'
@@ -1326,7 +1348,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                       ? <Coins size={16} color={accent} strokeWidth={2} />
                       : variant === 'completion'
                         ? <Flag size={16} color={accent} strokeWidth={2} />
-                        : <Calendar size={16} color={accent} strokeWidth={2} />}
+                        : variant === 'crew'
+                          ? <Users size={16} color={accent} strokeWidth={2} />
+                          : <Calendar size={16} color={accent} strokeWidth={2} />}
                   <View style={{ flexShrink: 1 }}>
                     <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
                       {headline}
