@@ -61,7 +61,12 @@ reads.
 - After his רלוונטי: respond-only, even if the unprompted request was never used.
 - After the client's רלוונטי: unrestricted, as before.
 
-### Also fixed: a V1 bug in `releaseEngagement`
+### Also fixed: a V1 bug in `releaseEngagement` (V1 defect, NOT item 3)
+> This is a **defect shipped with V1** (candidate review, `0152f73`), found while building item 3.
+> It ships as a **bug fix**, not as a side effect of the new feature: `rejectCandidate` has been
+> exposed to it since V1 went live. It's fixed here because item 3's decline goes through the same
+> `releaseEngagement`.
+
 **The bug:** it set a released pro's accepted **price offers** to `removed`, but never touched his
 accepted **bundle**. A pro hired on a bundle and then rejected (or, with item 3, declining) left a
 bundle that was still `accepted` with `review: 'pending'`. So:
@@ -75,6 +80,8 @@ Probe scenario 11 covers it, and **fails against the old code** (bundle left `ac
 still under review).
 
 ## 2. The `declineCandidacy` race (your question)
+
+**Decision (2026-09-17): accepted, not hardened.** Recorded in `docs/known-issues-silent-failures.md` ("ACCEPTED: decline racing an accepted price change…").
 **Setup:** the pro declines while his own unprompted price request is pending, and the client
 accepts that request at the same moment. Traced through the actual code of both paths; neither
 runs in a transaction.

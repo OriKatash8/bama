@@ -583,3 +583,41 @@ Four specific traps, all of which have actually bitten:
   `allUsers` run-invoker binding propagates. That is not an auth bug in the
   callable — check `gcloud run services get-iam-policy` before chasing it, and
   retry.
+
+# ACCEPTED: decline racing an accepted price change can leave an inconsistent request record
+
+**Status: accepted, not fixed (decided 2026-09-17).** No money or user-facing effect.
+Recorded so it isn't re-investigated from scratch. Full trace in
+`docs/status/2026-09-17-item3-step2-server.md` §2.
+
+**Scenario:** a professional under review calls `declineCandidacy` while his own pending price
+change is being accepted by the client in `respondToPaymentRequest`. Neither path is a
+transaction.
+
+**The two paths:**
+- **Accept:** read the request (`pending`) → `loadParty` (the pro must be in `professionalIds`) →
+  query his `status == 'accepted'` offers for the role → one batch sets `price` on them + request
+  `accepted`.
+- **Decline:** guards → `releaseEngagement` batch (`professionalIds` / `slotHolders` / seat out; fee
+  `withdrawn` / `not_owed` / `feeDue: 0`; offers **and bundles** → `removed`; notice) →
+  `closePendingPriceChanges` (query `pending`, batch → `rejected`) → `maybeActivateProject`.
+
+**Outcomes:**
+- **Accept commits first:** price updated, request `accepted`, then a normal release. Consistent.
+- **Release commits before accept's step 2 or 3:** accept throws (`professional-not-on-project` /
+  `No accepted offer to reprice`), and the request ends `rejected`. Consistent.
+- **Interleaved** (accept reads steps 1–3 before the release commits, and the close-query runs
+  before accept commits): both write the request, last commit wins (`accepted` or `rejected`).
+  The removed offer carries the proposed price, since the price update doesn't touch `status`.
+
+**Why it's harmless:**
+- The fee is voided unconditionally.
+- A `removed` offer is outside `computeProAmount`, the review card and chip, `isPendingReview` and
+  activation.
+- A non-pending request is in nobody's list.
+
+The only artefact is a request record whose status may not match the (removed) offer's price.
+
+**Why not fixed:** closing it means making both callables transactional over each other's
+documents, which touches two correct callables for a tidier orphan record. Revisit only if
+something starts reading the price of `removed` offers, or the status of non-pending requests.
