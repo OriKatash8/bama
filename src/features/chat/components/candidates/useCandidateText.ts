@@ -21,6 +21,13 @@ export function useCandidateText() {
     lang,
     rtl,
     align: (rtl ? 'right' : 'left') as 'right' | 'left',
+    /**
+     * Put on every line that interpolates a NAME. Without it the browser takes
+     * the line's direction from its first strong character — so "{name} proposed
+     * a new price" with a Hebrew name renders right-to-left inside an English UI
+     * (and an English name scrambles a Hebrew line the same way).
+     */
+    dir: { writingDirection: (rtl ? 'rtl' : 'ltr') as 'rtl' | 'ltr' },
     rowDir: (rtl ? 'row-reverse' : 'row') as 'row-reverse' | 'row',
     money: (n: number) => `₪${Number(n || 0).toLocaleString()}`,
   };

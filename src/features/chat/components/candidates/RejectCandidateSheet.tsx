@@ -27,7 +27,7 @@ export function RejectCandidateSheet({
   onClose: () => void;
 }) {
   const colors = useTheme();
-  const { t, align } = useCandidateText();
+  const { t, align, dir } = useCandidateText();
   const [reason, setReason] = useState('');
 
   // A reason typed for one professional must not reappear for the next.
@@ -38,10 +38,10 @@ export function RejectCandidateSheet({
       <View style={s.overlay}>
         <View style={s.sheet} testID="reject-candidate-sheet">
           <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
-            <AppText weight="bold" style={[s.title, { color: colors.text, textAlign: align }]}>
+            <AppText weight="bold" style={[s.title, { color: colors.text, textAlign: align }, dir]}>
               {t('candidate_review.reject_title', { name })}
             </AppText>
-            <AppText weight="regular" style={[s.body, { color: colors.textMuted, textAlign: align }]}>
+            <AppText weight="regular" style={[s.body, { color: colors.textMuted, textAlign: align }, dir]}>
               {t('candidate_review.reject_body', { name })}
             </AppText>
             <AppText weight="regular" style={[s.label, { color: colors.textMuted, textAlign: align }]}>

@@ -216,3 +216,23 @@ describe('direction', () => {
     expect(getAllByText(tr.candidate_review.relevant)).toHaveLength(2);
   });
 });
+
+describe('lines that carry a name set their writing direction explicitly', () => {
+  // A line whose first word is a name takes its direction from that name unless
+  // told otherwise: an English line starting with a Hebrew name rendered RTL on web.
+  it.each([['en', 'ltr'], ['he', 'rtl']])('%s → %s', async (lang, dir) => {
+    mockLang = lang;
+    mockRequests = [
+      { id: 'r1', professionalId: 'pro-a', fromUserId: CLIENT, toUserId: 'pro-a', status: 'pending' },
+      { id: 'r2', professionalId: 'pro-b', fromUserId: 'pro-b', toUserId: CLIENT, status: 'pending' },
+    ];
+    const { getByTestId } = await renderCard();
+    expect(StyleSheet.flatten(getByTestId('candidate-waiting-pro-pro-a').props.style).writingDirection).toBe(dir);
+    expect(StyleSheet.flatten(getByTestId('candidate-name-pro-a').props.style).writingDirection).toBe(dir);
+    const answerLine = getByTestId('candidate-answer-pro-b');
+    const text = answerLine.findAll((n: { props: { style?: unknown } }) =>
+      (StyleSheet.flatten(n.props.style as never) as { writingDirection?: string } | undefined)?.writingDirection !== undefined);
+    expect(text.length).toBeGreaterThan(0);
+    expect(StyleSheet.flatten(text[0].props.style).writingDirection).toBe(dir);
+  });
+});

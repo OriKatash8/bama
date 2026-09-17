@@ -36,7 +36,7 @@ export function PriceChangeSheet({
   onClose: () => void;
 }) {
   const colors = useTheme();
-  const { t, align, money } = useCandidateText();
+  const { t, align, money, dir } = useCandidateText();
   const [roleKey, setRoleKey] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -61,7 +61,7 @@ export function PriceChangeSheet({
       <View style={s.overlay}>
         <View style={s.sheet} testID="price-change-sheet">
           <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
-            <AppText weight="bold" style={[s.title, { color: colors.text, textAlign: align }]}>
+            <AppText weight="bold" style={[s.title, { color: colors.text, textAlign: align }, dir]}>
               {t('candidate_review.price_title', { name })}
             </AppText>
 

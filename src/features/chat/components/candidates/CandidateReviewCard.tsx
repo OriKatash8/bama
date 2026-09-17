@@ -42,7 +42,7 @@ export function CandidateReviewCard({
 }) {
   const router = useRouter();
   const showToast = useUiStore((s) => s.showToast);
-  const { t, lang, align, rowDir, money } = useCandidateText();
+  const { t, lang, align, rowDir, money, dir } = useCandidateText();
 
   const [accepted, setAccepted] = useState<{ offers: PriceOffer[]; bundles: BundleOffer[] } | null>(null);
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
@@ -150,7 +150,7 @@ export function CandidateReviewCard({
             <AppText
               weight="semiBold"
               numberOfLines={1}
-              style={[styles.name, { textAlign: align }, !resolved && styles.namePlaceholder]}
+              style={[styles.name, { textAlign: align }, dir, !resolved && styles.namePlaceholder]}
               testID={`candidate-name-${c.proId}`}
             >
               {resolved ? name : t('candidate_review.name_loading')}
@@ -163,13 +163,13 @@ export function CandidateReviewCard({
         </View>
 
         {waitingOnPro && (
-          <AppText weight="regular" style={[styles.status, { textAlign: align }]} testID={`candidate-waiting-pro-${c.proId}`}>
+          <AppText weight="regular" style={[styles.status, { textAlign: align }, dir]} testID={`candidate-waiting-pro-${c.proId}`}>
             {t('candidate_review.waiting_on_pro', { name: name || t('candidate_review.name_loading') })}
           </AppText>
         )}
         {waitingOnClient && (
           <TouchableOpacity onPress={openPayments} accessibilityRole="link" testID={`candidate-answer-${c.proId}`} activeOpacity={0.7}>
-            <AppText weight="semiBold" style={[styles.statusAction, { textAlign: align }]}>
+            <AppText weight="semiBold" style={[styles.statusAction, { textAlign: align }, dir]}>
               {t('candidate_review.pro_countered', { name: name || t('candidate_review.name_loading') })}
             </AppText>
           </TouchableOpacity>
