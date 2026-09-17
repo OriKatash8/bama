@@ -5,6 +5,7 @@
  * undeployed callable.
  *
  *   node scripts/seed-candidate-review-web.mjs                    # seed; writes manifest
+ *   node scripts/seed-candidate-review-web.mjs --live             # post-deploy click-through seed
  *   node scripts/seed-candidate-review-web.mjs --cleanup <file>   # delete + read-only sweep
  *
  * NO REAL USER IS NOTIFIED. onProjectCreate fans "פרויקט חדש" out for an OPEN
@@ -37,6 +38,12 @@ if (args[0] === '--cleanup') {
   const deleted = [];
   const del = async (ref, label) => { if ((await ref.get()).exists) { await ref.delete(); deleted.push(label); } };
   const uids = Object.values(m.uids);
+  // Chats created later by a real hire are not in the manifest; read them off
+  // the projects before the projects are deleted.
+  for (const pid of m.projectIds) {
+    const chatId = (await db.doc(`projects/${pid}`).get()).data()?.chatId;
+    if (chatId && !m.chatIds.includes(chatId)) m.chatIds.push(chatId);
+  }
 
   for (const chatId of m.chatIds) {
     for (const d of (await db.collection(`chats/${chatId}/messages`).get()).docs) await del(d.ref, `chats/${chatId}/messages/${d.id}`);
@@ -102,9 +109,12 @@ if (args[0] === '--cleanup') {
 }
 
 // ── seed ────────────────────────────────────────────────────────────────────
-const STAMP = `crweb${Date.now()}`;
+const LIVE = args[0] === '--live';
+const STAMP = `${LIVE ? 'crlive' : 'crweb'}${Date.now()}`;
 const PW = 'Probe-Password-123!';
-const who = { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד', proC: 'חן צלמת' };
+const who = LIVE
+  ? { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד' }
+  : { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד', proC: 'חן צלמת' };
 const uids = {};
 for (const [tag, displayName] of Object.entries(who)) {
   const u = await auth.createUser({ email: `${STAMP}.${tag}@probe.invalid`, password: PW, displayName });
@@ -123,6 +133,35 @@ for (const [tag, uid] of Object.entries(uids)) {
 
 const projectIds = [], chatIds = [];
 const now = Date.now();
+
+if (LIVE) {
+  // Post-deploy click-through: NO chat, NO accepted offer — the real app does the
+  // hiring. Each project has one seat, pre-filled by a placeholder, and a
+  // targetProfessionalId (onProjectCreate notifies nobody); a PENDING offer from
+  // the pro for the client to accept in the Offers tab.
+  //   L1 → pro A: invite → counter → pro accepts → רלוונטי → in_progress + 🎬
+  //   L2 → pro B: invite → לא רלוונטי (with reason) → removed, DM, stays open
+  for (const [key, tag, price] of [['l1', 'proA', 1500], ['l2', 'proB', 900]]) {
+    const pid = `${STAMP}-${key}`;
+    await db.doc(`projects/${pid}`).set({
+      clientId: uids.client, title: `Probe ${STAMP} ${key}`, description: 'live click-through', location: 'TLV',
+      deadline: 'flexible', status: 'open', createdAt: Timestamp.now(),
+      targetProfessionalId: uids[tag],
+      crewSlots: [{ category: 'Editor', quantity: 1 }],
+      filledSlots: [{ category: 'Editor', professionalId: `${STAMP}-filler` }],
+    });
+    await db.doc(`priceOffers/${pid}-${tag}`).set({
+      projectId: pid, professionalId: uids[tag], category: 'Editor', price, status: 'pending', createdAt: Timestamp.now(),
+    });
+    projectIds.push(pid);
+  }
+  const manifest = { stamp: STAMP, password: PW, uids, projectIds, chatIds: [] };
+  const out = `/private/tmp/claude-501/-Users-ori-Documents-bama/d3a12253-e9ed-4762-9799-672cc3d762b3/scratchpad/${STAMP}.json`;
+  writeFileSync(out, JSON.stringify(manifest, null, 2));
+  console.log(JSON.stringify({ ...manifest, emails: Object.fromEntries(Object.keys(who).map((t) => [t, `${STAMP}.${t}@probe.invalid`])) }, null, 2));
+  console.log(`\nmanifest: ${out}`);
+  process.exit(0);
+}
 async function project(key, pros, seats) {
   const pid = `${STAMP}-${key}`;
   const chatRef = db.collection('chats').doc();

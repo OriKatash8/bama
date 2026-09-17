@@ -8,6 +8,13 @@ and a duplicate-chat bug in hiring.
 
 ## STATE
 
+**2026-09-17 — V1 candidate review card: merged, pushed, DEPLOYED, verified live on web.**
+Rules (`981106c2…`) and 43 functions from `0152f73`, verified from downloaded artefacts.
+Live web click-through of both flows passed. **iPhone pass not done — needs you.**
+Report: `docs/status/2026-09-17-v1-deploy.md`. Next deferred commit: sole-pro withdrawal
+fix (drop withdrawn engagements from completion only when nothing ever completed).
+
+
 **Shipped to origin/main**
 - `ddf1e4a` — portfolio viewer became a vertical pager; per-item captions.
 - `37aff51` — Reels-style chrome, page-background backdrop, two close-button fixes.

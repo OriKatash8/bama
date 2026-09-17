@@ -6,17 +6,12 @@
 > trigger that releases them. These are the ones that get dropped once the
 > immediate problem looks solved.
 >
-> ### 1. `paymentRequests` → `allow create: if false` — CLOSED IN REPO, deploy pending
->
-> **Closed on branch `feat/candidate-review-v1` (V1 step c, 2026-09-17).** The interim
-> rule and its comment are gone; `firestore.rules` now has `allow create: if false;`.
-> Pre-launch with no public installs, so the only builds still writing directly
-> were the owner's own devices — accepted.
->
-> **Still to do:** ships in the single V1 rules + functions deploy. Verified on the
-> emulator by `scripts/probe-repricing.mjs` §7 (direct client `addDoc` denied; a
-> client still reads its own requests). After the production deploy, repeat that
-> check live and then delete this item.
+> *None open.* The last item — `paymentRequests` → `allow create: if false` — shipped
+> with the V1 candidate-review deploy on 2026-09-17 (ruleset
+> `981106c2-7690-4424-a5d7-972bdae6335c`, commit `0152f73`) and was verified live: a
+> direct client `addDoc` into `projects/{id}/paymentRequests` is `permission-denied`
+> while the client still reads its own requests. See
+> `docs/status/2026-09-17-v1-deploy.md`.
 
 
 Catch blocks and error handlers that discard the real failure. Each one turns a

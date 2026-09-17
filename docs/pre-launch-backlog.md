@@ -248,8 +248,8 @@ extending `onCommunityDeleted` to cascade. Either way, use `confirmDialog`, not
 
 - ~~The INTERIM `paymentRequests` rule, and `repricing.ts:200`'s `< 0` vs `<= 0`.~~
   Both closed in repo on `feat/candidate-review-v1` (V1 step c): create is
-  `if false`, and accept now requires `isOfferPriceValid` (1–50000). Deploy pending
-  with V1.
+  `if false`, and accept now requires `isOfferPriceValid` (1–50000). Deployed with
+  V1 on 2026-09-17 and verified live (direct create denied).
 - Raise `MIN_OFFER_PRICE` above the commission floor so the 600% case is
   unreachable.
 - `confirmCompletion` and `completeAllEngagements` are byte-identical — same
