@@ -8,12 +8,22 @@ and a duplicate-chat bug in hiring.
 
 ## STATE
 
-**2026-09-17 — V1 candidate review card: merged, pushed, DEPLOYED, verified live on web.**
-Rules (`981106c2…`) and 43 functions from `0152f73`, verified from downloaded artefacts.
-Live web click-through of both flows passed. **iPhone pass not done — needs you.**
-Report: `docs/status/2026-09-17-v1-deploy.md`. Next deferred commit: sole-pro withdrawal
-fix (drop withdrawn engagements from completion only when nothing ever completed).
+**2026-09-17: item 3 (pro review card, client carousel, instruction lines) is merged, pushed,
+DEPLOYED and verified live on web.**
+- **Functions:** 45 from `1fe0a05`, including the new `acknowledgeCandidacy` and
+  `declineCandidacy`. All 45 source zips match. Rules unchanged.
+- **Live web click-through passed,** including a sole-pro decline: project stays open, grey
+  pill, client push, fee `candidate_declined` / `not_owed`.
+- **iPhone pass not done, and it needs you.**
+- **Report:** `docs/status/2026-09-17-item3-deploy.md`.
 
+**Earlier the same day:**
+- **Sole-pro withdrawal fix** (`e0d171e`, deployed): `docs/status/2026-09-17-sole-pro-withdrawal.md`.
+- **V1 candidate review** (`0152f73`, deployed): `docs/status/2026-09-17-v1-deploy.md`.
+
+**Deferred:**
+- Node 20 runtime upgrade, by 2026-10-30.
+- The 5 held community-invite functions, waiting on the budget alert.
 
 **Shipped to origin/main**
 - `ddf1e4a` — portfolio viewer became a vertical pager; per-item captions.

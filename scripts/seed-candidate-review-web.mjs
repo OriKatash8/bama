@@ -7,6 +7,7 @@
  *   node scripts/seed-candidate-review-web.mjs                    # seed; writes manifest
  *   node scripts/seed-candidate-review-web.mjs --live             # post-deploy click-through seed
  *   node scripts/seed-candidate-review-web.mjs --item3            # item 3 render pass (carousel, pro card)
+ *   node scripts/seed-candidate-review-web.mjs --live3            # item 3 post-deploy click-through
  *   node scripts/seed-candidate-review-web.mjs --cleanup <file>   # delete + read-only sweep
  *
  * NO REAL USER IS NOTIFIED. onProjectCreate fans "פרויקט חדש" out for an OPEN
@@ -112,9 +113,12 @@ if (args[0] === '--cleanup') {
 // ── seed ────────────────────────────────────────────────────────────────────
 const LIVE = args[0] === '--live';
 const ITEM3 = args[0] === '--item3';
-const STAMP = `${LIVE ? 'crlive' : ITEM3 ? 'cri3' : 'crweb'}${Date.now()}`;
+const LIVE3 = args[0] === '--live3';
+const STAMP = `${LIVE ? 'crlive' : LIVE3 ? 'crl3' : ITEM3 ? 'cri3' : 'crweb'}${Date.now()}`;
 const PW = 'Probe-Password-123!';
-const who = ITEM3
+const who = LIVE3
+  ? { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד', proC: 'חן צלמת' }
+  : ITEM3
   ? { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד', proC: 'חן תאורה', proD: 'דנה צלמת' }
   : LIVE
   ? { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד' }
@@ -195,6 +199,39 @@ if (ITEM3) {
   const p3 = await seed('p3', ['proD'], ['Editor'], [['proD', 'Editor', 2200, { review: 'confirmed', proAccepted: true }]]);
 
   const manifest = { stamp: STAMP, password: PW, uids, projectIds, chatIds, chats: { p1: p1.chatId, p2: p2.chatId, p3: p3.chatId } };
+  const out = `/private/tmp/claude-501/-Users-ori-Documents-bama/d3a12253-e9ed-4762-9799-672cc3d762b3/scratchpad/${STAMP}.json`;
+  writeFileSync(out, JSON.stringify(manifest, null, 2));
+  console.log(JSON.stringify({ ...manifest, emails: Object.fromEntries(Object.keys(who).map((t) => [t, `${STAMP}.${t}@probe.invalid`])) }, null, 2));
+  console.log(`\nmanifest: ${out}`);
+  process.exit(0);
+}
+
+if (LIVE3) {
+  // Item 3 post-deploy click-through. Same guard as --live: every seat pre-filled
+  // by a placeholder plus a targetProfessionalId; PENDING offers only, the app hires.
+  //   M1 → pros A (Editor) + B (Sound): client hires both → carousel; A acknowledges;
+  //        B's one unprompted price request; client confirms on the shown pro
+  //   M2 → pro C alone: client hires; C declines → project stays open
+  const specs = [
+    ['m1', ['Editor', 'Sound Recordist'], [['proA', 'Editor', 1500], ['proB', 'Sound Recordist', 900]]],
+    ['m2', ['Still Photographer'], [['proC', 'Still Photographer', 1200]]],
+  ];
+  for (const [key, seats, offers] of specs) {
+    const pid = `${STAMP}-${key}`;
+    await db.doc(`projects/${pid}`).set({
+      clientId: uids.client, title: `Probe ${STAMP} ${key}`, description: 'item 3 live click-through', location: 'TLV',
+      deadline: 'flexible', status: 'open', createdAt: Timestamp.now(), targetProfessionalId: uids[offers[0][0]],
+      crewSlots: seats.map((category) => ({ category, quantity: 1 })),
+      filledSlots: seats.map((category) => ({ category, professionalId: `${STAMP}-filler` })),
+    });
+    for (const [tag, category, price] of offers) {
+      await db.doc(`priceOffers/${pid}-${tag}`).set({
+        projectId: pid, professionalId: uids[tag], category, price, status: 'pending', createdAt: Timestamp.now(),
+      });
+    }
+    projectIds.push(pid);
+  }
+  const manifest = { stamp: STAMP, password: PW, uids, projectIds, chatIds: [] };
   const out = `/private/tmp/claude-501/-Users-ori-Documents-bama/d3a12253-e9ed-4762-9799-672cc3d762b3/scratchpad/${STAMP}.json`;
   writeFileSync(out, JSON.stringify(manifest, null, 2));
   console.log(JSON.stringify({ ...manifest, emails: Object.fromEntries(Object.keys(who).map((t) => [t, `${STAMP}.${t}@probe.invalid`])) }, null, 2));
