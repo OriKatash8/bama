@@ -324,6 +324,20 @@ async function commitHire(args: {
 
 // ── Per-type accept preparation (which docs to accept/reject + the filled slots) ──
 
+/**
+ * Every offer this hire accepts starts under the client's review. The client's
+ * review card (candidates.ts) moves it to 'confirmed' or releases the pro.
+ *
+ * Written on the accepted docs rather than on the project, the chat or the fee:
+ * an offer is readable by exactly the client and that professional, which is who
+ * the card and the pro's status chip are for. The project is readable by every
+ * signed-in user, the chat by every crew member, and the fee by the pro alone.
+ *
+ * Offers accepted before this existed carry no `review`, which reads as
+ * confirmed — no backfill.
+ */
+const REVIEW_PENDING = 'pending';
+
 async function prepareOffer(offerSnap: admin.firestore.DocumentSnapshot, project: Record<string, unknown>) {
   const offer = offerSnap.data() as Record<string, unknown>;
   const projectId = offer.projectId as string;
@@ -349,7 +363,7 @@ async function prepareOffer(offerSnap: admin.firestore.DocumentSnapshot, project
   const acceptWrites = (batch: Writer) => {
     competing.docs.forEach((d) => { if (d.id !== offerSnap.id) batch.update(d.ref, { status: 'rejected' }); });
     staleBundles.docs.forEach((d) => batch.update(d.ref, { status: 'rejected' }));
-    batch.update(offerSnap.ref, { status: 'accepted' });
+    batch.update(offerSnap.ref, { status: 'accepted', review: REVIEW_PENDING });
   };
   return { filledEntries, amount, acceptWrites };
 }
@@ -388,8 +402,8 @@ async function prepareBundle(bSnap: admin.firestore.DocumentSnapshot, project: R
     .map((d) => d.id);
 
   const acceptWrites = (batch: Writer) => {
-    batch.update(bSnap.ref, { status: 'accepted' });
-    offerIds.forEach((id) => batch.update(db.doc(`priceOffers/${id}`), { status: 'accepted' }));
+    batch.update(bSnap.ref, { status: 'accepted', review: REVIEW_PENDING });
+    offerIds.forEach((id) => batch.update(db.doc(`priceOffers/${id}`), { status: 'accepted', review: REVIEW_PENDING }));
     competingOfferIds.forEach((id) => batch.update(db.doc(`priceOffers/${id}`), { status: 'rejected' }));
     competingBundleIds.forEach((id) => batch.update(db.doc(`bundleOffers/${id}`), { status: 'rejected' }));
   };

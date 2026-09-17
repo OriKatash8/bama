@@ -335,6 +335,9 @@ export type ProjectFee = {
   endDatePromptedAt?: Timestamp;
 };
 
+/** See `PriceOffer.review`. */
+export type OfferReview = 'pending' | 'confirmed';
+
 export type PriceOffer = {
   id: string;
   projectId: string;
@@ -348,6 +351,18 @@ export type PriceOffer = {
   /** Set when the professional edits a pending offer's price. */
   editedAt?: Timestamp;
   editCount?: number;
+  /**
+   * The client's decision on this professional, once hired. Written by
+   * `hireProfessional` as 'pending' on the offers it accepts, and moved to
+   * 'confirmed' by the client's review card (server-only — outside the offer
+   * rules' client allowlist, so neither party can write it).
+   *
+   * ABSENT means confirmed: every offer accepted before the review card existed
+   * has no field, and those hires were never up for review.
+   */
+  review?: OfferReview;
+  /** When `review` left 'pending'. */
+  reviewedAt?: Timestamp;
 };
 
 export type RemovalRequest = {
@@ -375,6 +390,10 @@ export type BundleOffer = {
   /** Set when the professional edits a pending bundle's price. */
   editedAt?: Timestamp;
   editCount?: number;
+  /** Same as `PriceOffer.review`. Written on the bundle AND on each of its
+   *  component offers, which are accepted together. */
+  review?: OfferReview;
+  reviewedAt?: Timestamp;
 };
 
 export type AcceptedMember = {
