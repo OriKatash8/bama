@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from '@components/ui/AppText';
@@ -18,7 +18,7 @@ import { RejectCandidateSheet } from './RejectCandidateSheet';
 import { PriceChangeSheet } from './PriceChangeSheet';
 import { chromeStyles } from './chromeStyles';
 import { ActionButton } from './ActionButton';
-import { resolveShownIndex, swipeStep } from './carousel';
+import { carouselPanConfig, resolveShownIndex, slidePlan, SLIDE_MS } from './carousel';
 
 type Busy = 'confirm' | 'reject' | 'price';
 
@@ -74,20 +74,63 @@ export function CandidateReviewCard({
     const next = Math.max(0, Math.min(shownIndex + step, ids.length - 1));
     if (next !== shownIndex) setShownId(ids[next]);
   };
-  // Refs so the one PanResponder always sees the current list and direction.
-  const goRef = useRef(go);
-  goRef.current = go;
-  const rtlRef = useRef(rtl);
-  rtlRef.current = rtl;
-  const pan = useRef(PanResponder.create({
-    // Only claim clearly horizontal drags, so taps still reach the buttons and
-    // vertical drags still scroll the chat.
-    onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-    onPanResponderRelease: (_e, g) => {
-      const step = swipeStep(g.dx, rtlRef.current);
-      if (step !== 0) goRef.current(step);
-    },
-  })).current;
+
+  // ── Sliding ────────────────────────────────────────────────────────────
+  // The card tracks the finger while dragging and is carried the rest of the
+  // way on release; the chevrons play the same slide, so both gestures look
+  // like the same strip of cards moving. JS driver throughout: the value is
+  // both animated and written directly by the gesture, which the native driver
+  // does not allow on one node.
+  const [slide] = useState(() => new Animated.Value(0));
+  const widthRef = useRef(0);
+  const slidingRef = useRef(false);
+  // One PanResponder is built on the first render, so everything it needs to
+  // read at gesture time lives here, refreshed after each render.
+  const live = useRef({
+    rtl,
+    atStart: true,
+    atEnd: true,
+    step: (_step: -1 | 1) => {},
+  });
+
+  const settle = () => Animated.timing(slide, { toValue: 0, duration: SLIDE_MS, useNativeDriver: false }).start();
+
+  /** Carry the card off, swap in the next professional, bring him in. */
+  const slideTo = (step: -1 | 1) => {
+    if (slidingRef.current) return;
+    if (step === 1 ? live.current.atEnd : live.current.atStart) { settle(); return; }
+    // Falls back to a sensible width if the layout has not been measured yet;
+    // the distance only decides how far off screen the card goes.
+    const { out, from } = slidePlan(step, live.current.rtl, widthRef.current || 320);
+    slidingRef.current = true;
+    Animated.timing(slide, { toValue: out, duration: SLIDE_MS, useNativeDriver: false }).start(({ finished }) => {
+      // Cut short (the screen went away mid-slide): drop the card back where it
+      // belongs rather than paging on the strength of an animation that stopped.
+      if (!finished) { slide.setValue(0); slidingRef.current = false; return; }
+      go(step);
+      slide.setValue(from);
+      Animated.timing(slide, { toValue: 0, duration: SLIDE_MS, useNativeDriver: false })
+        .start((end) => { if (!end.finished) slide.setValue(0); slidingRef.current = false; });
+    });
+  };
+
+  useEffect(() => {
+    live.current = {
+      rtl,
+      atStart: shownIndex === 0,
+      atEnd: shownIndex === ids.length - 1,
+      step: slideTo,
+    };
+  });
+
+  const [pan] = useState(() => PanResponder.create(carouselPanConfig({
+    locked: () => slidingRef.current,
+    rtl: () => live.current.rtl,
+    ends: () => ({ atStart: live.current.atStart, atEnd: live.current.atEnd }),
+    onDrag: (x) => slide.setValue(x),
+    onStep: (step) => live.current.step(step),
+    onSettle: () => settle(),
+  })));
 
   if (candidates.length === 0) return null;
 
@@ -164,7 +207,7 @@ export function CandidateReviewCard({
       <TouchableOpacity
         key={which}
         testID={`carousel-${which}`}
-        onPress={() => go(which === 'prev' ? -1 : 1)}
+        onPress={() => slideTo(which === 'prev' ? -1 : 1)}
         disabled={off}
         hitSlop={10}
         accessibilityRole="button"
@@ -272,8 +315,16 @@ export function CandidateReviewCard({
         {t('candidate_review.client_instruction')}
       </AppText>
       {carousel ? (
-        <View {...pan.panHandlers} testID="candidate-carousel">
-          {renderRow(candidates[shownIndex])}
+        <View
+          {...pan.panHandlers}
+          testID="candidate-carousel"
+          style={styles.carousel}
+          onLayout={(e) => { widthRef.current = e.nativeEvent.layout.width; }}
+        >
+          {/* The row slides; the dots stay put — they are the position, not the card. */}
+          <Animated.View testID="carousel-slider" style={{ transform: [{ translateX: slide }] }}>
+            {renderRow(candidates[shownIndex])}
+          </Animated.View>
           <View
             style={[styles.dots, { flexDirection: rowDir }]}
             testID="carousel-dots"
@@ -308,6 +359,9 @@ export function CandidateReviewCard({
 const styles = StyleSheet.create({
   title: { fontSize: 12, color: 'rgba(15,15,31,0.5)', marginBottom: 2 },
   instruction: { fontSize: 12, color: 'rgba(15,15,31,0.45)', marginBottom: 4 },
+  // Clips the card that is leaving and the one arriving, so neither shows
+  // outside the pinned strip mid-slide.
+  carousel: { overflow: 'hidden' },
   row: { paddingVertical: 8, gap: 6 },
   // Carousel: the dots line (DOT + DOTS_MARGIN) is paid for by trimming the
   // row's vertical padding by the same amount, so the card is no taller than a

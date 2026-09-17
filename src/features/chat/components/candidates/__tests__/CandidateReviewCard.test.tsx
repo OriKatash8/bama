@@ -44,6 +44,7 @@ jest.mock('../../../services/candidateService', () => {
 });
 
 import { CandidateReviewCard } from '../CandidateReviewCard';
+const { SLIDE_MS } = jest.requireActual('../carousel');
 
 const CLIENT = 'client-1';
 const offer = (professionalId: string, over: Record<string, unknown> = {}) => ({
@@ -58,9 +59,21 @@ async function renderCard() {
   return r;
 }
 const disabled = (el: { props: { accessibilityState?: { disabled?: boolean } } }) => !!el.props.accessibilityState?.disabled;
+/**
+ * Paging is animated — the card is carried off before the next one is swapped
+ * in — so a press only lands once both halves of the slide have run.
+ */
+const settle = async () => {
+  await act(async () => { await new Promise((done) => setTimeout(done, SLIDE_MS * 2 + 60)); });
+};
 /** Two pending professionals render as a carousel: page to the next one. */
 const next = async (r: Pick<ReturnType<typeof render>, 'getByTestId'>) => {
   await act(async () => { fireEvent.press(r.getByTestId('carousel-next')); });
+  await settle();
+};
+const prev = async (r: Pick<ReturnType<typeof render>, 'getByTestId'>) => {
+  await act(async () => { fireEvent.press(r.getByTestId('carousel-prev')); });
+  await settle();
 };
 
 beforeEach(() => {
@@ -263,7 +276,7 @@ it("shows the professional's own רלוונטי as a tag on his row", async () =
 
 describe('carousel (2+ pending)', () => {
   const three = () => ({ offers: [offer('pro-a'), offer('pro-b', { category: 'Sound Recordist', price: 300 }), offer('pro-c', { category: 'Lighting Tech', price: 200 })], bundles: [] });
-  beforeEach(() => { mockUsers = { ...named, 'pro-c': { displayName: 'Chen', photoURL: null } }; });
+  beforeEach(() => { mockUsers = { ...named, 'pro-c': { displayName: 'Chen', photoURL: null } }; clock = 1000; });
 
   it('shows one professional at a time, with dots for position and current', async () => {
     mockAccepted = three();
@@ -286,16 +299,108 @@ describe('carousel (2+ pending)', () => {
     await next(r);
     expect(r.getByTestId('candidate-row-pro-c')).toBeTruthy();
     expect(disabled(r.getByTestId('carousel-next'))).toBe(true);
-    await act(async () => { fireEvent.press(r.getByTestId('carousel-prev')); });
+    await prev(r);
     expect(r.getByTestId('candidate-row-pro-b')).toBeTruthy();
   });
 
-  it('the carousel takes horizontal swipes (pan responder attached)', async () => {
+  /**
+   * Drives a real horizontal drag through the responder system, so the gesture
+   * is exercised as the finger exercises it. Each step needs its own timestamp:
+   * PanResponder ignores a move it has already accounted for.
+   */
+  const START = 200;
+  let clock = 1000;
+  const touchEvent = (to: number) => {
+    clock += 100;
+    return {
+      nativeEvent: { touches: [{ identifier: 1, pageX: to, pageY: 10, timestamp: clock, target: 1 }], identifier: 1, pageX: to, pageY: 10, timestamp: clock },
+      touchHistory: {
+        numberActiveTouches: 1, indexOfSingleActiveTouch: 0, mostRecentTimeStamp: clock,
+        touchBank: [null, {
+          touchActive: true, startPageX: START, startPageY: 10, startTimeStamp: 1000,
+          currentPageX: to, currentPageY: 10, currentTimeStamp: clock,
+          previousPageX: START, previousPageY: 10, previousTimeStamp: clock - 100,
+        }],
+      },
+    };
+  };
+  // The responder props are invoked directly: fireEvent does not dispatch
+  // responder events, and it is PanResponder's own gesture maths we want to run.
+  const handlers = (r: Pick<ReturnType<typeof render>, 'getByTestId'>) =>
+    r.getByTestId('candidate-carousel').props as {
+      onResponderGrant: (e: unknown) => void;
+      onResponderMove: (e: unknown) => void;
+      onResponderRelease: (e: unknown) => void;
+    };
+  const dragBy = async (r: Pick<ReturnType<typeof render>, 'getByTestId'>, dx: number) => {
+    const h = handlers(r);
+    await act(async () => {
+      h.onResponderGrant(touchEvent(START));
+      h.onResponderMove(touchEvent(START + dx));
+    });
+  };
+  const releaseAt = async (r: Pick<ReturnType<typeof render>, 'getByTestId'>, dx: number) => {
+    await act(async () => { handlers(r).onResponderRelease(touchEvent(START + dx)); });
+    await settle();
+  };
+  const shift = (r: Pick<ReturnType<typeof render>, 'getByTestId'>) =>
+    StyleSheet.flatten(r.getByTestId('carousel-slider').props.style).transform[0].translateX;
+
+  it('the card follows the finger, and is carried the rest of the way on release', async () => {
+    mockAccepted = three();
+    const r = await renderCard();
+    await dragBy(r, -45);
+    expect(shift(r)).toBe(-45);            // moved with the finger, not after it
+    await releaseAt(r, -70);
+    expect(r.getByTestId('candidate-row-pro-b')).toBeTruthy();
+    expect(shift(r)).toBe(0);              // and came to rest square
+  });
+
+  it('dragging back from the first professional resists, and nothing pages', async () => {
+    mockAccepted = three();
+    const r = await renderCard();
+    await dragBy(r, 80);
+    expect(shift(r)).toBe(20);             // a quarter of the drag: the end of the list, felt
+    await releaseAt(r, 80);
+    expect(r.getByTestId('candidate-row-pro-a')).toBeTruthy();
+    expect(shift(r)).toBe(0);
+  });
+
+  it('dragging on past the last professional resists too, and nothing pages', async () => {
+    mockAccepted = three();
+    const r = await renderCard();
+    await next(r);
+    await next(r);                         // showing C, the last one
+    await dragBy(r, -80);
+    expect(shift(r)).toBe(-20);
+    await releaseAt(r, -80);
+    expect(r.getByTestId('candidate-row-pro-c')).toBeTruthy();
+    expect(shift(r)).toBe(0);
+  });
+
+  it('a page carries the card off first: the row changes only once the slide has run', async () => {
+    mockAccepted = three();
+    const r = await renderCard();
+    await act(async () => { fireEvent.press(r.getByTestId('carousel-next')); });
+    expect(r.getByTestId('candidate-row-pro-a')).toBeTruthy(); // still there, on its way out
+    await settle();
+    expect(r.getByTestId('candidate-row-pro-b')).toBeTruthy();
+  });
+
+  it('the carousel takes horizontal swipes, and the card itself slides', async () => {
     mockAccepted = three();
     const r = await renderCard();
     const props = r.getByTestId('candidate-carousel').props;
     expect(typeof props.onMoveShouldSetResponder).toBe('function');
+    // Follows the finger, is carried on release, and goes back if the gesture
+    // is taken away mid-drag.
+    expect(typeof props.onResponderMove).toBe('function');
     expect(typeof props.onResponderRelease).toBe('function');
+    expect(typeof props.onResponderTerminate).toBe('function');
+    // The row is what moves; the dots are outside it and stay put.
+    const slider = r.getByTestId('carousel-slider');
+    expect(StyleSheet.flatten(slider.props.style).transform[0]).toHaveProperty('translateX');
+    expect(slider.props.children.props.testID).toBe('candidate-row-pro-a');
   });
 
   it('buttons act on the shown professional only', async () => {
@@ -379,6 +484,122 @@ describe('carousel (2+ pending)', () => {
     const dotsHeight = num(/dots: \{[^}]*height: (\d+)/);
     const dotsMargin = num(/dots: \{[^}]*marginTop: (\d+)/);
     expect(2 * carouselPad + dotsHeight + dotsMargin).toBeLessThanOrEqual(2 * rowPad);
+  });
+});
+
+describe('the carousel gesture', () => {
+  const { carouselPanConfig } = jest.requireActual('../carousel');
+  const wire = (over: Record<string, unknown> = {}) => {
+    const calls = { drag: [] as number[], step: [] as number[], settle: 0 };
+    const cfg = carouselPanConfig({
+      locked: () => false,
+      rtl: () => false,
+      ends: () => ({ atStart: false, atEnd: false }),
+      onDrag: (x: number) => calls.drag.push(x),
+      onStep: (s: number) => calls.step.push(s),
+      onSettle: () => { calls.settle += 1; },
+      ...over,
+    });
+    return { cfg, calls };
+  };
+
+  it('moves the card with the finger, by exactly what was dragged', () => {
+    const { cfg, calls } = wire();
+    cfg.onPanResponderMove(null, { dx: -30, dy: 2 });
+    cfg.onPanResponderMove(null, { dx: -75, dy: 4 });
+    expect(calls.drag).toEqual([-30, -75]);
+  });
+
+  it('at the last professional, a forward drag moves the card only a little', () => {
+    const { cfg, calls } = wire({ ends: () => ({ atStart: false, atEnd: true }) });
+    cfg.onPanResponderMove(null, { dx: -80, dy: 0 });
+    expect(calls.drag).toEqual([-20]);
+  });
+
+  it('claims clearly horizontal drags only, and never while a slide is playing', () => {
+    const { cfg } = wire();
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5 })).toBe(true);
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -8, dy: 0 })).toBe(false);  // a tap
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -20, dy: 30 })).toBe(false); // scrolling
+    const locked = wire({ locked: () => true });
+    expect(locked.cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5 })).toBe(false);
+    locked.cfg.onPanResponderMove(null, { dx: -40, dy: 5 });
+    expect(locked.calls.drag).toEqual([]);
+  });
+
+  it('on release: a real swipe pages, a short drag falls back', () => {
+    const { cfg, calls } = wire();
+    cfg.onPanResponderRelease(null, { dx: -60, dy: 0 });
+    expect(calls.step).toEqual([1]);
+    cfg.onPanResponderRelease(null, { dx: 60, dy: 0 });
+    expect(calls.step).toEqual([1, -1]);
+    cfg.onPanResponderRelease(null, { dx: -20, dy: 0 });
+    expect(calls.step).toEqual([1, -1]);
+    expect(calls.settle).toBe(1);
+  });
+
+  it('RTL: swiping right pages forward', () => {
+    const { cfg, calls } = wire({ rtl: () => true });
+    cfg.onPanResponderRelease(null, { dx: 60, dy: 0 });
+    expect(calls.step).toEqual([1]);
+  });
+
+  it('a finger lifted mid-slide is ignored: the slide already in flight wins', () => {
+    const { cfg, calls } = wire({ locked: () => true });
+    cfg.onPanResponderRelease(null, { dx: -60, dy: 0 });
+    cfg.onPanResponderTerminate();
+    expect(calls.step).toEqual([]);
+    expect(calls.settle).toBe(0);
+  });
+
+  it('losing the gesture puts the card back', () => {
+    const { cfg, calls } = wire();
+    cfg.onPanResponderTerminate();
+    expect(calls.settle).toBe(1);
+    expect(calls.step).toEqual([]);
+  });
+});
+
+describe('dragOffset: how far the card follows the finger', () => {
+  const { dragOffset } = jest.requireActual('../carousel');
+  it('tracks the finger one-to-one when there is somewhere to go', () => {
+    expect(dragOffset(-50, false, true, false)).toBe(-50);  // at the start, dragging toward next
+    expect(dragOffset(50, false, false, true)).toBe(50);    // at the end, dragging back
+    expect(dragOffset(-50, false, false, false)).toBe(-50); // in the middle
+  });
+  it('resists past the first professional, and past the last', () => {
+    expect(dragOffset(60, false, true, false)).toBe(15);    // LTR: back, already first
+    expect(dragOffset(-60, false, false, true)).toBe(-15);  // LTR: next, already last
+  });
+  it('RTL mirrors which end resists', () => {
+    expect(dragOffset(60, true, false, true)).toBe(15);     // RTL: right is next, already last
+    expect(dragOffset(-60, true, true, false)).toBe(-15);   // RTL: left is back, already first
+    expect(dragOffset(60, true, true, false)).toBe(60);     // RTL: right is next, room to go
+  });
+  it('a single professional at both ends still moves, softly', () => {
+    expect(dragOffset(40, false, true, true, 4)).toBe(10);
+    expect(dragOffset(-40, false, true, true, 4)).toBe(-10);
+  });
+});
+
+describe('slidePlan: the card leaves one way, the next arrives from the other', () => {
+  const { slidePlan } = jest.requireActual('../carousel');
+  it.each([[1, false], [-1, false], [1, true], [-1, true]])('step %s, rtl %s', (step, rtl) => {
+    const { out, from } = slidePlan(step, rtl, 300);
+    expect(Math.abs(out)).toBe(300);
+    expect(from).toBe(-out); // opposite edges, never the same side
+  });
+});
+
+describe('exitSign: which way the card leaves', () => {
+  const { exitSign } = jest.requireActual('../carousel');
+  it('LTR: the next card pushes the shown one off to the left', () => {
+    expect(exitSign(1, false)).toBe(-1);
+    expect(exitSign(-1, false)).toBe(1);
+  });
+  it('RTL mirrors it', () => {
+    expect(exitSign(1, true)).toBe(1);
+    expect(exitSign(-1, true)).toBe(-1);
   });
 });
 
