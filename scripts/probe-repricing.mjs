@@ -13,6 +13,7 @@
  *  5 an out-of-range request written before the check cannot be accepted
  *  6 after רלוונטי, the pro may reprice unprompted again
  *  7 rules: no direct client create; reading own requests still works
+ *  8 a push notification is written for the counterparty, both directions, and not on refusal
  */
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb } from 'firebase-admin/firestore';
@@ -70,7 +71,12 @@ async function wipe() {
   }
   await ref.delete();
   for (const d of (await adb.collection('priceOffers').get()).docs) if (d.id.startsWith('rp-')) await d.ref.delete();
+  for (const uid of Object.values(uids)) {
+    for (const n of (await adb.collection('notifications').where('userId', '==', uid).get()).docs) await n.ref.delete();
+  }
 }
+const priceNotes = async (tag) => (await adb.collection('notifications').where('userId', '==', uids[tag]).get())
+  .docs.map((d) => d.data()).filter((n) => String(n.message).startsWith('💰'));
 
 await account('client');
 await account('pro');
@@ -190,6 +196,28 @@ try {
   await as('pro');
   const postConfirm = await proCreate(SD, 480);
   check('pro raises a Sound change unprompted', postConfirm.ok, reason(postConfirm));
+
+  // ── 8 ─────────────────────────────────────────────────────────────────────
+  console.log('\n=== 8. push notifications ===');
+  for (const tag of ['client', 'pro']) {
+    for (const n of (await adb.collection('notifications').where('userId', '==', uids[tag]).get()).docs) await n.ref.delete();
+  }
+  await as('client');
+  const toPro = await clientCreate(ED, 800);
+  check('client raises a change', toPro.ok, reason(toPro));
+  const proNotes = await priceNotes('pro');
+  check('pro gets a notification doc', proNotes.length === 1 && proNotes[0].data?.type === 'system' && !!proNotes[0].data?.chatId, JSON.stringify(proNotes.map((n) => n.message)));
+  check('client (the sender) gets none', (await priceNotes('client')).length === 0);
+  await as('client');
+  const refused = await clientCreate(ED, 810);
+  check('a refused request (pending) notifies nobody', reason(refused) === 'price-change-pending' && (await priceNotes('pro')).length === 1);
+  check('pro rejects', (await answerAs('pro', toPro.data.requestId, false)).ok);
+  await as('pro');
+  const toClient = await proCreate(ED, 820);
+  check('pro raises a change (confirmed role, unprompted)', toClient.ok, reason(toClient));
+  const clientNotes = await priceNotes('client');
+  check('client gets a notification doc', clientNotes.length === 1 && clientNotes[0].data?.type === 'system', JSON.stringify(clientNotes.map((n) => n.message)));
+  check('client rejects', (await answerAs('client', toClient.data.requestId, false)).ok);
 
   // ── 7 ─────────────────────────────────────────────────────────────────────
   console.log('\n=== 7. rules ===');

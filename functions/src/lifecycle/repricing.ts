@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { db, FieldValue, requireAuth } from './helpers';
+import { db, FieldValue, requireAuth, notify } from './helpers';
 import { isOfferPriceValid } from '../pricing';
 import { isPendingReview } from './review';
 import { decideNewPriceRequest, roleKeyOf, sameRole } from './priceRequestPolicy';
@@ -157,6 +157,24 @@ export const createPaymentRequest = onCall(async (request) => {
       });
     }
   });
+
+  // PUSH the other side. The chat notice alone reached nobody: onNewChatMessage
+  // skips system messages, so a professional asked for a new price — or a client
+  // sent a counter — learned of it only by opening the chat. While a request is
+  // pending the client's רלוונטי is locked, so an unannounced request is a dead
+  // end for both of them. 'system' is an essential type (cannot be muted — it is
+  // about money) and routes to the chat. After the commit: a refused request
+  // must not notify anyone.
+  const projectName = project.title ? ` "${project.title}"` : '';
+  await notify({
+    userId: toUserId,
+    title: 'BAMA',
+    message: callerIsClient
+      ? `💰 הלקוח/ה ביקש/ה שינוי מחיר בפרויקט${projectName}`
+      : `💰 בעל/ת המקצוע ביקש/ה שינוי מחיר בפרויקט${projectName}`,
+    data: { type: 'system', chatId: project.chatId ?? '', projectId },
+  });
+
   return { ok: true, requestId: reqRef.id, currentAmount };
 });
 

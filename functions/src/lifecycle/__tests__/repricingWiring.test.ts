@@ -46,3 +46,12 @@ it('clients cannot create paymentRequests directly', () => {
   expect(block.slice(0, block.indexOf('allow read'))).toMatch(/allow create: if false;/);
   expect(RULES).not.toMatch(/INTERIM/);
 });
+
+it('create pushes the counterparty, only after the transaction committed', () => {
+  const tx = create.indexOf('db.runTransaction');
+  const push = create.search(/await notify\(\{\s*userId: toUserId,/);
+  expect(push).toBeGreaterThan(tx);
+  // After the transaction's closing, not inside its callback.
+  expect(create.slice(tx, push)).toMatch(/\n  \}\);\n/);
+  expect(create.slice(push)).toMatch(/type: 'system'/);
+});
