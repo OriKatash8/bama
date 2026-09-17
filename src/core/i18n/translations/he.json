@@ -1174,6 +1174,19 @@
     "err_price_pending": "יש בקשת שינוי מחיר פתוחה מול {{name}}",
     "err_not_under_review": "כבר התקבלה החלטה לגבי {{name}}",
     "err_engagement_not_open": "כבר לא ניתן להסיר את {{name}} מהפרויקט",
-    "err_generic": "משהו השתבש. נסו שוב."
+    "err_generic": "משהו השתבש. נסו שוב.",
+    "pro_confirm_title": "הפרויקט מתאים לך?",
+    "pro_confirm_body": "הלקוח/ה יראה/תראה שאישרת.\nאחרי האישור לא תוכל/י להציע מחיר חדש — רק להגיב להצעה של הלקוח/ה.",
+    "pro_confirm_ok": "אישור",
+    "pro_confirmed_toast": "אישרת את הפרויקט",
+    "pro_decline_title": "לעזוב את הפרויקט?",
+    "pro_decline_body": "תוסר/י מהצ׳אט ומהפרויקט, והלקוח/ה יקבל/תקבל הודעה.",
+    "pro_decline_ok": "עזיבה",
+    "pro_declined_toast": "עזבת את הפרויקט",
+    "pro_acknowledged_note": "אישרת · שינויי מחיר מעכשיו רק בתגובה להצעה של הלקוח/ה",
+    "pro_err_not_under_review": "הלקוח/ה כבר קיבל/ה החלטה",
+    "pro_err_engagement_not_open": "כבר לא ניתן לעזוב מכאן",
+    "pro_accepted_tag": "{{name}} אישר/ה",
+    "pro_client": "לקוח/ה"
   }
 }

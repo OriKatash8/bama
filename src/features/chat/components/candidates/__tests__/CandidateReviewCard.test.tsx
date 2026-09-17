@@ -236,3 +236,10 @@ describe('lines that carry a name set their writing direction explicitly', () =>
     expect(StyleSheet.flatten(text[0].props.style).writingDirection).toBe(dir);
   });
 });
+
+it("shows the professional's own רלוונטי as a tag on his row", async () => {
+  mockAccepted = { offers: [offer('pro-a', { proAccepted: true }), offer('pro-b', { category: 'Sound Recordist' })], bundles: [] };
+  const { getByTestId, queryByTestId } = await renderCard();
+  expect(getByTestId('candidate-pro-accepted-pro-a').props.children).toBe('✓ Avi confirmed');
+  expect(queryByTestId('candidate-pro-accepted-pro-b')).toBeNull();
+});

@@ -1,9 +1,10 @@
 import { where } from 'firebase/firestore';
 import { subscribeToCollection } from '@core/firebase/firestore';
 import { callFunction } from '@core/firebase/functions';
-import type { BundleOffer, PriceOffer } from '@core/types/project';
+import type { BundleOffer, PaymentRequest, PriceOffer } from '@core/types/project';
 import { categoryLabel } from '@features/crew/data/categories';
 import { isPendingReview } from '../utils/review';
+import { decideNewPriceRequest, roleKeyOf, sameRole } from '../utils/priceRequestPolicy';
 
 /**
  * Data for the client's review card and the professional's status chip.
@@ -27,6 +28,8 @@ export type PendingCandidate = {
   proId: string;
   roles: ReviewRole[];
   total: number;
+  /** The professional has said רלוונטי (acknowledgeCandidacy) on something still under review. */
+  proAccepted: boolean;
 };
 
 type Lang = 'he' | 'en';
@@ -77,7 +80,8 @@ export function groupPendingByPro(offers: PriceOffer[], bundles: BundleOffer[], 
         pendingBundles.filter((b) => b.professionalId === proId),
         lang,
       );
-      return { proId, roles, total: sum(roles) };
+      const mine = [...pendingOffers, ...pendingBundles].filter((o) => o.professionalId === proId);
+      return { proId, roles, total: sum(roles), proAccepted: mine.some((o) => o.proAccepted === true) };
     })
     // A pro whose only pending offers are bundle components with no loaded bundle
     // has nothing actionable to show — the bundle doc is what carries the price.
@@ -149,6 +153,83 @@ export function confirmCandidate(projectId: string, professionalId: string) {
 /** לא רלוונטי. `reason`, when given, reaches the professional only as a private DM. */
 export function rejectCandidate(projectId: string, professionalId: string, reason?: string) {
   return rejectCandidateFn({ projectId, professionalId, ...(reason ? { reason } : {}) });
+}
+
+const acknowledgeCandidacyFn = callFunction<{ projectId: string }, { ok: boolean; acknowledged: number }>('acknowledgeCandidacy');
+const declineCandidacyFn = callFunction<{ projectId: string }, { ok: boolean; activated: boolean }>('declineCandidacy');
+
+/** The professional's רלוונטי. Informational for the client; afterwards he may only counter. */
+export function acknowledgeCandidacy(projectId: string) {
+  return acknowledgeCandidacyFn({ projectId });
+}
+
+/** The professional's לא רלוונטי — leaves the project immediately while still under review. */
+export function declineCandidacy(projectId: string) {
+  return declineCandidacyFn({ projectId });
+}
+
+/** Has the professional said רלוונטי on anything still under review? */
+export function proHasAcknowledged(offers: PriceOffer[], bundles: BundleOffer[]): boolean {
+  return [...offers, ...bundles].some((o) => isPendingReview(o) && o.proAccepted === true);
+}
+
+/**
+ * Every price change involving this professional on the project, ANY status —
+ * the policy needs the history, not just what is pending. Two queries because the
+ * read rule admits a request only to its `fromUserId` or `toUserId`.
+ */
+export function listenToMyPriceRequestHistory(
+  projectId: string,
+  proId: string,
+  callback: (requests: PaymentRequest[]) => void,
+): () => void {
+  let from: PaymentRequest[] | null = null;
+  let to: PaymentRequest[] | null = null;
+  const emit = () => {
+    if (!from || !to) return;
+    const byId = new Map<string, PaymentRequest>();
+    [...from, ...to].forEach((r) => byId.set(r.id, r));
+    callback([...byId.values()]);
+  };
+  const path = `projects/${projectId}/paymentRequests`;
+  const u1 = subscribeToCollection<PaymentRequest>(path, (d) => { from = d; emit(); }, where('fromUserId', '==', proId));
+  const u2 = subscribeToCollection<PaymentRequest>(path, (d) => { to = d; emit(); }, where('toUserId', '==', proId));
+  return () => { u1(); u2(); };
+}
+
+const millis = (ts: unknown): number =>
+  typeof (ts as { toMillis?: () => number })?.toMillis === 'function' ? (ts as { toMillis: () => number }).toMillis() : 0;
+
+/**
+ * The professional's roles he may raise a price change on right now — the same
+ * decision createPaymentRequest will make (via the client mirror of the policy).
+ * Per role: under review and proAccepted come from that role's own offer/bundle.
+ */
+export function rolesProMayReprice(
+  offers: PriceOffer[],
+  bundles: BundleOffer[],
+  history: PaymentRequest[],
+  proId: string,
+  lang: Lang,
+): ReviewRole[] {
+  const accepted = [
+    ...bundles.filter((b) => b.status === 'accepted').map((b) => ({ key: `bundle:${b.id}`, doc: b as PriceOffer | BundleOffer })),
+    ...offers.filter((o) => o.status === 'accepted' && !o.bundleId).map((o) => ({ key: `category:${o.category}`, doc: o as PriceOffer | BundleOffer })),
+  ];
+  const roles = rolesOf(offers.filter((o) => o.status === 'accepted'), bundles.filter((b) => b.status === 'accepted'), lang);
+  return roles.filter((role) => {
+    const doc = accepted.find((a) => a.key === role.key)?.doc;
+    if (!doc) return false;
+    const decision = decideNewPriceRequest({
+      callerIsClient: false,
+      underReview: isPendingReview(doc),
+      proAccepted: doc.proAccepted === true,
+      history: history
+        .filter((r) => sameRole(role.key, roleKeyOf(r)))
+        .map((r) => ({ fromClient: r.fromUserId !== proId, status: r.status, createdAtMs: millis(r.createdAt) })),
+    });
+    return decision.allowed;
+  });
 }
 
 /** Translation key for a failed decision, from the callable's message. */

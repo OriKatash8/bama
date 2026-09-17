@@ -39,7 +39,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, Users } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, Users, UserMinus } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -61,7 +61,7 @@ import { formatHebMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
-import { CandidateStatusChip } from '../components/candidates/CandidateStatusChip';
+import { CandidateProCard } from '../components/candidates/CandidateProCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
@@ -130,7 +130,7 @@ function formatRecordingTime(seconds: number): string {
 
 // ── System messages (new mission/meeting) ──────────────────────────────────
 
-type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'completion' | 'crew' | 'neutral';
+type SystemVariant = 'meeting' | 'mission' | 'price_change' | 'completion' | 'crew' | 'left' | 'neutral';
 
 /**
  * Which section of project-details a system message opens. Keyed by the variant
@@ -185,6 +185,12 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
   if (text.startsWith('🎬') || text.includes('הצוות נסגר')) {
     const detail = text.replace(/^(?:🎬\s*)?הצוות נסגר:?\s*/, '').trim();
     return { variant: 'crew', headline: 'הצוות נסגר', detail };
+  }
+  // releaseEngagement (functions/src/lifecycle/removal.ts): a professional left
+  // or was released ("עזב את הפרויקט"), or declined during review ("החליט/ה לא
+  // להמשיך בפרויקט"). Used to fall through to 'neutral' and wear the meeting icon.
+  if (text.includes('עזב את הפרויקט') || text.includes('החליט/ה לא להמשיך בפרויקט')) {
+    return { variant: 'left', headline: text, detail: '' };
   }
   return { variant: 'neutral', headline: text, detail: '' };
 }
@@ -1288,7 +1294,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       {chatType === 'group' && !!chatProjectId && !!projectClientId && !isReadOnly && !chatArchived && (
         projectClientId === currentUserId
           ? <CandidateReviewCard projectId={chatProjectId} chatId={chatId} clientId={currentUserId} />
-          : <CandidateStatusChip projectId={chatProjectId} chatId={chatId} proId={currentUserId} projectStatus={projectStatus} />
+          : <CandidateProCard projectId={chatProjectId} chatId={chatId} proId={currentUserId} projectStatus={projectStatus} />
       )}
 
       {/* Product notice opened by tapping the purchase-chat title */}
@@ -1329,7 +1335,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             const msg = item as Message;
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
-              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' || variant === 'crew' ? '#1c9d63' : variant === 'completion' ? '#004aad' : '#1e4fa3';
+              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' || variant === 'crew' ? '#1c9d63' : variant === 'completion' ? '#004aad' : variant === 'left' ? '#6b7280' : '#1e4fa3';
               // Each known kind names a section of project-details. 'neutral' has
               // nowhere to go — that is "X left the project" and the purchase-chat
               // notices — and a chat with no projectId has no details screen at
@@ -1339,7 +1345,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               const pill = (
                 <View style={[
                   styles.systemPill,
-                  variant === 'mission' ? styles.systemPillMission : variant === 'price_change' || variant === 'crew' ? styles.systemPillPrice : variant === 'completion' ? styles.systemPillCompletion : styles.systemPillMeeting,
+                  variant === 'mission' ? styles.systemPillMission : variant === 'price_change' || variant === 'crew' ? styles.systemPillPrice : variant === 'completion' ? styles.systemPillCompletion : variant === 'left' ? styles.systemPillLeft : styles.systemPillMeeting,
                   { flexDirection: rtl ? 'row-reverse' : 'row' },
                 ]}>
                   {variant === 'mission'
@@ -1350,7 +1356,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                         ? <Flag size={16} color={accent} strokeWidth={2} />
                         : variant === 'crew'
                           ? <Users size={16} color={accent} strokeWidth={2} />
-                          : <Calendar size={16} color={accent} strokeWidth={2} />}
+                          : variant === 'left'
+                            ? <UserMinus size={16} color={accent} strokeWidth={2} />
+                            : <Calendar size={16} color={accent} strokeWidth={2} />}
                   <View style={{ flexShrink: 1 }}>
                     <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
                       {headline}
@@ -2158,6 +2166,7 @@ const styles = StyleSheet.create({
   systemPillMission: { backgroundColor: 'rgba(203,108,230,0.10)' },
   systemPillPrice: { backgroundColor: 'rgba(28,157,99,0.10)' },
   systemPillCompletion: { backgroundColor: 'rgba(0,74,173,0.10)' },
+  systemPillLeft: { backgroundColor: 'rgba(107,114,128,0.10)' },
   systemHeadline: {
     fontSize: 13,
     textAlign: 'center',

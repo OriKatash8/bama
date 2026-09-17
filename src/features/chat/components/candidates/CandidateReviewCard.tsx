@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from '@components/ui/AppText';
 import { useUiStore } from '@core/stores/uiStore';
@@ -16,6 +16,7 @@ import { useCandidateText } from './useCandidateText';
 import { RejectCandidateSheet } from './RejectCandidateSheet';
 import { PriceChangeSheet } from './PriceChangeSheet';
 import { chromeStyles } from './chromeStyles';
+import { ActionButton } from './ActionButton';
 
 type Busy = 'confirm' | 'reject' | 'price';
 
@@ -158,6 +159,11 @@ export function CandidateReviewCard({
             <AppText weight="regular" numberOfLines={1} style={[styles.roles, { textAlign: align }]}>
               {c.roles.map((r) => r.label).join(' · ')}
             </AppText>
+            {c.proAccepted && resolved && (
+              <AppText weight="semiBold" numberOfLines={1} style={[styles.acceptedTag, { textAlign: align }, dir]} testID={`candidate-pro-accepted-${c.proId}`}>
+                {`✓ ${t('candidate_review.pro_accepted_tag', { name })}`}
+              </AppText>
+            )}
           </View>
           <AppText weight="bold" style={styles.price}>{money(c.total)}</AppText>
         </View>
@@ -231,34 +237,6 @@ export function CandidateReviewCard({
   );
 }
 
-function ActionButton({
-  label, variant, disabled, loading, onPress, testID,
-}: {
-  label: string;
-  variant: 'primary' | 'danger' | 'outline';
-  disabled: boolean;
-  loading: boolean;
-  onPress: () => void;
-  testID: string;
-}) {
-  const off = disabled || loading;
-  return (
-    <TouchableOpacity
-      testID={testID}
-      onPress={onPress}
-      disabled={off}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: off }}
-      activeOpacity={0.8}
-      style={[styles.btn, styles[variant], off && styles.btnDisabled]}
-    >
-      {loading
-        ? <ActivityIndicator size="small" color={variant === 'primary' ? '#ffffff' : '#004aad'} />
-        : <AppText weight="semiBold" numberOfLines={1} style={[styles.btnText, styles[`${variant}Text`]]}>{label}</AppText>}
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   title: { fontSize: 12, color: 'rgba(15,15,31,0.5)', marginBottom: 6 },
   scrollCap: { maxHeight: 330 },
@@ -271,17 +249,9 @@ const styles = StyleSheet.create({
   name: { fontSize: 15, color: '#0f0f1f' },
   namePlaceholder: { color: 'rgba(15,15,31,0.35)' },
   roles: { fontSize: 12, color: 'rgba(15,15,31,0.55)' },
+  acceptedTag: { fontSize: 11, color: '#1c7a4a' },
   price: { fontSize: 15, color: '#004aad' },
   status: { fontSize: 12, color: 'rgba(15,15,31,0.55)' },
   statusAction: { fontSize: 12, color: '#004aad' },
   actions: { gap: 8 },
-  btn: { flex: 1, minHeight: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  btnDisabled: { opacity: 0.45 },
-  btnText: { fontSize: 13 },
-  primary: { backgroundColor: '#004aad' },
-  primaryText: { color: '#ffffff' },
-  danger: { borderWidth: 1, borderColor: '#d64545' },
-  dangerText: { color: '#d64545' },
-  outline: { borderWidth: 1, borderColor: '#004aad55' },
-  outlineText: { color: '#004aad' },
 });

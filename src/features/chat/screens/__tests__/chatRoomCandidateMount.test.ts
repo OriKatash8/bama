@@ -13,12 +13,13 @@ it('mounts above the message list, so it stays pinned while messages scroll', ()
   const list = SRC.indexOf('<View style={{ flex: 1, zIndex: 0 }}>');
   expect(mount).toBeGreaterThan(-1);
   expect(mount).toBeLessThan(list);
-  expect(SRC.indexOf('<CandidateStatusChip')).toBeLessThan(list);
+  expect(SRC.indexOf('<CandidateProCard')).toBeLessThan(list);
 });
 
 it('client gets the card, anyone else on the project gets the chip — by project role, not mode', () => {
   expect(SRC).toMatch(/projectClientId === currentUserId\s*\?\s*<CandidateReviewCard[^>]*clientId=\{currentUserId\}/);
-  expect(SRC).toMatch(/:\s*<CandidateStatusChip[^>]*proId=\{currentUserId\}/);
+  expect(SRC).toMatch(/:\s*<CandidateProCard[^>]*proId=\{currentUserId\}/);
+  expect(SRC).not.toMatch(/CandidateStatusChip/);
 });
 
 it('only on open project group chats', () => {
@@ -33,4 +34,10 @@ it('follows the project live, so the chip leaves when the project activates', ()
 it('renders the crew message as its own pill', () => {
   expect(SRC).toMatch(/text\.startsWith\('🎬'\)/);
   expect(SRC).toMatch(/variant: 'crew'/);
+});
+
+it("renders 'left the project' and 'chose not to continue' as their own pill", () => {
+  expect(SRC).toMatch(/text\.includes\('עזב את הפרויקט'\) \|\| text\.includes\('החליט\/ה לא להמשיך בפרויקט'\)/);
+  expect(SRC).toMatch(/variant: 'left'/);
+  expect(SRC).toMatch(/variant === 'left'\s*\?\s*<UserMinus/);
 });

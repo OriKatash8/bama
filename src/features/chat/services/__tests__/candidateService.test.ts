@@ -2,7 +2,7 @@ jest.mock('@core/firebase/firestore', () => ({ subscribeToCollection: jest.fn() 
 jest.mock('@core/firebase/functions', () => ({ callFunction: () => jest.fn() }));
 jest.mock('firebase/firestore', () => ({ where: jest.fn() }));
 
-import { groupPendingByPro, proReviewState, proPrice, candidateErrorKey } from '../candidateService';
+import { groupPendingByPro, proReviewState, proPrice, candidateErrorKey, rolesProMayReprice, proHasAcknowledged } from '../candidateService';
 
 const offer = (over: Record<string, unknown>) => ({
   id: String(over.id ?? Math.random()), projectId: 'p1', professionalId: 'a', category: 'Editor',
@@ -84,5 +84,31 @@ describe('candidateErrorKey', () => {
     ['boom', 'candidate_review.err_generic'],
   ])('%s', (message, key) => {
     expect(candidateErrorKey({ message })).toBe(key);
+  });
+});
+
+describe('rolesProMayReprice (pro side, mirrors the server policy per role)', () => {
+  const ts = (ms: number) => ({ toMillis: () => ms });
+  const pr = (from: string, status: string, t: number, category = 'Editor') =>
+    ({ id: `r${t}`, professionalId: 'a', category, fromUserId: from, toUserId: from === 'a' ? 'c' : 'a', status, createdAt: ts(t) }) as never;
+  const two = [offer({ category: 'Editor', review: 'pending' }), offer({ category: 'Sound Recordist', review: 'pending' })];
+
+  it('each role has its own unprompted request', () => {
+    const roles = rolesProMayReprice(two, [], [pr('a', 'rejected', 1, 'Editor')], 'a', 'en');
+    expect(roles.map((r) => r.category)).toEqual(['Sound Recordist']);
+  });
+  it('none once he acknowledged, until he has something to counter', () => {
+    const acked = [offer({ category: 'Editor', review: 'pending', proAccepted: true })];
+    expect(rolesProMayReprice(acked, [], [], 'a', 'en')).toEqual([]);
+    expect(rolesProMayReprice(acked, [], [pr('c', 'rejected', 1)], 'a', 'en').map((r) => r.category)).toEqual(['Editor']);
+  });
+  it('all roles once the client confirmed', () => {
+    const confirmed = [offer({ category: 'Editor', review: 'confirmed', proAccepted: true })];
+    expect(rolesProMayReprice(confirmed, [], [pr('a', 'rejected', 1), pr('a', 'rejected', 2)], 'a', 'en')).toHaveLength(1);
+  });
+  it('proHasAcknowledged looks only at offers still under review', () => {
+    expect(proHasAcknowledged([offer({ review: 'pending', proAccepted: true })], [])).toBe(true);
+    expect(proHasAcknowledged([offer({ review: 'confirmed', proAccepted: true })], [])).toBe(false);
+    expect(proHasAcknowledged([offer({ status: 'removed', review: 'pending', proAccepted: true })], [])).toBe(false);
   });
 });

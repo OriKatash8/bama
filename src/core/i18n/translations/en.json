@@ -1174,6 +1174,19 @@
     "err_price_pending": "There's an open price change with {{name}}",
     "err_not_under_review": "A decision on {{name}} was already made",
     "err_engagement_not_open": "{{name}} can no longer be removed from the project",
-    "err_generic": "Something went wrong. Try again."
+    "err_generic": "Something went wrong. Try again.",
+    "pro_confirm_title": "Is this project right for you?",
+    "pro_confirm_body": "The client will see that you confirmed.\nAfter confirming you won't be able to propose a new price — only respond to the client's.",
+    "pro_confirm_ok": "Confirm",
+    "pro_confirmed_toast": "You confirmed the project",
+    "pro_decline_title": "Leave the project?",
+    "pro_decline_body": "You'll be removed from this chat and the project, and the client will be notified.",
+    "pro_decline_ok": "Leave",
+    "pro_declined_toast": "You left the project",
+    "pro_acknowledged_note": "You confirmed · price changes now only in response to the client",
+    "pro_err_not_under_review": "The client has already decided",
+    "pro_err_engagement_not_open": "You can no longer leave from here",
+    "pro_accepted_tag": "{{name}} confirmed",
+    "pro_client": "the client"
   }
 }
