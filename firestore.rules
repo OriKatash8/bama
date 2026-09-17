@@ -148,10 +148,18 @@ service cloud.firestore {
     // could reopen a closed job, and with it the offers and fee machinery that
     // confirmCompletion had already settled. Reopening, if it is ever wanted,
     // goes through a callable.
+    //
+    // 'in_progress' is entered only by maybeActivateProject (candidates.ts), once
+    // every hired professional has been reviewed and no seat is empty. A client
+    // writing it directly would skip that gate — and hide the project from the
+    // noticeboard, which lists only 'open'. LEAVING it for 'open' stays allowed:
+    // reposting a role does exactly that (project-details.tsx handlePostRoles).
     function statusTransitionAllowed() {
-      return request.resource.data.get('status', '') == resource.data.get('status', '') ||
-        (!(request.resource.data.get('status', '') in ['completed', 'cancelled']) &&
-         !(resource.data.get('status', '') in ['completed', 'cancelled']));
+      let before = resource.data.get('status', '');
+      let after = request.resource.data.get('status', '');
+      return after == before ||
+        (!(after in ['completed', 'cancelled', 'in_progress']) &&
+         !(before in ['completed', 'cancelled']));
     }
 
     // Every field a client legitimately writes to a project AFTER creation.
@@ -478,7 +486,11 @@ service cloud.firestore {
       allow read: if isAuth();    // professionals browse the noticeboard
       // Clients create projects. `filledSlots: []` is fine; every other lifecycle
       // field must be absent so a client cannot self-assign feeStatus at create.
+      // A new project starts 'open' — the only status either create site writes
+      // (useProjectRequests, DirectProjectSheet). Unchecked, a client could create
+      // one already 'in_progress' and skip the review gate the update rule holds.
       allow create: if isAuth() &&
+        request.resource.data.get('status', 'open') == 'open' &&
         request.resource.data.get('filledSlots', []) == [] &&
         !request.resource.data.keys().hasAny(
           serverOnlyProjectFields().removeAll(['filledSlots'])

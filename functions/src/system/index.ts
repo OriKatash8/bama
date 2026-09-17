@@ -1,5 +1,8 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+// Statics from the MODULAR entry point — under the functions emulator the
+// `admin.firestore.FieldValue` namespace is undefined (docs/slice1-verification.md).
+import { FieldValue } from 'firebase-admin/firestore';
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -25,7 +28,7 @@ async function ensureSystemUser(db: admin.firestore.Firestore): Promise<void> {
       displayName: 'BAMA System',
       email: '',
       photoURL: null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     },
     { merge: true },
   );
@@ -50,7 +53,7 @@ export async function sendBamaSystemDM(
       type: 'dm',
       members: [SYSTEM_USER_ID, targetUid],
       readOnly: true,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     },
     { merge: true },
   );
@@ -58,7 +61,7 @@ export async function sendBamaSystemDM(
   await chatRef.collection('messages').add({
     senderId: SYSTEM_USER_ID,
     text,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: FieldValue.serverTimestamp(),
     readBy: [],
   });
 
@@ -66,9 +69,9 @@ export async function sendBamaSystemDM(
     lastMessage: {
       text,
       senderId: SYSTEM_USER_ID,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
     },
-    [`unreadCount.${targetUid}`]: admin.firestore.FieldValue.increment(1),
+    [`unreadCount.${targetUid}`]: FieldValue.increment(1),
   });
 
   await db.collection('notifications').add({
@@ -76,7 +79,7 @@ export async function sendBamaSystemDM(
     title: 'BAMA System',
     message: text,
     data: { type: 'system', chatId },
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   });
 
   return chatId;

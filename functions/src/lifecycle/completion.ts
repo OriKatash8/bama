@@ -8,6 +8,7 @@ import {
 import { readConfig } from './config';
 import { applyDerivedProjectState } from './derive';
 import { releaseEngagement } from './removal';
+import { warnIfCompletedUnderReview } from './review';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -278,6 +279,9 @@ export async function confirmCompletionInternal(
     });
   }
   await batch.commit();
+
+  // C6: observation only. Never blocks or changes a completion.
+  await Promise.all(closedPros.map((proId) => warnIfCompletedUnderReview(projectId, proId)));
 
   // The project's own status is now DERIVED from the engagements this batch just
   // closed, rather than asserted alongside them. It is written above too, so the
@@ -838,6 +842,9 @@ export async function completeEngagementInternal(
   await db.doc(`projects/${projectId}`).update({
     slotHolders: FieldValue.arrayRemove(proId),
   } as Update);
+
+  // C6: observation only. Never blocks or changes a completion.
+  await warnIfCompletedUnderReview(projectId, proId);
 
   await applyDerivedProjectState(projectId);
   return { completed: true };

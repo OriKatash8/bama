@@ -1,4 +1,4 @@
-import { db, feesCol, contestWindowEndsAt, type FeeDoc } from './helpers';
+import { db, feesCol, contestWindowEndsAt, FieldValue, type FeeDoc } from './helpers';
 import * as admin from 'firebase-admin';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
@@ -68,10 +68,18 @@ export type DerivedProjectState = {
 export function deriveProjectState(
   engagements: readonly Pick<
     FeeDoc,
-    'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'completion'
+    'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'completion' | 'releaseReason'
   >[],
   now: number = Date.now(),
 ): DerivedProjectState {
+  // A candidate the client rejected during review never started. Counting their
+  // voided engagement as a terminal one completed the project the moment the
+  // only candidate was turned down — status 'completed', slots emptied, and a
+  // client cannot leave 'completed', so the seat could never be filled again.
+  // Without them, a project whose only candidate was rejected is simply a
+  // project nobody is hired on yet.
+  engagements = engagements.filter((e) => e.releaseReason !== 'candidate_rejected');
+
   // Read through the accessor, never off either field: new engagements carry
   // chargeDueAt, records from before the collapse carry disputeWindowEndsAt, and
   // a project can hold both at once while the old ones age out.
@@ -171,7 +179,7 @@ export async function applyDerivedProjectState(projectId: string): Promise<Deriv
   if (derived.endRequestedAt) completion.requestedAt = derived.endRequestedAt;
   if (prior.source) completion.source = prior.source;
   if (derived.completionState === 'confirmed') {
-    completion.confirmedAt = prior.confirmedAt ?? admin.firestore.FieldValue.serverTimestamp();
+    completion.confirmedAt = prior.confirmedAt ?? FieldValue.serverTimestamp();
   }
   update.completion = completion;
 
@@ -179,7 +187,7 @@ export async function applyDerivedProjectState(projectId: string): Promise<Deriv
   if (project.status !== 'cancelled') {
     if (derived.isComplete && project.status !== 'completed') {
       update.status = 'completed';
-      update.completedAt = admin.firestore.FieldValue.serverTimestamp();
+      update.completedAt = FieldValue.serverTimestamp();
       // Completion is what frees capacity, for everyone, whatever is owed.
       update.slotHolders = [];
       update.slotActive = false;
@@ -292,17 +300,20 @@ export function remindersDueFor(
  * Thresholds and a client-facing reliability signal are a product decision that
  * has not been made, and a derived count costs nothing to leave unused.
  */
-export async function withdrawalCount(professionalId: string): Promise<{
+export type WithdrawalCounts = {
   withdrawn: number;
   byClientRemoval: number;
   byOwnChoice: number;
-}> {
-  const snap = await db.collectionGroup('fees')
-    .where('professionalId', '==', professionalId)
-    .get();
-  const withdrawn = snap.docs
-    .map((d) => d.data() as FeeDoc)
-    .filter((f) => f.engagementStatus === 'withdrawn');
+  /** Released by the client during review, before any work. Reported for the
+   *  admin view but NOT part of `withdrawn`: a client choosing among candidates
+   *  says nothing about this professional's reliability. */
+  candidateRejections: number;
+};
+
+/** Pure half of withdrawalCount, so the buckets are testable without Firestore. */
+export function splitWithdrawals(fees: readonly Pick<FeeDoc, 'engagementStatus' | 'releaseReason'>[]): WithdrawalCounts {
+  const released = fees.filter((f) => f.engagementStatus === 'withdrawn');
+  const withdrawn = released.filter((f) => f.releaseReason !== 'candidate_rejected');
   return {
     withdrawn: withdrawn.length,
     // Split because the two are not the same signal. Being removed by a client
@@ -310,5 +321,13 @@ export async function withdrawalCount(professionalId: string): Promise<{
     // of them is a decision the professional made.
     byClientRemoval: withdrawn.filter((f) => f.releaseReason === 'client_removed').length,
     byOwnChoice: withdrawn.filter((f) => f.releaseReason === 'pro_withdrew').length,
+    candidateRejections: released.length - withdrawn.length,
   };
+}
+
+export async function withdrawalCount(professionalId: string): Promise<WithdrawalCounts> {
+  const snap = await db.collectionGroup('fees')
+    .where('professionalId', '==', professionalId)
+    .get();
+  return splitWithdrawals(snap.docs.map((d) => d.data() as FeeDoc));
 }

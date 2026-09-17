@@ -313,7 +313,10 @@ export type ProjectFee = {
    * is not the same as one who chose to leave, and the reliability count must
    * not bucket them together.
    */
-  releaseReason?: 'client_removed' | 'pro_withdrew';
+  releaseReason?: 'client_removed' | 'pro_withdrew'
+    /** The client decided against them during review, before work started.
+     *  Not a withdrawal: excluded from project completion and reliability. */
+    | 'candidate_rejected';
 
   /** This engagement's own dispute deadline, stamped at ITS confirmation. One
    *  client action closing several engagements opens several independent

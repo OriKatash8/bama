@@ -8,6 +8,7 @@ export * from './system';
 
 // Pricing & project lifecycle (slice 1)
 export * from './lifecycle/hire';
+export * from './lifecycle/candidates';
 export * from './lifecycle/deletion';
 export * from './lifecycle/repricing';
 export * from './lifecycle/completion';

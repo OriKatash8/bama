@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { db, FieldValue, requireAuth, feeRef } from './helpers';
+import { db, FieldValue, requireAuth, feeRef, type ReleaseReason } from './helpers';
 import { applyDerivedProjectState } from './derive';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
@@ -51,7 +51,7 @@ type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 export async function releaseEngagement(
   projectId: string,
   proId: string,
-  reason: 'client_removed' | 'pro_withdrew',
+  reason: ReleaseReason,
 ): Promise<{ ok: boolean; chatId: string | null }> {
   const snap = await db.doc(`projects/${projectId}`).get();
   if (!snap.exists) throw new HttpsError('not-found', 'Project not found');

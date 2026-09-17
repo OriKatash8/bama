@@ -263,3 +263,23 @@ describe('remindersDueFor — the cache selects, the engagement decides', () => 
     )).toEqual([]);
   });
 });
+
+describe('candidate rejection is not an engagement outcome (C1)', () => {
+  const rejected = () => e('withdrawn', { releaseReason: 'candidate_rejected' });
+
+  it('a project whose only candidate was rejected is NOT complete — it has nobody on it yet', () => {
+    const d = deriveProjectState([rejected()], now);
+    expect(d.isComplete).toBe(false);
+    expect(d.reason).toBe('no engagements');
+  });
+
+  it('a rejected candidate neither holds open nor completes a project with real work', () => {
+    expect(deriveProjectState([e('completed'), rejected()], now).isComplete).toBe(true);
+    expect(deriveProjectState([e('hired'), rejected()], now).isComplete).toBe(false);
+  });
+
+  it('a professional who WITHDREW is unchanged: sole withdrawal still completes (reported, not fixed)', () => {
+    expect(deriveProjectState([e('withdrawn', { releaseReason: 'pro_withdrew' })], now).isComplete).toBe(true);
+    expect(deriveProjectState([e('withdrawn', { releaseReason: 'client_removed' })], now).isComplete).toBe(true);
+  });
+});

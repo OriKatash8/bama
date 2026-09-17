@@ -84,6 +84,14 @@ export function feesCol(projectId: string) {
  *  past an invoice's grace period may take on NEW work; see feeBlocksNewHire. */
 export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
+/**
+ * Why an engagement was released. `candidate_rejected` is the client deciding
+ * during review (candidates.ts), before the work started: it is not a
+ * withdrawal by or against the professional, so the project roll-up and the
+ * reliability count both leave it out (derive.ts).
+ */
+export type ReleaseReason = 'client_removed' | 'pro_withdrew' | 'candidate_rejected';
+
 export type FeeDoc = {
   professionalId: string;
   /** Denormalised so a collection-group read knows its project without walking
@@ -137,7 +145,7 @@ export type FeeDoc = {
     endKind?: 'finished' | 'withdrawing';
     endReason?: string;
   };
-  releaseReason?: 'client_removed' | 'pro_withdrew';
+  releaseReason?: ReleaseReason;
   /** Auto-complete deadline, stamped from the project's endDate. Absent = never. */
   completionDueAt?: admin.firestore.Timestamp;
   /** When the fee charges, and until when the professional may contest it.
