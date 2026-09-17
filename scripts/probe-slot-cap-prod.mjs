@@ -6,6 +6,13 @@
  * The failure that matters is a false refusal — a client unable to hire a second
  * role — which is exactly what was happening before.
  *
+ * NO REAL USER IS NOTIFIED. onProjectCreate sends "פרויקט חדש" to every matching
+ * professional for an OPEN project with a VACANT seat. Probe projects are created
+ * with every seat pre-filled by a placeholder and a targetProfessionalId set to
+ * the throwaway pro — the trigger returns on either. hireProfessional does not
+ * check vacancy, and the checks below count only the throwaway pro's own
+ * filledSlots entries, so the probe exercises the same paths as before.
+ *
  *   node scripts/probe-slot-cap-prod.mjs
  */
 import { readFileSync } from 'node:fs';
@@ -60,8 +67,13 @@ async function project(id, extra = {}) {
   await adminDb.collection('projects').doc(id).set({
     clientId: CLIENT, title: `Probe ${id}`, description: 'x', location: 'TLV',
     deadline: 'flexible', status: 'open', createdAt: new Date(),
+    targetProfessionalId: PRO,
     crewSlots: [{ category: 'Editor', quantity: 1 }, { category: 'Video Photographer', quantity: 1 }],
-    filledSlots: [], ...extra,
+    filledSlots: [
+      { category: 'Editor', professionalId: `${STAMP}-filler` },
+      { category: 'Video Photographer', professionalId: `${STAMP}-filler` },
+    ],
+    ...extra,
   });
 }
 async function offer(id, projectId, category, price) {
@@ -127,6 +139,30 @@ try {
   for (const d of offers.docs) if (d.id.startsWith(STAMP)) await d.ref.delete();
   for (const c of madeChats) await adminDb.collection('chats').doc(c).delete();
 
+  // What the triggers wrote for the two throwaway accounts: onUserCreate's
+  // users/{uid} doc and the offer notifications. Earlier versions of this script
+  // never removed either, so every past run left both behind in production.
+  // Swept twice — the notification triggers can land after the first pass.
+  async function sweepAccountDocs() {
+    let n = 0;
+    for (const tag of ['pro', 'client']) {
+      const uid = accounts[tag]?.uid;
+      if (!uid) continue;
+      const notes = await adminDb.collection('notifications').where('userId', '==', uid).get();
+      for (const d of notes.docs) { await d.ref.delete(); n++; }
+      const userRef = adminDb.collection('users').doc(uid);
+      for (const sub of await userRef.listCollections()) {
+        for (const d of (await sub.get()).docs) { await d.ref.delete(); n++; }
+      }
+      if ((await userRef.get()).exists) { await userRef.delete(); n++; }
+    }
+    return n;
+  }
+  await sweepAccountDocs();
+  await new Promise((r) => setTimeout(r, 5000));
+  const lateAccountDocs = await sweepAccountDocs();
+  if (lateAccountDocs) console.error(`  swept late: ${lateAccountDocs} users/notifications doc(s)`);
+
   let left = 0;
   for (const col of ['projects', 'priceOffers', 'chats']) {
     const s = await adminDb.collection(col).get();
@@ -139,6 +175,14 @@ try {
   }
   check('probe docs removed', left === 0, `${left} swept late`);
   check('probe accounts removed', leaked === 0, `${leaked} leaked`);
+  let accountResidue = 0;
+  for (const tag of ['pro', 'client']) {
+    const uid = accounts[tag]?.uid;
+    if (!uid) continue;
+    accountResidue += (await adminDb.collection('notifications').where('userId', '==', uid).get()).size;
+    if ((await adminDb.collection('users').doc(uid).get()).exists) accountResidue++;
+  }
+  check('probe users/notifications docs removed', accountResidue === 0, `${accountResidue} left`);
 }
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`);
 process.exit(failures === 0 ? 0 : 1);
