@@ -15,8 +15,11 @@ and a duplicate-chat bug in hiring.
 **Written, pushed, NOT deployed**
 - Nothing. Both commits are client-only and ship with the next app build.
 
-**Written, NOT committed** — the duplicate-chat fix (see below). Needs a functions
-deploy to take effect, which is the one thing here that touches production.
+**Deployed to production (2026-09-16 19:17 UTC)** — `hireProfessional` only, revision
+`hireprofessional-00009-ceq`, from `ef8e0c3`. Carries both hire fixes: the
+duplicate-chat transaction (`0ec90eb`, §2) and the slot-cap race (R8, §2b). Deployed
+source downloaded and diffed byte-identical; recorded in `docs/production-deploys.md`.
+No other function was redeployed.
 
 **Gate at time of writing:** 703 tests / 71 suites green; root and `functions/`
 both typecheck clean.
@@ -77,7 +80,7 @@ Was already a horizontal pager; turned it vertical, Instagram-style.
 
 ---
 
-## 2. Duplicate project chats — fixed, NOT committed, NOT deployed
+## 2. Duplicate project chats — fixed, committed (`0ec90eb`), DEPLOYED 2026-09-16
 
 **Reported:** one professional with two offers on one project produced two project
 chats.
@@ -112,11 +115,23 @@ original line.
 
 ---
 
+## 2b. Slot-cap race (R8) — fixed (`ef8e0c3`), DEPLOYED 2026-09-16
+
+Two concurrent hires of one professional onto two different projects both passed
+the cap check, which ran before the transaction. `commitHire` now re-runs the cap
+query through `tx.get(query)` before any write. Emulator: old code over the cap
+20/20 (tx shape) and 10/10 (callables); fixed 0/20 and 0/10. Production: 5/5 rounds
+one hire landed and one was refused, zero residue. Full record:
+`docs/status/2026-09-17-r8-slot-cap-race.md`.
+
+---
+
 ## OPEN
 
-1. **Deploy the hire fix.** `firebase deploy --only functions`. Until then
-   production still creates duplicate chats. The client half ships with the app
-   build. Record in `docs/production-deploys.md` per convention.
+1. ~~**Deploy the hire fix.**~~ **CLOSED 2026-09-16.** `hireProfessional` deployed
+   with the duplicate-chat fix and the R8 slot-cap fix (§2, §2b). The client half
+   (Accept locks on every card while a hire is in flight) still ships with the next
+   app build.
 
 2. **Existing duplicate chats are not cleaned up.** Projects already carrying an
    orphaned chat still show it. Offered: a read-only script listing chats whose
