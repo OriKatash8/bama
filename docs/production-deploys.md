@@ -27,3 +27,10 @@ while later commits leave that file alone.
 
 No per-commit record. The drift check only confirms that every exported function name is
 deployed (24 on 2026-09-13), not which source version is running.
+
+Single-function deploys, verified by downloading the uploaded source from the
+`gcf-v2-sources-*` bucket and diffing it against the commit:
+
+| Released (UTC) | Function | Commit | Revision | How verified |
+|---|---|---|---|---|
+| 2026-09-16 19:17 | `hireProfessional` | `ef8e0c3` (branch `fix/slot-cap-race`) | `hireprofessional-00009-ceq` | Uploaded `src/lifecycle/hire.ts` and `slotCap.ts` byte-identical to `ef8e0c3`; the compiled `lib/lifecycle/hire.js` calls `slotCapBlocksHire`. Also ships `0ec90eb` (hire in a transaction), which was not live before. Race probe against production: 5/5 rounds one ok + one capped, zero residue |
