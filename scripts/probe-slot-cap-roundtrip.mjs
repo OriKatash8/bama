@@ -18,7 +18,6 @@ import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/
 import {
   getAuth, connectAuthEmulator, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
 } from 'firebase/auth';
-import { SUBSCRIBER_MONTHLY_LIMIT } from '../src/core/constants/pricing.ts';
 
 const FS = process.env.FS_PORT ?? '8680';
 const AU = process.env.AUTH_PORT ?? '9699';
@@ -74,28 +73,13 @@ async function callHire(offerId) {
   catch (e) { return { ok: false, code: e.code ?? '', msg: String(e.message ?? '') }; }
 }
 
-async function scenario(label, { subscriber }) {
+async function scenario(label) {
   console.log(`\n=== ${label} ===`);
   // Reset state.
   for (const [c, i] of [['projects', HERE], ['projects', OTHER], ['projects', THIRD]]) {
     const fees = await adminDb.collection(`${c}/${i}/fees`).get();
     for (const f of fees.docs) await f.ref.delete();
     await adminDb.collection(c).doc(i).delete();
-  }
-  await adminDb.collection('subscriptions').doc(PRO).delete();
-  if (subscriber) {
-    // ONE credit below the limit, deliberately. Starting AT the limit cannot test
-    // what we care about: the first hire genuinely needs a credit and is rightly
-    // refused, so the pro never reaches the state where a SECOND role is possible.
-    // Starting at limit-1 lets the first hire land (spending the last credit and
-    // putting them exactly AT the limit), and the second role then proves both
-    // halves at once — no limit check, and no increment.
-    const mk = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit' })
-      .format(new Date()).slice(0, 7);
-    await adminDb.collection('subscriptions').doc(PRO).set({
-      status: 'active', monthKey: mk, monthCount: SUBSCRIBER_MONTHLY_LIMIT - 1,
-    });
-    created.push(['subscriptions', PRO]);
   }
 
   await project(HERE);
@@ -110,12 +94,8 @@ async function scenario(label, { subscriber }) {
 
   if (!r1.ok) { console.log('  (skipping the rest — the first hire did not land)'); return; }
 
-  const beforeSub = (await adminDb.collection('subscriptions').doc(PRO).get()).data();
   const p1 = (await adminDb.collection('projects').doc(HERE).get()).data();
   const chatId = p1.chatId;
-  check('first hire spent a monthly credit', !subscriber
-    || beforeSub?.monthCount === SUBSCRIBER_MONTHLY_LIMIT,
-    subscriber ? `monthCount=${beforeSub?.monthCount} (want ${SUBSCRIBER_MONTHLY_LIMIT})` : 'n/a');
   const membersBefore = JSON.stringify((await adminDb.collection('chats').doc(chatId).get()).data()?.members ?? []);
   if (chatId) created.push(['chats', chatId]);
 
@@ -141,24 +121,19 @@ async function scenario(label, { subscriber }) {
   const membersAfter = JSON.stringify((await adminDb.collection('chats').doc(chatId).get()).data()?.members ?? []);
   check('group chat members unchanged', membersBefore === membersAfter, `${membersBefore} -> ${membersAfter}`);
 
-  const afterSub = (await adminDb.collection('subscriptions').doc(PRO).get()).data();
-  if (subscriber) {
-    check('monthCount UNCHANGED by the second role',
-          afterSub?.monthCount === beforeSub?.monthCount,
-          `${beforeSub?.monthCount} -> ${afterSub?.monthCount}`);
-  }
 
   // A hire on a genuinely NEW project must still be refused.
   await offer(`${THIRD}-o1`, THIRD, 'Editor', 500);
   const r3 = await callHire(`${THIRD}-o1`);
   check('hire on a THIRD, new project is still denied', !r3.ok,
         r3.ok ? 'ALLOWED — cap not enforced!' : `${r3.code} ${r3.msg}`);
-  check('...and denied for the right reason', !r3.ok && /slot-cap-reached|monthly-limit-reached/.test(r3.msg), r3.msg ?? '');
+  check('...and denied for the right reason', !r3.ok && /slot-cap-reached/.test(r3.msg), r3.msg ?? '');
 }
 
 try {
-  await scenario('NON-SUBSCRIBER at the slot cap', { subscriber: false });
-  await scenario('SUBSCRIBER at the monthly limit', { subscriber: true });
+  // Subscriptions no longer affect hiring (setSubscription is inert), so the
+  // monthly-limit scenario that used to run here tested nothing that exists.
+  await scenario('Professional at the slot cap');
 } catch (e) {
   console.error('\nprobe threw:', e); failures++;
 } finally {
@@ -168,13 +143,13 @@ try {
     for (const f of fees.docs) await f.ref.delete();
   }
   for (const [c, i] of created.reverse()) await adminDb.collection(c).doc(i).delete().catch(() => {});
-  for (const c of ['projects', 'priceOffers', 'chats', 'subscriptions']) {
+  for (const c of ['projects', 'priceOffers', 'chats']) {
     const snap = await adminDb.collection(c).get();
     const junk = snap.docs.filter((d) => /^sc-/.test(d.id) || d.id === PRO || d.id === CLIENT);
     for (const d of junk) await d.ref.delete();
   }
   let left = 0;
-  for (const c of ['projects', 'priceOffers', 'chats', 'subscriptions']) {
+  for (const c of ['projects', 'priceOffers', 'chats']) {
     const snap = await adminDb.collection(c).get();
     left += snap.docs.filter((d) => /^sc-/.test(d.id)).length;
   }
