@@ -6,6 +6,7 @@
  *
  *   node scripts/seed-candidate-review-web.mjs                    # seed; writes manifest
  *   node scripts/seed-candidate-review-web.mjs --live             # post-deploy click-through seed
+ *   node scripts/seed-candidate-review-web.mjs --item3            # item 3 render pass (carousel, pro card)
  *   node scripts/seed-candidate-review-web.mjs --cleanup <file>   # delete + read-only sweep
  *
  * NO REAL USER IS NOTIFIED. onProjectCreate fans "פרויקט חדש" out for an OPEN
@@ -110,9 +111,12 @@ if (args[0] === '--cleanup') {
 
 // ── seed ────────────────────────────────────────────────────────────────────
 const LIVE = args[0] === '--live';
-const STAMP = `${LIVE ? 'crlive' : 'crweb'}${Date.now()}`;
+const ITEM3 = args[0] === '--item3';
+const STAMP = `${LIVE ? 'crlive' : ITEM3 ? 'cri3' : 'crweb'}${Date.now()}`;
 const PW = 'Probe-Password-123!';
-const who = LIVE
+const who = ITEM3
+  ? { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד', proC: 'חן תאורה', proD: 'דנה צלמת' }
+  : LIVE
   ? { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד' }
   : { client: 'לקוחה בדיקה', proA: 'אבי עורך', proB: 'בני סאונד', proC: 'חן צלמת' };
 const uids = {};
@@ -133,6 +137,70 @@ for (const [tag, uid] of Object.entries(uids)) {
 
 const projectIds = [], chatIds = [];
 const now = Date.now();
+
+if (ITEM3) {
+  const seed = async (key, pros, seats, offers, extra = {}) => {
+    const pid = `${STAMP}-${key}`;
+    const chatRef = db.collection('chats').doc();
+    await db.doc(`projects/${pid}`).set({
+      clientId: uids.client, title: `Probe ${STAMP} ${key}`, description: 'item 3 render check', location: 'TLV',
+      deadline: 'flexible', status: 'open', createdAt: Timestamp.now(), targetProfessionalId: uids[pros[0]],
+      crewSlots: seats.map((category) => ({ category, quantity: 1 })),
+      filledSlots: seats.map((category) => ({ category, professionalId: `${STAMP}-filler` })),
+      professionalIds: pros.map((p) => uids[p]), chatId: chatRef.id, ...extra,
+    });
+    await chatRef.set({
+      type: 'group', name: `Probe ${key}`, projectId: pid, members: [uids.client, ...pros.map((p) => uids[p])],
+      roles: { [uids.client]: 'admin' }, lastMessage: null, createdAt: Timestamp.now(),
+    });
+    for (const [tag, category, price, fields] of offers) {
+      await db.doc(`priceOffers/${pid}-${tag}`).set({
+        projectId: pid, professionalId: uids[tag], category, price, status: 'accepted', createdAt: Timestamp.now(), ...fields,
+      });
+    }
+    projectIds.push(pid); chatIds.push(chatRef.id);
+    return { pid, chatId: chatRef.id };
+  };
+  const req = async (pid, id, from, to, pro, category, cur, prop, status, t) => db.collection(`projects/${pid}/paymentRequests`).doc(id).set({
+    projectId: pid, fromUserId: uids[from], toUserId: uids[to], professionalId: uids[pro], category,
+    currentAmount: cur, proposedAmount: prop, status, createdAt: Timestamp.fromMillis(now - t),
+  });
+
+  // P1 — three pending: the carousel.
+  const p1 = await seed('p1', ['proA', 'proB', 'proC'], ['Editor', 'Sound Recordist', 'Lighting Tech'], [
+    ['proA', 'Editor', 1800, { review: 'pending' }],
+    ['proB', 'Sound Recordist', 950, { review: 'pending', proAccepted: true, proAcceptedAt: Timestamp.now() }],
+    ['proC', 'Lighting Tech', 700, { review: 'pending' }],
+  ]);
+  await req(p1.pid, 'client-to-a', 'client', 'proA', 'proA', 'Editor', 1800, 1600, 'pending', 120_000);
+  await req(p1.pid, 'c-unprompted', 'proC', 'client', 'proC', 'Lighting Tech', 700, 850, 'pending', 60_000);
+  const lines = ['היי לכולם, תודה שהצטרפתם', 'שלום!', 'מתי מתחילים?', 'ביום ראשון', 'מעולה'];
+  const senders = [uids.client, uids.proA, uids.proB, uids.proC];
+  for (let i = 0; i < 24; i++) {
+    await db.collection(`chats/${p1.chatId}/messages`).add({
+      senderId: senders[i % 4], text: `${lines[i % lines.length]} (${i + 1})`, timestamp: Timestamp.fromMillis(now - (40 - i) * 60_000), readBy: [],
+    });
+  }
+  // System pills, rendered from the real texts the functions write.
+  for (const [text, dt] of [['יוסי צלם עזב את הפרויקט', 14], ['רון עורך החליט/ה לא להמשיך בפרויקט', 13], ['🎬 הצוות נסגר: אבי עורך, בני סאונד', 12]]) {
+    await db.collection(`chats/${p1.chatId}/messages`).add({
+      senderId: 'system', system: true, text, timestamp: Timestamp.fromMillis(now - dt * 60_000), readBy: [],
+    });
+  }
+
+  // P2 — a sole pending professional (D): single client card, and D's full action card.
+  const p2 = await seed('p2', ['proD'], ['Still Photographer'], [['proD', 'Still Photographer', 1200, { review: 'pending' }]]);
+
+  // P3 — D confirmed by the client: green chip.
+  const p3 = await seed('p3', ['proD'], ['Editor'], [['proD', 'Editor', 2200, { review: 'confirmed', proAccepted: true }]]);
+
+  const manifest = { stamp: STAMP, password: PW, uids, projectIds, chatIds, chats: { p1: p1.chatId, p2: p2.chatId, p3: p3.chatId } };
+  const out = `/private/tmp/claude-501/-Users-ori-Documents-bama/d3a12253-e9ed-4762-9799-672cc3d762b3/scratchpad/${STAMP}.json`;
+  writeFileSync(out, JSON.stringify(manifest, null, 2));
+  console.log(JSON.stringify({ ...manifest, emails: Object.fromEntries(Object.keys(who).map((t) => [t, `${STAMP}.${t}@probe.invalid`])) }, null, 2));
+  console.log(`\nmanifest: ${out}`);
+  process.exit(0);
+}
 
 if (LIVE) {
   // Post-deploy click-through: NO chat, NO accepted offer — the real app does the
