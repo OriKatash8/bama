@@ -59,6 +59,21 @@ export type DerivedProjectState = {
 };
 
 /**
+ * Has this engagement ever been completed — whatever it is now?
+ *
+ * Both completion paths (confirmCompletionInternal, completeEngagementInternal)
+ * stamp the contest window, and nothing clears it afterwards: a contest moves the
+ * engagement to 'disputed' and a re-hire moves it back to 'hired', both leaving
+ * the stamp. Read through contestWindowEndsAt, so records from before the two
+ * window fields collapsed (disputeWindowEndsAt only) count too.
+ */
+export function everCompleted(
+  e: Pick<FeeDoc, 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt'>,
+): boolean {
+  return e.engagementStatus === 'completed' || contestWindowEndsAt(e) != null;
+}
+
+/**
  * Pure. No Firestore, so the whole table is unit-testable.
  *
  * An empty engagement list is NOT complete. A project with no one hired has not
@@ -79,6 +94,19 @@ export function deriveProjectState(
   // Without them, a project whose only candidate was rejected is simply a
   // project nobody is hired on yet.
   engagements = engagements.filter((e) => e.releaseReason !== 'candidate_rejected');
+
+  // Withdrawals only close a project that had real work in it. When nothing on
+  // the project ever completed, withdrawn engagements are dropped: a project
+  // whose only professional withdrew (or was removed) used to roll up to
+  // 'completed' — slots emptied, hiring refused, and a client cannot leave
+  // 'completed' — so the client could never replace them. Without the withdrawals
+  // it is a project nobody is hired on yet, and stays open.
+  //
+  // Once ANY engagement has completed, withdrawals count as terminal again, so a
+  // project where some work was delivered and everyone else left still closes.
+  if (!engagements.some(everCompleted)) {
+    engagements = engagements.filter((e) => e.engagementStatus !== 'withdrawn');
+  }
 
   // Read through the accessor, never off either field: new engagements carry
   // chargeDueAt, records from before the collapse carry disputeWindowEndsAt, and
@@ -129,9 +157,9 @@ export function deriveProjectState(
     };
   }
 
-  // Every engagement is terminal. Note this includes the case where they are ALL
-  // withdrawn or cancelled — nobody delivered anything, and the project is still
-  // finished in the sense that nothing more will happen on it.
+  // Every engagement is terminal. Withdrawals only reach this point when some
+  // engagement ever completed (see above); an all-cancelled set can too, but a
+  // cancelled project's status is never touched by applyDerivedProjectState.
   const delivered = engagements.filter((e) => !NON_CHARGING.has(e.engagementStatus ?? ''));
   return {
     ...base,

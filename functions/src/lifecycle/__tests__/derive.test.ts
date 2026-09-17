@@ -1,4 +1,4 @@
-import { deriveProjectState, remindersDueFor } from '../derive';
+import { deriveProjectState, remindersDueFor, everCompleted } from '../derive';
 
 const DAY = 86400_000;
 const now = Date.UTC(2026, 8, 12);
@@ -27,10 +27,12 @@ describe('deriveProjectState — the project rolls up from its engagements', () 
     expect(deriveProjectState([e('completed'), e('cancelled')], now).isComplete).toBe(true);
   });
 
-  it('completes a project where EVERYONE withdrew, and says nobody delivered', () => {
+  it('does NOT complete a project where everyone withdrew and nothing ever completed', () => {
+    // Used to complete ("nobody delivered") — which stranded the client in a
+    // 'completed' project they could not reopen or hire into.
     const d = deriveProjectState([e('withdrawn'), e('withdrawn')], now);
-    expect(d.isComplete).toBe(true);
-    expect(d.reason).toContain('none delivered');
+    expect(d.isComplete).toBe(false);
+    expect(d.reason).toBe('no engagements');
   });
 
   it('ONE dispute holds the project open however many others finished', () => {
@@ -278,8 +280,61 @@ describe('candidate rejection is not an engagement outcome (C1)', () => {
     expect(deriveProjectState([e('hired'), rejected()], now).isComplete).toBe(false);
   });
 
-  it('a professional who WITHDREW is unchanged: sole withdrawal still completes (reported, not fixed)', () => {
-    expect(deriveProjectState([e('withdrawn', { releaseReason: 'pro_withdrew' })], now).isComplete).toBe(true);
-    expect(deriveProjectState([e('withdrawn', { releaseReason: 'client_removed' })], now).isComplete).toBe(true);
+  it('a sole professional who withdrew, or was removed, leaves the project open', () => {
+    expect(deriveProjectState([e('withdrawn', { releaseReason: 'pro_withdrew' })], now).isComplete).toBe(false);
+    expect(deriveProjectState([e('withdrawn', { releaseReason: 'client_removed' })], now).isComplete).toBe(false);
+    expect(deriveProjectState([e('withdrawn')], now).isComplete).toBe(false); // legacy, no reason
+  });
+});
+
+describe('withdrawals close a project only if something ever completed', () => {
+  const past = ts(now - 10 * DAY);
+  const future = ts(now + 2 * DAY);
+
+  it('real work completed + someone withdrew → complete, as before', () => {
+    expect(deriveProjectState([e('completed', { chargeDueAt: past }), e('withdrawn')], now).isComplete).toBe(true);
+    expect(deriveProjectState([e('completed'), e('withdrawn'), e('withdrawn')], now).isComplete).toBe(true);
+  });
+
+  it('a completed-then-contested engagement still counts as ever-completed, and holds open as disputed', () => {
+    const d = deriveProjectState([e('disputed', { chargeDueAt: future }), e('withdrawn')], now);
+    expect(d.isComplete).toBe(false);
+    expect(d.reason).toContain('disputed');
+  });
+
+  it('a completed-then-rehired engagement keeps the project open until it finishes again', () => {
+    expect(deriveProjectState([e('hired', { chargeDueAt: past }), e('withdrawn')], now).isComplete).toBe(false);
+  });
+
+  it('a legacy completion (disputeWindowEndsAt only) counts as ever-completed', () => {
+    expect(deriveProjectState([e('completed', { disputeWindowEndsAt: past }), e('withdrawn')], now).isComplete).toBe(true);
+  });
+
+  it('THE case the "ever completed" condition exists for: only withdrawals remain, but one had completed before', () => {
+    // A professional completed, was re-hired for a further role, then withdrew from
+    // that. Work was delivered on this project, so it closes. Dropping withdrawals
+    // unconditionally would reopen it.
+    const d = deriveProjectState([e('withdrawn', { chargeDueAt: past, releaseReason: 'pro_withdrew' })], now);
+    expect(d.isComplete).toBe(true);
+    expect(deriveProjectState([e('withdrawn', { chargeDueAt: past }), e('withdrawn')], now).isComplete).toBe(true);
+  });
+
+  it('withdrawals plus open work: open, and the withdrawals do not change that', () => {
+    expect(deriveProjectState([e('hired'), e('withdrawn')], now).isComplete).toBe(false);
+  });
+});
+
+describe('everCompleted', () => {
+  const past = ts(now - DAY);
+  it.each([
+    ['completed, no stamp', e('completed'), true],
+    ['disputed with chargeDueAt', e('disputed', { chargeDueAt: past }), true],
+    ['hired with chargeDueAt (re-hire)', e('hired', { chargeDueAt: past }), true],
+    ['legacy disputeWindowEndsAt', e('disputed', { disputeWindowEndsAt: past }), true],
+    ['hired, never completed', e('hired'), false],
+    ['withdrawn, never completed', e('withdrawn'), false],
+    ['disputed before any completion (rejected withdrawal)', e('disputed'), false],
+  ])('%s', (_label, eng, expected) => {
+    expect(everCompleted(eng)).toBe(expected);
   });
 });
