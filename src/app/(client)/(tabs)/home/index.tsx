@@ -51,6 +51,9 @@ const FIELD_FILL = '#F6F5FA';
 const FIELD_BORDER = '#EAE8F0';
 const HAIRLINE = '#F0EEF6';
 const FIELD_GAP = 18;
+/** Shortest description the builder accepts. Shared by the validator and the
+ *  field's "looks good" outline, so the two can never disagree. */
+const DESCRIPTION_MIN = 10;
 /** Chrome draws `outline: auto` over the violet ring on focus, whatever the
  *  width; RN's types have no 'none', hence the cast (web only). */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
@@ -321,11 +324,16 @@ export default function HomeScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }
 
+  // Visual only: a filled field that would pass handleNext gets a violet
+  // outline, the same signal the date and location tiles give once set.
+  const titleOk = title.trim().length > 0;
+  const descriptionOk = description.trim().length >= DESCRIPTION_MIN;
+
   // ── Step 1 → Step 2 ──
   function handleNext() {
     const next: Record<string, string> = {};
     if (!title.trim()) next.title = t('builder.error_required');
-    if (description.trim().length < 10) next.description = rtl ? 'נא לרשום לפחות 10 תווים' : 'Please write at least 10 characters';
+    if (description.trim().length < DESCRIPTION_MIN) next.description = rtl ? 'נא לרשום לפחות 10 תווים' : 'Please write at least 10 characters';
     if (!deadline) next.deadline = t('builder.error_required');
     setErrors(next);
     if (Object.keys(next).length > 0) {
@@ -432,7 +440,7 @@ export default function HomeScreen() {
                 onLayout={(e) => { fieldY.current.title = e.nativeEvent.layout.y; }}
               >
               <TextInput
-                style={[styles.input, webNoOutline, { textAlign: rtl ? 'right' : 'left' }, focusedField === 'title' && styles.inputFocused, errors.title ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
+                style={[styles.input, webNoOutline, { textAlign: rtl ? 'right' : 'left' }, titleOk && styles.inputOk, focusedField === 'title' && styles.inputFocused, errors.title ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
                 value={title}
                 onChangeText={setTitle}
                 onFocus={() => setFocusedField('title')}
@@ -455,6 +463,7 @@ export default function HomeScreen() {
                   styles.textarea,
                   webNoOutline,
                   { textAlign: rtl ? 'right' : 'left' },
+                  descriptionOk && styles.inputOk,
                   focusedField === 'description' && styles.inputFocused,
                   errors.description ? { borderWidth: 1.5, borderColor: '#fc8181' } : null,
                 ]}
@@ -1079,6 +1088,8 @@ function createStyles(
     },
     textarea: { height: 106, fontSize: 14.5, lineHeight: 23, paddingVertical: 12, textAlignVertical: 'top' },
     inputFocused: { borderColor: '#8B5CF6', backgroundColor: '#FFFFFF' },
+    /** Filled and valid. Outline only; the error border still wins over it. */
+    inputOk: { borderColor: '#8B5CF6' },
     /** margin -3 cancels the ring's own width, so focusing moves nothing. */
     focusRing: { borderWidth: 3, borderColor: 'transparent', borderRadius: 17, margin: -3 },
     focusRingOn: { borderColor: 'rgba(139,92,246,0.18)' },
