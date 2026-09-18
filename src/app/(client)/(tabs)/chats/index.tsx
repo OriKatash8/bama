@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Search, MessageCircle, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { useUserChats } from '@features/chat/hooks/useUserChats';
 import { Screen } from '@components/layout/Screen';
 import { PageTitle } from '@components/ui/PageTitle';
+import { GradientBand } from '@components/ui/GradientBand';
 import { EmptyState } from '@components/ui/EmptyState';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -17,13 +17,6 @@ import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
-/** Same band as the create-project and browse screens: top-right to bottom-left. */
-const BAND_GRADIENT = {
-  colors: ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const,
-  locations: [0, 0.46, 0.78, 1] as const,
-  start: { x: 1, y: 0 },
-  end: { x: 0.15, y: 1 },
-};
 const PAGE_BG = '#FAFAFC';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
@@ -78,9 +71,9 @@ export default function ChatsPage() {
 
   return (
     <Screen style={{ padding: 0, paddingBottom: 100 }} scrollable={hasChats} backgroundColor={PAGE_BG}>
-      <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+      <GradientBand style={styles.band}>
         <PageTitle style={titleType}>{t(tr, 'chats_page.title')}</PageTitle>
-      </LinearGradient>
+      </GradientBand>
 
       <View style={styles.sheet}>
 

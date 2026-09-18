@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { PageTitle } from '@components/ui/PageTitle';
+import { GradientBand } from '@components/ui/GradientBand';
 import { useTheme } from '@core/hooks/useTheme';
 import { ROLE_CATEGORIES, categoryLabel, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
@@ -55,13 +56,6 @@ const CATEGORY_IMAGE: Record<string, number> = {
   'Sound Recordist':    require('../../../../../assets/images/categories/blue-sound.png'),
 };
 
-/** Same band as the create-project wizard: top-right to bottom-left. */
-const BAND_GRADIENT = {
-  colors: ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const,
-  locations: [0, 0.46, 0.78, 1] as const,
-  start: { x: 1, y: 0 },
-  end: { x: 0.15, y: 1 },
-};
 const PAGE_BG = '#FAFAFC';
 const VIOLET = '#6D28D9';
 /** Row padding 14 + icon tile 46 + gap 12: separators start where the label does. */
@@ -157,9 +151,9 @@ export default function SearchScreen() {
   return (
     <Screen keyboardShouldPersistTaps="handled" backgroundColor={PAGE_BG} style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
-      <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+      <GradientBand style={styles.band}>
         <PageTitle style={titleType}>{t('search.heading')}</PageTitle>
-      </LinearGradient>
+      </GradientBand>
 
       <View style={styles.sheet}>
       {/* Top search bar */}

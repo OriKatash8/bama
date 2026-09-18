@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, TouchableOpacity, Modal, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SlidersHorizontal, X, FolderPlus, Plus, Inbox, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
+import { GradientBand } from '@components/ui/GradientBand';
 import { AppText } from '@components/ui/AppText';
 import { EmptyState } from '@components/ui/EmptyState';
 import { useTheme } from '@core/hooks/useTheme';
@@ -40,13 +40,6 @@ type CombinedOffer =
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string; rating?: number };
 
-/** Same band as the other client tabs: top-right to bottom-left. */
-const BAND_GRADIENT = {
-  colors: ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const,
-  locations: [0, 0.46, 0.78, 1] as const,
-  start: { x: 1, y: 0 },
-  end: { x: 0.15, y: 1 },
-};
 const PAGE_BG = '#FAFAFC';
 
 type Translations = typeof en;
@@ -351,7 +344,7 @@ export default function ProjectsPage() {
       >
         {/* The band holds only the segmented control — the tabs are the title.
             The row direction flips so the first segment sits on the leading edge. */}
-        <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+        <GradientBand style={styles.band}>
         <View style={[styles.segBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {(['projects', 'offers'] as const).map((key) => {
             const isActive = segment === key;
@@ -386,7 +379,7 @@ export default function ProjectsPage() {
             );
           })}
         </View>
-        </LinearGradient>
+        </GradientBand>
 
         <View style={styles.sheet}>
           {segment === 'projects' ? (

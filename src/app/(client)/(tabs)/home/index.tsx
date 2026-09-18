@@ -9,6 +9,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
+import { GradientBand } from '@components/ui/GradientBand';
 import { HelpTooltip } from '@components/ui/HelpTooltip';
 import { PressableScale } from '@components/ui/PressableScale';
 import { TypingPlaceholder } from '@components/ui/TypingPlaceholder';
@@ -54,13 +55,6 @@ const FIELD_GAP = 18;
  *  width; RN's types have no 'none', hence the cast (web only). */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 const TILE_GAP = 9;
-/** Runs top-right to bottom-left, so the light end trails the reading direction in Hebrew. */
-const BAND_GRADIENT = {
-  colors: ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const,
-  locations: [0, 0.46, 0.78, 1] as const,
-  start: { x: 1, y: 0 },
-  end: { x: 0.15, y: 1 },
-};
 /** Along the button's length, a shallower angle than the band (~105deg). */
 const BUTTON_GRADIENT = {
   colors: ['#2563EB', '#6D34DE', '#9A4BF0'] as const,
@@ -417,7 +411,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 1: Project details ══════════════ */}
         {step === 1 && (
           <>
-            <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+            <GradientBand style={styles.band}>
               <PageTitle style={titleType}>{rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}</PageTitle>
               <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.progressBar, styles.progressDone]} />
@@ -425,7 +419,7 @@ export default function HomeScreen() {
                 <View style={[styles.progressBar, styles.progressTodo]} />
               </View>
               <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.step_label_1')}</Text>
-            </LinearGradient>
+            </GradientBand>
 
             <View style={[styles.sheet, styles.card]} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
               <Text style={[styles.label, { textAlign: rtl ? 'right' : 'left', marginTop: 0 }]}>{t('builder.title')}</Text>
@@ -638,7 +632,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 2: Roles + quantity ══════════════ */}
         {step === 2 && (
           <>
-            <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+            <GradientBand style={styles.band}>
               <PageTitle style={titleType}>{rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}</PageTitle>
               <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.progressBar, styles.progressDone]} />
@@ -646,7 +640,7 @@ export default function HomeScreen() {
                 <View style={[styles.progressBar, styles.progressTodo]} />
               </View>
               <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.step_label_2')}</Text>
-            </LinearGradient>
+            </GradientBand>
 
             <View style={styles.sheet}>
 
@@ -769,7 +763,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 3: Per-slot subskill ══════════════ */}
         {step === 3 && (
           <>
-            <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+            <GradientBand style={styles.band}>
               <PageTitle style={titleType}>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
               <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.progressBar, styles.progressDone]} />
@@ -777,7 +771,7 @@ export default function HomeScreen() {
                 <View style={[styles.progressBar, styles.progressDone]} />
               </View>
               <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.step_label_3')}</Text>
-            </LinearGradient>
+            </GradientBand>
 
             <View style={styles.sheet}>
 
