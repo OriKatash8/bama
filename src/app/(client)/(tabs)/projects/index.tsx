@@ -20,6 +20,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useOffersSeenStore, unseenOfferCount, newestOfferMs } from '@core/stores/offersSeenStore';
 import { getDocument } from '@core/firebase/firestore';
+import { confirmDialog } from '@utils/confirmDialog';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/project';
@@ -216,7 +217,28 @@ export default function ProjectsPage() {
     return t('chats_page.failed_accept');
   }
 
+  /**
+   * Accept hires and Deny discards, and both buttons sit side by side on every
+   * offer card — so each asks first, naming who and how much, to catch a stray tap.
+   */
+  function confirmOffer(kind: 'accept' | 'reject', professionalId: string, price: number): Promise<boolean> {
+    const vars = {
+      name: professionalProfiles[professionalId]?.displayName ?? t('chats.unknown'),
+      price: price.toLocaleString(),
+    };
+    return confirmDialog(
+      t(`offers.confirm_${kind}_title`),
+      t(`offers.confirm_${kind}_body`, vars),
+      {
+        confirm: t(kind === 'accept' ? 'offers.accept' : 'offers.deny'),
+        cancel: t('common.cancel'),
+        destructive: kind === 'reject',
+      },
+    );
+  }
+
   async function handleAccept(offer: PriceOffer) {
+    if (!(await confirmOffer('accept', offer.professionalId, offer.price))) return;
     try {
       await accept(offer);
       showToast(t('chats_page.offer_accepted'), 'success');
@@ -226,7 +248,9 @@ export default function ProjectsPage() {
     }
   }
 
-  async function handleReject(offerId: string) {
+  async function handleReject(offer: PriceOffer) {
+    if (!(await confirmOffer('reject', offer.professionalId, offer.price))) return;
+    const offerId = offer.id;
     try {
       await reject(offerId);
     } catch {
@@ -235,6 +259,7 @@ export default function ProjectsPage() {
   }
 
   async function handleAcceptBundle(bundle: BundleOffer) {
+    if (!(await confirmOffer('accept', bundle.professionalId, bundle.bundlePrice))) return;
     try {
       await acceptBundle(bundle);
       showToast(t('chats_page.offer_accepted'), 'success');
@@ -244,7 +269,9 @@ export default function ProjectsPage() {
     }
   }
 
-  async function handleRejectBundle(bundleId: string) {
+  async function handleRejectBundle(bundle: BundleOffer) {
+    if (!(await confirmOffer('reject', bundle.professionalId, bundle.bundlePrice))) return;
+    const bundleId = bundle.id;
     try {
       await rejectBundle(bundleId);
     } catch {
@@ -461,7 +488,7 @@ export default function ProjectsPage() {
                       projectTitle={projectTitles[item.data.projectId]}
                       onPressProfile={() => goToProfessionalProfile(item.data.professionalId)}
                       onAccept={() => handleAcceptBundle(item.data)}
-                      onReject={() => handleRejectBundle(item.data.id)}
+                      onReject={() => handleRejectBundle(item.data)}
                       isAccepting={isBundleAccepting === item.data.id}
                       busy={anyHireInFlight}
                     />
@@ -473,7 +500,7 @@ export default function ProjectsPage() {
                       projectTitle={projectTitles[item.data.projectId]}
                       onPressProfile={() => goToProfessionalProfile(item.data.professionalId)}
                       onAccept={() => handleAccept(item.data)}
-                      onReject={() => handleReject(item.data.id)}
+                      onReject={() => handleReject(item.data)}
                       isAccepting={isAccepting === item.data.id}
                       busy={anyHireInFlight}
                     />
