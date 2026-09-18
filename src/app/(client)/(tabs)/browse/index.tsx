@@ -64,8 +64,8 @@ const BAND_GRADIENT = {
 };
 const PAGE_BG = '#FAFAFC';
 const VIOLET = '#6D28D9';
-/** Row padding 14 + icon tile 38 + gap 12: separators start where the label does. */
-const SEPARATOR_INSET = 64;
+/** Row padding 14 + icon tile 46 + gap 12: separators start where the label does. */
+const SEPARATOR_INSET = 72;
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
@@ -250,8 +250,8 @@ export default function SearchScreen() {
                   {catLabel(cat.key, rtl)}
                 </Text>
                 {rtl
-                  ? <ChevronLeft size={16} color="#C6C2D2" strokeWidth={2} />
-                  : <ChevronRight size={16} color="#C6C2D2" strokeWidth={2} />}
+                  ? <ChevronLeft size={18} color="#C6C2D2" strokeWidth={2} />
+                  : <ChevronRight size={18} color="#C6C2D2" strokeWidth={2} />}
               </Pressable>
             </Fragment>
           ))}
@@ -449,28 +449,30 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#F0EEF6' },
+  // 64 tall: sized so the eight rows reach down to the tab bar on an iPhone
+  // instead of leaving the bottom of the screen empty.
   categoryRow: {
-    minHeight: 52,
+    minHeight: 64,
     alignItems: 'center',
-    paddingVertical: 7,
+    paddingVertical: 9,
     paddingHorizontal: 14,
     gap: 12,
   },
   categoryRowPressed: { backgroundColor: '#F8F6FC' },
   categoryIconTile: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     backgroundColor: '#F3EEFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   /** Fills the tile: the PNGs are ~40% ink on a 400px transparent canvas, so a
-   *  38pt frame gives a glyph of roughly 15-18pt. */
-  categoryIcon: { width: 38, height: 38 },
+   *  46pt frame gives a glyph of roughly 18-22pt. */
+  categoryIcon: { width: 46, height: 46 },
   categoryLabel: {
     flex: 1,
-    fontSize: 14.5,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1A1626',
   },
