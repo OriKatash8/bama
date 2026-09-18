@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, TouchableOpacity, Modal, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SlidersHorizontal, X, FolderPlus, Plus, Inbox, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
@@ -38,8 +39,14 @@ type CombinedOffer =
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string; rating?: number };
 
-/** This page carries its own background, not the app-wide one. */
-const PAGE_GRADIENT = ['#bccce8', '#efd5f7'] as const;
+/** Same band as the other client tabs: top-right to bottom-left. */
+const BAND_GRADIENT = {
+  colors: ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const,
+  locations: [0, 0.46, 0.78, 1] as const,
+  start: { x: 1, y: 0 },
+  end: { x: 0.15, y: 1 },
+};
+const PAGE_BG = '#FAFAFC';
 
 type Translations = typeof en;
 
@@ -308,24 +315,27 @@ export default function ProjectsPage() {
   }, [segment, userId, newestMs, markSeen]);
 
   return (
-    <Screen scrollable={false} gradient={PAGE_GRADIENT}>
+    <Screen scrollable={false} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Segmented control — the chats-page tab pills, two segments. The row
-            direction flips so the first segment sits on the leading edge. */}
+        {/* The band holds only the segmented control — the tabs are the title.
+            The row direction flips so the first segment sits on the leading edge. */}
+        <LinearGradient {...BAND_GRADIENT} style={styles.band}>
         <View style={[styles.segBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {(['projects', 'offers'] as const).map((key) => {
             const isActive = segment === key;
             return (
-              <Animated.View key={key} style={{ transform: [{ scale: segScales[key] }] }}>
+              <Animated.View key={key} style={[styles.segSlot, { transform: [{ scale: segScales[key] }] }]}>
                 <TouchableOpacity
-                  style={[styles.segPill, isActive ? styles.segPillActive : styles.segPillInactive]}
+                  style={[styles.segPill, isActive && styles.segPillActive]}
                   onPress={() => switchSegment(key)}
                   activeOpacity={0.85}
+                  // 34 + the track's 3 + 5 of slop = 44 on each side.
+                  hitSlop={{ top: 5, bottom: 5 }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isActive }}
                 >
@@ -349,8 +359,9 @@ export default function ProjectsPage() {
             );
           })}
         </View>
+        </LinearGradient>
 
-        <View style={styles.content}>
+        <View style={styles.sheet}>
           {segment === 'projects' ? (
             <View style={styles.section}>
               {/* Awareness strip: the same unseen count as the pill's circle, gone
@@ -366,8 +377,8 @@ export default function ProjectsPage() {
                     {t('chats_page.new_offers_strip', { n: String(newOffersCount) })}
                   </AppText>
                   {rtl
-                    ? <ChevronLeft size={16} color="#004aad" strokeWidth={2.5} />
-                    : <ChevronRight size={16} color="#004aad" strokeWidth={2.5} />}
+                    ? <ChevronLeft size={16} color="#6D28D9" strokeWidth={2.5} />
+                    : <ChevronRight size={16} color="#6D28D9" strokeWidth={2.5} />}
                 </TouchableOpacity>
               )}
 
@@ -411,8 +422,10 @@ export default function ProjectsPage() {
                     style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
                     onPress={openSortModal}
                     activeOpacity={0.8}
+                    // 32 visual + 6 either side = 44.
+                    hitSlop={{ top: 6, bottom: 6 }}
                   >
-                    <SlidersHorizontal size={14} color='#1e4fa3' strokeWidth={2} />
+                    <SlidersHorizontal size={14} color="#4C1D95" strokeWidth={2} />
                     <AppText weight="semiBold" style={styles.sortBtnText}>
                       {t('offers.filter')}
                     </AppText>
@@ -539,35 +552,47 @@ export default function ProjectsPage() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  content: { padding: 16, gap: 20 },
+  band: { paddingTop: 20, paddingHorizontal: 20, paddingBottom: 40 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    gap: 20,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
+  },
   section: { gap: 10 },
   // The filter is alone on its row now that the heading is gone. flex-end puts
   // it on the TRAILING edge in both directions — left under row-reverse, right
   // under row — which is where it sat when the heading held the leading edge.
   filterRow: { alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8 },
-  // ── Segmented control ── the chats-page tab pills, verbatim tokens.
+  // ── Segmented control ── one translucent track on the band, white thumb.
   segBar: {
-    width: '100%',
-    paddingHorizontal: 8,
-    // The segmented control is the first thing on the page now that the title is
-    // gone, so it carries the top spacing PageTitle used to contribute.
-    paddingTop: 16,
-    paddingBottom: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 999,
+    padding: 3,
   },
+  segSlot: { flex: 1 },
   segPill: {
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    flexShrink: 1,
+    height: 34,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
-  segPillActive: { backgroundColor: '#004aad', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
-  segPillInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
-  segText: { fontSize: 14, fontWeight: '600' },
-  segTextActive: { color: '#ffffff', fontSize: 16 },
-  segTextInactive: { color: '#004aad' },
+  segPillActive: { backgroundColor: '#FFFFFF' },
+  segText: { fontSize: 13.5, fontWeight: '600' },
+  segTextActive: { color: '#4C1D95' },
+  segTextInactive: { color: 'rgba(255,255,255,0.85)' },
   // Purple count circle on the top-left of the price offers pill (same purple as
   // the bottom tab badges).
   offersBadge: {
@@ -591,27 +616,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0,74,173,0.08)',
-    borderRadius: 12,
+    backgroundColor: '#F3EEFE',
+    borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 2,
   },
-  newOffersText: { fontSize: 14, color: '#004aad', flexShrink: 1 },
+  newOffersText: { fontSize: 13, color: '#4C1D95', flexShrink: 1 },
 
   sortBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: '#ffffff',
+    height: 32,
+    borderRadius: 999,
+    paddingHorizontal: 13,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(30,79,163,0.25)',
+    borderColor: '#EAE8F0',
   },
-  sortBtnActive: { backgroundColor: '#ffffff', borderColor: '#1e4fa3' },
-  sortBtnText: { fontSize: 13, color: '#1e4fa3' },
+  // A filter is on: the outline darkens, as before, in the violet palette.
+  sortBtnActive: { borderColor: '#6D28D9' },
+  sortBtnText: { fontSize: 12.5, fontWeight: '600', color: '#4C1D95' },
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.5)' },
   modalCard: {
     width: '100%',

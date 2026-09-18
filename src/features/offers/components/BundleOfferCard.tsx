@@ -21,18 +21,21 @@ function makeT(translations: Translations) {
 }
 
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3',
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
+  shadowColor: '#4C1D95',
+  shadowOpacity: 0.05,
+  shadowRadius: 7,
+  shadowOffset: { width: 0, height: 2 },
+  elevation: 2,
 } as const;
 
-const BLUE = '#1e4fa3';
-const MUTED = '#8890b0';
-const BORDER_LIGHT = 'rgba(30,79,163,0.12)';
-const REJECT_RED = '#e04b4b';
-const BUNDLE_PURPLE = '#cb6ce6';
+// Violet card palette, local to the client projects screen's cards.
+const INK = '#1A1626';
+const INK_2 = '#6B6880';
+const ICON_MUTED = '#8B8898';
+const VIOLET = '#6D28D9';
+const VIOLET_DEEP = '#4C1D95';
+const HAIRLINE = '#F2F0F7';
+
 
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string };
 
@@ -150,25 +153,25 @@ export function BundleOfferCard({
             activeOpacity={0.7}
           >
             <AppText
-              weight="semiBold"
+              weight="regular"
               style={[styles.rolesToggleText, { textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={1}
             >
               {rolesSummary}
             </AppText>
             {expanded ? (
-              <ChevronUp size={13} color={BLUE} />
+              <ChevronUp size={13} color={INK_2} />
             ) : (
-              <ChevronDown size={13} color={BLUE} />
+              <ChevronDown size={13} color={INK_2} />
             )}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.priceSquare}>
-          <AppText weight="bold" style={styles.priceText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+        <View style={[styles.priceBlock, { alignItems: rtl ? 'flex-start' : 'flex-end' }]}>
+          <AppText weight="bold" style={[styles.priceText, rtl ? { fontFamily: 'Heebo-ExtraBold' } : null]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
             ₪{bundle.bundlePrice.toLocaleString()}
           </AppText>
-          <AppText weight="semiBold" style={styles.strikePriceText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+          <AppText weight="regular" style={styles.strikePriceText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
             ₪{bundle.individualTotal.toLocaleString()}
           </AppText>
         </View>
@@ -178,7 +181,7 @@ export function BundleOfferCard({
       {expanded && (
         <View style={styles.breakdown}>
           {loadingDetails ? (
-            <ActivityIndicator size="small" color={BLUE} />
+            <ActivityIndicator size="small" color={VIOLET} />
           ) : (
             offerDetails.map((o, i) => (
               <View key={i} style={[styles.breakdownRow, { flexDirection: rowDir }]}>
@@ -208,9 +211,9 @@ export function BundleOfferCard({
 
       {/* Zone 4 — Action row: accept (50%) | view profile (~33%) | divider | reject (~17%) */}
       <View style={[styles.actionStrip, { flexDirection: rowDir }]}>
-        <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7} hitSlop={{ top: 3, bottom: 3 }}>
           <View style={[styles.actionInner, { flexDirection: rowDir }]}>
-            <User size={12} color="#ffffff" strokeWidth={1.8} />
+            <User size={13} color={VIOLET_DEEP} strokeWidth={1.8} />
             <AppText
               weight="semiBold"
               style={styles.actionProfileText}
@@ -228,12 +231,13 @@ export function BundleOfferCard({
           onPress={onAccept}
           disabled={isAccepting || busy}
           activeOpacity={0.85}
+          hitSlop={{ top: 3, bottom: 3 }}
         >
           {isAccepting ? (
-            <ActivityIndicator size="small" color={BLUE} />
+            <ActivityIndicator size="small" color="#ffffff" />
           ) : (
             <View style={[styles.actionInner, { flexDirection: rowDir }]}>
-              <Check size={15} color={BLUE} strokeWidth={2.5} />
+              <Check size={15} color="#ffffff" strokeWidth={2.5} />
               <AppText weight="semiBold" style={styles.actionAcceptText}>
                 {t('offers.accept')}
               </AppText>
@@ -241,10 +245,8 @@ export function BundleOfferCard({
           )}
         </TouchableOpacity>
 
-        <View style={styles.actionInnerDivider} />
-
-        <TouchableOpacity style={styles.actionReject} onPress={onReject} activeOpacity={0.7}>
-          <AppText weight="semiBold" style={styles.actionRejectText}>
+        <TouchableOpacity style={styles.actionReject} onPress={onReject} activeOpacity={0.7} hitSlop={{ top: 3, bottom: 3 }}>
+          <AppText weight="medium" style={styles.actionRejectText}>
             {t('offers.deny')}
           </AppText>
         </TouchableOpacity>
@@ -256,11 +258,11 @@ export function BundleOfferCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
     padding: 14,
-    marginHorizontal: 12,
-    marginBottom: 12,
-    gap: 12,
+    gap: 11,
     ...CARD_SHADOW,
   },
   // Zone 1
@@ -269,100 +271,99 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bundleBadge: {
-    backgroundColor: BUNDLE_PURPLE,
-    borderRadius: 20,
-    paddingHorizontal: 10,
+    backgroundColor: '#FCE7F8',
+    borderRadius: 999,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     flexShrink: 0,
   },
   bundleBadgeText: {
-    color: '#ffffff',
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: '#A21CAF',
+    fontSize: 10,
+    fontWeight: '600',
   },
   forLabel: {
-    fontSize: 11,
-    color: MUTED,
+    fontSize: 12.5,
+    color: ICON_MUTED,
   },
   projectName: {
-    fontSize: 15,
-    color: BLUE,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: INK_2,
     flex: 1,
   },
   bandDivider: {
     height: 1,
-    backgroundColor: BORDER_LIGHT,
+    backgroundColor: HAIRLINE,
   },
   // Zone 2
   mainRow: {
     alignItems: 'center',
-    gap: 12,
+    gap: 11,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     flexShrink: 0,
   },
   avatarFallback: {
-    backgroundColor: BLUE,
+    backgroundColor: '#EDE4FB',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitial: {
-    fontSize: 17,
-    color: '#ffffff',
+    fontSize: 18,
+    color: VIOLET,
   },
   nameCol: {
     flex: 1,
-    gap: 6,
+    minWidth: 0,
+    gap: 3,
   },
   nameText: {
-    fontSize: 18,
-    color: BLUE,
+    fontSize: 15,
+    fontWeight: '700',
+    color: INK,
   },
+  // maxWidth keeps the toggle inside nameCol, so the text's flexShrink has a
+  // bound to shrink against; without it a long roles list ran under the price.
   rolesToggle: {
     alignItems: 'center',
     gap: 4,
+    maxWidth: '100%',
   },
   // flexShrink, NOT flex:1. `flex: 1` stretched this text to fill nameCol, and a
   // stretched box aligns its content by RN's default textAlign:'auto' — i.e. by
   // the roles string's own script — so the summary drifted away from the right
-  // edge in Hebrew mode. PriceOfferCard's roleText has no flex at all, which is
-  // why its role pill always sat correctly; flexShrink keeps that behaviour while
-  // still letting a long summary truncate instead of pushing out the chevron.
+  // edge in Hebrew mode. flexShrink still lets a long summary truncate instead
+  // of pushing out the chevron.
   rolesToggleText: {
-    fontSize: 12,
-    color: BLUE,
+    fontSize: 12.5,
+    color: INK_2,
     flexShrink: 1,
   },
-  priceSquare: {
-    width: 72,
-    height: 72,
-    borderRadius: 16,
-    backgroundColor: 'rgba(30,79,163,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
+  // No tile: the price sits bare at the row's outer edge.
+  priceBlock: {
     flexShrink: 0,
-    gap: 2,
+    maxWidth: 110,
+    gap: 1,
   },
   priceText: {
     fontSize: 17,
-    color: BLUE,
-    textAlign: 'center',
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    color: INK,
   },
   strikePriceText: {
-    fontSize: 11,
-    color: '#8890b0',
-    textAlign: 'center',
+    fontSize: 11.5,
+    color: '#A9A6B5',
     textDecorationLine: 'line-through',
   },
   // Breakdown
   breakdown: {
-    backgroundColor: 'rgba(30,79,163,0.05)',
-    borderRadius: 10,
+    backgroundColor: '#F6F5FA',
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 6,
@@ -372,16 +373,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   breakdownRole: {
-    fontSize: 13,
-    color: BLUE,
+    fontSize: 12.5,
+    color: INK_2,
   },
   breakdownPrice: {
-    fontSize: 13,
-    color: BLUE,
+    fontSize: 12.5,
+    color: INK,
   },
   breakdownDivider: {
     height: 1,
-    backgroundColor: BORDER_LIGHT,
+    backgroundColor: '#EAE8F0',
     marginVertical: 2,
   },
   breakdownTotalLabel: {
@@ -394,21 +395,19 @@ const styles = StyleSheet.create({
   // Zone 3
   separator: {
     height: 1,
-    backgroundColor: BORDER_LIGHT,
-    marginVertical: -2,
+    backgroundColor: HAIRLINE,
   },
-  // Zone 4
+  // Zone 4 — three separate controls, weighted by consequence: accept is the
+  // filled primary, profile is outlined, reject is plain text.
   actionStrip: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: BORDER_LIGHT,
-    height: 44,
+    alignItems: 'center',
+    gap: 8,
   },
   actionAccept: {
-    flex: 2,
-    height: 44,
-    backgroundColor: '#ffffff',
+    flex: 1,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: VIOLET,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -421,34 +420,33 @@ const styles = StyleSheet.create({
   },
   actionAcceptText: {
     fontSize: 13,
-    color: BLUE,
-  },
-  actionProfile: {
-    flex: 3,
-    height: 44,
-    backgroundColor: BLUE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  actionProfileText: {
-    fontSize: 11,
+    fontWeight: '600',
     color: '#ffffff',
   },
-  actionInnerDivider: {
-    width: 1,
-    height: 44,
-    backgroundColor: BORDER_LIGHT,
+  actionProfile: {
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#DDD7EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  actionProfileText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: VIOLET_DEEP,
   },
   actionReject: {
-    flex: 1,
-    height: 44,
-    backgroundColor: '#ffffff',
+    height: 38,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionRejectText: {
-    fontSize: 12,
-    color: REJECT_RED,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#B4232A',
   },
 });
