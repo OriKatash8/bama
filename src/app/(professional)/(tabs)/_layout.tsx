@@ -1,22 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
-import { View, Platform, PanResponder, Dimensions } from 'react-native';
-import { Tabs, usePathname, useRouter } from 'expo-router';
-import { LayoutDashboard, ShoppingBag, User, MessageCircle } from 'lucide-react-native';
-import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
-import { useTheme } from '@core/hooks/useTheme';
-import { useUiStore } from '@core/stores/uiStore';
-import { useSettingsStore } from '@core/stores/settingsStore';
-import { useAuthStore } from '@core/stores/authStore';
-import { useAppFont } from '@core/hooks/useAppFont';
-import { listenToUserChats } from '@features/chat/services/chatService';
 import { AppHeader } from '@components/layout/AppHeader';
+import { useAppFont } from '@core/hooks/useAppFont';
+import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import {
-  getFloatingTabBarStyle,
   FLOATING_TAB_BAR_INACTIVE_COLOR,
+  getFloatingTabBarStyle,
 } from '@core/navigation/floatingTabBar';
 import { SlidingTabBackground } from '@core/navigation/SlidingTabBackground';
+import { useAuthStore } from '@core/stores/authStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import { useUiStore } from '@core/stores/uiStore';
+import { listenToUserChats } from '@features/chat/services/chatService';
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import { LayoutDashboard, MessageCircle, ShoppingBag, User } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Dimensions, PanResponder, Platform, View } from 'react-native';
+import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Translations = typeof en;
 
@@ -31,8 +31,7 @@ function makeT(translations: Translations) {
 
 const PROF_TABS = ['dashboard', 'marketplace', 'chats', 'profile'] as const;
 
-export default function ProfessionalTabsLayout() {
-  const [totalUnread, setTotalUnread] = useState(0);
+export default function ProfessionalTabsLayout() {   const [totalUnread, setTotalUnread] = useState(0);
   const insets = useSafeAreaInsets();
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
@@ -57,11 +56,6 @@ export default function ProfessionalTabsLayout() {
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
 
-  // Editing the profile hides the tab bar (its Save/Cancel bar takes the bottom).
-  const profileEditing = useUiStore((s) => s.profileEditing);
-  const profileEditingRef = useRef(profileEditing);
-  profileEditingRef.current = profileEditing;
-
   const router = useRouter();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
@@ -73,7 +67,7 @@ export default function ProfessionalTabsLayout() {
   const tabPanResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => {
-        if (lockedRef.current || inChatRoomRef.current || profileEditingRef.current) return false;
+        if (lockedRef.current || inChatRoomRef.current) return false;
         const startX = gs.moveX - gs.dx;
         const screenWidth = Dimensions.get('window').width;
         const EDGE_ZONE = 50;
@@ -82,7 +76,7 @@ export default function ProfessionalTabsLayout() {
         return Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
       },
       onPanResponderRelease: (_, gs) => {
-        if (lockedRef.current || inChatRoomRef.current || profileEditingRef.current) return;
+        if (lockedRef.current || inChatRoomRef.current) return;
         const idx = PROF_TABS.findIndex((t) => pathnameRef.current.includes(`/${t}`));
         if (idx === -1) return;
         if (gs.dx < -80) {
@@ -108,7 +102,7 @@ export default function ProfessionalTabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: (locked || inChatRoom || profileEditing) ? { display: 'none' } : getFloatingTabBarStyle(isDark),
+            tabBarStyle: (locked || inChatRoom) ? { display: 'none' } : getFloatingTabBarStyle(isDark),
             tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,
             tabBarActiveTintColor: '#004aad',
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
