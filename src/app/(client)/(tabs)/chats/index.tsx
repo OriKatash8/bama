@@ -125,12 +125,14 @@ export default function ChatsPage() {
             )}
           </View>
 
-          <ChatsList
-            scrollable={false}
-            chats={chats}
-            searchQuery={searchQuery}
-            onClearSearch={() => setSearchQuery('')}
-          />
+          <View style={styles.listBleed}>
+            <ChatsList
+              scrollable={false}
+              chats={chats}
+              searchQuery={searchQuery}
+              onClearSearch={() => setSearchQuery('')}
+            />
+          </View>
         </>
       )}
       </View>
@@ -180,5 +182,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
   },
   searchRowFocused: { borderColor: '#8B5CF6' },
+  /** ChatsScreen (shared with the pro tab) insets its chips and cards by 16 of
+   *  its own. Inside this page's 20pt sheet that doubled to 36; cancelling it
+   *  here lines them up with the search field without touching the shared file. */
+  listBleed: { marginHorizontal: -16 },
   searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
 });
