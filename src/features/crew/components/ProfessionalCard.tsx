@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Star } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@core/hooks/useTheme';
@@ -22,7 +22,13 @@ function makeT(translations: Translations) {
 
 
 const STAR_COLOR = '#cb6ce6';
-const STAR_EMPTY = '#d1d5db';
+const STAR_EMPTY = '#E3DFEE';
+
+// Violet card palette. Local on purpose: the card reads these directly rather
+// than through useTheme, whose values reach the whole app.
+const VIOLET = '#6D28D9';
+const INK = '#1A1626';
+const MUTED = '#9C99AD';
 
 function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
@@ -77,7 +83,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
 
 
   return (
-    <View style={[styles.card, { borderColor: colors.border }]}>
+    <View style={styles.card}>
       <View style={[styles.row, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         {user.photoURL ? (
           <Image
@@ -89,31 +95,31 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
             transition={150}
           />
         ) : (
-          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.accent + '33' }]}>
-            <Text style={[styles.avatarInitial, { color: colors.accent }]}>
+          <View style={[styles.avatar, styles.avatarFallback]}>
+            <Text style={styles.avatarInitial}>
               {user.displayName?.charAt(0)?.toUpperCase() ?? '?'}
             </Text>
           </View>
         )}
 
         <View style={styles.info}>
-          <Text style={[styles.name, { color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={1}>
+          <Text style={[styles.name, { textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={1} ellipsizeMode="tail">
             {user.displayName}
           </Text>
           {profile.rating > 0 ? (
             <View style={[styles.ratingBlock, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <StarRow rating={profile.rating} size={14} />
-              <Text style={[styles.ratingNum, { color: colors.text, ...font.bold }]}>
+              <Text style={[styles.ratingNum, { ...font.bold }]}>
                 {profile.rating.toFixed(1)}
               </Text>
-              <Text style={[styles.ratingCount, { color: colors.textMuted, ...font.regular }]}>
+              <Text style={[styles.ratingCount, { ...font.regular }]}>
                 · {profile.reviewCount} {rtl ? 'דירוגים' : 'ratings'}
               </Text>
             </View>
           ) : (
             <View style={[styles.ratingBlock, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <StarRow rating={0} size={14} />
-              <Text style={[styles.ratingCount, { color: colors.textMuted, ...font.regular }]}>
+              <Text style={[styles.ratingCount, { ...font.regular }]}>
                 (0)
               </Text>
             </View>
@@ -122,23 +128,24 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
       </View>
 
       <View style={[styles.btnRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        {/* The row stretches its children (the default for a row), so when one
+            label wraps to two lines both buttons grow together; minHeight sets
+            the floor, never a fixed height. */}
         {onViewProfile && (
-          <TouchableOpacity
-            style={[styles.btn, styles.btnOutline]}
+          <Pressable
+            style={({ pressed }) => [styles.btn, styles.btnOutline, pressed && styles.btnOutlinePressed]}
             onPress={onViewProfile}
-            activeOpacity={0.8}
           >
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.btnOutlineText, { ...font.bold }]}>{t('search.view_profile')}</Text>
-          </TouchableOpacity>
+            <Text numberOfLines={2} style={[styles.btnText, styles.btnOutlineText, { ...font.semiBold }]}>{t('search.view_profile')}</Text>
+          </Pressable>
         )}
         {onDirectProject && (
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: '#004aad' }]}
+          <Pressable
+            style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && styles.btnPrimaryPressed]}
             onPress={onDirectProject}
-            activeOpacity={0.8}
           >
-            <Text numberOfLines={2} style={[styles.btnFilledText, { textAlign: 'center', ...font.bold }]}>{t('search.tell_us_about_project_card')}</Text>
-          </TouchableOpacity>
+            <Text numberOfLines={2} style={[styles.btnText, styles.btnFilledText, { ...font.semiBold }]}>{t('search.tell_us_about_project_card')}</Text>
+          </Pressable>
         )}
         {onMessage && !onDirectProject && (
           <TouchableOpacity
@@ -149,7 +156,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
           >
             {isMessaging
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.btnFilledText, { ...font.bold }]}>{t('search.message')}</Text>
+              : <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.btnText, styles.btnFilledText, { ...font.semiBold }]}>{t('search.message')}</Text>
             }
           </TouchableOpacity>
         )}
@@ -160,35 +167,47 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
+    borderColor: '#EDE9F7',
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   row: { alignItems: 'flex-start', gap: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26 },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 22, fontWeight: '700' },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#EDE4FB' },
+  avatarInitial: { fontSize: 22, fontWeight: '700', color: VIOLET },
   info: { flex: 1 },
-  name: { fontSize: 16, marginBottom: 4 },
+  name: { fontSize: 16, fontWeight: '700', color: INK, marginBottom: 4 },
   ratingBlock: { alignItems: 'center', gap: 5, marginBottom: 2 },
-  ratingNum: { fontSize: 14 },
-  ratingCount: { fontSize: 12 },
+  ratingNum: { fontSize: 14, color: INK },
+  ratingCount: { fontSize: 12, color: MUTED },
   btnRow: { marginTop: 12, gap: 8 },
   btn: {
     flex: 1,
-    borderRadius: 10,
-    paddingVertical: 9,
+    minHeight: 48,
+    borderRadius: 13,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 38,
   },
+  btnPrimary: { backgroundColor: VIOLET },
+  btnPrimaryPressed: { backgroundColor: '#5B21B6' },
   btnOutline: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#004aad',
+    borderColor: VIOLET,
   },
-  btnOutlineText: { color: '#004aad', fontSize: 14 },
-  btnFilledText: { color: '#fff', fontSize: 14, lineHeight: 17 },
+  btnOutlinePressed: { backgroundColor: '#F6F2FE' },
+  // lineHeight 18 ≈ 13.5 × 1.3.
+  btnText: { fontSize: 13.5, fontWeight: '600', lineHeight: 18, textAlign: 'center' },
+  btnOutlineText: { color: VIOLET },
+  btnFilledText: { color: '#FFFFFF' },
 });

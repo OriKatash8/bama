@@ -4,7 +4,6 @@ import {
   StyleSheet, ActivityIndicator, ScrollView, Pressable, Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -270,11 +269,9 @@ export default function SearchScreen() {
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeModal} />
           <View style={styles.modalSheetWrapper}>
-          {/* Same surface as the page behind it: colors.bgGradient, running
-              vertically as Screen does. It was a hardcoded pastel pair running
-              horizontally, so the sheet read as a different surface from the
-              browse page — and, being hardcoded, ignored the theme entirely. */}
-          <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.modalSheet}>
+          {/* Flat lavender-white sheet, the same tinted-neutral family as the
+              browse page behind it. */}
+          <View style={styles.modalSheet}>
             {/* Modal header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.modalTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{catLabel(selectedCategory ?? '', rtl)}</Text>
@@ -284,18 +281,18 @@ export default function SearchScreen() {
             </View>
 
             {/* Pill search bar */}
-            <View style={[styles.modalSearchRow, { backgroundColor: '#ffffff', borderColor: 'rgba(0,74,173,0.2)' }]}>
-              <Search size={16} color="rgba(0,74,173,0.6)" strokeWidth={2.5} />
+            <View style={styles.modalSearchRow}>
+              <Search size={16} color="#8B8898" strokeWidth={2.5} />
               <TextInput
-                style={[styles.modalSearchInput, { ...font.regular, color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.modalSearchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={t('search.placeholder')}
-                placeholderTextColor="rgba(0,74,173,0.4)"
+                placeholderTextColor="#9C99AD"
                 value={modalQuery}
                 onChangeText={setModalQuery}
               />
               {modalQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setModalQuery('')} activeOpacity={0.7}>
-                  <Text style={{ color: 'rgba(0,74,173,0.5)', fontSize: 14 }}>✕</Text>
+                  <Text style={{ color: '#9C99AD', fontSize: 14 }}>✕</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -313,7 +310,10 @@ export default function SearchScreen() {
                 // flexGrow:0 stops this row growing but NOT shrinking, so its
                 // height collapsed and the chip labels were clipped — only ever
                 // visible once a user list had rendered.
-                style={[{ flexGrow: 0, flexShrink: 0, marginBottom: 26 }, rtl && { transform: [{ scaleX: -1 }] }]}
+                // marginHorizontal -16 cancels the sheet's padding, so a
+                // part-scrolled chip runs to the screen edge; the content
+                // container puts the 16 back inside.
+                style={[{ flexGrow: 0, flexShrink: 0, marginBottom: 26, marginHorizontal: -16 }, rtl && { transform: [{ scaleX: -1 }] }]}
               >
                 {subskills.map((sp) => {
                   const on = selectedSub === sp.id;
@@ -335,14 +335,14 @@ export default function SearchScreen() {
 
             {/* Results */}
             {modalLoading ? (
-              <ActivityIndicator color="#004aad" style={{ marginTop: 24 }} />
+              <ActivityIndicator color={VIOLET} style={{ marginTop: 24 }} />
             ) : filteredModalResults.length === 0 ? (
               <View style={styles.emptyResults}>
                 <Text style={styles.emptyIcon}>👤</Text>
-                <Text style={[styles.emptyText, { color: '#004aad' }]}>
+                <Text style={[styles.emptyText, { color: '#4C1D95' }]}>
                   {t('search.no_professionals_yet')}
                 </Text>
-                <Text style={[styles.emptySubtext, { color: 'rgba(0,74,173,0.6)' }]}>
+                <Text style={[styles.emptySubtext, { color: '#6B6880' }]}>
                   {t('search.no_professionals_subtext')}
                 </Text>
               </View>
@@ -368,7 +368,7 @@ export default function SearchScreen() {
                 )}
               />
             )}
-          </LinearGradient>
+          </View>
           </View>
         </View>
       </Modal>
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(26,22,38,0.42)',
     justifyContent: 'flex-end',
   },
   modalSheetWrapper: {
@@ -486,6 +486,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   modalSheet: {
+    backgroundColor: '#F6F4FC',
     paddingTop: 20,
     paddingHorizontal: 16,
     flex: 1,
@@ -498,39 +499,43 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#004aad',
+    color: '#4C1D95',
     flex: 1,
   },
   modalClose: {
     fontSize: 18,
-    color: '#004aad',
+    color: VIOLET,
     paddingHorizontal: 4,
   },
   modalSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 24,
+    borderRadius: 14,
     marginBottom: 10,
-    paddingHorizontal: 14,
-    height: 44,
+    paddingHorizontal: 16,
+    height: 50,
     borderWidth: 1,
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
     gap: 8,
   },
-  modalSearchInput: { flex: 1, fontSize: 15 },
+  modalSearchInput: { flex: 1, fontSize: 15, color: '#1A1626' },
 
-  subFilterScroll: { gap: 8, paddingHorizontal: 2, alignItems: 'center' },
+  subFilterScroll: { gap: 8, paddingHorizontal: 16, alignItems: 'center' },
+  // Unselected is outlined and quiet, selected is filled — so the applied
+  // filter is readable at a glance.
   subChip: {
     alignSelf: 'center',
     borderWidth: 1,
-    borderColor: '#004aad',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: '#ffffff',
+    borderColor: '#DED8EE',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    backgroundColor: '#FFFFFF',
   },
-  subChipActive: { backgroundColor: '#004aad' },
-  subChipText: { fontSize: 12, color: '#004aad' },
-  subChipTextActive: { color: '#ffffff' },
+  subChipActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  subChipText: { fontSize: 13, fontWeight: '600', color: '#5B5768' },
+  subChipTextActive: { color: '#FFFFFF' },
 
   emptyResults: {
     alignItems: 'center',
