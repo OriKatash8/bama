@@ -107,7 +107,8 @@
     "error_date_past": "You can't pick a date in the past.",
     "error_deadline_order": "The deadline can't be before the execution date.",
     "flexible_no_autocomplete": "You chose a flexible date — the project has no end date, so it will not close on its own. Each professional marks when they have finished their part.",
-    "end_date_note": "On the end date, the project closes on its own if the professionals have not already marked their parts finished."
+    "end_date_note": "On the end date, the project closes on its own if the professionals have not already marked their parts finished.",
+    "tip_details": "The more details you add, the more offers your project is likely to get"
   },
   "search": {
     "no_professionals_yet": "No professionals yet",

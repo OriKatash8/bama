@@ -26,7 +26,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { ROLE_BY_ID, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, ChevronRight, X, MapPin, Lock } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, ChevronRight, X, MapPin, Lock, Info } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -429,7 +429,7 @@ export default function HomeScreen() {
               <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.step_label_1')}</Text>
             </GradientBand>
 
-            <View style={[styles.sheet, styles.card]} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
+            <View style={styles.sheet} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
               <Text style={[styles.label, { textAlign: rtl ? 'right' : 'left', marginTop: 0 }]}>{t('builder.title')}</Text>
               {/* The ring is always mounted and only changes colour: mounting it
                   on focus would re-parent the TextInput and drop the keyboard. */}
@@ -601,39 +601,48 @@ export default function HomeScreen() {
                   {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
                 </View>
               </View>
-            </View>
 
-            {/* What the date actually DOES, said out loud.
-                'flexible' is not a softer version of a date — it means the
-                project has no end date at all and never closes by itself, which
-                is a real consequence the client should meet here rather than
-                discover weeks later when nothing has happened. */}
-            {deadline ? (
-              <Text
-                style={[
-                  styles.dateConsequence,
-                  { textAlign: rtl ? 'right' : 'left', color: deadline === 'flexible' ? '#b7791f' : INK_2 },
-                ]}
-              >
-                {deadline === 'flexible'
-                  ? t('builder.flexible_no_autocomplete')
-                  : t('builder.end_date_note')}
-              </Text>
-            ) : null}
+              {/* What the date actually DOES, said out loud.
+                  'flexible' is not a softer version of a date — it means the
+                  project has no end date at all and never closes by itself, which
+                  is a real consequence the client should meet here rather than
+                  discover weeks later when nothing has happened. */}
+              {deadline ? (
+                <Text
+                  style={[
+                    styles.dateConsequence,
+                    { textAlign: rtl ? 'right' : 'left', color: deadline === 'flexible' ? '#b7791f' : INK_2 },
+                  ]}
+                >
+                  {deadline === 'flexible'
+                    ? t('builder.flexible_no_autocomplete')
+                    : t('builder.end_date_note')}
+                </Text>
+              ) : null}
 
-            <View style={styles.grow} />
-            <View style={styles.submitWrap}>
-              <PressableScale
-                style={[styles.submitBtn, ctaPressed && styles.submitBtnPressed]}
-                onPressIn={() => setCtaPressed(true)}
-                onPressOut={() => setCtaPressed(false)}
-                onPress={handleNext}
-                activeScale={0.98}
-              >
-                <LinearGradient {...BUTTON_GRADIENT} style={styles.submitFill}>
-                  <Text style={styles.submitText}>{t('builder.next_step')}</Text>
-                </LinearGradient>
-              </PressableScale>
+              {/* Below the date note, not between the tiles and it: that note
+                  explains the end-date tile and has to stay next to it. */}
+              <View style={[styles.tipBox, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <Info size={16} color={VIOLET} strokeWidth={2} style={styles.tipIcon} />
+                <Text style={[styles.tipText, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('builder.tip_details')}
+                </Text>
+              </View>
+
+              <View style={styles.grow} />
+              <View style={styles.submitWrap}>
+                <PressableScale
+                  style={[styles.submitBtn, ctaPressed && styles.submitBtnPressed]}
+                  onPressIn={() => setCtaPressed(true)}
+                  onPressOut={() => setCtaPressed(false)}
+                  onPress={handleNext}
+                  activeScale={0.98}
+                >
+                  <LinearGradient {...BUTTON_GRADIENT} style={styles.submitFill}>
+                    <Text style={styles.submitText}>{t('builder.next_step')}</Text>
+                  </LinearGradient>
+                </PressableScale>
+              </View>
             </View>
           </>
         )}
@@ -750,21 +759,21 @@ export default function HomeScreen() {
               />
             </View>
 
-            </View>
 
-            <View style={styles.grow} />
-            <View style={styles.submitWrap}>
-              <PressableScale
-                style={[styles.submitBtn, ctaPressed && styles.submitBtnPressed]}
-                onPressIn={() => setCtaPressed(true)}
-                onPressOut={() => setCtaPressed(false)}
-                onPress={handleGoStep3}
-                activeScale={0.98}
-              >
-                <LinearGradient {...BUTTON_GRADIENT} style={styles.submitFill}>
-                  <Text style={styles.submitText}>{t('builder.next_step')}</Text>
-                </LinearGradient>
-              </PressableScale>
+              <View style={styles.grow} />
+              <View style={styles.submitWrap}>
+                <PressableScale
+                  style={[styles.submitBtn, ctaPressed && styles.submitBtnPressed]}
+                  onPressIn={() => setCtaPressed(true)}
+                  onPressOut={() => setCtaPressed(false)}
+                  onPress={handleGoStep3}
+                  activeScale={0.98}
+                >
+                  <LinearGradient {...BUTTON_GRADIENT} style={styles.submitFill}>
+                    <Text style={styles.submitText}>{t('builder.next_step')}</Text>
+                  </LinearGradient>
+                </PressableScale>
+              </View>
             </View>
           </>
         )}
@@ -861,23 +870,23 @@ export default function HomeScreen() {
               );
             })}
 
-            </View>
 
-            <View style={styles.grow} />
-            <View style={styles.submitWrap}>
-              <PressableScale
-                style={[styles.submitBtn, ctaPressed && styles.submitBtnPressed]}
-                onPressIn={() => setCtaPressed(true)}
-                onPressOut={() => setCtaPressed(false)}
-                onPress={handleReview}
-                activeScale={0.98}
-              >
-                <LinearGradient {...BUTTON_GRADIENT} style={styles.submitFill}>
-                  <AppText weight="bold" style={styles.submitText}>
-                    {rtl ? 'המשך לסקירה' : 'Continue to review'}
-                  </AppText>
-                </LinearGradient>
-              </PressableScale>
+              <View style={styles.grow} />
+              <View style={styles.submitWrap}>
+                <PressableScale
+                  style={[styles.submitBtn, ctaPressed && styles.submitBtnPressed]}
+                  onPressIn={() => setCtaPressed(true)}
+                  onPressOut={() => setCtaPressed(false)}
+                  onPress={handleReview}
+                  activeScale={0.98}
+                >
+                  <LinearGradient {...BUTTON_GRADIENT} style={styles.submitFill}>
+                    <AppText weight="bold" style={styles.submitText}>
+                      {rtl ? 'המשך לסקירה' : 'Continue to review'}
+                    </AppText>
+                  </LinearGradient>
+                </PressableScale>
+              </View>
             </View>
           </>
         )}
@@ -1001,8 +1010,9 @@ function createStyles(
     scroll: { flex: 1 },
     // flexGrow lets step 1 fill a tall screen, so the spacer below the card can
     // push the next-step button to the bottom instead of leaving dead space under
-    // it. Short screens still scroll normally.
-    scrollContent: { paddingBottom: 56, flexGrow: 1 },
+    // it. Short screens still scroll normally. The bottom clearance for the
+    // floating tab bar lives on the sheet, so the white runs to the very end.
+    scrollContent: { flexGrow: 1 },
     /** Carries the step transition. flexGrow so the `grow` spacer inside each
      *  step still reaches the bottom of a tall screen — the wrapper sits between
      *  the content container and the step, and would otherwise break that chain. */
@@ -1043,7 +1053,10 @@ function createStyles(
 
     band: { paddingTop: 22, paddingHorizontal: 20, paddingBottom: 30 },
     /** Overlaps the band's bottom edge. zIndex so it paints over the gradient. */
+    // flexGrow: the next-step button lives inside the sheet now, and the `grow`
+    // spacer above it needs the sheet to fill a tall screen to push it down.
     sheet: {
+      flexGrow: 1,
       backgroundColor: '#FFFFFF',
       borderTopLeftRadius: 26,
       borderTopRightRadius: 26,
@@ -1051,6 +1064,8 @@ function createStyles(
       zIndex: 1,
       paddingTop: 26,
       paddingHorizontal: 20,
+      // Clears the floating tab bar, inside the white rather than below it.
+      paddingBottom: 56,
       shadowColor: '#4C1D95',
       shadowOpacity: 0.09,
       shadowRadius: 14,
@@ -1067,8 +1082,6 @@ function createStyles(
     backArrow: { alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.sm },
     backArrowText: { color: VIOLET, fontSize: 15, fontWeight: '600', fontFamily: ffSemiBold },
 
-    /** Step 1's field group. The sheet supplies surface and inset. */
-    card: { paddingBottom: SPACE.xs },
     rolesCard: { marginTop: SPACE.xs, paddingVertical: SPACE.sm },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 14, lineHeight: 20, fontWeight: '600', fontFamily: ffSemiBold, color: INK, marginTop: FIELD_GAP, marginBottom: SPACE.sm },
@@ -1094,7 +1107,20 @@ function createStyles(
     focusRing: { borderWidth: 3, borderColor: 'transparent', borderRadius: 17, margin: -3 },
     focusRingOn: { borderColor: 'rgba(139,92,246,0.18)' },
     error: { fontSize: 12, lineHeight: 16, color: '#fc8181', marginTop: 4, fontFamily: ff },
-    dateConsequence: { fontSize: 11.5, lineHeight: 18, marginTop: SPACE.md, paddingHorizontal: 20, fontFamily: ff },
+    dateConsequence: { fontSize: 11.5, lineHeight: 18, marginTop: SPACE.md, fontFamily: ff },
+    /** Informational only — no press, border or shadow. Sits inside the sheet,
+     *  which supplies the side inset. */
+    tipBox: {
+      backgroundColor: '#F3EEFE',
+      borderRadius: 14,
+      paddingVertical: 11,
+      paddingHorizontal: 13,
+      marginTop: 14,
+      alignItems: 'flex-start',
+      gap: 9,
+    },
+    tipIcon: { flexShrink: 0, marginTop: 1 },
+    tipText: { flex: 1, fontSize: 12, fontWeight: '400', color: '#4C1D95', lineHeight: 19, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     // No overflow here — the ring needs to escape. The tile is a positioning
     // box; the surface and the clipping both live on tileClip.
@@ -1128,11 +1154,11 @@ function createStyles(
     /** Shared by all three steps, so the next-step button is the same width
      *  throughout. The 36pt inset used to be inline on step 1 only, leaving
      *  steps 2 and 3 with the 16pt default and visibly wider buttons. */
+    // Inside the sheet, which already supplies the 20pt side inset.
     submitWrap: {
       backgroundColor: '#FFFFFF',
       paddingTop: 12,
       paddingBottom: 14,
-      paddingHorizontal: 20,
       borderTopWidth: 1,
       borderTopColor: HAIRLINE,
       marginTop: SPACE.lg,
