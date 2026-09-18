@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, PanResponder, Platform, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from '@components/ui/AppText';
@@ -18,7 +18,7 @@ import { RejectCandidateSheet } from './RejectCandidateSheet';
 import { PriceChangeSheet } from './PriceChangeSheet';
 import { chromeStyles } from './chromeStyles';
 import { ActionButton } from './ActionButton';
-import { carouselPanConfig, resolveShownIndex, slidePlan, SLIDE_MS } from './carousel';
+import { carouselPanConfig, pageSwipeGuard, resolveShownIndex, slidePlan, SLIDE_MS } from './carousel';
 
 type Busy = 'confirm' | 'reject' | 'price';
 
@@ -44,6 +44,7 @@ export function CandidateReviewCard({
   clientId: string;
 }) {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const showToast = useUiStore((s) => s.showToast);
   const { t, lang, rtl, align, rowDir, money, dir } = useCandidateText();
 
@@ -90,8 +91,10 @@ export function CandidateReviewCard({
     rtl,
     atStart: true,
     atEnd: true,
+    screenWidth,
     step: (_step: -1 | 1) => {},
   });
+
 
   const settle = () => Animated.timing(slide, { toValue: 0, duration: SLIDE_MS, useNativeDriver: false }).start();
 
@@ -119,6 +122,7 @@ export function CandidateReviewCard({
       rtl,
       atStart: shownIndex === 0,
       atEnd: shownIndex === ids.length - 1,
+      screenWidth,
       step: slideTo,
     };
   });
@@ -127,6 +131,7 @@ export function CandidateReviewCard({
     locked: () => slidingRef.current,
     rtl: () => live.current.rtl,
     ends: () => ({ atStart: live.current.atStart, atEnd: live.current.atEnd }),
+    screenWidth: () => live.current.screenWidth,
     onDrag: (x) => slide.setValue(x),
     onStep: (step) => live.current.step(step),
     onSettle: () => settle(),
@@ -318,7 +323,7 @@ export function CandidateReviewCard({
         <View
           {...pan.panHandlers}
           testID="candidate-carousel"
-          style={styles.carousel}
+          style={[styles.carousel, pageSwipeGuard(Platform.OS)]}
           onLayout={(e) => { widthRef.current = e.nativeEvent.layout.width; }}
         >
           {/* The row slides; the dots stay put — they are the position, not the card. */}

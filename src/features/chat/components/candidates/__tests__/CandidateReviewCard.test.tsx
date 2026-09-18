@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, StyleSheet } from 'react-native';
+import { Alert, Platform, StyleSheet } from 'react-native';
 import { render, act, fireEvent } from '@testing-library/react-native';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -378,6 +378,20 @@ describe('carousel (2+ pending)', () => {
     expect(shift(r)).toBe(0);
   });
 
+  it('on the web the card claims the horizontal axis, so the browser cannot go back under it', async () => {
+    mockAccepted = three();
+    const was = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true });
+    try {
+      const r = await renderCard();
+      const style = StyleSheet.flatten(r.getByTestId('candidate-carousel').props.style);
+      expect(style.touchAction).toBe('pan-y');
+      expect(style.overscrollBehaviorX).toBe('contain');
+    } finally {
+      Object.defineProperty(Platform, 'OS', { value: was, configurable: true });
+    }
+  });
+
   it('a page carries the card off first: the row changes only once the slide has run', async () => {
     mockAccepted = three();
     const r = await renderCard();
@@ -495,6 +509,7 @@ describe('the carousel gesture', () => {
       locked: () => false,
       rtl: () => false,
       ends: () => ({ atStart: false, atEnd: false }),
+      screenWidth: () => 400,
       onDrag: (x: number) => calls.drag.push(x),
       onStep: (s: number) => calls.step.push(s),
       onSettle: () => { calls.settle += 1; },
@@ -505,48 +520,69 @@ describe('the carousel gesture', () => {
 
   it('moves the card with the finger, by exactly what was dragged', () => {
     const { cfg, calls } = wire();
-    cfg.onPanResponderMove(null, { dx: -30, dy: 2 });
-    cfg.onPanResponderMove(null, { dx: -75, dy: 4 });
+    cfg.onPanResponderMove(null, { dx: -30, dy: 2, moveX: 170 });
+    cfg.onPanResponderMove(null, { dx: -75, dy: 4, moveX: 125 });
     expect(calls.drag).toEqual([-30, -75]);
   });
 
   it('at the last professional, a forward drag moves the card only a little', () => {
     const { cfg, calls } = wire({ ends: () => ({ atStart: false, atEnd: true }) });
-    cfg.onPanResponderMove(null, { dx: -80, dy: 0 });
+    cfg.onPanResponderMove(null, { dx: -80, dy: 0, moveX: 120 });
     expect(calls.drag).toEqual([-20]);
+  });
+
+  it('decides on where the drag STARTED, not on x0 — which is still 0 while the claim is being made', () => {
+    const { cfg } = wire();
+    // The shape RN really hands over mid-claim: x0 not filled in yet, moveX
+    // current. Reading x0 here put every drag on the left edge and refused
+    // the lot, which is exactly how swiping stopped working.
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5, moveX: 160, x0: 0 })).toBe(true);
+  });
+
+  it('leaves the screen edges to the screen: a drag that starts there is not claimed', () => {
+    const { cfg } = wire();
+    // Paging the card and swiping the screen away are the same motion; on the
+    // edges the screen wins, so going back still works.
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5, moveX: -20 })).toBe(false);
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5, moveX: 350 })).toBe(false);
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5, moveX: 160 })).toBe(true);
+  });
+
+  it('never hands the drag back once it has it', () => {
+    expect(wire().cfg.onPanResponderTerminationRequest()).toBe(false);
   });
 
   it('claims clearly horizontal drags only, and never while a slide is playing', () => {
     const { cfg } = wire();
-    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5 })).toBe(true);
-    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -8, dy: 0 })).toBe(false);  // a tap
-    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -20, dy: 30 })).toBe(false); // scrolling
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5, moveX: 160 })).toBe(true);
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -8, dy: 0, moveX: 192 })).toBe(false);  // a tap
+    expect(cfg.onMoveShouldSetPanResponder(null, { dx: -20, dy: 30, moveX: 180 })).toBe(false); // scrolling
     const locked = wire({ locked: () => true });
-    expect(locked.cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5 })).toBe(false);
-    locked.cfg.onPanResponderMove(null, { dx: -40, dy: 5 });
+    expect(locked.cfg.onMoveShouldSetPanResponder(null, { dx: -40, dy: 5, moveX: 160 })).toBe(false);
+    locked.cfg.onPanResponderMove(null, { dx: -40, dy: 5, moveX: 160 });
     expect(locked.calls.drag).toEqual([]);
   });
 
   it('on release: a real swipe pages, a short drag falls back', () => {
     const { cfg, calls } = wire();
-    cfg.onPanResponderRelease(null, { dx: -60, dy: 0 });
+    cfg.onPanResponderRelease(null, { dx: -60, dy: 0, moveX: 140 });
     expect(calls.step).toEqual([1]);
-    cfg.onPanResponderRelease(null, { dx: 60, dy: 0 });
+    cfg.onPanResponderRelease(null, { dx: 60, dy: 0, moveX: 260 });
     expect(calls.step).toEqual([1, -1]);
-    cfg.onPanResponderRelease(null, { dx: -20, dy: 0 });
+    cfg.onPanResponderRelease(null, { dx: -20, dy: 0, moveX: 180 });
     expect(calls.step).toEqual([1, -1]);
     expect(calls.settle).toBe(1);
   });
 
   it('RTL: swiping right pages forward', () => {
     const { cfg, calls } = wire({ rtl: () => true });
-    cfg.onPanResponderRelease(null, { dx: 60, dy: 0 });
+    cfg.onPanResponderRelease(null, { dx: 60, dy: 0, moveX: 260 });
     expect(calls.step).toEqual([1]);
   });
 
   it('a finger lifted mid-slide is ignored: the slide already in flight wins', () => {
     const { cfg, calls } = wire({ locked: () => true });
-    cfg.onPanResponderRelease(null, { dx: -60, dy: 0 });
+    cfg.onPanResponderRelease(null, { dx: -60, dy: 0, moveX: 140 });
     cfg.onPanResponderTerminate();
     expect(calls.step).toEqual([]);
     expect(calls.settle).toBe(0);
@@ -557,6 +593,41 @@ describe('the carousel gesture', () => {
     cfg.onPanResponderTerminate();
     expect(calls.settle).toBe(1);
     expect(calls.step).toEqual([]);
+  });
+});
+
+describe('dragStartX: where the finger went down', () => {
+  const { dragStartX } = jest.requireActual('../carousel');
+  it('works it back from where the finger is now', () => {
+    expect(dragStartX({ moveX: 260, dx: 10 })).toBe(250);
+    expect(dragStartX({ moveX: 140, dx: -60 })).toBe(200);
+    expect(dragStartX({ moveX: 200, dx: 0 })).toBe(200);
+  });
+});
+
+describe('startedAtEdge: whose gesture is it', () => {
+  const { startedAtEdge, EDGE_PX } = jest.requireActual('../carousel');
+  it('the strip along either edge belongs to the screen', () => {
+    expect(startedAtEdge(0, 400)).toBe(true);
+    expect(startedAtEdge(EDGE_PX, 400)).toBe(true);
+    expect(startedAtEdge(400, 400)).toBe(true);
+    expect(startedAtEdge(400 - EDGE_PX, 400)).toBe(true);
+  });
+  it('everything between belongs to the card', () => {
+    expect(startedAtEdge(EDGE_PX + 1, 400)).toBe(false);
+    expect(startedAtEdge(200, 400)).toBe(false);
+    expect(startedAtEdge(400 - EDGE_PX - 1, 400)).toBe(false);
+  });
+});
+
+describe('pageSwipeGuard: the browser must not read a card swipe as "go back"', () => {
+  const { pageSwipeGuard } = jest.requireActual('../carousel');
+  it('claims the horizontal axis on the web', () => {
+    expect(pageSwipeGuard('web')).toEqual({ touchAction: 'pan-y', overscrollBehaviorX: 'contain' });
+  });
+  it('leaves native alone', () => {
+    expect(pageSwipeGuard('ios')).toBeNull();
+    expect(pageSwipeGuard('android')).toBeNull();
   });
 });
 

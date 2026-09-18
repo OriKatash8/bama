@@ -14,6 +14,30 @@ export const SWIPE_THRESHOLD = 40;
  */
 export const CLAIM_PX = 12;
 
+/** Width of the strip along each screen edge that belongs to the screen. */
+export const EDGE_PX = 32;
+
+/**
+ * Whether a drag began in the screen's own gesture zone.
+ *
+ * Paging the card and swiping the screen away are the same motion, and in
+ * Hebrew they are even the same direction. The edges stay the screen's: a drag
+ * that starts there is left alone, so going back still works. Everywhere else
+ * on the card is the carousel's.
+ */
+export function startedAtEdge(x0: number, screenWidth: number, edge = EDGE_PX): boolean {
+  return x0 <= edge || x0 >= screenWidth - edge;
+}
+
+/**
+ * On the web the browser reads a horizontal drag as "go back in history", and
+ * a trackpad swipe as the same. Claiming the axis is what stops it; native
+ * platforms have no such style and take null.
+ */
+export function pageSwipeGuard(platform: string): object | null {
+  return platform === 'web' ? { touchAction: 'pan-y', overscrollBehaviorX: 'contain' } : null;
+}
+
 /** How long the card takes to leave, and the next one to arrive (ms, each way). */
 export const SLIDE_MS = 150;
 
@@ -84,7 +108,18 @@ export function slidePlan(step: -1 | 1, rtl: boolean, width: number): { out: num
 }
 
 /** What a gesture gives us. Structural, so this file stays free of React Native. */
-type Gesture = { dx: number; dy: number };
+type Gesture = { dx: number; dy: number; moveX: number };
+
+/**
+ * Where the finger went down, worked back from where it is now.
+ *
+ * `gestureState.x0` would say the same thing, but it is only filled in once the
+ * responder has been GRANTED — while the claim is still being decided it reads
+ * 0, which put every drag on the left edge and refused the lot.
+ */
+export function dragStartX(g: { moveX: number; dx: number }): number {
+  return g.moveX - g.dx;
+}
 
 /**
  * The carousel's gesture, as plain callbacks: claim clearly horizontal drags,
@@ -99,13 +134,20 @@ export function carouselPanConfig(o: {
   locked: () => boolean;
   rtl: () => boolean;
   ends: () => { atStart: boolean; atEnd: boolean };
+  /** Screen width, for leaving the edges to the screen's own gesture. */
+  screenWidth: () => number;
   onDrag: (x: number) => void;
   onStep: (step: -1 | 1) => void;
   onSettle: () => void;
 }) {
   return {
     onMoveShouldSetPanResponder: (_e: unknown, g: Gesture) =>
-      !o.locked() && Math.abs(g.dx) > CLAIM_PX && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      !o.locked()
+      && !startedAtEdge(dragStartX(g), o.screenWidth())
+      && Math.abs(g.dx) > CLAIM_PX && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+    // Once the card has the drag it keeps it: handing it back mid-swipe is how
+    // one motion ends up moving both the card and the screen.
+    onPanResponderTerminationRequest: () => false,
     onPanResponderMove: (_e: unknown, g: Gesture) => {
       if (o.locked()) return;
       const { atStart, atEnd } = o.ends();
