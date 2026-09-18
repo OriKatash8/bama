@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Search, MessageCircle, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { useUserChats } from '@features/chat/hooks/useUserChats';
 import { Screen } from '@components/layout/Screen';
-import { SURFACE } from '@core/constants/surface';
 import { PageTitle } from '@components/ui/PageTitle';
 import { EmptyState } from '@components/ui/EmptyState';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -16,6 +16,17 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+
+/** Same band as the create-project and browse screens: top-right to bottom-left. */
+const BAND_GRADIENT = {
+  colors: ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const,
+  locations: [0, 0.46, 0.78, 1] as const,
+  start: { x: 1, y: 0 },
+  end: { x: 0.15, y: 1 },
+};
+const PAGE_BG = '#FAFAFC';
+/** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
+const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 type Translations = typeof en;
 function t(translations: Translations, key: string): string {
@@ -45,14 +56,33 @@ export default function ChatsPage() {
     softAsk.ask('client');
   }, [projectSubmittedNonce, softAsk]);
   const [searchQuery, setSearchQuery] = useState('');
+  /** Visual only: the search field's focus border. */
+  const [searchFocused, setSearchFocused] = useState(false);
+  /** White on the band. PageTitle is shared, so the overrides ride its style
+   *  prop; 800 has no useAppFont entry, so Hebrew names the ExtraBold face. */
+  const titleType = {
+    color: '#FFFFFF',
+    fontSize: 25,
+    lineHeight: 30,
+    letterSpacing: -0.3,
+    fontWeight: '800' as const,
+    ...(rtl ? { fontFamily: 'Heebo-ExtraBold' } : null),
+    marginTop: 0,
+    marginBottom: 0,
+    paddingHorizontal: 0,
+  };
 
   const { chats, loading } = useUserChats();
   const realChats = chats.filter((c) => c.type !== 'community');
   const hasChats = realChats.length > 0;
 
   return (
-    <Screen style={{ padding: 0, paddingBottom: 100 }} scrollable={hasChats} backgroundColor={SURFACE.canvas}>
-      <PageTitle>{t(tr, 'chats_page.title')}</PageTitle>
+    <Screen style={{ padding: 0, paddingBottom: 100 }} scrollable={hasChats} backgroundColor={PAGE_BG}>
+      <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+        <PageTitle style={titleType}>{t(tr, 'chats_page.title')}</PageTitle>
+      </LinearGradient>
+
+      <View style={styles.sheet}>
 
       {loading ? (
         <View style={styles.centerFill}>
@@ -76,14 +106,16 @@ export default function ChatsPage() {
         />
       ) : (
         <>
-          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+          <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <Search size={18} color="#8B8898" strokeWidth={2.5} />
             <TextInput
-              style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
               placeholder={t(tr, 'search.placeholder')}
-              placeholderTextColor={colors.placeholder}
+              placeholderTextColor="#9C99AD"
               value={searchQuery}
               onChangeText={setSearchQuery}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
@@ -101,6 +133,7 @@ export default function ChatsPage() {
           />
         </>
       )}
+      </View>
 
       <NotifSoftAskModal context={softAsk.context} onClose={softAsk.close} />
     </Screen>
@@ -111,17 +144,41 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1 },
   // Bias the empty block upward a little (matches the Projects empty position).
   emptyBias: { paddingBottom: 100 },
+  band: { paddingTop: 22, paddingHorizontal: 20, paddingBottom: 40 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient.
+   *  flexGrow so the loading and empty states still fill the page. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
+  },
   searchRow: {
     // Direction is set inline. Hardcoded 'row' left the magnifier on the visual
     // left in Hebrew while the input was right-aligned beside it.
     alignItems: 'center',
-    borderRadius: 24,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 14,
-    height: 44,
+    height: 46,
+    borderRadius: 14,
     borderWidth: 1,
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    marginBottom: 8,
     gap: 8,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
-  searchInput: { flex: 1, fontSize: 15 },
+  searchRowFocused: { borderColor: '#8B5CF6' },
+  searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
 });
