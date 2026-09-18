@@ -38,7 +38,7 @@ import {
   addDoc, setDoc, serverTimestamp,
   orderBy,
 } from 'firebase/firestore';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, Users, UserMinus } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -528,6 +528,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   // mode picks the tab, it does not decide your role on a given project.
   const [projectClientId, setProjectClientId] = useState<string | undefined>(undefined);
   const [projectStatus, setProjectStatus] = useState<string | undefined>(undefined);
+  // True while the review card is a carousel the client can swipe through.
+  const [cardSwipeable, setCardSwipeable] = useState(false);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [chatPhotoURL, setChatPhotoURL] = useState<string | null>(null);
   const [chatPhotoModalOpen, setChatPhotoModalOpen] = useState(false);
@@ -1167,6 +1169,16 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   return (
     <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>
+    {/*
+      The screen's swipe-back and the review card's swipe are the same motion.
+      The app lays out left to right (I18nManager.allowRTL(false)), so the back
+      gesture starts on the left edge — which is exactly where a Hebrew reader
+      begins a right-swipe to see the next professional. One of them has to give
+      way, and while the card is swipeable it is the screen's: the back button in
+      the header still goes back, and the gesture returns the moment the client
+      is down to one professional to decide on.
+    */}
+    <Stack.Screen options={{ headerShown: false, gestureEnabled: !cardSwipeable }} />
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1293,7 +1305,14 @@ export function ChatRoomScreen({ chatId }: Props) {
           themselves when there is nothing to show. */}
       {chatType === 'group' && !!chatProjectId && !!projectClientId && !isReadOnly && !chatArchived && (
         projectClientId === currentUserId
-          ? <CandidateReviewCard projectId={chatProjectId} chatId={chatId} clientId={currentUserId} />
+          ? (
+            <CandidateReviewCard
+              projectId={chatProjectId}
+              chatId={chatId}
+              clientId={currentUserId}
+              onSwipeableChange={setCardSwipeable}
+            />
+          )
           : <CandidateProCard projectId={chatProjectId} chatId={chatId} proId={currentUserId} projectStatus={projectStatus} />
       )}
 

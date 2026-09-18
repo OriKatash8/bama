@@ -38,10 +38,16 @@ export function CandidateReviewCard({
   projectId,
   chatId,
   clientId,
+  onSwipeableChange,
 }: {
   projectId: string;
   chatId: string;
   clientId: string;
+  /**
+   * Told whenever the card becomes swipeable (2+ professionals) or stops being
+   * so. The screen uses it to stand its own swipe down — see ChatRoomScreen.
+   */
+  onSwipeableChange?: (swipeable: boolean) => void;
 }) {
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
@@ -136,6 +142,15 @@ export function CandidateReviewCard({
     onStep: (step) => live.current.step(step),
     onSettle: () => settle(),
   })));
+
+  // Paging the card and swiping the screen away are the same motion, and with
+  // the app laid out left to right the screen's gesture starts in the same
+  // place a right-swipe on the card does. Whoever owns the screen turns theirs
+  // off while the card can be swiped.
+  useEffect(() => {
+    onSwipeableChange?.(carousel);
+    return () => onSwipeableChange?.(false);
+  }, [carousel, onSwipeableChange]);
 
   if (candidates.length === 0) return null;
 

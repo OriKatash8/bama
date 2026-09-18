@@ -17,7 +17,7 @@ it('mounts above the message list, so it stays pinned while messages scroll', ()
 });
 
 it('client gets the card, anyone else on the project gets the chip — by project role, not mode', () => {
-  expect(SRC).toMatch(/projectClientId === currentUserId\s*\?\s*<CandidateReviewCard[^>]*clientId=\{currentUserId\}/);
+  expect(SRC).toMatch(/projectClientId === currentUserId\s*\?\s*\(?\s*<CandidateReviewCard[\s\S]{0,240}?clientId=\{currentUserId\}/);
   expect(SRC).toMatch(/:\s*<CandidateProCard[^>]*proId=\{currentUserId\}/);
   expect(SRC).not.toMatch(/CandidateStatusChip/);
 });
@@ -40,4 +40,13 @@ it("renders 'left the project' and 'chose not to continue' as their own pill", (
   expect(SRC).toMatch(/text\.includes\('עזב את הפרויקט'\) \|\| text\.includes\('החליט\/ה לא להמשיך בפרויקט'\)/);
   expect(SRC).toMatch(/variant: 'left'/);
   expect(SRC).toMatch(/variant === 'left'\s*\?\s*<UserMinus/);
+});
+
+it("stands the screen's own swipe-back down while the review card can be swiped", () => {
+  // Same motion, same starting edge (the app lays out LTR), so only one of the
+  // two may be live. The screen is the single owner of the option.
+  expect(SRC).toMatch(/<Stack\.Screen options=\{\{ headerShown: false, gestureEnabled: !cardSwipeable \}\} \/>/);
+  expect(SRC).toMatch(/onSwipeableChange=\{setCardSwipeable\}/);
+  const route = readFileSync(join(__dirname, '..', '..', '..', '..', 'app', '(client)', '(tabs)', 'chats', '[chatId].tsx'), 'utf8');
+  expect(route).not.toMatch(/gestureEnabled/);
 });

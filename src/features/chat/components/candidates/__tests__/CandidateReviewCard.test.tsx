@@ -531,6 +531,39 @@ describe('the carousel gesture', () => {
     expect(calls.drag).toEqual([-20]);
   });
 
+  const withSwipeReports = async () => {
+    mockAccepted = { offers: [offer('pro-a'), offer('pro-b', { category: 'Sound Recordist' }), offer('pro-c', { category: 'Lighting Tech' })], bundles: [] };
+    const swipeable: boolean[] = [];
+    const r = render(<CandidateReviewCard projectId="p1" chatId="c1" clientId={CLIENT} onSwipeableChange={(v) => swipeable.push(v)} />);
+    await act(async () => {});
+    return { r, swipeable, last: () => swipeable[swipeable.length - 1] };
+  };
+
+  it('tells the screen when it becomes swipeable, and again when the list shrinks', async () => {
+    const { last } = await withSwipeReports();
+    expect(last()).toBe(true);
+    // Down to one professional: nothing left to page through.
+    await act(async () => {
+      mockPushAccepted({ offers: [offer('pro-a', { review: 'confirmed' }), offer('pro-b', { status: 'removed' }), offer('pro-c', { category: 'Lighting Tech' })], bundles: [] });
+    });
+    expect(last()).toBe(false);
+  });
+
+  it('gives the screen its gesture back when the card goes away', async () => {
+    const { r, last } = await withSwipeReports();
+    expect(last()).toBe(true);   // still swipeable at the moment it unmounts
+    r.unmount();
+    expect(last()).toBe(false);
+  });
+
+  it('a single professional never asks the screen to stand down', async () => {
+    mockAccepted = { offers: [offer('pro-a')], bundles: [] };
+    const swipeable: boolean[] = [];
+    render(<CandidateReviewCard projectId="p1" chatId="c1" clientId={CLIENT} onSwipeableChange={(v) => swipeable.push(v)} />);
+    await act(async () => {});
+    expect(swipeable.some(Boolean)).toBe(false);
+  });
+
   it('decides on where the drag STARTED, not on x0 — which is still 0 while the claim is being made', () => {
     const { cfg } = wire();
     // The shape RN really hands over mid-claim: x0 not filled in yet, moveX
