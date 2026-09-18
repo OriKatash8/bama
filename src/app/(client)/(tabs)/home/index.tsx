@@ -708,13 +708,16 @@ export default function HomeScreen() {
                           rather than on the tile — a ring at a negative offset on
                           a clipping parent is simply cut away. */}
                       <View style={styles.tileClip}>
-                      {cat.glyph ? (
-                        <View style={styles.tileGlyphWrap}>
+                      {cat.image ? (
+                        // The role's gradient card art, untinted. The PNG is a
+                        // square canvas with the card across its middle ~42%,
+                        // so it is drawn tile-wide and the band around the card
+                        // is clipped by this wrapper.
+                        <View style={[styles.tileGlyphWrap, { height: Math.round(tileSize * 0.5) }]}>
                           <Image
-                            source={cat.glyph}
-                            style={styles.tileGlyph}
+                            source={cat.image}
+                            style={styles.tileArt}
                             contentFit="contain"
-                            tintColor="#004aad"
                             cachePolicy="memory-disk"
                           />
                         </View>
@@ -1125,17 +1128,16 @@ function createStyles(
     // No overflow here — the ring needs to escape. The tile is a positioning
     // box; the surface and the clipping both live on tileClip.
     tile: { position: 'relative', alignItems: 'center' },
+    // No fill or border of its own: the card art is the tile's surface, sitting
+    // straight on the white sheet.
     tileClip: {
       width: '100%',
       borderRadius: RADIUS.md,
       overflow: 'hidden',
       alignItems: 'center',
-      backgroundColor: FIELD_FILL,
-      borderWidth: 1,
-      borderColor: FIELD_BORDER,
     },
-    tileGlyphWrap: { width: '100%', height: 80, alignItems: 'center', justifyContent: 'center' },
-    tileGlyph: { width: 44, height: 44 },
+    tileGlyphWrap: { width: '100%', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    tileArt: { width: '100%', aspectRatio: 1 },
     tileRing: {
       position: 'absolute',
       top: -2, left: -2, right: -2, bottom: -2,
