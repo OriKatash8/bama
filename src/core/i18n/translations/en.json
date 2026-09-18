@@ -882,7 +882,8 @@
   },
   "common": {
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "help": "Help"
   },
   "media": {
     "processing_video": "Processing video...",

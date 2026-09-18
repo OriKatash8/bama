@@ -882,7 +882,8 @@
   },
   "common": {
     "cancel": "ביטול",
-    "confirm": "אישור"
+    "confirm": "אישור",
+    "help": "עזרה"
   },
   "media": {
     "processing_video": "מעבד וידאו...",

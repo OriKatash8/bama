@@ -3,11 +3,16 @@ import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'r
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 
 type Props = { text: string };
 
 /** Must match `popover.maxWidth` — the clamp needs a number, not a style. */
 const POPOVER_WIDTH = 220;
+
+/** 18pt circle + 13 on every side = the 44pt minimum touch target. */
+const HIT_SLOP = { top: 13, bottom: 13, left: 13, right: 13 };
 
 export function HelpTooltip({ text }: Props) {
   const [visible, setVisible] = useState(false);
@@ -36,7 +41,13 @@ export function HelpTooltip({ text }: Props) {
 
   return (
     <View ref={btnRef} collapsable={false}>
-      <Pressable onPress={openPopover} style={styles.btn} hitSlop={8}>
+      <Pressable
+        onPress={openPopover}
+        style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
+        hitSlop={HIT_SLOP}
+        accessibilityRole="button"
+        accessibilityLabel={(rtl ? he : en).common.help}
+      >
         <Text style={styles.q}>?</Text>
       </Pressable>
 
@@ -69,19 +80,21 @@ export function HelpTooltip({ text }: Props) {
 
 const styles = StyleSheet.create({
   btn: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#004aad',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#EFEDF5',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  btnPressed: { backgroundColor: '#E4E0EF' },
   q: {
-    color: '#004aad',
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: '700',
+    color: '#7A7788',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   overlay: {
     flex: 1,
