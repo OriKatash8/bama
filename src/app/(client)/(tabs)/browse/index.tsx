@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal, FlatList,
-  StyleSheet, ActivityIndicator, ScrollView,
+  StyleSheet, ActivityIndicator, ScrollView, Pressable, Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Search } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { PageTitle } from '@components/ui/PageTitle';
 import { useTheme } from '@core/hooks/useTheme';
@@ -55,6 +55,20 @@ const CATEGORY_IMAGE: Record<string, number> = {
   'Sound Recordist':    require('../../../../../assets/images/categories/blue-sound.png'),
 };
 
+/** Same band as the create-project wizard: top-right to bottom-left. */
+const BAND_GRADIENT = {
+  colors: ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const,
+  locations: [0, 0.46, 0.78, 1] as const,
+  start: { x: 1, y: 0 },
+  end: { x: 0.15, y: 1 },
+};
+const PAGE_BG = '#FAFAFC';
+const VIOLET = '#6D28D9';
+/** Row padding 14 + icon tile 38 + gap 12: separators start where the label does. */
+const SEPARATOR_INSET = 64;
+/** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
+const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
+
 const CATEGORIES = ROLE_CATEGORIES.map((key) => ({
   key,
   label: key,
@@ -69,6 +83,8 @@ export default function SearchScreen() {
 
   const [sheetProfessionalId, setSheetProfessionalId] = useState<string | null>(null);
   const [sheetProfessionalName, setSheetProfessionalName] = useState('');
+  /** Visual only: the search field's focus border. */
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const colors = useTheme();
   const router = useRouter();
@@ -77,6 +93,19 @@ export default function SearchScreen() {
   const rtl = language === 'he';
   const font = useAppFont();
   const { showToast } = useUiStore();
+  /** White on the band. PageTitle is shared, so the overrides ride its style
+   *  prop; 800 has no useAppFont entry, so Hebrew names the ExtraBold face. */
+  const titleType = {
+    color: '#FFFFFF',
+    fontSize: 25,
+    lineHeight: 30,
+    letterSpacing: -0.3,
+    fontWeight: '800' as const,
+    ...(rtl ? { fontFamily: 'Heebo-ExtraBold' } : null),
+    marginTop: 0,
+    marginBottom: 0,
+    paddingHorizontal: 0,
+  };
 
   function openDirectSheet(id: string, name: string) {
     setSheetProfessionalId(id);
@@ -126,19 +155,24 @@ export default function SearchScreen() {
   const isSearching = query.trim().length > 0;
 
   return (
-    <Screen keyboardShouldPersistTaps="handled" style={{ padding: 0, paddingBottom: 100 }}>
+    <Screen keyboardShouldPersistTaps="handled" backgroundColor={PAGE_BG} style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
-      <PageTitle>{t('search.heading')}</PageTitle>
+      <LinearGradient {...BAND_GRADIENT} style={styles.band}>
+        <PageTitle style={titleType}>{t('search.heading')}</PageTitle>
+      </LinearGradient>
 
+      <View style={styles.sheet}>
       {/* Top search bar */}
-      <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border }]}>
-        <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+      <View style={[styles.searchRow, searchFocused && styles.searchRowFocused]}>
+        <Search size={18} color="#8B8898" strokeWidth={2.5} />
         <TextInput
-          style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+          style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
           placeholder={t('search.placeholder')}
-          placeholderTextColor={colors.placeholder}
+          placeholderTextColor="#9C99AD"
           value={query}
           onChangeText={setQuery}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           returnKeyType="search"
         />
         {query.length > 0 && (
@@ -165,7 +199,7 @@ export default function SearchScreen() {
             </View>
           ) : (
             unifiedResults.map((item) => (
-              <View key={item.user.id} style={styles.resultItem}>
+              <View key={item.user.id}>
                 <ProfessionalCard
                   item={item}
                   onViewProfile={() => router.push(`/browse/profile/${item.user.id}` as never)}
@@ -178,28 +212,51 @@ export default function SearchScreen() {
       ) : (
         /* Flat category list */
         <View style={styles.listContent}>
-          {filteredCategories.map((cat) => (
-            <View key={cat.key} style={styles.categoryCard}>
-              <TouchableOpacity
-                style={[styles.categoryCardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+          {filteredCategories.length > 0 && (
+          <View style={styles.listCard}>
+          {filteredCategories.map((cat, i) => (
+            <Fragment key={cat.key}>
+              {/* Its own view, not a border on the row: a border can't be
+                  inset, and this one starts past the icon column. */}
+              {i > 0 && (
+                <View
+                  style={[
+                    styles.separator,
+                    rtl ? { marginRight: SEPARATOR_INSET } : { marginLeft: SEPARATOR_INSET },
+                  ]}
+                />
+              )}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.categoryRow,
+                  { flexDirection: rtl ? 'row-reverse' : 'row' },
+                  pressed && styles.categoryRowPressed,
+                ]}
                 onPress={() => openCategory(cat.key)}
-                activeOpacity={0.7}
               >
-                {cat.image && (
-                  <Image
-                    source={cat.image}
-                    style={styles.categoryIcon}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    loading="lazy"
-                  />
-                )}
-                <Text style={[styles.categoryLabel, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>
+                <View style={styles.categoryIconTile}>
+                  {cat.image && (
+                    <Image
+                      source={cat.image}
+                      style={styles.categoryIcon}
+                      contentFit="cover"
+                      tintColor={VIOLET}
+                      cachePolicy="memory-disk"
+                      loading="lazy"
+                    />
+                  )}
+                </View>
+                <Text style={[styles.categoryLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
                   {catLabel(cat.key, rtl)}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                {rtl
+                  ? <ChevronLeft size={16} color="#C6C2D2" strokeWidth={2} />
+                  : <ChevronRight size={16} color="#C6C2D2" strokeWidth={2} />}
+              </Pressable>
+            </Fragment>
           ))}
+          </View>
+          )}
           {filteredCategories.length === 0 && (
             <Text style={{ color: colors.textMuted, textAlign: rtl ? 'right' : 'left', marginTop: 32, ...font.regular }}>
               {t('search.no_categories_match', { query })}
@@ -207,6 +264,7 @@ export default function SearchScreen() {
           )}
         </View>
       )}
+      </View>
 
       {/* Category results modal */}
       <Modal
@@ -337,51 +395,86 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
 
+  band: { paddingTop: 22, paddingHorizontal: 20, paddingBottom: 40 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
+  },
+
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 24,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    paddingHorizontal: 14,
-    height: 44,
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    marginBottom: 16,
     gap: 8,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
-  searchInput: { flex: 1, fontSize: 15 },
+  searchRowFocused: { borderColor: '#8B5CF6' },
+  searchInput: { flex: 1, fontSize: 14.5, color: '#1A1626' },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
   listContent: { paddingBottom: 16 },
 
-  categoryCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    marginHorizontal: 24,
-    marginBottom: 10,
-    maxWidth: 600,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+  /** One container for every row; rows carry no surface of their own. */
+  listCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
     overflow: 'hidden',
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  categoryCardRow: {
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#F0EEF6' },
+  categoryRow: {
+    minHeight: 52,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     gap: 12,
   },
-  categoryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  categoryRowPressed: { backgroundColor: '#F8F6FC' },
+  categoryIconTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#F3EEFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  /** Fills the tile: the PNGs are ~40% ink on a 400px transparent canvas, so a
+   *  38pt frame gives a glyph of roughly 15-18pt. */
+  categoryIcon: { width: 38, height: 38 },
   categoryLabel: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#004aad',
+    fontSize: 14.5,
+    fontWeight: '600',
+    color: '#1A1626',
   },
+
 
   resultItem: { paddingHorizontal: 16 },
 
