@@ -1983,10 +1983,8 @@ export default function ProjectDetailsScreen() {
           onSelect={handleEditDeadline}
           onClose={() => setShowDeadlinePicker(false)}
           minDate={deadlineMinDate}
-          showFlexible
-          isFlexible={project.deadline === 'flexible'}
-          onFlexible={() => handleEditDeadline('flexible')}
-          flexibleLabel={t('builder.flexible')}
+          // "Flexible" is no longer offered. A project that already has it still
+          // shows it, and picking a date here replaces it.
         />
       )}
 

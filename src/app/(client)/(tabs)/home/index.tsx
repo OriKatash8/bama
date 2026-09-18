@@ -37,7 +37,7 @@ import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@fea
 import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
 import { formatIsoDay } from '@utils/formatters';
 import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
-import { RADIUS, SPACE, SURFACE, TEXT } from '@core/constants/surface';
+import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
 
 /**
  * The wizard's violet palette. Local on purpose: this pass restyles this screen
@@ -145,16 +145,6 @@ export default function HomeScreen() {
     marginBottom: 0,
     paddingHorizontal: 0,
   };
-  /**
-   * The optional marker. Small text wants a little POSITIVE tracking to stay
-   * legible, and small caps is what makes a label of this size read as
-   * deliberate rather than leftover — but both are Latin devices. `uppercase` is
-   * a no-op on Hebrew, and Heebo does not take tracking, so Hebrew gets the size
-   * and colour and nothing else.
-   */
-  const optionalType = rtl
-    ? null
-    : { textTransform: 'uppercase' as const, letterSpacing: 0.6 };
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
   const scrollRef = useRef<ScrollView>(null);
@@ -542,8 +532,8 @@ export default function HomeScreen() {
                     <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                     </Text>
+                    <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>
                   </PressableScale>
-                  <Text style={[styles.optionalTag, optionalType]}>{t('builder.optional')}</Text>
                 </View>
 
                 {/* Deadline square */}
@@ -596,32 +586,12 @@ export default function HomeScreen() {
                     <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {location || t('builder.placeholder_location')}
                     </Text>
+                    <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>
                   </PressableScale>
-                  <Text style={[styles.optionalTag, optionalType]}>{t('builder.optional')}</Text>
                   {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
                 </View>
               </View>
 
-              {/* What the date actually DOES, said out loud.
-                  'flexible' is not a softer version of a date — it means the
-                  project has no end date at all and never closes by itself, which
-                  is a real consequence the client should meet here rather than
-                  discover weeks later when nothing has happened. */}
-              {deadline ? (
-                <Text
-                  style={[
-                    styles.dateConsequence,
-                    { textAlign: rtl ? 'right' : 'left', color: deadline === 'flexible' ? '#b7791f' : INK_2 },
-                  ]}
-                >
-                  {deadline === 'flexible'
-                    ? t('builder.flexible_no_autocomplete')
-                    : t('builder.end_date_note')}
-                </Text>
-              ) : null}
-
-              {/* Below the date note, not between the tiles and it: that note
-                  explains the end-date tile and has to stay next to it. */}
               <View style={[styles.tipBox, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <Info size={16} color={VIOLET} strokeWidth={2} style={styles.tipIcon} />
                 <Text style={[styles.tipText, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -822,9 +792,15 @@ export default function HomeScreen() {
                       <Image source={CATEGORY_ICON[category]} style={styles.s3Avatar} contentFit="cover" cachePolicy="memory-disk" />
                     ) : null}
                     <View style={{ flex: 1 }}>
-                      <AppText weight="bold" style={[styles.s3RoleName, { textAlign: rtl ? 'right' : 'left' }]}>{roleLabel}</AppText>
-                      <AppText weight="regular" style={[styles.s3RoleNeed, { textAlign: rtl ? 'right' : 'left' }]}>
-                        {rtl ? `${caps.length} דרושים` : `${caps.length} needed`}
+                      <AppText weight="bold" style={[styles.s3RoleName, { textAlign: rtl ? 'right' : 'left' }]}>
+                        {roleLabel}
+                        {/* One seat: its chosen subskill rides on the role name.
+                            Several seats: each seat's own line carries it below. */}
+                        {caps.length === 1 ? (
+                          <AppText weight="semiBold" style={styles.s3SelLabel}>
+                            {` - ${labelOf(subskills.find((s) => s.id === (caps[0] ?? 'general')) ?? subskills[0], lang)}`}
+                          </AppText>
+                        ) : null}
                       </AppText>
                     </View>
                   </View>
@@ -836,18 +812,20 @@ export default function HomeScreen() {
                     const multiple = caps.length > 1;
                     return (
                       <View key={i} style={styles.s3Slot}>
-                        <View style={[styles.s3SlotHead, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                          {multiple && (
-                            <>
-                              <View style={styles.s3Num}>
-                                <AppText weight="bold" style={styles.s3NumText}>{i + 1}</AppText>
-                              </View>
-                              <AppText weight="regular" style={styles.s3SlotLabel}>{`${roleLabel} ${i + 1}`}</AppText>
-                            </>
-                          )}
-                          <View style={{ flex: 1 }} />
-                          <AppText weight="semiBold" style={styles.s3SelLabel}>{selectedLabel}</AppText>
-                        </View>
+                        {/* A rule between seats of the same role, so each
+                            person's choice reads as its own block. */}
+                        {i > 0 && <View style={styles.s3SeatDivider} />}
+                        {multiple && (
+                          <View style={[styles.s3SlotHead, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                            <View style={styles.s3Num}>
+                              <AppText weight="bold" style={styles.s3NumText}>{i + 1}</AppText>
+                            </View>
+                            <AppText weight="regular" style={styles.s3SlotLabel}>
+                              {`${roleLabel} ${i + 1}`}
+                              <AppText weight="semiBold" style={styles.s3SelLabel}>{` - ${selectedLabel}`}</AppText>
+                            </AppText>
+                          </View>
+                        )}
                         <View style={[styles.s3PillRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                           {subskills.map((sp) => {
                             const on = selectedId === sp.id;
@@ -991,10 +969,10 @@ export default function HomeScreen() {
             setCalOpen(null);
           }}
           onClose={() => setCalOpen(null)}
-          showFlexible={calOpen === 'deadline'}
-          isFlexible={deadline === 'flexible'}
-          onFlexible={() => { setDeadline(deadline === 'flexible' ? '' : 'flexible'); setCalOpen(null); }}
-          flexibleLabel={t('builder.flexible')}
+          // No "flexible" end date is offered any more. A project that already
+          // has one still shows it, and picking a date here replaces it.
+          // What the end date does is said here, where it is chosen.
+          note={calOpen === 'deadline' ? t('builder.end_date_calendar_note') : undefined}
           minDate={calOpen === 'exec' ? tomorrowISO : (exec || todayISO)}
           maxDate={calOpen === 'exec' && deadline && deadline !== 'flexible' ? deadline : undefined}
         />
@@ -1021,13 +999,17 @@ function createStyles(
      *  the content container and the step, and would otherwise break that chain. */
     stepWrap: { flexGrow: 1 },
     descriptionWrap: { position: 'relative' },
-    /** Under the square, centred on it. Out of the square entirely now, so it no
-     *  longer contends with the help "?" or the clear "x" for a corner, and it
-     *  can stay visible whether or not the field has been filled. */
+    /** "(optional)" / "(לא חובה)", above the icon at the top of the square.
+     *  Absolute, so it takes no room in the centred column. Stays visible
+     *  whether or not the field has been filled. */
     optionalTag: {
-      marginTop: SPACE.xs,
-      fontSize: 9,
-      fontFamily: ffMedium,
+      position: 'absolute',
+      top: 7,
+      left: 0,
+      right: 0,
+      fontSize: 11,
+      lineHeight: 14,
+      fontFamily: ff,
       color: PLACEHOLDER,
       textAlign: 'center',
     },
@@ -1110,7 +1092,6 @@ function createStyles(
     focusRing: { borderWidth: 3, borderColor: 'transparent', borderRadius: 17, margin: -3 },
     focusRingOn: { borderColor: 'rgba(139,92,246,0.18)' },
     error: { fontSize: 12, lineHeight: 16, color: '#fc8181', marginTop: 4, fontFamily: ff },
-    dateConsequence: { fontSize: 11.5, lineHeight: 18, marginTop: SPACE.md, fontFamily: ff },
     /** Informational only — no press, border or shadow. Sits inside the sheet,
      *  which supplies the side inset. */
     tipBox: {
@@ -1287,11 +1268,14 @@ function createStyles(
       borderColor: FIELD_BORDER,
       borderRadius: 16,
       width: '100%',
-      minHeight: 84,
+      // 100, not 84: the two optional squares carry an extra "(optional)" line,
+      // and the required one must stay the same height beside them.
+      minHeight: 100,
+      // Centred. The "(optional)" line is positioned over the top of the
+      // square rather than stacked in the column, so the icon and text centre
+      // identically in all three squares and sit on the same line.
       justifyContent: 'center',
       alignItems: 'center',
-      // 6, not 8: icon + two lines of value text + padding then fit exactly in
-      // 84, so a wrapped value never makes its tile taller than its neighbours.
       gap: 6,
       paddingVertical: 12,
       paddingHorizontal: 11,
@@ -1528,17 +1512,19 @@ function createStyles(
     // rounded square — at 80 it dominated the role header.
     s3Avatar: { width: 56, height: 56, borderRadius: 28 },
     s3RoleName: { fontSize: 16, lineHeight: 21, color: TEXT.primary },
-    s3RoleNeed: { fontSize: 12, lineHeight: 16, color: TEXT.secondary, marginTop: 1 },
-    s3Slot: { backgroundColor: FIELD_FILL, borderRadius: RADIUS.sm, padding: SPACE.md, marginTop: SPACE.md, gap: SPACE.sm },
+    // No fill of its own: the seats sit straight on the card. The pills carry
+    // the tint instead, so they still read as buttons on white.
+    s3Slot: { marginTop: SPACE.md, gap: SPACE.sm },
+    s3SeatDivider: { height: 1, backgroundColor: FIELD_BORDER, marginBottom: SPACE.xs },
     s3SlotHead: { alignItems: 'center', gap: SPACE.sm },
-    s3Num: { width: 22, height: 22, borderRadius: 11, backgroundColor: SURFACE.raised, alignItems: 'center', justifyContent: 'center' },
+    s3Num: { width: 22, height: 22, borderRadius: 11, backgroundColor: FIELD_FILL, alignItems: 'center', justifyContent: 'center' },
     s3NumText: { fontSize: 12, color: TEXT.secondary },
     s3SlotLabel: { fontSize: 12, lineHeight: 16, color: TEXT.secondary },
     s3SelLabel: { fontSize: 13, lineHeight: 17, color: TEXT.primary },
     s3PillRow: { flexWrap: 'wrap', gap: SPACE.sm },
     s3Pill: { borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
     s3PillSel: { backgroundColor: '#004aad' },
-    s3PillUnsel: { backgroundColor: SURFACE.raised },
+    s3PillUnsel: { backgroundColor: FIELD_FILL },
     s3PillTextSel: { color: '#ffffff', fontSize: 13, lineHeight: 17 },
     s3PillTextUnsel: { color: TEXT.primary, fontSize: 13, lineHeight: 17 },
   });

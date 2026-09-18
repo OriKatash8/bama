@@ -17,9 +17,12 @@ type Props = {
   flexibleLabel?: string;
   minDate?: string;
   maxDate?: string;
+  /** Optional line under the dates. Renders nothing when omitted, so callers
+   *  that don't pass it are unchanged. */
+  note?: string;
 };
 
-export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexible, onFlexible, flexibleLabel, minDate, maxDate }: Props) {
+export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexible, onFlexible, flexibleLabel, minDate, maxDate, note }: Props) {
   const today = new Date();
   const init = value
     ? new Date(value + 'T00:00:00')
@@ -117,6 +120,8 @@ export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexibl
                 })}
               </View>
 
+              {note ? <Text style={styles.note}>{note}</Text> : null}
+
               {showFlexible && (
                 <TouchableOpacity
                   style={[styles.flexibleBtn, isFlexible && styles.flexibleBtnActive]}
@@ -177,4 +182,5 @@ const styles = StyleSheet.create({
   flexibleBtnActive: { backgroundColor: '#004aad' },
   flexibleBtnText: { fontSize: 13, fontWeight: '600', color: '#004aad' },
   flexibleBtnTextActive: { color: '#ffffff' },
+  note: { marginTop: 10, fontSize: 12, lineHeight: 17, color: '#6B6880', textAlign: 'center' },
 });
