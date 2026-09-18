@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions, Platform } from 'react-native';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, Inbox, History, Briefcase, LayoutGrid } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
+import { GradientBand } from '@components/ui/GradientBand';
 import { AppText } from '@components/ui/AppText';
 import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCard';
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
@@ -67,6 +68,11 @@ function formatDeadlineShort(deadline?: string, flexibleLabel?: string): string 
 const BLUE = '#1e4fa3';
 const MUTED = '#8890b0';
 const STAT_BG = '#f5f6fb';
+const PAGE_BG = '#FAFAFC';
+/** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
+const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
+const VIOLET = '#6D28D9';
+
 const CARD_SHADOW = {
   shadowColor: '#1e4fa3',
   shadowOpacity: 0.06,
@@ -77,7 +83,8 @@ const CARD_SHADOW = {
 
 export default function DashboardScreen() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const cardWidth = screenWidth - 32;
+  // The sheet's 20pt side padding, both sides.
+  const cardWidth = screenWidth - 40;
 
   const { profile, isLoading: profileLoading } = useProfile();
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -158,6 +165,8 @@ export default function DashboardScreen() {
   // ── Sort & filter (client-side over the already-matched list) ──
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  /** Visual only: the search field's focus border. */
+  const [searchFocused, setSearchFocused] = useState(false);
   const [search, setSearch] = useState('');
   const [sortModalVisible, setSortModalVisible] = useState(false);
   // The board shows the noticeboard by default; in-progress projects and history
@@ -359,24 +368,27 @@ export default function DashboardScreen() {
     : t('noticeboard.open_projects_other', { count: displayed.length });
 
   return (
-    <Screen scrollable={false}>
+    <Screen scrollable={false} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {notifPrompt.visible && pendingCount > 0 && (
-          <NotifPermissionBanner context="offers" onDismiss={notifPrompt.dismiss} />
-        )}
-
-
-        {/* ── Notice board ── */}
+        {/* ── Notice board ── the header sits on the violet band. */}
+        <GradientBand style={styles.band}>
         <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <View style={{ flex: 1 }}>
-            <AppText weight="bold" style={[styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+            {/* Plain Text, not AppText: AppText applies its own font after the
+                style, which would override the ExtraBold face. */}
+            <Text
+              style={[
+                styles.sectionTitle,
+                { fontFamily: rtl ? 'Heebo-ExtraBold' : font.bold.fontFamily, textAlign: rtl ? 'right' : 'left' },
+              ]}
+            >
               {showInProgress ? t('noticeboard.projects_in_progress') : showHistory ? t('history.title') : t('noticeboard.notice_board')}
-            </AppText>
+            </Text>
             {onBoard && !isLoading && (
               <AppText weight="regular" style={[styles.sectionCount, { textAlign: rtl ? 'right' : 'left' }]}>
                 {openProjectsLabel}
@@ -396,8 +408,8 @@ export default function DashboardScreen() {
             testID="noticeboard-history-btn"
           >
             {showHistory
-              ? <LayoutGrid size={15} color="#004aad" strokeWidth={2.5} />
-              : <History size={15} color="#004aad" strokeWidth={2.2} />}
+              ? <LayoutGrid size={14} color={VIOLET} strokeWidth={2.3} />
+              : <History size={14} color={VIOLET} strokeWidth={2.1} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showHistory ? t('noticeboard.notice_board') : t('history.title')}
             </AppText>
@@ -405,7 +417,6 @@ export default function DashboardScreen() {
               <View
                 style={[
                   styles.historyBadge,
-                  { backgroundColor: colors.accent, borderColor: colors.bg },
                   { [rtl ? 'left' : 'right']: -4 },
                 ]}
               >
@@ -426,8 +437,8 @@ export default function DashboardScreen() {
             accessibilityRole="button"
           >
             {showInProgress
-              ? <LayoutGrid size={15} color="#004aad" strokeWidth={2.5} />
-              : <Briefcase size={15} color="#004aad" strokeWidth={2.5} />}
+              ? <LayoutGrid size={14} color={VIOLET} strokeWidth={2.3} />
+              : <Briefcase size={14} color={VIOLET} strokeWidth={2.3} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
             </AppText>
@@ -438,13 +449,21 @@ export default function DashboardScreen() {
               onPress={openSortModal}
               activeOpacity={0.8}
             >
-              <SlidersHorizontal size={15} color={filterActive ? '#ffffff' : '#004aad'} strokeWidth={2.5} />
+              <SlidersHorizontal size={14} color={filterActive ? '#ffffff' : VIOLET} strokeWidth={2.3} />
               <AppText weight="semiBold" style={[styles.navBtnText, filterActive && styles.navBtnTextActive]} numberOfLines={2}>
                 {t('noticeboard.filter_short')}
               </AppText>
             </TouchableOpacity>
           )}
         </View>
+        </GradientBand>
+
+        <View style={styles.sheet}>
+        {/* Below the band, not above it: the band's pull-down extension sits
+            directly above the band and would paint over anything there. */}
+        {notifPrompt.visible && pendingCount > 0 && (
+          <NotifPermissionBanner context="offers" onDismiss={notifPrompt.dismiss} />
+        )}
 
         {/* ── In-progress projects — shown only while the toggle is on ── */}
         {showInProgress && activeProjects.length > 0 && (
@@ -533,14 +552,16 @@ export default function DashboardScreen() {
         )}
 
         {onBoard && !isLoading && biddable.length > 0 && (
-          <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
+          <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <Search size={18} color="#8B8898" strokeWidth={2.5} />
             <TextInput
-              style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
               placeholder={rtl ? 'חיפוש בלוח המודעות…' : 'Search the notice board…'}
-              placeholderTextColor={colors.placeholder}
+              placeholderTextColor="#9C99AD"
               value={search}
               onChangeText={setSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               returnKeyType="search"
             />
             {search.length > 0 && (
@@ -601,6 +622,7 @@ export default function DashboardScreen() {
             )}
           />
         )}
+        </View>
       </ScrollView>
 
       <FeeArrearsSheet
@@ -708,34 +730,59 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { paddingBottom: 140 },
 
-  // Section headers
-  sectionTitle: {
-    fontSize: 24,
-    color: BLUE,
-  },
-  sectionCount: {
-    fontSize: 12,
-    color: MUTED,
+  band: { paddingTop: 20, paddingHorizontal: 20, paddingBottom: 40 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
   },
 
-  // Notice board header + sort/filter
+  // Section headers — white on the band
+  sectionTitle: {
+    fontSize: 25,
+    lineHeight: 30,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    color: '#FFFFFF',
+  },
+  sectionCount: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.82)',
+  },
+
+  // Notice board header + sort/filter. The band supplies the padding.
   noticeHeaderRow: {
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
   },
   searchRow: {
     alignItems: 'center',
-    borderRadius: 24,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    height: 44,
+    height: 46,
+    borderRadius: 14,
     borderWidth: 1,
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    marginBottom: 12,
     gap: 8,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
-  searchInput: { flex: 1, fontSize: 15 },
+  searchRowFocused: { borderColor: '#8B5CF6' },
+  searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
   // Icon over a small label, at a FIXED width: the middle button's label swaps
   // ("In progress" <-> "Notice board") and must not resize, or the page title
@@ -745,32 +792,38 @@ const styles = StyleSheet.create({
     // Explicit width AND height. English labels differ in line count — "Filter"
     // and "History" are one line, "In progress" and "Notice board" are two — so
     // without a fixed height the three buttons were visibly different sizes.
-    width: 52,
+    // 50 × 44: the smallest that still fits. At 9pt the English "progress" is
+    // 40.6pt against the 41pt left inside padding and border; 44 is the touch
+    // minimum, and a two-line label (14 + 2 + 2×11) fits inside it.
+    width: 50,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
     paddingHorizontal: 3,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: BLUE,
-    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: VIOLET,
+    backgroundColor: '#FFFFFF',
   },
-  navBtnActive: { backgroundColor: BLUE },
-  navBtnText: { fontSize: 9, lineHeight: 11, color: BLUE, textAlign: 'center' },
-  navBtnTextActive: { color: '#ffffff' },
+  navBtnActive: { backgroundColor: VIOLET },
+  navBtnText: { fontSize: 9, lineHeight: 11, fontWeight: '600', color: '#4C1D95', textAlign: 'center' },
+  navBtnTextActive: { color: '#FFFFFF' },
+  // White ring so the badge reads against the gradient behind the button.
   historyBadge: {
     position: 'absolute',
-    top: -4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    paddingHorizontal: 4,
+    top: -5,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#A855F7',
+    paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  historyBadgeText: { fontSize: 10, color: '#ffffff', lineHeight: 13 },
+  historyBadgeText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', lineHeight: 11 },
   sortOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   sortCard: {
     width: '100%',
@@ -805,7 +858,7 @@ const styles = StyleSheet.create({
   // In-progress section
   // Vertical list, same rhythm as the noticeboard's gridContent — the two
   // sections swap into the same slot, so they should scroll the same way.
-  projectsList: { paddingVertical: 8, gap: 12, paddingBottom: 100, paddingHorizontal: 16 },
+  projectsList: { paddingVertical: 8, gap: 12, paddingBottom: 100 },
   inProgressEmpty: { alignItems: 'center', paddingHorizontal: 32, paddingVertical: 48, gap: 6 },
 
   projectCard: {
@@ -874,7 +927,7 @@ const styles = StyleSheet.create({
   },
 
   // Notice board
-  gridContent: { paddingVertical: 8, gap: 12, paddingBottom: 100, paddingHorizontal: 16 },
+  gridContent: { paddingVertical: 8, gap: 12, paddingBottom: 100 },
 
   // Empty state
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },

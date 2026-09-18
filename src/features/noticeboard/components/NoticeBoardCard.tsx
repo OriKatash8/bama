@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +18,14 @@ import { capabilityLabel } from '@features/noticeboard/matching';
 import { translateCity } from '@core/utils/cityTranslations';
 
 type Translations = typeof en;
+
+// Violet card palette. Local on purpose: the card reads these directly rather
+// than through useTheme, whose values reach the whole app.
+const VIOLET = '#6D28D9';
+const VIOLET_DEEP = '#4C1D95';
+const TEXT_MUTED = '#8B8898';
+const ICON_MUTED = '#9B98A8';
+const TINT = '#F6F5FA';
 
 function makeT(translations: Translations) {
   return (key: string, vars?: Record<string, string | number>): string => {
@@ -78,26 +86,14 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     const cap = capabilityLabel(s.category, s.requiredCapability, lang);
     return cap ? `${base} · ${cap}` : base;
   });
-  // Direct-invite variant: white base with a refined purple accent treatment.
+  // Direct invite: the card itself looks like any other; only the edge ribbon
+  // and the "direct invite" badge mark it out.
   const isDI = !!isDirectInvite;
-  const cardBg = isDI ? '#faf7fe' : '#ffffff';
-  const textColor = isDI ? '#a23bc4' : '#004aad';
-  const statValueColor = isDI ? '#7a3b9c' : '#004aad';
-  const descBg = isDI ? '#f4ecfb' : '#f7f8fc';
-  const descColor = isDI ? '#4a4266' : colors.textSec;
-  const statBg = isDI ? '#f8f3fc' : '#f5f6fb';
-  const sepColor = isDI ? '#ecdcf7' : '#e0e0e0';
-  const offerBg = isDI ? '#cb6ce6' : '#004aad';
-  const skillsAccent = isDI ? '#a23bc4' : '#004aad';
-  const timeColor = isDI ? '#9b7fb0' : colors.textMuted;
-  const metaIconColor = isDI ? '#a07bb5' : colors.textMuted;
-  const avatarFallbackBg = isDI ? '#cb6ce6' : '#004aad';
 
   const cardStyle = [
     styles.card,
-    compact && styles.cardCompact,
-    { backgroundColor: cardBg, borderColor: isDI ? '#ecdcf7' : colors.border },
-    isDI && { shadowColor: '#cb6ce6', shadowOpacity: 0.14 },
+    // The unused full layout keeps its theme border; the compact card sets its own.
+    compact ? styles.cardCompact : { borderColor: colors.border },
     cardWidth !== undefined && { width: cardWidth },
   ];
 
@@ -152,7 +148,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDI && (
           <LinearGradient
-            colors={['#cb6ce6', '#8b4fd4']}
+            colors={['#D946EF', '#A855F7']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={[styles.ribbon, rtl ? { right: 0 } : { left: 0 }]}
@@ -160,8 +156,8 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         )}
         {isDirectInvite && directInviteLabel && (
           <View style={[styles.directBadge, { flexDirection: rowDir }]}>
-            <Send size={11} color="#fff" strokeWidth={2.2} />
-            <AppText weight="bold" style={styles.directBadgeText}>{directInviteLabel}</AppText>
+            <Send size={11} color="#A21CAF" strokeWidth={2.2} />
+            <AppText weight="semiBold" style={styles.directBadgeText}>{directInviteLabel}</AppText>
           </View>
         )}
 
@@ -171,7 +167,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           {poster?.photoURL ? (
             <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
-            <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: avatarFallbackBg }]}>
+            <View style={[styles.avatar, styles.avatarFallback]}>
               <AppText weight="bold" style={styles.avatarInitial}>
                 {poster?.displayName?.charAt(0)?.toUpperCase() ?? '?'}
               </AppText>
@@ -181,8 +177,9 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           {/* Title + poster name + time ago */}
           <View style={[styles.headerContent, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
             <Text
-              style={[styles.cardTitle, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]}
-              numberOfLines={2}
+              style={[styles.cardTitle, { ...font.forText(request.title, 'bold'), textAlign: rtl ? 'right' : 'left' }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {request.title}
             </Text>
@@ -194,17 +191,17 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             {(!!poster?.displayName || !!timeAgo) && (
               <View style={[styles.posterLine, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {!!poster?.displayName && (
-                  <AppText weight="semiBold" style={[styles.posterNameCompact, { color: statValueColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+                  <AppText weight="semiBold" style={[styles.posterNameCompact, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
                     {poster.displayName}
                   </AppText>
                 )}
                 {!!poster?.displayName && !!timeAgo && (
-                  <AppText weight="regular" style={[styles.posterLineDash, { color: timeColor }]}>
+                  <AppText weight="regular" style={styles.posterLineDash}>
                     -
                   </AppText>
                 )}
                 {!!timeAgo && (
-                  <AppText weight="regular" style={[styles.timeAgoText, { color: timeColor }]} numberOfLines={1}>
+                  <AppText weight="regular" style={styles.timeAgoText} numberOfLines={1}>
                     {timeAgo}
                   </AppText>
                 )}
@@ -221,16 +218,16 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               style={styles.dismissInline}
               testID="notice-dismiss"
             >
-              <X size={15} color={colors.textMuted} />
+              <X size={17} color={ICON_MUTED} />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Description — tinted box */}
         {hasDesc && (
-          <View style={[styles.descBox, { backgroundColor: descBg }]}>
+          <View style={styles.descBox}>
             <Text
-              style={[styles.snippetText, { ...font.forText(request.description, 'regular'), color: descColor, textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.snippetText, { ...font.forText(request.description, 'regular'), textAlign: rtl ? 'right' : 'left' }]}
               numberOfLines={2}
             >
               {request.description}
@@ -242,34 +239,34 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         {hasMetaRow && (
           <View style={[styles.datesRow, { flexDirection: rowDir }]}>
             {hasLocation && (
-              <View style={[styles.dateSquare, { backgroundColor: statBg }]}>
-                <MapPin size={11} color={metaIconColor} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
+              <View style={styles.dateSquare}>
+                <MapPin size={15} color={ICON_MUTED} strokeWidth={1.6} />
+                <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.location_label')}
                 </AppText>
-                <AppText weight="bold" style={[styles.dateSquareValue, { color: statValueColor }]} numberOfLines={1}>
+                <AppText weight="bold" style={styles.dateSquareValue} numberOfLines={1}>
                   {locationText}
                 </AppText>
               </View>
             )}
             {hasExec && (
-              <View style={[styles.dateSquare, { backgroundColor: statBg }]}>
-                <Calendar size={11} color={metaIconColor} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
+              <View style={styles.dateSquare}>
+                <Calendar size={15} color={ICON_MUTED} strokeWidth={1.6} />
+                <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.exec_date_label')}
                 </AppText>
-                <AppText weight="bold" style={[styles.dateSquareValue, { color: statValueColor }]}>
+                <AppText weight="bold" style={styles.dateSquareValue}>
                   {formatDateCompact(request.exec)}
                 </AppText>
               </View>
             )}
             {hasDeadline && (
-              <View style={[styles.dateSquare, { backgroundColor: statBg }]}>
-                <Clock size={11} color={metaIconColor} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.dateSquareLabel, { color: colors.textMuted }]}>
+              <View style={styles.dateSquare}>
+                <Clock size={15} color={ICON_MUTED} strokeWidth={1.6} />
+                <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.deadline_short')}
                 </AppText>
-                <AppText weight="bold" style={[styles.dateSquareValue, { color: statValueColor }]}>
+                <AppText weight="bold" style={styles.dateSquareValue}>
                   {formatDateCompact(request.deadline)}
                 </AppText>
               </View>
@@ -277,41 +274,39 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           </View>
         )}
 
-        <View style={[styles.separator, { backgroundColor: sepColor }]} />
+        <View style={styles.separator} />
 
         {/* Bottom: make-offer button + skills toggle */}
         <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
           {onRestore ? (
-            <TouchableOpacity
-              style={[styles.offerPill, styles.restorePill, { backgroundColor: offerBg, flexDirection: rowDir }]}
+            <Pressable
+              style={({ pressed }) => [styles.offerPill, styles.restorePill, pressed && styles.offerPillPressed, { flexDirection: rowDir }]}
               onPress={(e) => { e.stopPropagation?.(); onRestore(); }}
-              activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel={t('history.restore')}
             >
-              <RotateCcw size={13} color="#ffffff" strokeWidth={2.2} />
+              <RotateCcw size={14} color="#ffffff" strokeWidth={2.2} />
               <AppText weight="bold" style={styles.offerPillText}>{t('history.restore')}</AppText>
-            </TouchableOpacity>
+            </Pressable>
           ) : (
-            <TouchableOpacity
-              style={[styles.offerPill, { backgroundColor: offerBg }]}
+            <Pressable
+              style={({ pressed }) => [styles.offerPill, pressed && styles.offerPillPressed]}
               onPress={(e) => { e.stopPropagation?.(); onMakeOffer(); }}
-              activeOpacity={0.8}
             >
               <AppText weight="bold" style={styles.offerPillText}>{t('noticeboard.make_offer')}</AppText>
-            </TouchableOpacity>
+            </Pressable>
           )}
           <TouchableOpacity
             style={[styles.skillsBtn, { flexDirection: rowDir }]}
             onPress={(e) => { e.stopPropagation?.(); setSkillsOpen((v) => !v); }}
             activeOpacity={0.7}
           >
-            <AppText weight="semiBold" style={[styles.skillsBtnText, { color: skillsAccent }]}>
+            <AppText weight="bold" style={styles.skillsBtnText}>
               {t('noticeboard.role_plural')} ({allRoles.length})
             </AppText>
             {skillsOpen
-              ? <ChevronUp size={13} color={skillsAccent} strokeWidth={2} />
-              : <ChevronDown size={13} color={skillsAccent} strokeWidth={2} />}
+              ? <ChevronUp size={15} color={VIOLET} strokeWidth={2} />
+              : <ChevronDown size={15} color={VIOLET} strokeWidth={2} />}
           </TouchableOpacity>
         </View>
 
@@ -319,8 +314,8 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         {skillsOpen && (
           <View style={styles.skillsSection}>
             {roleChips.map((role, i) => (
-              <View key={i} style={[styles.skillChip, isDI && { borderColor: '#cb6ce6' }]}>
-                <AppText weight="semiBold" style={[styles.skillName, { color: skillsAccent, textAlign: rtl ? 'right' : 'left' }]}>
+              <View key={i} style={styles.skillChip}>
+                <AppText weight="semiBold" style={[styles.skillName, { textAlign: rtl ? 'right' : 'left' }]}>
                   {role}
                 </AppText>
               </View>
@@ -331,7 +326,10 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     );
   }
 
-  // Non-compact (full) card — preserved for future use
+  // Non-compact (full) card — preserved for future use. Its title/roles colour
+  // was the shared `textColor`; the direct-invite pink branch is gone, so it
+  // keeps the plain value it always had for a normal card.
+  const textColor = '#004aad';
   return (
     <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
       {isDirectInvite && directInviteLabel && (
@@ -401,41 +399,54 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     marginVertical: 0,
     padding: 14,
+    gap: 11,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 
   // --- Compact card: header ---
+  // Spacing between the card's sections comes from cardCompact's gap.
   headerRow: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'flex-start',
-    marginBottom: 8,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 999,
     flexShrink: 0,
   },
   avatarFallback: {
-    backgroundColor: '#004aad',
+    backgroundColor: VIOLET,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitial: {
-    color: '#fff',
-    fontSize: 15,
+    color: '#FFFFFF',
+    fontSize: 19,
     fontWeight: '700',
   },
   headerContent: {
     flex: 1,
     gap: 1,
   },
+  // Source order + alignSelf, never `order`: under RTL `order` flips meaning
+  // and would put the ✕ on the avatar's side. 28 + hitSlop 10 each side = 48.
   dismissInline: {
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    alignSelf: 'flex-start',
   },
   confirmRow: {
     gap: 12,
@@ -472,10 +483,11 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
-    lineHeight: 22,
+    lineHeight: 23,
     marginBottom: 0,
+    color: VIOLET_DEEP,
   },
   // One row, so the name must be the part that gives: flexShrink lets a long
   // name truncate instead of pushing the timestamp off the card. maxWidth keeps
@@ -486,55 +498,63 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   posterNameCompact: {
-    fontSize: 12,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: VIOLET,
     marginTop: 0,
     flexShrink: 1,
   },
   posterLineDash: {
-    fontSize: 11,
+    fontSize: 12.5,
+    color: TEXT_MUTED,
   },
   timeAgoText: {
-    fontSize: 11,
+    fontSize: 12.5,
+    color: TEXT_MUTED,
+    flexShrink: 0,
   },
 
   // --- Compact card: description + dates ---
   descBox: {
-    backgroundColor: '#f7f8fc',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
+    backgroundColor: TINT,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 15,
   },
   snippetText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 13.5,
+    lineHeight: 20,
+    color: '#4C4859',
   },
   datesRow: {
     gap: 8,
-    marginBottom: 6,
   },
   dateSquare: {
     flex: 1,
-    backgroundColor: '#f5f6fb',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    backgroundColor: TINT,
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    gap: 3,
+    justifyContent: 'center',
+    gap: 4,
   },
   dateSquareLabel: {
-    fontSize: 10,
+    fontSize: 11.5,
+    color: TEXT_MUTED,
     textAlign: 'center',
   },
   dateSquareValue: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: '700',
+    color: VIOLET_DEEP,
     textAlign: 'center',
   },
 
   // --- Shared separator ---
   separator: {
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 8,
+    backgroundColor: '#F2F0F7',
   },
 
   // --- Compact card: bottom row ---
@@ -545,17 +565,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   offerPill: {
-    backgroundColor: '#004aad',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: VIOLET,
+    height: 48,
+    borderRadius: 999,
+    paddingHorizontal: 30,
     alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.26,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
+  offerPillPressed: { backgroundColor: '#5B21B6' },
   restorePill: { alignItems: 'center', gap: 6 },
   offerPillText: {
-    fontSize: 13,
-    color: '#ffffff',
+    fontSize: 15,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   skillsBtn: {
@@ -563,19 +590,19 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   skillsBtnText: {
-    fontSize: 13,
-    color: '#004aad',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: VIOLET,
   },
   skillsSection: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 12,
     justifyContent: 'center',
   },
   skillChip: {
     borderWidth: 1.5,
-    borderColor: '#004aad',
+    borderColor: VIOLET,
     borderRadius: 12,
     backgroundColor: '#ffffff',
     paddingHorizontal: 10,
@@ -583,7 +610,7 @@ const styles = StyleSheet.create({
   },
   skillName: {
     fontSize: 12,
-    color: '#004aad',
+    color: VIOLET,
   },
 
   // --- Direct invite: leading-edge accent ribbon ---
@@ -600,18 +627,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#cb6ce6',
-    borderRadius: 20,
-    paddingHorizontal: 10,
+    backgroundColor: '#FCE7F8',
+    borderRadius: 999,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    marginBottom: 8,
   },
   directBadgeText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: '#A21CAF',
+    fontSize: 10,
+    fontWeight: '600',
   },
 
   // --- Non-compact card ---
