@@ -613,8 +613,8 @@ const styles = StyleSheet.create({
   segText: { fontSize: 13.5, fontWeight: '600' },
   segTextActive: { color: '#4C1D95' },
   segTextInactive: { color: 'rgba(255,255,255,0.85)' },
-  // Purple count circle on the top-left of the price offers pill (same purple as
-  // the bottom tab badges).
+  // Unseen-offers count on the top-left of the price offers segment: a white
+  // circle with violet digits, so it reads against the violet band.
   offersBadge: {
     position: 'absolute',
     top: -7,
@@ -623,13 +623,20 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     paddingHorizontal: 5,
-    backgroundColor: '#cb6ce6',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    // No border: white on white would vanish. A soft shadow lifts it off the
+    // translucent track instead. It only ever shows while the offers segment is
+    // NOT selected (opening it marks everything seen), so it never sits on the
+    // white thumb.
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
   },
-  offersBadgeText: { color: '#ffffff', fontSize: 11, lineHeight: 14 },
+  offersBadgeText: { color: '#6D28D9', fontSize: 11, lineHeight: 14 },
 
   // ── New-offers strip ──
   newOffersStrip: {
