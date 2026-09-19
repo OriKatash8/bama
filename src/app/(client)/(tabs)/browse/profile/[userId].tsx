@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronLeft, ChevronRight, Flag, X } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
+import { GradientBand } from '@components/ui/GradientBand';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs } from '@features/profile/components/ContentTabs';
@@ -46,6 +47,7 @@ function makeT(translations: Translations) {
 }
 
 const MAX_EVIDENCE = 3;
+const PAGE_BG = '#FAFAFC';
 
 export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -161,7 +163,7 @@ export default function PublicProfileScreen() {
     return (
       <Screen scrollable={false} backgroundColor={colors.bg}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#cb6ce6" />
+          <ActivityIndicator size="large" color="#6D28D9" />
         </View>
       </Screen>
     );
@@ -188,67 +190,73 @@ export default function PublicProfileScreen() {
   const canSubmit = reportReason.trim().length >= 20;
 
   return (
-    <Screen scrollable style={styles.screenContent} backgroundColor={colors.bg}>
-      {/* ── Title row: back + report. In Hebrew the row mirrors: back on the right
-          (pointing right), report on the left. ── */}
-      <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <TouchableOpacity
-          onPress={goToBrowse}
-          style={styles.backBtn}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          testID="profile-back"
-        >
-          {rtl
-            ? <ChevronRight size={24} color="#004aad" strokeWidth={2.5} />
-            : <ChevronLeft size={24} color="#004aad" strokeWidth={2.5} />}
-        </TouchableOpacity>
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={() => setReportVisible(true)} activeOpacity={0.7} hitSlop={8} accessibilityRole="button" testID="profile-report">
-          <Flag size={18} color="#ff4d6d" strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Profile header (avatar, name, rating) ── */}
-      <ProfileHeader
-        photoURL={user.photoURL ?? null}
-        name={user.displayName}
-        isEditing={false}
-        reviews={reviews}
-        size={130}
-      />
-
-      {/* ── Bio ── */}
-      <BioSection bio={profile.bio} isEditing={false} />
-
-      {/* ── Equipment / Reviews / Skills ── */}
-      <ContentTabs
-        equipment={profile.equipment}
-        reviews={reviews}
-        roleSkills={roleSkills}
-        isEditing={false}
-      />
-
-      {/* ── Portfolio ── */}
-      {portfolio.length > 0 && (
-        <View style={styles.portfolioSection}>
-          <PortfolioGrid assets={portfolio} isEditing={false} />
+    <Screen scrollable style={styles.screenContent} backgroundColor={PAGE_BG}>
+      {/* Identity, on the violet band */}
+      <GradientBand style={styles.band}>
+        {/* ── Title row: back + report. In Hebrew the row mirrors: back on the right
+            (pointing right), report on the left. ── */}
+        <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <TouchableOpacity
+            onPress={goToBrowse}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            testID="profile-back"
+          >
+            {rtl
+              ? <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />
+              : <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />}
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity onPress={() => setReportVisible(true)} activeOpacity={0.7} hitSlop={8} accessibilityRole="button" testID="profile-report">
+            <Flag size={18} color="#ff4d6d" strokeWidth={2} />
+          </TouchableOpacity>
         </View>
-      )}
 
-      {/* ── Tell us about your project ── */}
-      <TouchableOpacity
-        style={styles.projectBtn}
-        onPress={() => setSheetVisible(true)}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.projectBtnText, { ...font.bold }]}>
-          {t('search.tell_us_about_project')}
-        </Text>
-      </TouchableOpacity>
+        {/* ── Profile header (avatar, name, rating) ── */}
+        <ProfileHeader
+          photoURL={user.photoURL ?? null}
+          name={user.displayName}
+          isEditing={false}
+          reviews={reviews}
+          roleSkills={roleSkills}
+          size={88}
+        />
+      </GradientBand>
 
-      <View style={styles.bottomPad} />
+      <View style={styles.sheet}>
+        {/* ── Bio ── */}
+        <BioSection bio={profile.bio} isEditing={false} />
+
+        {/* ── Equipment / Reviews / Skills ── */}
+        <ContentTabs
+          equipment={profile.equipment}
+          reviews={reviews}
+          roleSkills={roleSkills}
+          isEditing={false}
+        />
+
+        {/* ── Portfolio ── */}
+        {portfolio.length > 0 && (
+          <View style={styles.portfolioSection}>
+            <PortfolioGrid assets={portfolio} isEditing={false} />
+          </View>
+        )}
+
+        {/* ── Tell us about your project ── */}
+        <TouchableOpacity
+          style={styles.projectBtn}
+          onPress={() => setSheetVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.projectBtnText, { ...font.bold }]}>
+            {t('search.tell_us_about_project')}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.bottomPad} />
+      </View>
 
       <DirectProjectSheet
         visible={sheetVisible}
@@ -353,12 +361,30 @@ export default function PublicProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screenContent: { gap: 24, paddingBottom: 100 },
+  screenContent: { padding: 0, paddingBottom: 100 },
+  band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 40, alignItems: 'center', gap: 10 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    gap: 14,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   errorText: { fontSize: 16, fontWeight: '500' },
   backFallback: { paddingVertical: 8 },
 
-  titleRow: { alignItems: 'center' },
+  titleRow: { alignItems: 'center', alignSelf: 'stretch' },
   backBtn: { paddingHorizontal: 4 },
 
   portfolioSection: {},
@@ -366,10 +392,10 @@ const styles = StyleSheet.create({
   projectBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#004aad',
-    borderRadius: 12,
-    height: 54,
-    marginTop: 24,
+    backgroundColor: '#6D28D9',
+    borderRadius: 16,
+    height: 52,
+    marginTop: 10,
   },
   projectBtnText: {
     color: '#fff',

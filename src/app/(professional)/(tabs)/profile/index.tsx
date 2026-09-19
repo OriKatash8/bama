@@ -8,6 +8,7 @@ import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Pencil } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
+import { GradientBand } from '@components/ui/GradientBand';
 import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs, type RoleSkill } from '@features/profile/components/ContentTabs';
@@ -20,7 +21,6 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import { AppText } from '@components/ui/AppText';
-import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
@@ -49,7 +49,6 @@ export default function ProfessionalProfileScreen() {
   const { assets, upload, addVideoUrl, remove } = usePortfolio();
   const { showToast } = useUiStore();
   const setProfileEditing = useUiStore((s) => s.setProfileEditing);
-  const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -157,7 +156,7 @@ export default function ProfessionalProfileScreen() {
     return (
       <Screen scrollable={false}>
         <View style={styles.loadingCenter}>
-          <ActivityIndicator size="large" color="#cb6ce6" />
+          <ActivityIndicator size="large" color="#6D28D9" />
         </View>
       </Screen>
     );
@@ -165,68 +164,73 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <Screen style={[styles.content, isEditing && styles.contentEditing]} scrollable>
-      {locked && (
-        <View style={styles.completeBanner}>
-          <AppText weight="semiBold" style={[styles.completeBannerText, { textAlign: rtl ? 'right' : 'left' }]}>
-            {t('profile.complete_banner')}
-          </AppText>
-        </View>
-      )}
+    <Screen style={[styles.content, isEditing && styles.contentEditing]} scrollable backgroundColor={PAGE_BG}>
+      {/* Identity, on the violet band */}
+      <GradientBand style={styles.band}>
+        <ProfileHeader
+          photoURL={photoUri ?? user?.photoURL ?? null}
+          name={name}
+          isEditing={isEditing}
+          onPhotoPress={handlePhotoPress}
+          onNameChange={setName}
+          reviews={reviews}
+          roleSkills={roleSkills}
+          size={88}
+        />
 
-      {isEditing && !isComplete && (
-        <AppText weight="regular" style={[styles.missingHint, { textAlign: rtl ? 'right' : 'left' }]}>
-          {t('profile.missing_prefix')}: {missing.join(', ')}
-        </AppText>
-      )}
-
-      <ProfileHeader
-        photoURL={photoUri ?? user?.photoURL ?? null}
-        name={name}
-        isEditing={isEditing}
-        onPhotoPress={handlePhotoPress}
-        onNameChange={setName}
-        reviews={reviews}
-        size={130}
-      />
-
-      {!isEditing && (
-        <View style={styles.actionRow}>
+        {!isEditing && (
           <TouchableOpacity
-            style={[styles.editPill, { backgroundColor: colors.primary, flexDirection: rtl ? 'row-reverse' : 'row' }]}
+            style={[styles.editBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
             onPress={() => setIsEditing(true)}
             activeOpacity={0.85}
             accessibilityRole="button"
+            hitSlop={{ top: 3, bottom: 3 }}
           >
-            <Pencil size={16} color="#ffffff" strokeWidth={2} />
-            <AppText weight="medium" style={styles.editPillText}>{t('profile.edit_profile')}</AppText>
+            <Pencil size={14} color="#4C1D95" strokeWidth={2} />
+            <AppText weight="semiBold" style={styles.editBtnText}>{t('profile.edit_profile')}</AppText>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </GradientBand>
 
-      <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
-      <ContentTabs
-        equipment={equipment}
-        reviews={reviews}
-        roleSkills={roleSkills}
-        isEditing={isEditing}
-        onEquipmentChange={setEquipment}
-        onRoleSkillsChange={setRoleSkills}
-        onRequestEdit={() => setIsEditing(true)}
-      />
+      <View style={styles.sheet}>
+        {locked && (
+          <View style={styles.completeBanner}>
+            <AppText weight="semiBold" style={[styles.completeBannerText, { textAlign: rtl ? 'right' : 'left' }]}>
+              {t('profile.complete_banner')}
+            </AppText>
+          </View>
+        )}
 
-      <View style={styles.portfolioSection}>
-        <AppText weight="bold" style={[styles.portfolioTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left' }]}>
-          {t('profile.portfolio')}
-        </AppText>
-        <PortfolioGrid
-          assets={assets}
+        {isEditing && !isComplete && (
+          <AppText weight="regular" style={[styles.missingHint, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('profile.missing_prefix')}: {missing.join(', ')}
+          </AppText>
+        )}
+
+        <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
+        <ContentTabs
+          equipment={equipment}
+          reviews={reviews}
+          roleSkills={roleSkills}
           isEditing={isEditing}
-          onAdd={upload}
-          onAddVideo={addVideoUrl}
-          onRemove={remove}
-          onError={(msg) => showToast(msg, 'error')}
+          onEquipmentChange={setEquipment}
+          onRoleSkillsChange={setRoleSkills}
+          onRequestEdit={() => setIsEditing(true)}
         />
+
+        <View style={styles.portfolioSection}>
+          <AppText weight="bold" style={[styles.portfolioTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('profile.portfolio')}
+          </AppText>
+          <PortfolioGrid
+            assets={assets}
+            isEditing={isEditing}
+            onAdd={upload}
+            onAddVideo={addVideoUrl}
+            onRemove={remove}
+            onError={(msg) => showToast(msg, 'error')}
+          />
+        </View>
       </View>
     </Screen>
 
@@ -259,9 +263,29 @@ export default function ProfessionalProfileScreen() {
   );
 }
 
+const PAGE_BG = '#FAFAFC';
+
 const styles = StyleSheet.create({
-  content: { gap: 24, paddingBottom: 100 },
+  content: { padding: 0, paddingBottom: 100 },
   contentEditing: { paddingBottom: 120 },
+  band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 40, alignItems: 'center', gap: 10 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    gap: 14,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
+  },
   saveBar: {
     position: 'absolute',
     left: 16,
@@ -270,49 +294,35 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   saveBarBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  saveBarCancel: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#004aad' },
-  saveBarCancelText: { color: '#004aad', fontSize: 15 },
-  saveBarSave: { backgroundColor: '#004aad' },
-  saveBarSaveDisabled: { backgroundColor: '#9aa0b8' },
-  saveBarSaveText: { color: '#ffffff', fontSize: 15 },
+  saveBarCancel: { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#6D28D9' },
+  saveBarCancelText: { color: '#6D28D9', fontSize: 15 },
+  saveBarSave: { backgroundColor: '#6D28D9' },
+  saveBarSaveDisabled: { backgroundColor: '#C9C5D6' },
+  saveBarSaveText: { color: '#FFFFFF', fontSize: 15 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  actionRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'center',
-    gap: 8,
-    // The parent `content` already adds a 24px gap between children; pull the row
-    // in so it sits snug under the rating and above "קצת עליי".
-    marginTop: -12,
-    marginBottom: -12,
-  },
-  editPill: {
-    height: 44,
-    borderRadius: 22,
+  editBtn: {
+    height: 38,
+    borderRadius: 12,
     paddingHorizontal: 18,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
-  editPillText: { color: '#ffffff', fontSize: 14, fontWeight: '500' },
+  editBtnText: { color: '#4C1D95', fontSize: 13, fontWeight: '600' },
 
   completeBanner: {
-    backgroundColor: 'rgba(203,108,230,0.12)',
-    borderRadius: 12,
+    backgroundColor: '#F3EEFE',
+    borderWidth: 1,
+    borderColor: '#E4DBFA',
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    marginTop: -8,
   },
-  completeBannerText: { fontSize: 14, color: '#004aad' },
-  missingHint: { fontSize: 13, color: '#e04b4b', marginTop: -12 },
+  completeBannerText: { fontSize: 14, color: '#4C1D95' },
+  missingHint: { fontSize: 13, color: '#B4232A' },
 
-  pageTitle: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#004aad',
-    textTransform: 'uppercase',
-  },
-  portfolioSection: { gap: 12 },
-  portfolioTitle: { fontSize: 18, fontWeight: '700' },
-
+  portfolioSection: { gap: 10 },
+  portfolioTitle: { fontSize: 13, fontWeight: '700', color: '#1A1626' },
 });

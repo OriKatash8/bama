@@ -82,14 +82,14 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
       {/* Navigation row */}
       {reviews.length > 1 && (
         <View style={styles.navRow}>
-          <TouchableOpacity onPress={prev} style={styles.navBtn} activeOpacity={0.7}>
-            <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+          <TouchableOpacity onPress={prev} style={styles.navBtn} activeOpacity={0.7} hitSlop={4}>
+            <ChevronLeft size={20} color="#6D28D9" strokeWidth={2.5} />
           </TouchableOpacity>
 
           <Text style={styles.counter}>{index + 1} / {reviews.length}</Text>
 
-          <TouchableOpacity onPress={next} style={styles.navBtn} activeOpacity={0.7}>
-            <ChevronRight size={20} color="#004aad" strokeWidth={2.5} />
+          <TouchableOpacity onPress={next} style={styles.navBtn} activeOpacity={0.7} hitSlop={4}>
+            <ChevronRight size={20} color="#6D28D9" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
       )}
@@ -99,20 +99,20 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
 
 const styles = StyleSheet.create({
   container: { gap: 10 },
-  empty: { fontSize: 14, color: 'rgba(0,74,173,0.4)', textAlign: 'center', paddingVertical: 16 },
+  empty: { fontSize: 13, color: '#9C99AD', textAlign: 'center', paddingVertical: 16 },
 
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#FAF9FD',
+    borderRadius: 14,
+    padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.1)',
+    borderColor: '#EFEDF5',
   },
 
   date: {
     fontSize: 11,
-    color: 'rgba(0,74,173,0.4)',
+    color: '#9C99AD',
   },
 
   nameAvatarRow: {
@@ -123,20 +123,20 @@ const styles = StyleSheet.create({
   author: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#004aad',
+    color: '#1A1626',
     flex: 1,
   },
 
   stars: {
     fontSize: 15,
-    color: '#cb6ce6',
+    color: '#F5A524',
   },
 
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(0,74,173,0.1)',
+    backgroundColor: '#F3EEFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -144,12 +144,12 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#004aad',
+    color: '#6D28D9',
   },
 
   body: {
     fontSize: 14,
-    color: '#004aad',
+    color: '#4C4859',
     lineHeight: 20,
   },
 
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0,74,173,0.07)',
+    backgroundColor: '#F3EEFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   counter: {
     fontSize: 13,
     fontWeight: '600',
-    color: 'rgba(0,74,173,0.5)',
+    color: '#8B8898',
     minWidth: 40,
     textAlign: 'center',
   },

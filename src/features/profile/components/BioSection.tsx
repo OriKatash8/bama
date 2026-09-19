@@ -1,7 +1,5 @@
 import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { AppText } from '@components/ui/AppText';
-import { useTheme } from '@core/hooks/useTheme';
-import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
@@ -25,9 +23,6 @@ type BioSectionProps = {
 };
 
 export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
-  const colors = useTheme();
-  const isDark = useUiStore((s) => s.isDark);
-  const cardBg = isDark ? '#1a1a2e' : '#ffffff';
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -39,8 +34,8 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
         <AppText weight="bold" style={[styles.cardLabel, { textAlign: rtl ? 'right' : 'left' }]}>
           {t('profile_sections.about')}
         </AppText>
-        <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <Text style={[styles.text, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+        <View style={styles.card}>
+          <Text style={[styles.text, bio ? styles.textBio : styles.textEmpty, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {bio || t('profile_sections.no_bio')}
           </Text>
         </View>
@@ -53,12 +48,12 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
         {t('profile_sections.about')}
       </AppText>
       <TextInput
-        style={[styles.input, { backgroundColor: '#ffffff', borderColor: colors.inputBorder, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+        style={[styles.input, { backgroundColor: '#FFFFFF', borderColor: '#EFEDF5', color: '#4C4859', textAlign: rtl ? 'right' : 'left' }]}
         value={bio}
         onChangeText={onChange}
         multiline
         placeholder={t('profile_sections.bio_placeholder')}
-        placeholderTextColor={colors.placeholder}
+        placeholderTextColor="#9C99AD"
       />
     </View>
   );
@@ -66,23 +61,32 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    borderRadius: 18,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   cardLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#004aad',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    color: '#1A1626',
   },
-  text: { fontSize: 15, lineHeight: 22 },
+  text: { fontSize: 14, lineHeight: 22 },
+  textBio: { color: '#4C4859' },
+  // 13 × 1.55 ≈ 20.
+  textEmpty: { fontSize: 13, lineHeight: 20, color: '#9C99AD' },
   input: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 12,
     minHeight: 100,
     textAlignVertical: 'top',

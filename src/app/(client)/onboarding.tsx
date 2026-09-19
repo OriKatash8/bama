@@ -97,6 +97,9 @@ export default function ClientOnboardingScreen() {
         onPhotoPress={pickPhoto}
         onNameChange={setName}
         size={120}
+        // Onboarding has no gradient band behind the header, so it keeps the
+        // violet-on-light colours.
+        tone="light"
       />
 
       <Text style={[styles.hint, { ...font.regular, color: colors.textMuted, textAlign: 'center' }]}>

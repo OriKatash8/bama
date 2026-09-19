@@ -13,7 +13,6 @@ import {
 } from '@features/profile/equipment';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
-import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
@@ -34,6 +33,9 @@ function makeT(translations: Translations) {
 type SectionKey = 'equipment' | 'reviews' | 'skills';
 
 const SECTION_KEYS: SectionKey[] = ['equipment', 'reviews', 'skills'];
+
+const TRACK_PAD = 3;
+const TRACK_GAP = 3;
 
 export type RoleSkill = { role: string; specializations: string[] };
 
@@ -58,7 +60,6 @@ export function ContentTabs({
   onRoleSkillsChange,
   onRequestEdit,
 }: ContentTabsProps) {
-  const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -124,28 +125,32 @@ export function ContentTabs({
     setNewEquipment('');
   }
 
-  const pillWidth = tabBarWidth / 3;
+  // Segmented track: three equal segments inside a 3pt padding with 3pt gaps.
+  const segWidth = (tabBarWidth - TRACK_PAD * 2 - TRACK_GAP * 2) / 3;
 
   return (
     <View style={styles.wrapper}>
 
-      {/* ── Tab bar card ── */}
-      <View style={styles.tabCard}>
+      {/* ── Segmented track ── */}
       <View
         style={styles.tabBar}
         onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
       >
-        {/* Sliding pill behind labels */}
+        {/* Selected segment, sliding behind the labels */}
         {tabBarWidth > 0 && (
           <Animated.View
             style={[
               styles.slidingPill,
               {
-                width: pillWidth - 8,
+                width: segWidth,
                 transform: [{
                   translateX: slideAnim.interpolate({
                     inputRange: [0, 1, 2],
-                    outputRange: [4, pillWidth + 4, pillWidth * 2 + 4],
+                    outputRange: [
+                      TRACK_PAD,
+                      TRACK_PAD + segWidth + TRACK_GAP,
+                      TRACK_PAD + (segWidth + TRACK_GAP) * 2,
+                    ],
                   }),
                 }],
               },
@@ -153,20 +158,20 @@ export function ContentTabs({
           />
         )}
 
-        {/* Labels on top of pill */}
+        {/* Labels on top of the selected segment */}
         {SECTION_KEYS.map((key) => (
           <TouchableOpacity
             key={key}
             style={styles.tab}
             onPress={() => switchTab(key)}
             activeOpacity={0.8}
+            hitSlop={{ top: 5, bottom: 5 }}
           >
-            <AppText weight="semiBold" style={[styles.tabText, { color: active === key ? '#fff' : '#004aad' }]}>
+            <AppText weight="semiBold" style={[styles.tabText, { color: active === key ? '#FFFFFF' : '#6B6880' }]}>
               {sectionLabel(key)}
             </AppText>
           </TouchableOpacity>
         ))}
-      </View>
       </View>
 
       {/* ── Content card ── */}
@@ -178,38 +183,38 @@ export function ContentTabs({
           <>
             {equipmentItems.length === 0 && !isEditing ? (
               <View style={[styles.eqEmptyWrap, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-                <AppText weight="regular" style={[styles.empty, { color: colors.textMuted }]}>
+                <AppText weight="regular" style={styles.empty}>
                   {t('profile_sections.no_equipment')}
                 </AppText>
                 {onRequestEdit && (
                   <TouchableOpacity onPress={onRequestEdit} accessibilityRole="button" style={styles.eqAddLinkBtn} activeOpacity={0.7}>
-                    <AppText weight="semiBold" style={[styles.eqAddLink, { color: colors.primary }]}>
+                    <AppText weight="semiBold" style={styles.eqAddLink}>
                       {t('profile_sections.add_equipment')}
                     </AppText>
                   </TouchableOpacity>
                 )}
               </View>
             ) : (
-              <View style={{ gap: 12 }}>
+              <View style={styles.eqGroups}>
                 {groupEquipment(equipmentItems).map((group) => (
-                  <View key={group.category} style={styles.roleBlock}>
-                    <AppText weight="bold" style={[styles.roleBlockTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+                  <View key={group.category} style={styles.eqGroup}>
+                    <AppText weight="bold" style={[styles.eqGroupTitle, { textAlign: rtl ? 'right' : 'left' }]}>
                       {t(equipmentCategoryLabelKey(group.category))}
                     </AppText>
                     <View style={[styles.chipsWrap, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
                       {group.entries.map(({ item, index }) => (
                         <View key={`eq-${index}`} style={[styles.chip, styles.eqChip, { flexDirection: rowDir }]}>
-                          <AppText weight="regular" numberOfLines={1} style={styles.chipText}>
+                          <AppText weight="semiBold" numberOfLines={1} style={styles.chipText}>
                             {item.name}
                           </AppText>
                           {isEditing && (
                             <TouchableOpacity
                               onPress={() => onEquipmentChange?.(equipmentItems.filter((_, i) => i !== index))}
-                              hitSlop={6}
+                              hitSlop={16}
                               activeOpacity={0.7}
                               accessibilityRole="button"
                             >
-                              <X size={12} color="#ffffff" strokeWidth={2.5} />
+                              <X size={12} color="#6D28D9" strokeWidth={2.5} />
                             </TouchableOpacity>
                           )}
                         </View>
@@ -228,11 +233,11 @@ export function ContentTabs({
                   </TouchableOpacity>
                   <TextInput
                     ref={equipInputRef}
-                    style={[styles.addInput, { borderColor: colors.border, textAlign: rtl ? 'right' : 'left' }]}
+                    style={[styles.addInput, { textAlign: rtl ? 'right' : 'left' }]}
                     value={newEquipment}
                     onChangeText={setNewEquipment}
                     placeholder={t('profile_sections.add_item')}
-                    placeholderTextColor="rgba(0,74,173,0.4)"
+                    placeholderTextColor="#9C99AD"
                     onSubmitEditing={addEquipment}
                     returnKeyType="done"
                   />
@@ -366,32 +371,29 @@ const styles = StyleSheet.create({
   wrapper: {
     gap: 12,
   },
-  tabCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
-    overflow: 'hidden',
-  },
   contentCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
     shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
-    overflow: 'hidden',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  /* Tab bar */
+  /* Segmented track */
   tabBar: {
     flexDirection: 'row',
-    height: 48,
+    backgroundColor: '#F1EFF8',
+    borderRadius: 999,
+    padding: TRACK_PAD,
+    gap: TRACK_GAP,
     position: 'relative',
   },
   tab: {
     flex: 1,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -401,24 +403,26 @@ const styles = StyleSheet.create({
   },
   slidingPill: {
     position: 'absolute',
-    top: 4,
-    bottom: 4,
-    borderRadius: 100,
-    backgroundColor: '#004aad',
+    top: TRACK_PAD,
+    left: 0,
+    height: 34,
+    borderRadius: 999,
+    backgroundColor: '#6D28D9',
   },
   /* Content */
   panel: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 16,
-    gap: 12,
+    padding: 14,
+    gap: 14,
   },
 
-  /* Equipment chips (reuse the skills chip/pill styles) */
+  /* Equipment: category groups inside the one card */
+  eqGroups: { gap: 14 },
+  eqGroup: { gap: 8 },
+  eqGroupTitle: { fontSize: 12.5, fontWeight: '700', color: '#4C1D95' },
   eqChip: { alignItems: 'center', gap: 5, maxWidth: '100%' },
   eqEmptyWrap: { gap: 8 },
   eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
-  eqAddLink: { fontSize: 13 },
+  eqAddLink: { fontSize: 13, color: '#6D28D9' },
   addSection: { gap: 8 },
 
   /* Add row */
@@ -430,8 +434,8 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: '#004aad',
+    borderRadius: 10,
+    backgroundColor: '#6D28D9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -444,18 +448,19 @@ const styles = StyleSheet.create({
   addInput: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 8,
+    borderColor: '#EAE8F0',
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#004aad',
-    backgroundColor: 'rgba(0,74,173,0.06)',
+    color: '#1A1626',
+    backgroundColor: '#F6F5FA',
   },
 
   empty: {
     textAlign: 'center',
-    fontSize: 14,
-    color: 'rgba(0,74,173,0.4)',
+    fontSize: 13,
+    color: '#9C99AD',
     paddingVertical: 12,
   },
 
@@ -466,48 +471,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,74,173,0.04)',
+    borderRadius: 10,
+    backgroundColor: '#F6F5FA',
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.1)',
+    borderColor: '#EFEDF5',
   },
-  tableRowActive: { backgroundColor: 'rgba(0,74,173,0.1)', borderColor: '#004aad' },
-  tableRowCheck: { width: 20, fontSize: 13, color: '#004aad', fontWeight: '700' },
-  tableRowCheckActive: { color: '#004aad' },
-  tableRowText: { fontSize: 14, color: 'rgba(0,74,173,0.6)', fontWeight: '500', flex: 1 },
-  tableRowTextActive: { color: '#004aad', fontWeight: '700' },
+  tableRowActive: { backgroundColor: '#F3EEFE', borderColor: '#6D28D9' },
+  tableRowCheck: { width: 20, fontSize: 13, color: '#6D28D9', fontWeight: '700' },
+  tableRowCheckActive: { color: '#6D28D9' },
+  tableRowText: { fontSize: 14, color: '#6B6880', fontWeight: '500', flex: 1 },
+  tableRowTextActive: { color: '#4C1D95', fontWeight: '700' },
 
-  /* Skills chips (view mode) */
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
+  /* Chips: tinted labels (equipment + skills view mode) */
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#004aad',
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#F3EEFE',
+    borderWidth: 1,
+    borderColor: '#E4DBFA',
   },
-  chipText: { fontSize: 12, color: '#ffffff' },
+  chipText: { fontSize: 12.5, fontWeight: '600', color: '#4C1D95' },
 
   /* Roles → subskills/specializations */
   roleBlock: {
-    backgroundColor: 'rgba(0,74,173,0.04)',
-    borderRadius: 12,
+    backgroundColor: '#FAF9FD',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.1)',
+    borderColor: '#EFEDF5',
     padding: 12,
     gap: 8,
   },
-  roleBlockTitle: { fontSize: 14, color: '#004aad' },
-  subLabel: { fontSize: 12, color: 'rgba(0,74,173,0.6)' },
+  roleBlockTitle: { fontSize: 14, color: '#4C1D95' },
+  subLabel: { fontSize: 12, color: '#8B8898' },
   pillsWrap: { flexWrap: 'wrap', gap: 6 },
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#004aad',
-    backgroundColor: '#ffffff',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E4DBFA',
+    backgroundColor: '#FFFFFF',
   },
-  pillActive: { backgroundColor: '#004aad' },
-  pillText: { fontSize: 12, color: '#004aad' },
-  pillTextActive: { color: '#ffffff' },
+  pillActive: { backgroundColor: '#6D28D9', borderColor: '#6D28D9' },
+  pillText: { fontSize: 12, color: '#4C1D95' },
+  pillTextActive: { color: '#FFFFFF' },
 });

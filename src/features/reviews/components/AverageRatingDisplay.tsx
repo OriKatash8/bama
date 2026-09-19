@@ -23,6 +23,11 @@ function makeT(translations: Translations) {
   };
 }
 
+// Colours for the violet profile band — its only placement (ProfileHeader,
+// outside edit mode). Pass colours in instead if it ever lands on a light surface.
+const STAR = '#FFD166';
+const STAR_EMPTY = 'rgba(255,255,255,0.3)';
+
 type Props = {
   reviews: Review[];
   showEmptyState?: boolean;
@@ -50,16 +55,16 @@ export function AverageRatingDisplay({ reviews, showEmptyState = false }: Props)
         {[1, 2, 3, 4, 5].map((i) => {
           const filled = rounded >= i;
           const half = !filled && rounded >= i - 0.5;
-          if (filled) return <Star key={i} size={16} color="#cb6ce6" fill="#cb6ce6" />;
+          if (filled) return <Star key={i} size={16} color={STAR} fill={STAR} />;
           if (half) return (
             <View key={i} style={{ width: 16, height: 16 }}>
-              <Star size={16} color="#d1d5db" fill="#d1d5db" />
+              <Star size={16} color={STAR_EMPTY} fill={STAR_EMPTY} />
               <View style={{ position: 'absolute', left: 0, top: 0, width: 8, height: 16, overflow: 'hidden' }}>
-                <Star size={16} color="#cb6ce6" fill="#cb6ce6" />
+                <Star size={16} color={STAR} fill={STAR} />
               </View>
             </View>
           );
-          return <Star key={i} size={16} color="#d1d5db" fill="#d1d5db" />;
+          return <Star key={i} size={16} color={STAR_EMPTY} fill={STAR_EMPTY} />;
         })}
         <Text style={styles.averageText}>{average.toFixed(1)}</Text>
       </View>
@@ -71,7 +76,7 @@ export function AverageRatingDisplay({ reviews, showEmptyState = false }: Props)
 const styles = StyleSheet.create({
   container: { alignItems: 'center', gap: 2 },
   starsRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  averageText: { marginLeft: 6, fontSize: 14, fontWeight: '700', color: '#004aad' },
-  countText: { fontSize: 12, color: '#888888' },
-  emptyText: { fontSize: 13, color: '#888888' },
+  averageText: { marginLeft: 6, fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  countText: { fontSize: 12, color: 'rgba(255,255,255,0.75)' },
+  emptyText: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
 });
