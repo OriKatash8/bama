@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Platform, PanResponder, Dimensions } from 'react-native';
+import { View, PanResponder, Dimensions } from 'react-native';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { Search, Home, MessageCircle, FolderKanban } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
@@ -15,10 +15,12 @@ import { AppHeader } from '@components/layout/AppHeader';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import {
-  getFloatingTabBarStyle,
+  getDockedTabBarStyle,
   FLOATING_TAB_BAR_INACTIVE_COLOR,
+  CLIENT_TAB_ACTIVE,
+  TAB_ITEM_STYLE,
 } from '@core/navigation/floatingTabBar';
-import { SlidingTabBackground } from '@core/navigation/SlidingTabBackground';
+import { GlassTabBarBackground } from '@core/navigation/GlassTabBarBackground';
 
 type Translations = typeof en;
 
@@ -114,13 +116,15 @@ export default function ClientTabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: hideTabBar ? { display: 'none' } : getFloatingTabBarStyle(isDark),
-            tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['home', 'browse', 'chats', 'projects']} />,
-            tabBarActiveTintColor: '#004aad',
+            tabBarStyle: hideTabBar ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
+            // Docked glass bar; it owns the bottom safe-area inset (the provider
+            // below zeroes it for the screens, so the real inset is passed in).
+            tabBarBackground: () => <GlassTabBarBackground activeColor={CLIENT_TAB_ACTIVE} isDark={isDark} tabNames={['home', 'browse', 'chats', 'projects']} />,
+            tabBarActiveTintColor: CLIENT_TAB_ACTIVE,
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
             tabBarActiveBackgroundColor: 'transparent',
             tabBarInactiveBackgroundColor: 'transparent',
-            tabBarItemStyle: { paddingVertical: 4 },
+            tabBarItemStyle: TAB_ITEM_STYLE,
             tabBarLabelStyle: { fontSize: 10, ...font.regular, marginTop: -4 },
           }}
         >
@@ -128,7 +132,6 @@ export default function ClientTabsLayout() {
             name="home"
             options={{
               title: t('tabs.home'),
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
@@ -142,7 +145,6 @@ export default function ClientTabsLayout() {
             name="browse"
             options={{
               title: t('tabs.search'),
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
@@ -158,7 +160,6 @@ export default function ClientTabsLayout() {
               title: t('tabs.chats'),
               tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
               tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
@@ -174,7 +175,6 @@ export default function ClientTabsLayout() {
               title: t('tabs.projects'),
               tabBarBadge: newOffers > 0 ? (newOffers > 99 ? '99+' : newOffers) : undefined,
               tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>

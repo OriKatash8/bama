@@ -1,39 +1,76 @@
-import { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Animated, View, StyleSheet } from 'react-native';
 import { useSegments } from 'expo-router';
 
-type Props = { numTabs: number; tabNames: string[] };
+type Props = {
+  numTabs: number;
+  tabNames: string[];
+  /** The active tab's tint; the pill is drawn in it at PILL_OPACITY. */
+  activeColor: string;
+  /** Height of the bar's content band. The pill stays inside it, above the
+   *  bottom safe-area inset the bar also covers. */
+  bandHeight: number;
+};
 
-export function SlidingTabBackground({ numTabs, tabNames }: Props) {
+const PILL_OPACITY = 0.13;
+const PILL_INSET_X = 8;
+const PILL_INSET_Y = 5;
+
+/**
+ * Critically damped spring (no overshoot): response 0.35s, damping ratio 1.0.
+ * stiffness = (2π / response)² · mass, damping = 2 · √(stiffness · mass).
+ * A spring starts from the pill's current on-screen position, so a second tap
+ * mid-slide redirects it smoothly instead of jumping.
+ */
+const RESPONSE = 0.35;
+const STIFFNESS = Math.pow((2 * Math.PI) / RESPONSE, 2);
+const DAMPING = 2 * Math.sqrt(STIFFNESS);
+
+/** '#RRGGBB' → rgba at the given alpha. */
+function withAlpha(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+export function SlidingTabBackground({ numTabs, tabNames, activeColor, bandHeight }: Props) {
   const segments = useSegments();
   const activeSegment = segments.find(s => tabNames.includes(s)) ?? tabNames[0];
   const activeIndex = Math.max(0, tabNames.indexOf(activeSegment));
 
   const [width, setWidth] = useState(0);
-  const slideAnim = useRef(new Animated.Value(activeIndex)).current;
+  // Held in state, not a ref: created once, and safe to read while rendering.
+  const [slideAnim] = useState(() => new Animated.Value(activeIndex));
 
   useEffect(() => {
-    Animated.timing(slideAnim, {
+    Animated.spring(slideAnim, {
       toValue: activeIndex,
-      duration: 240,
+      stiffness: STIFFNESS,
+      damping: DAMPING,
+      mass: 1,
+      overshootClamping: true,
       useNativeDriver: true,
     }).start();
-  }, [activeIndex]);
+  }, [activeIndex, slideAnim]);
 
   const pillWidth = width / numTabs;
 
   return (
-    <View style={StyleSheet.absoluteFill} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
+    <View
+      style={[styles.band, { height: bandHeight }]}
+      onLayout={e => setWidth(e.nativeEvent.layout.width)}
+      pointerEvents="none"
+    >
       {width > 0 && (
         <Animated.View
           style={[
             styles.pill,
             {
-              width: pillWidth - 8,
+              width: pillWidth - PILL_INSET_X * 2,
+              backgroundColor: withAlpha(activeColor, PILL_OPACITY),
               transform: [{
                 translateX: slideAnim.interpolate({
                   inputRange:  Array.from({ length: numTabs }, (_, i) => i),
-                  outputRange: Array.from({ length: numTabs }, (_, i) => i * pillWidth + 4),
+                  outputRange: Array.from({ length: numTabs }, (_, i) => i * pillWidth + PILL_INSET_X),
                 }),
               }],
             },
@@ -45,11 +82,11 @@ export function SlidingTabBackground({ numTabs, tabNames }: Props) {
 }
 
 const styles = StyleSheet.create({
+  band: { position: 'absolute', top: 0, left: 0, right: 0 },
   pill: {
     position: 'absolute',
-    top: 4,
-    bottom: 4,
+    top: PILL_INSET_Y,
+    bottom: PILL_INSET_Y,
     borderRadius: 100,
-    backgroundColor: 'rgba(180, 180, 180, 0.35)',
   },
 });

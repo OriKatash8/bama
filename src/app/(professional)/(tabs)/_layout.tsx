@@ -5,9 +5,11 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import {
   FLOATING_TAB_BAR_INACTIVE_COLOR,
-  getFloatingTabBarStyle,
+  getDockedTabBarStyle,
+  PRO_TAB_ACTIVE,
+  TAB_ITEM_STYLE,
 } from '@core/navigation/floatingTabBar';
-import { SlidingTabBackground } from '@core/navigation/SlidingTabBackground';
+import { GlassTabBarBackground } from '@core/navigation/GlassTabBarBackground';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -15,7 +17,7 @@ import { listenToUserChats } from '@features/chat/services/chatService';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { LayoutDashboard, MessageCircle, ShoppingBag, User } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, PanResponder, Platform, View } from 'react-native';
+import { Dimensions, PanResponder, View } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Translations = typeof en;
@@ -102,13 +104,15 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: (locked || inChatRoom) ? { display: 'none' } : getFloatingTabBarStyle(isDark),
-            tabBarBackground: () => <SlidingTabBackground numTabs={4} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,
-            tabBarActiveTintColor: '#004aad',
+            tabBarStyle: (locked || inChatRoom) ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
+            // Docked glass bar; it owns the bottom safe-area inset (the provider
+            // below zeroes it for the screens, so the real inset is passed in).
+            tabBarBackground: () => <GlassTabBarBackground activeColor={PRO_TAB_ACTIVE} isDark={isDark} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,
+            tabBarActiveTintColor: PRO_TAB_ACTIVE,
             tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
             tabBarActiveBackgroundColor: 'transparent',
             tabBarInactiveBackgroundColor: 'transparent',
-            tabBarItemStyle: { paddingVertical: 4 },
+            tabBarItemStyle: TAB_ITEM_STYLE,
             tabBarLabelStyle: { fontSize: 10, ...font.regular, marginTop: -4 },
           }}
         >
@@ -116,7 +120,6 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
             name="dashboard"
             options={{
               title: t('tabs.notice_board'),
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
@@ -130,7 +133,6 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
             name="marketplace"
             options={{
               title: t('tabs.marketplace'),
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
@@ -146,7 +148,6 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
               title: t('tabs.chats'),
               tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
               tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
@@ -161,7 +162,6 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
             name="profile"
             options={{
               title: t('tabs.profile'),
-              tabBarItemStyle: { paddingVertical: Platform.OS === 'web' ? 6 : 3, height: Platform.OS === 'web' ? 65 : 48, justifyContent: 'center', alignItems: 'center', transform: Platform.OS === 'web' ? [] : [{ translateY: -7 }] },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
