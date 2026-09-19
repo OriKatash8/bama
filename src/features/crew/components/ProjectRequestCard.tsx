@@ -35,20 +35,20 @@ function makeT(translations: Translations) {
 }
 
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3',
+  shadowColor: '#4C1D95',
   shadowOpacity: 0.06,
   shadowRadius: 8,
   shadowOffset: { width: 0, height: 3 },
   elevation: 3,
 } as const;
 
-const BLUE = '#1e4fa3';
-const MUTED = '#8890b0';
-const BORDER_LIGHT = 'rgba(30,79,163,0.12)';
-const GREEN = '#1c9d63';
-const PURPLE = '#cb6ce6';
+/** Texts. */
+const TEXT = '#000000';
+/** Buttons, outlines and icons. */
+const VIOLET = '#6D28D9';
+const BORDER_LIGHT = '#F2F0F7';
 const REJECT_RED = '#e04b4b';
-const STAT_BG = '#f5f6fb';
+const STAT_BG = '#F6F5FA';
 const MENU_WIDTH = 130;
 
 type Props = {
@@ -89,7 +89,8 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
   const filledCount = request.filledSlots?.length ?? 0;
   const totalSlots = request.crewSlots.reduce((acc, s) => acc + s.quantity, 0);
   const isTeamFull = totalSlots > 0 && filledCount >= totalSlots;
-  const teamColor = isTeamFull ? GREEN : PURPLE;
+  // The crew line is black, and turns purple once every seat is filled.
+  const teamColor = isTeamFull ? VIOLET : TEXT;
   const canEdit = request.status === 'open';
 
   function handleEdit() {
@@ -140,7 +141,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
             hitSlop={8}
             activeOpacity={0.7}
           >
-            <MoreHorizontal size={20} color={BLUE} />
+            <MoreHorizontal size={20} color={VIOLET} />
           </TouchableOpacity>
         </View>
         <AppText
@@ -162,7 +163,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
       {/* Zone 2 — Three stat squares: location / end date / execution */}
       <View style={[styles.statsRow, { flexDirection: rowDir }]}>
         <View style={styles.statSquare}>
-          <MapPin size={14} color={MUTED} strokeWidth={1.5} />
+          <MapPin size={14} color={VIOLET} strokeWidth={1.5} />
           <AppText weight="regular" style={styles.statLabel}>
             {t('chats_page.stat_location')}
           </AppText>
@@ -172,7 +173,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
         </View>
 
         <View style={styles.statSquare}>
-          <CalendarDays size={14} color={MUTED} strokeWidth={1.5} />
+          <CalendarDays size={14} color={VIOLET} strokeWidth={1.5} />
           <AppText weight="regular" style={styles.statLabel}>
             {t('chats_page.stat_deadline')}
           </AppText>
@@ -182,7 +183,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
         </View>
 
         <View style={styles.statSquare}>
-          <CalendarCheck size={14} color={MUTED} strokeWidth={1.5} />
+          <CalendarCheck size={14} color={VIOLET} strokeWidth={1.5} />
           <AppText weight="regular" style={styles.statLabel}>
             {t('chats_page.stat_execution')}
           </AppText>
@@ -230,7 +231,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
               onPress={handleEdit}
               activeOpacity={0.8}
             >
-              <Pencil size={13} color={BLUE} strokeWidth={2} />
+              <Pencil size={13} color={VIOLET} strokeWidth={2} />
               <AppText weight="semiBold" style={styles.editBtnText}>
                 {t('chats_page.edit_project')}
               </AppText>
@@ -243,7 +244,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
       {teamOpen && (
         <View style={styles.teamSection}>
           {teamLoading ? (
-            <ActivityIndicator size="small" color={PURPLE} />
+            <ActivityIndicator size="small" color={VIOLET} />
           ) : (
             request.crewSlots.map((slot, i) => {
               const filled = request.filledSlots?.find(
@@ -258,7 +259,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
                 <View key={i} style={[styles.teamChip, member ? styles.teamChipFilled : styles.teamChipOpen]}>
                   <AppText
                     weight="semiBold"
-                    style={[styles.teamRole, { textAlign: rtl ? 'right' : 'left', color: member ? '#ffffff' : BLUE }]}
+                    style={[styles.teamRole, { textAlign: rtl ? 'right' : 'left', color: member ? '#ffffff' : TEXT }]}
                   >
                     {slot.category}
                   </AppText>
@@ -272,7 +273,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
                   ) : (
                     <AppText
                       weight="semiBold"
-                      style={[styles.teamOpen, { textAlign: rtl ? 'right' : 'left', color: BLUE }]}
+                      style={[styles.teamOpen, { textAlign: rtl ? 'right' : 'left', color: TEXT }]}
                     >
                       — {t('chats_page.open_slot')}
                     </AppText>
@@ -375,7 +376,7 @@ const styles = StyleSheet.create({
   // Sits between the ⋯ and the title in the header row, which is reversed
   // relative to rowDir — so it lands on the leading edge in both directions.
   offerCountBadge: {
-    backgroundColor: BLUE,
+    backgroundColor: VIOLET,
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontSize: 17,
-    color: BLUE,
+    color: TEXT,
     lineHeight: 23,
   },
   // Zone 2
@@ -403,12 +404,12 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    color: MUTED,
+    color: TEXT,
     textAlign: 'center',
   },
   statValue: {
     fontSize: 12,
-    color: BLUE,
+    color: TEXT,
     textAlign: 'center',
   },
   // Divider
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
   chatBtn: {
     alignItems: 'center',
     gap: 5,
-    backgroundColor: BLUE,
+    backgroundColor: VIOLET,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -449,13 +450,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     borderWidth: 1.5,
-    borderColor: BLUE,
+    borderColor: VIOLET,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   editBtnText: {
-    color: BLUE,
+    color: VIOLET,
     fontSize: 12,
   },
   // Team expansion
@@ -467,12 +468,12 @@ const styles = StyleSheet.create({
   },
   teamChip: {
     borderWidth: 1.5,
-    borderColor: BLUE,
+    borderColor: VIOLET,
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 3,
   },
-  teamChipFilled: { backgroundColor: BLUE },
+  teamChipFilled: { backgroundColor: VIOLET },
   teamChipOpen: { backgroundColor: '#ffffff' },
   teamRole: { fontSize: 10 },
   teamName: { fontSize: 9, marginTop: 1 },
@@ -485,7 +486,7 @@ const styles = StyleSheet.create({
   },
   confirmText: {
     fontSize: 14,
-    color: MUTED,
+    color: TEXT,
     textAlign: 'center',
   },
   confirmBtns: {
@@ -502,7 +503,7 @@ const styles = StyleSheet.create({
   },
   confirmCancelText: {
     fontSize: 14,
-    color: MUTED,
+    color: TEXT,
   },
   confirmYes: {
     paddingHorizontal: 20,
@@ -523,7 +524,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 4,
     width: MENU_WIDTH,
-    shadowColor: '#1e4fa3',
+    shadowColor: '#4C1D95',
     shadowOpacity: 0.12,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },

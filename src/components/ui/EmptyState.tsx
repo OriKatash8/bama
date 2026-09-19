@@ -1,7 +1,6 @@
 import { View, TouchableOpacity, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
-import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 
 type Action = { label: string; onPress: () => void; icon?: LucideIcon };
@@ -22,22 +21,21 @@ type Props = {
  * link. Centers within the space it's given (flex:1). RTL-safe.
  */
 export function EmptyState({ icon: Icon, title, description, primaryAction, secondaryAction, style }: Props) {
-  const colors = useTheme();
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const PrimaryIcon = primaryAction.icon;
   return (
     <View style={[styles.container, style]}>
-      <View style={[styles.iconCircle, { backgroundColor: colors.card }]}>
-        <Icon size={32} color={colors.primary} strokeWidth={1.8} />
+      <View style={styles.iconCircle}>
+        <Icon size={32} color={VIOLET} strokeWidth={1.8} />
       </View>
-      <AppText weight="medium" style={[styles.title, { color: colors.text }]}>
+      <AppText weight="medium" style={styles.title}>
         {title}
       </AppText>
-      <AppText weight="regular" style={[styles.description, { color: colors.textMuted }]}>
+      <AppText weight="regular" style={styles.description}>
         {description}
       </AppText>
       <TouchableOpacity
-        style={[styles.primaryBtn, { backgroundColor: colors.primary, flexDirection: rtl ? 'row-reverse' : 'row' }]}
+        style={[styles.primaryBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
         onPress={primaryAction.onPress}
         activeOpacity={0.85}
         accessibilityRole="button"
@@ -52,7 +50,7 @@ export function EmptyState({ icon: Icon, title, description, primaryAction, seco
           activeOpacity={0.7}
           accessibilityRole="button"
         >
-          <AppText weight="regular" style={[styles.secondaryText, { color: colors.primary }]}>
+          <AppText weight="regular" style={styles.secondaryText}>
             {secondaryAction.label}
           </AppText>
         </TouchableOpacity>
@@ -60,6 +58,10 @@ export function EmptyState({ icon: Icon, title, description, primaryAction, seco
     </View>
   );
 }
+
+/** Black text; purple icon, button and link. */
+const TEXT = '#000000';
+const VIOLET = '#6D28D9';
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
@@ -70,10 +72,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
+    backgroundColor: '#F3EEFE',
   },
-  title: { fontSize: 15, fontWeight: '500', marginBottom: 6, textAlign: 'center' },
-  description: { fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 220, marginBottom: 16 },
+  title: { fontSize: 15, fontWeight: '500', marginBottom: 6, textAlign: 'center', color: TEXT },
+  description: { fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 220, marginBottom: 16, color: TEXT },
   primaryBtn: {
+    backgroundColor: VIOLET,
     borderRadius: 16,
     paddingVertical: 11,
     paddingHorizontal: 22,
@@ -84,5 +88,5 @@ const styles = StyleSheet.create({
   },
   primaryText: { color: '#ffffff', fontSize: 13, fontWeight: '500' },
   secondaryBtn: { marginTop: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  secondaryText: { fontSize: 13 },
+  secondaryText: { fontSize: 13, color: VIOLET },
 });

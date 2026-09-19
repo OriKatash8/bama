@@ -29,9 +29,8 @@ const CARD_SHADOW = {
 } as const;
 
 // Violet card palette, local to the client projects screen's cards.
-const INK = '#1A1626';
-const INK_2 = '#6B6880';
-const ICON_MUTED = '#8B8898';
+const INK = '#000000';
+const INK_2 = '#000000';
 const VIOLET = '#6D28D9';
 const VIOLET_DEEP = '#4C1D95';
 const HAIRLINE = '#F2F0F7';
@@ -160,9 +159,9 @@ export function BundleOfferCard({
               {rolesSummary}
             </AppText>
             {expanded ? (
-              <ChevronUp size={13} color={INK_2} />
+              <ChevronUp size={13} color={VIOLET} />
             ) : (
-              <ChevronDown size={13} color={INK_2} />
+              <ChevronDown size={13} color={VIOLET} />
             )}
           </TouchableOpacity>
         </View>
@@ -213,7 +212,7 @@ export function BundleOfferCard({
       <View style={[styles.actionStrip, { flexDirection: rowDir }]}>
         <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7} hitSlop={{ top: 3, bottom: 3 }}>
           <View style={[styles.actionInner, { flexDirection: rowDir }]}>
-            <User size={13} color={VIOLET_DEEP} strokeWidth={1.8} />
+            <User size={13} color={VIOLET} strokeWidth={1.8} />
             <AppText
               weight="semiBold"
               style={styles.actionProfileText}
@@ -284,7 +283,7 @@ const styles = StyleSheet.create({
   },
   forLabel: {
     fontSize: 12.5,
-    color: ICON_MUTED,
+    color: INK,
   },
   projectName: {
     fontSize: 12.5,
