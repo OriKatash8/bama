@@ -376,7 +376,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Notice board ── the header sits on the violet band. */}
-        <GradientBand style={styles.band}>
+        <GradientBand style={styles.band} flip>
         <View style={[styles.noticeHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <View style={{ flex: 1 }}>
             {/* Plain Text, not AppText: AppText applies its own font after the
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   navBtnActive: { backgroundColor: VIOLET },
-  navBtnText: { fontSize: 9, lineHeight: 11, fontWeight: '600', color: '#4C1D95', textAlign: 'center' },
+  navBtnText: { fontSize: 9, lineHeight: 11, fontWeight: '600', color: '#000000', textAlign: 'center' },
   navBtnTextActive: { color: '#FFFFFF' },
   // White ring so the badge reads against the gradient behind the button.
   historyBadge: {

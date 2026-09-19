@@ -166,7 +166,7 @@ export default function ProfessionalProfileScreen() {
     <View style={{ flex: 1 }}>
     <Screen style={[styles.content, isEditing && styles.contentEditing]} scrollable backgroundColor={PAGE_BG}>
       {/* Identity, on the violet band */}
-      <GradientBand style={styles.band}>
+      <GradientBand style={styles.band} flip>
         <ProfileHeader
           photoURL={photoUri ?? user?.photoURL ?? null}
           name={name}

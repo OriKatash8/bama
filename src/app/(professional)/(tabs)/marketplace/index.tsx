@@ -280,7 +280,7 @@ export default function MarketplaceScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Toggle + mode description, on the violet band */}
-        <GradientBand style={styles.band}>
+        <GradientBand style={styles.band} flip>
           <MarketplaceToggle active={activeTab} onChange={(tab) => { setActiveTab(tab); setFilterCondition(null); }} />
 
           {/* Mode description — switches with the selected toggle mode */}

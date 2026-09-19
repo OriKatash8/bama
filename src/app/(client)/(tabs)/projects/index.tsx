@@ -344,7 +344,7 @@ export default function ProjectsPage() {
       >
         {/* The band holds only the segmented control — the tabs are the title.
             The row direction flips so the first segment sits on the leading edge. */}
-        <GradientBand style={styles.band}>
+        <GradientBand style={styles.band} flip>
         <View style={[styles.segBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {(['projects', 'offers'] as const).map((key) => {
             const isActive = segment === key;

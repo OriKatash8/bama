@@ -22,8 +22,9 @@ type Translations = typeof en;
 // Violet card palette. Local on purpose: the card reads these directly rather
 // than through useTheme, whose values reach the whole app.
 const VIOLET = '#6D28D9';
-const VIOLET_DEEP = '#4C1D95';
 const TEXT_MUTED = '#8B8898';
+/** Card content text: title, poster, description, date values. */
+const TEXT_BLACK = '#000000';
 const ICON_MUTED = '#9B98A8';
 const TINT = '#F6F5FA';
 
@@ -240,7 +241,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           <View style={[styles.datesRow, { flexDirection: rowDir }]}>
             {hasLocation && (
               <View style={styles.dateSquare}>
-                <MapPin size={15} color={ICON_MUTED} strokeWidth={1.6} />
+                <MapPin size={15} color={VIOLET} strokeWidth={1.6} />
                 <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.location_label')}
                 </AppText>
@@ -251,7 +252,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             )}
             {hasExec && (
               <View style={styles.dateSquare}>
-                <Calendar size={15} color={ICON_MUTED} strokeWidth={1.6} />
+                <Calendar size={15} color={VIOLET} strokeWidth={1.6} />
                 <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.exec_date_label')}
                 </AppText>
@@ -262,7 +263,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             )}
             {hasDeadline && (
               <View style={styles.dateSquare}>
-                <Clock size={15} color={ICON_MUTED} strokeWidth={1.6} />
+                <Clock size={15} color={VIOLET} strokeWidth={1.6} />
                 <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.deadline_short')}
                 </AppText>
@@ -305,8 +306,8 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               {t('noticeboard.role_plural')} ({allRoles.length})
             </AppText>
             {skillsOpen
-              ? <ChevronUp size={15} color={VIOLET} strokeWidth={2} />
-              : <ChevronDown size={15} color={VIOLET} strokeWidth={2} />}
+              ? <ChevronUp size={15} color={TEXT_BLACK} strokeWidth={2} />
+              : <ChevronDown size={15} color={TEXT_BLACK} strokeWidth={2} />}
           </TouchableOpacity>
         </View>
 
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 23,
     marginBottom: 0,
-    color: VIOLET_DEEP,
+    color: TEXT_BLACK,
   },
   // One row, so the name must be the part that gives: flexShrink lets a long
   // name truncate instead of pushing the timestamp off the card. maxWidth keeps
@@ -500,7 +501,7 @@ const styles = StyleSheet.create({
   posterNameCompact: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: VIOLET,
+    color: TEXT_BLACK,
     marginTop: 0,
     flexShrink: 1,
   },
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
   snippetText: {
     fontSize: 13.5,
     lineHeight: 20,
-    color: '#4C4859',
+    color: TEXT_BLACK,
   },
   datesRow: {
     gap: 8,
@@ -541,13 +542,13 @@ const styles = StyleSheet.create({
   },
   dateSquareLabel: {
     fontSize: 11.5,
-    color: TEXT_MUTED,
+    color: TEXT_BLACK,
     textAlign: 'center',
   },
   dateSquareValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: VIOLET_DEEP,
+    color: TEXT_BLACK,
     textAlign: 'center',
   },
 
@@ -592,7 +593,7 @@ const styles = StyleSheet.create({
   skillsBtnText: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: VIOLET,
+    color: TEXT_BLACK,
   },
   skillsSection: {
     flexDirection: 'row',

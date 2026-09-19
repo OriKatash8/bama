@@ -7,6 +7,9 @@ const BAND_COLORS = ['#1D4FD8', '#5B33E0', '#8B45E8', '#A855F7'] as const;
 const BAND_LOCATIONS = [0, 0.46, 0.78, 1] as const;
 const BAND_START = { x: 1, y: 0 };
 const BAND_END = { x: 0.15, y: 1 };
+/** Mirrored: blue on the left, purple on the right (top-left to bottom-right). */
+const FLIP_START = { x: 0, y: 0 };
+const FLIP_END = { x: 0.85, y: 1 };
 
 /** How far the gradient continues above the band. Only an iOS rubber-band pull
  *  ever shows it, and no pull reaches this far. */
@@ -16,6 +19,8 @@ type Props = {
   children: React.ReactNode;
   /** The band's own padding — each screen sets its own. */
   style?: StyleProp<ViewStyle>;
+  /** Mirror the diagonal: blue on the left, purple on the right. */
+  flip?: boolean;
 };
 
 /**
@@ -30,14 +35,16 @@ type Props = {
  * the first colour. That needs the band's measured size, so it appears after
  * the first layout.
  */
-export function GradientBand({ children, style }: Props) {
+export function GradientBand({ children, style, flip = false }: Props) {
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  const start = flip ? FLIP_START : BAND_START;
+  const end = flip ? FLIP_END : BAND_END;
 
   return (
     <View>
       {size && (
         <LinearGradient
-          {...extensionGradient(size.w, size.h)}
+          {...extensionGradient(size.w, size.h, start, end)}
           style={[styles.extension, { height: OVERSCROLL + size.h }]}
           pointerEvents="none"
         />
@@ -45,8 +52,8 @@ export function GradientBand({ children, style }: Props) {
       <LinearGradient
         colors={BAND_COLORS}
         locations={BAND_LOCATIONS}
-        start={BAND_START}
-        end={BAND_END}
+        start={start}
+        end={end}
         style={style}
         onLayout={(e) => {
           const { width, height } = e.nativeEvent.layout;
@@ -73,15 +80,20 @@ export function GradientBand({ children, style }: Props) {
  * the longer line: stop s sits (s − ½)·L_band from the band's centre, and the
  * band's centre sits OVERSCROLL/2 below the tall box's centre.
  */
-function extensionGradient(w: number, h: number) {
+function extensionGradient(
+  w: number,
+  h: number,
+  bandStart: { x: number; y: number },
+  bandEnd: { x: number; y: number },
+) {
   const tallH = OVERSCROLL + h;
-  const start = { x: BAND_START.x, y: OVERSCROLL / tallH };
-  const end = { x: BAND_END.x, y: 1 };
+  const start = { x: bandStart.x, y: OVERSCROLL / tallH };
+  const end = { x: bandEnd.x, y: 1 };
   if (Platform.OS !== 'web') {
     return { colors: BAND_COLORS, locations: BAND_LOCATIONS, start, end };
   }
   // expo-linear-gradient's own web angle: 90° + atan2 of the pixel vector.
-  const a = Math.PI / 2 + Math.atan2((BAND_END.y - BAND_START.y) * h, (BAND_END.x - BAND_START.x) * w);
+  const a = Math.PI / 2 + Math.atan2((bandEnd.y - bandStart.y) * h, (bandEnd.x - bandStart.x) * w);
   const sin = Math.abs(Math.sin(a));
   const cos = Math.cos(a);
   const bandLength = w * sin + h * Math.abs(cos);

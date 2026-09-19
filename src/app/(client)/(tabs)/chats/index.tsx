@@ -71,7 +71,7 @@ export default function ChatsPage() {
 
   return (
     <Screen style={{ padding: 0, paddingBottom: 100 }} scrollable={hasChats} backgroundColor={PAGE_BG}>
-      <GradientBand style={styles.band}>
+      <GradientBand style={styles.band} flip>
         <PageTitle style={titleType}>{t(tr, 'chats_page.title')}</PageTitle>
       </GradientBand>
 

@@ -278,7 +278,7 @@ export default function ProfessionalChatsScreen() {
     <Screen scrollRef={pageScrollRef} style={{ padding: 0, paddingBottom: 100 }} backgroundColor={PAGE_BG}>
       {/* Header — the three-way switch as one segmented control on the band.
           Same order and setActive logic as before. */}
-      <GradientBand style={styles.band}>
+      <GradientBand style={styles.band} flip>
         <View style={[styles.tabBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {TAB_KEYS.map((key) => {
             const isActive = active === key;

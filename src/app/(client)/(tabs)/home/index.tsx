@@ -44,6 +44,8 @@ import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
  * only, and the brand tokens in useTheme stay as they are.
  */
 const VIOLET = '#6D28D9';
+/** A filled date / location square: outline, icon, value and clear button. */
+const DATE_BLUE = '#2563EB';
 const INK = '#1A1626';
 const INK_2 = '#6B6880';
 const PLACEHOLDER = '#9C99AD';
@@ -409,7 +411,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 1: Project details ══════════════ */}
         {step === 1 && (
           <>
-            <GradientBand style={styles.band}>
+            <GradientBand style={styles.band} flip>
               <PageTitle style={titleType}>{rtl ? 'בנה את הפרויקט שלך' : 'Build Your Project'}</PageTitle>
               <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.progressBar, styles.progressDone]} />
@@ -528,11 +530,12 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <CalendarDays size={19} color={exec ? VIOLET : INK_2} strokeWidth={1.8} />
+                    <CalendarDays size={19} color={exec ? DATE_BLUE : INK_2} strokeWidth={1.8} />
                     <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                     </Text>
-                    <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>
+                    {/* "(optional)" only while the date is still empty. */}
+                    {!exec && <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>}
                   </PressableScale>
                 </View>
 
@@ -555,7 +558,7 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <CalendarDays size={19} color={deadline ? VIOLET : INK_2} strokeWidth={1.8} />
+                    <CalendarDays size={19} color={deadline ? DATE_BLUE : INK_2} strokeWidth={1.8} />
                     <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
                     </Text>
@@ -582,7 +585,7 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <MapPin size={19} color={location ? VIOLET : INK_2} strokeWidth={1.8} />
+                    <MapPin size={19} color={location ? DATE_BLUE : INK_2} strokeWidth={1.8} />
                     <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {location || t('builder.placeholder_location')}
                     </Text>
@@ -620,7 +623,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 2: Roles + quantity ══════════════ */}
         {step === 2 && (
           <>
-            <GradientBand style={styles.band}>
+            <GradientBand style={styles.band} flip>
               <PageTitle style={titleType}>{rtl ? 'בנה את הצוות שלך' : 'Build Your Crew'}</PageTitle>
               <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.progressBar, styles.progressDone]} />
@@ -695,34 +698,40 @@ export default function HomeScreen() {
                       <View style={styles.tileOverlay}>
                         <Text style={styles.tileLabel} numberOfLines={1}>{labelOf(ROLE_BY_ID[cat.roleId], lang)}</Text>
                       </View>
+                      </View>
+                      {/* −/count/+ as a column over the art's left edge, + on
+                          top. Overlaid, so a selected tile is no taller than
+                          the others; outside tileClip so a short art band on a
+                          narrow phone can't clip it. */}
                       {q > 0 && (
-                        <View style={styles.tileControls}>
-                          <PressableScale
-                            style={[styles.tileControlBtnRemove, locked && styles.tileControlBtnLocked]}
-                            onPress={(e) => { e.stopPropagation?.(); if (!locked) setQuantity(cat.key, q - 1); }}
-                            disabled={locked}
-                            accessibilityLabel={locked ? t('builder.role_locked_a11y') : undefined}
-                            hitSlop={6}
-                            activeScale={0.88}
-                            haptic="commit"
-                          >
-                            {locked
-                              ? <Lock size={11} color="#ffffff" strokeWidth={2.5} />
-                              : <Text style={styles.tileControlText}>−</Text>}
-                          </PressableScale>
-                          <Text style={styles.tileCountText}>{q}</Text>
-                          <PressableScale
-                            style={styles.tileControlBtnAdd}
-                            onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q + 1); }}
-                            hitSlop={6}
-                            activeScale={0.88}
-                            haptic="commit"
-                          >
-                            <Text style={styles.tileControlText}>+</Text>
-                          </PressableScale>
+                        <View style={[styles.tileControlsWrap, { height: Math.round(tileSize * 0.5) }]}>
+                          <View style={styles.tileControls}>
+                            <PressableScale
+                              style={styles.tileControlBtnAdd}
+                              onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q + 1); }}
+                              hitSlop={10}
+                              activeScale={0.88}
+                              haptic="commit"
+                            >
+                              <Text style={styles.tileControlText}>+</Text>
+                            </PressableScale>
+                            <Text style={styles.tileCountText}>{q}</Text>
+                            <PressableScale
+                              style={[styles.tileControlBtnRemove, locked && styles.tileControlBtnLocked]}
+                              onPress={(e) => { e.stopPropagation?.(); if (!locked) setQuantity(cat.key, q - 1); }}
+                              disabled={locked}
+                              accessibilityLabel={locked ? t('builder.role_locked_a11y') : undefined}
+                              hitSlop={10}
+                              activeScale={0.88}
+                              haptic="commit"
+                            >
+                              {locked
+                                ? <Lock size={11} color="#ffffff" strokeWidth={2.5} />
+                                : <Text style={styles.tileControlText}>−</Text>}
+                            </PressableScale>
+                          </View>
                         </View>
                       )}
-                      </View>
                       {/* Drawn over, not in the box model, so selecting a tile
                           cannot nudge the grid the way borderWidth: 2 did. */}
                       {q > 0 && <View style={styles.tileRing} pointerEvents="none" />}
@@ -754,7 +763,7 @@ export default function HomeScreen() {
         {/* ══════════════ STEP 3: Per-slot subskill ══════════════ */}
         {step === 3 && (
           <>
-            <GradientBand style={styles.band}>
+            <GradientBand style={styles.band} flip>
               <PageTitle style={titleType}>{rtl ? 'התאמת התמחויות' : 'Match subskills'}</PageTitle>
               <View style={[styles.progressRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.progressBar, styles.progressDone]} />
@@ -1128,7 +1137,21 @@ function createStyles(
     },
     tileOverlay: { width: '100%', paddingTop: 0, paddingBottom: SPACE.sm, paddingHorizontal: SPACE.xs },
     tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: TEXT.primary, textAlign: 'center', lineHeight: 17, includeFontPadding: false },
-    tileControls: { width: '100%', height: 28, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: SPACE.sm, backgroundColor: '#FFFFFF' },
+    /** Spans the art's height at the tile's left edge; centres the column in it. */
+    tileControlsWrap: { position: 'absolute', top: 0, left: 6, justifyContent: 'center' },
+    tileControls: {
+      alignItems: 'center',
+      gap: 4,
+      paddingVertical: 4,
+      paddingHorizontal: 3,
+      borderRadius: 999,
+      backgroundColor: 'rgba(255,255,255,0.94)',
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 2,
+    },
     tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
     tileControlBtnLocked: { backgroundColor: 'rgba(120,125,150,0.7)' },
     tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
@@ -1280,7 +1303,7 @@ function createStyles(
       paddingVertical: 12,
       paddingHorizontal: 11,
     },
-    dateSquareSel: { borderWidth: 1.5, borderColor: '#8B5CF6', backgroundColor: '#F3EEFE' },
+    dateSquareSel: { borderWidth: 1.5, borderColor: DATE_BLUE, backgroundColor: '#F3EEFE' },
     tileTitle: { fontSize: 12.5, lineHeight: 17, fontWeight: '600', fontFamily: ffSemiBold, color: INK, textAlign: 'center' },
     tileTitleSel: { color: '#3B0764' },
     /** Title then "?", in reading order: flexDirection is set inline per language. */
@@ -1297,7 +1320,7 @@ function createStyles(
       fontSize: 12.5,
       lineHeight: 16,
       fontWeight: '500',
-      color: VIOLET,
+      color: DATE_BLUE,
       textAlign: 'center',
       fontFamily: ffMedium,
     },
@@ -1305,7 +1328,7 @@ function createStyles(
       position: 'absolute',
       top: 6,
       right: 6,
-      backgroundColor: VIOLET,
+      backgroundColor: DATE_BLUE,
       borderRadius: 10,
       width: 18,
       height: 18,

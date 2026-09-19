@@ -150,7 +150,7 @@ export default function SearchScreen() {
   return (
     <Screen keyboardShouldPersistTaps="handled" backgroundColor={PAGE_BG} style={{ padding: 0, paddingBottom: 100 }}>
       {/* Header */}
-      <GradientBand style={styles.band}>
+      <GradientBand style={styles.band} flip>
         <PageTitle style={titleType}>{t('search.heading')}</PageTitle>
       </GradientBand>
 
