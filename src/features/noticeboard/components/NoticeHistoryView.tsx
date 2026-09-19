@@ -32,7 +32,7 @@ type Tab = 'hidden' | 'sent';
 
 // Status text colours reuse existing app values (no new palette).
 const STATUS_COLOR: Record<string, string> = {
-  pending: '#004aad',
+  pending: '#1D4ED8',
   accepted: '#1c9d63',
   rejected: '#e53935',
   removed: 'rgba(15,15,31,0.4)',
@@ -132,15 +132,15 @@ export function NoticeHistoryView({
           </View>
         </View>
 
-        <AppText weight="regular" style={[styles.offerMeta, { color: colors.textSec, textAlign }]}>{meta}</AppText>
+        <AppText weight="regular" style={[styles.offerMeta, { color: '#000000', textAlign }]}>{meta}</AppText>
         {!isPrice && (
-          <AppText weight="regular" style={[styles.bundleNote, { color: colors.textMuted, textAlign }]}>
+          <AppText weight="regular" style={[styles.bundleNote, { color: '#000000', textAlign }]}>
             {t('history.bundle_note', { total: (entry.data as BundleOffer).individualTotal.toLocaleString() })}
           </AppText>
         )}
 
         <View style={[styles.offerBottom, { flexDirection: rowDir }]}>
-          <AppText weight="regular" style={[styles.timeText, { color: colors.textMuted }]}>
+          <AppText weight="regular" style={[styles.timeText, { color: '#000000' }]}>
             {edited ? t('history.edited') : formatDate(entry.ts)}
           </AppText>
           {editable && !editing && (
@@ -160,7 +160,7 @@ export function NoticeHistoryView({
         {editing && (
           <View style={[styles.editRow, { flexDirection: rowDir }]}>
             <TextInput
-              style={[styles.priceInput, { borderColor: colors.border, color: colors.text, textAlign }]}
+              style={[styles.priceInput, { borderColor: '#1D4ED8', color: '#000000', textAlign }]}
               value={editValue}
               onChangeText={setEditValue}
               keyboardType="numeric"
@@ -182,7 +182,7 @@ export function NoticeHistoryView({
               accessibilityRole="button"
               accessibilityLabel={t('history.cancel')}
             >
-              <X size={16} color={colors.textMuted} strokeWidth={2.5} />
+              <X size={16} color="#1D4ED8" strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         )}
@@ -194,7 +194,7 @@ export function NoticeHistoryView({
     return (
       <View style={styles.empty}>
         <AppText weight="semiBold" style={styles.emptyTitle}>{t(titleKey)}</AppText>
-        <AppText weight="regular" style={[styles.emptyDesc, { color: colors.textMuted }]}>{t(descKey)}</AppText>
+        <AppText weight="regular" style={[styles.emptyDesc, { color: '#000000' }]}>{t(descKey)}</AppText>
       </View>
     );
   }
@@ -226,7 +226,7 @@ export function NoticeHistoryView({
 
       {tab === 'hidden' ? (
         hiddenLoading ? (
-          <ActivityIndicator color="#004aad" style={styles.loading} />
+          <ActivityIndicator color="#1D4ED8" style={styles.loading} />
         ) : hidden.length === 0 ? (
           empty('history.empty_hidden_title', 'history.empty_hidden_desc')
         ) : (
@@ -249,7 +249,7 @@ export function NoticeHistoryView({
           </View>
         )
       ) : offersLoading ? (
-        <ActivityIndicator color="#004aad" style={styles.loading} />
+        <ActivityIndicator color="#1D4ED8" style={styles.loading} />
       ) : offers.length === 0 ? (
         empty('history.empty_sent_title', 'history.empty_sent_desc')
       ) : (
@@ -263,16 +263,16 @@ const styles = StyleSheet.create({
   tabs: { justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 16 },
   tab: { borderRadius: 20, paddingVertical: 8, paddingHorizontal: 20 },
   // The selected tab is enlarged so it clearly stands out (MarketplaceToggle).
-  tabActive: { backgroundColor: '#004aad', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
-  tabInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
+  tabActive: { backgroundColor: '#1D4ED8', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
+  tabInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#1D4ED8' },
   tabText: { fontSize: 14 },
   tabTextActive: { color: '#ffffff', fontSize: 16 },
-  tabTextInactive: { color: '#004aad' },
+  tabTextInactive: { color: '#000000' },
 
   list: { gap: 12, alignItems: 'center' },
   loading: { marginVertical: 24 },
   empty: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24, gap: 6 },
-  emptyTitle: { fontSize: 16, color: '#004aad', textAlign: 'center' },
+  emptyTitle: { fontSize: 16, color: '#000000', textAlign: 'center' },
   emptyDesc: { fontSize: 13, textAlign: 'center' },
 
   offerCard: {
@@ -281,17 +281,17 @@ const styles = StyleSheet.create({
   },
   offerCardDim: { opacity: 0.7 },
   offerTop: { alignItems: 'center', gap: 8 },
-  offerTitle: { flex: 1, fontSize: 16, color: '#004aad' },
+  offerTitle: { flex: 1, fontSize: 16, color: '#000000' },
   statusBadge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   statusText: { fontSize: 11 },
   offerMeta: { fontSize: 13 },
   bundleNote: { fontSize: 11 },
   offerBottom: { alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
   timeText: { fontSize: 11 },
-  editBtn: { alignItems: 'center', gap: 5, backgroundColor: '#004aad', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
+  editBtn: { alignItems: 'center', gap: 5, backgroundColor: '#1D4ED8', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   editText: { fontSize: 12, color: '#ffffff' },
   editRow: { alignItems: 'center', gap: 8, marginTop: 8 },
   priceInput: { flex: 1, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14 },
-  iconBtn: { width: 40, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#004aad' },
+  iconBtn: { width: 40, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1D4ED8' },
   iconBtnGhost: { width: 40, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
 });

@@ -21,11 +21,12 @@ type Translations = typeof en;
 
 // Violet card palette. Local on purpose: the card reads these directly rather
 // than through useTheme, whose values reach the whole app.
-const VIOLET = '#6D28D9';
-const TEXT_MUTED = '#8B8898';
+/** Buttons, outlines and icons. */
+const BLUE = '#1D4ED8';
+
 /** Card content text: title, poster, description, date values. */
 const TEXT_BLACK = '#000000';
-const ICON_MUTED = '#9B98A8';
+
 const TINT = '#F6F5FA';
 
 function makeT(translations: Translations) {
@@ -126,12 +127,12 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     if (confirmingDismiss) {
       return (
         <View style={[cardStyle, styles.confirmRow]}>
-          <AppText weight="regular" style={[styles.confirmText, { color: colors.textSec }]}>
+          <AppText weight="regular" style={[styles.confirmText, { color: TEXT_BLACK }]}>
             {t('noticeboard.dismiss_body')}
           </AppText>
           <View style={styles.confirmBtns}>
             <TouchableOpacity style={styles.confirmCancel} onPress={() => setConfirmingDismiss(false)}>
-              <AppText weight="semiBold" style={[styles.confirmCancelText, { color: colors.textMuted }]}>
+              <AppText weight="semiBold" style={[styles.confirmCancelText, { color: TEXT_BLACK }]}>
                 {t('noticeboard.dismiss_cancel')}
               </AppText>
             </TouchableOpacity>
@@ -219,7 +220,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
               style={styles.dismissInline}
               testID="notice-dismiss"
             >
-              <X size={17} color={ICON_MUTED} />
+              <X size={17} color={BLUE} />
             </TouchableOpacity>
           )}
         </View>
@@ -241,7 +242,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           <View style={[styles.datesRow, { flexDirection: rowDir }]}>
             {hasLocation && (
               <View style={styles.dateSquare}>
-                <MapPin size={15} color={VIOLET} strokeWidth={1.6} />
+                <MapPin size={15} color={BLUE} strokeWidth={1.6} />
                 <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.location_label')}
                 </AppText>
@@ -252,7 +253,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             )}
             {hasExec && (
               <View style={styles.dateSquare}>
-                <Calendar size={15} color={VIOLET} strokeWidth={1.6} />
+                <Calendar size={15} color={BLUE} strokeWidth={1.6} />
                 <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.exec_date_label')}
                 </AppText>
@@ -263,7 +264,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
             )}
             {hasDeadline && (
               <View style={styles.dateSquare}>
-                <Clock size={15} color={VIOLET} strokeWidth={1.6} />
+                <Clock size={15} color={BLUE} strokeWidth={1.6} />
                 <AppText weight="regular" style={styles.dateSquareLabel}>
                   {t('noticeboard.deadline_short')}
                 </AppText>
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   avatarFallback: {
-    backgroundColor: VIOLET,
+    backgroundColor: BLUE,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -507,11 +508,11 @@ const styles = StyleSheet.create({
   },
   posterLineDash: {
     fontSize: 12.5,
-    color: TEXT_MUTED,
+    color: TEXT_BLACK,
   },
   timeAgoText: {
     fontSize: 12.5,
-    color: TEXT_MUTED,
+    color: TEXT_BLACK,
     flexShrink: 0,
   },
 
@@ -566,7 +567,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   offerPill: {
-    backgroundColor: VIOLET,
+    backgroundColor: BLUE,
     height: 48,
     borderRadius: 999,
     paddingHorizontal: 30,
@@ -579,7 +580,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  offerPillPressed: { backgroundColor: '#5B21B6' },
+  offerPillPressed: { backgroundColor: '#1E40AF' },
   restorePill: { alignItems: 'center', gap: 6 },
   offerPillText: {
     fontSize: 15,
@@ -603,7 +604,7 @@ const styles = StyleSheet.create({
   },
   skillChip: {
     borderWidth: 1.5,
-    borderColor: VIOLET,
+    borderColor: BLUE,
     borderRadius: 12,
     backgroundColor: '#ffffff',
     paddingHorizontal: 10,
@@ -611,7 +612,7 @@ const styles = StyleSheet.create({
   },
   skillName: {
     fontSize: 12,
-    color: VIOLET,
+    color: BLUE,
   },
 
   // --- Direct invite: leading-edge accent ribbon ---

@@ -27,7 +27,6 @@ import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '@features/
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
-import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -65,13 +64,14 @@ function formatDeadlineShort(deadline?: string, flexibleLabel?: string): string 
   return `${d}/${m}`;
 }
 
-const BLUE = '#1e4fa3';
-const MUTED = '#8890b0';
+/** Text. */
+const TEXT = '#000000';
+/** Buttons, outlines and icons. */
+const BLUE = '#1D4ED8';
 const STAT_BG = '#f5f6fb';
 const PAGE_BG = '#FAFAFC';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
-const VIOLET = '#6D28D9';
 
 const CARD_SHADOW = {
   shadowColor: '#1e4fa3',
@@ -276,7 +276,6 @@ export default function DashboardScreen() {
   );
 
   const { showToast } = useUiStore();
-  const colors = useTheme();
 
   const [selected, setSelected] = useState<ProjectRequest | null>(null);
   const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');
@@ -408,8 +407,8 @@ export default function DashboardScreen() {
             testID="noticeboard-history-btn"
           >
             {showHistory
-              ? <LayoutGrid size={14} color={VIOLET} strokeWidth={2.3} />
-              : <History size={14} color={VIOLET} strokeWidth={2.1} />}
+              ? <LayoutGrid size={14} color={BLUE} strokeWidth={2.3} />
+              : <History size={14} color={BLUE} strokeWidth={2.1} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showHistory ? t('noticeboard.notice_board') : t('history.title')}
             </AppText>
@@ -437,8 +436,8 @@ export default function DashboardScreen() {
             accessibilityRole="button"
           >
             {showInProgress
-              ? <LayoutGrid size={14} color={VIOLET} strokeWidth={2.3} />
-              : <Briefcase size={14} color={VIOLET} strokeWidth={2.3} />}
+              ? <LayoutGrid size={14} color={BLUE} strokeWidth={2.3} />
+              : <Briefcase size={14} color={BLUE} strokeWidth={2.3} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
             </AppText>
@@ -449,7 +448,7 @@ export default function DashboardScreen() {
               onPress={openSortModal}
               activeOpacity={0.8}
             >
-              <SlidersHorizontal size={14} color={filterActive ? '#ffffff' : VIOLET} strokeWidth={2.3} />
+              <SlidersHorizontal size={14} color={filterActive ? '#ffffff' : BLUE} strokeWidth={2.3} />
               <AppText weight="semiBold" style={[styles.navBtnText, filterActive && styles.navBtnTextActive]} numberOfLines={2}>
                 {t('noticeboard.filter_short')}
               </AppText>
@@ -485,17 +484,17 @@ export default function DashboardScreen() {
                   {/* Zone 2: 3 stat squares */}
                   <View style={[styles.projectStatsRow, { flexDirection: rowDir }]}>
                     <View style={styles.projectStatSquare}>
-                      <MapPin size={14} color={MUTED} strokeWidth={1.5} />
+                      <MapPin size={14} color={BLUE} strokeWidth={1.5} />
                       <AppText weight="regular" style={styles.projectStatLabel}>{t('chats_page.stat_location')}</AppText>
                       <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{project.location || '—'}</AppText>
                     </View>
                     <View style={styles.projectStatSquare}>
-                      <CalendarDays size={14} color={MUTED} strokeWidth={1.5} />
+                      <CalendarDays size={14} color={BLUE} strokeWidth={1.5} />
                       <AppText weight="regular" style={styles.projectStatLabel}>{t('chats_page.stat_deadline')}</AppText>
                       <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{formatDeadlineShort(project.deadline, t('builder.flexible'))}</AppText>
                     </View>
                     <View style={styles.projectStatSquare}>
-                      <CalendarCheck size={14} color={MUTED} strokeWidth={1.5} />
+                      <CalendarCheck size={14} color={BLUE} strokeWidth={1.5} />
                       <AppText weight="regular" style={styles.projectStatLabel}>{t('chats_page.stat_execution')}</AppText>
                       <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{formatDeadlineShort(project.exec, t('builder.flexible'))}</AppText>
                     </View>
@@ -525,14 +524,14 @@ export default function DashboardScreen() {
         {showInProgress && !activeProjectsLoading && activeProjects.length === 0 && (
           <View style={styles.inProgressEmpty}>
             <AppText weight="semiBold" style={styles.emptyText}>{t('noticeboard.no_in_progress')}</AppText>
-            <AppText weight="regular" style={[styles.emptySubtext, { color: MUTED }]}>
+            <AppText weight="regular" style={[styles.emptySubtext, { color: TEXT }]}>
               {t('noticeboard.no_in_progress_sub')}
             </AppText>
           </View>
         )}
 
         {showInProgress && activeProjectsLoading && (
-          <ActivityIndicator color="#004aad" style={{ marginVertical: 24 }} />
+          <ActivityIndicator color={BLUE} style={{ marginVertical: 24 }} />
         )}
 
         {/* ── History — shown only while that detour is on ── */}
@@ -553,7 +552,7 @@ export default function DashboardScreen() {
 
         {onBoard && !isLoading && biddable.length > 0 && (
           <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Search size={18} color="#8B8898" strokeWidth={2.5} />
+            <Search size={18} color={BLUE} strokeWidth={2.5} />
             <TextInput
               style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
               placeholder={rtl ? 'חיפוש בלוח המודעות…' : 'Search the notice board…'}
@@ -566,26 +565,26 @@ export default function DashboardScreen() {
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-                <AppText weight="regular" style={[styles.clearBtn, { color: colors.textMuted }]}>✕</AppText>
+                <AppText weight="regular" style={[styles.clearBtn, { color: BLUE }]}>✕</AppText>
               </TouchableOpacity>
             )}
           </View>
         )}
 
         {!onBoard ? null : isLoading ? (
-          <ActivityIndicator size="large" color="#cb6ce6" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={BLUE} style={{ marginTop: 40 }} />
         ) : displayed.length === 0 ? (
           <View style={[styles.center, { minHeight: screenHeight * 0.6 }]}>
-            <Inbox size={48} color={colors.textMuted} strokeWidth={1.5} style={{ marginBottom: 8 }} />
-            <Text style={[styles.emptyText, { ...font.semiBold, color: colors.textSec, textAlign: 'center' }]}>
+            <Inbox size={48} color={BLUE} strokeWidth={1.5} style={{ marginBottom: 8 }} />
+            <Text style={[styles.emptyText, { ...font.semiBold, color: TEXT, textAlign: 'center' }]}>
               {t('noticeboard.no_projects')}
             </Text>
-            <Text style={[styles.emptySubtext, { ...font.regular, color: colors.textMuted, textAlign: 'center' }]}>
+            <Text style={[styles.emptySubtext, { ...font.regular, color: TEXT, textAlign: 'center' }]}>
               {t('noticeboard.check_back')}
             </Text>
             {!activeProjectsLoading && activeProjects.length === 0 && (
               <View style={styles.upgradeWrap}>
-                <Text style={[styles.upgradeHint, { ...font.regular, color: colors.textMuted, textAlign: 'center' }]}>
+                <Text style={[styles.upgradeHint, { ...font.regular, color: TEXT, textAlign: 'center' }]}>
                   {t('noticeboard.upgrade_profile_hint')}
                 </Text>
                 <TouchableOpacity
@@ -781,8 +780,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
   },
-  searchRowFocused: { borderColor: '#8B5CF6' },
-  searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
+  searchRowFocused: { borderColor: BLUE },
+  searchInput: { flex: 1, fontSize: 14, color: TEXT },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
   // Icon over a small label, at a FIXED width: the middle button's label swaps
   // ("In progress" <-> "Notice board") and must not resize, or the page title
@@ -803,10 +802,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: VIOLET,
+    borderColor: BLUE,
     backgroundColor: '#FFFFFF',
   },
-  navBtnActive: { backgroundColor: VIOLET },
+  navBtnActive: { backgroundColor: BLUE },
   navBtnText: { fontSize: 9, lineHeight: 11, fontWeight: '600', color: '#000000', textAlign: 'center' },
   navBtnTextActive: { color: '#FFFFFF' },
   // White ring so the badge reads against the gradient behind the button.
@@ -818,7 +817,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: '#FFFFFF',
-    backgroundColor: '#A855F7',
+    backgroundColor: BLUE,
     paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
@@ -835,23 +834,23 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     maxHeight: '85%',
   },
-  sortHeader: { fontSize: 18, color: BLUE, marginBottom: 12 },
-  sortSectionTitle: { fontSize: 12, color: 'rgba(15,15,31,0.4)', marginBottom: 8 },
+  sortHeader: { fontSize: 18, color: TEXT, marginBottom: 12 },
+  sortSectionTitle: { fontSize: 12, color: TEXT, marginBottom: 8 },
   sortOptions: { flexWrap: 'wrap', gap: 8 },
   sortOption: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.2)',
+    borderColor: BLUE,
     backgroundColor: '#fff',
   },
   sortOptionActive: { backgroundColor: BLUE, borderColor: BLUE },
-  sortOptionText: { fontSize: 13, color: BLUE, textAlign: 'center' },
+  sortOptionText: { fontSize: 13, color: TEXT, textAlign: 'center' },
   sortOptionTextActive: { color: '#ffffff' },
   sortFooter: { marginTop: 18, alignItems: 'center', gap: 12 },
   sortClearBtn: { paddingHorizontal: 12, paddingVertical: 12 },
-  sortClearText: { fontSize: 14, color: 'rgba(15,15,31,0.4)' },
+  sortClearText: { fontSize: 14, color: TEXT },
   sortApplyBtn: { flex: 1, paddingVertical: 14, borderRadius: 16, backgroundColor: BLUE, alignItems: 'center' },
   sortApplyText: { fontSize: 15, color: '#ffffff' },
 
@@ -877,12 +876,12 @@ const styles = StyleSheet.create({
   },
   projectCardTitle: {
     fontSize: 17,
-    color: BLUE,
+    color: TEXT,
     lineHeight: 23,
   },
   projectCardClient: {
     fontSize: 12,
-    color: MUTED,
+    color: TEXT,
   },
   projectStatsRow: {
     gap: 8,
@@ -898,17 +897,17 @@ const styles = StyleSheet.create({
   },
   projectStatLabel: {
     fontSize: 10,
-    color: MUTED,
+    color: TEXT,
     textAlign: 'center',
   },
   projectStatValue: {
     fontSize: 12,
-    color: BLUE,
+    color: TEXT,
     textAlign: 'center',
   },
   projectDivider: {
     height: 1,
-    backgroundColor: 'rgba(30,79,163,0.12)',
+    backgroundColor: '#F2F0F7',
   },
   projectBottomRow: {
     alignItems: 'center',
@@ -931,7 +930,7 @@ const styles = StyleSheet.create({
 
   // Empty state
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },
-  emptyText: { fontSize: 17, fontWeight: '600' },
+  emptyText: { fontSize: 17, fontWeight: '600', color: TEXT },
   emptySubtext: { fontSize: 14 },
   upgradeWrap: { alignItems: 'center', gap: 10, marginTop: 14 },
   upgradeHint: { fontSize: 14, lineHeight: 20, paddingHorizontal: 24 },
