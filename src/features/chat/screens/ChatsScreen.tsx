@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { TouchableOpacity, Pressable, View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
@@ -60,11 +60,16 @@ function makeT(translations: Translations) {
 // They are not two ends of one scale and must not be swapped for each other:
 // green here belongs to the same family as the cancelled and in_progress badges,
 // so flattening it to blue would make a completed project read like an open one.
-// The paid pill is blue, and is outlined rather than filled so it cannot be
-// mistaken for a fifth status badge. See `paidPill` in the stylesheet.
+// The paid pill is violet, and is outlined rather than filled so it cannot be
+// mistaken for another status badge. See `paidPill` in the stylesheet.
 
-/** Completed-line text and chevron — the same green as the `completed` badge. */
-const COMPLETED_LINE_COLOR = '#2d6a2d';
+/** Completed-line text — the same green as the `completed` badge. */
+const COMPLETED_LINE_COLOR = '#2F7A45';
+
+// Row palette (violet system). Local on purpose: useTheme reaches the whole app.
+const VIOLET = '#6D28D9';
+const INK = '#1A1626';
+const AVATAR_TINT = '#EDE4FB';
 
 /** The viewer's role on a project row. Deliberately neither green (project
  *  state) nor red (cancelled) — a role is not a point on the status scale.
@@ -72,11 +77,13 @@ const COMPLETED_LINE_COLOR = '#2d6a2d';
  *  background is a light tint of the same colour. */
 type ProjectRole = 'client' | 'creator';
 const ROLE_CONFIG: Record<ProjectRole, { bg: string; text: string }> = {
-  client:  { bg: '#e0e9f5', text: '#004aad' },
-  creator: { bg: '#ede9fe', text: '#8b5cf6' },
+  client:  { bg: '#E8F0FE', text: '#1D4FD8' },
+  creator: { bg: '#F3EEFE', text: VIOLET },
 };
-/** A completed project's badge replaces the role — green, because it is state. */
-const COMPLETED_BADGE = { bg: '#ecf9c1', text: '#2d6a2d' };
+/** A completed project's badge replaces the role — green, because it is state.
+ *  The shop's completed badge uses the same pair. */
+const COMPLETED_BADGE = { bg: '#E9F5EC', text: '#2F7A45' };
+const CANCELLED_BADGE = { bg: '#FDECEC', text: '#B4232A' };
 
 function formatTimestamp(ts: { toDate(): Date } | null | undefined, language: string): string {
   if (!ts) return '';
@@ -108,6 +115,8 @@ type DmInfo = { name: string; photoURL: string | null };
  */
 type ChatFilter = 'all' | 'open' | 'completed' | 'marketplace';
 const CHAT_FILTERS: ChatFilter[] = ['all', 'open', 'completed', 'marketplace'];
+/** Row padding 14 + avatar 44 + gap 11: separators start where the text does. */
+const SEPARATOR_INSET = 69;
 
 export function ChatsScreen({
   scrollable = true,
@@ -291,8 +300,6 @@ export function ChatsScreen({
     await removeMemberFromGroup(chatId, user.id);
   }
 
-  const avatarMargin = { marginRight: rtl ? 0 : 12, marginLeft: rtl ? 12 : 0 };
-
   function renderAvatar(item: Chat) {
     if (item.type === 'purchase') {
       const productImage = purchaseImages[item.id];
@@ -301,14 +308,14 @@ export function ChatsScreen({
       }
       return (
         <View style={[styles.avatar, { backgroundColor: item.archived ? '#e5e7eb' : '#fff7ed' }]}>
-          <Package size={24} color={item.archived ? '#9ca3af' : '#f59e0b'} strokeWidth={1.8} />
+          <Package size={21} color={item.archived ? '#9ca3af' : '#f59e0b'} strokeWidth={1.8} />
         </View>
       );
     }
     if (item.type === 'community') {
       return (
-        <View style={[styles.avatar, { backgroundColor: '#0d9488' }]}>
-          <Users size={24} color="#fff" strokeWidth={1.8} />
+        <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
+          <Users size={21} color={VIOLET} strokeWidth={1.8} />
         </View>
       );
     }
@@ -317,8 +324,8 @@ export function ChatsScreen({
         return <Image source={{ uri: item.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
       }
       return (
-        <View style={[styles.avatar, { backgroundColor: '#e7c8f2' }]}>
-          <Users size={24} color="#7c3aed" strokeWidth={1.8} />
+        <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
+          <Users size={21} color={VIOLET} strokeWidth={1.8} />
         </View>
       );
     }
@@ -328,7 +335,7 @@ export function ChatsScreen({
     }
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
-      <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+      <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
         <AppText weight="bold" style={styles.avatarInitial}>{initial}</AppText>
       </View>
     );
@@ -386,7 +393,7 @@ export function ChatsScreen({
       })
     : filteredChats;
 
-  const cards = visibleChats.map((item) => {
+  const cards = visibleChats.map((item, index) => {
     const currentUserId = user?.id ?? '';
     const chatName = item.type === 'community'
       ? (item.name ?? 'Community')
@@ -491,93 +498,115 @@ export function ChatsScreen({
       : role != null
       ? { label: role === 'client' ? t('chats.role_client') : t('chats.role_creator'), ...ROLE_CONFIG[role] }
       : null;
+    const isUnread = unread > 0;
+    const showTrash =
+      (item.type === 'group' && (status === 'completed' || status === 'cancelled' || isCompletedProject))
+      || (item.type === 'purchase' && !!item.archived);
     return (
-      <TouchableOpacity
-        key={item.id}
-        style={[
-          styles.card,
-          { backgroundColor: '#ffffff', flexDirection: rowDir },
-        ]}
-        testID={`chat-row-${item.id}`}
-        onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}` as never)}
-        activeOpacity={0.75}
-      >
-        <View style={[styles.avatarWrap, avatarMargin]}>
+      <Fragment key={item.id}>
+        {/* Hairline between rows, inset past the avatar column: row padding 14
+            + avatar 44 + gap 11. None above the first row. */}
+        {index > 0 && (
+          <View style={[styles.separator, rtl ? { marginRight: SEPARATOR_INSET } : { marginLeft: SEPARATOR_INSET }]} />
+        )}
+        <Pressable
+          style={({ pressed }) => [
+            styles.row,
+            { flexDirection: rowDir },
+            isUnread && styles.rowUnread,
+            pressed && styles.rowPressed,
+          ]}
+          testID={`chat-row-${item.id}`}
+          onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}` as never)}
+        >
           {renderAvatar(item)}
-          {timestamp ? (
-            <View style={styles.avatarTimestampOverlay}>
-              <Text style={[styles.avatarTimestampText, { color: colors.textMuted, ...font.regular }]}>
-                {timestamp}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        <View style={styles.content}>
-          <View style={[styles.headerRow, { flexDirection: rowDir }]}>
-            <AppText weight="bold" style={[styles.name, { color: '#004aad', textAlign: rtl ? 'right' : 'left', flex: 1 }]} numberOfLines={1}>
-              {chatName}
-            </AppText>
-            {badge != null && (
-              <View testID={`project-badge-${item.id}`} style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                <AppText weight="bold" style={[styles.statusBadgeText, { color: badge.text }]}>
-                  {badge.label}
-                </AppText>
-              </View>
-            )}
-            {item.type === 'purchase' && item.archived && (
-              <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? '#fee2e2' : '#ecf9c1' }]}>
-                <AppText weight="bold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? '#dc2626' : '#2d6a2d' }]}>
-                  {item.archiveReason === 'cancelled' ? t('chats.badge_cancelled') : t('chats.badge_completed')}
-                </AppText>
-              </View>
-            )}
-          </View>
-          <View style={[styles.bottomRow, { flexDirection: rowDir }]}>
-            <AppText
-              weight={completedLine ? 'semiBold' : 'regular'}
-              style={[styles.preview, {
-                color: completedLine ? COMPLETED_LINE_COLOR : colors.textMuted,
-                textAlign: rtl ? 'right' : 'left',
-                paddingRight: rtl ? 0 : 4,
-                paddingLeft: rtl ? 4 : 0,
-              }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {completedLine ?? item.lastMessage?.text ?? ''}
-            </AppText>
-            {/* Owing money changes NOTHING about what this row can do. A
-                professional who owes used to lose the trash button here — an
-                inert chevron replaced it, so they could not dismiss the row that
-                was asking them to settle, and it came back the moment they paid.
-                That made leaving a conversation something a payment bought.
-                It also swallowed the unread badge on the same branch. */}
-            {(item.type === 'group' && (status === 'completed' || status === 'cancelled' || isCompletedProject)) || (item.type === 'purchase' && !!item.archived) ? (
-              <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
-                hitSlop={8}
-                activeOpacity={0.7}
-                style={[styles.trashBtn, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}
+          <View style={styles.content}>
+            {/* Line 1: name, then the time above the tag(s) */}
+            <View style={[styles.line, { flexDirection: rowDir }]}>
+              <AppText
+                weight={isUnread ? 'bold' : 'semiBold'}
+                style={[styles.name, isUnread && styles.nameUnread, { textAlign: rtl ? 'right' : 'left' }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
-                <Trash2 size={15} color="#ef4444" strokeWidth={2} />
-              </TouchableOpacity>
-            ) : unread > 0 ? (
-              <View style={[styles.unreadBadge, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]}>
-                <Text style={[styles.unreadBadgeText, { ...font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
+                {chatName}
+              </AppText>
+              {/* Trailing column: the time sits above the tag(s). */}
+              <View style={[styles.trailing, { alignItems: rtl ? 'flex-start' : 'flex-end' }]}>
+                {timestamp ? (
+                  <AppText
+                    weight={isUnread ? 'semiBold' : 'regular'}
+                    style={[styles.timestamp, isUnread && styles.timestampUnread]}
+                    numberOfLines={1}
+                  >
+                    {timestamp}
+                  </AppText>
+                ) : null}
+                {(badge != null || (item.type === 'purchase' && item.archived)) && (
+                  <View style={[styles.badges, { flexDirection: rowDir }]}>
+                    {badge != null && (
+                      <View testID={`project-badge-${item.id}`} style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: badge.text }]}>
+                          {badge.label}
+                        </AppText>
+                      </View>
+                    )}
+                    {item.type === 'purchase' && item.archived && (
+                      <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? CANCELLED_BADGE.bg : COMPLETED_BADGE.bg }]}>
+                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? CANCELLED_BADGE.text : COMPLETED_BADGE.text }]}>
+                          {item.archiveReason === 'cancelled' ? t('chats.badge_cancelled') : t('chats.badge_completed')}
+                        </AppText>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
-            ) : (
-              <View style={[styles.badgePlaceholder, { marginLeft: rtl ? 0 : 20, marginRight: rtl ? 20 : 0 }]} />
-            )}
-            {/* Last child, so it hugs the row's trailing edge and lands directly
-                under the status badge on the line above. */}
-            {feeSettledEarly && (
-              <View style={[styles.paidPill, { marginLeft: rtl ? 0 : 6, marginRight: rtl ? 6 : 0 }]}>
-                <AppText weight="bold" style={styles.paidPillText}>{t('chats.fee_paid_pill')}</AppText>
-              </View>
-            )}
+            </View>
+
+            {/* Line 2: preview (or the completed sentence), paid pill, then the
+                unread badge or the trash button in the trailing slot. */}
+            <View style={[styles.line, { flexDirection: rowDir }]}>
+              <AppText
+                weight={completedLine ? 'semiBold' : isUnread ? 'medium' : 'regular'}
+                style={[
+                  styles.preview,
+                  completedLine ? { color: COMPLETED_LINE_COLOR } : isUnread ? styles.previewUnread : null,
+                  { textAlign: rtl ? 'right' : 'left' },
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {completedLine ?? item.lastMessage?.text ?? ''}
+              </AppText>
+              {feeSettledEarly && (
+                <View style={styles.paidPill}>
+                  <AppText weight="semiBold" style={styles.paidPillText}>{t('chats.fee_paid_pill')}</AppText>
+                </View>
+              )}
+              {/* Owing money changes NOTHING about what this row can do. A
+                  professional who owes used to lose the trash button here — an
+                  inert chevron replaced it, so they could not dismiss the row that
+                  was asking them to settle, and it came back the moment they paid.
+                  That made leaving a conversation something a payment bought.
+                  It also swallowed the unread badge on the same branch. */}
+              {showTrash ? (
+                <TouchableOpacity
+                  onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
+                  hitSlop={12}
+                  activeOpacity={0.7}
+                  style={styles.trashBtn}
+                >
+                  <Trash2 size={15} color="#ef4444" strokeWidth={2} />
+                </TouchableOpacity>
+              ) : isUnread ? (
+                <View style={styles.unreadBadge}>
+                  <Text style={[styles.unreadBadgeText, { ...font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
+        </Pressable>
+      </Fragment>
     );
   });
 
@@ -658,11 +687,11 @@ export function ChatsScreen({
       <ScrollView style={styles.flex} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
         {notifBanner}
         {filterRow}
-        {emptyBody ?? cards}
+        {emptyBody ?? <View style={styles.listCard}>{cards}</View>}
       </ScrollView>
     );
   }
-  return <View style={styles.listContent}>{notifBanner}{filterRow}{emptyBody ?? cards}</View>;
+  return <View style={styles.listContent}>{notifBanner}{filterRow}{emptyBody ?? <View style={styles.listCard}>{cards}</View>}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -674,91 +703,95 @@ const styles = StyleSheet.create({
   // list down. flexGrow keeps a short row aligned to the reading edge, since
   // under row-reverse the default flex-start IS the right edge.
   filterScroll: { flexGrow: 0, marginBottom: 10 },
-  filterRow: { gap: 6, paddingHorizontal: 16, alignItems: 'center', flexGrow: 1 },
+  filterRow: { gap: 7, paddingHorizontal: 16, alignItems: 'center', flexGrow: 1 },
   filterChip: {
-    height: 28,
-    borderRadius: 14,
-    paddingHorizontal: 11,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 999,
     justifyContent: 'center',
     borderWidth: 1,
-    // A real blue outline, not the 20%-opacity version it had — at that alpha it
-    // read as grey and the unselected chips looked borderless. Same treatment as
-    // MarketplaceToggle's inactive pill.
-    borderColor: '#004aad',
-    backgroundColor: '#ffffff',
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
   },
-  filterChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  filterChipText: { fontSize: 12, color: '#004aad' },
-  filterChipTextActive: { color: '#ffffff' },
+  filterChipActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  filterChipText: { fontSize: 12.5, fontWeight: '600', color: '#6B6880' },
+  filterChipTextActive: { color: '#FFFFFF' },
   noResults: { paddingTop: 40, alignItems: 'center', gap: 6 },
   noResultsTitle: { fontSize: 15 },
   noResultsClear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
   noResultsClearText: { fontSize: 13 },
 
-  card: {
-    alignItems: 'center',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  // One container for every row. The 16pt inset matches the chip row's, and
+  // both pages that render this list cancel it the same way.
+  listCard: {
     marginHorizontal: 16,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#F0EEF6' },
+  // 64 tall: padding 10 × 2 + the 44 avatar.
+  row: {
+    minHeight: 64,
+    alignItems: 'center',
+    gap: 11,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  rowUnread: { backgroundColor: '#FBFAFE' },
+  rowPressed: { backgroundColor: '#F8F6FC' },
 
-  avatarWrap: { position: 'relative' },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { color: '#fff', fontSize: 20, fontWeight: '700' },
-  avatarTimestampOverlay: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: 'white',
-    borderRadius: 6,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
-  },
-  avatarTimestampText: { fontSize: 9 },
+  avatarInitial: { color: VIOLET, fontSize: 18, fontWeight: '700' },
 
-  content: { flex: 1, gap: 4 },
-  headerRow: { alignItems: 'center', justifyContent: 'space-between' },
-  name: { fontSize: 15, fontWeight: '700' },
-  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
-  // Sits at the trailing end of the preview line — the last child of the row, so
-  // it lines up directly beneath the status badge above it.
-  //
-  // OUTLINED, not filled, and radius 10 rather than the status badges' 20. Those
-  // badges are solid fills on one colour scale (open/in_progress/completed/
-  // cancelled); a filled blue pill would read as another point on it — and
-  // against the completed row's green it would imply blue and green are two ends
-  // of one axis, which they are not: green marks project state, blue marks
-  // something the professional did. The outline also keeps it distinct from the
-  // solid-#004aad unread badge it now sits next to.
+  content: { flex: 1, minWidth: 0, gap: 3 },
+  line: { alignItems: 'center', gap: 6 },
+  name: { flex: 1, fontSize: 14.5, fontWeight: '600', color: INK },
+  nameUnread: { fontWeight: '700' },
+  trailing: { flexShrink: 0, gap: 3 },
+  badges: { gap: 4 },
+  statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, flexShrink: 0 },
+  statusBadgeText: { fontSize: 10, fontWeight: '600' },
+  timestamp: { fontSize: 11, color: '#A9A6B5', flexShrink: 0 },
+  timestampUnread: { color: VIOLET, fontWeight: '600' },
+  preview: { flex: 1, fontSize: 12.5, color: '#8B8898' },
+  previewUnread: { color: '#5B5768', fontWeight: '500' },
+  // OUTLINED, not filled: a payment state, not a role or a project status, so
+  // it must not read as another point on the status-badge scale. The 1pt border
+  // replaces a point of padding, so it measures the same as the filled tags.
   paidPill: {
     borderWidth: 1,
-    borderColor: '#004aad',
-    borderRadius: 10,
-    // Padding is one less than statusBadge's on each axis, because the 1px border
-    // adds it back — the two pills then measure the same. Radius stays 10: that
-    // is the deliberate signal that this is not a fifth status badge.
+    borderColor: '#C4B5FD',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
     paddingHorizontal: 6,
     paddingVertical: 1,
     flexShrink: 0,
   },
-  paidPillText: { fontSize: 11, fontWeight: '700', color: '#004aad' },
-  trashBtn: { padding: 4, marginLeft: 6 },
-  statusBadgeText: { fontSize: 11, fontWeight: '700' },
-  bottomRow: { alignItems: 'center', justifyContent: 'space-between' },
-  preview: { fontSize: 13, flex: 1 },
-  unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, flexShrink: 0 },
-  unreadBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  badgePlaceholder: { width: 20, height: 20, flexShrink: 0 },
+  paidPillText: { fontSize: 10, fontWeight: '600', color: VIOLET },
+  trashBtn: { padding: 4, flexShrink: 0 },
+  unreadBadge: {
+    minWidth: 19,
+    height: 19,
+    borderRadius: 999,
+    backgroundColor: VIOLET,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    flexShrink: 0,
+  },
+  unreadBadgeText: { fontSize: 10.5, fontWeight: '700', color: '#FFFFFF' },
 });

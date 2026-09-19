@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { render, act, within } from '@testing-library/react-native';
 import { ChatsScreen } from '../ChatsScreen';
 import { listenToMyFees } from '@features/pricing/services/feesService';
@@ -78,17 +79,18 @@ describe('project row role badge', () => {
     expect(queryByText(en.chats.role_client)).toBeNull();
   });
 
-  it('the creator badge is purple — the creator mode colour', async () => {
+  it('the creator badge is violet, on a tint of the same violet', async () => {
     withProject(project);
-    const { getByText } = await renderAs('pro-1');
-    expect(getByText(en.chats.role_creator)).toHaveStyle({ color: '#8b5cf6' });
+    const { getByText, getByTestId } = await renderAs('pro-1');
+    expect(getByText(en.chats.role_creator)).toHaveStyle({ color: '#6D28D9' });
+    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#F3EEFE' });
   });
 
   it('the client badge is the client mode blue, on a tint of the same blue', async () => {
     withProject(project);
     const { getByText, getByTestId } = await renderAs('client-1');
-    expect(getByText(en.chats.role_client)).toHaveStyle({ color: '#004aad' });
-    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#e0e9f5' });
+    expect(getByText(en.chats.role_client)).toHaveStyle({ color: '#1D4FD8' });
+    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#E8F0FE' });
   });
 
   it('self-hire reads as client, matching the row copy', async () => {
@@ -110,7 +112,10 @@ describe('project row role badge', () => {
   it('a completed project row is white, not tinted green', async () => {
     withProject({ ...project, status: 'completed' });
     const { getByTestId } = await renderAs('client-1');
-    expect(getByTestId('chat-row-chat-1')).toHaveStyle({ backgroundColor: '#ffffff' });
+    // The row paints no background of its own: it shows the white list
+    // container behind it. Only the badge carries the completed green.
+    expect(StyleSheet.flatten(getByTestId('chat-row-chat-1').props.style).backgroundColor).toBeUndefined();
+    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#E9F5EC' });
   });
 
   it('no longer shows the project status badge', async () => {

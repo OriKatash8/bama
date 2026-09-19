@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, MessageCircle } from 'lucide-react-native';
+import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, MessageCircle, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -22,6 +22,7 @@ import { useUserChats } from '@features/chat/hooks/useUserChats';
 import { EmptyState } from '@components/ui/EmptyState';
 import { CommunityDiscoveryTab } from '@features/chat/components/CommunityDiscoveryTab';
 import { Screen } from '@components/layout/Screen';
+import { GradientBand } from '@components/ui/GradientBand';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -43,6 +44,13 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
+
+const PAGE_BG = '#FAFAFC';
+const VIOLET = '#6D28D9';
+const VIOLET_DEEP = '#4C1D95';
+const TEXT_MUTED = '#8B8898';
+/** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
+const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 type TabKey = 'chats' | 'courses' | 'communities';
 const TAB_KEYS: TabKey[] = ['chats', 'communities', 'courses'];
@@ -76,6 +84,8 @@ export default function ProfessionalChatsScreen() {
   const hasChats = userChats.filter((c) => c.type !== 'community').length > 0;
 
   const [active, setActive] = useState<TabKey>('chats');
+  /** Visual only: which search field is focused, for its border. */
+  const [focusedSearch, setFocusedSearch] = useState<'chats' | 'courses' | null>(null);
   // Pop the newly-selected tab, as MarketplaceToggle does. One value per tab
   // rather than the toggle's two named refs, since there are three of them.
   const tabScales = useRef(
@@ -265,40 +275,46 @@ export default function ProfessionalChatsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <Screen scrollRef={pageScrollRef} style={{ padding: 0, paddingBottom: 100 }}>
-      {/* Header */}
-      <View style={styles.headerWrap}>
-        <View style={[styles.gradient, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-          <View style={[styles.tabBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            {TAB_KEYS.map((key) => {
-              const isActive = active === key;
-              return (
-                <Animated.View key={key} style={{ transform: [{ scale: tabScales[key] }] }}>
-                <TouchableOpacity
-                  style={[styles.tabPill, isActive ? styles.tabPillActive : styles.tabPillInactive]}
-                  onPress={() => { setActive(key); setSearchQuery(''); }}
-                  activeOpacity={0.8}
+    <Screen scrollRef={pageScrollRef} style={{ padding: 0, paddingBottom: 100 }} backgroundColor={PAGE_BG}>
+      {/* Header — the three-way switch as one segmented control on the band.
+          Same order and setActive logic as before. */}
+      <GradientBand style={styles.band}>
+        <View style={[styles.tabBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          {TAB_KEYS.map((key) => {
+            const isActive = active === key;
+            return (
+              <View key={key} style={styles.tabSlot}>
+              <Animated.View style={{ transform: [{ scale: tabScales[key] }] }}>
+              <TouchableOpacity
+                style={[styles.tabPill, isActive && styles.tabPillActive]}
+                onPress={() => { setActive(key); setSearchQuery(''); }}
+                activeOpacity={0.8}
+                // 34 + the track's 3 + 5 of slop = 44 on each side.
+                hitSlop={{ top: 5, bottom: 5 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
+              >
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                  style={[
+                    styles.tabText,
+                    isActive ? styles.tabTextActive : styles.tabTextInactive,
+                    font.semiBold,
+                  ]}
                 >
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.85}
-                    style={[
-                      styles.tabText,
-                      isActive ? styles.tabTextActive : styles.tabTextInactive,
-                      isActive ? font.semiBold : font.semiBold,
-                    ]}
-                  >
-                    {TAB_LABELS[key]}
-                  </Text>
-                </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </View>
+                  {TAB_LABELS[key]}
+                </Text>
+              </TouchableOpacity>
+              </Animated.View>
+              </View>
+            );
+          })}
         </View>
-      </View>
+      </GradientBand>
 
+      <View style={styles.sheet}>
       {/* Chats tab */}
       {active === 'chats' && (
         chatsLoading ? (
@@ -321,14 +337,16 @@ export default function ProfessionalChatsScreen() {
           </View>
         ) : (
           <>
-            <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+            <View style={[styles.searchRow, focusedSearch === 'chats' && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Search size={18} color="#8B8898" strokeWidth={2.5} />
               <TextInput
-                style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={t('search.placeholder')}
-                placeholderTextColor={colors.placeholder}
+                placeholderTextColor="#9C99AD"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
+                onFocus={() => setFocusedSearch('chats')}
+                onBlur={() => setFocusedSearch(null)}
                 returnKeyType="search"
               />
               {searchQuery.length > 0 && (
@@ -337,12 +355,17 @@ export default function ProfessionalChatsScreen() {
                 </TouchableOpacity>
               )}
             </View>
-            <ChatsList
-              scrollable={false}
-              chats={userChats}
-              searchQuery={searchQuery}
-              onClearSearch={() => setSearchQuery('')}
-            />
+            {/* ChatsScreen (shared with the client tab) insets its chips and
+                list by 16 of its own; cancelling that here lines them up with
+                the search field, as the client page does. */}
+            <View style={styles.listBleed}>
+              <ChatsList
+                scrollable={false}
+                chats={userChats}
+                searchQuery={searchQuery}
+                onClearSearch={() => setSearchQuery('')}
+              />
+            </View>
           </>
         )
       )}
@@ -357,14 +380,16 @@ export default function ProfessionalChatsScreen() {
         <View>
           {/* Row 1 — search + filter button */}
           <View style={[styles.courseSearchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <View style={[styles.searchRow, styles.searchRowFlex, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Search size={18} color={colors.placeholder} strokeWidth={2.5} />
+            <View style={[styles.searchRow, styles.searchRowFlex, focusedSearch === 'courses' && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Search size={18} color="#8B8898" strokeWidth={2.5} />
               <TextInput
-                style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+                style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 placeholder={t('courses.search_placeholder')}
-                placeholderTextColor={colors.placeholder}
+                placeholderTextColor="#9C99AD"
                 value={courseSearch}
                 onChangeText={setCourseSearch}
+                onFocus={() => setFocusedSearch('courses')}
+                onBlur={() => setFocusedSearch(null)}
                 returnKeyType="search"
               />
               {courseSearch.length > 0 && (
@@ -374,9 +399,9 @@ export default function ProfessionalChatsScreen() {
               )}
             </View>
             <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterSheetOpen(true)} activeOpacity={0.85}>
-              <SlidersHorizontal size={19} color="#ffffff" strokeWidth={2.4} />
+              <SlidersHorizontal size={18} color={VIOLET_DEEP} strokeWidth={2.2} />
               {activeRefinementCount > 0 && (
-                <View style={[styles.filterBadge, { backgroundColor: colors.accent, borderColor: colors.bg }]}>
+                <View style={styles.filterBadge}>
                   <Text style={[styles.filterBadgeText, { ...font.bold }]}>{activeRefinementCount}</Text>
                 </View>
               )}
@@ -396,8 +421,10 @@ export default function ProfessionalChatsScreen() {
               styles.categoryPillsRow,
               {
                 flexDirection: rtl ? 'row-reverse' : 'row',
-                paddingLeft: rtl ? 40 : 12,
-                paddingRight: rtl ? 12 : 40,
+                // The row bleeds 20 past the sheet on both sides (see
+                // categoryPillsScroll); the leading 20 puts it back in line.
+                paddingLeft: rtl ? 40 : 20,
+                paddingRight: rtl ? 20 : 40,
               },
             ]}
             style={styles.categoryPillsScroll}
@@ -434,24 +461,24 @@ export default function ProfessionalChatsScreen() {
             <View style={[styles.activeChipsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               {courseLevel && (
                 <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseLevel(null)} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: colors.accent }]}>{t(`courses.level_${courseLevel}`)}</Text>
-                  <X size={13} color={colors.accent} strokeWidth={2.4} />
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: VIOLET }]}>{t(`courses.level_${courseLevel}`)}</Text>
+                  <X size={13} color={VIOLET} strokeWidth={2.4} />
                 </TouchableOpacity>
               )}
               {coursePriceBand !== 'all' && (
                 <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCoursePriceBand('all')} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: colors.accent }]}>
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: VIOLET }]}>
                     {t(PRICE_BANDS.find((b) => b.id === coursePriceBand)?.labelKey ?? 'courses.price_all')}
                   </Text>
-                  <X size={13} color={colors.accent} strokeWidth={2.4} />
+                  <X size={13} color={VIOLET} strokeWidth={2.4} />
                 </TouchableOpacity>
               )}
               {courseSort !== 'newest' && (
                 <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseSort('newest')} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: colors.accent }]}>
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: VIOLET }]}>
                     {t(courseSort === 'price_low_high' ? 'courses.price_low_high' : 'courses.price_high_low')}
                   </Text>
-                  <X size={13} color={colors.accent} strokeWidth={2.4} />
+                  <X size={13} color={VIOLET} strokeWidth={2.4} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={() => { setCourseLevel(null); setCoursePriceBand('all'); setCourseSort('newest'); }} activeOpacity={0.7} style={styles.clearAllBtn}>
@@ -471,7 +498,8 @@ export default function ProfessionalChatsScreen() {
               data={filteredCourses}
               keyExtractor={(c) => c.id}
               scrollEnabled={false}
-              contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, gap: 12 }}
+              // Clears the + button: it sits 110 up and is 56 tall.
+              contentContainerStyle={{ paddingTop: 8, paddingBottom: 180, gap: 12 }}
               renderItem={({ item }) => (
                 <View style={styles.courseCard}>
                   {/* Cover */}
@@ -498,17 +526,17 @@ export default function ProfessionalChatsScreen() {
                   <View style={styles.cardBody}>
                     {/* Title + price */}
                     <View style={[styles.titlePriceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.cardTitle, { ...font.bold, color: colors.text, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                      <Text style={[styles.cardTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
                         {item.title}
                       </Text>
-                      <Text style={[styles.coursePrice, { ...font.bold, color: colors.primary }]}>
+                      <Text style={[styles.coursePrice, { ...font.bold }]}>
                         ₪{item.price.toLocaleString()}
                       </Text>
                     </View>
 
                     {/* Description */}
                     {!!item.description && (
-                      <Text style={[styles.cardDesc, { ...font.regular, color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
+                      <Text style={[styles.cardDesc, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} ellipsizeMode="tail">
                         {item.description}
                       </Text>
                     )}
@@ -518,26 +546,28 @@ export default function ProfessionalChatsScreen() {
                       <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                         {!!item.durationHours && (
                           <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <Clock size={12} color={colors.textMuted} strokeWidth={1.8} />
-                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.durationHours} {t('courses.hours')}</Text>
+                            <Clock size={13} color={TEXT_MUTED} strokeWidth={1.8} />
+                            <Text style={[styles.metaText, { ...font.regular }]}>{item.durationHours} {t('courses.hours')}</Text>
                           </View>
                         )}
                         {!!item.lessonsCount && (
                           <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <BookOpen size={12} color={colors.textMuted} strokeWidth={1.8} />
-                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>{item.lessonsCount} {t('courses.lessons')}</Text>
+                            <BookOpen size={13} color={TEXT_MUTED} strokeWidth={1.8} />
+                            <Text style={[styles.metaText, { ...font.regular }]}>{item.lessonsCount} {t('courses.lessons')}</Text>
                           </View>
                         )}
                         {!!item.level && (
                           <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <BarChart2 size={12} color={colors.textMuted} strokeWidth={1.8} />
-                            <Text style={[styles.metaText, { ...font.regular, color: colors.textMuted }]}>
+                            <BarChart2 size={13} color={TEXT_MUTED} strokeWidth={1.8} />
+                            <Text style={[styles.metaText, { ...font.regular }]}>
                               {normalizeLevel(item.level) ? t(`courses.level_${normalizeLevel(item.level)}`) : item.level}
                             </Text>
                           </View>
                         )}
                       </View>
                     )}
+
+                    <View style={styles.cardDivider} />
 
                     {/* Footer: instructor + visit */}
                     <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -547,11 +577,11 @@ export default function ProfessionalChatsScreen() {
                             {item.instructorName.charAt(0).toUpperCase()}
                           </Text>
                         </View>
-                        <View style={{ alignItems: rtl ? 'flex-end' : 'flex-start' }}>
-                          <Text style={[styles.instructorName, { ...font.semiBold, color: colors.text }]} numberOfLines={2}>
+                        <View style={{ flex: 1, minWidth: 0, alignItems: rtl ? 'flex-end' : 'flex-start' }}>
+                          <Text style={[styles.instructorName, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} ellipsizeMode="tail">
                             {item.instructorName}
                           </Text>
-                          <Text style={[styles.instructorBadge, { ...font.regular, color: colors.textMuted }]}>
+                          <Text style={[styles.instructorBadge, { ...font.regular }]}>
                             {t('courses.instructor_badge')}
                           </Text>
                         </View>
@@ -567,8 +597,10 @@ export default function ProfessionalChatsScreen() {
                           }}
                           activeOpacity={0.8}
                           style={styles.visitBtn}
+                          // 36 visual + 4 of slop each side = 44.
+                          hitSlop={{ top: 4, bottom: 4 }}
                         >
-                          <Text style={[styles.visitBtnText, { ...font.semiBold }]}>{t('courses.visit_course')}</Text>
+                          <Text style={[styles.visitBtnText, { ...font.bold }]}>{t('courses.visit_course')}</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -579,6 +611,7 @@ export default function ProfessionalChatsScreen() {
           )}
         </View>
       )}
+      </View>
 
       {/* Community request modal */}
       <Modal visible={commModal} transparent animationType="fade" onRequestClose={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
@@ -694,15 +727,29 @@ export default function ProfessionalChatsScreen() {
 
     {/* FAB — communities tab: sibling of Screen so position:absolute anchors to viewport */}
     {active === 'communities' && (
-      <TouchableOpacity style={styles.fab} onPress={() => setCommModal(true)} activeOpacity={0.8}>
-        <Text style={styles.fabText}>+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => setCommModal(true)} activeOpacity={0.85}>
+        <LinearGradient
+          colors={['#2563EB', '#6D34DE', '#9A4BF0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabFill}
+        >
+          <Plus size={24} color="#FFFFFF" strokeWidth={2.4} />
+        </LinearGradient>
       </TouchableOpacity>
     )}
 
     {/* FAB — courses tab */}
     {active === 'courses' && (
-      <TouchableOpacity style={styles.fab} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.8}>
-        <Text style={styles.fabText}>+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.85}>
+        <LinearGradient
+          colors={['#2563EB', '#6D34DE', '#9A4BF0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabFill}
+        >
+          <Plus size={24} color="#FFFFFF" strokeWidth={2.4} />
+        </LinearGradient>
       </TouchableOpacity>
     )}
     </View>
@@ -710,14 +757,25 @@ export default function ProfessionalChatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerWrap: {
-    alignSelf: 'stretch',
-  },
-  gradient: {
-    paddingVertical: 20,
+  band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 38 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingTop: 16,
     paddingHorizontal: 20,
-    gap: 16,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
   },
+  /** ChatsScreen insets its own chips and list by 16; cancel it inside the sheet. */
+  listBleed: { marginHorizontal: -16 },
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',
@@ -731,42 +789,47 @@ const styles = StyleSheet.create({
     // Direction is set inline. Hardcoded 'row' left the magnifier on the visual
     // left in Hebrew while the input was right-aligned beside it.
     alignItems: 'center',
-    borderRadius: 24,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 14,
-    height: 44,
+    height: 46,
+    borderRadius: 14,
     borderWidth: 1,
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 10,
+    paddingHorizontal: 14,
     gap: 8,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
-  searchInput: { flex: 1, fontSize: 15 },
+  searchRowFocused: { borderColor: '#8B5CF6' },
+  searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
   // Same shape as MarketplaceToggle: a centred row of pills, the selected one
   // filled and enlarged so it reads as chosen rather than merely tinted. This
   // replaces the earlier edge-to-edge gap tuning — the marketplace row centres
   // with a fixed gap, so spacing comes from the shared style, not per-language
   // values.
+  // One segmented control on the band: a translucent track, the selected
+  // segment filled white.
   tabBar: {
     width: '100%',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 999,
+    padding: 3,
     alignItems: 'center',
-    gap: 10,
   },
+  tabSlot: { flex: 1 },
   tabPill: {
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    flexShrink: 1,
+    height: 34,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
   },
-  // The selected tab is filled and enlarged, matching MarketplaceToggle.
-  tabPillActive: { backgroundColor: '#004aad', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
-  tabPillInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
-  tabText: { fontSize: 14, fontWeight: '600' },
-  // Active label is white on the filled pill and a size larger, as in the
-  // marketplace toggle.
-  tabTextActive: { color: '#ffffff', fontSize: 16 },
-  tabTextInactive: { color: '#004aad' },
+  tabPillActive: { backgroundColor: '#FFFFFF' },
+  tabText: { fontSize: 13.5, fontWeight: '600' },
+  tabTextActive: { color: VIOLET_DEEP },
+  tabTextInactive: { color: 'rgba(255,255,255,0.85)' },
   tabContentHeader: {
     alignItems: 'stretch',
     justifyContent: 'space-between',
@@ -776,13 +839,16 @@ const styles = StyleSheet.create({
   },
   myCoursesTitle: { fontSize: 18 },
   // Row 1 — search + filter button
-  courseSearchRow: { alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  courseSearchRow: { alignItems: 'center', gap: 8, marginBottom: 12 },
   searchRowFlex: { flex: 1, marginHorizontal: 0, marginBottom: 0 },
+  // Same height and shape as the search field beside it.
   filterBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
-    backgroundColor: '#004aad',
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAE8F0',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -793,16 +859,20 @@ const styles = StyleSheet.create({
     right: -5,
     minWidth: 17,
     height: 17,
-    borderRadius: 9,
+    borderRadius: 999,
     borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#A855F7',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  filterBadgeText: { fontSize: 10, color: '#ffffff' },
+  filterBadgeText: { fontSize: 10, color: '#FFFFFF' },
 
   // Row 2 — category pills
-  categoryPillsScroll: { marginBottom: 10 },
+  // Bleeds 20 past the sheet on both sides so a part-scrolled chip reaches the
+  // screen edge; the content padding (inline) puts the first chip back in line.
+  categoryPillsScroll: { marginBottom: 10, marginHorizontal: -20 },
   // Trailing padding keeps the last pill partially cut off so the swipe
   // affordance is visible when the row overflows.
   // Trailing padding (set inline per direction) keeps the last pill partially
@@ -815,26 +885,24 @@ const styles = StyleSheet.create({
   // pills back to the left — the opposite of what was wanted.
   categoryPillsRow: { gap: 7, alignItems: 'center', flexGrow: 1 },
   catPill: {
-    height: 34,
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 999,
     justifyContent: 'center',
     borderWidth: 1,
-    // A real blue outline, like the chats filter chips (ChatsScreen filterChip):
-    // at 20% opacity the unselected pills read as grey and borderless.
-    borderColor: '#004aad',
-    backgroundColor: '#ffffff',
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
   },
-  catPillActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  catPillText: { fontSize: 13, color: '#004aad' },
-  catPillTextActive: { color: '#ffffff' },
+  catPillActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  catPillText: { fontSize: 12.5, fontWeight: '600', color: '#6B6880' },
+  catPillTextActive: { color: '#FFFFFF' },
 
   // Row 3 — active refinement chips
-  activeChipsRow: { flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  activeChipsRow: { flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 },
   activeChip: {
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(203,108,230,0.14)',
+    backgroundColor: '#F3EEFE',
     borderRadius: 14,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -846,23 +914,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  // The gradient lives on an inner, clipped fill so the shadow on this outer
+  // view isn't cut by overflow:hidden.
   fab: {
     position: 'absolute',
     bottom: 110,
     right: 24,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#004aad',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#004aad',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 8,
+    borderRadius: 999,
+    shadowColor: '#3B19A0',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.36,
+    shadowRadius: 11,
+    elevation: 10,
   },
-  fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  fabFill: { flex: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -872,19 +939,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   courseCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    marginHorizontal: 16,
+    elevation: 2,
   },
   coverArea: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    height: 132,
     backgroundColor: '#1a1a2e',
     overflow: 'hidden',
   },
@@ -892,33 +960,34 @@ const styles = StyleSheet.create({
   categoryTag: {
     position: 'absolute',
     top: 8,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 20,
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(26,22,38,0.55)',
+    borderRadius: 999,
+    paddingHorizontal: 9,
     paddingVertical: 3,
   },
-  categoryTagText: { fontSize: 11, color: '#fff' },
-  cardBody: { padding: 14, gap: 8 },
+  categoryTagText: { fontSize: 10.5, fontWeight: '700', color: '#FFFFFF' },
+  cardBody: { paddingTop: 12, paddingHorizontal: 13, paddingBottom: 13, gap: 8 },
   titlePriceRow: { alignItems: 'flex-start', gap: 8 },
-  cardTitle: { fontSize: 18, flex: 1 },
-  coursePrice: { fontSize: 16 },
-  cardDesc: { fontSize: 13, lineHeight: 18 },
-  metaRow: { flexWrap: 'wrap', gap: 16 },
+  cardTitle: { fontSize: 15.5, fontWeight: '700', color: '#1A1626', flex: 1 },
+  coursePrice: { fontSize: 16, fontWeight: '800', color: VIOLET_DEEP, letterSpacing: -0.2 },
+  cardDesc: { fontSize: 12.5, color: TEXT_MUTED },
+  metaRow: { flexWrap: 'wrap', gap: 14 },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 11 },
-  cardFooter: { alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
-  instructorRow: { alignItems: 'center', gap: 8, flex: 1 },
+  metaText: { fontSize: 11.5, color: TEXT_MUTED },
+  cardDivider: { height: 1, backgroundColor: '#F2F0F7' },
+  cardFooter: { alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  instructorRow: { alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
   instructorAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#004aad',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EDE4FB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  instructorInitial: { color: '#fff', fontSize: 14 },
-  instructorName: { fontSize: 13 },
-  instructorBadge: { fontSize: 11 },
+  instructorInitial: { color: VIOLET, fontSize: 12 },
+  instructorName: { fontSize: 12.5, fontWeight: '600', color: '#4C4859' },
+  instructorBadge: { fontSize: 11, color: TEXT_MUTED },
   // Matches the marketplace filter popup: white card, radius 24, maxWidth 440,
   // 20/20/24 padding, soft shadow, #004aad title.
   overlay: {
@@ -977,12 +1046,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   visitBtn: {
-    backgroundColor: '#004aad',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    height: 36,
+    backgroundColor: VIOLET,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  visitBtnText: { color: '#fff', fontSize: 13 },
+  visitBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   commCategoryPicker: {
     backgroundColor: '#ffffff',
     borderWidth: 1,

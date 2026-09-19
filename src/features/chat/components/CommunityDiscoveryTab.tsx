@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, type RefObject } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Users, Search, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { Image } from 'expo-image';
@@ -34,6 +34,17 @@ const STRIP_FILL_COUNT = 5;
 
 /** How far above the first Discover card a "+" tile's scroll stops. */
 const CARDS_SCROLL_INSET = 8;
+
+// Violet palette for this tab. Local on purpose: useTheme reaches the whole app.
+const VIOLET = '#6D28D9';
+const VIOLET_DEEP = '#4C1D95';
+const INK = '#1A1626';
+/** The pro chats sheet's side padding — the strip and chips bleed by this much. */
+const SHEET_PAD = 20;
+/** Row padding 14 + avatar 46 + gap 11 ≈ 69: separators start where the text does. */
+const SEPARATOR_INSET = 69;
+/** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
+const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 const GRADIENTS: [string, string][] = [
   ['#1e4fa3', '#cb6ce6'],
@@ -97,6 +108,8 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
 
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  /** Visual only: the search field's focus border. */
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // ── Page scroll: a "+" tile in the strip takes the user down to the Discover
   //    cards themselves — past the heading, search and chips — so the next tap
@@ -175,13 +188,6 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
     return c.lastMessage?.text ?? '';
   }
 
-  const cardShadow = {
-    shadowColor: '#534ab7',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  };
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -190,7 +196,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
       {myCommunities.length > 0 && (
         <>
           <View style={[styles.sectionRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <AppText weight="semiBold" style={[styles.sectionLabel, { color: '#004aad' }]}>
+            <AppText weight="bold" style={styles.sectionLabel}>
               {t('communities.my_communities')}
             </AppText>
           </View>
@@ -217,7 +223,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
                     activeOpacity={0.75}
                   >
                     <View style={styles.stripIconWrap}>
-                      <CommunityAvatar community={c} size={60} />
+                      <CommunityAvatar community={c} size={56} />
                       {unread > 0 && (
                         <View style={[styles.stripBadge, styles.stripBadgeRight]}>
                           <AppText weight="bold" style={styles.stripBadgeText}>
@@ -268,12 +274,12 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
 
             {canScrollLeft && (
               <TouchableOpacity style={[styles.stripArrow, styles.stripArrowLeft]} onPress={() => scrollStrip('left')} activeOpacity={0.8}>
-                <ChevronLeft size={20} color="#004aad" strokeWidth={2.5} />
+                <ChevronLeft size={20} color={VIOLET_DEEP} strokeWidth={2.5} />
               </TouchableOpacity>
             )}
             {canScrollRight && (
               <TouchableOpacity style={[styles.stripArrow, styles.stripArrowRight]} onPress={() => scrollStrip('right')} activeOpacity={0.8}>
-                <ChevronRight size={20} color="#004aad" strokeWidth={2.5} />
+                <ChevronRight size={20} color={VIOLET_DEEP} strokeWidth={2.5} />
               </TouchableOpacity>
             )}
           </View>
@@ -282,20 +288,22 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
 
       {/* Discover */}
       <AppText
-        weight="semiBold"
-        style={[styles.sectionLabel, { color: '#004aad', marginTop: myCommunities.length > 0 ? 20 : 0, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
+        weight="bold"
+        style={[styles.sectionLabel, { marginTop: myCommunities.length > 0 ? 20 : 0, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
       </AppText>
 
       {/* Search bar (above the category filter) */}
-      <View style={[styles.searchRow, { backgroundColor: '#ffffff', borderColor: colors.border, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
+      <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <Search size={18} color="#8B8898" strokeWidth={2.5} />
         <TextInput
-          style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+          style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
           placeholder={rtl ? 'חיפוש קהילות…' : 'Search communities…'}
-          placeholderTextColor={colors.placeholder}
+          placeholderTextColor="#9C99AD"
           value={search}
           onChangeText={setSearch}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           returnKeyType="search"
         />
         {search.length > 0 && (
@@ -309,8 +317,8 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-        style={[{ marginHorizontal: -16, marginBottom: 12 }, rtl && { transform: [{ scaleX: -1 }] }]}
+        contentContainerStyle={{ paddingHorizontal: SHEET_PAD, gap: 7 }}
+        style={[{ marginHorizontal: -SHEET_PAD, marginBottom: 12 }, rtl && { transform: [{ scaleX: -1 }] }]}
       >
         <TouchableOpacity
           style={[styles.filterChip, filterCategory === null && styles.filterChipActive, rtl && { transform: [{ scaleX: -1 }] }]}
@@ -355,32 +363,37 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
           </TouchableOpacity>
         </View>
       ) : (
-        filteredDiscover.map((c) => {
+        <View style={styles.listCard}>
+        {filteredDiscover.map((c, index) => {
           const status = joinStatuses[c.id];
           const isMember = memberIds.has(c.id);
           const isPending = !isMember && status === 'pending';
           return (
-            <View key={c.id} style={[styles.card, { ...cardShadow }]}>
+            <View key={c.id}>
+              {/* Hairline between rows, inset past the avatar. None above the first. */}
+              {index > 0 && (
+                <View style={[styles.separator, rtl ? { marginRight: SEPARATOR_INSET } : { marginLeft: SEPARATOR_INSET }]} />
+              )}
               <View style={[styles.cardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <CommunityAvatar community={c} size={52} />
+                <CommunityAvatar community={c} size={46} />
 
                 <View style={styles.textGroup}>
                   <View style={[styles.nameRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <AppText weight="bold" numberOfLines={1} style={[styles.cardName, { color: colors.text, textAlign: rtl ? 'right' : 'left', flexShrink: 1 }]}>
+                    <AppText weight="semiBold" numberOfLines={1} ellipsizeMode="tail" style={[styles.cardName, { textAlign: rtl ? 'right' : 'left', flexShrink: 1 }]}>
                       {c.name}
                     </AppText>
                     {isMember ? (
-                      <View style={[styles.statusBadge, { backgroundColor: '#e4f7f0' }]}>
-                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#1c9d78' }]}>{rtl ? 'חבר' : 'Member'}</AppText>
+                      <View style={[styles.statusBadge, { backgroundColor: '#E9F5EC' }]}>
+                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#2F7A45' }]}>{rtl ? 'חבר' : 'Member'}</AppText>
                       </View>
                     ) : isPending ? (
-                      <View style={[styles.statusBadge, { backgroundColor: '#fbeccb' }]}>
-                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#b7791f' }]}>{rtl ? 'ממתין' : 'Pending'}</AppText>
+                      <View style={[styles.statusBadge, { backgroundColor: '#FBEFD9' }]}>
+                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#9A5B0E' }]}>{rtl ? 'ממתין' : 'Pending'}</AppText>
                       </View>
                     ) : null}
                   </View>
                   <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <Users size={12} color="#9aa0b8" strokeWidth={1.5} />
+                    <Users size={12} color="#8B8898" strokeWidth={1.5} />
                     <AppText weight="regular" style={styles.memberCount}>
                       {c.members.length} {t('communities.members')}
                     </AppText>
@@ -388,78 +401,111 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
                 </View>
 
                 {isMember ? (
-                  <TouchableOpacity style={styles.btnSolid} onPress={() => navigateToCommunity(c.id)} activeOpacity={0.8}>
-                    <AppText weight="semiBold" style={styles.btnTextLight}>{rtl ? 'פתח צ׳אט' : 'Open chat'}</AppText>
+                  <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={() => navigateToCommunity(c.id)} activeOpacity={0.8} hitSlop={{ top: 5, bottom: 5 }}>
+                    <AppText weight="semiBold" style={styles.btnTextSecondary}>{rtl ? 'פתח צ׳אט' : 'Open chat'}</AppText>
                   </TouchableOpacity>
                 ) : isPending ? (
                   <TouchableOpacity
-                    style={[styles.btnMuted, styles.btnMutedRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+                    style={[styles.btn, styles.btnMuted, styles.btnMutedRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+                    hitSlop={{ top: 5, bottom: 5 }}
                     onPress={() => confirmCancelJoin(c.id, c.name ?? '')}
                     accessibilityRole="button"
                     accessibilityLabel={rtl ? 'ביטול בקשת הצטרפות' : 'Withdraw join request'}
                     activeOpacity={0.7}
                   >
                     <AppText weight="semiBold" style={styles.btnTextMuted}>{rtl ? 'בקשה נשלחה' : 'Requested'}</AppText>
-                    <X size={13} color="#9aa0b8" strokeWidth={2.5} />
+                    <X size={13} color="#6B6880" strokeWidth={2.5} />
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity style={styles.btnSoft} onPress={() => requestToJoin(c.id, user?.displayName ?? '')} activeOpacity={0.8}>
-                    <AppText weight="semiBold" style={styles.btnTextBlue}>{rtl ? 'הצטרף' : 'Join'}</AppText>
+                  <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={() => requestToJoin(c.id, user?.displayName ?? '')} activeOpacity={0.8} hitSlop={{ top: 5, bottom: 5 }}>
+                    <AppText weight="bold" style={styles.btnTextPrimary}>{rtl ? 'הצטרף' : 'Join'}</AppText>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
           );
-        })
+        })}
+        </View>
       )}
 
-      <View style={{ height: 100 }} />
+      {/* Clears the + button: it sits 110 up and is 56 tall. */}
+      <View style={{ height: 180 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingTop: 8 },
+  // The pro chats sheet supplies the side padding.
+  container: { paddingTop: 0 },
   sectionRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  sectionLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  card: { backgroundColor: '#ffffff', borderRadius: 16, padding: 13, marginBottom: 12 },
-  cardRow: { alignItems: 'center', gap: 12 },
-  textGroup: { flex: 1 },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: INK },
+  // One container for every Discover row; rows carry no surface of their own.
+  listCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#F0EEF6' },
+  cardRow: { alignItems: 'center', gap: 11, paddingVertical: 11, paddingHorizontal: 14 },
+  textGroup: { flex: 1, minWidth: 0 },
   nameRow: { alignItems: 'center', gap: 6 },
   metaRow: { alignItems: 'center', gap: 4, marginTop: 2 },
-  cardName: { fontSize: 15.5 },
-  memberCount: { fontSize: 12, color: '#9aa0b8' },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
-  statusBadgeText: { fontSize: 11 },
-  btnSolid: { backgroundColor: '#004aad', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
-  btnSoft: { backgroundColor: '#e8f0fd', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
-  btnMuted: { backgroundColor: '#eceef3', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
-  btnMutedRow: { alignItems: 'center', gap: 6 },
-  btnTextLight: { color: '#ffffff', fontSize: 13 },
-  btnTextBlue: { color: '#004aad', fontSize: 13 },
-  btnTextMuted: { color: '#9aa0b8', fontSize: 13 },
+  cardName: { fontSize: 14.5, fontWeight: '600', color: INK },
+  memberCount: { fontSize: 11.5, color: '#8B8898' },
+  statusBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  statusBadgeText: { fontSize: 10, fontWeight: '600' },
+  // 34 visual + 5 of hitSlop each side ≈ 44.
+  btn: {
+    height: 34,
+    borderRadius: 11,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  btnSecondary: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DDD7EC' },
+  btnPrimary: { backgroundColor: VIOLET },
+  btnMuted: { backgroundColor: '#F4F3F8' },
+  btnMutedRow: { gap: 6 },
+  btnTextSecondary: { color: VIOLET_DEEP, fontSize: 12.5, fontWeight: '600' },
+  btnTextPrimary: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '700' },
+  btnTextMuted: { color: '#6B6880', fontSize: 12.5, fontWeight: '600' },
   searchRow: {
     alignItems: 'center',
-    borderRadius: 24,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
     marginBottom: 12,
     paddingHorizontal: 14,
-    height: 44,
-    borderWidth: 1,
     gap: 8,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
-  searchInput: { flex: 1, fontSize: 15 },
+  searchRowFocused: { borderColor: '#8B5CF6' },
+  searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
   filterChip: {
     borderWidth: 1,
-    borderColor: '#004aad',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: '#ffffff',
+    borderColor: '#EAE8F0',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: '#FFFFFF',
   },
-  filterChipActive: { backgroundColor: '#004aad' },
-  filterChipText: { fontSize: 12, color: '#004aad' },
-  filterChipTextActive: { color: '#ffffff' },
+  filterChipActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  filterChipText: { fontSize: 12.5, fontWeight: '600', color: '#6B6880' },
+  filterChipTextActive: { color: '#FFFFFF' },
   emptyState: { alignItems: 'center', paddingVertical: 32, gap: 10 },
   emptyIconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   emptyTitle: { fontSize: 16, marginTop: 4, textAlign: 'center' },
@@ -467,33 +513,37 @@ const styles = StyleSheet.create({
   emptyCta: { marginTop: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
 
   stripWrap: { position: 'relative' },
-  stripOuter: { marginHorizontal: -16, marginBottom: 8 },
-  stripScroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 12 },
-  stripItem: { alignItems: 'center', width: 68 },
-  // Matches CommunityAvatar's geometry at size 60 (radius = size * 0.26), so a
-  // "+" tile occupies exactly the space a real community does.
+  stripOuter: { marginHorizontal: -SHEET_PAD, marginBottom: 8 },
+  stripScroll: { paddingHorizontal: SHEET_PAD, paddingTop: 8, paddingBottom: 4, gap: 12 },
+  stripItem: { alignItems: 'center', width: 64 },
+  // Matches CommunityAvatar's geometry at size 56 (radius = round(56 × 0.26) =
+  // 15), so a "+" tile occupies exactly the space a real community does. Dashed,
+  // so it reads as an empty slot rather than a community.
   placeholderSquare: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+    width: 56,
+    height: 56,
+    borderRadius: 15,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.18)',
+    borderStyle: 'dashed',
+    borderColor: '#DED8EE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  placeholderPlus: { fontSize: 26, lineHeight: 30, color: 'rgba(0,74,173,0.55)' },
+  placeholderPlus: { fontSize: 24, lineHeight: 28, color: '#9C99AD' },
   stripArrow: {
     position: 'absolute',
     top: 20,
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EDE9F7',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-    shadowColor: '#1e4fa3',
+    shadowColor: '#4C1D95',
     shadowOpacity: 0.14,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -502,7 +552,7 @@ const styles = StyleSheet.create({
   stripArrowLeft: { left: 0 },
   stripArrowRight: { right: 0 },
   stripIconWrap: { position: 'relative', marginBottom: 6 },
-  stripTitle: { fontSize: 11, color: '#004aad', textAlign: 'center', maxWidth: 64 },
+  stripTitle: { fontSize: 10.5, fontWeight: '500', color: '#5B5768', textAlign: 'center', maxWidth: 64 },
   stripBadge: {
     position: 'absolute',
     top: -4,
