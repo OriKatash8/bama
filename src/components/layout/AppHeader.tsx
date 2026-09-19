@@ -98,7 +98,7 @@ export function AppHeader() {
   const firstName = user?.displayName?.split(' ')[0] ?? '';
   const greeting = `${t(getGreetingKey())}, ${firstName}`;
   const modeIsClient = activeMode === 'client';
-  const modeBadgeColor = modeIsClient ? '#004aad' : '#8b5cf6';
+  const modeBadgeColor = modeIsClient ? '#004aad' : '#1D4ED8';
   const modeBadgeLabel = modeIsClient ? t('header.client_mode') : t('header.pro_mode');
 
   async function handleAvatarPress() {
