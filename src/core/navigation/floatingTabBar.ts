@@ -39,8 +39,8 @@ export function getFloatingTabBarStyle(isDark: boolean): ViewStyle {
 
 // TODO: promote to theme tokens. useTheme's `accent` is the pink badge colour
 // (#cb6ce6), so the active tab colours live here for now, one per app.
-export const CLIENT_TAB_ACTIVE = '#004aad';
-export const PRO_TAB_ACTIVE = '#6D28D9';
+export const CLIENT_TAB_ACTIVE = '#6D28D9';
+export const PRO_TAB_ACTIVE = '#1D4ED8';
 /** Unselected tabs on the client/pro capsule: black in light mode; dark mode
  *  keeps the light tint, since black wouldn't read on the dark material.
  *  (Admin keeps FLOATING_TAB_BAR_INACTIVE_COLOR.) */

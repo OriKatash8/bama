@@ -147,7 +147,7 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
             options={{
               title: t('tabs.chats'),
               tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
-              tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
+              tabBarBadgeStyle: { backgroundColor: PRO_TAB_ACTIVE, color: 'white', fontSize: 10 },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
