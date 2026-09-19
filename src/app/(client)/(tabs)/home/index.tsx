@@ -44,8 +44,6 @@ import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
  * only, and the brand tokens in useTheme stay as they are.
  */
 const VIOLET = '#6D28D9';
-/** A filled date / location square: outline, icon, value and clear button. */
-const DATE_BLUE = '#2563EB';
 const INK = '#1A1626';
 const INK_2 = '#6B6880';
 const PLACEHOLDER = '#9C99AD';
@@ -530,7 +528,7 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <CalendarDays size={19} color={exec ? DATE_BLUE : INK_2} strokeWidth={1.8} />
+                    <CalendarDays size={19} color={VIOLET} strokeWidth={1.8} />
                     <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                     </Text>
@@ -558,7 +556,7 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <CalendarDays size={19} color={deadline ? DATE_BLUE : INK_2} strokeWidth={1.8} />
+                    <CalendarDays size={19} color={VIOLET} strokeWidth={1.8} />
                     <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
                     </Text>
@@ -585,11 +583,12 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <MapPin size={19} color={location ? DATE_BLUE : INK_2} strokeWidth={1.8} />
+                    <MapPin size={19} color={VIOLET} strokeWidth={1.8} />
                     <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {location || t('builder.placeholder_location')}
                     </Text>
-                    <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>
+                    {/* "(optional)" only while no location is picked. */}
+                    {!location && <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>}
                   </PressableScale>
                   {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
                 </View>
@@ -904,7 +903,7 @@ export default function HomeScreen() {
                     {t('builder.location')}
                   </Text>
                   <TouchableOpacity onPress={() => setLocationModalOpen(false)} hitSlop={12} activeOpacity={0.7}>
-                    <X size={18} color="#004aad" strokeWidth={2.5} />
+                    <X size={18} color={VIOLET} strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
 
@@ -914,7 +913,7 @@ export default function HomeScreen() {
                   value={locationSearch}
                   onChangeText={setLocationSearch}
                   placeholder={t('builder.search_city')}
-                  placeholderTextColor="#004aad80"
+                  placeholderTextColor="#9C99AD"
                   autoFocus
                   returnKeyType="search"
                   clearButtonMode="while-editing"
@@ -940,7 +939,7 @@ export default function HomeScreen() {
                       }}
                       activeOpacity={0.7}
                     >
-                      <MapPin size={14} color="#004aad" strokeWidth={1.8} />
+                      <MapPin size={14} color={VIOLET} strokeWidth={1.8} />
                       <Text style={[styles.locationAddText, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
                         {rtl ? `+ הוסף "${locationSearch.trim()}"` : `+ Add "${locationSearch.trim()}"`}
                       </Text>
@@ -956,7 +955,7 @@ export default function HomeScreen() {
                       }}
                       activeOpacity={0.7}
                     >
-                      <MapPin size={14} color="#004aad" strokeWidth={1.8} />
+                      <MapPin size={14} color={VIOLET} strokeWidth={1.8} />
                       <Text style={[styles.locationRowText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
                         {item}
                       </Text>
@@ -1303,7 +1302,7 @@ function createStyles(
       paddingVertical: 12,
       paddingHorizontal: 11,
     },
-    dateSquareSel: { borderWidth: 1.5, borderColor: DATE_BLUE, backgroundColor: '#F3EEFE' },
+    dateSquareSel: { borderWidth: 1.5, borderColor: '#8B5CF6', backgroundColor: '#F3EEFE' },
     tileTitle: { fontSize: 12.5, lineHeight: 17, fontWeight: '600', fontFamily: ffSemiBold, color: INK, textAlign: 'center' },
     tileTitleSel: { color: '#3B0764' },
     /** Title then "?", in reading order: flexDirection is set inline per language. */
@@ -1320,7 +1319,7 @@ function createStyles(
       fontSize: 12.5,
       lineHeight: 16,
       fontWeight: '500',
-      color: DATE_BLUE,
+      color: VIOLET,
       textAlign: 'center',
       fontFamily: ffMedium,
     },
@@ -1328,7 +1327,7 @@ function createStyles(
       position: 'absolute',
       top: 6,
       right: 6,
-      backgroundColor: DATE_BLUE,
+      backgroundColor: VIOLET,
       borderRadius: 10,
       width: 18,
       height: 18,
@@ -1388,11 +1387,16 @@ function createStyles(
     locationBox: {
       width: 300,
       maxHeight: 420,
-      borderRadius: 16,
-      borderWidth: 2,
-      padding: 12,
-      backgroundColor: '#ffffff',
-      borderColor: '#004aad',
+      borderRadius: 20,
+      borderWidth: 1,
+      padding: 14,
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E4DBFA',
+      shadowColor: '#4C1D95',
+      shadowOpacity: 0.18,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 10,
     },
     locationNav: {
       flexDirection: 'row',
@@ -1404,17 +1408,18 @@ function createStyles(
       fontSize: 16,
       lineHeight: 21,
       fontWeight: '700',
-      color: '#004aad',
+      color: INK,
     },
     locationSearchInput: {
       borderWidth: 1,
-      borderRadius: 8,
+      borderRadius: 10,
       paddingHorizontal: 10,
-      paddingVertical: 6,
+      paddingVertical: 7,
       fontSize: 14,
       marginBottom: 6,
-      color: '#004aad',
-      borderColor: '#004aad',
+      color: INK,
+      borderColor: FIELD_BORDER,
+      backgroundColor: FIELD_FILL,
     },
     locationList: {
       maxHeight: 280,
@@ -1430,16 +1435,15 @@ function createStyles(
       lineHeight: 18,
       fontWeight: '500',
       flex: 1,
-      color: '#004aad',
+      color: INK,
     },
     locationSeparator: {
       height: 1,
-      backgroundColor: '#004aad',
-      opacity: 0.15,
+      backgroundColor: '#F0EEF6',
     },
     locationAddRow: {
       borderTopWidth: 1,
-      borderTopColor: 'rgba(0,74,173,0.15)',
+      borderTopColor: '#EFEDF5',
       marginTop: 4,
       paddingTop: 10,
     },
@@ -1447,7 +1451,7 @@ function createStyles(
       fontSize: 14,
       lineHeight: 18,
       flex: 1,
-      color: '#004aad',
+      color: VIOLET,
     },
 
     // Vibe modal

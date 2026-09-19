@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -18,7 +17,6 @@ export function HelpTooltip({ text }: Props) {
   const [visible, setVisible] = useState(false);
   const [anchor, setAnchor] = useState({ x: 0, y: 0, height: 0 });
   const btnRef = useRef<View>(null);
-  const colors = useTheme();
   const font = useAppFont();
   const { width: screenWidth } = useWindowDimensions();
   const rtl = useSettingsStore((s) => s.language) === 'he';
@@ -43,12 +41,14 @@ export function HelpTooltip({ text }: Props) {
     <View ref={btnRef} collapsable={false}>
       <Pressable
         onPress={openPopover}
-        style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
+        // Purple while pressed and while its tip is open, so it reads as the
+        // tip's source.
+        style={({ pressed }) => [styles.btn, (pressed || visible) && styles.btnActive]}
         hitSlop={HIT_SLOP}
         accessibilityRole="button"
         accessibilityLabel={(rtl ? he : en).common.help}
       >
-        <Text style={styles.q}>?</Text>
+        {({ pressed }) => <Text style={[styles.q, (pressed || visible) && styles.qActive]}>?</Text>}
       </Pressable>
 
       {visible && (
@@ -57,7 +57,7 @@ export function HelpTooltip({ text }: Props) {
             <Pressable
               style={[
                 styles.popover,
-                { backgroundColor: colors.card, top: popoverTop, left: popoverLeft },
+                { top: popoverTop, left: popoverLeft },
               ]}
               onPress={() => setVisible(false)}
             >
@@ -65,7 +65,7 @@ export function HelpTooltip({ text }: Props) {
                 style={[
                   styles.popoverText,
                   // Help text is a sentence, so it has to follow the language.
-                  { color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.regular },
+                  { textAlign: rtl ? 'right' : 'left', ...font.regular },
                 ]}
               >
                 {text}
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnPressed: { backgroundColor: '#E4E0EF' },
+  btnActive: { backgroundColor: '#6D28D9' },
   q: {
     fontSize: 11,
     lineHeight: 13,
@@ -96,16 +96,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     includeFontPadding: false,
   },
+  qActive: { color: '#FFFFFF' },
   overlay: {
     flex: 1,
     backgroundColor: 'transparent',
   },
   popover: {
     position: 'absolute',
-    borderRadius: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E4DBFA',
+    // Soft purple, with fixed dark text so it reads the same in either theme.
+    backgroundColor: '#F3EEFE',
     padding: 10,
     maxWidth: POPOVER_WIDTH,
-    shadowColor: '#000',
+    shadowColor: '#4C1D95',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -114,5 +119,6 @@ const styles = StyleSheet.create({
   },
   popoverText: {
     fontSize: 13,
+    color: '#1A1626',
   },
 });

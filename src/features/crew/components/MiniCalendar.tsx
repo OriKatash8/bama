@@ -141,6 +141,9 @@ export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexibl
   );
 }
 
+const VIOLET = '#6D28D9';
+const INK = '#1A1626';
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -151,36 +154,41 @@ const styles = StyleSheet.create({
   },
   box: {
     width: 300,
-    borderRadius: 16,
-    borderWidth: 2,
-    padding: 12,
-    backgroundColor: '#ffffff',
-    borderColor: '#004aad',
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E4DBFA',
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  navArrow: { fontSize: 24, fontWeight: '600', paddingHorizontal: 8, color: '#004aad' },
+  navArrow: { fontSize: 24, fontWeight: '600', paddingHorizontal: 8, color: VIOLET },
   navArrowDisabled: { opacity: 0.2 },
-  navTitle: { fontSize: 16, fontWeight: '700', color: '#004aad' },
+  navTitle: { fontSize: 16, fontWeight: '700', color: INK },
   weekRow: { flexDirection: 'row', marginBottom: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%` as any, alignItems: 'center', paddingVertical: 5 },
-  cellSelected: { backgroundColor: '#004aad', borderRadius: 20 },
-  dayName: { fontSize: 11, fontWeight: '600', color: '#004aad', opacity: 0.6 },
-  dayNum: { fontSize: 14, fontWeight: '500', color: '#004aad' },
-  dayNumSelected: { color: '#ffffff' },
+  cellSelected: { backgroundColor: VIOLET, borderRadius: 20 },
+  dayName: { fontSize: 11, fontWeight: '600', color: '#9C99AD' },
+  dayNum: { fontSize: 14, fontWeight: '500', color: INK },
+  dayNumSelected: { color: '#FFFFFF' },
   dayNumEmpty: { color: 'transparent' },
   dayNumDisabled: { opacity: 0.2 },
   flexibleBtn: {
     marginTop: 10,
     borderWidth: 1.5,
-    borderColor: '#004aad',
+    borderColor: VIOLET,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 6,
     alignItems: 'center',
   },
-  flexibleBtnActive: { backgroundColor: '#004aad' },
-  flexibleBtnText: { fontSize: 13, fontWeight: '600', color: '#004aad' },
-  flexibleBtnTextActive: { color: '#ffffff' },
+  flexibleBtnActive: { backgroundColor: VIOLET },
+  flexibleBtnText: { fontSize: 13, fontWeight: '600', color: VIOLET },
+  flexibleBtnTextActive: { color: '#FFFFFF' },
   note: { marginTop: 10, fontSize: 12, lineHeight: 17, color: '#6B6880', textAlign: 'center' },
 });
