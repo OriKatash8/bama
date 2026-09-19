@@ -152,7 +152,7 @@ export function PortfolioGrid({
       {/* Processing indicator */}
       {videoActive && (
         <View style={styles.processingRow}>
-          <ActivityIndicator size="small" color="#6D28D9" />
+          <ActivityIndicator size="small" color="#1D4ED8" />
           <AppText style={styles.processingText}>
             {videoUploading ? 'Uploading...' : t('media.processing_video')}
           </AppText>
@@ -167,7 +167,7 @@ export function PortfolioGrid({
             disabled={videoActive}
             activeOpacity={0.8}
           >
-            <ImagePlus size={28} color="#6D28D9" strokeWidth={1.5} />
+            <ImagePlus size={28} color="#1D4ED8" strokeWidth={1.5} />
             <AppText style={styles.addMediaLabel}>{t('profile_sections.add_media')}</AppText>
           </TouchableOpacity>
         )}
@@ -277,11 +277,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#DED8EE',
+    borderColor: '#1D4ED8',
     borderStyle: 'dashed',
     backgroundColor: '#FFFFFF',
   },
-  addMediaLabel: { fontSize: 11, color: '#6D28D9', fontWeight: '600', marginTop: 6 },
+  addMediaLabel: { fontSize: 11, color: '#1D4ED8', fontWeight: '600', marginTop: 6 },
   image: { width: '100%', height: '100%' },
   videoThumb: {
     alignItems: 'center',
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   processingText: {
     fontSize: 13,
-    color: '#6D28D9',
+    color: '#000000',
     fontWeight: '500',
   },
   captionOverlay: {
@@ -337,8 +337,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  captionTitle: { fontSize: 17, color: '#1A1626' },
-  captionBody: { fontSize: 13, color: '#6b7280', marginTop: 6 },
+  captionTitle: { fontSize: 17, color: '#000000' },
+  captionBody: { fontSize: 13, color: '#000000', marginTop: 6 },
   captionInput: {
     marginTop: 12,
     minHeight: 84,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     fontSize: 15,
-    color: '#1a1a2e',
+    color: '#000000',
     textAlignVertical: 'top',
   },
   captionActions: { marginTop: 14, gap: 10 },
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   captionBtnSkip: { backgroundColor: '#f1f3f9' },
-  captionBtnSkipText: { color: '#6b7280', fontSize: 15 },
-  captionBtnSave: { backgroundColor: '#6D28D9' },
+  captionBtnSkipText: { color: '#000000', fontSize: 15 },
+  captionBtnSave: { backgroundColor: '#1D4ED8' },
   captionBtnSaveText: { color: '#fff', fontSize: 15 },
 });

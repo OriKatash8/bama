@@ -48,7 +48,7 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
         {t('profile_sections.about')}
       </AppText>
       <TextInput
-        style={[styles.input, { backgroundColor: '#FFFFFF', borderColor: '#EFEDF5', color: '#4C4859', textAlign: rtl ? 'right' : 'left' }]}
+        style={[styles.input, { backgroundColor: '#FFFFFF', borderColor: '#EFEDF5', color: '#000000', textAlign: rtl ? 'right' : 'left' }]}
         value={bio}
         onChangeText={onChange}
         multiline
@@ -76,12 +76,12 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1A1626',
+    color: '#000000',
   },
   text: { fontSize: 14, lineHeight: 22 },
-  textBio: { color: '#4C4859' },
+  textBio: { color: '#000000' },
   // 13 × 1.55 ≈ 20.
-  textEmpty: { fontSize: 13, lineHeight: 20, color: '#9C99AD' },
+  textEmpty: { fontSize: 13, lineHeight: 20, color: '#000000' },
   input: {
     fontSize: 14,
     lineHeight: 22,

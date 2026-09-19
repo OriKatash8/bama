@@ -83,13 +83,13 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
       {reviews.length > 1 && (
         <View style={styles.navRow}>
           <TouchableOpacity onPress={prev} style={styles.navBtn} activeOpacity={0.7} hitSlop={4}>
-            <ChevronLeft size={20} color="#6D28D9" strokeWidth={2.5} />
+            <ChevronLeft size={20} color="#1D4ED8" strokeWidth={2.5} />
           </TouchableOpacity>
 
           <Text style={styles.counter}>{index + 1} / {reviews.length}</Text>
 
           <TouchableOpacity onPress={next} style={styles.navBtn} activeOpacity={0.7} hitSlop={4}>
-            <ChevronRight size={20} color="#6D28D9" strokeWidth={2.5} />
+            <ChevronRight size={20} color="#1D4ED8" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
       )}
@@ -99,7 +99,7 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
 
 const styles = StyleSheet.create({
   container: { gap: 10 },
-  empty: { fontSize: 13, color: '#9C99AD', textAlign: 'center', paddingVertical: 16 },
+  empty: { fontSize: 13, color: '#000000', textAlign: 'center', paddingVertical: 16 },
 
   card: {
     backgroundColor: '#FAF9FD',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
 
   date: {
     fontSize: 11,
-    color: '#9C99AD',
+    color: '#000000',
   },
 
   nameAvatarRow: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   author: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1A1626',
+    color: '#000000',
     flex: 1,
   },
 
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F3EEFE',
+    backgroundColor: '#E6EDFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -144,12 +144,12 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#6D28D9',
+    color: '#1D4ED8',
   },
 
   body: {
     fontSize: 14,
-    color: '#4C4859',
+    color: '#000000',
     lineHeight: 20,
   },
 
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F3EEFE',
+    backgroundColor: '#E6EDFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   counter: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8B8898',
+    color: '#000000',
     minWidth: 40,
     textAlign: 'center',
   },

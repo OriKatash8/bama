@@ -120,7 +120,7 @@ export function ContentTabs({
           {title}
         </AppText>
         <View style={isOpen && styles.chevronOpen}>
-          <ChevronDown size={18} color="#8B8898" strokeWidth={2.2} />
+          <ChevronDown size={18} color="#1D4ED8" strokeWidth={2.2} />
         </View>
       </TouchableOpacity>
     );
@@ -201,7 +201,7 @@ export function ContentTabs({
             activeOpacity={0.8}
             hitSlop={{ top: 5, bottom: 5 }}
           >
-            <AppText weight="semiBold" style={[styles.tabText, { color: active === key ? '#FFFFFF' : '#6B6880' }]}>
+            <AppText weight="semiBold" style={[styles.tabText, { color: active === key ? '#FFFFFF' : '#000000' }]}>
               {sectionLabel(key)}
             </AppText>
           </TouchableOpacity>
@@ -256,7 +256,7 @@ export function ContentTabs({
                                 activeOpacity={0.7}
                                 accessibilityRole="button"
                               >
-                                <X size={12} color="#6D28D9" strokeWidth={2.5} />
+                                <X size={12} color="#1D4ED8" strokeWidth={2.5} />
                               </TouchableOpacity>
                             )}
                           </View>
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     left: 0,
     height: 34,
     borderRadius: 999,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#1D4ED8',
   },
   /* Content */
   panel: {
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   /* Equipment: category groups inside the one card */
   eqGroups: { gap: 14 },
   eqGroup: { gap: 8 },
-  eqGroupTitle: { fontSize: 12.5, fontWeight: '700', color: '#4C1D95' },
+  eqGroupTitle: { fontSize: 12.5, fontWeight: '700', color: '#000000' },
   /* Collapsible sections (equipment categories, skill roles) */
   sectionHeader: { minHeight: 44, alignItems: 'center', gap: 8 },
   sectionTitle: { flex: 1, fontSize: 14 },
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   eqChip: { alignItems: 'center', gap: 5, maxWidth: '100%' },
   eqEmptyWrap: { gap: 8 },
   eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
-  eqAddLink: { fontSize: 13, color: '#6D28D9' },
+  eqAddLink: { fontSize: 13, color: '#1D4ED8' },
   addSection: { gap: 8 },
 
   /* Add row */
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#1D4ED8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -503,14 +503,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#1A1626',
+    color: '#000000',
     backgroundColor: '#F6F5FA',
   },
 
   empty: {
     textAlign: 'center',
     fontSize: 13,
-    color: '#9C99AD',
+    color: '#000000',
     paddingVertical: 12,
   },
 
@@ -526,23 +526,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#EFEDF5',
   },
-  tableRowActive: { backgroundColor: '#F3EEFE', borderColor: '#6D28D9' },
-  tableRowCheck: { width: 20, fontSize: 13, color: '#6D28D9', fontWeight: '700' },
-  tableRowCheckActive: { color: '#6D28D9' },
-  tableRowText: { fontSize: 14, color: '#6B6880', fontWeight: '500', flex: 1 },
-  tableRowTextActive: { color: '#4C1D95', fontWeight: '700' },
+  tableRowActive: { backgroundColor: '#E6EDFC', borderColor: '#1D4ED8' },
+  tableRowCheck: { width: 20, fontSize: 13, color: '#1D4ED8', fontWeight: '700' },
+  tableRowCheckActive: { color: '#1D4ED8' },
+  tableRowText: { fontSize: 14, color: '#000000', fontWeight: '500', flex: 1 },
+  tableRowTextActive: { color: '#000000', fontWeight: '700' },
 
-  /* Chips: tinted labels (equipment + skills view mode) */
+  /* Chips: neutral labels (equipment + skills view mode) */
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   chip: {
     paddingHorizontal: 13,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#F3EEFE',
+    backgroundColor: '#F6F5FA',
     borderWidth: 1,
-    borderColor: '#E4DBFA',
+    borderColor: '#EAE8F0',
   },
-  chipText: { fontSize: 12.5, fontWeight: '600', color: '#4C1D95' },
+  chipText: { fontSize: 12.5, fontWeight: '600', color: '#000000' },
 
   /* Roles → subskills/specializations */
   roleBlock: {
@@ -553,18 +553,18 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
-  roleBlockTitle: { fontSize: 14, color: '#4C1D95' },
-  subLabel: { fontSize: 12, color: '#8B8898' },
+  roleBlockTitle: { fontSize: 14, color: '#000000' },
+  subLabel: { fontSize: 12, color: '#000000' },
   pillsWrap: { flexWrap: 'wrap', gap: 6 },
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E4DBFA',
+    borderColor: '#1D4ED8',
     backgroundColor: '#FFFFFF',
   },
-  pillActive: { backgroundColor: '#6D28D9', borderColor: '#6D28D9' },
-  pillText: { fontSize: 12, color: '#4C1D95' },
+  pillActive: { backgroundColor: '#1D4ED8', borderColor: '#1D4ED8' },
+  pillText: { fontSize: 12, color: '#000000' },
   pillTextActive: { color: '#FFFFFF' },
 });

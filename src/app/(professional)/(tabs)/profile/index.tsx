@@ -156,7 +156,7 @@ export default function ProfessionalProfileScreen() {
     return (
       <Screen scrollable={false}>
         <View style={styles.loadingCenter}>
-          <ActivityIndicator size="large" color="#6D28D9" />
+          <ActivityIndicator size="large" color="#1D4ED8" />
         </View>
       </Screen>
     );
@@ -186,7 +186,7 @@ export default function ProfessionalProfileScreen() {
             accessibilityRole="button"
             hitSlop={{ top: 3, bottom: 3 }}
           >
-            <Pencil size={14} color="#4C1D95" strokeWidth={2} />
+            <Pencil size={14} color="#1D4ED8" strokeWidth={2} />
             <AppText weight="semiBold" style={styles.editBtnText}>{t('profile.edit_profile')}</AppText>
           </TouchableOpacity>
         )}
@@ -294,9 +294,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   saveBarBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  saveBarCancel: { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#6D28D9' },
-  saveBarCancelText: { color: '#6D28D9', fontSize: 15 },
-  saveBarSave: { backgroundColor: '#6D28D9' },
+  saveBarCancel: { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#1D4ED8' },
+  saveBarCancelText: { color: '#1D4ED8', fontSize: 15 },
+  saveBarSave: { backgroundColor: '#1D4ED8' },
   saveBarSaveDisabled: { backgroundColor: '#C9C5D6' },
   saveBarSaveText: { color: '#FFFFFF', fontSize: 15 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -310,19 +310,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  editBtnText: { color: '#4C1D95', fontSize: 13, fontWeight: '600' },
+  editBtnText: { color: '#1D4ED8', fontSize: 13, fontWeight: '600' },
 
   completeBanner: {
-    backgroundColor: '#F3EEFE',
+    backgroundColor: '#E6EDFC',
     borderWidth: 1,
-    borderColor: '#E4DBFA',
+    borderColor: '#C7D5F7',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  completeBannerText: { fontSize: 14, color: '#4C1D95' },
+  completeBannerText: { fontSize: 14, color: '#000000' },
   missingHint: { fontSize: 13, color: '#B4232A' },
 
   portfolioSection: { gap: 10 },
-  portfolioTitle: { fontSize: 13, fontWeight: '700', color: '#1A1626' },
+  portfolioTitle: { fontSize: 13, fontWeight: '700', color: '#000000' },
 });
