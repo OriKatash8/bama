@@ -289,7 +289,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
       {/* Discover */}
       <AppText
         weight="bold"
-        style={[styles.sectionLabel, { marginTop: myCommunities.length > 0 ? 20 : 0, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
+        style={[styles.sectionLabel, { marginTop: myCommunities.length > 0 ? 8 : 0, marginBottom: 12, textAlign: rtl ? 'right' : 'left' }]}>
         {t('communities.discover')}
       </AppText>
 
