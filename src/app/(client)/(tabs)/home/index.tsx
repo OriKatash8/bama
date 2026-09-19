@@ -1083,7 +1083,7 @@ function createStyles(
 
     rolesCard: { marginTop: SPACE.xs, paddingVertical: SPACE.sm },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
-    label: { fontSize: 14, lineHeight: 20, fontWeight: '600', fontFamily: ffSemiBold, color: INK, marginTop: FIELD_GAP, marginBottom: SPACE.sm },
+    label: { fontSize: 16, lineHeight: 22, fontWeight: '600', fontFamily: ffSemiBold, color: INK, marginTop: FIELD_GAP, marginBottom: SPACE.sm },
     // No lineHeight here on purpose: on a single-line TextInput it fights RN's
     // own vertical centring, and the one place leading actually matters — the
     // multiline description — already sets 21 inline at its own 15pt size.
@@ -1325,7 +1325,7 @@ function createStyles(
     /** Matches dateSquareSel's fill once a deadline is picked. */
     deadlineClockSel: { backgroundColor: '#F3EEFE' },
     dateSquareSel: { borderWidth: 1.5, borderColor: '#8B5CF6', backgroundColor: '#F3EEFE' },
-    tileTitle: { fontSize: 12.5, lineHeight: 17, fontWeight: '600', fontFamily: ffSemiBold, color: INK, textAlign: 'center' },
+    tileTitle: { fontSize: 14, lineHeight: 18, fontWeight: '600', fontFamily: ffSemiBold, color: INK, textAlign: 'center' },
     tileTitleSel: { color: '#3B0764' },
     /** Title then "?", in reading order: flexDirection is set inline per language. */
     tileTitleRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 5 },
