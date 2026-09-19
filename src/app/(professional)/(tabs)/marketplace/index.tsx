@@ -6,8 +6,10 @@ import {
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
-import { SlidersHorizontal, X, Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { SlidersHorizontal, X, Search, Plus } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@components/layout/Screen';
+import { GradientBand } from '@components/ui/GradientBand';
 import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceToggle';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
@@ -25,6 +27,12 @@ import type { MarketplaceListing, MarketplaceListingType, ProductCondition } fro
 import { brandLabel } from '@features/marketplace/utils';
 
 type Translations = typeof en;
+
+const PAGE_BG = '#FAFAFC';
+const VIOLET = '#6D28D9';
+const VIOLET_DEEP = '#4C1D95';
+/** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
+const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 function makeT(translations: Translations) {
   return (key: string): string => {
@@ -121,7 +129,7 @@ function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: Cat
       <Animated.View style={{ transform: [{ scale }] }}>
         <Image source={iconSource} style={styles.tileIcon} contentFit="contain" cachePolicy="memory-disk" />
       </Animated.View>
-      <AppText weight="semiBold" style={[styles.catLabel, { color: isActive ? '#004aad' : inactiveLabelColor }]}>
+      <AppText weight={isActive ? 'semiBold' : 'medium'} style={[styles.catLabel, isActive ? styles.catLabelActive : { color: inactiveLabelColor }]}>
         {label}
       </AppText>
     </TouchableOpacity>
@@ -140,6 +148,8 @@ type FilterTag = { key: string; label: string; onRemove: () => void };
 export default function MarketplaceScreen() {
   const [activeTab, setActiveTab]               = useState<MarketplaceListingType>('secondhand');
   const [searchQuery, setSearchQuery]           = useState('');
+  /** Visual only: the search field's focus border. */
+  const [searchFocused, setSearchFocused]       = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedListing, setSelectedListing]   = useState<MarketplaceListing | null>(null);
   const [editListing, setEditListing]           = useState<MarketplaceListing | null>(null);
@@ -262,38 +272,40 @@ export default function MarketplaceScreen() {
   }, []);
 
   return (
-    <Screen scrollable={false} style={styles.screen}>
+    <Screen scrollable={false} style={styles.screen} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Toggle */}
-        <View style={styles.toggleWrap}>
+        {/* Toggle + mode description, on the violet band */}
+        <GradientBand style={styles.band}>
           <MarketplaceToggle active={activeTab} onChange={(tab) => { setActiveTab(tab); setFilterCondition(null); }} />
-        </View>
 
-        {/* Mode description — switches with the selected toggle mode */}
-        <AppText weight="regular" numberOfLines={1} style={[styles.modeDesc, { color: colors.textSec }]}>
-          {t(activeTab === 'rental' ? 'marketplace.mode_desc_rental' : 'marketplace.mode_desc_market')}
-        </AppText>
+          {/* Mode description — switches with the selected toggle mode */}
+          <AppText weight="regular" numberOfLines={1} style={styles.modeDesc}>
+            {t(activeTab === 'rental' ? 'marketplace.mode_desc_rental' : 'marketplace.mode_desc_market')}
+          </AppText>
+        </GradientBand>
 
+        <View style={styles.sheet}>
         {/* Search */}
-        <View style={[styles.searchWrap, { flexDirection: rtl ? 'row-reverse' : 'row', borderColor: colors.borderMuted }]}>
-          <Search size={18} color={colors.placeholder} strokeWidth={2} />
+        <View style={[styles.searchWrap, searchFocused && styles.searchWrapFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <Search size={18} color="#8B8898" strokeWidth={2} />
           <TextInput
-            style={[styles.searchBar, { ...font.regular, color: colors.text, textAlign: rtl ? 'right' : 'left' }]}
+            style={[styles.searchBar, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
             placeholder={t('marketplace.search_placeholder')}
-            placeholderTextColor={colors.placeholder}
+            placeholderTextColor="#9C99AD"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
           />
         </View>
 
-        {/* Categories */}
+        {/* Categories — the row runs to the screen edges (see categoriesScroll) */}
         <View style={styles.categoriesWrapper}>
-          <ChevronLeft size={18} color="rgba(0,74,173,0.35)" strokeWidth={2.5} style={styles.catArrow} />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -307,11 +319,10 @@ export default function MarketplaceScreen() {
                 label={t(`marketplace.${cat.labelKey}`)}
                 isActive={selectedCategory === cat.id}
                 onPress={() => setSelectedCategory(cat.id)}
-                inactiveLabelColor={colors.textMuted}
+                inactiveLabelColor="#6B6880"
               />
             ))}
           </ScrollView>
-          <ChevronRight size={18} color="rgba(0,74,173,0.35)" strokeWidth={2.5} style={styles.catArrow} />
         </View>
 
         {/* Filter button + active tags */}
@@ -319,14 +330,15 @@ export default function MarketplaceScreen() {
           <TouchableOpacity
             style={[
               styles.filterBtn,
-              { borderColor: filtersActive ? '#004aad' : colors.border },
               filtersActive && styles.filterBtnActive,
             ]}
             onPress={openFilterModal}
             activeOpacity={0.8}
+            // 32 visual + 6 either side = 44.
+            hitSlop={{ top: 6, bottom: 6 }}
           >
-            <SlidersHorizontal size={15} color={filtersActive ? '#fff' : colors.text} strokeWidth={2} />
-            <AppText weight="semiBold" style={[styles.filterBtnText, { color: filtersActive ? '#fff' : colors.text }]}>
+            <SlidersHorizontal size={14} color={filtersActive ? '#FFFFFF' : VIOLET_DEEP} strokeWidth={2} />
+            <AppText weight="semiBold" style={[styles.filterBtnText, { color: filtersActive ? '#FFFFFF' : VIOLET_DEEP }]}>
               {t('marketplace.filter')}
             </AppText>
           </TouchableOpacity>
@@ -356,7 +368,7 @@ export default function MarketplaceScreen() {
         {/* Product grid */}
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#004aad" />
+            <ActivityIndicator size="large" color={VIOLET} />
           </View>
         ) : filtered.length === 0 ? (
           <View style={styles.center}>
@@ -374,11 +386,19 @@ export default function MarketplaceScreen() {
             ))}
           </View>
         )}
+        </View>
       </ScrollView>
 
       {/* FAB — fixed above tab bar, outside the ScrollView */}
-      <TouchableOpacity style={styles.fab} onPress={() => setPostSheetVisible(true)} activeOpacity={0.8}>
-        <Text style={styles.fabText}>+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
+        <LinearGradient
+          colors={['#2563EB', '#6D34DE', '#9A4BF0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabFill}
+        >
+          <Plus size={24} color="#FFFFFF" strokeWidth={2.4} />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Filter modal */}
@@ -516,61 +536,83 @@ export default function MarketplaceScreen() {
 const styles = StyleSheet.create({
   screen: { gap: 0 },
   flex: { flex: 1 },
-  scrollContent: { paddingBottom: 120 },
+  // Clears the + button at the end of the list: FAB bottom 96 + 56 tall + room.
+  scrollContent: { paddingBottom: 170 },
 
+  band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 38 },
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
+  },
+
+  // The gradient lives on an inner, clipped fill so the shadow on this outer
+  // view isn't cut by overflow:hidden.
   fab: {
     position: 'absolute',
-    bottom: 110,
+    bottom: 96,
     right: 24,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#004aad',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#004aad',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 8,
+    borderRadius: 999,
+    shadowColor: '#3B19A0',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.36,
+    shadowRadius: 11,
+    elevation: 10,
   },
-  fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  fabFill: { flex: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 
-  toggleWrap: { paddingHorizontal: 16, paddingVertical: 4, marginTop: 12 },
-  modeDesc: { fontSize: 12, textAlign: 'center', marginTop: 9, marginBottom: 9, paddingHorizontal: 16 },
+  modeDesc: { fontSize: 12.5, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginTop: 10 },
 
   searchWrap: {
-    marginHorizontal: 16,
-    marginTop: 0,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 50,
+    height: 46,
+    borderRadius: 14,
     borderWidth: 1,
-    backgroundColor: '#ffffff',
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
-    paddingVertical: 10,
     gap: 8,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
+  searchWrapFocused: { borderColor: '#8B5CF6' },
   searchBar: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
+    color: '#1A1626',
   },
 
+  // The ‹ › arrows are gone; the strip bleeds 20 past the sheet's padding on
+  // both sides, with the same 20 back inside, so a part-scrolled tile reaches
+  // the screen edge.
   categoriesWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    marginHorizontal: -20,
   },
   categoriesScroll: {
     flex: 1,
   },
-  catArrow: {
-    paddingHorizontal: 2,
-  },
   categoriesRow: {
     flexDirection: 'row',
-    paddingHorizontal: 8,
+    paddingHorizontal: 20,
     paddingVertical: 2,
     gap: 4,
     marginTop: 0,
@@ -584,33 +626,35 @@ const styles = StyleSheet.create({
   // The visible gap is not `gap` — that was already 2. It is transparent padding
   // baked into the 72×72 contentFit="contain" icons, so the label is pulled up
   // into it rather than the spacing being reduced. Icon hit area is unchanged.
-  catLabel: { fontSize: 13, fontWeight: '600', marginTop: -10 },
+  catLabel: { fontSize: 11, fontWeight: '500', marginTop: -10 },
+  catLabelActive: { fontWeight: '600', color: VIOLET_DEEP },
 
   filterBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    height: 32,
+    borderRadius: 999,
+    paddingHorizontal: 13,
     borderWidth: 1,
-    backgroundColor: '#ffffff',
+    borderColor: '#EAE8F0',
+    backgroundColor: '#FFFFFF',
   },
-  filterBtnActive: { backgroundColor: '#004aad' },
-  filterBtnText: { fontSize: 14, fontWeight: '600' },
+  // A filter is on: filled, as before, in the violet palette.
+  filterBtnActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  filterBtnText: { fontSize: 12.5, fontWeight: '600' },
 
   tagsScroll: { flex: 1, marginLeft: 8 },
   tagsContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   activeTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#004aad',
+    backgroundColor: VIOLET,
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -619,9 +663,9 @@ const styles = StyleSheet.create({
   activeTagText: { fontSize: 12, color: '#fff', fontWeight: '600' },
   activeTagRemove: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: '700' },
 
-  row: { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
+  row: { flexDirection: 'row', gap: 11 },
   halfItem: { flex: 1 },
-  list: { gap: 10 },
+  list: { gap: 11 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 60 },
   emptyText: { fontSize: 17, fontWeight: '600' },
 

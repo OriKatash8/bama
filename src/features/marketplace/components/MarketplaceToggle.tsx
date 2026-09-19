@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import type { MarketplaceListingType } from '../types';
-import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -24,7 +23,6 @@ type Props = {
 };
 
 export function MarketplaceToggle({ active, onChange }: Props) {
-  const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
 
@@ -38,44 +36,64 @@ export function MarketplaceToggle({ active, onChange }: Props) {
   }, [active, marketScale, rentalScale]);
 
   return (
+    // One segmented control on the band: a translucent track, the selected
+    // segment filled white. Same two labels, same order, same onChange.
     <View style={styles.row}>
+      <View style={styles.slot}>
       <Animated.View style={{ transform: [{ scale: marketScale }] }}>
         <TouchableOpacity
-          style={[styles.pill, active === 'secondhand' ? styles.pillActive : styles.pillInactive]}
+          style={[styles.pill, active === 'secondhand' && styles.pillActive]}
           onPress={() => onChange('secondhand')}
           activeOpacity={0.8}
+          // 34 + the track's 3 + 5 of slop = 44 on each side.
+          hitSlop={{ top: 5, bottom: 5 }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: active === 'secondhand' }}
         >
           <AppText weight="semiBold" style={[styles.label, active === 'secondhand' ? styles.labelActive : styles.labelInactive]}>
             {'BAMA Market'}
           </AppText>
         </TouchableOpacity>
       </Animated.View>
+      </View>
+      <View style={styles.slot}>
       <Animated.View style={{ transform: [{ scale: rentalScale }] }}>
         <TouchableOpacity
-          style={[styles.pill, active === 'rental' ? styles.pillActive : styles.pillInactive]}
+          style={[styles.pill, active === 'rental' && styles.pillActive]}
           onPress={() => onChange('rental')}
           activeOpacity={0.8}
+          hitSlop={{ top: 5, bottom: 5 }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: active === 'rental' }}
         >
           <AppText weight="semiBold" style={[styles.label, active === 'rental' ? styles.labelActive : styles.labelInactive]}>
             {'BAMA Rental'}
           </AppText>
         </TouchableOpacity>
       </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
-  pill: {
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 999,
+    padding: 3,
   },
-  // The selected tab is enlarged so it clearly stands out.
-  pillActive: { backgroundColor: '#004aad', paddingVertical: 11, paddingHorizontal: 26, borderRadius: 22 },
-  pillInactive: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#004aad' },
-  label: { fontSize: 14, fontWeight: '600' },
-  labelActive: { color: '#ffffff', fontSize: 16 },
-  labelInactive: { color: '#004aad' },
+  slot: { flex: 1 },
+  pill: {
+    height: 34,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  pillActive: { backgroundColor: '#FFFFFF' },
+  label: { fontSize: 13.5, fontWeight: '600' },
+  labelActive: { color: '#4C1D95' },
+  labelInactive: { color: 'rgba(255,255,255,0.85)' },
 });
