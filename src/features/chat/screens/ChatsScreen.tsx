@@ -5,7 +5,6 @@ import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { Users, Package, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
-import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
 import { removeMemberFromGroup } from '../services/chatService';
@@ -66,9 +65,12 @@ function makeT(translations: Translations) {
 /** Completed-line text — the same green as the `completed` badge. */
 const COMPLETED_LINE_COLOR = '#2F7A45';
 
-// Row palette (violet system). Local on purpose: useTheme reaches the whole app.
+// Row palette: black text, blue buttons; tags keep their own colours. Local on purpose: useTheme reaches the whole app.
 const VIOLET = '#6D28D9';
-const INK = '#1A1626';
+/** Buttons (and their outlines and icons). */
+const BLUE = '#1D4ED8';
+/** Text. */
+const INK = '#000000';
 const AVATAR_TINT = '#EDE4FB';
 
 /** The viewer's role on a project row. Deliberately neither green (project
@@ -132,7 +134,6 @@ export function ChatsScreen({
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
-  const colors = useTheme();
   const font = useAppFont();
   const user = useAuthStore((s) => s.user);
   const language = useSettingsStore((s) => s.language);
@@ -315,7 +316,7 @@ export function ChatsScreen({
     if (item.type === 'community') {
       return (
         <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
-          <Users size={21} color={VIOLET} strokeWidth={1.8} />
+          <Users size={21} color={BLUE} strokeWidth={1.8} />
         </View>
       );
     }
@@ -325,7 +326,7 @@ export function ChatsScreen({
       }
       return (
         <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
-          <Users size={21} color={VIOLET} strokeWidth={1.8} />
+          <Users size={21} color={BLUE} strokeWidth={1.8} />
         </View>
       );
     }
@@ -615,7 +616,7 @@ export function ChatsScreen({
   const searching = searchQuery.trim().length > 0;
   const emptyBody = visibleChats.length > 0 ? null : (
     <View style={styles.noResults}>
-      <AppText weight="medium" style={[styles.noResultsTitle, { color: colors.text }]}>
+      <AppText weight="medium" style={[styles.noResultsTitle, { color: INK }]}>
         {searching ? t('chats.empty_search_title') : t('chats.empty_filter_title')}
       </AppText>
       {searching ? (
@@ -625,7 +626,7 @@ export function ChatsScreen({
           activeOpacity={0.7}
           accessibilityRole="button"
         >
-          <AppText weight="regular" style={[styles.noResultsClearText, { color: colors.primary }]}>
+          <AppText weight="regular" style={[styles.noResultsClearText, { color: BLUE }]}>
             {t('chats.empty_search_clear')}
           </AppText>
         </TouchableOpacity>
@@ -636,7 +637,7 @@ export function ChatsScreen({
           activeOpacity={0.7}
           accessibilityRole="button"
         >
-          <AppText weight="regular" style={[styles.noResultsClearText, { color: colors.primary }]}>
+          <AppText weight="regular" style={[styles.noResultsClearText, { color: BLUE }]}>
             {t('chats.filter_all')}
           </AppText>
         </TouchableOpacity>
@@ -710,8 +711,8 @@ const styles = StyleSheet.create({
     borderColor: '#EAE8F0',
     backgroundColor: '#FFFFFF',
   },
-  filterChipActive: { backgroundColor: VIOLET, borderColor: VIOLET },
-  filterChipText: { fontSize: 12.5, fontWeight: '600', color: '#6B6880' },
+  filterChipActive: { backgroundColor: BLUE, borderColor: BLUE },
+  filterChipText: { fontSize: 12.5, fontWeight: '600', color: INK },
   filterChipTextActive: { color: '#FFFFFF' },
   noResults: { paddingTop: 40, alignItems: 'center', gap: 6 },
   noResultsTitle: { fontSize: 15 },
@@ -742,7 +743,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { color: VIOLET, fontSize: 18, fontWeight: '700' },
+  avatarInitial: { color: BLUE, fontSize: 18, fontWeight: '700' },
 
   content: { flex: 1, minWidth: 0, gap: 3 },
   line: { alignItems: 'center', gap: 6 },
@@ -751,10 +752,10 @@ const styles = StyleSheet.create({
   nameUnread: { fontWeight: '700' },
   statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, flexShrink: 0 },
   statusBadgeText: { fontSize: 10, fontWeight: '600' },
-  timestamp: { fontSize: 11, color: '#A9A6B5', flexShrink: 0 },
-  timestampUnread: { color: VIOLET, fontWeight: '600' },
-  preview: { flex: 1, fontSize: 12.5, color: '#8B8898' },
-  previewUnread: { color: '#5B5768', fontWeight: '500' },
+  timestamp: { fontSize: 11, color: INK, flexShrink: 0 },
+  timestampUnread: { color: INK, fontWeight: '700' },
+  preview: { flex: 1, fontSize: 12.5, color: INK },
+  previewUnread: { color: INK, fontWeight: '600' },
   // OUTLINED, not filled: a payment state, not a role or a project status, so
   // it must not read as another point on the status-badge scale. The 1pt border
   // replaces a point of padding, so it measures the same as the filled tags.
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
     minWidth: 19,
     height: 19,
     borderRadius: 999,
-    backgroundColor: VIOLET,
+    backgroundColor: BLUE,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 5,

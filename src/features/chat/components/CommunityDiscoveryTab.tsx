@@ -5,7 +5,6 @@ import { Users, Search, ChevronLeft, ChevronRight, X } from 'lucide-react-native
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '@components/ui/AppText';
-import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useCommunityDiscovery } from '../hooks/useCommunityDiscovery';
@@ -35,10 +34,11 @@ const STRIP_FILL_COUNT = 5;
 /** How far above the first Discover card a "+" tile's scroll stops. */
 const CARDS_SCROLL_INSET = 8;
 
-// Violet palette for this tab. Local on purpose: useTheme reaches the whole app.
-const VIOLET = '#6D28D9';
-const VIOLET_DEEP = '#4C1D95';
-const INK = '#1A1626';
+// Palette for this tab: black text, blue buttons. Local on purpose: useTheme reaches the whole app.
+/** Buttons (and their outlines and icons). */
+const BLUE = '#1D4ED8';
+/** Text. */
+const INK = '#000000';
 /** The pro chats sheet's side padding — the strip and chips bleed by this much. */
 const SHEET_PAD = 20;
 /** Row padding 14 + avatar 46 + gap 11 ≈ 69: separators start where the text does. */
@@ -96,7 +96,6 @@ export function CommunityAvatar({ community, size = 46 }: { community: Chat; siz
 }
 
 export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Props) {
-  const colors = useTheme();
   const font = useAppFont();
   const router = useRouter();
   const segments = useSegments();
@@ -274,12 +273,12 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
 
             {canScrollLeft && (
               <TouchableOpacity style={[styles.stripArrow, styles.stripArrowLeft]} onPress={() => scrollStrip('left')} activeOpacity={0.8}>
-                <ChevronLeft size={20} color={VIOLET_DEEP} strokeWidth={2.5} />
+                <ChevronLeft size={20} color={BLUE} strokeWidth={2.5} />
               </TouchableOpacity>
             )}
             {canScrollRight && (
               <TouchableOpacity style={[styles.stripArrow, styles.stripArrowRight]} onPress={() => scrollStrip('right')} activeOpacity={0.8}>
-                <ChevronRight size={20} color={VIOLET_DEEP} strokeWidth={2.5} />
+                <ChevronRight size={20} color={BLUE} strokeWidth={2.5} />
               </TouchableOpacity>
             )}
           </View>
@@ -308,7 +307,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-            <AppText weight="regular" style={[styles.clearBtn, { color: colors.textMuted }]}>✕</AppText>
+            <AppText weight="regular" style={[styles.clearBtn, { color: BLUE }]}>✕</AppText>
           </TouchableOpacity>
         )}
       </View>
@@ -349,16 +348,16 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
 
       {filteredDiscover.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={[styles.emptyIconCircle, { backgroundColor: colors.inputBg }]}>
-            <Users size={32} color={colors.primary} strokeWidth={1.5} />
+          <View style={[styles.emptyIconCircle, { backgroundColor: '#E6EDFC' }]}>
+            <Users size={32} color={BLUE} strokeWidth={1.5} />
           </View>
-          <AppText weight="bold" style={[styles.emptyTitle, { color: colors.text }]}>
+          <AppText weight="bold" style={[styles.emptyTitle, { color: INK }]}>
             {t('communities.no_discover_title')}
           </AppText>
-          <AppText weight="regular" style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+          <AppText weight="regular" style={[styles.emptySubtitle, { color: INK }]}>
             {t('communities.no_discover_subtitle')}
           </AppText>
-          <TouchableOpacity style={[styles.emptyCta, { backgroundColor: colors.primary }]} onPress={onRequestCommunity} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.emptyCta, { backgroundColor: BLUE }]} onPress={onRequestCommunity} activeOpacity={0.7}>
             <AppText weight="semiBold" style={{ color: '#fff', fontSize: 14 }}>{t('communities.request_create')}</AppText>
           </TouchableOpacity>
         </View>
@@ -393,7 +392,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
                     ) : null}
                   </View>
                   <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                    <Users size={12} color="#8B8898" strokeWidth={1.5} />
+                    <Users size={12} color={BLUE} strokeWidth={1.5} />
                     <AppText weight="regular" style={styles.memberCount}>
                       {c.members.length} {t('communities.members')}
                     </AppText>
@@ -458,7 +457,7 @@ const styles = StyleSheet.create({
   nameRow: { alignItems: 'center', gap: 6 },
   metaRow: { alignItems: 'center', gap: 4, marginTop: 2 },
   cardName: { fontSize: 14.5, fontWeight: '600', color: INK },
-  memberCount: { fontSize: 11.5, color: '#8B8898' },
+  memberCount: { fontSize: 11.5, color: INK },
   statusBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   statusBadgeText: { fontSize: 10, fontWeight: '600' },
   // 34 visual + 5 of hitSlop each side ≈ 44.
@@ -470,13 +469,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  btnSecondary: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DDD7EC' },
-  btnPrimary: { backgroundColor: VIOLET },
+  btnSecondary: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: BLUE },
+  btnPrimary: { backgroundColor: BLUE },
   btnMuted: { backgroundColor: '#F4F3F8' },
   btnMutedRow: { gap: 6 },
-  btnTextSecondary: { color: VIOLET_DEEP, fontSize: 12.5, fontWeight: '600' },
+  btnTextSecondary: { color: BLUE, fontSize: 12.5, fontWeight: '600' },
   btnTextPrimary: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '700' },
-  btnTextMuted: { color: '#6B6880', fontSize: 12.5, fontWeight: '600' },
+  btnTextMuted: { color: INK, fontSize: 12.5, fontWeight: '600' },
   searchRow: {
     alignItems: 'center',
     height: 46,
@@ -492,8 +491,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
   },
-  searchRowFocused: { borderColor: '#8B5CF6' },
-  searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
+  searchRowFocused: { borderColor: BLUE },
+  searchInput: { flex: 1, fontSize: 14, color: INK },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
   filterChip: {
     borderWidth: 1,
@@ -503,8 +502,8 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     backgroundColor: '#FFFFFF',
   },
-  filterChipActive: { backgroundColor: VIOLET, borderColor: VIOLET },
-  filterChipText: { fontSize: 12.5, fontWeight: '600', color: '#6B6880' },
+  filterChipActive: { backgroundColor: BLUE, borderColor: BLUE },
+  filterChipText: { fontSize: 12.5, fontWeight: '600', color: INK },
   filterChipTextActive: { color: '#FFFFFF' },
   emptyState: { alignItems: 'center', paddingVertical: 32, gap: 10 },
   emptyIconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
@@ -530,7 +529,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  placeholderPlus: { fontSize: 24, lineHeight: 28, color: '#9C99AD' },
+  placeholderPlus: { fontSize: 24, lineHeight: 28, color: BLUE },
   stripArrow: {
     position: 'absolute',
     top: 20,
@@ -552,7 +551,7 @@ const styles = StyleSheet.create({
   stripArrowLeft: { left: 0 },
   stripArrowRight: { right: 0 },
   stripIconWrap: { position: 'relative', marginBottom: 6 },
-  stripTitle: { fontSize: 10.5, fontWeight: '500', color: '#5B5768', textAlign: 'center', maxWidth: 64 },
+  stripTitle: { fontSize: 10.5, fontWeight: '500', color: INK, textAlign: 'center', maxWidth: 64 },
   stripBadge: {
     position: 'absolute',
     top: -4,

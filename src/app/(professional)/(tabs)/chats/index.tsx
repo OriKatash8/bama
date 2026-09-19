@@ -23,7 +23,6 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { CommunityDiscoveryTab } from '@features/chat/components/CommunityDiscoveryTab';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
-import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
@@ -46,9 +45,10 @@ function makeT(translations: Translations) {
 }
 
 const PAGE_BG = '#FAFAFC';
-const VIOLET = '#6D28D9';
-const VIOLET_DEEP = '#4C1D95';
-const TEXT_MUTED = '#8B8898';
+/** Text. */
+const TEXT = '#000000';
+/** Buttons (and their outlines and icons). */
+const BLUE = '#1D4ED8';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
@@ -70,7 +70,6 @@ type Course = {
 };
 
 export default function ProfessionalChatsScreen() {
-  const colors = useTheme();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -319,7 +318,7 @@ export default function ProfessionalChatsScreen() {
       {active === 'chats' && (
         chatsLoading ? (
           <View style={{ minHeight: windowHeight * 0.6, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={BLUE} />
           </View>
         ) : !hasChats ? (
           <View style={{ minHeight: windowHeight * 0.6 }}>
@@ -351,7 +350,7 @@ export default function ProfessionalChatsScreen() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
-                  <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
+                  <Text style={{ color: BLUE, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -394,12 +393,12 @@ export default function ProfessionalChatsScreen() {
               />
               {courseSearch.length > 0 && (
                 <TouchableOpacity onPress={() => setCourseSearch('')} activeOpacity={0.7}>
-                  <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
+                  <Text style={{ color: BLUE, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
                 </TouchableOpacity>
               )}
             </View>
             <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterSheetOpen(true)} activeOpacity={0.85}>
-              <SlidersHorizontal size={18} color={VIOLET_DEEP} strokeWidth={2.2} />
+              <SlidersHorizontal size={18} color={BLUE} strokeWidth={2.2} />
               {activeRefinementCount > 0 && (
                 <View style={styles.filterBadge}>
                   <Text style={[styles.filterBadgeText, { ...font.bold }]}>{activeRefinementCount}</Text>
@@ -461,35 +460,35 @@ export default function ProfessionalChatsScreen() {
             <View style={[styles.activeChipsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               {courseLevel && (
                 <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseLevel(null)} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: VIOLET }]}>{t(`courses.level_${courseLevel}`)}</Text>
-                  <X size={13} color={VIOLET} strokeWidth={2.4} />
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>{t(`courses.level_${courseLevel}`)}</Text>
+                  <X size={13} color={BLUE} strokeWidth={2.4} />
                 </TouchableOpacity>
               )}
               {coursePriceBand !== 'all' && (
                 <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCoursePriceBand('all')} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: VIOLET }]}>
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>
                     {t(PRICE_BANDS.find((b) => b.id === coursePriceBand)?.labelKey ?? 'courses.price_all')}
                   </Text>
-                  <X size={13} color={VIOLET} strokeWidth={2.4} />
+                  <X size={13} color={BLUE} strokeWidth={2.4} />
                 </TouchableOpacity>
               )}
               {courseSort !== 'newest' && (
                 <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseSort('newest')} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: VIOLET }]}>
+                  <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>
                     {t(courseSort === 'price_low_high' ? 'courses.price_low_high' : 'courses.price_high_low')}
                   </Text>
-                  <X size={13} color={VIOLET} strokeWidth={2.4} />
+                  <X size={13} color={BLUE} strokeWidth={2.4} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={() => { setCourseLevel(null); setCoursePriceBand('all'); setCourseSort('newest'); }} activeOpacity={0.7} style={styles.clearAllBtn}>
-                <Text style={[styles.clearAllText, { ...font.semiBold, color: colors.textMuted }]}>{t('courses.clear_all')}</Text>
+                <Text style={[styles.clearAllText, { ...font.semiBold, color: BLUE }]}>{t('courses.clear_all')}</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {filteredCourses.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={[styles.emptyText, { ...font.regular, color: colors.textMuted }]}>
+              <Text style={[styles.emptyText, { ...font.regular, color: TEXT }]}>
                 {courses.length === 0 ? t('courses.empty') : t('courses.no_results')}
               </Text>
             </View>
@@ -546,19 +545,19 @@ export default function ProfessionalChatsScreen() {
                       <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                         {!!item.durationHours && (
                           <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <Clock size={13} color={TEXT_MUTED} strokeWidth={1.8} />
+                            <Clock size={13} color={BLUE} strokeWidth={1.8} />
                             <Text style={[styles.metaText, { ...font.regular }]}>{item.durationHours} {t('courses.hours')}</Text>
                           </View>
                         )}
                         {!!item.lessonsCount && (
                           <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <BookOpen size={13} color={TEXT_MUTED} strokeWidth={1.8} />
+                            <BookOpen size={13} color={BLUE} strokeWidth={1.8} />
                             <Text style={[styles.metaText, { ...font.regular }]}>{item.lessonsCount} {t('courses.lessons')}</Text>
                           </View>
                         )}
                         {!!item.level && (
                           <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <BarChart2 size={13} color={TEXT_MUTED} strokeWidth={1.8} />
+                            <BarChart2 size={13} color={BLUE} strokeWidth={1.8} />
                             <Text style={[styles.metaText, { ...font.regular }]}>
                               {normalizeLevel(item.level) ? t(`courses.level_${normalizeLevel(item.level)}`) : item.level}
                             </Text>
@@ -626,7 +625,7 @@ export default function ProfessionalChatsScreen() {
                 <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Text style={[styles.modalTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]}>{t('communities.modal_title')}</Text>
                   <TouchableOpacity onPress={() => { setCommModal(false); setCommPhotoUri(null); setCommCategory(''); setCommShowCategoryPicker(false); }}>
-                    <X size={20} color="#004aad" />
+                    <X size={20} color={BLUE} />
                   </TouchableOpacity>
                 </View>
 
@@ -647,7 +646,7 @@ export default function ProfessionalChatsScreen() {
 
                 <TextInput
                   placeholder={t('communities.name_placeholder')}
-                  placeholderTextColor="#004aad80"
+                  placeholderTextColor="#9C99AD"
                   value={commName}
                   onChangeText={setCommName}
                   style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
@@ -659,7 +658,7 @@ export default function ProfessionalChatsScreen() {
                   onPress={() => setCommShowCategoryPicker(!commShowCategoryPicker)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[{ ...font.regular, color: commCategory ? '#1a1a2e' : '#004aad80', textAlign: rtl ? 'right' : 'left' }]}>
+                  <Text style={[{ ...font.regular, color: commCategory ? TEXT : '#9C99AD', textAlign: rtl ? 'right' : 'left' }]}>
                     {commCategory ? communityCategoryLabel(commCategory, rtl ? 'he' : 'en') : t('communities.select_category')}
                   </Text>
                 </TouchableOpacity>
@@ -682,7 +681,7 @@ export default function ProfessionalChatsScreen() {
 
                 <TextInput
                   placeholder={t('communities.description_placeholder')}
-                  placeholderTextColor="#004aad80"
+                  placeholderTextColor="#9C99AD"
                   value={commDesc}
                   onChangeText={setCommDesc}
                   multiline
@@ -729,7 +728,7 @@ export default function ProfessionalChatsScreen() {
     {active === 'communities' && (
       <TouchableOpacity style={styles.fab} onPress={() => setCommModal(true)} activeOpacity={0.85}>
         <LinearGradient
-          colors={['#2563EB', '#6D34DE', '#9A4BF0']}
+          colors={[BLUE, BLUE]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabFill}
@@ -743,7 +742,7 @@ export default function ProfessionalChatsScreen() {
     {active === 'courses' && (
       <TouchableOpacity style={styles.fab} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.85}>
         <LinearGradient
-          colors={['#2563EB', '#6D34DE', '#9A4BF0']}
+          colors={[BLUE, BLUE]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabFill}
@@ -802,8 +801,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
   },
-  searchRowFocused: { borderColor: '#8B5CF6' },
-  searchInput: { flex: 1, fontSize: 14, color: '#1A1626' },
+  searchRowFocused: { borderColor: BLUE },
+  searchInput: { flex: 1, fontSize: 14, color: TEXT },
   // Same shape as MarketplaceToggle: a centred row of pills, the selected one
   // filled and enlarged so it reads as chosen rather than merely tinted. This
   // replaces the earlier edge-to-edge gap tuning — the marketplace row centres
@@ -828,7 +827,7 @@ const styles = StyleSheet.create({
   },
   tabPillActive: { backgroundColor: '#FFFFFF' },
   tabText: { fontSize: 13.5, fontWeight: '600' },
-  tabTextActive: { color: VIOLET_DEEP },
+  tabTextActive: { color: TEXT },
   tabTextInactive: { color: 'rgba(255,255,255,0.85)' },
   tabContentHeader: {
     alignItems: 'stretch',
@@ -862,7 +861,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: '#FFFFFF',
-    backgroundColor: '#A855F7',
+    backgroundColor: BLUE,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
@@ -893,8 +892,8 @@ const styles = StyleSheet.create({
     borderColor: '#EAE8F0',
     backgroundColor: '#FFFFFF',
   },
-  catPillActive: { backgroundColor: VIOLET, borderColor: VIOLET },
-  catPillText: { fontSize: 12.5, fontWeight: '600', color: '#6B6880' },
+  catPillActive: { backgroundColor: BLUE, borderColor: BLUE },
+  catPillText: { fontSize: 12.5, fontWeight: '600', color: TEXT },
   catPillTextActive: { color: '#FFFFFF' },
 
   // Row 3 — active refinement chips
@@ -902,7 +901,7 @@ const styles = StyleSheet.create({
   activeChip: {
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#F3EEFE',
+    backgroundColor: '#E6EDFC',
     borderRadius: 14,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -923,7 +922,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 999,
-    shadowColor: '#3B19A0',
+    shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.36,
     shadowRadius: 11,
@@ -968,12 +967,12 @@ const styles = StyleSheet.create({
   categoryTagText: { fontSize: 10.5, fontWeight: '700', color: '#FFFFFF' },
   cardBody: { paddingTop: 12, paddingHorizontal: 13, paddingBottom: 13, gap: 8 },
   titlePriceRow: { alignItems: 'flex-start', gap: 8 },
-  cardTitle: { fontSize: 15.5, fontWeight: '700', color: '#1A1626', flex: 1 },
-  coursePrice: { fontSize: 16, fontWeight: '800', color: VIOLET_DEEP, letterSpacing: -0.2 },
-  cardDesc: { fontSize: 12.5, color: TEXT_MUTED },
+  cardTitle: { fontSize: 15.5, fontWeight: '700', color: TEXT, flex: 1 },
+  coursePrice: { fontSize: 16, fontWeight: '800', color: TEXT, letterSpacing: -0.2 },
+  cardDesc: { fontSize: 12.5, color: TEXT },
   metaRow: { flexWrap: 'wrap', gap: 14 },
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 11.5, color: TEXT_MUTED },
+  metaText: { fontSize: 11.5, color: TEXT },
   cardDivider: { height: 1, backgroundColor: '#F2F0F7' },
   cardFooter: { alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   instructorRow: { alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
@@ -981,15 +980,15 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#EDE4FB',
+    backgroundColor: '#E6EDFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  instructorInitial: { color: VIOLET, fontSize: 12 },
-  instructorName: { fontSize: 12.5, fontWeight: '600', color: '#4C4859' },
-  instructorBadge: { fontSize: 11, color: TEXT_MUTED },
+  instructorInitial: { color: BLUE, fontSize: 12 },
+  instructorName: { fontSize: 12.5, fontWeight: '600', color: TEXT },
+  instructorBadge: { fontSize: 11, color: TEXT },
   // Matches the marketplace filter popup: white card, radius 24, maxWidth 440,
-  // 20/20/24 padding, soft shadow, #004aad title.
+  // 20/20/24 padding, soft shadow, black title.
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1022,20 +1021,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#004aad',
+    color: TEXT,
   },
   input: {
     backgroundColor: '#ffffff',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: '#1a1a2e',
+    color: TEXT,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
+    borderColor: BLUE,
   },
   submitBtn: {
-    backgroundColor: '#004aad',
+    backgroundColor: BLUE,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1047,7 +1046,7 @@ const styles = StyleSheet.create({
   },
   visitBtn: {
     height: 36,
-    backgroundColor: VIOLET,
+    backgroundColor: BLUE,
     borderRadius: 12,
     paddingHorizontal: 18,
     alignItems: 'center',
@@ -1058,7 +1057,7 @@ const styles = StyleSheet.create({
   commCategoryPicker: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
+    borderColor: BLUE,
     borderRadius: 10,
     marginBottom: 12,
     overflow: 'hidden',
@@ -1069,7 +1068,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,74,173,0.10)',
   },
-  commCategoryItemText: { color: '#1a1a2e', fontSize: 14 },
+  commCategoryItemText: { color: TEXT, fontSize: 14 },
   avatarPicker: { alignSelf: 'center', marginBottom: 16, position: 'relative' },
   cameraBadge: {
     position: 'absolute',
