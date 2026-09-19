@@ -4,7 +4,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import {
-  FLOATING_TAB_BAR_INACTIVE_COLOR,
+  TAB_INACTIVE,
   getDockedTabBarStyle,
   PRO_TAB_ACTIVE,
   TAB_ITEM_STYLE,
@@ -109,7 +109,7 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
             // below zeroes it for the screens, so the real inset is passed in).
             tabBarBackground: () => <GlassTabBarBackground activeColor={PRO_TAB_ACTIVE} isDark={isDark} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,
             tabBarActiveTintColor: PRO_TAB_ACTIVE,
-            tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
+            tabBarInactiveTintColor: isDark ? TAB_INACTIVE.dark : TAB_INACTIVE.light,
             tabBarActiveBackgroundColor: 'transparent',
             tabBarInactiveBackgroundColor: 'transparent',
             tabBarItemStyle: TAB_ITEM_STYLE,

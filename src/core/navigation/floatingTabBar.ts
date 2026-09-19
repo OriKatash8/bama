@@ -40,10 +40,17 @@ export function getFloatingTabBarStyle(isDark: boolean): ViewStyle {
 // TODO: promote to theme tokens. useTheme's `accent` is the pink badge colour
 // (#cb6ce6), so the active tab colours live here for now, one per app.
 export const CLIENT_TAB_ACTIVE = '#004aad';
-export const PRO_TAB_ACTIVE = '#D97706';
+export const PRO_TAB_ACTIVE = '#6D28D9';
+/** Unselected tabs on the client/pro capsule: black in light mode; dark mode
+ *  keeps the light tint, since black wouldn't read on the dark material.
+ *  (Admin keeps FLOATING_TAB_BAR_INACTIVE_COLOR.) */
+export const TAB_INACTIVE = { light: '#000000', dark: FLOATING_TAB_BAR_INACTIVE_COLOR.dark } as const;
 
-/** The bar's content band — icon + label — above the bottom safe-area inset. */
-export const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'web' ? 58 : 50;
+/** The bar's content band — icon + label — above the bottom safe-area inset.
+ *  56 on native: the icon box (28) and a Heebo label (16pt line box, pulled up
+ *  4) are 40 tall, so this leaves ~6pt between them and the highlight pill on
+ *  each side. Screens clear the bar by its measured height, so they follow. */
+export const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'web' ? 58 : 56;
 
 /** Space between the last content on a screen and the top of the tab bar. */
 export const TAB_BAR_CONTENT_GAP = 16;
@@ -61,8 +68,9 @@ export const FLOATING_TAB_BAR_BOTTOM = 24;
 /** One item style for every tab: fills the content band, icon over label. */
 export const TAB_ITEM_STYLE: ViewStyle = {
   height: TAB_BAR_CONTENT_HEIGHT,
-  paddingTop: 6,
-  paddingBottom: 4,
+  // Equal, so icon + label sit centred in the capsule.
+  paddingTop: 5,
+  paddingBottom: 5,
   justifyContent: 'center',
   alignItems: 'center',
 };

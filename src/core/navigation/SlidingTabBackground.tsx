@@ -19,8 +19,14 @@ type Props = {
 };
 
 const PILL_OPACITY = 0.13;
-const PILL_INSET_X = 8;
-const PILL_INSET_Y = 5;
+/**
+ * The pill must contain the whole tab — icon AND label (Heebo's line box is
+ * 16pt at the 10pt label size, so the label sits low). A 2pt inset on every
+ * side keeps the pill clear of the text and makes its rounded ends concentric
+ * with the capsule's (same centre, radius 2 less).
+ */
+const PILL_INSET_X = 2;
+const PILL_INSET_Y = 2;
 
 /**
  * Critically damped spring (no overshoot): response 0.35s, damping ratio 1.0.

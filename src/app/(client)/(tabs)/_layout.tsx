@@ -16,7 +16,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import {
   getDockedTabBarStyle,
-  FLOATING_TAB_BAR_INACTIVE_COLOR,
+  TAB_INACTIVE,
   CLIENT_TAB_ACTIVE,
   TAB_ITEM_STYLE,
 } from '@core/navigation/floatingTabBar';
@@ -121,7 +121,7 @@ export default function ClientTabsLayout() {
             // below zeroes it for the screens, so the real inset is passed in).
             tabBarBackground: () => <GlassTabBarBackground activeColor={CLIENT_TAB_ACTIVE} isDark={isDark} tabNames={['home', 'browse', 'chats', 'projects']} />,
             tabBarActiveTintColor: CLIENT_TAB_ACTIVE,
-            tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
+            tabBarInactiveTintColor: isDark ? TAB_INACTIVE.dark : TAB_INACTIVE.light,
             tabBarActiveBackgroundColor: 'transparent',
             tabBarInactiveBackgroundColor: 'transparent',
             tabBarItemStyle: TAB_ITEM_STYLE,
