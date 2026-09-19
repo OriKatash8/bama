@@ -150,7 +150,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
         {isDI && (
           <LinearGradient
-            colors={['#D946EF', '#A855F7']}
+            colors={['#2563EB', '#1D4ED8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={[styles.ribbon, rtl ? { right: 0 } : { left: 0 }]}
@@ -158,7 +158,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         )}
         {isDirectInvite && directInviteLabel && (
           <View style={[styles.directBadge, { flexDirection: rowDir }]}>
-            <Send size={11} color="#A21CAF" strokeWidth={2.2} />
+            <Send size={11} color={BLUE} strokeWidth={2.2} />
             <AppText weight="semiBold" style={styles.directBadgeText}>{directInviteLabel}</AppText>
           </View>
         )}
@@ -629,13 +629,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#FCE7F8',
+    backgroundColor: '#E6EDFC',
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   directBadgeText: {
-    color: '#A21CAF',
+    color: BLUE,
     fontSize: 10,
     fontWeight: '600',
   },
