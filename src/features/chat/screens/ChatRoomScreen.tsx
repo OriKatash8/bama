@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -38,7 +38,8 @@ import {
   addDoc, setDoc, serverTimestamp,
   orderBy,
 } from 'firebase/firestore';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { useActiveChatStore } from '@core/stores/activeChatStore';
 import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, Users, UserMinus } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -812,6 +813,16 @@ export function ChatRoomScreen({ chatId }: Props) {
       });
     });
   }, [chatId, chatType]);
+
+  // While this room is on screen, pushes for it are not shown (see
+  // foregroundHandler). Focus, not mount: a screen pushed on top of the room
+  // (project details, a profile) means the user is no longer reading it.
+  useFocusEffect(
+    useCallback(() => {
+      useActiveChatStore.getState().setActive(chatId, chatType === 'community' ? activeChannelId || null : null);
+      return () => useActiveChatStore.getState().clear(chatId);
+    }, [chatId, chatType, activeChannelId]),
+  );
 
   // Entering a chat — or switching community channel — opens on the last message.
   useEffect(() => {

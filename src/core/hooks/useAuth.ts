@@ -7,19 +7,14 @@ import { useModerationStore } from '@core/stores/moderationStore';
 import { onAuthChange, signOut } from '@core/firebase/auth';
 import { getDocument, updateDocument, setDocument } from '@core/firebase/firestore';
 import { registerIfGranted } from '@core/notifications/registerForPushNotifications';
+import { handleForegroundNotification } from '@core/notifications/foregroundHandler';
 import i18n from '@core/i18n';
 import type { User } from '@core/types/user';
 
 type LegacyUserDoc = User & { role?: string };
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// Shows every push while the app is open, except messages in the chat on screen.
+Notifications.setNotificationHandler({ handleNotification: handleForegroundNotification });
 
 export function useAuth() {
   const { user, activeMode, isLoading, setUser, setLoading, clear } = useAuthStore();
