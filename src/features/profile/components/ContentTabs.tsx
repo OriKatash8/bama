@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { ChevronDown, X } from 'lucide-react-native';
 import { ROLES, getSpecializations, labelOf, type Labeled } from '@features/crew/data/categories';
 import {
   EQUIPMENT_CATEGORIES,
@@ -91,6 +91,40 @@ export function ContentTabs({
 
   const [active, setActive] = useState<SectionKey>('equipment');
   const [newEquipment, setNewEquipment] = useState('');
+  // Equipment categories and skill roles start closed; tapping a heading opens
+  // it. Keys are 'eq:<category>' / 'sk:<role>'.
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
+  function toggleSection(key: string) {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  /** A tappable section heading with a chevron that points down when closed
+   *  and up when open. */
+  function sectionHeader(key: string, title: string) {
+    const isOpen = openSections.has(key);
+    return (
+      <TouchableOpacity
+        style={[styles.sectionHeader, { flexDirection: rowDir }]}
+        onPress={() => toggleSection(key)}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+        testID={`section-${key}`}
+      >
+        <AppText weight="bold" style={[styles.eqGroupTitle, styles.sectionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+          {title}
+        </AppText>
+        <View style={isOpen && styles.chevronOpen}>
+          <ChevronDown size={18} color="#8B8898" strokeWidth={2.2} />
+        </View>
+      </TouchableOpacity>
+    );
+  }
   const [tabBarWidth, setTabBarWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -195,31 +229,40 @@ export function ContentTabs({
                 )}
               </View>
             ) : (
-              <View style={styles.eqGroups}>
-                {groupEquipment(equipmentItems).map((group) => (
-                  <View key={group.category} style={styles.eqGroup}>
-                    <AppText weight="bold" style={[styles.eqGroupTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-                      {t(equipmentCategoryLabelKey(group.category))}
-                    </AppText>
-                    <View style={[styles.chipsWrap, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
-                      {group.entries.map(({ item, index }) => (
-                        <View key={`eq-${index}`} style={[styles.chip, styles.eqChip, { flexDirection: rowDir }]}>
-                          <AppText weight="semiBold" numberOfLines={1} style={styles.chipText}>
-                            {item.name}
-                          </AppText>
-                          {isEditing && (
-                            <TouchableOpacity
-                              onPress={() => onEquipmentChange?.(equipmentItems.filter((_, i) => i !== index))}
-                              hitSlop={16}
-                              activeOpacity={0.7}
-                              accessibilityRole="button"
-                            >
-                              <X size={12} color="#6D28D9" strokeWidth={2.5} />
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      ))}
-                    </View>
+              <View style={isEditing ? styles.eqGroups : null}>
+                {groupEquipment(equipmentItems).map((group, gi) => (
+                  <View key={group.category} style={isEditing ? styles.eqGroup : null}>
+                    {isEditing ? (
+                      <AppText weight="bold" style={[styles.eqGroupTitle, { textAlign: rtl ? 'right' : 'left' }]}>
+                        {t(equipmentCategoryLabelKey(group.category))}
+                      </AppText>
+                    ) : (
+                      <>
+                        {gi > 0 && <View style={styles.sectionDivider} />}
+                        {sectionHeader(`eq:${group.category}`, t(equipmentCategoryLabelKey(group.category)))}
+                      </>
+                    )}
+                    {(isEditing || openSections.has(`eq:${group.category}`)) && (
+                      <View style={[styles.chipsWrap, !isEditing && styles.sectionBody, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
+                        {group.entries.map(({ item, index }) => (
+                          <View key={`eq-${index}`} style={[styles.chip, styles.eqChip, { flexDirection: rowDir }]}>
+                            <AppText weight="semiBold" numberOfLines={1} style={styles.chipText}>
+                              {item.name}
+                            </AppText>
+                            {isEditing && (
+                              <TouchableOpacity
+                                onPress={() => onEquipmentChange?.(equipmentItems.filter((_, i) => i !== index))}
+                                hitSlop={16}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                              >
+                                <X size={12} color="#6D28D9" strokeWidth={2.5} />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 ))}
               </View>
@@ -337,22 +380,23 @@ export function ContentTabs({
               rs.length === 0 ? (
                 <AppText weight="regular" style={styles.empty}>{t('profile_sections.no_skills')}</AppText>
               ) : (
-                <View style={{ gap: 12 }}>
-                  {ROLES.filter((role) => rs.some((e) => e.role === role.id)).map((role) => {
+                <View>
+                  {ROLES.filter((role) => rs.some((e) => e.role === role.id)).map((role, ri) => {
                     const entry = rs.find((e) => e.role === role.id)!;
                     const specs = getSpecializations(role.id);
                     return (
-                      <View key={`ro-${role.id}`} style={styles.roleBlock}>
-                        <AppText weight="bold" style={[styles.roleBlockTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-                          {labelOf(role, lang)}
-                        </AppText>
-                        <View style={[styles.chipsWrap, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
-                          {entry.specializations.map((id) => (
-                            <View key={`sp-${id}`} style={styles.chip}>
-                              <AppText weight="regular" style={styles.chipText}>{labelById(specs, id)}</AppText>
-                            </View>
-                          ))}
-                        </View>
+                      <View key={`ro-${role.id}`}>
+                        {ri > 0 && <View style={styles.sectionDivider} />}
+                        {sectionHeader(`sk:${role.id}`, labelOf(role, lang))}
+                        {openSections.has(`sk:${role.id}`) && (
+                          <View style={[styles.chipsWrap, styles.sectionBody, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
+                            {entry.specializations.map((id) => (
+                              <View key={`sp-${id}`} style={styles.chip}>
+                                <AppText weight="semiBold" style={styles.chipText}>{labelById(specs, id)}</AppText>
+                              </View>
+                            ))}
+                          </View>
+                        )}
                       </View>
                     );
                   })}
@@ -419,6 +463,12 @@ const styles = StyleSheet.create({
   eqGroups: { gap: 14 },
   eqGroup: { gap: 8 },
   eqGroupTitle: { fontSize: 12.5, fontWeight: '700', color: '#4C1D95' },
+  /* Collapsible sections (equipment categories, skill roles) */
+  sectionHeader: { minHeight: 44, alignItems: 'center', gap: 8 },
+  sectionTitle: { flex: 1, fontSize: 14 },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
+  sectionBody: { paddingBottom: 12 },
+  sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#EFEDF5' },
   eqChip: { alignItems: 'center', gap: 5, maxWidth: '100%' },
   eqEmptyWrap: { gap: 8 },
   eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
