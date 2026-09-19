@@ -355,9 +355,9 @@ export default function ProfessionalChatsScreen() {
                 </TouchableOpacity>
               )}
             </View>
-            {/* ChatsScreen (shared with the client tab) insets its chips and
-                list by 16 of its own; cancelling that here lines them up with
-                the search field, as the client page does. */}
+            {/* The chat list runs edge to edge; ChatsScreen (shared with the
+                client tab) insets its chips and rows by 20, in line with the
+                search field. */}
             <View style={styles.listBleed}>
               <ChatsList
                 scrollable={false}
@@ -774,8 +774,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -6 },
     elevation: 6,
   },
-  /** ChatsScreen insets its own chips and list by 16; cancel it inside the sheet. */
-  listBleed: { marginHorizontal: -16 },
+  /** Cancels the sheet's 20pt padding so the chat list runs edge to edge. */
+  listBleed: { marginHorizontal: -20 },
   headerTitle: {
     fontSize: 36,
     fontWeight: '800',

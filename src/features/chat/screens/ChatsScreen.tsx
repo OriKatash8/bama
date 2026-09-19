@@ -116,7 +116,7 @@ type DmInfo = { name: string; photoURL: string | null };
 type ChatFilter = 'all' | 'open' | 'completed' | 'marketplace';
 const CHAT_FILTERS: ChatFilter[] = ['all', 'open', 'completed', 'marketplace'];
 /** Row padding 14 + avatar 44 + gap 11: separators start where the text does. */
-const SEPARATOR_INSET = 69;
+const SEPARATOR_INSET = 75;
 
 export function ChatsScreen({
   scrollable = true,
@@ -504,7 +504,7 @@ export function ChatsScreen({
       || (item.type === 'purchase' && !!item.archived);
     return (
       <Fragment key={item.id}>
-        {/* Hairline between rows, inset past the avatar column: row padding 14
+        {/* Hairline between rows, inset past the avatar column: row padding 20
             + avatar 44 + gap 11. None above the first row. */}
         {index > 0 && (
           <View style={[styles.separator, rtl ? { marginRight: SEPARATOR_INSET } : { marginLeft: SEPARATOR_INSET }]} />
@@ -521,50 +521,47 @@ export function ChatsScreen({
         >
           {renderAvatar(item)}
           <View style={styles.content}>
-            {/* Line 1: name, then the time above the tag(s) */}
+            {/* Line 1: name and tag(s), then the time */}
             <View style={[styles.line, { flexDirection: rowDir }]}>
-              <AppText
-                weight={isUnread ? 'bold' : 'semiBold'}
-                style={[styles.name, isUnread && styles.nameUnread, { textAlign: rtl ? 'right' : 'left' }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {chatName}
-              </AppText>
-              {/* Trailing column: the time sits above the tag(s). */}
-              <View style={[styles.trailing, { alignItems: rtl ? 'flex-start' : 'flex-end' }]}>
-                {timestamp ? (
-                  <AppText
-                    weight={isUnread ? 'semiBold' : 'regular'}
-                    style={[styles.timestamp, isUnread && styles.timestampUnread]}
-                    numberOfLines={1}
-                  >
-                    {timestamp}
-                  </AppText>
-                ) : null}
-                {(badge != null || (item.type === 'purchase' && item.archived)) && (
-                  <View style={[styles.badges, { flexDirection: rowDir }]}>
-                    {badge != null && (
-                      <View testID={`project-badge-${item.id}`} style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: badge.text }]}>
-                          {badge.label}
-                        </AppText>
-                      </View>
-                    )}
-                    {item.type === 'purchase' && item.archived && (
-                      <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? CANCELLED_BADGE.bg : COMPLETED_BADGE.bg }]}>
-                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? CANCELLED_BADGE.text : COMPLETED_BADGE.text }]}>
-                          {item.archiveReason === 'cancelled' ? t('chats.badge_cancelled') : t('chats.badge_completed')}
-                        </AppText>
-                      </View>
-                    )}
+              {/* The name, then the tag(s) right after it (left of it in
+                  Hebrew, right of it in English). */}
+              <View style={[styles.nameWrap, { flexDirection: rowDir }]}>
+                <AppText
+                  weight={isUnread ? 'bold' : 'semiBold'}
+                  style={[styles.name, isUnread && styles.nameUnread, { textAlign: rtl ? 'right' : 'left' }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {chatName}
+                </AppText>
+                {badge != null && (
+                  <View testID={`project-badge-${item.id}`} style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                    <AppText weight="semiBold" style={[styles.statusBadgeText, { color: badge.text }]}>
+                      {badge.label}
+                    </AppText>
+                  </View>
+                )}
+                {item.type === 'purchase' && item.archived && (
+                  <View style={[styles.statusBadge, { backgroundColor: item.archiveReason === 'cancelled' ? CANCELLED_BADGE.bg : COMPLETED_BADGE.bg }]}>
+                    <AppText weight="semiBold" style={[styles.statusBadgeText, { color: item.archiveReason === 'cancelled' ? CANCELLED_BADGE.text : COMPLETED_BADGE.text }]}>
+                      {item.archiveReason === 'cancelled' ? t('chats.badge_cancelled') : t('chats.badge_completed')}
+                    </AppText>
                   </View>
                 )}
               </View>
+              {timestamp ? (
+                <AppText
+                  weight={isUnread ? 'semiBold' : 'regular'}
+                  style={[styles.timestamp, isUnread && styles.timestampUnread]}
+                  numberOfLines={1}
+                >
+                  {timestamp}
+                </AppText>
+              ) : null}
             </View>
 
             {/* Line 2: preview (or the completed sentence), paid pill, then the
-                unread badge or the trash button in the trailing slot. */}
+                unread count or the trash button in the trailing slot. */}
             <View style={[styles.line, { flexDirection: rowDir }]}>
               <AppText
                 weight={completedLine ? 'semiBold' : isUnread ? 'medium' : 'regular'}
@@ -703,7 +700,7 @@ const styles = StyleSheet.create({
   // list down. flexGrow keeps a short row aligned to the reading edge, since
   // under row-reverse the default flex-start IS the right edge.
   filterScroll: { flexGrow: 0, marginBottom: 10 },
-  filterRow: { gap: 7, paddingHorizontal: 16, alignItems: 'center', flexGrow: 1 },
+  filterRow: { gap: 7, paddingHorizontal: 20, alignItems: 'center', flexGrow: 1 },
   filterChip: {
     paddingVertical: 7,
     paddingHorizontal: 14,
@@ -721,20 +718,10 @@ const styles = StyleSheet.create({
   noResultsClear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
   noResultsClearText: { fontSize: 13 },
 
-  // One container for every row. The 16pt inset matches the chip row's, and
-  // both pages that render this list cancel it the same way.
+  // One white strip for every row, edge to edge (both pages that render this
+  // list bleed it to the screen's sides) — no card, border or shadow.
   listCard: {
-    marginHorizontal: 16,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EFEDF5',
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 7,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#F0EEF6' },
   // 64 tall: padding 10 × 2 + the 44 avatar.
@@ -743,7 +730,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 11,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 20,
   },
   rowUnread: { backgroundColor: '#FBFAFE' },
   rowPressed: { backgroundColor: '#F8F6FC' },
@@ -759,10 +746,9 @@ const styles = StyleSheet.create({
 
   content: { flex: 1, minWidth: 0, gap: 3 },
   line: { alignItems: 'center', gap: 6 },
-  name: { flex: 1, fontSize: 14.5, fontWeight: '600', color: INK },
+  nameWrap: { flex: 1, minWidth: 0, alignItems: 'center', gap: 6 },
+  name: { flexShrink: 1, fontSize: 14.5, fontWeight: '600', color: INK },
   nameUnread: { fontWeight: '700' },
-  trailing: { flexShrink: 0, gap: 3 },
-  badges: { gap: 4 },
   statusBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, flexShrink: 0 },
   statusBadgeText: { fontSize: 10, fontWeight: '600' },
   timestamp: { fontSize: 11, color: '#A9A6B5', flexShrink: 0 },
