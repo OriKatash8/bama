@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { SlidingTabBackground } from './SlidingTabBackground';
 import { TAB_BAR_CONTENT_HEIGHT } from './floatingTabBar';
 
@@ -17,9 +18,17 @@ const ANDROID_FALLBACK = { light: 'rgba(255,255,255,0.92)', dark: 'rgba(15,15,31
 const HAIRLINE = { light: 'rgba(0,0,0,0.12)', dark: 'rgba(255,255,255,0.14)' } as const;
 
 /**
- * The docked tab bar's material: a blur of the content scrolling under it, a
- * hairline on top where light catches the edge, and the sliding active-tab pill.
- * Honours Reduce Transparency — live, not just at mount — by going solid.
+ * The docked tab bar's material, in order of preference:
+ *  1. Reduce Transparency on (followed live) → solid, no glass, no blur.
+ *  2. Liquid Glass (iOS 26+, gated at runtime on isGlassEffectAPIAvailable() —
+ *     some iOS 26 betas lack the API and crash) → GlassView. It draws its own
+ *     edge, so no manual hairline.
+ *  3. Otherwise (older iOS, web, Android) → BlurView + hairline, as before.
+ * The sliding active-tab pill sits on top of whichever material is used.
+ *
+ * Never put opacity on the GlassView or any parent: opacity 0 anywhere above it
+ * kills the effect. Animate it with glassEffectStyle's animate /
+ * animationDuration instead.
  */
 export function GlassTabBarBackground({ activeColor, isDark, tabNames }: Props) {
   const [reduceTransparency, setReduceTransparency] = useState(false);
@@ -45,8 +54,19 @@ export function GlassTabBarBackground({ activeColor, isDark, tabNames }: Props) 
   }, []);
 
   let material;
+  let hairline = true;
   if (reduceTransparency) {
-    material = <View style={[StyleSheet.absoluteFill, { backgroundColor: SOLID[scheme] }]} />;
+    material = <View testID="tabbar-solid" style={[StyleSheet.absoluteFill, { backgroundColor: SOLID[scheme] }]} />;
+  } else if (isGlassEffectAPIAvailable()) {
+    material = (
+      <GlassView
+        testID="tabbar-glass"
+        style={StyleSheet.absoluteFill}
+        glassEffectStyle="regular"
+        colorScheme={scheme}
+      />
+    );
+    hairline = false;
   } else if (Platform.OS === 'android') {
     material = (
       <>
@@ -61,7 +81,7 @@ export function GlassTabBarBackground({ activeColor, isDark, tabNames }: Props) 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {material}
-      <View style={[styles.hairline, { backgroundColor: HAIRLINE[scheme] }]} />
+      {hairline && <View testID="tabbar-hairline" style={[styles.hairline, { backgroundColor: HAIRLINE[scheme] }]} />}
       <SlidingTabBackground
         numTabs={tabNames.length}
         tabNames={tabNames}

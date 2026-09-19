@@ -1,5 +1,5 @@
 import React from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { render, act } from '@testing-library/react-native';
 import { GlassTabBarBackground } from '../GlassTabBarBackground';
 
@@ -14,10 +14,20 @@ jest.mock('expo-blur', () => {
   return { BlurView: (p: object) => <View testID="blur" {...p} /> };
 });
 
+let mockGlassApi = false;
+jest.mock('expo-glass-effect', () => {
+  const { View } = require('react-native');
+  return {
+    GlassView: (p: object) => <View {...p} />,
+    isGlassEffectAPIAvailable: () => mockGlassApi,
+  };
+});
+
 let emit: ((on: boolean) => void) | null = null;
 const remove = jest.fn();
 
 beforeEach(() => {
+  mockGlassApi = false;
   emit = null;
   remove.mockClear();
   jest.spyOn(AccessibilityInfo, 'isReduceTransparencyEnabled').mockResolvedValue(false);
@@ -57,4 +67,40 @@ it('unsubscribes on unmount', async () => {
   await act(async () => {});
   r.unmount();
   expect(remove).toHaveBeenCalledTimes(1);
+});
+
+describe('Liquid Glass', () => {
+  it('uses GlassView when the glass API is available, with no manual hairline', async () => {
+    mockGlassApi = true;
+    const r = render(<GlassTabBarBackground {...props} />);
+    await act(async () => {});
+    expect(r.queryByTestId('tabbar-glass')).toBeTruthy();
+    expect(r.queryByTestId('blur')).toBeNull();
+    expect(r.queryByTestId('tabbar-hairline')).toBeNull();
+  });
+
+  it('keeps the blur and its hairline when the API is not available', async () => {
+    const r = render(<GlassTabBarBackground {...props} />);
+    await act(async () => {});
+    expect(r.queryByTestId('tabbar-glass')).toBeNull();
+    expect(r.queryByTestId('blur')).toBeTruthy();
+    expect(r.queryByTestId('tabbar-hairline')).toBeTruthy();
+  });
+
+  it('Reduce Transparency still wins: solid, no glass, no blur', async () => {
+    mockGlassApi = true;
+    const r = render(<GlassTabBarBackground {...props} />);
+    await act(async () => {});
+    act(() => emit!(true));
+    expect(r.queryByTestId('tabbar-solid')).toBeTruthy();
+    expect(r.queryByTestId('tabbar-glass')).toBeNull();
+    expect(r.queryByTestId('blur')).toBeNull();
+  });
+
+  it('never sets opacity on the glass material', async () => {
+    mockGlassApi = true;
+    const r = render(<GlassTabBarBackground {...props} />);
+    await act(async () => {});
+    expect(StyleSheet.flatten(r.getByTestId('tabbar-glass').props.style).opacity).toBeUndefined();
+  });
 });
