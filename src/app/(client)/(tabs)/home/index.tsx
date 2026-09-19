@@ -26,7 +26,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { ROLE_BY_ID, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, ChevronRight, X, MapPin, Lock, Info } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, X, MapPin, Lock, Info } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -58,12 +58,12 @@ const DESCRIPTION_MIN = 10;
  *  width; RN's types have no 'none', hence the cast (web only). */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 const TILE_GAP = 9;
-/** Along the button's length, a shallower angle than the band (~105deg). */
+/** The step buttons' fill: solid purple (a two-stop gradient of one colour, so
+ *  the LinearGradient that clips the corners stays in place). */
 const BUTTON_GRADIENT = {
-  colors: ['#2563EB', '#6D34DE', '#9A4BF0'] as const,
-  locations: [0, 0.52, 1] as const,
-  start: { x: 1, y: 0 },
-  end: { x: 0, y: 0.35 },
+  colors: ['#6D28D9', '#6D28D9'] as const,
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 0 },
 };
 
 /** Apple's pair: `duration` is the response, `dampingRatio` the damping. 1.0 —
@@ -528,7 +528,7 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <CalendarDays size={19} color={VIOLET} strokeWidth={1.8} />
+                    <CalendarDays size={19} color={exec ? VIOLET : INK_2} strokeWidth={1.8} />
                     <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                     </Text>
@@ -556,7 +556,13 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <CalendarDays size={19} color={VIOLET} strokeWidth={1.8} />
+                    {/* Calendar with a small clock at its bottom-right: a deadline. */}
+                    <View style={styles.deadlineIcon}>
+                      <CalendarDays size={19} color={deadline ? VIOLET : INK_2} strokeWidth={1.8} />
+                      <View style={[styles.deadlineClock, deadline ? styles.deadlineClockSel : null]}>
+                        <Clock size={9} color={deadline ? VIOLET : INK_2} strokeWidth={2.4} />
+                      </View>
+                    </View>
                     <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
                     </Text>
@@ -583,7 +589,7 @@ export default function HomeScreen() {
                         <X size={12} color="#fff" strokeWidth={2.5} />
                       </PressableScale>
                     ) : null}
-                    <MapPin size={19} color={VIOLET} strokeWidth={1.8} />
+                    <MapPin size={19} color={location ? VIOLET : INK_2} strokeWidth={1.8} />
                     <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
                       {location || t('builder.placeholder_location')}
                     </Text>
@@ -1112,7 +1118,7 @@ function createStyles(
       gap: 9,
     },
     tipIcon: { flexShrink: 0, marginTop: 1 },
-    tipText: { flex: 1, fontSize: 12, fontWeight: '400', color: '#4C1D95', lineHeight: 19, fontFamily: ff },
+    tipText: { flex: 1, fontSize: 12, fontWeight: '400', color: '#000000', lineHeight: 19, fontFamily: ff },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     // No overflow here — the ring needs to escape. The tile is a positioning
     // box; the surface and the clipping both live on tileClip.
@@ -1175,7 +1181,7 @@ function createStyles(
       borderRadius: 16,
       // Never seen (the gradient covers it), but Android draws elevation from
       // the view's background, and a transparent one casts no shadow.
-      backgroundColor: '#6D34DE',
+      backgroundColor: '#6D28D9',
       shadowColor: '#3B19A0',
       shadowOpacity: 0.30,
       shadowRadius: 10,
@@ -1302,6 +1308,22 @@ function createStyles(
       paddingVertical: 12,
       paddingHorizontal: 11,
     },
+    deadlineIcon: { width: 19, height: 19 },
+    // Sits on the calendar's corner; the fill punches it out of the calendar's
+    // lines so the two don't blur together.
+    deadlineClock: {
+      position: 'absolute',
+      right: -4,
+      bottom: -3,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: FIELD_FILL,
+    },
+    /** Matches dateSquareSel's fill once a deadline is picked. */
+    deadlineClockSel: { backgroundColor: '#F3EEFE' },
     dateSquareSel: { borderWidth: 1.5, borderColor: '#8B5CF6', backgroundColor: '#F3EEFE' },
     tileTitle: { fontSize: 12.5, lineHeight: 17, fontWeight: '600', fontFamily: ffSemiBold, color: INK, textAlign: 'center' },
     tileTitleSel: { color: '#3B0764' },
