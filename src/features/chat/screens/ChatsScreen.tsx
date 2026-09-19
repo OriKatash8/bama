@@ -3,6 +3,7 @@ import { TouchableOpacity, Pressable, View, Text, StyleSheet, ScrollView } from 
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
+import { CLIENT_TAB_ACTIVE, PRO_TAB_ACTIVE } from '@core/navigation/floatingTabBar';
 import { Users, Package, Trash2 } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAuthStore } from '@core/stores/authStore';
@@ -55,20 +56,20 @@ function makeT(translations: Translations) {
 }
 
 // ── Colour rule for this screen ───────────────────────────────────────────────
-// GREEN means project state. BLUE means an action, or something the user did.
+// GREEN means project state. The mode accent (purple client / blue pro) means an action, or something the user did.
 // They are not two ends of one scale and must not be swapped for each other:
 // green here belongs to the same family as the cancelled and in_progress badges,
-// so flattening it to blue would make a completed project read like an open one.
+// so flattening it to the accent would make a completed project read like an open one.
 // The paid pill is violet, and is outlined rather than filled so it cannot be
 // mistaken for another status badge. See `paidPill` in the stylesheet.
 
-/** Completed-line text — the same green as the `completed` badge. */
-const COMPLETED_LINE_COLOR = '#2F7A45';
+/** Completed-line text: black, like the rest of the row's text. */
+const COMPLETED_LINE_COLOR = '#000000';
 
 // Row palette: black text, blue buttons; tags keep their own colours. Local on purpose: useTheme reaches the whole app.
 const VIOLET = '#6D28D9';
 /** Buttons (and their outlines and icons). */
-const BLUE = '#1D4ED8';
+
 /** Text. */
 const INK = '#000000';
 const AVATAR_TINT = '#EDE4FB';
@@ -79,8 +80,8 @@ const AVATAR_TINT = '#EDE4FB';
  *  background is a light tint of the same colour. */
 type ProjectRole = 'client' | 'creator';
 const ROLE_CONFIG: Record<ProjectRole, { bg: string; text: string }> = {
-  client:  { bg: '#E8F0FE', text: '#1D4FD8' },
-  creator: { bg: '#F3EEFE', text: VIOLET },
+  client:  { bg: '#F3EEFE', text: CLIENT_TAB_ACTIVE }, // purple, like client mode
+  creator: { bg: '#E6EDFC', text: PRO_TAB_ACTIVE },    // blue, like pro mode
 };
 /** A completed project's badge replaces the role — green, because it is state.
  *  The shop's completed badge uses the same pair. */
@@ -134,6 +135,9 @@ export function ChatsScreen({
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
+  // Buttons, the unread badge and avatar icons follow the mode, like the tab
+  // bar: purple in client mode, blue in pro mode.
+  const accent = modeSegment === '(client)' ? CLIENT_TAB_ACTIVE : PRO_TAB_ACTIVE;
   const font = useAppFont();
   const user = useAuthStore((s) => s.user);
   const language = useSettingsStore((s) => s.language);
@@ -316,7 +320,7 @@ export function ChatsScreen({
     if (item.type === 'community') {
       return (
         <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
-          <Users size={21} color={BLUE} strokeWidth={1.8} />
+          <Users size={21} color={accent} strokeWidth={1.8} />
         </View>
       );
     }
@@ -326,7 +330,7 @@ export function ChatsScreen({
       }
       return (
         <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
-          <Users size={21} color={BLUE} strokeWidth={1.8} />
+          <Users size={21} color={accent} strokeWidth={1.8} />
         </View>
       );
     }
@@ -337,7 +341,7 @@ export function ChatsScreen({
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
       <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
-        <AppText weight="bold" style={styles.avatarInitial}>{initial}</AppText>
+        <AppText weight="bold" style={[styles.avatarInitial, { color: accent }]}>{initial}</AppText>
       </View>
     );
   }
@@ -597,7 +601,7 @@ export function ChatsScreen({
                   <Trash2 size={15} color="#ef4444" strokeWidth={2} />
                 </TouchableOpacity>
               ) : isUnread ? (
-                <View style={styles.unreadBadge}>
+                <View style={[styles.unreadBadge, { backgroundColor: accent }]}>
                   <Text style={[styles.unreadBadgeText, { ...font.bold }]}>{unread > 99 ? '99+' : unread}</Text>
                 </View>
               ) : null}
@@ -626,7 +630,7 @@ export function ChatsScreen({
           activeOpacity={0.7}
           accessibilityRole="button"
         >
-          <AppText weight="regular" style={[styles.noResultsClearText, { color: BLUE }]}>
+          <AppText weight="regular" style={[styles.noResultsClearText, { color: accent }]}>
             {t('chats.empty_search_clear')}
           </AppText>
         </TouchableOpacity>
@@ -637,7 +641,7 @@ export function ChatsScreen({
           activeOpacity={0.7}
           accessibilityRole="button"
         >
-          <AppText weight="regular" style={[styles.noResultsClearText, { color: BLUE }]}>
+          <AppText weight="regular" style={[styles.noResultsClearText, { color: accent }]}>
             {t('chats.filter_all')}
           </AppText>
         </TouchableOpacity>
@@ -659,7 +663,7 @@ export function ChatsScreen({
         return (
           <TouchableOpacity
             key={f}
-            style={[styles.filterChip, active && styles.filterChipActive]}
+            style={[styles.filterChip, active && { backgroundColor: accent, borderColor: accent }]}
             onPress={() => setChatFilter(f)}
             activeOpacity={0.8}
             accessibilityRole="button"
@@ -711,7 +715,6 @@ const styles = StyleSheet.create({
     borderColor: '#EAE8F0',
     backgroundColor: '#FFFFFF',
   },
-  filterChipActive: { backgroundColor: BLUE, borderColor: BLUE },
   filterChipText: { fontSize: 12.5, fontWeight: '600', color: INK },
   filterChipTextActive: { color: '#FFFFFF' },
   noResults: { paddingTop: 40, alignItems: 'center', gap: 6 },
@@ -743,7 +746,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { color: BLUE, fontSize: 18, fontWeight: '700' },
+  avatarInitial: { fontSize: 18, fontWeight: '700' },
 
   content: { flex: 1, minWidth: 0, gap: 3 },
   line: { alignItems: 'center', gap: 6 },
@@ -774,7 +777,6 @@ const styles = StyleSheet.create({
     minWidth: 19,
     height: 19,
     borderRadius: 999,
-    backgroundColor: BLUE,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 5,

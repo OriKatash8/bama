@@ -82,15 +82,15 @@ describe('project row role badge', () => {
   it('the creator badge is violet, on a tint of the same violet', async () => {
     withProject(project);
     const { getByText, getByTestId } = await renderAs('pro-1');
-    expect(getByText(en.chats.role_creator)).toHaveStyle({ color: '#6D28D9' });
-    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#F3EEFE' });
+    expect(getByText(en.chats.role_creator)).toHaveStyle({ color: '#1D4ED8' });
+    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#E6EDFC' });
   });
 
   it('the client badge is the client mode blue, on a tint of the same blue', async () => {
     withProject(project);
     const { getByText, getByTestId } = await renderAs('client-1');
-    expect(getByText(en.chats.role_client)).toHaveStyle({ color: '#1D4FD8' });
-    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#E8F0FE' });
+    expect(getByText(en.chats.role_client)).toHaveStyle({ color: '#6D28D9' });
+    expect(getByTestId('project-badge-chat-1')).toHaveStyle({ backgroundColor: '#F3EEFE' });
   });
 
   it('self-hire reads as client, matching the row copy', async () => {

@@ -16,7 +16,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { useTabBarClearance } from '@core/navigation/floatingTabBar';
+import { useTabBarClearance, CLIENT_TAB_ACTIVE } from '@core/navigation/floatingTabBar';
 
 const PAGE_BG = '#FAFAFC';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
@@ -81,7 +81,7 @@ export default function ChatsPage() {
 
       {loading ? (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={CLIENT_TAB_ACTIVE} />
         </View>
       ) : !hasChats ? (
         <EmptyState
