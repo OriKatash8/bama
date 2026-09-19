@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getCountFromServer, collection, query, where, type Query } from 'firebase/firestore';
@@ -48,6 +49,9 @@ export default function AdminDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const language = useSettingsStore((s) => s.language);
+  // Admin keeps the floating pill: its measured height + the 24pt it floats
+  // above the edge + the content gap.
+  const tabBarClearance = useTabBarClearance() + FLOATING_TAB_BAR_BOTTOM;
   const rtl = language === 'he';
   const t = makeT(rtl ? he : en);
   const rowDir = rtl ? 'row-reverse' : 'row';
@@ -89,7 +93,7 @@ export default function AdminDashboard() {
         <Text style={[styles.headerTitle, { ...font.medium, textAlign }]}>{t('admin_dashboard.title')}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]} showsVerticalScrollIndicator={false}>
         {/* Action queue */}
         <View style={[styles.headingRow, { flexDirection: rowDir }]}>
           <Text style={[styles.heading, { ...font.medium, color: colors.text, textAlign }]}>{t('admin_dashboard.attention')}</Text>
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)', width: '100%' },
   headerTitle: { fontSize: 17, color: '#ffffff', width: '100%' },
 
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16 },
 
   headingRow: { alignItems: 'center' },
   heading: { fontSize: 13, width: '100%' },

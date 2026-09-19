@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookOpen, MessagesSquare, ShoppingBag, ChevronRight, ChevronLeft, Percent } from 'lucide-react-native';
@@ -26,6 +27,9 @@ export default function OperationsAdmin() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const language = useSettingsStore((s) => s.language);
+  // Admin keeps the floating pill: its measured height + the 24pt it floats
+  // above the edge + the content gap.
+  const tabBarClearance = useTabBarClearance() + FLOATING_TAB_BAR_BOTTOM;
   const rtl = language === 'he';
   const t = makeT(rtl ? he : en);
   const rowDir = rtl ? 'row-reverse' : 'row';
@@ -50,7 +54,7 @@ export default function OperationsAdmin() {
         <Text style={[styles.headerTitle, { ...font.medium, textAlign: 'right' }]}>{t('admin_operations.title')}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {items.map(({ label, route, icon: Icon }, i) => (
             <TouchableOpacity
@@ -78,7 +82,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)', width: '100%' },
   headerTitle: { fontSize: 17, color: '#ffffff', width: '100%' },
 
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16 },
   card: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   row: { alignItems: 'center', gap: 14, minHeight: 56, paddingHorizontal: 16, paddingVertical: 14 },
   icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },

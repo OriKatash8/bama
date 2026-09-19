@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Modal,
   TextInput, Switch, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
@@ -84,6 +85,9 @@ export default function CoursesAdmin() {
   const { showToast } = useUiStore();
   const { uploading, processing, uploadVideo } = useVideoUpload();
   const language = useSettingsStore((s) => s.language);
+  // Admin keeps the floating pill: its measured height + the 24pt it floats
+  // above the edge + the content gap.
+  const tabBarClearance = useTabBarClearance() + FLOATING_TAB_BAR_BOTTOM;
   const t = makeT(language === 'he' ? he : en);
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -230,7 +234,7 @@ export default function CoursesAdmin() {
       <FlatList
         data={courses}
         keyExtractor={(c) => c.id}
-        contentContainerStyle={{ padding: 16, paddingTop: 8 }}
+        contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: tabBarClearance }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListHeaderComponent={
           requests.length > 0 ? (

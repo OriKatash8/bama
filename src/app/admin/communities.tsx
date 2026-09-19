@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, ActivityIndicator, TextInput,
@@ -39,6 +40,9 @@ type Community = {
 
 export default function CommunitiesAdmin() {
   const colors = useTheme();
+  // Admin keeps the floating pill: its measured height + the 24pt it floats
+  // above the edge + the content gap.
+  const tabBarClearance = useTabBarClearance() + FLOATING_TAB_BAR_BOTTOM;
   const font = useAppFont();
   const router = useRouter();
   const { showToast } = useUiStore();
@@ -122,7 +126,7 @@ export default function CommunitiesAdmin() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.container, { paddingBottom: tabBarClearance }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7}>
           <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />

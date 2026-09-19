@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Coins, Percent, Clock, ArrowLeftRight, Info, Ban } from 'lucide-react-native';
@@ -32,6 +33,9 @@ export default function MoneyAdmin() {
   const font = useAppFont();
   const insets = useSafeAreaInsets();
   const language = useSettingsStore((s) => s.language);
+  // Admin keeps the floating pill: its measured height + the 24pt it floats
+  // above the edge + the content gap.
+  const tabBarClearance = useTabBarClearance() + FLOATING_TAB_BAR_BOTTOM;
   const rtl = language === 'he';
   const t = makeT(rtl ? he : en);
   const rowDir = rtl ? 'row-reverse' : 'row';
@@ -84,7 +88,7 @@ export default function MoneyAdmin() {
         <Text style={[styles.headerTitle, { ...font.medium, textAlign }]}>{t('admin_money.title')}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]} showsVerticalScrollIndicator={false}>
         <Text style={[styles.heading, { ...font.medium, color: colors.text, textAlign }]}>{t('admin_money.metrics')}</Text>
         <View style={[styles.grid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           {metrics.map(({ key, label, value, icon: Icon }) => (
@@ -188,7 +192,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)', width: '100%' },
   headerTitle: { fontSize: 17, color: '#ffffff', width: '100%' },
 
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16 },
   heading: { fontSize: 13, width: '100%', marginBottom: 10 },
   headingSpaced: { marginTop: 22 },
 
