@@ -16,6 +16,14 @@ const SOLID = { light: '#FFFFFF', dark: '#0f0f1f' } as const;
  *  screens), so it gets a near-solid material instead of a blur of nothing. */
 const ANDROID_FALLBACK = { light: 'rgba(255,255,255,0.92)', dark: 'rgba(15,15,31,0.92)' } as const;
 const HAIRLINE = { light: 'rgba(0,0,0,0.12)', dark: 'rgba(255,255,255,0.14)' } as const;
+/** A soft lift under the floating capsule: a wide diffuse shadow plus a tight
+ *  contact one. CSS box-shadow semantics (RN new architecture + web): drawn
+ *  only OUTSIDE the capsule, never behind it — so nothing shows through the
+ *  glass or the blur, and it needs no background of its own. */
+const CAPSULE_SHADOW = {
+  light: '0px 8px 24px rgba(15, 15, 31, 0.12), 0px 1px 3px rgba(15, 15, 31, 0.08)',
+  dark: '0px 8px 24px rgba(0, 0, 0, 0.45), 0px 1px 3px rgba(0, 0, 0, 0.35)',
+} as const;
 
 /**
  * The docked tab bar's material, in order of preference:
@@ -98,6 +106,9 @@ export function GlassTabBarBackground({ activeColor, isDark, tabNames }: Props) 
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {/* Its own layer behind the material: the blur wrapper clips with
+          overflow hidden, which would cut a shadow set on it. */}
+      <View testID="tabbar-shadow" style={[styles.capsule, { boxShadow: CAPSULE_SHADOW[scheme] }]} />
       {material}
       <SlidingTabBackground
         numTabs={tabNames.length}

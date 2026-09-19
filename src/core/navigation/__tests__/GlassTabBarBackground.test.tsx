@@ -143,6 +143,20 @@ describe('capsule shape', () => {
     expect(frameOf(blur.getByTestId('tabbar-solid').props.style)).toEqual(expected);
   });
 
+  it('every path gets the soft shadow, on a capsule-shaped layer with no fill of its own', async () => {
+    for (const glass of [true, false]) {
+      mockGlassApi = glass;
+      const r = render(<GlassTabBarBackground {...props} />);
+      await act(async () => {});
+      const sh = StyleSheet.flatten(r.getByTestId('tabbar-shadow').props.style);
+      expect(frameOf(sh)).toEqual(expected);
+      expect(typeof sh.boxShadow).toBe('string');
+      expect(sh.backgroundColor).toBeUndefined();
+      expect(sh.opacity).toBeUndefined();
+      r.unmount();
+    }
+  });
+
   it('the blur carries the radius itself too (web clips backdrop-filter by its own radius)', async () => {
     const r = render(<GlassTabBarBackground {...props} />);
     await act(async () => {});
