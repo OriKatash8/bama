@@ -10,6 +10,12 @@ type Props = {
   /** Height of the bar's content band. The pill stays inside it, above the
    *  bottom safe-area inset the bar also covers. */
   bandHeight: number;
+  /** Inset of the band from each side — the capsule's side margin — so the
+   *  band's width is the tab row's and the pill lines up with the items. */
+  sideInset?: number;
+  /** Corner radius of the band; with overflow hidden the pill can never cross
+   *  the capsule's rounded ends. */
+  radius?: number;
 };
 
 const PILL_OPACITY = 0.13;
@@ -32,7 +38,7 @@ function withAlpha(hex: string, alpha: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
-export function SlidingTabBackground({ numTabs, tabNames, activeColor, bandHeight }: Props) {
+export function SlidingTabBackground({ numTabs, tabNames, activeColor, bandHeight, sideInset = 0, radius = 0 }: Props) {
   const segments = useSegments();
   const activeSegment = segments.find(s => tabNames.includes(s)) ?? tabNames[0];
   const activeIndex = Math.max(0, tabNames.indexOf(activeSegment));
@@ -56,7 +62,7 @@ export function SlidingTabBackground({ numTabs, tabNames, activeColor, bandHeigh
 
   return (
     <View
-      style={[styles.band, { height: bandHeight }]}
+      style={[styles.band, { height: bandHeight, left: sideInset, right: sideInset, borderRadius: radius }]}
       onLayout={e => setWidth(e.nativeEvent.layout.width)}
       pointerEvents="none"
     >
@@ -82,7 +88,7 @@ export function SlidingTabBackground({ numTabs, tabNames, activeColor, bandHeigh
 }
 
 const styles = StyleSheet.create({
-  band: { position: 'absolute', top: 0, left: 0, right: 0 },
+  band: { position: 'absolute', top: 0, overflow: 'hidden' },
   pill: {
     position: 'absolute',
     top: PILL_INSET_Y,

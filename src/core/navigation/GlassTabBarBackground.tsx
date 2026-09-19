@@ -3,7 +3,7 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { SlidingTabBackground } from './SlidingTabBackground';
-import { TAB_BAR_CONTENT_HEIGHT } from './floatingTabBar';
+import { TAB_BAR_CONTENT_HEIGHT, TAB_BAR_SIDE_MARGIN, TAB_BAR_CAPSULE_RADIUS } from './floatingTabBar';
 
 type Props = {
   activeColor: string;
@@ -23,8 +23,10 @@ const HAIRLINE = { light: 'rgba(0,0,0,0.12)', dark: 'rgba(255,255,255,0.14)' } a
  *  2. Liquid Glass (iOS 26+, gated at runtime on isGlassEffectAPIAvailable() —
  *     some iOS 26 betas lack the API and crash) → GlassView. It draws its own
  *     edge, so no manual hairline.
- *  3. Otherwise (older iOS, web, Android) → BlurView + hairline, as before.
- * The sliding active-tab pill sits on top of whichever material is used.
+ *  3. Otherwise (older iOS, web, Android) → BlurView in a clipped capsule with
+ *     a rounded hairline border.
+ * Every path draws the same floating capsule (see styles.capsule), and the
+ * sliding active-tab pill sits inside it, clipped to its rounded ends.
  *
  * Never put opacity on the GlassView or any parent: opacity 0 anywhere above it
  * kills the effect. Animate it with glassEffectStyle's animate /
@@ -53,45 +55,70 @@ export function GlassTabBarBackground({ activeColor, isDark, tabNames }: Props) 
     return () => { alive = false; sub.remove(); };
   }, []);
 
+  // One capsule frame for every material: inset from the sides, sitting at the
+  // top of the bar's box — the float gap and the safe-area inset below it stay
+  // empty. The tab row is confined to exactly this band (getDockedTabBarStyle).
+  const hairlineBorder = { borderWidth: StyleSheet.hairlineWidth, borderColor: HAIRLINE[scheme] };
   let material;
-  let hairline = true;
   if (reduceTransparency) {
-    material = <View testID="tabbar-solid" style={[StyleSheet.absoluteFill, { backgroundColor: SOLID[scheme] }]} />;
+    material = (
+      <View testID="tabbar-solid" style={[styles.capsule, hairlineBorder, { backgroundColor: SOLID[scheme] }]} />
+    );
   } else if (isGlassEffectAPIAvailable()) {
+    // Liquid Glass takes the radius directly and draws its own edge — no
+    // hairline, and no opacity on it or any parent.
     material = (
       <GlassView
         testID="tabbar-glass"
-        style={StyleSheet.absoluteFill}
+        style={styles.capsule}
         glassEffectStyle="regular"
         colorScheme={scheme}
       />
     );
-    hairline = false;
-  } else if (Platform.OS === 'android') {
-    material = (
-      <>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: ANDROID_FALLBACK[scheme] }]} />
-        <BlurView style={StyleSheet.absoluteFill} tint={scheme} intensity={80} blurMethod="dimezisBlurView" />
-      </>
-    );
   } else {
-    material = <BlurView style={StyleSheet.absoluteFill} tint={scheme} intensity={80} />;
+    // A rounded wrapper with overflow hidden clips the blur's corners (BlurView
+    // ignores an explicit borderRadius on some platforms); the BlurView also
+    // gets the radius itself, because on web backdrop-filter is only reliably
+    // clipped by its own element's border-radius. The hairline is the wrapper's
+    // rounded border, not a straight line on top.
+    material = (
+      <View testID="tabbar-capsule" style={[styles.capsule, styles.clip, hairlineBorder]}>
+        {Platform.OS === 'android' && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: ANDROID_FALLBACK[scheme] }]} />
+        )}
+        <BlurView
+          style={[StyleSheet.absoluteFill, { borderRadius: TAB_BAR_CAPSULE_RADIUS }]}
+          tint={scheme}
+          intensity={80}
+          {...(Platform.OS === 'android' ? { blurMethod: 'dimezisBlurView' as const } : null)}
+        />
+      </View>
+    );
   }
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {material}
-      {hairline && <View testID="tabbar-hairline" style={[styles.hairline, { backgroundColor: HAIRLINE[scheme] }]} />}
       <SlidingTabBackground
         numTabs={tabNames.length}
         tabNames={tabNames}
         activeColor={activeColor}
         bandHeight={TAB_BAR_CONTENT_HEIGHT}
+        sideInset={TAB_BAR_SIDE_MARGIN}
+        radius={TAB_BAR_CAPSULE_RADIUS}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hairline: { position: 'absolute', top: 0, left: 0, right: 0, height: StyleSheet.hairlineWidth },
+  capsule: {
+    position: 'absolute',
+    top: 0,
+    left: TAB_BAR_SIDE_MARGIN,
+    right: TAB_BAR_SIDE_MARGIN,
+    height: TAB_BAR_CONTENT_HEIGHT,
+    borderRadius: TAB_BAR_CAPSULE_RADIUS,
+  },
+  clip: { overflow: 'hidden' },
 });

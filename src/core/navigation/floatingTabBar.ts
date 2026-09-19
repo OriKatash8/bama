@@ -48,6 +48,13 @@ export const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'web' ? 58 : 50;
 /** Space between the last content on a screen and the top of the tab bar. */
 export const TAB_BAR_CONTENT_GAP = 16;
 
+/** The capsule floats this far above the bottom safe-area inset. */
+export const TAB_BAR_BOTTOM_OFFSET = 24;
+/** The capsule's inset from each side of the screen. */
+export const TAB_BAR_SIDE_MARGIN = 16;
+/** Half the content height: a true capsule. */
+export const TAB_BAR_CAPSULE_RADIUS = TAB_BAR_CONTENT_HEIGHT / 2;
+
 /** How far the admin's floating pill sits above the screen edge (bottom: 24). */
 export const FLOATING_TAB_BAR_BOTTOM = 24;
 
@@ -61,10 +68,20 @@ export const TAB_ITEM_STYLE: ViewStyle = {
 };
 
 /**
- * A full-width bar docked to the bottom edge. Transparent: the material is
- * drawn by GlassTabBarBackground. The bar owns the bottom safe-area inset — its
- * height includes it — so useBottomTabBarHeight() already accounts for the home
- * indicator and screens must not add insets.bottom on top.
+ * The tab bar's box: full width, from the screen's bottom edge up to the top of
+ * the capsule. Transparent — GlassTabBarBackground draws the capsule inside it,
+ * inset TAB_BAR_SIDE_MARGIN from each side and floating TAB_BAR_BOTTOM_OFFSET
+ * above the bottom safe-area inset, which stays empty below it.
+ *
+ * The clearance contract: the height INCLUDES the inset and the float gap, so
+ * useBottomTabBarHeight() / useTabBarHeight() report a number that clears the
+ * whole thing. Screens must not add insets.bottom on top.
+ *
+ * The padding confines the tab row to the capsule band, so every tab's touch
+ * target lies inside the capsule — none reaches into the gap or the margins.
+ * pointerEvents 'box-none' lets taps in that transparent gap and the margins
+ * reach the content scrolled beneath. (tabBarStyle is applied after the
+ * navigator's own pointerEvents, so this wins.)
  */
 export function getDockedTabBarStyle(bottomInset: number): ViewStyle {
   return {
@@ -72,13 +89,15 @@ export function getDockedTabBarStyle(bottomInset: number): ViewStyle {
     left: 0,
     right: 0,
     bottom: 0,
-    height: TAB_BAR_CONTENT_HEIGHT + bottomInset,
+    height: TAB_BAR_CONTENT_HEIGHT + bottomInset + TAB_BAR_BOTTOM_OFFSET,
     paddingTop: 0,
-    paddingBottom: bottomInset,
+    paddingBottom: bottomInset + TAB_BAR_BOTTOM_OFFSET,
+    paddingHorizontal: TAB_BAR_SIDE_MARGIN,
     backgroundColor: 'transparent',
     borderTopWidth: 0,
     elevation: 0,
     shadowOpacity: 0,
+    pointerEvents: 'box-none',
   };
 }
 
