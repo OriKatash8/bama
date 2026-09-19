@@ -290,18 +290,34 @@ export default function MarketplaceScreen() {
         </GradientBand>
 
         <View style={styles.sheet}>
-        {/* Search */}
-        <View style={[styles.searchWrap, searchFocused && styles.searchWrapFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <Search size={18} color="#8B8898" strokeWidth={2} />
-          <TextInput
-            style={[styles.searchBar, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-            placeholder={t('marketplace.search_placeholder')}
-            placeholderTextColor="#9C99AD"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
+        {/* Search + filter button at its end — the same pair as the courses tab. */}
+        <View style={[styles.searchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.searchWrap, styles.searchWrapFlex, searchFocused && styles.searchWrapFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <Search size={18} color="#8B8898" strokeWidth={2} />
+            <TextInput
+              style={[styles.searchBar, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
+              placeholder={t('marketplace.search_placeholder')}
+              placeholderTextColor="#9C99AD"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+            />
+          </View>
+          <TouchableOpacity
+            style={[styles.filterBtn, filtersActive && styles.filterBtnActive]}
+            onPress={openFilterModal}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('marketplace.filter')}
+          >
+            <SlidersHorizontal size={18} color={BLUE} strokeWidth={2.2} />
+            {activeFilterTags.length > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={[styles.filterBadgeText, { ...font.bold }]}>{activeFilterTags.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Categories — the row runs to the screen edges (see categoriesScroll) */}
@@ -325,25 +341,9 @@ export default function MarketplaceScreen() {
           </ScrollView>
         </View>
 
-        {/* Filter button + active tags */}
-        <View style={styles.filterBarRow}>
-          <TouchableOpacity
-            style={[
-              styles.filterBtn,
-              filtersActive && styles.filterBtnActive,
-            ]}
-            onPress={openFilterModal}
-            activeOpacity={0.8}
-            // 32 visual + 6 either side = 44.
-            hitSlop={{ top: 6, bottom: 6 }}
-          >
-            <SlidersHorizontal size={14} color={filtersActive ? '#FFFFFF' : BLUE} strokeWidth={2} />
-            <AppText weight="semiBold" style={[styles.filterBtnText, { color: filtersActive ? '#FFFFFF' : BLUE }]}>
-              {t('marketplace.filter')}
-            </AppText>
-          </TouchableOpacity>
-
-          {activeFilterTags.length > 0 && (
+        {/* Active filter tags */}
+        {activeFilterTags.length > 0 && (
+          <View style={styles.filterBarRow}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -362,8 +362,8 @@ export default function MarketplaceScreen() {
                 </View>
               ))}
             </ScrollView>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Product grid */}
         {isLoading ? (
@@ -576,8 +576,9 @@ const styles = StyleSheet.create({
 
   modeDesc: { fontSize: 12.5, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginTop: 10 },
 
+  searchRow: { alignItems: 'center', gap: 8, marginBottom: 8 },
+  searchWrapFlex: { flex: 1 },
   searchWrap: {
-    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     height: 46,
@@ -634,22 +635,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 10,
   },
+  // Same height and shape as the search field beside it (as on courses).
   filterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 32,
-    borderRadius: 999,
-    paddingHorizontal: 13,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#EAE8F0',
-    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  // A filter is on: filled, as before, in the violet palette.
-  filterBtnActive: { backgroundColor: BLUE, borderColor: BLUE },
-  filterBtnText: { fontSize: 12.5, fontWeight: '600' },
+  // A filter is on: blue outline, plus the count.
+  filterBtnActive: { borderColor: BLUE },
+  // How many filters are on.
+  filterBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 999,
+    paddingHorizontal: 4,
+    backgroundColor: BLUE,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeText: { fontSize: 9.5, color: '#FFFFFF', lineHeight: 11 },
 
-  tagsScroll: { flex: 1, marginLeft: 8 },
+  tagsScroll: { flex: 1 },
   tagsContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   activeTag: {
     flexDirection: 'row',
