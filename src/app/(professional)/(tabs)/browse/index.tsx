@@ -17,6 +17,7 @@ import { useSearchProfessionals } from '@features/crew/hooks';
 import type { ProfessionalResult } from '@features/crew/hooks/useSearchProfessionals';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 const CATEGORIES = ROLE_CATEGORIES.map((key) => ({ key }));
 
@@ -38,6 +39,7 @@ export default function BrowseScreen() {
   const [modalQuery, setModalQuery] = useState('');
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const t = makeT(language === 'he' ? he : en);
   const font = useAppFont();
   const router = useRouter();
@@ -106,7 +108,7 @@ export default function BrowseScreen() {
         <FlatList
           data={filteredCategories}
           keyExtractor={(item) => item.key}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: tabBarClearance }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item: cat }) => (
@@ -217,7 +219,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15 },
   clearBtn: { fontSize: 14, paddingHorizontal: 4 },
 
-  listContent: { paddingHorizontal: 16, paddingBottom: 100 },
+  listContent: { paddingHorizontal: 16 },
 
   categoryRow: {
     flexDirection: 'row',

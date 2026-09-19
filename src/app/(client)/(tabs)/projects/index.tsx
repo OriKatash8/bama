@@ -25,6 +25,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/project';
 import type { User, ProfessionalProfile } from '@core/types/user';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 /** `null` is the default: newest first. There is no separate 'date' member —
  *  date-descending IS the default order, so a chip for it would duplicate it. */
@@ -66,6 +67,7 @@ export default function ProjectsPage() {
   const modeSegment = segments[0];
   const { showToast } = useUiStore();
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
@@ -338,7 +340,7 @@ export default function ProjectsPage() {
     <Screen scrollable={false} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -571,7 +573,7 @@ export default function ProjectsPage() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: {},
   band: { paddingTop: 20, paddingHorizontal: 20, paddingBottom: 40 },
   /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
   sheet: {

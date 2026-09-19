@@ -1,4 +1,6 @@
+import { use } from 'react';
 import { Platform } from 'react-native';
+import { BottomTabBarHeightContext } from 'expo-router/js-tabs';
 import type { ViewStyle } from 'react-native';
 
 export const FLOATING_TAB_BAR_ACTIVE_COLOR = '#004aad';
@@ -79,3 +81,40 @@ export function getDockedTabBarStyle(bottomInset: number): ViewStyle {
     shadowOpacity: 0,
   };
 }
+
+/**
+ * The docked tab bar's measured height, read from the navigator's context. It
+ * already includes the bottom safe-area inset (the bar owns it), so never add
+ * insets.bottom on top.
+ *
+ * Reads the context rather than useBottomTabBarHeight(), which throws when
+ * there is no navigator. The fallback is TAB_BAR_CONTENT_HEIGHT — the content
+ * band ONLY, excluding the safe-area inset. It's expected only outside a
+ * bottom-tab navigator (a screen rendered directly in a test); inside the app a
+ * miss is a bug, so it warns in development.
+ *
+ * Hidden-bar caveat: on a screen where tabBarStyle is display:'none', the value
+ * is the navigator's last laid-out bar height — stale, not 0. No screen that
+ * uses this is hidden-bar today; one that becomes so must not rely on it.
+ */
+export function useTabBarHeight(): number {
+  const height = use(BottomTabBarHeightContext);
+  if (height === undefined) {
+    if (__DEV__) {
+      console.warn(
+        '[tabs] BottomTabBarHeightContext missing — falling back to TAB_BAR_CONTENT_HEIGHT (no safe-area inset). Is this screen outside the tab navigator?',
+      );
+    }
+    return TAB_BAR_CONTENT_HEIGHT;
+  }
+  return height;
+}
+
+/** Bottom padding that clears the docked tab bar: its height + a small gap. */
+export function useTabBarClearance(): number {
+  return useTabBarHeight() + TAB_BAR_CONTENT_GAP;
+}
+
+/** Room for a + button (56) floating above the bar: list padding that lets the
+ *  last item scroll clear of both. */
+export const FAB_SIZE = 56;

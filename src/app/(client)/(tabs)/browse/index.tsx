@@ -22,6 +22,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -82,6 +83,7 @@ export default function SearchScreen() {
   const colors = useTheme();
   const router = useRouter();
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const font = useAppFont();
@@ -148,7 +150,7 @@ export default function SearchScreen() {
   const isSearching = query.trim().length > 0;
 
   return (
-    <Screen keyboardShouldPersistTaps="handled" backgroundColor={PAGE_BG} style={{ padding: 0, paddingBottom: 100 }}>
+    <Screen keyboardShouldPersistTaps="handled" backgroundColor={PAGE_BG} style={{ padding: 0, paddingBottom: tabBarClearance }}>
       {/* Header */}
       <GradientBand style={styles.band} flip>
         <PageTitle style={titleType}>{t('search.heading')}</PageTitle>

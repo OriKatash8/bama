@@ -16,6 +16,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 const PAGE_BG = '#FAFAFC';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
@@ -31,6 +32,7 @@ function t(translations: Translations, key: string): string {
 
 export default function ChatsPage() {
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const font = useAppFont();
   const colors = useTheme();
   const router = useRouter();
@@ -70,7 +72,7 @@ export default function ChatsPage() {
   const hasChats = realChats.length > 0;
 
   return (
-    <Screen style={{ padding: 0, paddingBottom: 100 }} scrollable={hasChats} backgroundColor={PAGE_BG}>
+    <Screen style={{ padding: 0, paddingBottom: tabBarClearance }} scrollable={hasChats} backgroundColor={PAGE_BG}>
       <GradientBand style={styles.band} flip>
         <PageTitle style={titleType}>{t(tr, 'chats_page.title')}</PageTitle>
       </GradientBand>
@@ -86,7 +88,7 @@ export default function ChatsPage() {
           icon={MessageCircle}
           title={t(tr, 'chats.empty_client_title')}
           description={t(tr, 'chats.empty_client_desc')}
-          style={styles.emptyBias}
+          style={[styles.emptyBias, { paddingBottom: tabBarClearance }]}
           primaryAction={{
             label: t(tr, 'chats.empty_client_primary'),
             icon: Plus,
@@ -138,7 +140,7 @@ export default function ChatsPage() {
 const styles = StyleSheet.create({
   centerFill: { flex: 1 },
   // Bias the empty block upward a little (matches the Projects empty position).
-  emptyBias: { paddingBottom: 100 },
+  emptyBias: {},
   band: { paddingTop: 22, paddingHorizontal: 20, paddingBottom: 40 },
   /** Overlaps the band's bottom edge; zIndex so it paints over the gradient.
    *  flexGrow so the loading and empty states still fill the page. */

@@ -32,6 +32,7 @@ import { setDocument } from '@core/firebase/firestore';
 import { ROLE_CATEGORIES, categoryLabel, communityCategoryLabel } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -72,6 +73,7 @@ type Course = {
 export default function ProfessionalChatsScreen() {
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
+  const tabBarHeight = useTabBarHeight();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const user = useAuthStore((s) => s.user);
@@ -274,7 +276,7 @@ export default function ProfessionalChatsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <Screen scrollRef={pageScrollRef} style={{ padding: 0, paddingBottom: 100 }} backgroundColor={PAGE_BG}>
+    <Screen scrollRef={pageScrollRef} style={{ padding: 0, paddingBottom: tabBarHeight + TAB_BAR_CONTENT_GAP }} backgroundColor={PAGE_BG}>
       {/* Header — the three-way switch as one segmented control on the band.
           Same order and setActive logic as before. */}
       <GradientBand style={styles.band} flip>
@@ -497,8 +499,9 @@ export default function ProfessionalChatsScreen() {
               data={filteredCourses}
               keyExtractor={(c) => c.id}
               scrollEnabled={false}
-              // Clears the + button: it sits 110 up and is 56 tall.
-              contentContainerStyle={{ paddingTop: 8, paddingBottom: 180, gap: 12 }}
+              // The page already clears the tab bar; this adds room for the +
+              // button that floats just above it.
+              contentContainerStyle={{ paddingTop: 8, paddingBottom: FAB_SIZE + TAB_BAR_CONTENT_GAP, gap: 12 }}
               renderItem={({ item }) => (
                 <View style={styles.courseCard}>
                   {/* Cover */}
@@ -726,7 +729,7 @@ export default function ProfessionalChatsScreen() {
 
     {/* FAB — communities tab: sibling of Screen so position:absolute anchors to viewport */}
     {active === 'communities' && (
-      <TouchableOpacity style={styles.fab} onPress={() => setCommModal(true)} activeOpacity={0.85}>
+      <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setCommModal(true)} activeOpacity={0.85}>
         <LinearGradient
           colors={[BLUE, BLUE]}
           start={{ x: 0, y: 0 }}
@@ -740,7 +743,7 @@ export default function ProfessionalChatsScreen() {
 
     {/* FAB — courses tab */}
     {active === 'courses' && (
-      <TouchableOpacity style={styles.fab} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.85}>
+      <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.85}>
         <LinearGradient
           colors={[BLUE, BLUE]}
           start={{ x: 0, y: 0 }}
@@ -917,7 +920,7 @@ const styles = StyleSheet.create({
   // view isn't cut by overflow:hidden.
   fab: {
     position: 'absolute',
-    bottom: 110,
+    // bottom is set inline: just above the tab bar.
     right: 24,
     width: 56,
     height: 56,

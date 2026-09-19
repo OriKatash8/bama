@@ -4,6 +4,7 @@ import {
   useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 const BAMA_LOGO = require('../../../../../assets/images/bama-logo.png');
 import { router, useLocalSearchParams } from 'expo-router';
@@ -56,6 +57,7 @@ export default function BuilderScreen() {
   const colors = useTheme();
   const { user } = useAuth();
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const font = useAppFont();
   const translations = language === 'he' ? he : en;
   const t = (key: string, vars?: Record<string, string | number>): string => {
@@ -190,7 +192,7 @@ export default function BuilderScreen() {
 
   return (
     <Screen scrollable={false} backgroundColor={colors.bg}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]} keyboardShouldPersistTaps="handled">
         <View style={styles.topBar}>
           <View style={styles.logoWrap}>
             <Image source={BAMA_LOGO} style={styles.bamaLogo} contentFit="contain" cachePolicy="memory-disk" />
@@ -404,7 +406,7 @@ export default function BuilderScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: {},
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',

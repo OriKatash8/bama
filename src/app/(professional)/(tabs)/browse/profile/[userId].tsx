@@ -30,6 +30,7 @@ import he from '@core/i18n/translations/he.json';
 import type { User, ProfessionalProfile } from '@core/types/user';
 import type { MediaAsset } from '@core/types/media';
 import type { Review } from '@core/types/project';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -56,6 +57,7 @@ export default function PublicProfileScreen() {
   const modeSegment = segments[0];
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const font = useAppFont();
   const { showToast } = useUiStore();
   const currentUserId = useAuthStore((s) => s.user?.id ?? '');
@@ -190,7 +192,7 @@ export default function PublicProfileScreen() {
   const canSubmit = reportReason.trim().length >= 20;
 
   return (
-    <Screen scrollable style={styles.screenContent} backgroundColor={PAGE_BG}>
+    <Screen scrollable style={[styles.screenContent, { paddingBottom: tabBarClearance }]} backgroundColor={PAGE_BG}>
       {/* Identity, on the violet band */}
       <GradientBand style={styles.band}>
         {/* ── Title row: back + report ── */}
@@ -356,7 +358,7 @@ export default function PublicProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screenContent: { padding: 0, paddingBottom: 100 },
+  screenContent: { padding: 0 },
   band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 40, alignItems: 'center', gap: 10 },
   /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
   sheet: {

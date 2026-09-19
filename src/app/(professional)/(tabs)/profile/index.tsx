@@ -26,6 +26,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceEntry } from '@core/types/project';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -50,6 +51,7 @@ export default function ProfessionalProfileScreen() {
   const { showToast } = useUiStore();
   const setProfileEditing = useUiStore((s) => s.setProfileEditing);
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const font = useAppFont();
@@ -164,7 +166,7 @@ export default function ProfessionalProfileScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <Screen style={[styles.content, isEditing && styles.contentEditing]} scrollable backgroundColor={PAGE_BG}>
+    <Screen style={[styles.content, { paddingBottom: tabBarClearance }, isEditing && styles.contentEditing]} scrollable backgroundColor={PAGE_BG}>
       {/* Identity, on the violet band */}
       <GradientBand style={styles.band} flip>
         <ProfileHeader
@@ -266,7 +268,8 @@ export default function ProfessionalProfileScreen() {
 const PAGE_BG = '#FAFAFC';
 
 const styles = StyleSheet.create({
-  content: { padding: 0, paddingBottom: 100 },
+  content: { padding: 0 },
+  // Editing hides the tab bar; this clears the save bar instead.
   contentEditing: { paddingBottom: 120 },
   band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 40, alignItems: 'center', gap: 10 },
   /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */

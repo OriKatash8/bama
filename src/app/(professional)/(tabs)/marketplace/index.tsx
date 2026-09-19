@@ -24,6 +24,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
 import { brandLabel } from '@features/marketplace/utils';
+import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -169,6 +170,7 @@ export default function MarketplaceScreen() {
 
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
+  const tabBarHeight = useTabBarHeight();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const { listings, isLoading } = useMarketplaceListings(activeTab);
@@ -275,7 +277,8 @@ export default function MarketplaceScreen() {
     <Screen scrollable={false} style={styles.screen} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
+        // Clears the bar and the + button above it.
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + FAB_SIZE + TAB_BAR_CONTENT_GAP * 2 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -390,7 +393,7 @@ export default function MarketplaceScreen() {
       </ScrollView>
 
       {/* FAB — fixed above tab bar, outside the ScrollView */}
-      <TouchableOpacity style={styles.fab} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
+      <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
         <LinearGradient
           colors={[BLUE, BLUE]}
           start={{ x: 0, y: 0 }}
@@ -536,8 +539,8 @@ export default function MarketplaceScreen() {
 const styles = StyleSheet.create({
   screen: { gap: 0 },
   flex: { flex: 1 },
-  // Clears the + button at the end of the list: FAB bottom 96 + 56 tall + room.
-  scrollContent: { paddingBottom: 170 },
+  // paddingBottom is set inline: the bar's height + the + button + gaps.
+  scrollContent: {},
 
   band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 38 },
   /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
@@ -561,7 +564,7 @@ const styles = StyleSheet.create({
   // view isn't cut by overflow:hidden.
   fab: {
     position: 'absolute',
-    bottom: 96,
+    // bottom is set inline: just above the tab bar.
     right: 24,
     width: 56,
     height: 56,

@@ -38,6 +38,7 @@ import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israel
 import { formatIsoDay } from '@utils/formatters';
 import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
 import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
+import { useTabBarHeight } from '@core/navigation/floatingTabBar';
 
 /**
  * The wizard's violet palette. Local on purpose: this pass restyles this screen
@@ -122,6 +123,9 @@ export default function HomeScreen() {
   const artHeight = Math.round(artSize * 0.5);
 
   const language = useSettingsStore((s) => s.language);
+  // The sheet's last child (submitWrap) carries its own 14pt under the button,
+  // so the sheet clears the bar by its height alone — no extra gap.
+  const tabBarHeight = useTabBarHeight();
   const translations = language === 'he' ? he : en;
   const t = (key: string): string => {
     const keys = key.split('.');
@@ -427,7 +431,7 @@ export default function HomeScreen() {
               <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.step_label_1')}</Text>
             </GradientBand>
 
-            <View style={styles.sheet} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
+            <View style={[styles.sheet, { paddingBottom: tabBarHeight }]} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y; }}>
               <Text style={[styles.label, { textAlign: rtl ? 'right' : 'left', marginTop: 0 }]}>{t('builder.title')}</Text>
               {/* The ring is always mounted and only changes colour: mounting it
                   on focus would re-parent the TextInput and drop the keyboard. */}
@@ -646,7 +650,7 @@ export default function HomeScreen() {
               <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.step_label_2')}</Text>
             </GradientBand>
 
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { paddingBottom: tabBarHeight }]}>
 
             <TouchableOpacity
               style={[styles.backArrow, { alignSelf: rtl ? 'flex-end' : 'flex-start', flexDirection: rtl ? 'row-reverse' : 'row' }]}
@@ -795,7 +799,7 @@ export default function HomeScreen() {
               <Text style={[styles.stepLabel, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.step_label_3')}</Text>
             </GradientBand>
 
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { paddingBottom: tabBarHeight }]}>
 
             <TouchableOpacity
               style={[styles.backArrow, { alignSelf: rtl ? 'flex-end' : 'flex-start', flexDirection: rtl ? 'row-reverse' : 'row' }]}
@@ -1023,7 +1027,7 @@ function createStyles(
     // flexGrow lets step 1 fill a tall screen, so the spacer below the card can
     // push the next-step button to the bottom instead of leaving dead space under
     // it. Short screens still scroll normally. The bottom clearance for the
-    // floating tab bar lives on the sheet, so the white runs to the very end.
+    // tab bar lives on the sheet, so the white runs to the very end.
     scrollContent: { flexGrow: 1 },
     /** Carries the step transition. flexGrow so the `grow` spacer inside each
      *  step still reaches the bottom of a tall screen — the wrapper sits between
@@ -1080,8 +1084,8 @@ function createStyles(
       zIndex: 1,
       paddingTop: 26,
       paddingHorizontal: 20,
-      // Clears the floating tab bar, inside the white rather than below it.
-      paddingBottom: 56,
+      // paddingBottom (tab bar clearance) is set inline from the bar's measured
+      // height, inside the white rather than below it.
       shadowColor: '#4C1D95',
       shadowOpacity: 0.09,
       shadowRadius: 14,

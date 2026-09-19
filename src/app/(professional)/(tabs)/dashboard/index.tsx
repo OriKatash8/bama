@@ -36,6 +36,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import type { Chat } from '@features/chat/types';
+import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -93,6 +94,7 @@ export default function DashboardScreen() {
   const modeSegment = segments[0];
 
   const language = useSettingsStore((s) => s.language);
+  const tabBarClearance = useTabBarClearance();
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -370,7 +372,7 @@ export default function DashboardScreen() {
     <Screen scrollable={false} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -727,7 +729,10 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  scrollContent: { paddingBottom: 140 },
+  // paddingBottom (tab bar clearance) is set inline. The lists inside this
+  // scroll add only their own 8pt rhythm — they used to add another 100 each,
+  // stacking on top of this.
+  scrollContent: {},
 
   band: { paddingTop: 20, paddingHorizontal: 20, paddingBottom: 40 },
   /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
@@ -857,7 +862,7 @@ const styles = StyleSheet.create({
   // In-progress section
   // Vertical list, same rhythm as the noticeboard's gridContent — the two
   // sections swap into the same slot, so they should scroll the same way.
-  projectsList: { paddingVertical: 8, gap: 12, paddingBottom: 100 },
+  projectsList: { paddingVertical: 8, gap: 12 },
   inProgressEmpty: { alignItems: 'center', paddingHorizontal: 32, paddingVertical: 48, gap: 6 },
 
   projectCard: {
@@ -926,7 +931,7 @@ const styles = StyleSheet.create({
   },
 
   // Notice board
-  gridContent: { paddingVertical: 8, gap: 12, paddingBottom: 100 },
+  gridContent: { paddingVertical: 8, gap: 12 },
 
   // Empty state
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40 },

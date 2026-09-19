@@ -13,6 +13,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { communityCategoryLabel } from '@features/crew/data/categories';
+import { TAB_BAR_CONTENT_GAP, FAB_SIZE } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -428,7 +429,9 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
       )}
 
       {/* Clears the + button: it sits 110 up and is 56 tall. */}
-      <View style={{ height: 180 }} />
+      {/* Room for the + button floating above the tab bar; the host page
+          already clears the bar itself. */}
+      <View style={{ height: FAB_SIZE + TAB_BAR_CONTENT_GAP }} />
     </ScrollView>
   );
 }

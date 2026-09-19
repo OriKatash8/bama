@@ -121,3 +121,38 @@ All lucide-react-native at 20pt:
    - I'd replace the hardcoded 100 / 140 / 170 / 180 with `useBottomTabBarHeight()` (plus a small gap) on each listed screen, and move the two FABs to sit relative to it.
    - The hook only works inside the Tabs navigator, which all of these screens are.
    - One catch: the layout currently zeroes the bottom inset for everything below it, so the hook would report the bar height without the home-indicator area. I'd give the bar the real inset explicitly, so the hook's number includes it.
+
+---
+
+## Phase B notes: the padding sweep (commit B)
+
+### How screens clear the bar now
+- **Helpers:** `useTabBarHeight()` and `useTabBarClearance()` in `src/core/navigation/floatingTabBar.ts`.
+  - They read `BottomTabBarHeightContext` (from `expo-router/js-tabs`) directly, not `useBottomTabBarHeight()`, which throws outside a navigator.
+  - `useTabBarClearance()` = bar height + `TAB_BAR_CONTENT_GAP` (16).
+- **The bar owns the bottom safe-area inset.** Its measured height already includes the home indicator, so **never add `insets.bottom` on top**. Doing so double-counts the inset on notched devices.
+- **Fallback when the context is missing:** `TAB_BAR_CONTENT_HEIGHT`, the content band **only, excluding the safe-area inset**, and it `console.warn`s in `__DEV__`.
+  - Expected only outside a bottom-tab navigator. Today that's the six tests that render home/index, home/builder or projects/index directly; they print the warning.
+  - Inside the app, the warning means a screen is using the helper somewhere it shouldn't.
+
+### Hidden-bar screens: the value is stale, not 0
+- On a screen where the tab bar is hidden (`tabBarStyle: { display: 'none' }`), the hook returns the navigator's **last laid-out bar height**: a stale value, **not 0**.
+- A screen that mounts with the bar already hidden gets the navigator's initial estimate: 49 plus the bottom inset.
+- **No swept screen is hidden-bar today.** The hidden-bar screens are:
+  - the chat rooms and the chat-detail screens under `/chats/…`
+  - `/home/summary`
+  - the locked pro profile, which is always in edit mode and uses its own save-bar padding
+- None of them uses the helper. Anyone who makes a swept screen hidden-bar, or adds the helper to a hidden-bar screen, must not rely on it for clearance.
+
+### Where the clearance lives
+**Once per scroll, on the outermost scroll that meets the screen bottom.** Lists nested inside that scroll don't add it again.
+- **Pro dashboard:** the page scroll carried 140, and both inner lists (the notice board and the in-progress list, which don't scroll on their own) carried another 100 each. That stacked to 240. Now the page scroll clears the bar once, and the inner lists keep only their 8pt rhythm.
+- **Pro chats:** the page scroll clears the bar. The courses list and the communities spacer (`CommunityDiscoveryTab`) add only the + button's room (`FAB_SIZE` + gap), where they used to add 180 each on top of the page's 100.
+- **Pro marketplace:** one page scroll, cleared by bar + + button + 2 gaps. The + buttons on marketplace and pro chats sit at `bottom: bar + gap`.
+- **Client home steps:** the sheet clears the bar by its height **only, with no gap**. Each step's last child, the next-step bar, already carries 14pt under the button.
+
+### Not changed
+- Admin: floating bar, separate commit C.
+- The pro profile's edit-mode 120: it clears the save bar, and the tab bar is hidden.
+- Hidden-bar screens.
+- Decorative in-sheet spacers.
