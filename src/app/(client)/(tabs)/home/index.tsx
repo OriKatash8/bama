@@ -1187,11 +1187,11 @@ function createStyles(
       shadowOffset: { width: 0, height: 1 },
       elevation: 2,
     },
-    tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(229,57,53,0.85)', alignItems: 'center', justifyContent: 'center' },
+    tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#000000', alignItems: 'center', justifyContent: 'center' },
     tileControlBtnLocked: { backgroundColor: 'rgba(120,125,150,0.7)' },
-    tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#004aad', alignItems: 'center', justifyContent: 'center' },
+    tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: VIOLET, alignItems: 'center', justifyContent: 'center' },
     tileControlText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 16 },
-    tileCountText: { color: '#004aad', fontSize: 14, fontWeight: '800', fontFamily: ffBold, minWidth: 14, textAlign: 'center' },
+    tileCountText: { color: '#000000', fontSize: 14, fontWeight: '800', fontFamily: ffBold, minWidth: 14, textAlign: 'center' },
     /** Shared by all three steps, so the next-step button is the same width
      *  throughout. The 36pt inset used to be inline on step 1 only, leaving
      *  steps 2 and 3 with the 16pt default and visibly wider buttons. */

@@ -282,7 +282,7 @@ export default function SummaryScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Band: back link, title, subtitle ── */}
-        <GradientBand style={styles.band}>
+        <GradientBand style={styles.band} flip>
           <TouchableOpacity
             style={[styles.backRow, { flexDirection: rowDir, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}
             onPress={backToWizard}
