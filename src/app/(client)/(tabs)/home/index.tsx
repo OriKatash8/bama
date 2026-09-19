@@ -58,6 +58,8 @@ const DESCRIPTION_MIN = 10;
  *  width; RN's types have no 'none', hence the cast (web only). */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 const TILE_GAP = 9;
+/** Width of a role tile's outer-edge slot for the −/count/+ column: the 30pt pill, then 4pt to the art (the selection ring takes 2 of them). */
+const TILE_SIDE_SLOT = 34;
 /** The step buttons' fill: solid purple (a two-stop gradient of one colour, so
  *  the LinearGradient that clips the corners stays in place). */
 const BUTTON_GRADIENT = {
@@ -111,7 +113,13 @@ export default function HomeScreen() {
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const { width } = useWindowDimensions();
-  const tileSize = Math.floor((width - 64 - 8) / 2);
+  // Two tiles across the sheet's inner width (20pt padding each side, 8pt gap).
+  const tileSize = Math.floor((width - 40 - 8) / 2);
+  // Each tile keeps a slot on its outer edge for the −/count/+ column, so the
+  // column sits beside the art, never on it. Every tile reserves it, so
+  // selecting one moves nothing.
+  const artSize = tileSize - TILE_SIDE_SLOT;
+  const artHeight = Math.round(artSize * 0.5);
 
   const language = useSettingsStore((s) => s.language);
   const translations = language === 'he' ? he : en;
@@ -647,8 +655,8 @@ export default function HomeScreen() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               {rtl
-                ? <ChevronRight size={20} color={VIOLET} strokeWidth={2.5} />
-                : <ChevronLeft size={20} color={VIOLET} strokeWidth={2.5} />}
+                ? <ChevronRight size={20} color="#000000" strokeWidth={2.5} />
+                : <ChevronLeft size={20} color="#000000" strokeWidth={2.5} />}
               <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
             </TouchableOpacity>
 
@@ -660,20 +668,25 @@ export default function HomeScreen() {
                 extraData={slots}
                 numColumns={2}
                 scrollEnabled={false}
+                // The selection ring is drawn 2pt outside each tile; without room
+                // (and with the list clipping) the top row's ring lost its top
+                // edge and the bottom row's its bottom.
+                style={styles.rolesList}
+                contentContainerStyle={styles.rolesListContent}
                 keyExtractor={(cat) => cat.key}
                 initialNumToRender={8}
                 maxToRenderPerBatch={8}
                 windowSize={3}
                 columnWrapperStyle={{ gap: SPACE.sm, justifyContent: 'center' }}
                 ItemSeparatorComponent={() => <View style={{ height: SPACE.sm }} />}
-                renderItem={({ item: cat }) => {
+                renderItem={({ item: cat, index }) => {
                   const q = roleQuantity(cat.key);
                   // Locked only at/below the assigned count: you can trim seats
                   // added above it, but never reduce below the occupied count.
                   const locked = q <= (occupiedByCategory[cat.key] ?? 0);
                   return (
                     <PressableScale
-                      style={[styles.tile, { width: tileSize }]}
+                      style={[styles.tile, { width: tileSize, alignItems: index % 2 === 0 ? 'flex-end' : 'flex-start' }]}
                       onPress={() => { if (q === 0) setQuantity(cat.key, 1); }}
                       // Only the press that actually seats a role is worth a
                       // buzz. Once the tile has seats it is inert — the −/+ row
@@ -685,13 +698,18 @@ export default function HomeScreen() {
                           OUTSIDE it. overflow:'hidden' lives here, on the body,
                           rather than on the tile — a ring at a negative offset on
                           a clipping parent is simply cut away. */}
+                      {/* Art + label, and the selection ring drawn around just
+                          them — not the −/count/+ slot beside them. The ring is
+                          drawn over, not in the box model, so selecting a tile
+                          cannot nudge the grid the way borderWidth: 2 did. */}
+                      <View style={{ width: artSize }}>
                       <View style={styles.tileClip}>
                       {cat.image ? (
                         // The role's gradient card art, untinted. The PNG is a
                         // square canvas with the card across its middle ~42%,
                         // so it is drawn tile-wide and the band around the card
                         // is clipped by this wrapper.
-                        <View style={[styles.tileGlyphWrap, { height: Math.round(tileSize * 0.5) }]}>
+                        <View style={[styles.tileGlyphWrap, { height: artHeight }]}>
                           <Image
                             source={cat.image}
                             style={styles.tileArt}
@@ -704,12 +722,14 @@ export default function HomeScreen() {
                         <Text style={styles.tileLabel} numberOfLines={1}>{labelOf(ROLE_BY_ID[cat.roleId], lang)}</Text>
                       </View>
                       </View>
-                      {/* −/count/+ as a column over the art's left edge, + on
-                          top. Overlaid, so a selected tile is no taller than
-                          the others; outside tileClip so a short art band on a
-                          narrow phone can't clip it. */}
+                      {q > 0 && <View style={styles.tileRing} pointerEvents="none" />}
+                      </View>
+                      {/* −/count/+ as a column in the tile's outer-edge slot,
+                          beside the art (left column: left of it; right column:
+                          right of it), + on top, centred on the outline's
+                          height. */}
                       {q > 0 && (
-                        <View style={[styles.tileControlsWrap, { height: Math.round(tileSize * 0.5) }]}>
+                        <View style={[styles.tileControlsWrap, index % 2 === 0 ? styles.tileControlsLeft : styles.tileControlsRight]}>
                           <View style={styles.tileControls}>
                             <PressableScale
                               style={styles.tileControlBtnAdd}
@@ -737,9 +757,6 @@ export default function HomeScreen() {
                           </View>
                         </View>
                       )}
-                      {/* Drawn over, not in the box model, so selecting a tile
-                          cannot nudge the grid the way borderWidth: 2 did. */}
-                      {q > 0 && <View style={styles.tileRing} pointerEvents="none" />}
                     </PressableScale>
                   );
                 }}
@@ -787,8 +804,8 @@ export default function HomeScreen() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               {rtl
-                ? <ChevronRight size={20} color={VIOLET} strokeWidth={2.5} />
-                : <ChevronLeft size={20} color={VIOLET} strokeWidth={2.5} />}
+                ? <ChevronRight size={20} color="#000000" strokeWidth={2.5} />
+                : <ChevronLeft size={20} color="#000000" strokeWidth={2.5} />}
               <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
             </TouchableOpacity>
 
@@ -803,7 +820,7 @@ export default function HomeScreen() {
                   {/* Role header */}
                   <View style={[styles.s3Header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                     {CATEGORY_ICON[category] ? (
-                      <Image source={CATEGORY_ICON[category]} style={styles.s3Avatar} contentFit="cover" cachePolicy="memory-disk" />
+                      <Image source={CATEGORY_ICON[category]} style={styles.s3Avatar} contentFit="cover" cachePolicy="memory-disk" tintColor={VIOLET} />
                     ) : null}
                     <View style={{ flex: 1 }}>
                       <AppText weight="bold" style={[styles.s3RoleName, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -1078,10 +1095,13 @@ function createStyles(
     // right in RTL.
     // Sits at the top of the sheet now, which already carries the inset. The
     // vertical padding keeps the row at a 44pt touch height with the hitSlop.
-    backArrow: { alignItems: 'center', gap: SPACE.xs, paddingVertical: SPACE.sm },
-    backArrowText: { color: VIOLET, fontSize: 15, fontWeight: '600', fontFamily: ffSemiBold },
+    // Pulled up into the sheet's top padding; 28pt tall + the 8pt hitSlop = 44.
+    backArrow: { alignItems: 'center', gap: SPACE.xs, paddingVertical: 4, marginTop: -14 },
+    backArrowText: { color: '#000000', fontSize: 15, fontWeight: '600', fontFamily: ffSemiBold },
 
-    rolesCard: { marginTop: SPACE.xs, paddingVertical: SPACE.sm },
+    rolesCard: { marginTop: 0, paddingVertical: SPACE.sm },
+    rolesList: { overflow: 'visible' },
+    rolesListContent: { paddingVertical: 4 },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 16, lineHeight: 22, fontWeight: '600', fontFamily: ffSemiBold, color: INK, marginTop: FIELD_GAP, marginBottom: SPACE.sm },
     // No lineHeight here on purpose: on a single-line TextInput it fights RN's
@@ -1122,7 +1142,11 @@ function createStyles(
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     // No overflow here — the ring needs to escape. The tile is a positioning
     // box; the surface and the clipping both live on tileClip.
-    tile: { position: 'relative', alignItems: 'center' },
+    // minHeight: never shorter than the −/count/+ column (4+24+4+17+4+24+4 ≈ 81),
+    // which is centred on it — on a narrow phone the art + label alone are
+    // shorter, and the column would stick out past the row. The art frame is
+    // centred in the extra height, so the column stays centred on its ring.
+    tile: { position: 'relative', alignItems: 'center', justifyContent: 'center', minHeight: 84 },
     // No fill or border of its own: the card art is the tile's surface, sitting
     // straight on the white sheet.
     tileClip: {
@@ -1143,7 +1167,13 @@ function createStyles(
     tileOverlay: { width: '100%', paddingTop: 0, paddingBottom: SPACE.sm, paddingHorizontal: SPACE.xs },
     tileLabel: { fontSize: 14, fontWeight: '700', fontFamily: ffBold, color: TEXT.primary, textAlign: 'center', lineHeight: 17, includeFontPadding: false },
     /** Spans the art's height at the tile's left edge; centres the column in it. */
-    tileControlsWrap: { position: 'absolute', top: 0, left: 6, justifyContent: 'center' },
+    // The tile's full height — art + label, i.e. the ring's — so the column
+    // centres on the outline.
+    tileControlsWrap: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
+    // In the tile's outer-edge slot: left in the left column, right in the
+    // right (the grid is always laid out left to right, so even index = left).
+    tileControlsLeft: { left: 0 },
+    tileControlsRight: { right: 0 },
     tileControls: {
       alignItems: 'center',
       gap: 4,
@@ -1559,7 +1589,7 @@ function createStyles(
     s3Header: { alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.xs },
     // borderRadius stays half the size so this remains a circle, not a
     // rounded square — at 80 it dominated the role header.
-    s3Avatar: { width: 56, height: 56, borderRadius: 28 },
+    s3Avatar: { width: 64, height: 64, borderRadius: 32 },
     s3RoleName: { fontSize: 16, lineHeight: 21, color: TEXT.primary },
     // No fill of its own: the seats sit straight on the card. The pills carry
     // the tint instead, so they still read as buttons on white.
@@ -1572,7 +1602,7 @@ function createStyles(
     s3SelLabel: { fontSize: 13, lineHeight: 17, color: TEXT.primary },
     s3PillRow: { flexWrap: 'wrap', gap: SPACE.sm },
     s3Pill: { borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
-    s3PillSel: { backgroundColor: '#004aad' },
+    s3PillSel: { backgroundColor: VIOLET },
     s3PillUnsel: { backgroundColor: FIELD_FILL },
     s3PillTextSel: { color: '#ffffff', fontSize: 13, lineHeight: 17 },
     s3PillTextUnsel: { color: TEXT.primary, fontSize: 13, lineHeight: 17 },
