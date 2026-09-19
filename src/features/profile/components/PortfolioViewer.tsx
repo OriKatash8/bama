@@ -18,7 +18,7 @@ import he from '@core/i18n/translations/he.json';
 import { useTheme } from '@core/hooks/useTheme';
 import {
   MEDIA_VIEWER_CHROME_BG, MEDIA_VIEWER_CHROME_FG,
-  MEDIA_VIEWER_LABEL_FG, MEDIA_VIEWER_BOTTOM_SCRIM,
+  MEDIA_VIEWER_LABEL_FG,
 } from '@core/constants/mediaViewer';
 import type { MediaAsset } from '@core/types/media';
 
@@ -366,15 +366,16 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
             windowSize={3}
           />
 
-          {/* Caption band. Overlaid on the media rather than displacing it: the band
+          {/* Caption box. Overlaid on the media rather than displacing it: it
               disappears for captionless items, and a media area that changed height
               per item would break pagingEnabled's fixed getItemLayout.
-              A gradient, not a flat panel — a flat wash vanishes on a dark photo and
-              cannot carry white text on a bright one. */}
+              The outer view only positions (and keeps the padding that clears the
+              home indicator and the video scrubber); the information sits in its
+              own rounded, near-opaque dark box with a faint light edge, which keeps
+              white text legible on both a dark and a bright photo. */}
           {activeCaption && (
-            <LinearGradient
+            <View
               testID="viewer-caption"
-              colors={MEDIA_VIEWER_BOTTOM_SCRIM}
               style={[
                 styles.caption,
                 {
@@ -383,22 +384,24 @@ export function PortfolioViewer({ assets, initialIndex, visible, onClose }: Prop
               ]}
               pointerEvents="none"
             >
-              <View style={[styles.captionTypeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <InfoIcon size={13} color={MEDIA_VIEWER_LABEL_FG} strokeWidth={2} />
-                <AppText weight="regular" style={styles.captionType}>
-                  {t('media.info_label')}
+              <View testID="viewer-caption-box" style={styles.captionBox}>
+                <View style={[styles.captionTypeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  <InfoIcon size={13} color={MEDIA_VIEWER_LABEL_FG} strokeWidth={2} />
+                  <AppText weight="regular" style={styles.captionType}>
+                    {t('media.info_label')}
+                  </AppText>
+                </View>
+                <AppText
+                  testID="viewer-caption-text"
+                  weight="regular"
+                  numberOfLines={3}
+                  ellipsizeMode="tail"
+                  style={[styles.captionText, { textAlign: rtl ? 'right' : 'left' }]}
+                >
+                  {activeCaption}
                 </AppText>
               </View>
-              <AppText
-                testID="viewer-caption-text"
-                weight="regular"
-                numberOfLines={3}
-                ellipsizeMode="tail"
-                style={[styles.captionText, { textAlign: rtl ? 'right' : 'left' }]}
-              >
-                {activeCaption}
-              </AppText>
-            </LinearGradient>
+            </View>
           )}
 
           {/* Top bar. Its children sit in normal flow on purpose: an absolutely
@@ -477,8 +480,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingTop: 48,
     paddingHorizontal: 16,
+  },
+  /** The caption's own square: rounded, near-opaque dark, faint light edge. */
+  captionBox: {
+    backgroundColor: 'rgba(15, 15, 31, 0.72)',
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 12,
   },
   captionTypeRow: { alignItems: 'center', gap: 5, marginBottom: 4 },
   captionType: { color: MEDIA_VIEWER_LABEL_FG, fontSize: 12 },

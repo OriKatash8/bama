@@ -1,6 +1,6 @@
 import React from 'react';
 import { FlatList, Modal, StyleSheet, Dimensions } from 'react-native';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, act, within } from '@testing-library/react-native';
 import { PortfolioViewer } from '../PortfolioViewer';
 import { MEDIA_VIEWER_CHROME_BG } from '@core/constants/mediaViewer';
 import { LIGHT, ThemeProvider } from '@core/hooks/useTheme';
@@ -359,4 +359,13 @@ it('lets the page background show through the letterbox bars', () => {
 
 it('renders no dot row — position lives in the counter on a vertical pager', () => {
   expect(open(twelve, 0).queryByTestId('viewer-dots')).toBeNull();
+});
+
+it('shows the information inside its own rounded box, not a full-width band', () => {
+  const r = open([asset(0, 'image', 'Golden hour'), asset(1)], 0);
+  const box = StyleSheet.flatten(r.getByTestId('viewer-caption-box').props.style);
+  expect(box.borderRadius).toBeGreaterThan(0);
+  expect(box.backgroundColor).toBeTruthy();
+  // The caption text lives in the box.
+  expect(within(r.getByTestId('viewer-caption-box')).getByText('Golden hour')).toBeTruthy();
 });
