@@ -18,7 +18,6 @@ import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketpla
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument } from '@core/firebase/firestore';
 import { useUiStore } from '@core/stores/uiStore';
-import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -29,8 +28,10 @@ import { brandLabel } from '@features/marketplace/utils';
 type Translations = typeof en;
 
 const PAGE_BG = '#FAFAFC';
-const VIOLET = '#6D28D9';
-const VIOLET_DEEP = '#4C1D95';
+/** Text. */
+const TEXT = '#000000';
+/** Buttons (and their outlines and icons). */
+const BLUE = '#1D4ED8';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
@@ -166,7 +167,6 @@ export default function MarketplaceScreen() {
   const [draftBrands, setDraftBrands]           = useState<string[]>([]);
   const [draftCondition, setDraftCondition]     = useState<ProductCondition | null>(null);
 
-  const colors = useTheme();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -319,7 +319,7 @@ export default function MarketplaceScreen() {
                 label={t(`marketplace.${cat.labelKey}`)}
                 isActive={selectedCategory === cat.id}
                 onPress={() => setSelectedCategory(cat.id)}
-                inactiveLabelColor="#6B6880"
+                inactiveLabelColor={TEXT}
               />
             ))}
           </ScrollView>
@@ -337,8 +337,8 @@ export default function MarketplaceScreen() {
             // 32 visual + 6 either side = 44.
             hitSlop={{ top: 6, bottom: 6 }}
           >
-            <SlidersHorizontal size={14} color={filtersActive ? '#FFFFFF' : VIOLET_DEEP} strokeWidth={2} />
-            <AppText weight="semiBold" style={[styles.filterBtnText, { color: filtersActive ? '#FFFFFF' : VIOLET_DEEP }]}>
+            <SlidersHorizontal size={14} color={filtersActive ? '#FFFFFF' : BLUE} strokeWidth={2} />
+            <AppText weight="semiBold" style={[styles.filterBtnText, { color: filtersActive ? '#FFFFFF' : BLUE }]}>
               {t('marketplace.filter')}
             </AppText>
           </TouchableOpacity>
@@ -368,11 +368,11 @@ export default function MarketplaceScreen() {
         {/* Product grid */}
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={VIOLET} />
+            <ActivityIndicator size="large" color={BLUE} />
           </View>
         ) : filtered.length === 0 ? (
           <View style={styles.center}>
-            <AppText weight="semiBold" style={[styles.emptyText, { color: colors.textSec }]}>{t('marketplace.no_listings')}</AppText>
+            <AppText weight="semiBold" style={[styles.emptyText, { color: TEXT }]}>{t('marketplace.no_listings')}</AppText>
           </View>
         ) : (
           <View style={styles.list}>
@@ -392,7 +392,7 @@ export default function MarketplaceScreen() {
       {/* FAB — fixed above tab bar, outside the ScrollView */}
       <TouchableOpacity style={styles.fab} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
         <LinearGradient
-          colors={['#2563EB', '#6D34DE', '#9A4BF0']}
+          colors={[BLUE, BLUE]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabFill}
@@ -417,7 +417,7 @@ export default function MarketplaceScreen() {
                 {t('marketplace.filters_title')}
               </AppText>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)} style={styles.filterCloseBtn} activeOpacity={0.7}>
-                <X size={20} color="#004aad" />
+                <X size={20} color={BLUE} />
               </TouchableOpacity>
             </View>
 
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 999,
-    shadowColor: '#3B19A0',
+    shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.36,
     shadowRadius: 11,
@@ -592,11 +592,11 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
   },
-  searchWrapFocused: { borderColor: '#8B5CF6' },
+  searchWrapFocused: { borderColor: BLUE },
   searchBar: {
     flex: 1,
     fontSize: 14,
-    color: '#1A1626',
+    color: TEXT,
   },
 
   // The ‹ › arrows are gone; the strip bleeds 20 past the sheet's padding on
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   // baked into the 72×72 contentFit="contain" icons, so the label is pulled up
   // into it rather than the spacing being reduced. Icon hit area is unchanged.
   catLabel: { fontSize: 11, fontWeight: '500', marginTop: -10 },
-  catLabelActive: { fontWeight: '600', color: VIOLET_DEEP },
+  catLabelActive: { fontWeight: '600', color: TEXT },
 
   filterBarRow: {
     flexDirection: 'row',
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   // A filter is on: filled, as before, in the violet palette.
-  filterBtnActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  filterBtnActive: { backgroundColor: BLUE, borderColor: BLUE },
   filterBtnText: { fontSize: 12.5, fontWeight: '600' },
 
   tagsScroll: { flex: 1, marginLeft: 8 },
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   activeTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: VIOLET,
+    backgroundColor: BLUE,
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#004aad',
+    color: TEXT,
     paddingRight: 8,
   },
   filterCloseBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
 
   filterSectionLabel: {
     fontSize: 12,
-    color: 'rgba(15,15,31,0.4)',
+    color: TEXT,
     marginBottom: 8,
     marginTop: 10,
   },
@@ -717,11 +717,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.2)',
+    borderColor: BLUE,
     backgroundColor: '#ffffff',
   },
-  filterChipActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  filterChipLabel: { fontSize: 13, fontWeight: '600', color: '#004aad' },
+  filterChipActive: { backgroundColor: BLUE, borderColor: BLUE },
+  filterChipLabel: { fontSize: 13, fontWeight: '600', color: TEXT },
   filterChipLabelActive: { color: '#fff' },
 
   filterModalInput: {
@@ -729,10 +729,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: '#1a1a2e',
+    color: TEXT,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
+    borderColor: BLUE,
   },
 
   filterActions: {
@@ -744,13 +744,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
-  filterClearText: { color: 'rgba(15,15,31,0.4)', fontSize: 14 },
+  filterClearText: { color: TEXT, fontSize: 14 },
   filterApplyBtn: {
     flex: 1,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
-    backgroundColor: '#004aad',
+    backgroundColor: BLUE,
   },
   filterApplyText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

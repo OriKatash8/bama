@@ -94,6 +94,6 @@ const styles = StyleSheet.create({
   },
   pillActive: { backgroundColor: '#FFFFFF' },
   label: { fontSize: 13.5, fontWeight: '600' },
-  labelActive: { color: '#4C1D95' },
+  labelActive: { color: '#000000' },
   labelInactive: { color: 'rgba(255,255,255,0.85)' },
 });
