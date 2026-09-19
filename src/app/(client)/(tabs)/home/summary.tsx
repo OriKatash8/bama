@@ -1,20 +1,22 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  ScrollView, StyleSheet, View, Text, TouchableOpacity,
+  Pressable, ScrollView, StyleSheet, View, Text, TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { Screen } from '@components/layout/Screen';
+import { GradientBand } from '@components/ui/GradientBand';
 import { useCrewBuilder, useProjectRequests } from '@features/crew/hooks';
 import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { roleIdForCategory, professionalMatchesSlot, capabilityLabel, type RoleSkillEntry } from '@features/noticeboard/matching';
 import { ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
+import { CATEGORIES } from '@features/crew/data/roleTiles';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { CalendarCheck, CalendarDays, ChevronLeft, MapPin, Users, X } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react-native';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
@@ -34,6 +36,21 @@ function makeT(translations: Translations) {
 /** The tabs layout zeroes the safe-area context for its screens, so the real
  *  bottom inset has to come from the window metrics (same as ChatRoomScreen). */
 const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
+
+const PAGE_BG = '#FAFAFC';
+const VIOLET = '#6D28D9';
+const VIOLET_DEEP = '#4C1D95';
+const MUTED = '#8B8898';
+const EMPTY = '#B4B1BF';
+const HAIRLINE = '#F2F0F7';
+/** Label column of the one-line field rows. 84, not 74: English "Project name"
+ *  is 81pt at 12pt. The same in both languages so the rows line up. */
+const LABEL_WIDTH = 84;
+
+/** Flat role mark (black on transparency, tinted in code), by stored category. */
+const GLYPH_BY_CATEGORY: Record<string, ReturnType<typeof require>> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.key, c.glyph]),
+);
 
 export default function SummaryScreen() {
   const params = useLocalSearchParams<{
@@ -61,7 +78,6 @@ export default function SummaryScreen() {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
-  const colors = useTheme();
   const font = useAppFont();
 
   const isEditMode = !!params.projectId;
@@ -186,22 +202,19 @@ export default function SummaryScreen() {
   /** "General" label for a slot with no requiredCapability. */
   const generalLabel = rtl ? 'כללי' : 'General';
 
-  // Text on this screen is brand blue: full strength for values and titles,
-  // muted blue for labels so the hierarchy still reads.
-  const BLUE = '#004aad';
-  const BLUE_MUTED = 'rgba(0,74,173,0.55)';
-  const BLUE_FAINT = 'rgba(0,74,173,0.4)';
+  /** A divider between rows, inset 14 on both sides. */
+  const divider = <View style={styles.divider} />;
 
-  /** A missing value never shows a form placeholder — it says so plainly. */
-  function renderValue(value: string, style?: object) {
+  /** The value side of a field row. A missing value says so plainly, in a
+   *  lighter weight and colour, so it reads as missing rather than filled. */
+  function renderValue(value: string) {
     const empty = !value;
     return (
       <Text
         style={[
           styles.value,
-          { ...font.regular, textAlign, color: empty ? BLUE_FAINT : BLUE },
-          empty && styles.valueEmpty,
-          style,
+          empty ? { ...font.regular, ...styles.valueEmpty } : font.forText(value, 'semiBold'),
+          { textAlign },
         ]}
       >
         {empty ? t('builder.not_specified') : value}
@@ -209,308 +222,334 @@ export default function SummaryScreen() {
     );
   }
 
-  /** Section header: title at the start, an optional edit link to its wizard step. */
-  function renderCardHeader(label: string, step?: 1 | 2 | 3) {
+  /** One field: label in a fixed column, value beside it on the same line. */
+  function renderField(label: string, value: string) {
     return (
-      <View style={[styles.cardHeader, { flexDirection: rowDir }]}>
-        <Text style={[styles.cardTitle, { ...font.medium, color: BLUE, textAlign }]}>
-          {label}
-        </Text>
-        {step !== undefined && (
-          <TouchableOpacity
-            onPress={() => editStep(step)}
-            hitSlop={8}
-            activeOpacity={0.8}
-            style={styles.editBtn}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.editBtnText, { ...font.semiBold }]}>{t('builder.edit')}</Text>
-          </TouchableOpacity>
-        )}
+      <View style={[styles.fieldRow, { flexDirection: rowDir }]}>
+        <Text style={[styles.fieldLabel, { ...font.regular, textAlign }]}>{label}</Text>
+        {renderValue(value)}
       </View>
     );
   }
 
-  /** One "when & where" row: icon + label, value at the end. */
-  function renderMetaRow(
-    Icon: typeof CalendarDays,
-    label: string,
-    value: string,
-    chip = false,
-  ) {
-    return (
-      <View style={[styles.metaRow, { flexDirection: rowDir }]}>
-        <Icon size={17} color={BLUE_MUTED} strokeWidth={1.8} />
-        <Text style={[styles.metaLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
-          {label}
-        </Text>
-        {chip ? (
-          <View style={styles.chip}>
-            <Text style={[styles.chipText, { ...font.medium }]}>{value}</Text>
-          </View>
-        ) : (
-          renderValue(value, styles.metaValue)
-        )}
+  /** Rows with a divider between them, none after the last. */
+  function withDividers(rows: React.ReactNode[]) {
+    return rows.map((row, i) => (
+      <View key={i}>
+        {i > 0 && divider}
+        {row}
       </View>
+    ));
+  }
+
+  /** Card header: title (and an optional count) at the start, an optional
+   *  secondary edit button opposite, then a divider before the content. */
+  function renderCardHeader(label: string, step?: 1 | 2 | 3, count?: number) {
+    return (
+      <>
+        <View style={[styles.cardHeader, { flexDirection: rowDir }]}>
+          <View style={[styles.cardTitleRow, { flexDirection: rowDir }]}>
+            <Text style={[styles.cardTitle, font.forText(label, 'bold'), { textAlign }]}>{label}</Text>
+            {count !== undefined && (
+              <Text style={[styles.cardCount, font.regular]}>{count}</Text>
+            )}
+          </View>
+          {step !== undefined && (
+            <TouchableOpacity
+              onPress={() => editStep(step)}
+              hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
+              activeOpacity={0.7}
+              style={[styles.editBtn, { flexDirection: rowDir }]}
+              accessibilityRole="button"
+            >
+              <Pencil size={12} color={VIOLET_DEEP} strokeWidth={2.2} />
+              <Text style={[styles.editBtnText, font.semiBold]}>{t('builder.edit')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {divider}
+      </>
     );
   }
+
+  const crewCategories = [...new Set(slots.map((s) => s.category))];
 
   return (
-    <Screen scrollable={false}>
-      {/* Back shares the title's row and stays on the left in both languages —
-          it points out of the flow, not into the RTL text. The title sits in the
-          CENTRE of the line: the back slot and an empty slot on the right take
-          equal flexible widths, so the centre stays centred whatever the back
-          label's length in either language. */}
-      <View style={styles.headerRow}>
-        <View style={styles.headerSide}>
-          <TouchableOpacity
-            style={styles.backRow}
-            onPress={backToWizard}
-            activeOpacity={0.7}
-            hitSlop={12}
-          >
-            <ChevronLeft size={20} color="#004aad" strokeWidth={2} />
-            <Text style={[styles.backText, { ...font.semiBold }]}>{t('builder.back_to_edit')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.headerBlock}>
-          <Text style={[styles.screenTitle, { ...font.medium }]} numberOfLines={1}>
-            {t('builder.summary_title')}
-          </Text>
-          <Text style={[styles.screenSubtitle, { ...font.regular, color: BLUE_MUTED }]}>
-            {t('builder.summary_subtitle')}
-          </Text>
-        </View>
-
-        <View style={styles.headerSide} />
-      </View>
-
+    <Screen scrollable={false} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Card 1: project details ── */}
-        <View style={styles.card}>
-          {renderCardHeader(t('builder.section_project'), 1)}
+        {/* ── Band: back link, title, subtitle ── */}
+        <GradientBand style={styles.band}>
+          <TouchableOpacity
+            style={[styles.backRow, { flexDirection: rowDir, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}
+            onPress={backToWizard}
+            activeOpacity={0.7}
+            hitSlop={13}
+          >
+            {/* Points back out of the flow: › in Hebrew, ‹ in English. */}
+            {rtl
+              ? <ChevronRight size={15} color="rgba(255,255,255,0.9)" strokeWidth={2.4} />
+              : <ChevronLeft size={15} color="rgba(255,255,255,0.9)" strokeWidth={2.4} />}
+            <Text style={[styles.backText, font.semiBold]}>{t('builder.back_to_edit')}</Text>
+          </TouchableOpacity>
 
-          <Text style={[styles.fieldLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
-            {t('builder.title')}
+          <Text
+            style={[styles.screenTitle, extraBold(font.forText(t('builder.summary_title'), 'bold')), { textAlign }]}
+          >
+            {t('builder.summary_title')}
           </Text>
-          {renderValue(title)}
-
-          <Text style={[styles.fieldLabel, { ...font.regular, color: BLUE_MUTED, textAlign, marginTop: 10 }]}>
-            {t('builder.description')}
+          <Text style={[styles.screenSubtitle, font.regular, { textAlign }]}>
+            {t('builder.summary_subtitle')}
           </Text>
-          {renderValue(description, styles.description)}
-        </View>
+        </GradientBand>
 
-        {/* ── Card 2: when & where ── */}
-        <View style={styles.card}>
-          {renderCardHeader(t('builder.section_when_where'), 1)}
-          {renderMetaRow(CalendarDays, t('builder.execution'), formatIsoDay(exec))}
-          {renderMetaRow(
-            CalendarCheck,
-            t('builder.deadline'),
-            deadline === 'flexible' ? t('builder.flexible') : formatIsoDay(deadline),
-            deadline === 'flexible',
-          )}
-          {renderMetaRow(MapPin, t('builder.location'), location)}
-        </View>
-
-        {/* ── Card 3: crew ── */}
-        <View style={styles.card}>
-          {renderCardHeader(`${t('builder.section_crew')} · ${totalPeople}`, 2)}
-
-          {[...new Set(slots.map((s) => s.category))].map((category, i, arr) => {
-            const role = ROLE_BY_ID[roleIdForCategory(category)];
-            const roleLabel = role ? labelOf(role, lang) : category;
-            const forCategory = slots.filter((s) => s.category === category);
-            const breakdown = forCategory
-              .map((s) => {
-                const cap = s.requiredCapability
-                  ? capabilityLabel(s.category, s.requiredCapability, lang)
-                  : generalLabel;
-                return `${cap} · ${s.quantity} ${t('builder.people_suffix')}`;
-              })
-              .join(' · ');
-            return (
-              <View
-                key={category}
-                style={[
-                  styles.crewRow,
-                  { flexDirection: rowDir },
-                  i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-                ]}
-              >
-                <View style={styles.crewIcon}>
-                  <Users size={16} color="#004aad" strokeWidth={2} />
-                </View>
-                <View style={styles.crewText}>
-                  <Text style={[styles.crewRole, { ...font.medium, color: BLUE, textAlign }]}>
-                    {roleLabel}
-                  </Text>
-                  <Text style={[styles.crewMeta, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
-                    {breakdown}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => void confirmRemoveCategory(category)}
-                  hitSlop={10}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('builder.remove_role_title')}
-                >
-                  <X size={16} color="#9aa0b8" strokeWidth={2.5} />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-
-          {slots.length === 0 && (
-            <Text style={[styles.error, { ...font.regular, textAlign }]}>
-              {t('builder.error_role')}
-            </Text>
-          )}
-        </View>
-
-        {/* ── Role answers (only for projects that carry them) ── */}
-        {Object.keys(parsedRoleAnswers).length > 0 && (
+        <View style={styles.sheet}>
+          {/* ── Card 1: project details ── */}
           <View style={styles.card}>
-            {renderCardHeader(t('builder.section_role_details'))}
-            {Object.entries(parsedRoleAnswers).map(([roleKey, answers]) => {
-              const questions = ROLE_QUESTIONS[roleKey];
-              if (!questions) return null;
+            {renderCardHeader(t('builder.section_project'), 1)}
+            {withDividers([
+              renderField(t('builder.title'), title),
+              renderField(t('builder.description'), description),
+            ])}
+          </View>
+
+          {/* ── Card 2: when & where. A "flexible" deadline is the deadline's
+              value, so it sits in the deadline row as plain text. ── */}
+          <View style={styles.card}>
+            {renderCardHeader(t('builder.section_when_where'), 1)}
+            {withDividers([
+              renderField(t('builder.execution'), formatIsoDay(exec)),
+              renderField(
+                t('builder.deadline'),
+                deadline === 'flexible' ? t('builder.flexible') : formatIsoDay(deadline),
+              ),
+              renderField(t('builder.location'), location),
+            ])}
+          </View>
+
+          {/* ── Card 3: crew ── */}
+          <View style={styles.card}>
+            {renderCardHeader(t('builder.section_crew'), 2, totalPeople)}
+
+            {withDividers(crewCategories.map((category) => {
+              const role = ROLE_BY_ID[roleIdForCategory(category)];
+              const roleLabel = role ? labelOf(role, lang) : category;
+              const glyph = GLYPH_BY_CATEGORY[category];
+              const forCategory = slots.filter((s) => s.category === category);
+              const breakdown = forCategory
+                .map((s) => {
+                  const cap = s.requiredCapability
+                    ? capabilityLabel(s.category, s.requiredCapability, lang)
+                    : generalLabel;
+                  return `${cap} · ${s.quantity} ${t('builder.people_suffix')}`;
+                })
+                .join(' · ');
               return (
-                <View key={roleKey} style={{ marginBottom: 8 }}>
-                  <Text style={[styles.fieldLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
-                    {roleKey}
-                  </Text>
-                  {questions.map((q) => {
-                    const value = answers[q.id];
-                    if (!value) return null;
-                    return (
-                      <View key={q.id} style={[styles.metaRow, { flexDirection: rowDir }]}>
-                        <Text style={[styles.metaLabel, { ...font.regular, color: BLUE_MUTED, textAlign }]}>
-                          {questionLabel(q, rtl)}
-                        </Text>
-                        {renderValue(value, styles.metaValue)}
-                      </View>
-                    );
-                  })}
+                <View key={category} style={[styles.crewRow, { flexDirection: rowDir }]}>
+                  <View style={styles.crewIcon}>
+                    {glyph ? (
+                      <Image source={glyph} style={styles.crewGlyph} contentFit="contain" tintColor={VIOLET} />
+                    ) : null}
+                  </View>
+                  <View style={styles.crewText}>
+                    <Text style={[styles.crewRole, font.forText(roleLabel, 'semiBold'), { textAlign }]}>
+                      {roleLabel}
+                    </Text>
+                    <Text style={[styles.crewMeta, font.regular, { textAlign }]}>
+                      {breakdown}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => void confirmRemoveCategory(category)}
+                    hitSlop={15}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('builder.remove_role_title')}
+                  >
+                    <X size={15} color={EMPTY} strokeWidth={2.5} />
+                  </TouchableOpacity>
                 </View>
               );
-            })}
+            }))}
+
+            {slots.length === 0 && (
+              <Text style={[styles.error, { ...font.regular, textAlign }]}>
+                {t('builder.error_role')}
+              </Text>
+            )}
           </View>
-        )}
+
+          {/* ── Role answers (only for projects that carry them) ── */}
+          {Object.keys(parsedRoleAnswers).length > 0 && (
+            <View style={styles.card}>
+              {renderCardHeader(t('builder.section_role_details'))}
+              {/* One block per role: its name, then its answers as field rows. */}
+              {withDividers(Object.entries(parsedRoleAnswers).flatMap(([roleKey, answers]) => {
+                const questions = ROLE_QUESTIONS[roleKey];
+                if (!questions) return [];
+                return [
+                  <View key={roleKey}>
+                    <Text style={[styles.answersRole, font.semiBold, { textAlign }]}>{roleKey}</Text>
+                    {withDividers(
+                      questions
+                        .filter((q) => !!answers[q.id])
+                        .map((q) => renderField(questionLabel(q, rtl), answers[q.id])),
+                    )}
+                  </View>,
+                ];
+              }))}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
-      {/* ── Pinned publish bar — the tab bar is hidden on this route ── */}
+      {/* ── Publish bar, docked — the tab bar is hidden on this route ── */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.publishBtn, !canConfirm && styles.publishBtnDisabled]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.publishBtn,
+            pressed && canConfirm && styles.publishBtnPressed,
+            !canConfirm && styles.publishBtnDisabled,
+          ]}
           onPress={() => void handleConfirm()}
           disabled={!canConfirm}
-          activeOpacity={0.85}
+          accessibilityRole="button"
         >
-          <Text style={[styles.publishText, { ...font.medium }]}>
+          <Text style={[styles.publishText, font.bold]}>
             {isSubmitting
               ? t('builder.submitting')
               : isEditMode
                 ? t('builder.save_changes')
                 : t('builder.publish_project')}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </Screen>
   );
 }
 
+/** The title is 800: Heebo has an ExtraBold face; Montserrat takes the weight. */
+function extraBold(f: { fontFamily: string }) {
+  return f.fontFamily.startsWith('Heebo')
+    ? { fontFamily: 'Heebo-ExtraBold', fontWeight: '800' as const }
+    : { fontFamily: f.fontFamily, fontWeight: '800' as const };
+}
+
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 16 },
+  scrollContent: { flexGrow: 1 },
 
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+  band: { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 40, gap: 10 },
+  backRow: { alignItems: 'center', gap: 4 },
+  backText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
+  screenTitle: { fontSize: 25, color: '#FFFFFF', letterSpacing: -0.3 },
+  screenSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: -4 },
+
+  /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -22,
+    zIndex: 1,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    paddingBottom: 18,
+    gap: 12,
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 6,
   },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { fontSize: 15, color: '#004aad' },
-
-  // Equal flexible sides keep headerBlock centred on the line.
-  headerSide: { flex: 1, alignItems: 'flex-start' },
-  headerBlock: { flexShrink: 1, alignItems: 'center' },
-  screenTitle: { fontSize: 19, fontWeight: '500', color: '#004aad', textAlign: 'center' },
-  screenSubtitle: { fontSize: 12, marginTop: 2, textAlign: 'center' },
 
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 13,
-    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  cardHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  cardTitle: { fontSize: 13, fontWeight: '500', flex: 1 },
-  // Rounded-square blue button with white text (was a plain blue text link).
-  editBtn: {
-    backgroundColor: '#004aad',
-    borderRadius: 10,
+  cardHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingTop: 12,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingBottom: 10,
   },
-  editBtnText: { fontSize: 12, color: '#ffffff' },
-
-  fieldLabel: { fontSize: 11 },
-  value: { fontSize: 14, marginTop: 2 },
-  valueEmpty: { opacity: 0.7 },
-  description: { lineHeight: 20 },
-
-  metaRow: { alignItems: 'center', gap: 8, paddingVertical: 7 },
-  metaLabel: { fontSize: 11, flex: 1 },
-  metaValue: { fontSize: 13, marginTop: 0 },
-
-  chip: {
-    backgroundColor: '#eceef3',
-    borderRadius: 9,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  chipText: { fontSize: 12, color: '#9aa0b8' },
-
-  crewRow: { alignItems: 'center', gap: 10, paddingVertical: 8 },
-  crewIcon: {
-    width: 30,
+  cardTitleRow: { flex: 1, alignItems: 'center', gap: 6 },
+  cardTitle: { flexShrink: 1, fontSize: 13.5, fontWeight: '700', color: '#000000' },
+  cardCount: { fontSize: 12, color: MUTED },
+  // Secondary: outlined, so three of them don't outweigh the publish button.
+  // 30 tall + 7 above and below = 44.
+  editBtn: {
     height: 30,
+    paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,74,173,0.08)',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDD7EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  editBtnText: { fontSize: 12, fontWeight: '600', color: VIOLET_DEEP },
+
+  divider: { height: 1, backgroundColor: HAIRLINE, marginHorizontal: 14 },
+
+  fieldRow: { paddingVertical: 10, paddingHorizontal: 14, alignItems: 'flex-start', gap: 10 },
+  fieldLabel: { width: LABEL_WIDTH, flexShrink: 0, fontSize: 12, lineHeight: 19, color: MUTED },
+  value: { flex: 1, fontSize: 13.5, lineHeight: 20, fontWeight: '600', color: '#000000' },
+  valueEmpty: { fontWeight: '400', color: EMPTY },
+  answersRole: { fontSize: 12, color: VIOLET_DEEP, paddingTop: 10, paddingHorizontal: 14 },
+
+  crewRow: { alignItems: 'center', gap: 11, paddingVertical: 10, paddingHorizontal: 14 },
+  crewIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    backgroundColor: '#F3EEFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  crewText: { flex: 1 },
-  crewRole: { fontSize: 13 },
-  crewMeta: { fontSize: 11, marginTop: 1 },
+  crewGlyph: { width: 18, height: 18 },
+  crewText: { flex: 1, minWidth: 0 },
+  crewRole: { fontSize: 13.5, fontWeight: '600', color: '#000000' },
+  crewMeta: { fontSize: 11.5, color: MUTED, marginTop: 2 },
 
-  error: { fontSize: 12, color: '#e53935', paddingVertical: 4 },
+  error: { fontSize: 12, color: '#e53935', paddingVertical: 10, paddingHorizontal: 14 },
 
-  // No background of its own: the page's standard gradient (the same one the
-  // wizard uses) runs behind the button to the bottom of the screen.
   footer: {
-    paddingHorizontal: 12,
-    paddingTop: 14,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 12,
+    paddingHorizontal: 20,
     paddingBottom: 14 + BOTTOM_INSET,
+    borderTopWidth: 1,
+    borderTopColor: '#F0EEF6',
   },
   publishBtn: {
-    backgroundColor: '#004aad',
+    height: 52,
     borderRadius: 16,
-    paddingVertical: 13,
+    backgroundColor: VIOLET,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4C1D95',
+    shadowOpacity: 0.28,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
+  publishBtnPressed: { backgroundColor: '#5B21B6' },
   publishBtnDisabled: { opacity: 0.4 },
-  publishText: { color: '#ffffff', fontSize: 14, fontWeight: '500' },
+  publishText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 });
