@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import {
   View, Text, TextInput, TouchableOpacity, Modal, FlatList,
   StyleSheet, ActivityIndicator, ScrollView, Pressable, Platform,
@@ -22,7 +23,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { useTabBarClearance } from '@core/navigation/floatingTabBar';
+import { useTabBarClearance, useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -83,6 +84,8 @@ export default function SearchScreen() {
   const colors = useTheme();
   const router = useRouter();
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const tabBarClearance = useTabBarClearance();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -158,11 +161,10 @@ export default function SearchScreen() {
 
       <View style={styles.sheet}>
       {/* Top search bar */}
-      <View style={[styles.searchRow, searchFocused && styles.searchRowFocused]}>
-        <Search size={18} color="#8B8898" strokeWidth={2.5} />
+      <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <TextInput
           style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-          placeholder={t('search.placeholder')}
+          placeholder={rtlSafe(t('search.placeholder'), rtl)}
           placeholderTextColor="#9C99AD"
           value={query}
           onChangeText={setQuery}
@@ -175,6 +177,7 @@ export default function SearchScreen() {
             <Text style={[styles.clearBtn, { color: colors.textMuted }]}>✕</Text>
           </TouchableOpacity>
         )}
+        <Search size={18} color={searchIconColor} strokeWidth={2.5} />
       </View>
 
       {/* Unified search results */}
@@ -283,11 +286,10 @@ export default function SearchScreen() {
             </View>
 
             {/* Pill search bar */}
-            <View style={styles.modalSearchRow}>
-              <Search size={16} color="#8B8898" strokeWidth={2.5} />
+            <View style={[styles.modalSearchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <TextInput
                 style={[styles.modalSearchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                placeholder={t('search.placeholder')}
+                placeholder={rtlSafe(t('search.placeholder'), rtl)}
                 placeholderTextColor="#9C99AD"
                 value={modalQuery}
                 onChangeText={setModalQuery}
@@ -297,6 +299,7 @@ export default function SearchScreen() {
                   <Text style={{ color: '#9C99AD', fontSize: 14 }}>✕</Text>
                 </TouchableOpacity>
               )}
+              <Search size={16} color={searchIconColor} strokeWidth={2.5} />
             </View>
 
             {/* Subskill filter */}

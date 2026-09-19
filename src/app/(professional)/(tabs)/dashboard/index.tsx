@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions, Platform } from 'react-native';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, Inbox, History, Briefcase, LayoutGrid } from 'lucide-react-native';
@@ -36,7 +37,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import type { Chat } from '@features/chat/types';
-import { useTabBarClearance } from '@core/navigation/floatingTabBar';
+import { useTabBarClearance, useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -94,6 +95,8 @@ export default function DashboardScreen() {
   const modeSegment = segments[0];
 
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const tabBarClearance = useTabBarClearance();
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
@@ -554,10 +557,9 @@ export default function DashboardScreen() {
 
         {onBoard && !isLoading && biddable.length > 0 && (
           <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Search size={18} color={BLUE} strokeWidth={2.5} />
             <TextInput
               style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-              placeholder={rtl ? 'חיפוש בלוח המודעות…' : 'Search the notice board…'}
+              placeholder={rtlSafe(rtl ? 'חיפוש בלוח המודעות…' : 'Search the notice board…', rtl)}
               placeholderTextColor="#9C99AD"
               value={search}
               onChangeText={setSearch}
@@ -570,6 +572,7 @@ export default function DashboardScreen() {
                 <AppText weight="regular" style={[styles.clearBtn, { color: BLUE }]}>✕</AppText>
               </TouchableOpacity>
             )}
+            <Search size={18} color={searchIconColor} strokeWidth={2.5} />
           </View>
         )}
 

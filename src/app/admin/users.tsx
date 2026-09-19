@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
+import { rtlSafe } from '@utils/formatters';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Modal,
@@ -52,6 +54,8 @@ export default function UsersAdmin() {
   const insets = useSafeAreaInsets();
   const { showToast } = useUiStore();
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const rtl = language === 'he';
   const t = makeT(rtl ? he : en);
   const rowDir = rtl ? 'row-reverse' : 'row';
@@ -156,12 +160,11 @@ export default function UsersAdmin() {
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Search */}
         <View style={[styles.searchRow, { flexDirection: rowDir, borderColor: colors.border, backgroundColor: colors.card }]}>
-          <Search size={18} color={colors.textMuted} strokeWidth={2.5} />
           <TextInput
             style={[styles.searchInput, { ...font.regular, color: colors.text, textAlign }]}
             value={term}
             onChangeText={setTerm}
-            placeholder={t('admin_users.search_placeholder')}
+            placeholder={rtlSafe(t('admin_users.search_placeholder'), rtl)}
             placeholderTextColor={colors.placeholder}
             autoCapitalize="none"
             autoCorrect={false}
@@ -171,6 +174,7 @@ export default function UsersAdmin() {
           <TouchableOpacity style={styles.searchBtn} onPress={search} disabled={searching} activeOpacity={0.8}>
             {searching ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.searchBtnText, { ...font.semiBold }]}>{t('admin_users.search')}</Text>}
           </TouchableOpacity>
+          <Search size={18} color={searchIconColor} strokeWidth={2.5} />
         </View>
 
         {notFound && (

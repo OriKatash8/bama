@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import {
   Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
   FlatList, StyleSheet,
@@ -73,7 +74,7 @@ export function CityPickerModal({ visible, value, onSelect, onClose }: Props) {
                 style={[styles.searchInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 value={search}
                 onChangeText={setSearch}
-                placeholder={t('builder.search_city')}
+                placeholder={rtlSafe(t('builder.search_city'), rtl)}
                 placeholderTextColor="#004aad80"
                 autoFocus
                 returnKeyType="search"

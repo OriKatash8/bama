@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Platform, Animated, Modal,
@@ -24,7 +25,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
 import { brandLabel } from '@features/marketplace/utils';
-import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE } from '@core/navigation/floatingTabBar';
+import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -170,6 +171,8 @@ export default function MarketplaceScreen() {
 
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const tabBarHeight = useTabBarHeight();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -296,16 +299,16 @@ export default function MarketplaceScreen() {
         {/* Search + filter button at its end — the same pair as the courses tab. */}
         <View style={[styles.searchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <View style={[styles.searchWrap, styles.searchWrapFlex, searchFocused && styles.searchWrapFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Search size={18} color="#8B8898" strokeWidth={2} />
             <TextInput
               style={[styles.searchBar, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-              placeholder={t('marketplace.search_placeholder')}
+              placeholder={rtlSafe(t('marketplace.search_placeholder'), rtl)}
               placeholderTextColor="#9C99AD"
               value={searchQuery}
               onChangeText={setSearchQuery}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
             />
+            <Search size={18} color={searchIconColor} strokeWidth={2} />
           </View>
           <TouchableOpacity
             style={[styles.filterBtn, filtersActive && styles.filterBtnActive]}

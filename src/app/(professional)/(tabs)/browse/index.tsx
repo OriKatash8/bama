@@ -17,7 +17,7 @@ import { useSearchProfessionals } from '@features/crew/hooks';
 import type { ProfessionalResult } from '@features/crew/hooks/useSearchProfessionals';
 import { ProfessionalCard } from '@features/crew/components';
 import { getOrCreateDM } from '@features/chat/services/chatService';
-import { useTabBarClearance } from '@core/navigation/floatingTabBar';
+import { useTabBarClearance, useModeAccent } from '@core/navigation/floatingTabBar';
 
 const CATEGORIES = ROLE_CATEGORIES.map((key) => ({ key }));
 
@@ -39,6 +39,8 @@ export default function BrowseScreen() {
   const [modalQuery, setModalQuery] = useState('');
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const tabBarClearance = useTabBarClearance();
   const t = makeT(language === 'he' ? he : en);
   const font = useAppFont();
@@ -88,7 +90,6 @@ export default function BrowseScreen() {
 
         {/* Top search bar */}
         <View style={[styles.searchRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
           <TextInput
             style={[styles.searchInput, { ...font.regular, color: colors.text }]}
             placeholder="Search by category…"
@@ -102,6 +103,7 @@ export default function BrowseScreen() {
               <Text style={[styles.clearBtn, { color: colors.textMuted }]}>✕</Text>
             </TouchableOpacity>
           )}
+          <Search size={16} color={searchIconColor} strokeWidth={2.5} />
         </View>
 
         {/* Flat category list */}
@@ -149,7 +151,6 @@ export default function BrowseScreen() {
 
             {/* Pill search bar */}
             <View style={[styles.modalSearchRow, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
-              <Search size={16} color={colors.placeholder} strokeWidth={2.5} />
               <TextInput
                 style={[styles.modalSearchInput, { ...font.regular, color: colors.text }]}
                 placeholder="Search by name…"
@@ -162,6 +163,7 @@ export default function BrowseScreen() {
                   <Text style={{ color: colors.textMuted, fontSize: 14 }}>✕</Text>
                 </TouchableOpacity>
               )}
+              <Search size={16} color={searchIconColor} strokeWidth={2.5} />
             </View>
 
             {/* Results */}

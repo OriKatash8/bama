@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { Search, MessageCircle, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -16,7 +17,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { useTabBarClearance, CLIENT_TAB_ACTIVE } from '@core/navigation/floatingTabBar';
+import { useTabBarClearance, CLIENT_TAB_ACTIVE, useModeAccent } from '@core/navigation/floatingTabBar';
 
 const PAGE_BG = '#FAFAFC';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
@@ -32,6 +33,8 @@ function t(translations: Translations, key: string): string {
 
 export default function ChatsPage() {
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const tabBarClearance = useTabBarClearance();
   const font = useAppFont();
   const colors = useTheme();
@@ -102,10 +105,9 @@ export default function ChatsPage() {
       ) : (
         <>
           <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <Search size={18} color="#8B8898" strokeWidth={2.5} />
             <TextInput
               style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-              placeholder={t(tr, 'search.placeholder')}
+              placeholder={rtlSafe(t(tr, 'search.placeholder'), rtl)}
               placeholderTextColor="#9C99AD"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -118,6 +120,7 @@ export default function ChatsPage() {
                 <Text style={{ color: colors.textMuted, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
               </TouchableOpacity>
             )}
+            <Search size={18} color={searchIconColor} strokeWidth={2.5} />
           </View>
 
           <View style={styles.listBleed}>

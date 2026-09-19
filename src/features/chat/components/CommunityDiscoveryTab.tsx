@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, type RefObject } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Users, Search, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
@@ -13,7 +14,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { communityCategoryLabel } from '@features/crew/data/categories';
-import { TAB_BAR_CONTENT_GAP, FAB_SIZE } from '@core/navigation/floatingTabBar';
+import { TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -103,6 +104,8 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
   const modeSegment = segments[0];
   const user = useAuthStore((s) => s.user);
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
@@ -295,10 +298,9 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
 
       {/* Search bar (above the category filter) */}
       <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <Search size={18} color="#8B8898" strokeWidth={2.5} />
         <TextInput
           style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-          placeholder={rtl ? 'חיפוש קהילות…' : 'Search communities…'}
+          placeholder={rtlSafe(rtl ? 'חיפוש קהילות…' : 'Search communities…', rtl)}
           placeholderTextColor="#9C99AD"
           value={search}
           onChangeText={setSearch}
@@ -311,6 +313,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
             <AppText weight="regular" style={[styles.clearBtn, { color: BLUE }]}>✕</AppText>
           </TouchableOpacity>
         )}
+        <Search size={18} color={searchIconColor} strokeWidth={2.5} />
       </View>
 
       {/* Category filter chips */}

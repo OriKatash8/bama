@@ -35,7 +35,7 @@ import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest, FilledSlot } from '@core/types/project';
 import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@features/projects/constants/roleQuestions';
 import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
-import { formatIsoDay } from '@utils/formatters';
+import { formatIsoDay, rtlSafe } from '@utils/formatters';
 import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
 import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
 import { useTabBarHeight } from '@core/navigation/floatingTabBar';
@@ -939,7 +939,7 @@ export default function HomeScreen() {
                   style={[styles.locationSearchInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                   value={locationSearch}
                   onChangeText={setLocationSearch}
-                  placeholder={t('builder.search_city')}
+                  placeholder={rtlSafe(t('builder.search_city'), rtl)}
                   placeholderTextColor="#9C99AD"
                   autoFocus
                   returnKeyType="search"

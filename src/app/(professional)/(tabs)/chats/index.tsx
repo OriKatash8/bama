@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
@@ -32,7 +33,7 @@ import { setDocument } from '@core/firebase/firestore';
 import { ROLE_CATEGORIES, categoryLabel, communityCategoryLabel } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE } from '@core/navigation/floatingTabBar';
+import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 
@@ -73,6 +74,8 @@ type Course = {
 export default function ProfessionalChatsScreen() {
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
+  // The search magnifier takes the mode colour: purple client, blue pro.
+  const { accent: searchIconColor } = useModeAccent();
   const tabBarHeight = useTabBarHeight();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -339,10 +342,9 @@ export default function ProfessionalChatsScreen() {
         ) : (
           <>
             <View style={[styles.searchRow, focusedSearch === 'chats' && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Search size={18} color="#8B8898" strokeWidth={2.5} />
               <TextInput
                 style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                placeholder={t('search.placeholder')}
+                placeholder={rtlSafe(t('search.placeholder'), rtl)}
                 placeholderTextColor="#9C99AD"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -355,6 +357,7 @@ export default function ProfessionalChatsScreen() {
                   <Text style={{ color: BLUE, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
                 </TouchableOpacity>
               )}
+              <Search size={18} color={searchIconColor} strokeWidth={2.5} />
             </View>
             {/* The chat list runs edge to edge; ChatsScreen (shared with the
                 client tab) insets its chips and rows by 20, in line with the
@@ -382,10 +385,9 @@ export default function ProfessionalChatsScreen() {
           {/* Row 1 — search + filter button */}
           <View style={[styles.courseSearchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <View style={[styles.searchRow, styles.searchRowFlex, focusedSearch === 'courses' && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Search size={18} color="#8B8898" strokeWidth={2.5} />
               <TextInput
                 style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                placeholder={t('courses.search_placeholder')}
+                placeholder={rtlSafe(t('courses.search_placeholder'), rtl)}
                 placeholderTextColor="#9C99AD"
                 value={courseSearch}
                 onChangeText={setCourseSearch}
@@ -398,6 +400,7 @@ export default function ProfessionalChatsScreen() {
                   <Text style={{ color: BLUE, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
                 </TouchableOpacity>
               )}
+              <Search size={18} color={searchIconColor} strokeWidth={2.5} />
             </View>
             <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterSheetOpen(true)} activeOpacity={0.85}>
               <SlidersHorizontal size={18} color={BLUE} strokeWidth={2.2} />

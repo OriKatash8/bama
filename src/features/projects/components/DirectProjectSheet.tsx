@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { rtlSafe } from '@utils/formatters';
 import {
   Modal, View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
   StyleSheet, ActivityIndicator, TouchableWithoutFeedback,
@@ -506,7 +507,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                   style={[styles.locationSearchInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                   value={locationSearch}
                   onChangeText={setLocationSearch}
-                  placeholder={t('builder.search_city')}
+                  placeholder={rtlSafe(t('builder.search_city'), rtl)}
                   placeholderTextColor="#004aad80"
                   autoFocus
                   returnKeyType="search"

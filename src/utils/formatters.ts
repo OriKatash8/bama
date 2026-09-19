@@ -39,3 +39,13 @@ export function formatRelativeTime(timestamp: Pick<Timestamp, 'seconds'>): strin
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
 }
+
+/**
+ * A placeholder that ends in "…" (or any neutral punctuation) renders the dots
+ * on the wrong side in Hebrew: the app lays out LTR, so a trailing neutral
+ * character after Hebrew text falls to the LTR end — before the words. An
+ * invisible right-to-left mark after it anchors the dots to the Hebrew side.
+ */
+export function rtlSafe(text: string, rtl: boolean): string {
+  return rtl ? `${text}‏` : text;
+}
