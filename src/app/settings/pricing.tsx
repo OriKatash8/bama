@@ -8,6 +8,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -44,6 +45,8 @@ function makeT(translations: Translations) {
 export default function PricingScreen() {
   const router = useRouter();
   const colors = useTheme();
+  // Buttons follow the mode: purple for client, blue for professional.
+  const { accent } = useModeAccent();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -63,8 +66,8 @@ export default function PricingScreen() {
         hitSlop={10}
       >
         {rtl
-          ? <ChevronRight size={22} color={colors.primary} strokeWidth={2} />
-          : <ChevronLeft size={22} color={colors.primary} strokeWidth={2} />}
+          ? <ChevronRight size={22} color={accent} strokeWidth={2} />
+          : <ChevronLeft size={22} color={accent} strokeWidth={2} />}
         <AppText weight="bold" style={styles.title}>
           {t('pricing.title')}
         </AppText>
@@ -75,7 +78,7 @@ export default function PricingScreen() {
       <View style={styles.card}>
         <AppText
           weight="bold"
-          style={[styles.headline, { color: colors.primary, textAlign: align }]}
+          style={[styles.headline, { color: accent, textAlign: align }]}
         >
           {t('pricing.fee_headline', vars)}
         </AppText>

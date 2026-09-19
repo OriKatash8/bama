@@ -14,6 +14,7 @@ import { showsOnBalance, balanceRowNote } from '@features/pricing/utils/balance'
 import type { ProjectFee, ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -68,6 +69,8 @@ type Row = {
 export default function BalanceScreen() {
   const router = useRouter();
   const colors = useTheme();
+  // Buttons follow the mode: purple for client, blue for professional.
+  const { accent } = useModeAccent();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -136,8 +139,8 @@ export default function BalanceScreen() {
       hitSlop={10}
     >
       {rtl
-        ? <ChevronRight size={22} color={colors.primary} strokeWidth={2} />
-        : <ChevronLeft size={22} color={colors.primary} strokeWidth={2} />}
+        ? <ChevronRight size={22} color={accent} strokeWidth={2} />
+        : <ChevronLeft size={22} color={accent} strokeWidth={2} />}
       <AppText weight="bold" style={styles.title}>
         {t('balance.title')}
       </AppText>
@@ -148,7 +151,7 @@ export default function BalanceScreen() {
     return (
       <Screen style={styles.content}>
         {back}
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={accent} style={{ marginTop: 40 }} />
       </Screen>
     );
   }
@@ -177,7 +180,7 @@ export default function BalanceScreen() {
               <AppText weight="regular" style={[styles.amountLabel, { color: colors.textMuted }]}>
                 {t('balance.total_label')}
               </AppText>
-              <AppText weight="bold" style={[styles.amount, { color: colors.primary }]}>
+              <AppText weight="bold" style={[styles.amount, { color: accent }]}>
                 ₪{total.toLocaleString()}
               </AppText>
             </View>

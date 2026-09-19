@@ -2,6 +2,7 @@ import { use } from 'react';
 import { Platform } from 'react-native';
 import { BottomTabBarHeightContext } from 'expo-router/js-tabs';
 import { useSegments } from 'expo-router';
+import { useAuthStore } from '@core/stores/authStore';
 import type { ViewStyle } from 'react-native';
 
 export const FLOATING_TAB_BAR_ACTIVE_COLOR = '#004aad';
@@ -151,10 +152,17 @@ export const FAB_SIZE = 56;
  * The accent for shared UI that appears in both modes (profile tabs, reviews,
  * portfolio): purple under the client app, blue under the pro app — the same
  * colours as the tab bar. `tint` is a light wash of it for backgrounds.
+ * Off the two app sections (e.g. /settings), the user's active mode decides.
  */
 export function useModeAccent(): { accent: string; tint: string } {
   const segments = useSegments();
-  return segments[0] === '(client)'
+  const activeMode = useAuthStore((s) => s.activeMode);
+  const section = segments[0];
+  const isClient =
+    section === '(client)' ? true
+    : section === '(professional)' ? false
+    : activeMode === 'client';
+  return isClient
     ? { accent: CLIENT_TAB_ACTIVE, tint: '#F3EEFE' }
     : { accent: PRO_TAB_ACTIVE, tint: '#E6EDFC' };
 }

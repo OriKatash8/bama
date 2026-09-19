@@ -16,6 +16,7 @@ import {
 } from '@core/notifications/registerForPushNotifications';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -34,6 +35,8 @@ type OptionalType = (typeof OPTIONAL_TYPES)[number];
 export default function NotificationsSettings() {
   const router = useRouter();
   const colors = useTheme();
+  // Buttons follow the mode: purple for client, blue for professional.
+  const { accent } = useModeAccent();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -101,7 +104,7 @@ export default function NotificationsSettings() {
         value={value}
         onValueChange={onChange}
         disabled={disabled}
-        trackColor={{ true: colors.primary, false: colors.borderMuted }}
+        trackColor={{ true: accent, false: colors.borderMuted }}
       />
     </View>
   );
@@ -116,17 +119,17 @@ export default function NotificationsSettings() {
         accessibilityRole="button"
         hitSlop={10}
       >
-        {rtl ? <ChevronRight size={22} color={colors.primary} strokeWidth={2} /> : <ChevronLeft size={22} color={colors.primary} strokeWidth={2} />}
-        <AppText weight="bold" style={[styles.title, { color: colors.primary }]}>{t('settings.notifications')}</AppText>
+        {rtl ? <ChevronRight size={22} color={accent} strokeWidth={2} /> : <ChevronLeft size={22} color={accent} strokeWidth={2} />}
+        <AppText weight="bold" style={[styles.title, { color: accent }]}>{t('settings.notifications')}</AppText>
       </TouchableOpacity>
 
       {/* Section 1 — OS permission */}
       <View style={[styles.permCard, { backgroundColor: colors.card }]}>
         {perm == null ? (
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={accent} />
         ) : perm.granted ? (
           <View style={[styles.permRow, { flexDirection: rowDir }]}>
-            <View style={[styles.permIconOk, { backgroundColor: colors.primary }]}>
+            <View style={[styles.permIconOk, { backgroundColor: accent }]}>
               <Check size={15} color="#ffffff" strokeWidth={3} />
             </View>
             <AppText weight="semiBold" style={[styles.permText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
@@ -142,7 +145,7 @@ export default function NotificationsSettings() {
             <AppText weight="regular" style={[styles.permText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
               {t('settings.notif_perm_denied_text')}
             </AppText>
-            <TouchableOpacity style={[styles.permBtn, { backgroundColor: colors.primary }]} onPress={() => Linking.openSettings()} activeOpacity={0.85} accessibilityRole="button">
+            <TouchableOpacity style={[styles.permBtn, { backgroundColor: accent }]} onPress={() => Linking.openSettings()} activeOpacity={0.85} accessibilityRole="button">
               <AppText weight="bold" style={styles.permBtnText}>{t('settings.notif_perm_open_settings')}</AppText>
             </TouchableOpacity>
           </>
@@ -154,7 +157,7 @@ export default function NotificationsSettings() {
                 {t('settings.notif_perm_enable_text')}
               </AppText>
             </View>
-            <TouchableOpacity style={[styles.permBtn, { backgroundColor: colors.primary }]} onPress={onRequest} disabled={requesting} activeOpacity={0.85} accessibilityRole="button">
+            <TouchableOpacity style={[styles.permBtn, { backgroundColor: accent }]} onPress={onRequest} disabled={requesting} activeOpacity={0.85} accessibilityRole="button">
               {requesting ? <ActivityIndicator size="small" color="#fff" /> : <AppText weight="bold" style={styles.permBtnText}>{t('settings.notif_perm_enable')}</AppText>}
             </TouchableOpacity>
           </>
@@ -162,7 +165,7 @@ export default function NotificationsSettings() {
       </View>
 
       {loadingPrefs ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+        <ActivityIndicator color={accent} style={{ marginTop: 24 }} />
       ) : (
         <View style={[styles.sections, !enabled && styles.dimmed]}>
           {/* Section 2 — Essential (always on, disabled) */}

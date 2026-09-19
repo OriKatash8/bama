@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 
 const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
@@ -98,7 +99,9 @@ export function AppHeader() {
   const firstName = user?.displayName?.split(' ')[0] ?? '';
   const greeting = `${t(getGreetingKey())}, ${firstName}`;
   const modeIsClient = activeMode === 'client';
-  const modeBadgeColor = modeIsClient ? '#6D28D9' : '#1D4ED8';
+  // The settings panel's buttons (and the mode badge) follow the mode.
+  const { accent } = useModeAccent();
+  const modeBadgeColor = accent;
   const modeBadgeLabel = modeIsClient ? t('header.client_mode') : t('header.pro_mode');
 
   async function handleAvatarPress() {
@@ -198,7 +201,7 @@ export function AppHeader() {
           {/* User info — tappable avatar */}
           <View style={[styles.userSection, { borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8} style={styles.avatarWrap}>
-              <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
+              <View style={[styles.avatar, { backgroundColor: accent }]}>
                 {user?.photoURL ? (
                   <Image source={{ uri: user.photoURL }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" />
                 ) : (
@@ -211,7 +214,7 @@ export function AppHeader() {
                 )}
               </View>
               {/* Camera badge */}
-              <View style={[styles.cameraBadge, { backgroundColor: colors.primary }]}>
+              <View style={[styles.cameraBadge, { backgroundColor: accent }]}>
                 <Camera size={10} color="#fff" strokeWidth={2} />
               </View>
             </TouchableOpacity>
@@ -244,7 +247,7 @@ export function AppHeader() {
                   return (
                     <TouchableOpacity
                       key={lang}
-                      style={[styles.langBtn, active && styles.langBtnActive]}
+                      style={[styles.langBtn, active && { backgroundColor: accent }]}
                       onPress={() => setLanguage(lang)}
                       activeOpacity={0.8}
                     >
@@ -483,7 +486,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  langBtnActive: { backgroundColor: '#004aad' },
   langBtnText: { fontSize: 12 },
 
   logoutSection: {

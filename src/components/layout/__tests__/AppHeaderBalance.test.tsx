@@ -13,7 +13,7 @@ import en from '@core/i18n/translations/en.json';
 const mockPush = jest.fn();
 const mockMode = { activeMode: 'professional' as 'professional' | 'client' };
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }), useSegments: () => [] }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
