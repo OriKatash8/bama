@@ -274,7 +274,7 @@ export default function PublicProfileScreen() {
       {/* ── Report Modal ── */}
       <Modal visible={reportVisible} transparent animationType="slide" onRequestClose={closeReport}>
         <View style={styles.modalOverlay}>
-          <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modalSheet}>
+          <LinearGradient colors={['#4C1D95', '#6D28D9']} style={styles.modalSheet}>
             {/* Header */}
             <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.modalTitle, { ...font.bold }]}>
@@ -348,7 +348,7 @@ export default function PublicProfileScreen() {
               activeOpacity={0.8}
             >
               {reportSubmitting ? (
-                <ActivityIndicator size="small" color="#004aad" />
+                <ActivityIndicator size="small" color="#6D28D9" />
               ) : (
                 <Text style={[styles.submitBtnText, { ...font.bold }]}>
                   {t('report.submit')}
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   submitBtnText: {
-    color: '#004aad',
+    color: '#6D28D9',
     fontSize: 16,
     fontWeight: '700',
   },

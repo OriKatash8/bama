@@ -15,6 +15,7 @@ import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Review } from '@core/types/project';
@@ -65,6 +66,8 @@ export function ContentTabs({
   const rtl = language === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   const font = useAppFont();
+  // Purple when a client views the profile, blue in the pro app.
+  const { accent, tint } = useModeAccent();
 
   const rs: RoleSkill[] = roleSkills ?? [];
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
@@ -120,7 +123,7 @@ export function ContentTabs({
           {title}
         </AppText>
         <View style={isOpen && styles.chevronOpen}>
-          <ChevronDown size={18} color="#1D4ED8" strokeWidth={2.2} />
+          <ChevronDown size={18} color={accent} strokeWidth={2.2} />
         </View>
       </TouchableOpacity>
     );
@@ -175,6 +178,7 @@ export function ContentTabs({
           <Animated.View
             style={[
               styles.slidingPill,
+              { backgroundColor: accent },
               {
                 width: segWidth,
                 transform: [{
@@ -222,7 +226,7 @@ export function ContentTabs({
                 </AppText>
                 {onRequestEdit && (
                   <TouchableOpacity onPress={onRequestEdit} accessibilityRole="button" style={styles.eqAddLinkBtn} activeOpacity={0.7}>
-                    <AppText weight="semiBold" style={styles.eqAddLink}>
+                    <AppText weight="semiBold" style={[styles.eqAddLink, { color: accent }]}>
                       {t('profile_sections.add_equipment')}
                     </AppText>
                   </TouchableOpacity>
@@ -256,7 +260,7 @@ export function ContentTabs({
                                 activeOpacity={0.7}
                                 accessibilityRole="button"
                               >
-                                <X size={12} color="#1D4ED8" strokeWidth={2.5} />
+                                <X size={12} color={accent} strokeWidth={2.5} />
                               </TouchableOpacity>
                             )}
                           </View>
@@ -271,7 +275,7 @@ export function ContentTabs({
             {isEditing && (
               <View style={styles.addSection}>
                 <View style={[styles.addRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <TouchableOpacity style={styles.addBtn} onPress={addEquipment} activeOpacity={0.8}>
+                  <TouchableOpacity style={[styles.addBtn, { backgroundColor: accent }]} onPress={addEquipment} activeOpacity={0.8}>
                     <Text style={styles.addBtnText}>+</Text>
                   </TouchableOpacity>
                   <TextInput
@@ -298,7 +302,7 @@ export function ContentTabs({
                         onPress={() => setNewEquipmentCat(cat.id)}
                         activeOpacity={0.7}
                         accessibilityRole="button"
-                        style={[styles.pill, selected && styles.pillActive]}
+                        style={[styles.pill, { borderColor: accent }, selected && { backgroundColor: accent }]}
                       >
                         <AppText weight="semiBold" style={[styles.pillText, selected && styles.pillTextActive]}>
                           {t(equipmentCategoryLabelKey(cat.id))}
@@ -327,11 +331,11 @@ export function ContentTabs({
                     return (
                       <TouchableOpacity
                         key={role.id}
-                        style={[styles.tableRow, isSelected && styles.tableRowActive]}
+                        style={[styles.tableRow, isSelected && { backgroundColor: tint, borderColor: accent }]}
                         onPress={() => toggleRole(role.id)}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.tableRowCheck, isSelected && styles.tableRowCheckActive]}>
+                        <Text style={[styles.tableRowCheck, { color: accent }]}>
                           {isSelected ? '✓' : ''}
                         </Text>
                         <AppText weight="medium" style={[styles.tableRowText, isSelected && styles.tableRowTextActive]}>
@@ -361,7 +365,7 @@ export function ContentTabs({
                           return (
                             <TouchableOpacity
                               key={sp.id}
-                              style={[styles.pill, on && styles.pillActive]}
+                              style={[styles.pill, { borderColor: accent }, on && { backgroundColor: accent }]}
                               onPress={() => toggleInEntry(role.id, 'specializations', sp.id)}
                               activeOpacity={0.7}
                             >
@@ -451,7 +455,6 @@ const styles = StyleSheet.create({
     left: 0,
     height: 34,
     borderRadius: 999,
-    backgroundColor: '#1D4ED8',
   },
   /* Content */
   panel: {
@@ -472,7 +475,7 @@ const styles = StyleSheet.create({
   eqChip: { alignItems: 'center', gap: 5, maxWidth: '100%' },
   eqEmptyWrap: { gap: 8 },
   eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
-  eqAddLink: { fontSize: 13, color: '#1D4ED8' },
+  eqAddLink: { fontSize: 13 },
   addSection: { gap: 8 },
 
   /* Add row */
@@ -485,7 +488,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#1D4ED8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -526,9 +528,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#EFEDF5',
   },
-  tableRowActive: { backgroundColor: '#E6EDFC', borderColor: '#1D4ED8' },
-  tableRowCheck: { width: 20, fontSize: 13, color: '#1D4ED8', fontWeight: '700' },
-  tableRowCheckActive: { color: '#1D4ED8' },
+  tableRowCheck: { width: 20, fontSize: 13, fontWeight: '700' },
   tableRowText: { fontSize: 14, color: '#000000', fontWeight: '500', flex: 1 },
   tableRowTextActive: { color: '#000000', fontWeight: '700' },
 
@@ -561,10 +561,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
     backgroundColor: '#FFFFFF',
   },
-  pillActive: { backgroundColor: '#1D4ED8', borderColor: '#1D4ED8' },
   pillText: { fontSize: 12, color: '#000000' },
   pillTextActive: { color: '#FFFFFF' },
 });

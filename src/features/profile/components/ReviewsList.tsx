@@ -6,6 +6,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Review } from '@core/types/project';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 
 type ReviewsListProps = {
   reviews: Review[];
@@ -40,6 +41,8 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
   // together — flipping only the text would leave the avatar stranded.
   const language = useSettingsStore((s) => s.language);
   const rtl = language === 'he';
+  // Purple when a client views the profile, blue in the pro app.
+  const { accent, tint } = useModeAccent();
   const t = makeT(rtl ? he : en);
   const align = rtl ? 'right' : 'left' as const;
 
@@ -67,8 +70,8 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
         <View style={[styles.nameAvatarRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <Text style={styles.date}>{date}</Text>
           <AppText weight="bold" style={[styles.author, { textAlign: align }]}>{review.authorName}</AppText>
-          <View style={styles.avatar}>
-            <AppText weight="bold" style={styles.avatarText}>{initials(review.authorName)}</AppText>
+          <View style={[styles.avatar, { backgroundColor: tint }]}>
+            <AppText weight="bold" style={[styles.avatarText, { color: accent }]}>{initials(review.authorName)}</AppText>
           </View>
         </View>
 
@@ -82,14 +85,14 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
       {/* Navigation row */}
       {reviews.length > 1 && (
         <View style={styles.navRow}>
-          <TouchableOpacity onPress={prev} style={styles.navBtn} activeOpacity={0.7} hitSlop={4}>
-            <ChevronLeft size={20} color="#1D4ED8" strokeWidth={2.5} />
+          <TouchableOpacity onPress={prev} style={[styles.navBtn, { backgroundColor: tint }]} activeOpacity={0.7} hitSlop={4}>
+            <ChevronLeft size={20} color={accent} strokeWidth={2.5} />
           </TouchableOpacity>
 
           <Text style={styles.counter}>{index + 1} / {reviews.length}</Text>
 
-          <TouchableOpacity onPress={next} style={styles.navBtn} activeOpacity={0.7} hitSlop={4}>
-            <ChevronRight size={20} color="#1D4ED8" strokeWidth={2.5} />
+          <TouchableOpacity onPress={next} style={[styles.navBtn, { backgroundColor: tint }]} activeOpacity={0.7} hitSlop={4}>
+            <ChevronRight size={20} color={accent} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
       )}
@@ -136,7 +139,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E6EDFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -144,7 +146,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1D4ED8',
   },
 
   body: {
@@ -164,7 +165,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E6EDFC',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -68,6 +69,7 @@ export function PortfolioGrid({
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const font = useAppFont();
+  const { accent } = useModeAccent();
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [tileSize, setTileSize] = useState(0);
@@ -152,7 +154,7 @@ export function PortfolioGrid({
       {/* Processing indicator */}
       {videoActive && (
         <View style={styles.processingRow}>
-          <ActivityIndicator size="small" color="#1D4ED8" />
+          <ActivityIndicator size="small" color={accent} />
           <AppText style={styles.processingText}>
             {videoUploading ? 'Uploading...' : t('media.processing_video')}
           </AppText>
@@ -162,13 +164,13 @@ export function PortfolioGrid({
       <View style={styles.grid} onLayout={(e) => handleGridLayout(e.nativeEvent.layout.width)}>
         {isEditing && (
           <TouchableOpacity
-            style={[styles.tile, styles.addTile, { width: tileSize, height: tileSize }]}
+            style={[styles.tile, styles.addTile, { width: tileSize, height: tileSize, borderColor: accent }]}
             onPress={handleAddMedia}
             disabled={videoActive}
             activeOpacity={0.8}
           >
-            <ImagePlus size={28} color="#1D4ED8" strokeWidth={1.5} />
-            <AppText style={styles.addMediaLabel}>{t('profile_sections.add_media')}</AppText>
+            <ImagePlus size={28} color={accent} strokeWidth={1.5} />
+            <AppText style={[styles.addMediaLabel, { color: accent }]}>{t('profile_sections.add_media')}</AppText>
           </TouchableOpacity>
         )}
 
@@ -244,7 +246,7 @@ export function PortfolioGrid({
                 </AppText>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.captionBtn, styles.captionBtnSave]}
+                style={[styles.captionBtn, { backgroundColor: accent }]}
                 onPress={() => commitPending(caption.trim() || null)}
                 disabled={saving}
                 accessibilityRole="button"
@@ -277,11 +279,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#1D4ED8',
     borderStyle: 'dashed',
     backgroundColor: '#FFFFFF',
   },
-  addMediaLabel: { fontSize: 11, color: '#1D4ED8', fontWeight: '600', marginTop: 6 },
+  addMediaLabel: { fontSize: 11, fontWeight: '600', marginTop: 6 },
   image: { width: '100%', height: '100%' },
   videoThumb: {
     alignItems: 'center',
@@ -360,6 +361,5 @@ const styles = StyleSheet.create({
   },
   captionBtnSkip: { backgroundColor: '#f1f3f9' },
   captionBtnSkipText: { color: '#000000', fontSize: 15 },
-  captionBtnSave: { backgroundColor: '#1D4ED8' },
   captionBtnSaveText: { color: '#fff', fontSize: 15 },
 });
