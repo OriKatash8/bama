@@ -58,7 +58,7 @@ export const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'web' ? 58 : 56;
 export const TAB_BAR_CONTENT_GAP = 16;
 
 /** The capsule floats this far above the bottom safe-area inset. */
-export const TAB_BAR_BOTTOM_OFFSET = 24;
+export const TAB_BAR_BOTTOM_OFFSET = 6;
 /** The capsule's inset from each side of the screen. */
 export const TAB_BAR_SIDE_MARGIN = 16;
 /** Half the content height: a true capsule. */
