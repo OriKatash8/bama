@@ -42,6 +42,8 @@ type CombinedOffer =
 type ProfessionalProfileSummary = { displayName: string; photoURL?: string; rating?: number };
 
 const PAGE_BG = '#FAFAFC';
+/** Buttons, outlines and icons on this page — client mode's purple. */
+const VIOLET = '#6D28D9';
 
 type Translations = typeof en;
 
@@ -447,7 +449,7 @@ export default function ProjectsPage() {
                     // 32 visual + 6 either side = 44.
                     hitSlop={{ top: 6, bottom: 6 }}
                   >
-                    <SlidersHorizontal size={14} color="#4C1D95" strokeWidth={2} />
+                    <SlidersHorizontal size={14} color="#000000" strokeWidth={2} />
                     <AppText weight="semiBold" style={styles.sortBtnText}>
                       {t('offers.filter')}
                     </AppText>
@@ -517,7 +519,7 @@ export default function ProjectsPage() {
                 {t('offers.filter')}
               </AppText>
               <TouchableOpacity onPress={() => setSortModalVisible(false)} style={styles.modalClose} activeOpacity={0.7}>
-                <X size={20} color="#004aad" />
+                <X size={20} color={VIOLET} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
@@ -660,13 +662,13 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 999,
     paddingHorizontal: 13,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F3EEFE',
     borderWidth: 1,
-    borderColor: '#EAE8F0',
+    borderColor: '#6D28D9',
   },
-  // A filter is on: the outline darkens, as before, in the violet palette.
-  sortBtnActive: { borderColor: '#6D28D9' },
-  sortBtnText: { fontSize: 12.5, fontWeight: '600', color: '#4C1D95' },
+  // A filter is on: the outline thickens against the same purple fill.
+  sortBtnActive: { borderWidth: 1.5 },
+  sortBtnText: { fontSize: 12.5, fontWeight: '600', color: '#000000' },
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.5)' },
   modalCard: {
     width: '100%',
@@ -683,20 +685,22 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   modalHeader: { alignItems: 'center', marginBottom: 12 },
-  modalTitle: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#004aad' },
+  modalTitle: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#000000' },
   modalClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   modalScroll: { flexShrink: 1, marginBottom: 4 },
-  modalSectionLabel: { fontSize: 12, color: 'rgba(15,15,31,0.4)', marginBottom: 8, marginTop: 10 },
+  modalSectionLabel: { fontSize: 12, color: '#000000', marginBottom: 8, marginTop: 10 },
   sortOptions: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   showOptions: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   showOption: {},
-  sortOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', backgroundColor: '#fff' },
-  sortOptionActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  sortOptionText: { fontSize: 13, color: '#004aad' },
+  sortOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(109,40,217,0.25)', backgroundColor: '#fff' },
+  sortOptionActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  sortOptionText: { fontSize: 13, color: VIOLET },
   sortOptionTextActive: { color: '#fff' },
   modalActions: { alignItems: 'center', gap: 12, marginTop: 18 },
-  clearBtn: { paddingHorizontal: 12, paddingVertical: 12 },
-  clearBtnText: { color: 'rgba(15,15,31,0.4)', fontSize: 14 },
-  applyBtn: { flex: 1, borderRadius: 16, paddingVertical: 14, alignItems: 'center', backgroundColor: '#004aad' },
+  // The pair splits the row 70 / 30 (flexBasis 0, so the grow values are the
+  // ratio itself): apply is the filled primary, clear its outlined companion.
+  clearBtn: { flex: 3, borderRadius: 16, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(109,40,217,0.25)' },
+  clearBtnText: { color: VIOLET, fontSize: 14 },
+  applyBtn: { flex: 7, borderRadius: 16, paddingVertical: 14, alignItems: 'center', backgroundColor: VIOLET },
   applyBtnText: { color: '#fff', fontSize: 15 },
 });

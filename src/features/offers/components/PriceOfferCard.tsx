@@ -147,7 +147,7 @@ export function PriceOfferCard({
       {/* Zone 3 — Separator */}
       <View style={styles.separator} />
 
-      {/* Zone 4 — Action row: view profile (50%) | accept (~33%) | divider | reject (~17%) */}
+      {/* Zone 4 — Action row: view profile 40% | accept 40% | deny 20% */}
       <View style={[styles.actionStrip, { flexDirection: rowDir }]}>
         <TouchableOpacity style={styles.actionProfile} onPress={onPressProfile} activeOpacity={0.7} hitSlop={{ top: 3, bottom: 3 }}>
           <View style={[styles.actionInner, { flexDirection: rowDir }]}>
@@ -274,13 +274,14 @@ const styles = StyleSheet.create({
     backgroundColor: HAIRLINE,
   },
   // Zone 4 — three separate controls, weighted by consequence: accept is the
-  // filled primary, profile is outlined, reject is plain text.
+  // filled primary, profile is outlined, reject is plain text. They split the
+  // strip 40 / 40 / 20 (flexBasis 0, so the grow values are the ratio itself).
   actionStrip: {
     alignItems: 'center',
     gap: 8,
   },
   actionAccept: {
-    flex: 1,
+    flex: 2,
     height: 38,
     borderRadius: 12,
     backgroundColor: VIOLET,
@@ -300,6 +301,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   actionProfile: {
+    flex: 2,
     height: 38,
     borderRadius: 12,
     backgroundColor: '#ffffff',
@@ -315,7 +317,11 @@ const styles = StyleSheet.create({
     color: VIOLET_DEEP,
   },
   actionReject: {
+    flex: 1,
     height: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#000000',
     paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
