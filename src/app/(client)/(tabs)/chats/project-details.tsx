@@ -89,10 +89,13 @@ function makeT(translations: Translations) {
   };
 }
 
-const MISSION_STATUS_CONFIG: Record<MissionStatus, { color: string }> = {
-  todo:        { color: '#6b7280' },
-  in_progress: { color: '#f59e0b' },
-  done:        { color: '#22c55e' },
+/** Mission pill outlines. The label itself is always black; 'done' keeps its
+ *  green wash (styles.carouselStatusDone) because it is the finished state.
+ *  'in_progress' takes the mode accent, filled in at render. */
+const MISSION_OUTLINE: Record<MissionStatus, string | null> = {
+  todo:        '#000000',
+  in_progress: null, // the mode accent
+  done:        null, // the green wash instead of an outline
 };
 
 const MISSION_STATUS_CYCLE: Record<MissionStatus, MissionStatus> = {
@@ -1372,7 +1375,7 @@ export default function ProjectDetailsScreen() {
           <>
             {(() => {
               const mission = missions[Math.min(missionIndex, missions.length - 1)];
-              const cfg = MISSION_STATUS_CONFIG[mission.status] ?? { color: '#6b7280' };
+              const missionOutline = MISSION_OUTLINE[mission.status] ?? modeAccent;
               const isAssigned = mission.assignedTo.includes(currentUserId);
               return (
                 <TouchableOpacity
@@ -1450,13 +1453,13 @@ export default function ProjectDetailsScreen() {
                     <TouchableOpacity
                       style={[
                         styles.carouselStatusPill,
-                        mission.status === 'done' ? styles.carouselStatusDone : { borderColor: cfg.color, borderWidth: 1.5 },
+                        mission.status === 'done' ? styles.carouselStatusDone : { borderColor: missionOutline, borderWidth: 1.5 },
                         !isAssigned && { opacity: 0.5 },
                       ]}
                       onPress={isAssigned ? () => handleCycleMissionStatus(mission) : undefined}
                       activeOpacity={isAssigned ? 0.8 : 1}
                     >
-                      <AppText weight="bold" style={[styles.carouselStatusText, { color: mission.status === 'done' ? '#1c9d63' : cfg.color }]}>
+                      <AppText weight="bold" style={[styles.carouselStatusText, { color: '#000000' }]}>
                         {mission.status === 'done' ? `✓ ${missionLabel(mission.status)}` : missionLabel(mission.status)}
                       </AppText>
                     </TouchableOpacity>
@@ -1517,12 +1520,13 @@ export default function ProjectDetailsScreen() {
             {(() => {
               const meeting = sortedMeetings[Math.min(meetingIndex, sortedMeetings.length - 1)];
               const urgency = getMeetingUrgency(meeting.date, meeting.time);
-              // The urgency colour marks the date block; the title stays black.
+              // The date block carries the urgency; the title stays black.
+              // Within a week (imminent ≤2d, soon ≤7d) it takes the mode accent;
+              // further out it is black. A past meeting keeps its green.
               const titleColor =
-                urgency === 'past'     ? '#1c9d63' :
-                urgency === 'imminent' ? '#ef4444' :
-                urgency === 'soon'     ? '#f59e0b' :
-                '#1e4fa3';
+                urgency === 'past' ? '#1c9d63' :
+                urgency === 'imminent' || urgency === 'soon' ? modeAccent :
+                '#000000';
               const { monthAbbr, day } = getMeetingDateParts(meeting.date);
               return (
                 <TouchableOpacity
@@ -2006,9 +2010,9 @@ export default function ProjectDetailsScreen() {
                   </Text>
                   <View style={[
                     styles.carouselStatusPill,
-                    detailMission.status === 'done' ? styles.carouselStatusDone : { borderColor: MISSION_STATUS_CONFIG[detailMission.status]?.color ?? '#6b7280', borderWidth: 1.5 },
+                    detailMission.status === 'done' ? styles.carouselStatusDone : { borderColor: MISSION_OUTLINE[detailMission.status] ?? modeAccent, borderWidth: 1.5 },
                   ]}>
-                    <AppText weight="bold" style={[styles.carouselStatusText, { color: detailMission.status === 'done' ? '#1c9d63' : (MISSION_STATUS_CONFIG[detailMission.status]?.color ?? '#6b7280') }]}>
+                    <AppText weight="bold" style={[styles.carouselStatusText, { color: '#000000' }]}>
                       {detailMission.status === 'done' ? `✓ ${missionLabel(detailMission.status)}` : missionLabel(detailMission.status)}
                     </AppText>
                   </View>
