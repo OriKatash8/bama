@@ -476,7 +476,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
   // Buttons, the back arrow and my own bubbles follow the mode: purple in the
   // client app, blue in the pro app.
-  const { accent: modeAccent, tint: modeTint } = useModeAccent();
+  const { accent: modeAccent } = useModeAccent();
   const font = useAppFont();
   const router = useRouter();
   const language = useSettingsStore((s) => s.language);
@@ -1526,7 +1526,8 @@ export function ChatRoomScreen({ chatId }: Props) {
             chatStyles.menuSheet,
             {
               borderTopColor: colors.border,
-              backgroundColor: modeTint,
+              // Transparent: the chat shows through the strip.
+              backgroundColor: 'transparent',
               opacity: menuAnim,
               transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
             },
