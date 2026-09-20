@@ -37,6 +37,9 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
   const insets = useSafeAreaInsets();
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
+  // The profile's editor puts its own Save/Cancel bar at the bottom; the tab
+  // bar would sit on top of it (and navigating away mid-edit drops the edits).
+  const profileEditing = useUiStore((s) => s.profileEditing);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const userId = useAuthStore((s) => s.user?.id);
@@ -104,7 +107,7 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: (locked || inChatRoom) ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
+            tabBarStyle: (locked || inChatRoom || profileEditing) ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
             // Docked glass bar; it owns the bottom safe-area inset (the provider
             // below zeroes it for the screens, so the real inset is passed in).
             tabBarBackground: () => <GlassTabBarBackground activeColor={PRO_TAB_ACTIVE} isDark={isDark} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,

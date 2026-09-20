@@ -167,6 +167,9 @@ describe('capsule shape', () => {
     const inset = 34;
     const box = getDockedTabBarStyle(inset);
     expect(box.height).toBe(TAB_BAR_CONTENT_HEIGHT + inset + TAB_BAR_BOTTOM_OFFSET);
+    // No inset (Android, web): the space below the capsule never goes negative.
+    expect(getDockedTabBarStyle(0).paddingBottom).toBe(0);
+    expect(getDockedTabBarStyle(0).height).toBe(TAB_BAR_CONTENT_HEIGHT);
     // The tab row is the box minus its padding: exactly the capsule band, so no
     // touch target reaches into the float gap, the inset or the side margins.
     expect((box.height as number) - (box.paddingBottom as number) - (box.paddingTop as number)).toBe(TAB_BAR_CONTENT_HEIGHT);

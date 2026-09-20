@@ -57,8 +57,10 @@ export const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'web' ? 58 : 56;
 /** Space between the last content on a screen and the top of the tab bar. */
 export const TAB_BAR_CONTENT_GAP = 16;
 
-/** The capsule floats this far above the bottom safe-area inset. */
-export const TAB_BAR_BOTTOM_OFFSET = 6;
+/** How far the capsule floats above the bottom safe-area inset. Negative lets
+ *  it sit INTO that strip (over the home indicator); the space below it is
+ *  floored at 0, so a device without an inset never gets negative padding. */
+export const TAB_BAR_BOTTOM_OFFSET = -8;
 /** The capsule's inset from each side of the screen. */
 export const TAB_BAR_SIDE_MARGIN = 16;
 /** Half the content height: a true capsule. */
@@ -94,14 +96,15 @@ export const TAB_ITEM_STYLE: ViewStyle = {
  * navigator's own pointerEvents, so this wins.)
  */
 export function getDockedTabBarStyle(bottomInset: number): ViewStyle {
+  const bottomSpace = Math.max(0, bottomInset + TAB_BAR_BOTTOM_OFFSET);
   return {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: TAB_BAR_CONTENT_HEIGHT + bottomInset + TAB_BAR_BOTTOM_OFFSET,
+    height: TAB_BAR_CONTENT_HEIGHT + bottomSpace,
     paddingTop: 0,
-    paddingBottom: bottomInset + TAB_BAR_BOTTOM_OFFSET,
+    paddingBottom: bottomSpace,
     paddingHorizontal: TAB_BAR_SIDE_MARGIN,
     backgroundColor: 'transparent',
     borderTopWidth: 0,
