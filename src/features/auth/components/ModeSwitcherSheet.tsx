@@ -4,6 +4,7 @@ import { AppText } from '@components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { CheckCircle } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
+import { CLIENT_TAB_ACTIVE, PRO_TAB_ACTIVE } from '@core/navigation/floatingTabBar';
 import { useSwitchMode } from '@features/auth/hooks/useSwitchMode';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -103,8 +104,9 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
           const isActive = mode === activeMode;
           const isLast   = index === MODES.length - 1;
 
-          // Native fallback: dark purple when active
-          const nativeActiveColor = { color: '#8b5cf6' };
+          // The selected row wears its own mode's colour: purple for client,
+          // blue for professional — the same pair the tab bar uses.
+          const modeColor = mode === 'client' ? CLIENT_TAB_ACTIVE : PRO_TAB_ACTIVE;
           const nativeInactiveColor = { color: colors.text };
 
           return (
@@ -119,9 +121,11 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
                   weight="bold"
                   style={[
                     styles.rowLabel,
-                    Platform.OS === 'web'
+                    isActive
+                      ? { color: modeColor }
+                      : Platform.OS === 'web'
                       ? gradientTextStyle
-                      : (isActive ? nativeActiveColor : nativeInactiveColor),
+                      : nativeInactiveColor,
                   ]}
                 >
                   {modeLabel(mode)}
@@ -129,7 +133,7 @@ export function ModeSwitcherSheet({ visible, onClose }: Props) {
 
                 {isActive && (
                   <View style={styles.checkWrap}>
-                    <CheckCircle size={20} color="#004aad" strokeWidth={2.5} />
+                    <CheckCircle size={20} color={modeColor} strokeWidth={2.5} />
                   </View>
                 )}
               </TouchableOpacity>

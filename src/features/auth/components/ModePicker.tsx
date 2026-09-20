@@ -37,8 +37,9 @@ const personStyles = StyleSheet.create({
 });
 
 const CARD_MODES: { mode: ActiveMode; key: string; color: string }[] = [
-  { mode: 'client',       key: 'mode_picker.client',       color: '#004aad' },
-  { mode: 'professional', key: 'mode_picker.professional', color: '#cb6ce6' },
+  // Each mode wears its own colour, the same pair as the tab bar and header.
+  { mode: 'client',       key: 'mode_picker.client',       color: '#6D28D9' },
+  { mode: 'professional', key: 'mode_picker.professional', color: '#1D4ED8' },
 ];
 
 export function ModePicker() {
@@ -60,7 +61,7 @@ export function ModePicker() {
               style={[
                 styles.btn,
                 Platform.OS === 'web'
-                  ? ({ background: isPressed ? 'linear-gradient(to right, #004aad, #cb6ce6)' : '#ffffff' } as any)
+                  ? ({ background: isPressed ? 'linear-gradient(to right, #6D28D9, #1D4ED8)' : '#ffffff' } as any)
                   : { backgroundColor: isPressed ? color : '#ffffff' },
               ]}
               onPress={() => switchMode(mode)}
@@ -68,13 +69,13 @@ export function ModePicker() {
               onPressOut={() => setPressed(null)}
               activeOpacity={1}
             >
-              <AppText weight="bold" style={[styles.btnText, { color: isPressed ? '#ffffff' : (mode === 'client' ? '#004aad' : '#cb6ce6') }]}>
+              <AppText weight="bold" style={[styles.btnText, { color: isPressed ? '#ffffff' : color }]}>
                 {t(key)}
               </AppText>
               <View style={styles.iconRight}>
                 {mode === 'client'
-                  ? <PersonIcon color={isPressed ? '#ffffff' : '#004aad'} />
-                  : <Text style={[styles.btnIcon, { color: isPressed ? '#ffffff' : '#cb6ce6' }]}>✦</Text>}
+                  ? <PersonIcon color={isPressed ? '#ffffff' : color} />
+                  : <Text style={[styles.btnIcon, { color: isPressed ? '#ffffff' : color }]}>✦</Text>}
               </View>
             </TouchableOpacity>
           );

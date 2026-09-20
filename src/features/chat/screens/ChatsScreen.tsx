@@ -72,7 +72,9 @@ const VIOLET = '#6D28D9';
 
 /** Text. */
 const INK = '#000000';
-const AVATAR_TINT = '#EDE4FB';
+/** The fallback avatar's tile: a light wash of the mode colour, so the tile
+ *  matches the accent-coloured icon it holds. */
+const AVATAR_TINT = { client: '#EDE4FB', pro: '#E3EBFB' } as const;
 
 /** The viewer's role on a project row. Deliberately neither green (project
  *  state) nor red (cancelled) — a role is not a point on the status scale.
@@ -118,8 +120,10 @@ type DmInfo = { name: string; photoURL: string | null };
  */
 type ChatFilter = 'all' | 'open' | 'completed' | 'marketplace';
 const CHAT_FILTERS: ChatFilter[] = ['all', 'open', 'completed', 'marketplace'];
-/** Row padding 14 + avatar 44 + gap 11: separators start where the text does. */
-const SEPARATOR_INSET = 75;
+/** Row padding 20 + avatar 44: separators start where the avatar ends. */
+const SEPARATOR_INSET = 64;
+/** The row's own padding, so the line stops level with the badge column's edge. */
+const SEPARATOR_END_INSET = 20;
 
 export function ChatsScreen({
   scrollable = true,
@@ -138,6 +142,7 @@ export function ChatsScreen({
   // Buttons, the unread badge and avatar icons follow the mode, like the tab
   // bar: purple in client mode, blue in pro mode.
   const accent = modeSegment === '(client)' ? CLIENT_TAB_ACTIVE : PRO_TAB_ACTIVE;
+  const avatarTint = modeSegment === '(client)' ? AVATAR_TINT.client : AVATAR_TINT.pro;
   const font = useAppFont();
   const user = useAuthStore((s) => s.user);
   const language = useSettingsStore((s) => s.language);
@@ -319,7 +324,7 @@ export function ChatsScreen({
     }
     if (item.type === 'community') {
       return (
-        <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
+        <View style={[styles.avatar, { backgroundColor: avatarTint }]}>
           <Users size={21} color={accent} strokeWidth={1.8} />
         </View>
       );
@@ -329,7 +334,7 @@ export function ChatsScreen({
         return <Image source={{ uri: item.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
       }
       return (
-        <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
+        <View style={[styles.avatar, { backgroundColor: avatarTint }]}>
           <Users size={21} color={accent} strokeWidth={1.8} />
         </View>
       );
@@ -340,7 +345,7 @@ export function ChatsScreen({
     }
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
-      <View style={[styles.avatar, { backgroundColor: AVATAR_TINT }]}>
+      <View style={[styles.avatar, { backgroundColor: avatarTint }]}>
         <AppText weight="bold" style={[styles.avatarInitial, { color: accent }]}>{initial}</AppText>
       </View>
     );
@@ -509,10 +514,18 @@ export function ChatsScreen({
       || (item.type === 'purchase' && !!item.archived);
     return (
       <Fragment key={item.id}>
-        {/* Hairline between rows, inset past the avatar column: row padding 20
-            + avatar 44 + gap 11. None above the first row. */}
+        {/* Line between rows, from the avatar's far edge to the badge column's
+            edge — row padding 20 + avatar 44 in, the row's padding out. None
+            above the first row. */}
         {index > 0 && (
-          <View style={[styles.separator, rtl ? { marginRight: SEPARATOR_INSET } : { marginLeft: SEPARATOR_INSET }]} />
+          <View
+            style={[
+              styles.separator,
+              rtl
+                ? { marginRight: SEPARATOR_INSET, marginLeft: SEPARATOR_END_INSET }
+                : { marginLeft: SEPARATOR_INSET, marginRight: SEPARATOR_END_INSET },
+            ]}
+          />
         )}
         <Pressable
           style={({ pressed }) => [
@@ -727,7 +740,7 @@ const styles = StyleSheet.create({
   listCard: {
     backgroundColor: '#FFFFFF',
   },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#F0EEF6' },
+  separator: { height: 1, backgroundColor: '#D6D2E2' },
   // 64 tall: padding 10 × 2 + the 44 avatar.
   row: {
     minHeight: 64,

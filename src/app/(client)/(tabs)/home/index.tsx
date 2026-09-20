@@ -1191,7 +1191,7 @@ function createStyles(
       shadowOffset: { width: 0, height: 1 },
       elevation: 2,
     },
-    tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#000000', alignItems: 'center', justifyContent: 'center' },
+    tileControlBtnRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#1D4ED8', alignItems: 'center', justifyContent: 'center' },
     tileControlBtnLocked: { backgroundColor: 'rgba(120,125,150,0.7)' },
     tileControlBtnAdd: { width: 24, height: 24, borderRadius: 12, backgroundColor: VIOLET, alignItems: 'center', justifyContent: 'center' },
     tileControlText: { color: '#fff', fontSize: 14, fontWeight: '700', lineHeight: 16 },
