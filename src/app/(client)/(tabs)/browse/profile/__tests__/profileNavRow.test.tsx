@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { render, act } from '@testing-library/react-native';
 import type { ReactTestInstance } from 'react-test-renderer';
 import PublicProfileScreen from '../[userId]';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Flag } from 'lucide-react-native';
 import { getDocument } from '@core/firebase/firestore';
 
 /**
@@ -17,6 +17,7 @@ import { getDocument } from '@core/firebase/firestore';
  */
 
 const SOFT_VIOLET = '#F3EEFE';
+const DEEP_VIOLET = '#6D28D9';
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ userId: 'pro-1' }),
@@ -92,6 +93,13 @@ it('sets the report flag on a soft violet tile', async () => {
   expect(style.backgroundColor).toBe(SOFT_VIOLET);
   // Square, not a pill or a bare icon.
   expect(style.width).toBe(style.height);
+});
+
+it('draws the flag itself in the deep violet of the same pair', async () => {
+  const r = await openProfile();
+
+  const [flag] = r.getByTestId('profile-report').findAllByType(Flag);
+  expect(flag.props.color).toBe(DEEP_VIOLET);
 });
 
 it('points the back chevron outward, toward the edge it sits on', async () => {

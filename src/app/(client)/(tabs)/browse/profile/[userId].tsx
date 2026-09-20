@@ -49,8 +49,10 @@ function makeT(translations: Translations) {
 
 const MAX_EVIDENCE = 3;
 const PAGE_BG = '#FAFAFC';
-/** The soft violet behind the report flag — the builder's picked-square fill. */
+/** The report flag and the soft violet it sits on — the deep/pale violet pair
+ *  the builder's picked date squares already use. */
 const REPORT_TILE = '#F3EEFE';
+const REPORT_FLAG = '#6D28D9';
 
 export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -210,7 +212,7 @@ export default function PublicProfileScreen() {
             accessibilityRole="button"
             testID="profile-report"
           >
-            <Flag size={18} color="#ff4d6d" strokeWidth={2} />
+            <Flag size={18} color={REPORT_FLAG} strokeWidth={2} />
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
@@ -400,8 +402,8 @@ const styles = StyleSheet.create({
   titleRow: { alignItems: 'center', alignSelf: 'stretch' },
   backBtn: { paddingHorizontal: 4 },
   // A soft violet tile under the flag, the same fill the builder's picked date
-  // squares use. Pale enough to sit quietly on the band; the flag stays red,
-  // which is the one thing on this screen that red should mean.
+  // squares use, with the flag itself in the deep violet of that pair. Pale
+  // tile, dark mark: the pair reads on the band without shouting.
   reportBtn: {
     width: 32,
     height: 32,
