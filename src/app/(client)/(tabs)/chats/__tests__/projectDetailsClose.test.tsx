@@ -133,15 +133,15 @@ const mockConfirm = confirmDialog as jest.MockedFunction<typeof confirmDialog>;
 const PAST = '2020-01-15';
 const FUTURE = '2099-01-15';
 
-function withMission(status: 'todo' | 'done') {
+function withMission(status: 'todo' | 'done', createdBy = 'someone-else') {
   mockListenToMissions.mockImplementation(((_p: string, cb: (m: unknown[]) => void) => {
-    cb([{ id: 'm1', title: 'Deliver cut', status, assignedTo: ['pro-1'], projectId: 'p1' }]);
+    cb([{ id: 'm1', title: 'Deliver cut', status, assignedTo: ['pro-1'], projectId: 'p1', createdBy }]);
     return () => {};
   }) as never);
 }
-function withMeeting(date: string) {
+function withMeeting(date: string, createdBy = 'someone-else') {
   mockListenToMeetings.mockImplementation(((_p: string, cb: (m: unknown[]) => void) => {
-    cb([{ id: 'mt1', title: 'Kickoff', date, time: '10:00', location: '', invitedIds: ['pro-1'], projectId: 'p1' }]);
+    cb([{ id: 'mt1', title: 'Kickoff', date, time: '10:00', location: '', invitedIds: ['pro-1'], projectId: 'p1', createdBy }]);
     return () => {};
   }) as never);
 }
@@ -162,6 +162,14 @@ it('a done mission says it can be closed, and the sheet\'s trash removes it', as
   expect(mockDeleteMission).toHaveBeenCalledWith('p1', 'm1');
 });
 
+it('whoever added a mission can remove it, even before it is done', async () => {
+  withMission('todo', 'client-1'); // the signed-in viewer
+  const r = await renderLoaded();
+  await act(async () => { fireEvent.press(r.getByText('Deliver cut')); });
+  await act(async () => { fireEvent.press(r.getByTestId('mission-close')); });
+  expect(mockDeleteMission).toHaveBeenCalledWith('p1', 'm1');
+});
+
 it('a mission still to do neither says it nor offers the trash', async () => {
   withMission('todo');
   const r = await renderLoaded();
@@ -175,6 +183,14 @@ it('a meeting that already happened says it can be closed, and its trash removes
   withMeeting(PAST);
   const r = await renderLoaded();
   await act(async () => { fireEvent.press(r.getByText(`Kickoff - ${pd.tap_to_close}`)); });
+  await act(async () => { fireEvent.press(r.getByTestId('meeting-close')); });
+  expect(mockDeleteMeeting).toHaveBeenCalledWith('p1', 'mt1');
+});
+
+it('whoever added a meeting can remove it, even before it happens', async () => {
+  withMeeting(FUTURE, 'client-1'); // the signed-in viewer
+  const r = await renderLoaded();
+  await act(async () => { fireEvent.press(r.getByText('Kickoff')); });
   await act(async () => { fireEvent.press(r.getByTestId('meeting-close')); });
   expect(mockDeleteMeeting).toHaveBeenCalledWith('p1', 'mt1');
 });

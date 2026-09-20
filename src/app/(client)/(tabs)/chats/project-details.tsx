@@ -15,9 +15,11 @@ import {
   View,
 } from 'react-native';
 import { confirmDialog } from '@utils/confirmDialog';
+import { BottomSheet } from '@components/ui/BottomSheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, deleteField } from 'firebase/firestore';
+import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
@@ -65,7 +67,7 @@ import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
-import { Calendar, CalendarDays, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2 } from 'lucide-react-native';
+import { Calendar, CalendarDays, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2, Users, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -89,6 +91,16 @@ function makeT(translations: Translations) {
 /** Mission pill outlines. The label itself is always black; 'done' keeps its
  *  green wash (styles.carouselStatusDone) because it is the finished state.
  *  'in_progress' takes the mode accent, filled in at render. */
+/** The sheets' header tile — the same gradient as the app's + buttons. */
+const SHEET_TILE_GRADIENT = ['#2563EB', '#6D34DE', '#9A4BF0'] as const;
+
+/** Task status badge, read-only in the sheet (cycling stays on the card). */
+const MISSION_BADGE: Record<MissionStatus, { bg: string; text: string }> = {
+  todo:        { bg: '#F1EFF7', text: '#5A5768' },
+  in_progress: { bg: '#E8F0FE', text: '#1D4FD8' },
+  done:        { bg: '#E9F5EC', text: '#2F7A45' },
+};
+
 const MISSION_OUTLINE: Record<MissionStatus, string | null> = {
   todo:        '#000000',
   in_progress: null, // the mode accent
@@ -1038,6 +1050,50 @@ export default function ProjectDetailsScreen() {
     ? myRemovalDoc
     : undefined;
 
+  /** One sheet row: icon tile, then the label above its value. */
+  function renderSheetRow(Icon: typeof Users, label: string, value: React.ReactNode, outlined = false) {
+    return (
+      <View style={[styles.sheetRow, outlined && styles.sheetOutlined, outlined && { borderColor: modeAccent }, { flexDirection: rowDirection }]}>
+        <View style={styles.sheetRowTile}>
+          <Icon size={16} color="#6D28D9" strokeWidth={2} />
+        </View>
+        <View style={styles.sheetRowCol}>
+          <Text style={[styles.sheetRowLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{label}</Text>
+          {typeof value === 'string'
+            ? <Text style={[styles.sheetRowValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{value}</Text>
+            : value}
+        </View>
+      </View>
+    );
+  }
+
+  /** Invitees / assignees as chips — a comma-joined line does not scan. */
+  function renderPeopleChips(ids: string[]) {
+    if (ids.length === 0) {
+      return <Text style={[styles.sheetRowValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>—</Text>;
+    }
+    return (
+      <View style={[styles.sheetChipsWrap, { flexDirection: rowDirection }]}>
+        {ids.map((id) => {
+          const member = id === project?.clientId ? clientUser : memberUsers[id];
+          const name = allMemberNames[id] ?? id;
+          return (
+            <View key={id} style={[styles.sheetChip, { flexDirection: rowDirection }]}>
+              {member?.photoURL ? (
+                <ExpoImage source={{ uri: member.photoURL }} style={styles.sheetChipAvatar} contentFit="cover" cachePolicy="memory-disk" />
+              ) : (
+                <View style={[styles.sheetChipAvatar, styles.sheetChipAvatarFallback]}>
+                  <AppText weight="bold" style={styles.sheetChipInitial}>{(name[0] ?? '?').toUpperCase()}</AppText>
+                </View>
+              )}
+              <Text style={[styles.sheetChipName, { ...font.medium }]} numberOfLines={1}>{name}</Text>
+            </View>
+          );
+        })}
+      </View>
+    );
+  }
+
   const allMemberNames: Record<string, string> = {
     ...Object.fromEntries(
       Object.entries(memberUsers).map(([id, m]) => [id, m.displayName]),
@@ -1690,44 +1746,55 @@ export default function ProjectDetailsScreen() {
       )}
 
       {/* Add Mission Modal */}
-      <Modal
-        visible={showAddMission}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAddMission(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
-          <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-            <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+      <BottomSheet visible={showAddMission} onClose={() => setShowAddMission(false)}>
+        <View style={[styles.sheetHeader, { flexDirection: rowDirection }]}>
+          <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sheetTile}>
+            <CheckSquare size={20} color="#FFFFFF" strokeWidth={2} />
+          </LinearGradient>
+          <View style={styles.sheetTitleCol}>
+            <Text style={[styles.sheetTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={2}>
               {t('project_details.add_mission_title')}
             </Text>
+          </View>
+        </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        <ScrollView
+          style={styles.sheetBody}
+          contentContainerStyle={styles.sheetBodyContent}
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.mission_title')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMissionTitle}
               onChangeText={setNewMissionTitle}
               placeholder={t('project_details.mission_placeholder')}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#9C99AD"
             />
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.description_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.sheetInput, styles.sheetInputMultiline, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMissionDescription}
               onChangeText={setNewMissionDescription}
               placeholder={t('project_details.description_placeholder')}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#9C99AD"
               multiline
               numberOfLines={3}
             />
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.assign_to')}
             </Text>
             {assignableMembers.map((m) => {
@@ -1735,192 +1802,218 @@ export default function ProjectDetailsScreen() {
               return (
                 <TouchableOpacity
                   key={m.id}
-                  style={[
-                    styles.missionAssignRow,
-                    { borderColor: selected ? modeAccent : colors.border },
-                    selected && styles.missionAssignRowSelected,
-                  ]}
+                  style={[styles.sheetPersonRow, { flexDirection: rowDirection }, selected && { borderColor: modeAccent, backgroundColor: '#F8F6FC' }]}
                   onPress={() => toggleAssignee(m.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.missionAssignName, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                  <Text style={[styles.sheetPersonName, { textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                     {m.displayName}
                   </Text>
-                  <View style={[styles.missionCheckbox, { borderColor: selected ? modeAccent : colors.border, backgroundColor: selected ? modeAccent : 'transparent' }]}>
-                    {selected && <Text style={[styles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
+                  <View style={[styles.sheetCheck, { borderColor: selected ? modeAccent : '#DDD7EC', backgroundColor: selected ? modeAccent : 'transparent' }]}>
+                    {selected && <Text style={[styles.sheetCheckTick, { ...font.bold }]}>✓</Text>}
                   </View>
                 </TouchableOpacity>
               );
             })}
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.due_date')}
             </Text>
             {newMissionDueDate ? (
-              <View style={[styles.missionDateRow, { borderColor: modeAccent, backgroundColor: '#00000010' }]}>
-                <Calendar size={15} color={modeAccent} strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+              <View style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}>
+                <View style={styles.sheetRowTile}>
+                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                </View>
+                <Text style={[styles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                   {formatDueDate(newMissionDueDate, t('project_details.due'))}
                 </Text>
-                <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={10} activeOpacity={0.7}>
-                  <Text style={[styles.missionDateClear, { ...font.bold }]}>✕</Text>
+                <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={12} activeOpacity={0.7}>
+                  <Text style={[styles.sheetPickClear, { ...font.bold }]}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                style={[styles.missionDateRow, { borderColor: colors.border }]}
+                style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}
                 onPress={() => setShowDueDatePicker(true)}
                 activeOpacity={0.8}
               >
-                <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                <View style={styles.sheetRowTile}>
+                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                </View>
+                <Text style={[styles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.add_due_date')}
                 </Text>
               </TouchableOpacity>
             )}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]}
-                onPress={() => setShowAddMission(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalBtn,
-                  styles.modalBtnConfirm,
-                  { backgroundColor: modeAccent },
-                  (!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission) && styles.completeBtnDisabled,
-                ]}
-                onPress={handleAddMission}
-                disabled={!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission}
-                activeOpacity={0.8}
-              >
-                {isAddingMission ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={[styles.modalBtnConfirmText, { ...font.bold }]}>{t('project_details.add')}</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-          {showDueDatePicker && (
-            <MiniCalendar
-              value={newMissionDueDate}
-              onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
-              onClose={() => setShowDueDatePicker(false)}
-              minDate={todayISO}
-              maxDate={projectEndDate}
-            />
-          )}
           </View>
+        </ScrollView>
+
+        <View style={[styles.sheetActions, { flexDirection: rowDirection }]}>
+          <TouchableOpacity
+            style={[styles.sheetDismissBtn, styles.sheetSecondaryBtn]}
+            onPress={() => setShowAddMission(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.sheetPrimaryBtn,
+              { backgroundColor: modeAccent },
+              (!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission) && styles.completeBtnDisabled,
+            ]}
+            onPress={handleAddMission}
+            disabled={!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission}
+            activeOpacity={0.8}
+          >
+            {isAddingMission ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={[styles.sheetPrimaryText, { ...font.bold }]}>{t('project_details.add')}</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      </Modal>
+
+        {showDueDatePicker && (
+          <MiniCalendar
+            value={newMissionDueDate}
+            onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
+            onClose={() => setShowDueDatePicker(false)}
+            minDate={todayISO}
+            maxDate={projectEndDate}
+          />
+        )}
+      </BottomSheet>
 
       {/* Add Meeting Modal */}
-      <Modal
-        visible={showAddMeeting}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAddMeeting(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
-          <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-            <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+      <BottomSheet visible={showAddMeeting} onClose={() => setShowAddMeeting(false)}>
+        <View style={[styles.sheetHeader, { flexDirection: rowDirection }]}>
+          <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sheetTile}>
+            <Calendar size={20} color="#FFFFFF" strokeWidth={2} />
+          </LinearGradient>
+          <View style={styles.sheetTitleCol}>
+            <Text style={[styles.sheetTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={2}>
               {t('project_details.add_meeting_title')}
             </Text>
+          </View>
+        </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        <ScrollView
+          style={styles.sheetBody}
+          contentContainerStyle={styles.sheetBodyContent}
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.meeting_title_label')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMeetingTitle}
               onChangeText={setNewMeetingTitle}
               placeholder={t('project_details.meeting_title_placeholder')}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#9C99AD"
             />
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.description_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.sheetInput, styles.sheetInputMultiline, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMeetingDescription}
               onChangeText={setNewMeetingDescription}
               placeholder={t('project_details.description_placeholder')}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#9C99AD"
               multiline
               numberOfLines={3}
             />
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.meeting_date')}
             </Text>
             {newMeetingDate ? (
-              <View style={[styles.missionDateRow, { borderColor: modeAccent, backgroundColor: '#00000010' }]}>
-                <Calendar size={15} color={modeAccent} strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+              <View style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}>
+                <View style={styles.sheetRowTile}>
+                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                </View>
+                <Text style={[styles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                   {formatDueDate(newMeetingDate, '')}
                 </Text>
-                <TouchableOpacity onPress={() => setNewMeetingDate('')} hitSlop={10} activeOpacity={0.7}>
-                  <Text style={[styles.missionDateClear, { ...font.bold }]}>✕</Text>
+                <TouchableOpacity onPress={() => setNewMeetingDate('')} hitSlop={12} activeOpacity={0.7}>
+                  <Text style={[styles.sheetPickClear, { ...font.bold }]}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                style={[styles.missionDateRow, { borderColor: colors.border }]}
+                style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}
                 onPress={() => setShowMeetingDatePicker(true)}
                 activeOpacity={0.8}
               >
-                <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                <View style={styles.sheetRowTile}>
+                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                </View>
+                <Text style={[styles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.meeting_date')}
                 </Text>
               </TouchableOpacity>
             )}
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.meeting_time_optional')}
             </Text>
             {newMeetingTime ? (
-              <View style={[styles.missionDateRow, { borderColor: modeAccent, backgroundColor: '#00000010' }]}>
-                <Clock size={15} color={modeAccent} strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+              <View style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}>
+                <View style={styles.sheetRowTile}>
+                  <Clock size={16} color="#6D28D9" strokeWidth={2} />
+                </View>
+                <Text style={[styles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                   {newMeetingTime}
                 </Text>
-                <TouchableOpacity onPress={() => setNewMeetingTime('')} hitSlop={10} activeOpacity={0.7}>
-                  <Text style={[styles.missionDateClear, { ...font.bold }]}>✕</Text>
+                <TouchableOpacity onPress={() => setNewMeetingTime('')} hitSlop={12} activeOpacity={0.7}>
+                  <Text style={[styles.sheetPickClear, { ...font.bold }]}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                style={[styles.missionDateRow, { borderColor: colors.border }]}
+                style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}
                 onPress={() => setShowMeetingTimePicker(true)}
                 activeOpacity={0.8}
               >
-                <Clock size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                <View style={styles.sheetRowTile}>
+                  <Clock size={16} color="#6D28D9" strokeWidth={2} />
+                </View>
+                <Text style={[styles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.meeting_time_placeholder')}
                 </Text>
               </TouchableOpacity>
             )}
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.meeting_location_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMeetingLocation}
               onChangeText={setNewMeetingLocation}
               placeholder={t('project_details.meeting_location_placeholder')}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#9C99AD"
             />
+          </View>
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.meeting_invitees')}
             </Text>
             {assignableMembers.map((m) => {
@@ -1928,72 +2021,67 @@ export default function ProjectDetailsScreen() {
               return (
                 <TouchableOpacity
                   key={m.id}
-                  style={[
-                    styles.missionAssignRow,
-                    { borderColor: selected ? modeAccent : colors.border },
-                    selected && styles.missionAssignRowSelected,
-                  ]}
+                  style={[styles.sheetPersonRow, { flexDirection: rowDirection }, selected && { borderColor: modeAccent, backgroundColor: '#F8F6FC' }]}
                   onPress={() => toggleInvitee(m.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.missionAssignName, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                  <Text style={[styles.sheetPersonName, { textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                     {m.displayName}
                   </Text>
-                  <View style={[styles.missionCheckbox, { borderColor: selected ? modeAccent : colors.border, backgroundColor: selected ? modeAccent : 'transparent' }]}>
-                    {selected && <Text style={[styles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
+                  <View style={[styles.sheetCheck, { borderColor: selected ? modeAccent : '#DDD7EC', backgroundColor: selected ? modeAccent : 'transparent' }]}>
+                    {selected && <Text style={[styles.sheetCheckTick, { ...font.bold }]}>✓</Text>}
                   </View>
                 </TouchableOpacity>
               );
             })}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]}
-                onPress={() => setShowAddMeeting(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalBtn,
-                  styles.modalBtnConfirm,
-                  { backgroundColor: modeAccent },
-                  (!newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting) && styles.completeBtnDisabled,
-                ]}
-                onPress={handleAddMeeting}
-                disabled={!newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting}
-                accessibilityState={{ disabled: !newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting }}
-                testID="add-meeting-confirm"
-                activeOpacity={0.8}
-              >
-                {isAddingMeeting ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={[styles.modalBtnConfirmText, { ...font.bold }]}>{t('project_details.add')}</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-          {showMeetingDatePicker && (
-            <MiniCalendar
-              value={newMeetingDate}
-              onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
-              onClose={() => setShowMeetingDatePicker(false)}
-              minDate={todayISO}
-              maxDate={projectEndDate}
-            />
-          )}
-          {showMeetingTimePicker && (
-            <MiniTimePicker
-              value={newMeetingTime}
-              onSelect={(t) => setNewMeetingTime(t)}
-              onClose={() => setShowMeetingTimePicker(false)}
-            />
-          )}
           </View>
+        </ScrollView>
+
+        <View style={[styles.sheetActions, { flexDirection: rowDirection }]}>
+          <TouchableOpacity
+            style={[styles.sheetDismissBtn, styles.sheetSecondaryBtn]}
+            onPress={() => setShowAddMeeting(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.sheetPrimaryBtn,
+              { backgroundColor: modeAccent },
+              (!newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting) && styles.completeBtnDisabled,
+            ]}
+            onPress={handleAddMeeting}
+            disabled={!newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting}
+            accessibilityState={{ disabled: !newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting }}
+            testID="add-meeting-confirm"
+            activeOpacity={0.8}
+          >
+            {isAddingMeeting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={[styles.sheetPrimaryText, { ...font.bold }]}>{t('project_details.add')}</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      </Modal>
+
+        {showMeetingDatePicker && (
+          <MiniCalendar
+            value={newMeetingDate}
+            onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
+            onClose={() => setShowMeetingDatePicker(false)}
+            minDate={todayISO}
+            maxDate={projectEndDate}
+          />
+        )}
+        {showMeetingTimePicker && (
+          <MiniTimePicker
+            value={newMeetingTime}
+            onSelect={(t) => setNewMeetingTime(t)}
+            onClose={() => setShowMeetingTimePicker(false)}
+          />
+        )}
+      </BottomSheet>
 
       {/* Edit project deadline (client only) */}
       {showDeadlinePicker && (
@@ -2008,149 +2096,154 @@ export default function ProjectDetailsScreen() {
       )}
 
       {/* Mission detail popup */}
-      <Modal
-        visible={!!detailMission}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDetailMission(null)}
-      >
-        <View style={styles.centerOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setDetailMission(null)} />
-          {detailMission && (
-            <View style={[styles.centerCard, { backgroundColor: colors.card }]}>
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-                <View style={[styles.detailHeaderRow, { flexDirection: rowDirection }]}>
-                  <Text style={[styles.modalTitle, { color: '#000000', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-                    {detailMission.title}
-                  </Text>
-                  <View style={[
-                    styles.carouselStatusPill,
-                    detailMission.status === 'done' ? styles.carouselStatusDone : { borderColor: MISSION_OUTLINE[detailMission.status] ?? modeAccent, borderWidth: 1.5 },
-                  ]}>
-                    <AppText weight="bold" style={[styles.carouselStatusText, { color: '#000000' }]}>
-                      {detailMission.status === 'done' ? `✓ ${missionLabel(detailMission.status)}` : missionLabel(detailMission.status)}
+      <BottomSheet visible={!!detailMission} onClose={() => setDetailMission(null)}>
+        {detailMission && (
+          <>
+            {/* Header — stays put while the body scrolls */}
+            <View style={[styles.sheetHeader, { flexDirection: rowDirection }]}>
+              <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sheetTile}>
+                <CheckSquare size={20} color="#FFFFFF" strokeWidth={2} />
+              </LinearGradient>
+              <View style={styles.sheetTitleCol}>
+                <Text style={[styles.sheetTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={2}>
+                  {detailMission.title}
+                </Text>
+                <View style={[styles.sheetBadgeRow, { flexDirection: rowDirection }]}>
+                  <View style={[styles.sheetBadge, { backgroundColor: MISSION_BADGE[detailMission.status].bg }]}>
+                    <AppText weight="semiBold" style={[styles.sheetBadgeText, { color: MISSION_BADGE[detailMission.status].text }]}>
+                      {missionLabel(detailMission.status)}
                     </AppText>
                   </View>
-                  {/* Closing a finished mission removes it from the project. */}
-                  {detailMission.status === 'done' && (
-                    <TouchableOpacity
-                      style={styles.missionTrashBtn}
-                      onPress={() => void handleDeleteMission(detailMission)}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      testID="mission-close"
-                    >
-                      <Trash2 size={15} color="#e04b4b" strokeWidth={1.8} />
-                    </TouchableOpacity>
-                  )}
                 </View>
-
-                {!!detailMission.description && (
-                  <View>
-                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.description')}</Text>
-                    <View style={styles.descPanel}>
-                      <AppText weight="regular" style={[styles.descText, { textAlign: rtl ? 'right' : 'left' }]}>{detailMission.description}</AppText>
-                    </View>
-                  </View>
-                )}
-
-                <View>
-                  <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.assign_to')}</Text>
-                  <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-                    {detailMission.assignedTo.map((id) => allMemberNames[id] ?? id).join(', ') || '—'}
-                  </Text>
-                </View>
-
-                {!!detailMission.dueDate && (
-                  <View>
-                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.due_date')}</Text>
-                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{formatDueDate(detailMission.dueDate, '')}</Text>
-                  </View>
-                )}
-
-                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setDetailMission(null)} activeOpacity={0.8}>
-                  <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.close')}</Text>
+              </View>
+              {/* A mission can be removed once it is done — or at any time by
+                  whoever added it. */}
+              {(detailMission.status === 'done'
+                || detailMission.createdBy === auth.currentUser?.uid) && (
+                <TouchableOpacity
+                  style={styles.sheetTrashBtn}
+                  onPress={() => void handleDeleteMission(detailMission)}
+                  activeOpacity={0.7}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  testID="mission-close"
+                >
+                  <Trash2 size={15} color="#B4232A" strokeWidth={1.9} />
                 </TouchableOpacity>
-              </ScrollView>
+              )}
+              <TouchableOpacity
+                style={styles.sheetCloseBtn}
+                onPress={() => setDetailMission(null)}
+                activeOpacity={0.7}
+                hitSlop={7}
+                accessibilityRole="button"
+              >
+                <X size={14} color="#5A5768" strokeWidth={2.4} />
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
-      </Modal>
+
+            <ScrollView style={styles.sheetBody} contentContainerStyle={styles.sheetBodyContent} showsVerticalScrollIndicator={false}>
+              {!!detailMission.description && (
+                <View style={styles.sheetDescPanel}>
+                  <AppText weight="regular" style={[styles.sheetDescText, { textAlign: rtl ? 'right' : 'left' }]}>
+                    {detailMission.description}
+                  </AppText>
+                </View>
+              )}
+
+              <View>
+                {renderSheetRow(Users, t('project_details.assign_to'), renderPeopleChips(detailMission.assignedTo))}
+                {!!detailMission.dueDate && (
+                  <>
+                    <View style={styles.sheetRowDivider} />
+                    {renderSheetRow(Calendar, t('project_details.due_date'), formatDueDate(detailMission.dueDate, ''), true)}
+                  </>
+                )}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity style={styles.sheetDismissBtn} onPress={() => setDetailMission(null)} activeOpacity={0.8}>
+              <Text style={[styles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.close')}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </BottomSheet>
 
       {/* Meeting detail popup */}
-      <Modal
-        visible={!!detailMeeting}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDetailMeeting(null)}
-      >
-        <View style={styles.centerOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setDetailMeeting(null)} />
-          {detailMeeting && (
-            <View style={[styles.centerCard, { backgroundColor: colors.card }]}>
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-                <View style={[styles.detailHeaderRow, { flexDirection: rowDirection }]}>
-                  <Text style={[styles.modalTitle, { color: '#000000', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-                    {detailMeeting.title}
-                  </Text>
-                  {/* Closing a meeting that already happened removes it. */}
-                  {getMeetingUrgency(detailMeeting.date, detailMeeting.time) === 'past' && (
-                    <TouchableOpacity
-                      style={styles.missionTrashBtn}
-                      onPress={() => void handleDeleteMeeting(detailMeeting)}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      testID="meeting-close"
-                    >
-                      <Trash2 size={15} color="#e04b4b" strokeWidth={1.8} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {!!detailMeeting.description && (
-                  <View>
-                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.description')}</Text>
-                    <View style={styles.descPanel}>
-                      <AppText weight="regular" style={[styles.descText, { textAlign: rtl ? 'right' : 'left' }]}>{detailMeeting.description}</AppText>
-                    </View>
-                  </View>
-                )}
-
-                <View style={[styles.detailInlineRow, { flexDirection: rowDirection }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_date')}</Text>
-                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{formatDueDate(detailMeeting.date, '')}</Text>
-                  </View>
-                  {!!detailMeeting.time && (
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_time')}</Text>
-                      <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{detailMeeting.time}</Text>
-                    </View>
-                  )}
-                </View>
-
-                {!!detailMeeting.location && (
-                  <View>
-                    <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_location')}</Text>
-                    <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{detailMeeting.location}</Text>
-                  </View>
-                )}
-
-                <View>
-                  <Text style={[styles.detailLabel, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{t('project_details.meeting_invitees')}</Text>
-                  <Text style={[styles.detailValue, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-                    {detailMeeting.invitedIds.map((id) => allMemberNames[id] ?? id).join(', ') || '—'}
-                  </Text>
-                </View>
-
-                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setDetailMeeting(null)} activeOpacity={0.8}>
-                  <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.close')}</Text>
+      <BottomSheet visible={!!detailMeeting} onClose={() => setDetailMeeting(null)}>
+        {detailMeeting && (
+          <>
+            <View style={[styles.sheetHeader, { flexDirection: rowDirection }]}>
+              <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sheetTile}>
+                <Calendar size={20} color="#FFFFFF" strokeWidth={2} />
+              </LinearGradient>
+              <View style={styles.sheetTitleCol}>
+                <Text style={[styles.sheetTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={2}>
+                  {detailMeeting.title}
+                </Text>
+              </View>
+              {/* A meeting can be removed once it has happened — or at any
+                  time by whoever added it. */}
+              {(getMeetingUrgency(detailMeeting.date, detailMeeting.time) === 'past'
+                || detailMeeting.createdBy === auth.currentUser?.uid) && (
+                <TouchableOpacity
+                  style={styles.sheetTrashBtn}
+                  onPress={() => void handleDeleteMeeting(detailMeeting)}
+                  activeOpacity={0.7}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  testID="meeting-close"
+                >
+                  <Trash2 size={15} color="#B4232A" strokeWidth={1.9} />
                 </TouchableOpacity>
-              </ScrollView>
+              )}
+              <TouchableOpacity
+                style={styles.sheetCloseBtn}
+                onPress={() => setDetailMeeting(null)}
+                activeOpacity={0.7}
+                hitSlop={7}
+                accessibilityRole="button"
+              >
+                <X size={14} color="#5A5768" strokeWidth={2.4} />
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
-      </Modal>
+
+            <ScrollView style={styles.sheetBody} contentContainerStyle={styles.sheetBodyContent} showsVerticalScrollIndicator={false}>
+              {!!detailMeeting.description && (
+                <View style={styles.sheetDescPanel}>
+                  <AppText weight="regular" style={[styles.sheetDescText, { textAlign: rtl ? 'right' : 'left' }]}>
+                    {detailMeeting.description}
+                  </AppText>
+                </View>
+              )}
+
+              <View>
+                {/* Date and time are one fact, so they share a row. */}
+                {renderSheetRow(
+                  CalendarDays,
+                  t('project_details.meeting_date'),
+                  detailMeeting.time
+                    ? `${formatDueDate(detailMeeting.date, '')} · ${detailMeeting.time}`
+                    : formatDueDate(detailMeeting.date, ''),
+                  true,
+                )}
+                {!!detailMeeting.location && (
+                  <>
+                    <View style={styles.sheetRowDivider} />
+                    {renderSheetRow(MapPin, t('project_details.meeting_location'), detailMeeting.location)}
+                  </>
+                )}
+                <View style={styles.sheetRowDivider} />
+                {renderSheetRow(Users, t('project_details.meeting_invitees'), renderPeopleChips(detailMeeting.invitedIds))}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity style={styles.sheetDismissBtn} onPress={() => setDetailMeeting(null)} activeOpacity={0.8}>
+              <Text style={[styles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.close')}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </BottomSheet>
 
       {/* Payment Summary Modal */}
       <Modal
@@ -3052,39 +3145,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
   },
-  missionAssignRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 6,
-  },
-  missionAssignRowSelected: { backgroundColor: '#00000010' },
   missionAssignName: { fontSize: 14, fontWeight: '500', flex: 1 },
-  missionCheckbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  missionCheckboxTick: { color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14 },
-  missionDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  missionDateText: { flex: 1, fontSize: 14, fontWeight: '500' },
-  missionDatePlaceholder: { flex: 1, fontSize: 14 },
-  missionDateClear: { color: '#ef4444', fontSize: 14, fontWeight: '700', paddingHorizontal: 4 },
 
   // ── Complete bar ──────────────────────────────────────────────────────────────
   completeBar: {
@@ -3124,27 +3185,112 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 24,
   },
-  /** Centred card — the same shape as the marketplace filter popup. */
-  centerOverlay: {
-    flex: 1,
-    justifyContent: 'center',
+  // ── Add sheets (meeting / task) share the detail sheets' language ───────
+  sheetFieldLabel: { fontSize: 11.5, color: '#000000', marginBottom: 6 },
+  sheetInput: {
+    backgroundColor: '#F8F6FC',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: '#1A1626',
+  },
+  sheetInputMultiline: { minHeight: 76, textAlignVertical: 'top' },
+  /** Picker row (date / time): the detail sheets' row, made tappable. */
+  sheetPickRow: { alignItems: 'center', gap: 11, paddingVertical: 11 },
+  /** Dates and hours are outlined in the mode's colour, on both sheet kinds. */
+  sheetOutlined: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 12 },
+  sheetPickValue: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1A1626' },
+  sheetPickPlaceholder: { flex: 1, fontSize: 14, color: '#8B8898' },
+  sheetPickClear: { fontSize: 13, color: '#8B8898', paddingHorizontal: 4 },
+  /** One selectable member. */
+  sheetPersonRow: {
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    gap: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 6,
   },
-  centerCard: {
-    width: '100%',
-    maxWidth: 440,
-    maxHeight: '85%',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+  sheetPersonName: { flex: 1, fontSize: 14, color: '#1A1626' },
+  sheetCheck: { width: 20, height: 20, borderRadius: 999, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  sheetCheckTick: { fontSize: 11, color: '#FFFFFF' },
+  sheetActions: { flexDirection: 'row', gap: 10 },
+  sheetPrimaryBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  sheetPrimaryText: { fontSize: 14.5, fontWeight: '700', color: '#FFFFFF' },
+  sheetSecondaryBtn: { flex: 1 },
+
+  // ── Detail sheets (meeting / task) ──────────────────────────────────────
+  sheetHeader: { alignItems: 'flex-start', gap: 11 },
+  sheetTile: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  sheetTitleCol: { flex: 1, gap: 6 },
+  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#000000', letterSpacing: -0.2, lineHeight: 26 },
+  sheetBadgeRow: { alignItems: 'center' },
+  sheetBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  sheetBadgeText: { fontSize: 10, fontWeight: '600' },
+  sheetTrashBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: '#FDECEC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    backgroundColor: '#F1EFF7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** flexShrink so the body scrolls inside the sheet instead of growing it. */
+  sheetBody: { flexShrink: 1 },
+  sheetBodyContent: { gap: 14 },
+  sheetDescPanel: { backgroundColor: '#F8F6FC', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
+  sheetDescText: { fontSize: 13.5, color: '#4C4859', lineHeight: 21 },
+  sheetRow: { alignItems: 'center', gap: 11, paddingVertical: 11 },
+  sheetRowTile: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#F3EEFE', alignItems: 'center', justifyContent: 'center' },
+  sheetRowCol: { flex: 1, gap: 3 },
+  sheetRowLabel: { fontSize: 11.5, color: '#000000' },
+  sheetRowValue: { fontSize: 14, fontWeight: '600', color: '#1A1626', lineHeight: 20 },
+  sheetRowDivider: { height: 1, backgroundColor: '#F2F0F7' },
+  sheetChipsWrap: { flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  sheetChip: {
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F4F2F9',
+    borderRadius: 999,
+    paddingVertical: 3,
+    paddingStart: 4,
+    paddingEnd: 11,
+    maxWidth: '100%',
+  },
+  sheetChipAvatar: { width: 20, height: 20, borderRadius: 999 },
+  sheetChipAvatarFallback: { backgroundColor: '#EDE4FB', alignItems: 'center', justifyContent: 'center' },
+  sheetChipInitial: { fontSize: 10, color: '#6D28D9' },
+  sheetChipName: { fontSize: 12.5, fontWeight: '500', color: '#4C4859', flexShrink: 1 },
+  sheetDismissBtn: {
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDD7EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetDismissText: { fontSize: 14.5, fontWeight: '600', color: '#4C1D95' },
+
+  /** Centred card — the same shape as the marketplace filter popup. */
   modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
   feeRow: {
     flexDirection: 'row',
