@@ -329,6 +329,6 @@ const styles = StyleSheet.create({
   actionRejectText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#B4232A',
+    color: '#000000',
   },
 });
