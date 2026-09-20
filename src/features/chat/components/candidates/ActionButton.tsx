@@ -1,7 +1,13 @@
-import { ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 
-/** The three decision buttons on the review cards (client and professional). */
+/**
+ * The three decision buttons on the review cards (client and professional).
+ *
+ * They share one row at `flex: 1`, so a label that does not fit wraps to a
+ * second line rather than shrinking: `minHeight` plus the row's own `stretch`
+ * keeps all three the same height whichever of them wrapped.
+ */
 export function ActionButton({
   label, variant, disabled, loading, onPress, testID,
 }: {
@@ -14,30 +20,47 @@ export function ActionButton({
 }) {
   const off = disabled || loading;
   return (
-    <TouchableOpacity
+    <Pressable
       testID={testID}
       onPress={onPress}
       disabled={off}
       accessibilityRole="button"
       accessibilityState={{ disabled: off }}
-      activeOpacity={0.8}
-      style={[styles.btn, styles[variant], off && styles.btnDisabled]}
+      // 38 tall + 3 either side = 44. The row's own gap keeps the three apart.
+      hitSlop={{ top: 3, bottom: 3 }}
+      style={({ pressed }) => [
+        styles.btn,
+        styles[variant],
+        pressed && !off && styles[`${variant}Pressed`],
+        off && styles.btnDisabled,
+      ]}
     >
       {loading
-        ? <ActivityIndicator size="small" color={variant === 'primary' ? '#ffffff' : '#004aad'} />
-        : <AppText weight="semiBold" numberOfLines={1} style={[styles.btnText, styles[`${variant}Text`]]}>{label}</AppText>}
-    </TouchableOpacity>
+        ? <ActivityIndicator size="small" color={variant === 'primary' ? '#ffffff' : '#4C1D95'} />
+        : <AppText weight="semiBold" numberOfLines={2} style={[styles.btnText, styles[`${variant}Text`]]}>{label}</AppText>}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  btn: { flex: 1, minHeight: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  btn: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
   btnDisabled: { opacity: 0.45 },
-  btnText: { fontSize: 13 },
-  primary: { backgroundColor: '#004aad' },
-  primaryText: { color: '#ffffff' },
-  danger: { borderWidth: 1, borderColor: '#d64545' },
-  dangerText: { color: '#d64545' },
-  outline: { borderWidth: 1, borderColor: '#004aad55' },
-  outlineText: { color: '#004aad' },
+  btnText: { fontSize: 12.5, lineHeight: 16, textAlign: 'center' },
+  primary: { backgroundColor: '#6D28D9' },
+  primaryPressed: { backgroundColor: '#5B21B6' },
+  primaryText: { color: '#FFFFFF' },
+  danger: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F0D5D7' },
+  dangerPressed: { backgroundColor: '#FDF4F4' },
+  dangerText: { color: '#B4232A' },
+  outline: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DDD7EC' },
+  outlinePressed: { backgroundColor: '#F7F4FD' },
+  outlineText: { color: '#4C1D95' },
 });

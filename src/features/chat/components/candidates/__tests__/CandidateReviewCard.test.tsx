@@ -98,9 +98,9 @@ it('a single professional under review: one row, no carousel', async () => {
   const { getByTestId, getByText, queryByTestId } = await renderCard();
   expect(getByTestId('candidate-row-pro-a')).toBeTruthy();
   expect(getByText('Avi')).toBeTruthy();
-  expect(queryByTestId('candidate-carousel')).toBeNull();
   expect(queryByTestId('carousel-prev')).toBeNull();
-  expect(queryByTestId('carousel-dots')).toBeNull();
+  expect(queryByTestId('carousel-next')).toBeNull();
+  expect(queryByTestId('carousel-counter')).toBeNull();
 });
 
 it("a rejected candidate's removed offer (stale review: 'pending') is not shown", async () => {
@@ -268,7 +268,11 @@ describe('lines that carry a name set their writing direction explicitly', () =>
 it("shows the professional's own רלוונטי as a tag on his row", async () => {
   mockAccepted = { offers: [offer('pro-a', { proAccepted: true }), offer('pro-b', { category: 'Sound Recordist' })], bundles: [] };
   const r = await renderCard();
-  expect(r.getByTestId('candidate-pro-accepted-pro-a').props.children).toBe('✓ Avi confirmed');
+  // A check icon and the line beside it, where the string used to carry its own ✓.
+  const tag = r.getByTestId('candidate-pro-accepted-pro-a').props.children;
+  const lucide = jest.requireActual('lucide-react-native');
+  expect(tag[0].type).toBe(lucide.Check);
+  expect(tag[1].props.children).toBe('Avi confirmed');
   await next(r);
   expect(r.getByTestId('candidate-row-pro-b')).toBeTruthy();
   expect(r.queryByTestId('candidate-pro-accepted-pro-b')).toBeNull();
@@ -283,10 +287,8 @@ describe('carousel (2+ pending)', () => {
     const r = await renderCard();
     expect(r.getByTestId('candidate-row-pro-a')).toBeTruthy();
     expect(r.queryByTestId('candidate-row-pro-b')).toBeNull();
-    expect(r.getByTestId('carousel-dots').props.accessibilityLabel).toBe('1/3');
-    const dot = (i: number) => StyleSheet.flatten(r.getByTestId(`carousel-dot-${i}`).props.style).backgroundColor;
-    expect(dot(0)).toBe('#004aad');
-    expect(dot(1)).not.toBe('#004aad');
+    expect(r.getByTestId('carousel-counter').props.accessibilityLabel).toBe('1/3');
+    expect(r.getByTestId('carousel-counter').props.children).toBe('1 / 3');
   });
 
   it('chevrons page through and stop at the ends', async () => {
@@ -295,7 +297,7 @@ describe('carousel (2+ pending)', () => {
     expect(disabled(r.getByTestId('carousel-prev'))).toBe(true);
     await next(r);
     expect(r.getByTestId('candidate-row-pro-b')).toBeTruthy();
-    expect(r.getByTestId('carousel-dots').props.accessibilityLabel).toBe('2/3');
+    expect(r.getByTestId('carousel-counter').props.accessibilityLabel).toBe('2/3');
     await next(r);
     expect(r.getByTestId('candidate-row-pro-c')).toBeTruthy();
     expect(disabled(r.getByTestId('carousel-next'))).toBe(true);
@@ -327,7 +329,7 @@ describe('carousel (2+ pending)', () => {
   // The responder props are invoked directly: fireEvent does not dispatch
   // responder events, and it is PanResponder's own gesture maths we want to run.
   const handlers = (r: Pick<ReturnType<typeof render>, 'getByTestId'>) =>
-    r.getByTestId('candidate-carousel').props as {
+    r.getByTestId('candidate-pager').props as {
       onResponderGrant: (e: unknown) => void;
       onResponderMove: (e: unknown) => void;
       onResponderRelease: (e: unknown) => void;
@@ -384,7 +386,7 @@ describe('carousel (2+ pending)', () => {
     Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true });
     try {
       const r = await renderCard();
-      const style = StyleSheet.flatten(r.getByTestId('candidate-carousel').props.style);
+      const style = StyleSheet.flatten(r.getByTestId('candidate-pager').props.style);
       expect(style.touchAction).toBe('pan-y');
       expect(style.overscrollBehaviorX).toBe('contain');
     } finally {
@@ -404,7 +406,7 @@ describe('carousel (2+ pending)', () => {
   it('the carousel takes horizontal swipes, and the card itself slides', async () => {
     mockAccepted = three();
     const r = await renderCard();
-    const props = r.getByTestId('candidate-carousel').props;
+    const props = r.getByTestId('candidate-pager').props;
     expect(typeof props.onMoveShouldSetResponder).toBe('function');
     // Follows the finger, is carried on release, and goes back if the gesture
     // is taken away mid-drag.
@@ -437,7 +439,7 @@ describe('carousel (2+ pending)', () => {
     });
     expect(r.queryByTestId('candidate-row-pro-b')).toBeNull();
     expect(r.getByTestId('candidate-row-pro-c')).toBeTruthy(); // advanced, not back to A
-    expect(r.getByTestId('carousel-dots').props.accessibilityLabel).toBe('2/2');
+    expect(r.getByTestId('carousel-counter').props.accessibilityLabel).toBe('2/2');
   });
 
   it('when an EARLIER professional is resolved, the shown one stays (live update)', async () => {
@@ -449,7 +451,7 @@ describe('carousel (2+ pending)', () => {
       mockPushAccepted({ offers: [offer('pro-a', { status: 'removed' }), offer('pro-b', { category: 'Sound Recordist' }), offer('pro-c', { category: 'Lighting Tech' })], bundles: [] });
     });
     expect(r.getByTestId('candidate-row-pro-c')).toBeTruthy();
-    expect(r.getByTestId('carousel-dots').props.accessibilityLabel).toBe('2/2');
+    expect(r.getByTestId('carousel-counter').props.accessibilityLabel).toBe('2/2');
   });
 
   it('down to one pending professional: the carousel goes away', async () => {
@@ -459,7 +461,9 @@ describe('carousel (2+ pending)', () => {
       mockPushAccepted({ offers: [offer('pro-a', { review: 'confirmed' }), offer('pro-b', { status: 'removed' }), offer('pro-c', { category: 'Lighting Tech' })], bundles: [] });
     });
     expect(r.getByTestId('candidate-row-pro-c')).toBeTruthy();
-    expect(r.queryByTestId('candidate-carousel')).toBeNull();
+    expect(r.getByTestId('candidate-pager')).toBeTruthy();
+    expect(r.queryByTestId('carousel-prev')).toBeNull();
+    expect(r.queryByTestId('carousel-counter')).toBeNull();
   });
 
   it('resolveShownIndex: the table', async () => {
@@ -477,27 +481,41 @@ describe('carousel (2+ pending)', () => {
     mockLang = lang;
     mockAccepted = three();
     const r = await renderCard();
-    const identity = r.getByTestId('candidate-identity-pro-a');
-    expect(StyleSheet.flatten(identity.props.style).flexDirection).toBe(dir);
-    // "previous" is the FIRST child of the row in both languages; row-reverse is
-    // what puts it on the right in Hebrew.
-    const children = identity.props.children.filter(Boolean);
+    expect(StyleSheet.flatten(r.getByTestId('candidate-identity-pro-a').props.style).flexDirection).toBe(dir);
+    // The arrows sit on the pager, one either side of the member content.
+    // "previous" is the FIRST child in both languages; row-reverse is what puts
+    // it on the right in Hebrew.
+    const pager = r.getByTestId('candidate-pager');
+    expect(StyleSheet.flatten(pager.props.style).flexDirection).toBe(dir);
+    const children = pager.props.children.filter(Boolean);
     expect(children[0].props.testID).toBe('carousel-prev');
     expect(children[children.length - 1].props.testID).toBe('carousel-next');
     const lucide = jest.requireActual('lucide-react-native');
     expect(children[0].props.children.type).toBe(lucide[prevIcon]);
     expect(children[children.length - 1].props.children.type).toBe(lucide[nextIcon]);
-    expect(StyleSheet.flatten(r.getByTestId('carousel-dots').props.style).flexDirection).toBe(dir);
   });
 
-  it('is no taller than a single-professional card: the dots line is paid for by row padding', () => {
-    const src: string = require('fs').readFileSync(require('path').join(__dirname, '..', 'CandidateReviewCard.tsx'), 'utf8');
-    const num = (re: RegExp) => Number((src.match(re) ?? [])[1]);
-    const rowPad = num(/row: \{ paddingVertical: (\d+)/);
-    const carouselPad = num(/rowCarousel: \{ paddingVertical: (\d+)/);
-    const dotsHeight = num(/dots: \{[^}]*height: (\d+)/);
-    const dotsMargin = num(/dots: \{[^}]*marginTop: (\d+)/);
-    expect(2 * carouselPad + dotsHeight + dotsMargin).toBeLessThanOrEqual(2 * rowPad);
+  /**
+   * The buttons sit under the pager, so a member with no confirmed line and a
+   * shorter role must not pull them up under a thumb already reaching for them.
+   * The floor is the pager's, not the member's, and it is the same whether or
+   * not there is anyone to page to.
+   */
+  it('holds its height between members, and between one member and many', async () => {
+    mockAccepted = three();
+    const many = await renderCard();
+    const floor = StyleSheet.flatten(many.getByTestId('candidate-pager').props.style).minHeight;
+    expect(typeof floor).toBe('number');
+    expect(floor).toBeGreaterThan(0);
+    // pro-b carries a pending price change and pro-a does not, so the two
+    // members differ in content — the pager still reports the same floor.
+    await next(many);
+    expect(StyleSheet.flatten(many.getByTestId('candidate-pager').props.style).minHeight).toBe(floor);
+    many.unmount();
+
+    mockAccepted = { offers: [offer('pro-a')], bundles: [] };
+    const one = await renderCard();
+    expect(StyleSheet.flatten(one.getByTestId('candidate-pager').props.style).minHeight).toBe(floor);
   });
 });
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, PanResponder, Platform, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from '@components/ui/AppText';
 import { useUiStore } from '@core/stores/uiStore';
@@ -21,6 +21,11 @@ import { ActionButton } from './ActionButton';
 import { carouselPanConfig, pageSwipeGuard, resolveShownIndex, slidePlan, SLIDE_MS } from './carousel';
 
 type Busy = 'confirm' | 'reject' | 'price';
+
+/** The paging area never shrinks below the tallest member: identity (42 avatar,
+ *  or name + role + the confirmed line) + a status line + the pager's padding.
+ *  Without it the buttons move under the reader's thumb as they page. */
+const PAGER_MIN_HEIGHT = 92;
 
 /**
  * The client's decision on each hired professional: רלוונטי / לא רלוונטי / שינוי מחיר.
@@ -229,17 +234,19 @@ export function CandidateReviewCard({
         testID={`carousel-${which}`}
         onPress={() => slideTo(which === 'prev' ? -1 : 1)}
         disabled={off}
-        hitSlop={10}
+        // 26 + 9 either side = 44.
+        hitSlop={9}
         accessibilityRole="button"
         accessibilityState={{ disabled: off }}
         style={[styles.chevron, off && styles.chevronOff]}
       >
-        <Icon size={18} color="#004aad" strokeWidth={2.2} />
+        <Icon size={13} color="#8B8898" strokeWidth={2.2} />
       </TouchableOpacity>
     );
   };
 
-  const renderRow = (c: PendingCandidate) => {
+  /** The part that pages: one professional, and whatever is true of them. */
+  const renderMember = (c: PendingCandidate) => {
     const user = users[c.proId];
     // Unresolved (absent key) and unusable (null) both lock the row. Acting on a
     // professional whose name is not on screen is how the wrong one gets confirmed.
@@ -249,13 +256,9 @@ export function CandidateReviewCard({
     // Waiting on the CLIENT outranks waiting on the pro: it is the one with an action.
     const waitingOnClient = pending.some((r) => r.fromUserId !== clientId);
     const waitingOnPro = !waitingOnClient && pending.length > 0;
-    const blocked = pending.length > 0;
-    const rowBusy = busy[c.proId];
-    const canAct = !!resolved && !rowBusy;
     return (
-      <View key={c.proId} style={[styles.row, carousel && styles.rowCarousel]} testID={`candidate-row-${c.proId}`}>
+      <View key={c.proId} style={styles.row} testID={`candidate-row-${c.proId}`}>
         <View style={[styles.identity, { flexDirection: rowDir }]} testID={`candidate-identity-${c.proId}`}>
-          {carousel && chevron('prev')}
           {resolved?.photoURL
             ? <Image source={{ uri: resolved.photoURL }} style={styles.avatar} />
             : (
@@ -265,7 +268,7 @@ export function CandidateReviewCard({
             )}
           <View style={styles.identityText}>
             <AppText
-              weight="semiBold"
+              weight="bold"
               numberOfLines={1}
               style={[styles.name, { textAlign: align }, dir, !resolved && styles.namePlaceholder]}
               testID={`candidate-name-${c.proId}`}
@@ -276,13 +279,15 @@ export function CandidateReviewCard({
               {c.roles.map((r) => r.label).join(' · ')}
             </AppText>
             {c.proAccepted && resolved && (
-              <AppText weight="semiBold" numberOfLines={1} style={[styles.acceptedTag, { textAlign: align }, dir]} testID={`candidate-pro-accepted-${c.proId}`}>
-                {`✓ ${t('candidate_review.pro_accepted_tag', { name })}`}
-              </AppText>
+              <View style={[styles.acceptedRow, { flexDirection: rowDir }]} testID={`candidate-pro-accepted-${c.proId}`}>
+                <Check size={12} color="#2F7A45" strokeWidth={2.6} />
+                <AppText weight="semiBold" numberOfLines={1} style={[styles.acceptedTag, { textAlign: align }, dir]}>
+                  {t('candidate_review.pro_accepted_tag', { name })}
+                </AppText>
+              </View>
             )}
           </View>
           <AppText weight="bold" style={styles.price}>{money(c.total)}</AppText>
-          {carousel && chevron('next')}
         </View>
 
         {waitingOnPro && (
@@ -297,65 +302,95 @@ export function CandidateReviewCard({
             </AppText>
           </TouchableOpacity>
         )}
-
-        <View style={[styles.actions, { flexDirection: rowDir }]} testID={`candidate-actions-${c.proId}`}>
-          <ActionButton
-            testID={`candidate-relevant-${c.proId}`}
-            label={t('candidate_review.relevant')}
-            variant="primary"
-            disabled={!canAct || blocked}
-            loading={rowBusy === 'confirm'}
-            onPress={() => onRelevant(c, name)}
-          />
-          <ActionButton
-            testID={`candidate-not-relevant-${c.proId}`}
-            label={t('candidate_review.not_relevant')}
-            variant="danger"
-            disabled={!canAct}
-            loading={rowBusy === 'reject'}
-            onPress={() => setRejecting(c)}
-          />
-          <ActionButton
-            testID={`candidate-price-${c.proId}`}
-            label={t('candidate_review.change_price')}
-            variant="outline"
-            disabled={!canAct || blocked}
-            loading={rowBusy === 'price'}
-            onPress={() => setRepricing(c)}
-          />
-        </View>
       </View>
     );
   };
 
+  /** The three decisions, on whichever professional is shown. */
+  const renderActions = (c: PendingCandidate) => {
+    const resolved = users[c.proId] ?? null;
+    const name = resolved?.displayName ?? '';
+    const blocked = requests.some((r) => r.status === 'pending' && r.professionalId === c.proId);
+    const rowBusy = busy[c.proId];
+    const canAct = !!resolved && !rowBusy;
+    return (
+      <View style={[styles.actions, { flexDirection: rowDir }]} testID={`candidate-actions-${c.proId}`}>
+        <ActionButton
+          testID={`candidate-relevant-${c.proId}`}
+          label={t('candidate_review.relevant')}
+          variant="primary"
+          disabled={!canAct || blocked}
+          loading={rowBusy === 'confirm'}
+          onPress={() => onRelevant(c, name)}
+        />
+        <ActionButton
+          testID={`candidate-price-${c.proId}`}
+          label={t('candidate_review.change_price')}
+          variant="outline"
+          disabled={!canAct || blocked}
+          loading={rowBusy === 'price'}
+          onPress={() => setRepricing(c)}
+        />
+        <ActionButton
+          testID={`candidate-not-relevant-${c.proId}`}
+          label={t('candidate_review.not_relevant')}
+          variant="danger"
+          disabled={!canAct}
+          loading={rowBusy === 'reject'}
+          onPress={() => setRejecting(c)}
+        />
+      </View>
+    );
+  };
+
+  const current = candidates[shownIndex] ?? candidates[0];
+
   return (
-    <View style={chromeStyles.strip} testID="candidate-review-card">
-      <AppText weight="semiBold" style={[styles.title, { textAlign: align }]}>{t('candidate_review.title')}</AppText>
+    <View style={chromeStyles.card} testID="candidate-review-card">
+      {/* 1 — header: what this is, and where you are in the crew */}
+      <View style={[styles.header, { flexDirection: rowDir }]}>
+        <AppText weight="bold" style={[styles.title, { textAlign: align }]}>{t('candidate_review.title')}</AppText>
+        {carousel && (
+          <AppText
+            weight="semiBold"
+            style={styles.counter}
+            testID="carousel-counter"
+            accessibilityLabel={`${shownIndex + 1}/${candidates.length}`}
+          >
+            {`${shownIndex + 1} / ${candidates.length}`}
+          </AppText>
+        )}
+      </View>
+      <View style={chromeStyles.divider} />
+
+      {/* 2 — the crew member. The only part that pages: arrows on either side,
+          the content itself sliding between them. Its minHeight is the tallest
+          member's, so the buttons below never move while someone reaches for
+          them. */}
+      <View
+        {...(carousel ? pan.panHandlers : {})}
+        testID="candidate-pager"
+        style={[styles.pager, { flexDirection: rowDir }, carousel ? pageSwipeGuard(Platform.OS) : null]}
+        onLayout={(e) => { widthRef.current = e.nativeEvent.layout.width; }}
+      >
+        {carousel && chevron('prev')}
+        <View style={styles.viewport}>
+          <Animated.View testID="carousel-slider" style={{ transform: [{ translateX: slide }] }}>
+            {renderMember(current)}
+          </Animated.View>
+        </View>
+        {carousel && chevron('next')}
+      </View>
+      <View style={chromeStyles.divider} />
+
+      {/* 3 — the decision, on the member above */}
+      {renderActions(current)}
+      <View style={chromeStyles.divider} />
+
+      {/* 4 — read-once instructions, below the decision rather than above it */}
       <AppText weight="regular" style={[styles.instruction, { textAlign: align }]} testID="candidate-instruction">
         {t('candidate_review.client_instruction')}
       </AppText>
-      {carousel ? (
-        <View
-          {...pan.panHandlers}
-          testID="candidate-carousel"
-          style={[styles.carousel, pageSwipeGuard(Platform.OS)]}
-          onLayout={(e) => { widthRef.current = e.nativeEvent.layout.width; }}
-        >
-          {/* The row slides; the dots stay put — they are the position, not the card. */}
-          <Animated.View testID="carousel-slider" style={{ transform: [{ translateX: slide }] }}>
-            {renderRow(candidates[shownIndex])}
-          </Animated.View>
-          <View
-            style={[styles.dots, { flexDirection: rowDir }]}
-            testID="carousel-dots"
-            accessibilityLabel={`${shownIndex + 1}/${candidates.length}`}
-          >
-            {candidates.map((c, i) => (
-              <View key={c.proId} testID={`carousel-dot-${i}`} style={[styles.dot, i === shownIndex && styles.dotCurrent]} />
-            ))}
-          </View>
-        </View>
-      ) : renderRow(candidates[0])}
 
       <RejectCandidateSheet
         visible={!!rejecting}
@@ -377,32 +412,43 @@ export function CandidateReviewCard({
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 12, color: 'rgba(15,15,31,0.5)', marginBottom: 2 },
-  instruction: { fontSize: 12, color: 'rgba(15,15,31,0.45)', marginBottom: 4 },
-  // Clips the card that is leaving and the one arriving, so neither shows
-  // outside the pinned strip mid-slide.
-  carousel: { overflow: 'hidden' },
-  row: { paddingVertical: 8, gap: 6 },
-  // Carousel: the dots line (DOT + DOTS_MARGIN) is paid for by trimming the
-  // row's vertical padding by the same amount, so the card is no taller than a
-  // single-professional card. Asserted in CandidateReviewCard.test.tsx.
-  rowCarousel: { paddingVertical: 3 },
-  chevron: { width: 22, alignItems: 'center', justifyContent: 'center' },
-  chevronOff: { opacity: 0.25 },
-  dots: { justifyContent: 'center', alignItems: 'center', gap: 5, height: 6, marginTop: 4 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,74,173,0.2)' },
-  dotCurrent: { backgroundColor: '#004aad' },
+  // 1 — header
+  header: { alignItems: 'center', paddingTop: 12, paddingHorizontal: 14, paddingBottom: 10 },
+  title: { flex: 1, fontSize: 13.5, fontWeight: '700', color: '#1A1626' },
+  counter: { fontSize: 11.5, fontWeight: '600', color: '#8B8898' },
+
+  // 2 — the paging area. The viewport clips the card that is leaving and the
+  // one arriving; the arrows sit outside it and stay put.
+  pager: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, minHeight: PAGER_MIN_HEIGHT },
+  viewport: { flex: 1, minWidth: 0, overflow: 'hidden' },
+  chevron: {
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+    backgroundColor: '#F4F2FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chevronOff: { opacity: 0.35 },
+  row: { gap: 6 },
   identity: { alignItems: 'center', gap: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 18 },
-  avatarFallback: { backgroundColor: '#004aad22', alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#004aad', fontSize: 15 },
-  identityText: { flex: 1, minWidth: 0 },
-  name: { fontSize: 15, color: '#0f0f1f' },
-  namePlaceholder: { color: 'rgba(15,15,31,0.35)' },
-  roles: { fontSize: 12, color: 'rgba(15,15,31,0.55)' },
-  acceptedTag: { fontSize: 11, color: '#1c7a4a' },
-  price: { fontSize: 15, color: '#004aad' },
-  status: { fontSize: 12, color: 'rgba(15,15,31,0.55)' },
-  statusAction: { fontSize: 12, color: '#004aad' },
-  actions: { gap: 8 },
+  avatar: { width: 42, height: 42, borderRadius: 21 },
+  avatarFallback: { backgroundColor: '#EDE4FB', alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { color: '#6D28D9', fontSize: 17 },
+  identityText: { flex: 1, minWidth: 0, gap: 1 },
+  name: { fontSize: 15, fontWeight: '700', color: '#1A1626' },
+  namePlaceholder: { color: '#8B8898' },
+  roles: { fontSize: 12, color: '#8B8898' },
+  acceptedRow: { alignItems: 'center', gap: 3 },
+  acceptedTag: { flexShrink: 1, fontSize: 11.5, fontWeight: '600', color: '#2F7A45' },
+  price: { fontSize: 17, fontWeight: '800', color: '#4C1D95', letterSpacing: -0.2 },
+  status: { fontSize: 11.5, color: '#8B8898' },
+  statusAction: { fontSize: 11.5, fontWeight: '600', color: '#4C1D95' },
+
+  // 3 — the decision. `stretch` is what keeps the three the same height when
+  // one of them wraps to a second line.
+  actions: { alignItems: 'stretch', gap: 8, paddingHorizontal: 14, paddingVertical: 11 },
+
+  // 4 — instructions
+  instruction: { fontSize: 11.5, lineHeight: 18, color: '#8B8898', paddingTop: 11, paddingHorizontal: 14, paddingBottom: 13 },
 });

@@ -144,7 +144,7 @@ export function CandidateProCard({
   );
 
   return (
-    <View style={chromeStyles.strip} testID="candidate-pro-card">
+    <View style={[chromeStyles.card, chromeStyles.cardBody]} testID="candidate-pro-card">
       {actionable && (
         <AppText weight="regular" style={[styles.instruction, { textAlign: align }]} testID="pro-instruction">
           {t('candidate_review.pro_instruction')}

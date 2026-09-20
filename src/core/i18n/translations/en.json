@@ -1211,7 +1211,7 @@
     "pro_err_engagement_not_open": "You can no longer leave from here",
     "pro_accepted_tag": "{{name}} confirmed",
     "pro_client": "the client",
-    "client_instruction": "Talk with the crew in the chat before you decide",
+    "client_instruction": "Before you start, let's check it's a fit! Worth talking about — the project's scope, the main needs, how much raw material there is and how many rounds are needed. So the price still matches the amount of work.",
     "pro_instruction": "Talk with the client in the chat and make sure the project suits you before you decide"
   }
 }
