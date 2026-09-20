@@ -919,10 +919,21 @@ export default function ProjectDetailsScreen() {
     }
   }
 
+  /** Closing is a delete, and the sheet's button only says "close" — so ask. */
+  async function confirmClose(): Promise<boolean> {
+    return confirmDialog(
+      t('project_details.confirm_close_title'),
+      t('project_details.confirm_close_body'),
+      { confirm: t('project_details.close'), cancel: t('common.cancel'), destructive: true },
+    );
+  }
+
   async function handleDeleteMeeting(meeting: Meeting) {
     if (!projectId) return;
+    if (!await confirmClose()) return;
     try {
       await deleteMeeting(projectId, meeting.id);
+      setDetailMeeting(null);
       setMeetingIndex(i => Math.max(0, i - 1));
     } catch {
       Alert.alert('Error', t('project_details.error_update_mission'));
@@ -931,8 +942,10 @@ export default function ProjectDetailsScreen() {
 
   async function handleDeleteMission(mission: Mission) {
     if (!projectId) return;
+    if (!await confirmClose()) return;
     try {
       await deleteMission(projectId, mission.id);
+      setDetailMission(null);
       setMissionIndex(i => Math.max(0, i - 1));
     } catch {
       Alert.alert('Error', t('project_details.error_update_mission'));
@@ -1998,13 +2011,13 @@ export default function ProjectDetailsScreen() {
       <Modal
         visible={!!detailMission}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setDetailMission(null)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.centerOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setDetailMission(null)} />
           {detailMission && (
-            <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
+            <View style={[styles.centerCard, { backgroundColor: colors.card }]}>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
                 <View style={[styles.detailHeaderRow, { flexDirection: rowDirection }]}>
                   <Text style={[styles.modalTitle, { color: '#000000', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
@@ -2022,7 +2035,7 @@ export default function ProjectDetailsScreen() {
                   {detailMission.status === 'done' && (
                     <TouchableOpacity
                       style={styles.missionTrashBtn}
-                      onPress={() => { const m = detailMission; setDetailMission(null); void handleDeleteMission(m); }}
+                      onPress={() => void handleDeleteMission(detailMission)}
                       activeOpacity={0.7}
                       accessibilityRole="button"
                       testID="mission-close"
@@ -2068,13 +2081,13 @@ export default function ProjectDetailsScreen() {
       <Modal
         visible={!!detailMeeting}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setDetailMeeting(null)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.centerOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setDetailMeeting(null)} />
           {detailMeeting && (
-            <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
+            <View style={[styles.centerCard, { backgroundColor: colors.card }]}>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
                 <View style={[styles.detailHeaderRow, { flexDirection: rowDirection }]}>
                   <Text style={[styles.modalTitle, { color: '#000000', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
@@ -2084,7 +2097,7 @@ export default function ProjectDetailsScreen() {
                   {getMeetingUrgency(detailMeeting.date, detailMeeting.time) === 'past' && (
                     <TouchableOpacity
                       style={styles.missionTrashBtn}
-                      onPress={() => { const m = detailMeeting; setDetailMeeting(null); void handleDeleteMeeting(m); }}
+                      onPress={() => void handleDeleteMeeting(detailMeeting)}
                       activeOpacity={0.7}
                       accessibilityRole="button"
                       testID="meeting-close"
@@ -3110,6 +3123,27 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
+  },
+  /** Centred card — the same shape as the marketplace filter popup. */
+  centerOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  centerCard: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '85%',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
   },
   modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
   feeRow: {

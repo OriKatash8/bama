@@ -226,6 +226,8 @@
     "mission_in_progress": "בתהליך",
     "mission_done": "הושלם",
     "tap_to_close": "לחצו כאן לסגירה",
+    "confirm_close_title": "לסגור?",
+    "confirm_close_body": "הפריט יוסר מהפרויקט. לא ניתן לבטל.",
     "due": "תאריך יעד: ",
     "mission_uploaded": "הועלה: ",
     "project_not_found": "הפרויקט לא נמצא",

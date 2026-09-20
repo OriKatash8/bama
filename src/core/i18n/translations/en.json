@@ -226,6 +226,8 @@
     "mission_in_progress": "In Progress",
     "mission_done": "Done",
     "tap_to_close": "press here to close",
+    "confirm_close_title": "Close it?",
+    "confirm_close_body": "This removes it from the project. This cannot be undone.",
     "due": "Due: ",
     "mission_uploaded": "Uploaded: ",
     "project_not_found": "Project not found",

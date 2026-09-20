@@ -4,6 +4,7 @@ import ProjectDetailsScreen from '../project-details';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { listenToMeetings, deleteMeeting } from '@features/chat/services/meetingService';
 import { listenToMissions, deleteMission } from '@features/chat/services/missionService';
+import { confirmDialog } from '@utils/confirmDialog';
 import en from '@core/i18n/translations/en.json';
 
 /**
@@ -70,6 +71,7 @@ jest.mock('@features/projects/services/completionService', () => ({
   canDispute: jest.requireActual('@features/projects/utils/completion').canDispute,
   canMarkComplete: jest.requireActual('@features/projects/utils/completion').canMarkComplete,
 }));
+jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn(() => Promise.resolve(true)) }));
 jest.mock('@features/reviews/components/ReviewFlow', () => ({ ReviewFlow: () => null }));
 jest.mock('@features/chat/components/ChatMediaSection', () => ({ ChatMediaSection: () => null }));
 jest.mock('@features/crew/components', () => ({
@@ -109,6 +111,7 @@ const pd = en.project_details;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockConfirm.mockResolvedValue(true);
   mockGetDocument.mockImplementation(async (path: string) => {
     if (path === 'projects/p1') return project as never;
     if (path.startsWith('users/')) {
@@ -125,6 +128,7 @@ beforeEach(() => {
 const mockListenToMissions = listenToMissions as jest.MockedFunction<typeof listenToMissions>;
 const mockDeleteMission = deleteMission as jest.MockedFunction<typeof deleteMission>;
 const mockDeleteMeeting = deleteMeeting as jest.MockedFunction<typeof deleteMeeting>;
+const mockConfirm = confirmDialog as jest.MockedFunction<typeof confirmDialog>;
 
 const PAST = '2020-01-15';
 const FUTURE = '2099-01-15';
@@ -181,4 +185,25 @@ it('a meeting still ahead neither says it nor offers the trash', async () => {
   expect(r.queryByText(`Kickoff - ${pd.tap_to_close}`)).toBeNull();
   await act(async () => { fireEvent.press(r.getByText('Kickoff')); });
   expect(r.queryByTestId('meeting-close')).toBeNull();
+});
+
+it('asks before closing, and keeps the mission when the answer is no', async () => {
+  mockConfirm.mockResolvedValue(false);
+  withMission('done');
+  const r = await renderLoaded();
+  await act(async () => { fireEvent.press(r.getByText(`Deliver cut - ${pd.tap_to_close}`)); });
+  await act(async () => { fireEvent.press(r.getByTestId('mission-close')); });
+  expect(mockConfirm).toHaveBeenCalledTimes(1);
+  expect(mockDeleteMission).not.toHaveBeenCalled();
+  // The sheet stays open, so the trash is still there to try again.
+  expect(r.getByTestId('mission-close')).toBeTruthy();
+});
+
+it('asks before closing a past meeting too', async () => {
+  mockConfirm.mockResolvedValue(false);
+  withMeeting(PAST);
+  const r = await renderLoaded();
+  await act(async () => { fireEvent.press(r.getByText(`Kickoff - ${pd.tap_to_close}`)); });
+  await act(async () => { fireEvent.press(r.getByTestId('meeting-close')); });
+  expect(mockDeleteMeeting).not.toHaveBeenCalled();
 });
