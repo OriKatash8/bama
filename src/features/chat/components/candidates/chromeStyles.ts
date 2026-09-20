@@ -5,9 +5,8 @@ import { StyleSheet } from 'react-native';
  * header: inset from the screen's sides, white on the chat's own background,
  * with a hairline border and a shadow the same violet as the rest of the app.
  *
- * `card` is the shell only. The client's panel divides itself into sections
- * with their own padding, so a panel that is one block of content (the
- * professional's) adds `cardBody` for the padding the strip used to carry.
+ * `card` is the shell only: both panels divide themselves into sections that
+ * carry their own padding, separated by `divider`.
  */
 export const chromeStyles = StyleSheet.create({
   card: {
@@ -23,10 +22,6 @@ export const chromeStyles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
-  },
-  cardBody: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
   },
   /** Between the panel's sections. A true hairline is invisible at this
    *  contrast on a phone, so the divider is a full pixel. */

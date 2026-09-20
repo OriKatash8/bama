@@ -16,7 +16,11 @@ const mockReject = jest.fn();
 const mockCreatePR = jest.fn();
 const mockDialog = jest.fn();
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+  // The buttons take their colour from the mode the route is in.
+  useSegments: () => ['(client)'],
+}));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (sel: (s: { language: string }) => unknown) => sel({ language: mockLang }),
 }));
@@ -263,6 +267,15 @@ describe('lines that carry a name set their writing direction explicitly', () =>
     expect(text.length).toBeGreaterThan(0);
     expect(StyleSheet.flatten(text[0].props.style).writingDirection).toBe(dir);
   });
+});
+
+it('wears the mode it is shown in: violet for the client', async () => {
+  mockAccepted = { offers: [offer('pro-a')], bundles: [] };
+  const r = await renderCard();
+  const styleOf = (id: string) => StyleSheet.flatten(r.getByTestId(id).props.style);
+  expect(styleOf('candidate-relevant-pro-a').backgroundColor).toBe('#6D28D9');
+  expect(styleOf('candidate-price-pro-a').borderColor).toBe('#DDD7EC');
+  expect(styleOf('candidate-not-relevant-pro-a').borderColor).toBe('#F0D5D7');
 });
 
 it("shows the professional's own רלוונטי as a tag on his row", async () => {

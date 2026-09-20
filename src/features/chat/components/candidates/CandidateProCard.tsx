@@ -144,71 +144,91 @@ export function CandidateProCard({
   );
 
   return (
-    <View style={[chromeStyles.card, chromeStyles.cardBody]} testID="candidate-pro-card">
-      {actionable && (
-        <AppText weight="regular" style={[styles.instruction, { textAlign: align }]} testID="pro-instruction">
-          {t('candidate_review.pro_instruction')}
-        </AppText>
-      )}
-      <View style={[styles.line, { flexDirection: rowDir }]}>
-        {!actionable && (
-          <View style={[styles.pill, underReview ? styles.pillPending : styles.pillConfirmed]} testID={`chip-${state}`}>
-            <AppText weight="semiBold" style={[styles.pillText, underReview ? styles.pillTextPending : styles.pillTextConfirmed]}>
-              {underReview ? t('candidate_review.chip_pending') : t('candidate_review.chip_confirmed')}
+    <View style={chromeStyles.card} testID="candidate-pro-card">
+      {/* 1 — header. While there is a decision to make it asks for it; once it
+          is made, the state itself is the heading. */}
+      <View style={[styles.header, { flexDirection: rowDir }]}>
+        {actionable
+          ? (
+            <AppText weight="bold" style={[styles.title, { textAlign: align }]}>
+              {t('candidate_review.pro_confirm_title')}
             </AppText>
-          </View>
-        )}
-        <AppText weight="regular" numberOfLines={1} style={[styles.price, { textAlign: align }]} testID="chip-price">
+          )
+          : (
+            <View style={[styles.pill, underReview ? styles.pillPending : styles.pillConfirmed]} testID={`chip-${state}`}>
+              <AppText weight="semiBold" style={[styles.pillText, underReview ? styles.pillTextPending : styles.pillTextConfirmed]}>
+                {underReview ? t('candidate_review.chip_pending') : t('candidate_review.chip_confirmed')}
+              </AppText>
+            </View>
+          )}
+      </View>
+      <View style={chromeStyles.divider} />
+
+      {/* 2 — where the professional stands: their price, and whatever is
+          outstanding on it */}
+      <View style={styles.info}>
+        <AppText weight="bold" numberOfLines={2} style={[styles.price, { textAlign: align }]} testID="chip-price">
           {t('candidate_review.chip_your_price', { price: money(price.total) })}
           {price.roles.length > 1 ? ` · ${price.roles.map((r) => r.label).join(' · ')}` : ''}
         </AppText>
+
+        {acknowledged && (
+          <AppText weight="regular" style={[styles.note, { textAlign: align }]} testID="pro-acknowledged-note">
+            {t('candidate_review.pro_acknowledged_note')}
+          </AppText>
+        )}
+        {clientAsked && (
+          <TouchableOpacity testID="chip-client-asked" accessibilityRole="link" activeOpacity={0.7} onPress={openPayments}>
+            <AppText weight="semiBold" style={[styles.action, { textAlign: align }]}>
+              {t('candidate_review.chip_client_asked')}
+            </AppText>
+          </TouchableOpacity>
+        )}
+        {iAsked && (
+          <AppText weight="regular" style={[styles.note, { textAlign: align }]} testID="chip-waiting-client">
+            {t('candidate_review.chip_waiting_client')}
+          </AppText>
+        )}
       </View>
 
-      {acknowledged && (
-        <AppText weight="regular" style={[styles.note, { textAlign: align }]} testID="pro-acknowledged-note">
-          {t('candidate_review.pro_acknowledged_note')}
-        </AppText>
-      )}
-      {clientAsked && (
-        <TouchableOpacity testID="chip-client-asked" accessibilityRole="link" activeOpacity={0.7} onPress={openPayments}>
-          <AppText weight="semiBold" style={[styles.action, { textAlign: align }]}>
-            {t('candidate_review.chip_client_asked')}
-          </AppText>
-        </TouchableOpacity>
-      )}
-      {iAsked && (
-        <AppText weight="regular" style={[styles.note, { textAlign: align }]} testID="chip-waiting-client">
-          {t('candidate_review.chip_waiting_client')}
-        </AppText>
-      )}
-
       {actionable && (
-        <View style={[styles.actions, { flexDirection: rowDir }]} testID="pro-actions">
-          <ActionButton
-            testID="pro-relevant"
-            label={t('candidate_review.relevant')}
-            variant="primary"
-            disabled={!!busy}
-            loading={busy === 'acknowledge'}
-            onPress={onRelevant}
-          />
-          <ActionButton
-            testID="pro-not-relevant"
-            label={t('candidate_review.not_relevant')}
-            variant="danger"
-            disabled={!!busy}
-            loading={busy === 'decline'}
-            onPress={onNotRelevant}
-          />
-          <ActionButton
-            testID="pro-price"
-            label={t('candidate_review.change_price')}
-            variant="outline"
-            disabled={!!busy || pendingRequests.length > 0 || repriceable.length === 0}
-            loading={busy === 'price'}
-            onPress={() => setRepricing(true)}
-          />
-        </View>
+        <>
+          <View style={chromeStyles.divider} />
+          {/* 3 — the decision. Same order as the client's: the destructive one
+              is furthest from the thumb. */}
+          <View style={[styles.actions, { flexDirection: rowDir }]} testID="pro-actions">
+            <ActionButton
+              testID="pro-relevant"
+              label={t('candidate_review.relevant')}
+              variant="primary"
+              disabled={!!busy}
+              loading={busy === 'acknowledge'}
+              onPress={onRelevant}
+            />
+            <ActionButton
+              testID="pro-price"
+              label={t('candidate_review.change_price')}
+              variant="outline"
+              disabled={!!busy || pendingRequests.length > 0 || repriceable.length === 0}
+              loading={busy === 'price'}
+              onPress={() => setRepricing(true)}
+            />
+            <ActionButton
+              testID="pro-not-relevant"
+              label={t('candidate_review.not_relevant')}
+              variant="danger"
+              disabled={!!busy}
+              loading={busy === 'decline'}
+              onPress={onNotRelevant}
+            />
+          </View>
+          <View style={chromeStyles.divider} />
+
+          {/* 4 — read-once instructions, below the decision rather than above it */}
+          <AppText weight="regular" style={[styles.instruction, { textAlign: align }]} testID="pro-instruction">
+            {t('candidate_review.pro_instruction')}
+          </AppText>
+        </>
       )}
 
       <PriceChangeSheet
@@ -224,16 +244,25 @@ export function CandidateProCard({
 }
 
 const styles = StyleSheet.create({
-  line: { alignItems: 'center', gap: 10, paddingVertical: 2 },
-  instruction: { fontSize: 12, color: 'rgba(15,15,31,0.45)', marginBottom: 4 },
-  pill: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
-  pillPending: { backgroundColor: '#fff3cd' },
-  pillConfirmed: { backgroundColor: '#e3f5ea' },
-  pillText: { fontSize: 12 },
-  pillTextPending: { color: '#8a5a00' },
-  pillTextConfirmed: { color: '#1c7a4a' },
-  price: { flex: 1, fontSize: 13, color: '#0f0f1f' },
-  action: { fontSize: 12, color: '#004aad', marginTop: 4 },
-  note: { fontSize: 12, color: 'rgba(15,15,31,0.55)', marginTop: 4 },
-  actions: { gap: 8, marginTop: 8 },
+  // 1 — header
+  header: { alignItems: 'center', paddingTop: 12, paddingHorizontal: 14, paddingBottom: 10 },
+  title: { flex: 1, fontSize: 13.5, fontWeight: '700', color: '#1A1626' },
+  pill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  pillPending: { backgroundColor: '#F1EFF7' },
+  pillConfirmed: { backgroundColor: '#E9F5EC' },
+  pillText: { fontSize: 11.5, fontWeight: '600' },
+  pillTextPending: { color: '#5A5768' },
+  pillTextConfirmed: { color: '#2F7A45' },
+
+  // 2 — the professional's own standing
+  info: { gap: 4, paddingHorizontal: 14, paddingVertical: 12 },
+  price: { fontSize: 15, fontWeight: '700', color: '#1A1626' },
+  action: { fontSize: 11.5, fontWeight: '600', color: '#4C1D95' },
+  note: { fontSize: 11.5, color: '#8B8898' },
+
+  // 3 — the decision
+  actions: { alignItems: 'stretch', gap: 8, paddingHorizontal: 14, paddingVertical: 11 },
+
+  // 4 — instructions
+  instruction: { fontSize: 11.5, lineHeight: 18, color: '#8B8898', paddingTop: 11, paddingHorizontal: 14, paddingBottom: 13 },
 });

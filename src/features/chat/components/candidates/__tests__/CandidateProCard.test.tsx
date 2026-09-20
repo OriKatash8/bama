@@ -14,7 +14,11 @@ const mockAck = jest.fn();
 const mockDecline = jest.fn();
 const mockCreatePR = jest.fn();
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+  // The buttons take their colour from the mode the route is in.
+  useSegments: () => ['(professional)'],
+}));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (sel: (s: { language: string }) => unknown) => sel({ language: mockLang }),
 }));
@@ -197,6 +201,38 @@ it.each([['he', 'row-reverse'], ['en', 'row']])('%s: rows flow %s', async (lang,
   expect(StyleSheet.flatten(getByTestId('pro-actions').props.style).flexDirection).toBe(dir);
   const tr = lang === 'he' ? he : en;
   expect(getAllByText(tr.candidate_review.relevant)).toHaveLength(1);
+});
+
+/**
+ * The professional's card is the client's card seen from the other side: the
+ * same sections in the same order, and the destructive choice furthest from
+ * the thumb.
+ */
+it('reads header, standing, decision, instructions — with the buttons in the client card s order', async () => {
+  const r = await renderCard();
+  const order = ['pro-relevant', 'pro-price', 'pro-not-relevant'];
+  expect(r.getByTestId('pro-actions').props.children.map((b: { props: { testID: string } }) => b.props.testID)).toEqual(order);
+  // Walk the rendered tree: the instructions come after the decision, and the
+  // decision after the professional's standing.
+  const seen: string[] = [];
+  const walk = (n: unknown): void => {
+    if (!n || typeof n !== 'object') return;
+    const node = n as { props?: { testID?: string }; children?: unknown[] };
+    if (node.props?.testID) seen.push(node.props.testID);
+    (node.children ?? []).forEach(walk);
+  };
+  walk(r.toJSON());
+  expect(seen.indexOf('chip-price')).toBeLessThan(seen.indexOf('pro-actions'));
+  expect(seen.indexOf('pro-actions')).toBeLessThan(seen.indexOf('pro-instruction'));
+});
+
+it('wears the mode it is shown in: blue for the professional', async () => {
+  const { getByTestId } = await renderCard();
+  const styleOf = (id: string) => StyleSheet.flatten(getByTestId(id).props.style);
+  expect(styleOf('pro-relevant').backgroundColor).toBe('#1D4ED8');
+  expect(styleOf('pro-price').borderColor).toBe('#D4DEF7');
+  // Destructive stays red in both modes — it is what it means, not where it is.
+  expect(styleOf('pro-not-relevant').borderColor).toBe('#F0D5D7');
 });
 
 describe('instruction line', () => {
