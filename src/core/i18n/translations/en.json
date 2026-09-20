@@ -190,7 +190,15 @@
     "filter_marketplace": "Marketplace",
     "empty_filter_title": "No chats match this filter",
     "click_for_community_info": "Tap for community details",
-    "completed_pro_review": "Your part is with our team"
+    "completed_pro_review": "Your part is with our team",
+    "system_meeting_title": "New meeting scheduled",
+    "system_mission_title": "New task added",
+    "system_price_title": "Price change request",
+    "system_completion_done": "Project completed",
+    "system_completion_title": "Project completion request",
+    "system_crew_title": "The crew is set",
+    "system_left": "{{name}} left the project",
+    "system_declined": "{{name}} decided not to continue with the project"
   },
   "project_details": {
     "add_pro_step_roles": "Choose roles",

@@ -190,7 +190,15 @@
     "filter_marketplace": "חנות",
     "empty_filter_title": "אין צ׳אטים בסינון הזה",
     "click_for_community_info": "לחצו לפרטי הקהילה",
-    "completed_pro_review": "החלק שלך בבדיקת הצוות"
+    "completed_pro_review": "החלק שלך בבדיקת הצוות",
+    "system_meeting_title": "פגישה חדשה נקבעה",
+    "system_mission_title": "משימה חדשה נוספה",
+    "system_price_title": "בקשה לשינוי מחיר",
+    "system_completion_done": "הפרויקט הושלם",
+    "system_completion_title": "בקשה לסיום הפרויקט",
+    "system_crew_title": "הצוות מוכן לעבודה",
+    "system_left": "{{name}} עזב את הפרויקט",
+    "system_declined": "{{name}} החליט/ה לא להמשיך בפרויקט"
   },
   "project_details": {
     "add_pro_step_roles": "בחירת תפקידים",

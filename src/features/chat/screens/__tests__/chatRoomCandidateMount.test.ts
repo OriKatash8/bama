@@ -50,3 +50,46 @@ it("stands the screen's own swipe-back down while the review card can be swiped"
   const route = readFileSync(join(__dirname, '..', '..', '..', '..', 'app', '(client)', '(tabs)', 'chats', '[chatId].tsx'), 'utf8');
   expect(route).not.toMatch(/gestureEnabled/);
 });
+
+/**
+ * The stored text is always Hebrew — written by the app and by the triggers in
+ * functions/. The pill's headline is rebuilt from the variant instead, so an
+ * English reader reads English.
+ */
+describe('system pills speak the reader s language', () => {
+  const en = require('@core/i18n/translations/en.json');
+  const he = require('@core/i18n/translations/he.json');
+  const KEYS = [
+    'system_meeting_title', 'system_mission_title', 'system_price_title',
+    'system_completion_done', 'system_completion_title', 'system_crew_title',
+    'system_left', 'system_declined',
+  ];
+
+  it('has every headline in both languages', () => {
+    for (const k of KEYS) {
+      expect(typeof en.chats[k]).toBe('string');
+      expect(typeof he.chats[k]).toBe('string');
+    }
+    // The two sentence-shaped ones carry the name they are built around.
+    expect(en.chats.system_left).toContain('{{name}}');
+    expect(he.chats.system_declined).toContain('{{name}}');
+  });
+
+  it('builds every headline from a key, with no Hebrew left inline', () => {
+    const parser = SRC.slice(SRC.indexOf('function parseSystemMessage'), SRC.indexOf('interface VoiceMessageBubbleProps'));
+    for (const k of KEYS) expect(parser).toContain(`chats.${k}`);
+    // Hebrew still appears in the parser — it is what the text is MATCHED on —
+    // but never again as a headline it returns.
+    expect(parser).not.toMatch(/headline: '[^']*[֐-׿]/);
+  });
+
+  it('lifts the name out of the left/declined sentence rather than echoing it', () => {
+    expect(SRC).toMatch(/const name = text\.split\(phrase\)\[0\]\?\.trim\(\)/);
+    expect(SRC).toMatch(/t\(declined \? 'chats\.system_declined' : 'chats\.system_left', \{ name \}\)/);
+  });
+
+  it('dates the meeting line in the reader s language', () => {
+    expect(SRC).toMatch(/formatMeetingDetail\(text, lang\)/);
+    expect(SRC).toMatch(/parseSystemMessage\(msg\.text \?\? '', t, rtl \? 'he' : 'en'\)/);
+  });
+});

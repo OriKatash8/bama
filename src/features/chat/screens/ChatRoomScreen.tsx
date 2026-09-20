@@ -60,7 +60,7 @@ import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
 import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
-import { formatHebMeetingDetail } from '../utils/meetingText';
+import { formatMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
@@ -82,13 +82,17 @@ type Translations = typeof en;
 /** Names the General channel has shipped under. Matched language-agnostically so
  *  a community created in one language still resolves in the other. */
 function makeT(translations: Translations) {
-  return (key: string): string => {
+  return (key: string, vars?: Record<string, string>): string => {
     const keys = key.split('.');
     let result: unknown = translations;
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
+    if (typeof result !== 'string') return key;
+    if (!vars) return result;
+    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
   };
 }
+
+type T = ReturnType<typeof makeT>;
 
 /** The add sheets' header tile — the same gradient as on project details. */
 const SHEET_TILE_GRADIENT = ['#2563EB', '#6D34DE', '#9A4BF0'] as const;
@@ -159,14 +163,20 @@ const SYSTEM_SECTION: Partial<Record<SystemVariant, 'missions' | 'meetings' | 'p
  */
 const SYSTEM_OPENS_UNSECTIONED: Partial<Record<SystemVariant, true>> = { completion: true };
 
-function parseSystemMessage(text: string): { variant: SystemVariant; headline: string; detail: string } {
+/**
+ * System messages are written in Hebrew — by the app and by the triggers in
+ * functions/ — and stored that way, so the text is matched on its Hebrew and the
+ * headline is rebuilt from the variant in the reader's language. Details that are
+ * someone's own words (a task's title, a price note) stay as they were written.
+ */
+function parseSystemMessage(text: string, t: T, lang: 'he' | 'en'): { variant: SystemVariant; headline: string; detail: string } {
   if (text.startsWith('📅')) {
-    return { variant: 'meeting', headline: 'פגישה חדשה נקבעה', detail: formatHebMeetingDetail(text) };
+    return { variant: 'meeting', headline: t('chats.system_meeting_title'), detail: formatMeetingDetail(text, lang) };
   }
   if (text.startsWith('📋')) {
     return {
       variant: 'mission',
-      headline: 'משימה חדשה נוספה',
+      headline: t('chats.system_mission_title'),
       detail: text.replace(/^📋\s*משימה חדשה:\s*/, '').trim(),
     };
   }
@@ -174,7 +184,7 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
   // identically on web and native, regardless of emoji encoding differences.
   if (text.startsWith('💰') || text.includes('בקשת שינוי מחיר')) {
     const detail = text.replace(/^(?:💰\s*)?בקשת שינוי מחיר:?\s*/, '').trim();
-    return { variant: 'price_change', headline: 'בקשה לשינוי מחיר', detail };
+    return { variant: 'price_change', headline: t('chats.system_price_title'), detail };
   }
   // Matched by phrase as well as emoji, for the same encoding reason as above.
   if (text.startsWith('🏁') || text.includes('בקשת סיום פרויקט') || text.includes('הפרויקט הושלם')) {
@@ -182,7 +192,7 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
     const detail = text.replace(/^(?:🏁\s*)?(?:בקשת סיום פרויקט:?|הפרויקט הושלם)\s*/, '').trim();
     return {
       variant: 'completion',
-      headline: done ? 'הפרויקט הושלם' : 'בקשה לסיום הפרויקט',
+      headline: done ? t('chats.system_completion_done') : t('chats.system_completion_title'),
       detail,
     };
   }
@@ -190,13 +200,21 @@ function parseSystemMessage(text: string): { variant: SystemVariant; headline: s
   // professional confirmed and no seat empty — the crew is set.
   if (text.startsWith('🎬') || text.includes('הצוות נסגר')) {
     const detail = text.replace(/^(?:🎬\s*)?הצוות נסגר:?\s*/, '').trim();
-    return { variant: 'crew', headline: 'הצוות נסגר', detail };
+    return { variant: 'crew', headline: t('chats.system_crew_title'), detail };
   }
   // releaseEngagement (functions/src/lifecycle/removal.ts): a professional left
   // or was released ("עזב את הפרויקט"), or declined during review ("החליט/ה לא
   // להמשיך בפרויקט"). Used to fall through to 'neutral' and wear the meeting icon.
   if (text.includes('עזב את הפרויקט') || text.includes('החליט/ה לא להמשיך בפרויקט')) {
-    return { variant: 'left', headline: text, detail: '' };
+    // releaseNotice writes "<name> <phrase>", so the name is whatever precedes it.
+    const declined = text.includes('החליט/ה לא להמשיך בפרויקט');
+    const phrase = declined ? 'החליט/ה לא להמשיך בפרויקט' : 'עזב את הפרויקט';
+    const name = text.split(phrase)[0]?.trim() ?? '';
+    return {
+      variant: 'left',
+      headline: t(declined ? 'chats.system_declined' : 'chats.system_left', { name }),
+      detail: '',
+    };
   }
   return { variant: 'neutral', headline: text, detail: '' };
 }
@@ -1372,7 +1390,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             }
             const msg = item as Message;
             if (msg.system || msg.senderId === 'system') {
-              const { variant, headline, detail } = parseSystemMessage(msg.text ?? '');
+              const { variant, headline, detail } = parseSystemMessage(msg.text ?? '', t, rtl ? 'he' : 'en');
               const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' || variant === 'crew' ? '#1c9d63' : variant === 'completion' ? '#004aad' : variant === 'left' ? '#6b7280' : '#1e4fa3';
               // Each known kind names a section of project-details. 'neutral' has
               // nowhere to go — that is "X left the project" and the purchase-chat
