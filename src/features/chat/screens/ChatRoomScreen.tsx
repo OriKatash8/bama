@@ -494,7 +494,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
   // Buttons, the back arrow and my own bubbles follow the mode: purple in the
   // client app, blue in the pro app.
-  const { accent: modeAccent } = useModeAccent();
+  const { accent: modeAccent, tint: modeTint } = useModeAccent();
   const font = useAppFont();
   const router = useRouter();
   const language = useSettingsStore((s) => s.language);
@@ -1682,7 +1682,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 // The layout is forced LTR app-wide, so the field's own text
                 // side is set here: the placeholder and what is typed both start
                 // on the right in Hebrew.
-                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+                style={[styles.input, { backgroundColor: modeTint, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                 value={inputText}
                 onChangeText={setInputText}
                 placeholder={t('chats.message_placeholder')}
