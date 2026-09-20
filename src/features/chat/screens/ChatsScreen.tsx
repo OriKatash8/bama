@@ -746,7 +746,11 @@ const styles = StyleSheet.create({
     minHeight: 64,
     alignItems: 'center',
     gap: 11,
-    paddingVertical: 10,
+    // 14, not 10: at 10 the message line sat almost on the separator below it
+    // and the rows read as one block. The padding is symmetric, so what a row
+    // gains under its message it also gains above its name — between two rows
+    // that is 28 of clear space, and each chat reads as its own thing.
+    paddingVertical: 14,
     paddingHorizontal: 20,
   },
   rowUnread: { backgroundColor: '#FBFAFE' },
