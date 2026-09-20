@@ -49,6 +49,8 @@ function makeT(translations: Translations) {
 
 const MAX_EVIDENCE = 3;
 const PAGE_BG = '#FAFAFC';
+/** The soft violet behind the report flag — the builder's picked-square fill. */
+const REPORT_TILE = '#F3EEFE';
 
 export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -195,9 +197,22 @@ export default function PublicProfileScreen() {
     <Screen scrollable style={[styles.screenContent, { paddingBottom: tabBarClearance }]} backgroundColor={PAGE_BG}>
       {/* Identity, on the violet band */}
       <GradientBand style={styles.band}>
-        {/* ── Title row: back + report. In Hebrew the row mirrors: back on the right
-            (pointing right), report on the left. ── */}
+        {/* ── Title row: report at the leading edge, back at the trailing one.
+            In Hebrew the row mirrors, so report sits right and back sits left.
+            The chevron points OUTWARD, away from the band's content and toward
+            the edge the button sits on — right in English, left in Hebrew. ── */}
         <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <TouchableOpacity
+            onPress={() => setReportVisible(true)}
+            style={styles.reportBtn}
+            activeOpacity={0.7}
+            hitSlop={8}
+            accessibilityRole="button"
+            testID="profile-report"
+          >
+            <Flag size={18} color="#ff4d6d" strokeWidth={2} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
           <TouchableOpacity
             onPress={goToBrowse}
             style={styles.backBtn}
@@ -207,12 +222,8 @@ export default function PublicProfileScreen() {
             testID="profile-back"
           >
             {rtl
-              ? <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />
-              : <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />}
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => setReportVisible(true)} activeOpacity={0.7} hitSlop={8} accessibilityRole="button" testID="profile-report">
-            <Flag size={18} color="#ff4d6d" strokeWidth={2} />
+              ? <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
+              : <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />}
           </TouchableOpacity>
         </View>
 
@@ -388,6 +399,17 @@ const styles = StyleSheet.create({
 
   titleRow: { alignItems: 'center', alignSelf: 'stretch' },
   backBtn: { paddingHorizontal: 4 },
+  // A soft violet tile under the flag, the same fill the builder's picked date
+  // squares use. Pale enough to sit quietly on the band; the flag stays red,
+  // which is the one thing on this screen that red should mean.
+  reportBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: REPORT_TILE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   portfolioSection: {},
 

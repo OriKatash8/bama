@@ -6,7 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, Flag, X } from 'lucide-react-native';
+import { ChevronRight, Flag, X } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -49,6 +49,8 @@ function makeT(translations: Translations) {
 
 const MAX_EVIDENCE = 3;
 const PAGE_BG = '#FAFAFC';
+/** The soft violet behind the report flag — the builder's picked-square fill. */
+const REPORT_TILE = '#F3EEFE';
 
 export default function PublicProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -195,19 +197,29 @@ export default function PublicProfileScreen() {
     <Screen scrollable style={[styles.screenContent, { paddingBottom: tabBarClearance }]} backgroundColor={PAGE_BG}>
       {/* Identity, on the violet band */}
       <GradientBand style={styles.band}>
-        {/* ── Title row: back + report ── */}
+        {/* ── Title row: report at the leading edge, back at the trailing one,
+            as on the client's copy of this screen. ── */}
         <View style={styles.titleRow}>
+          <TouchableOpacity
+            onPress={() => setReportVisible(true)}
+            style={styles.reportBtn}
+            activeOpacity={0.7}
+            hitSlop={8}
+            accessibilityRole="button"
+            testID="profile-report"
+          >
+            <Flag size={18} color="#ff4d6d" strokeWidth={2} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
           <TouchableOpacity
             onPress={goToBrowse}
             style={styles.backBtn}
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            testID="profile-back"
           >
-            <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => setReportVisible(true)} activeOpacity={0.7} hitSlop={8}>
-            <Flag size={18} color="#ff4d6d" strokeWidth={2} />
+            <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -383,6 +395,17 @@ const styles = StyleSheet.create({
 
   titleRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
   backBtn: { paddingHorizontal: 4 },
+  // A soft violet tile under the flag, the same fill the builder's picked date
+  // squares use. Pale enough to sit quietly on the band; the flag stays red,
+  // which is the one thing on this screen that red should mean.
+  reportBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: REPORT_TILE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   portfolioSection: {},
 
