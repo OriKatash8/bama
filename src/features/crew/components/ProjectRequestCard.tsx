@@ -92,6 +92,10 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
   // The crew line is black, and turns purple once every seat is filled.
   const teamColor = isTeamFull ? VIOLET : TEXT;
   const canEdit = request.status === 'open';
+  // Deleting the project is only the client's to do while nobody has joined it.
+  // Once a single seat is filled there is a crew with a stake in it, so the ⋯
+  // menu — whose only item is the delete — disappears with it.
+  const canDelete = filledCount === 0;
 
   function handleEdit() {
     router.navigate({
@@ -101,6 +105,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
   }
 
   async function handleDelete() {
+    if (!canDelete) return;
     setIsDeleting(true);
     try {
       await cancelProject(request.id, request.chatId);
@@ -134,30 +139,39 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
       {/* Zone 1 — Header: ⋯ on the trailing corner (left in Hebrew, right in
           English) + project title. Reversed relative to rowDir on purpose. */}
       <View style={[styles.headerRow, { flexDirection: rtl ? 'row' : 'row-reverse' }]}>
-        <View ref={moreBtnRef}>
-          <TouchableOpacity
-            onPress={openMoreMenu}
-            style={styles.moreBtn}
-            hitSlop={8}
-            activeOpacity={0.7}
-          >
-            <MoreHorizontal size={20} color={VIOLET} />
-          </TouchableOpacity>
-        </View>
-        <AppText
-          weight="bold"
-          style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}
-          numberOfLines={2}
-        >
-          {request.title}
-        </AppText>
-        {offerCount > 0 && (
-          <View style={styles.offerCountBadge}>
-            <AppText weight="bold" style={styles.offerCountBadgeText}>
-              {t('chats_page.offer_count_badge', { n: String(offerCount) })}
-            </AppText>
+        {canDelete && (
+          <View ref={moreBtnRef}>
+            <TouchableOpacity
+              onPress={openMoreMenu}
+              style={styles.moreBtn}
+              hitSlop={8}
+              activeOpacity={0.7}
+              testID="project-more"
+            >
+              <MoreHorizontal size={20} color={VIOLET} />
+            </TouchableOpacity>
           </View>
         )}
+        {/* The badge follows the title's own reading direction, so it sits
+            where the title ends: to its left in Hebrew, to its right in
+            English. They share one flexing group so the badge stays beside
+            the text rather than drifting to the card's far edge. */}
+        <View style={[styles.titleGroup, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+          <AppText
+            weight="bold"
+            style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}
+            numberOfLines={2}
+          >
+            {request.title}
+          </AppText>
+          {offerCount > 0 && (
+            <View style={styles.offerCountBadge}>
+              <AppText weight="bold" style={styles.offerCountBadgeText}>
+                {t('chats_page.offer_count_badge', { n: String(offerCount) })}
+              </AppText>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Zone 2 — Three stat squares: location / end date / execution */}
@@ -383,8 +397,13 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   offerCountBadgeText: { color: '#ffffff', fontSize: 11 },
-  title: {
+  titleGroup: {
     flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  title: {
+    flexShrink: 1,
     fontSize: 17,
     color: TEXT,
     lineHeight: 23,
