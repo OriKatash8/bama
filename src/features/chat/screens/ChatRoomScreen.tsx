@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
   ActivityIndicator,
   Alert,
@@ -469,6 +470,9 @@ function SharedListingCard({ msg }: { msg: Message }) {
 
 export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
+  // Buttons, the back arrow and my own bubbles follow the mode: purple in the
+  // client app, blue in the pro app.
+  const { accent: modeAccent } = useModeAccent();
   const font = useAppFont();
   const router = useRouter();
   const language = useSettingsStore((s) => s.language);
@@ -1198,7 +1202,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
         <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats${chatType === 'community' ? '?tab=communities' : ''}`)} style={styles.headerBack} activeOpacity={0.7}>
-          <Text style={[styles.headerBackText, { color: colors.accent, ...font.regular }]}>‹</Text>
+          <Text style={[styles.headerBackText, { color: modeAccent, ...font.regular }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           {chatType === 'group' && chatProjectId ? (
@@ -1207,7 +1211,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
               activeOpacity={0.8}
             >
-              <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
               <AppText style={chatStyles.headerHint}>{t('chats.click_for_project_info')}</AppText>
@@ -1218,7 +1222,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => setShowPurchaseNotice(true)}
               activeOpacity={0.8}
             >
-              <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
               <AppText style={chatStyles.headerHint}>{t('chats.purchase_info_hint')}</AppText>
@@ -1229,13 +1233,13 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/(client)/(tabs)/chats/community-details?chatId=${chatId}`)}
               activeOpacity={0.8}
             >
-              <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
               <AppText style={chatStyles.headerHint}>{t('chats.click_for_community_info')}</AppText>
             </TouchableOpacity>
           ) : (
-            <AppText weight="bold" style={[styles.headerName, { color: '#004aad' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+            <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
             </AppText>
           )}
@@ -1424,7 +1428,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             return (
               <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
                 {msg.videoUrl ? (
-                  <View style={[styles.mediaBubble, { backgroundColor: isOwn ? colors.accent : '#ffffff' }]}>
+                  <View style={[styles.mediaBubble, { backgroundColor: isOwn ? modeAccent : '#ffffff' }]}>
                     {!isOwn && (
                       <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId), paddingHorizontal: 10, paddingTop: 6 }]}>
                         {userNames[msg.senderId] ?? 'Loading...'}
@@ -1443,7 +1447,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     </Text>
                   </View>
                 ) : msg.imageURL ? (
-                  <View style={[styles.mediaBubble, { backgroundColor: isOwn ? colors.accent : '#ffffff' }]}>
+                  <View style={[styles.mediaBubble, { backgroundColor: isOwn ? modeAccent : '#ffffff' }]}>
                     {!isOwn && (
                       <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId), paddingHorizontal: 10, paddingTop: 6 }]}>
                         {userNames[msg.senderId] ?? 'Loading...'}
@@ -1462,7 +1466,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     </Text>
                   </View>
                 ) : msg.audioUrl ? (
-                  <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
+                  <View style={[styles.bubble, isOwn ? { backgroundColor: modeAccent } : { backgroundColor: '#ffffff' }]}>
                     {!isOwn && (
                       <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
                         {userNames[msg.senderId] ?? 'Loading...'}
@@ -1481,7 +1485,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     </Text>
                   </View>
                 ) : (
-                  <View style={[styles.bubble, isOwn ? { backgroundColor: colors.accent } : { backgroundColor: '#ffffff' }]}>
+                  <View style={[styles.bubble, isOwn ? { backgroundColor: modeAccent } : { backgroundColor: '#ffffff' }]}>
                     {!isOwn && (
                       <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
                         {userNames[msg.senderId] ?? 'Loading...'}
@@ -1506,7 +1510,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             activeOpacity={0.85}
             accessibilityRole="button"
           >
-            <ChevronDown size={22} color="#004aad" strokeWidth={2.5} />
+            <ChevronDown size={22} color={modeAccent} strokeWidth={2.5} />
           </TouchableOpacity>
         )}
       </View>
@@ -1525,28 +1529,28 @@ export function ChatRoomScreen({ chatId }: Props) {
           ]}
         >
           <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachMedia(); }} activeOpacity={0.7}>
-            <View style={chatStyles.menuItemIcon}><Paperclip size={22} color="#004aad" strokeWidth={1.5} /></View>
+            <View style={chatStyles.menuItemIcon}><Paperclip size={22} color={modeAccent} strokeWidth={1.5} /></View>
             <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_media')}</AppText>
           </TouchableOpacity>
           <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); handleAttachCamera(); }} activeOpacity={0.7}>
-            <View style={chatStyles.menuItemIcon}><Camera size={22} color="#004aad" strokeWidth={1.5} /></View>
+            <View style={chatStyles.menuItemIcon}><Camera size={22} color={modeAccent} strokeWidth={1.5} /></View>
             <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.take_photo')}</AppText>
           </TouchableOpacity>
           {isMarketActive && (
             <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setListingPickerOpen(true); }} activeOpacity={0.7}>
-              <View style={chatStyles.menuItemIcon}><ShoppingBag size={22} color="#004aad" strokeWidth={1.5} /></View>
+              <View style={chatStyles.menuItemIcon}><ShoppingBag size={22} color={modeAccent} strokeWidth={1.5} /></View>
               <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('marketplace.share_to_market')}</AppText>
             </TouchableOpacity>
           )}
           {chatProjectId && !chatArchived && (
             <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMission(true); }} activeOpacity={0.7}>
-              <View style={chatStyles.menuItemIcon}><CheckSquare size={22} color="#004aad" strokeWidth={1.5} /></View>
+              <View style={chatStyles.menuItemIcon}><CheckSquare size={22} color={modeAccent} strokeWidth={1.5} /></View>
               <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_task')}</AppText>
             </TouchableOpacity>
           )}
           {chatProjectId && !chatArchived && (
             <TouchableOpacity style={chatStyles.menuItem} onPress={() => { closeMenu(); setShowAddMeeting(true); }} activeOpacity={0.7}>
-              <View style={chatStyles.menuItemIcon}><Calendar size={22} color="#004aad" strokeWidth={1.5} /></View>
+              <View style={chatStyles.menuItemIcon}><Calendar size={22} color={modeAccent} strokeWidth={1.5} /></View>
               <AppText weight="regular" style={chatStyles.menuItemLabel}>{t('chats.add_meeting')}</AppText>
             </TouchableOpacity>
           )}
@@ -1625,7 +1629,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             <AppText weight="semiBold" style={[styles.sendLabel, { color: '#fff' }]}>{t('chats.record_cancel')}</AppText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.sendButton, { backgroundColor: colors.accent }]}
+            style={[styles.sendButton, { backgroundColor: modeAccent }]}
             onPress={stopAndSendRecording}
             activeOpacity={0.7}
           >
@@ -1639,7 +1643,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
-              <ActivityIndicator size="small" color={colors.accent} />
+              <ActivityIndicator size="small" color={modeAccent} />
               <AppText weight="regular" style={[styles.mediaSendingText, { color: colors.textMuted }]}>
                 {videoUploading || videoProcessing ? t('media.send_video') : t('chats.sending_image')}
               </AppText>
@@ -1647,7 +1651,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           ) : (
             <>
               <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} activeOpacity={0.7}>
-                <Plus size={24} color={menuOpen ? colors.text : colors.accent} strokeWidth={2} />
+                <Plus size={24} color={menuOpen ? colors.text : modeAccent} strokeWidth={2} />
               </TouchableOpacity>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, ...font.regular }]}
@@ -1660,7 +1664,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               />
               {inputText.trim() ? (
                 <TouchableOpacity
-                  style={[styles.sendButton, { backgroundColor: colors.accent }]}
+                  style={[styles.sendButton, { backgroundColor: modeAccent }]}
                   onPress={handleSend}
                   activeOpacity={0.7}
                 >
@@ -1668,7 +1672,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  style={[styles.sendButton, { backgroundColor: colors.accent }]}
+                  style={[styles.sendButton, { backgroundColor: modeAccent }]}
                   onPress={startRecording}
                   activeOpacity={0.7}
                 >
@@ -1689,7 +1693,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           <View style={[styles.listingPickerHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <AppText weight="bold" style={styles.listingPickerTitle}>{t('marketplace.pick_listing_title')}</AppText>
             <TouchableOpacity onPress={() => setListingPickerOpen(false)} hitSlop={10} activeOpacity={0.7}>
-              <X size={20} color="#004aad" strokeWidth={2.5} />
+              <X size={20} color={modeAccent} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
@@ -2026,6 +2030,7 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#000000',
     textAlign: 'center',
     width: '100%',
   },
