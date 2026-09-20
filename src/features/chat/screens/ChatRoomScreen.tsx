@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BottomSheet } from '@components/ui/BottomSheet';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
   ActivityIndicator,
@@ -88,6 +89,9 @@ function makeT(translations: Translations) {
     return typeof result === 'string' ? result : key;
   };
 }
+
+/** The add sheets' header tile — the same gradient as on project details. */
+const SHEET_TILE_GRADIENT = ['#2563EB', '#6D34DE', '#9A4BF0'] as const;
 
 const USER_COLORS = [
   '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab', '#1e88e5',
@@ -472,7 +476,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const colors = useTheme();
   // Buttons, the back arrow and my own bubbles follow the mode: purple in the
   // client app, blue in the pro app.
-  const { accent: modeAccent } = useModeAccent();
+  const { accent: modeAccent, tint: modeTint } = useModeAccent();
   const font = useAppFont();
   const router = useRouter();
   const language = useSettingsStore((s) => s.language);
@@ -1522,7 +1526,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             chatStyles.menuSheet,
             {
               borderTopColor: colors.border,
-              backgroundColor: colors.card,
+              backgroundColor: modeTint,
               opacity: menuAnim,
               transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
             },
@@ -1809,23 +1813,38 @@ export function ChatRoomScreen({ chatId }: Props) {
     />
 
     {/* Add Mission Modal */}
-    <Modal visible={showAddMission} transparent animationType="slide" onRequestClose={() => setShowAddMission(false)}>
-      <View style={chatStyles.modalOverlay}>
-        <View style={[chatStyles.modalSheet, { backgroundColor: colors.card }]}>
-          <Text style={[chatStyles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-            {t('project_details.add_mission_title')}
-          </Text>
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+    <BottomSheet visible={showAddMission} onClose={() => setShowAddMission(false)}>
+      <View style={[chatStyles.sheetHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={chatStyles.sheetTile}>
+          <CheckSquare size={20} color="#FFFFFF" strokeWidth={2} />
+        </LinearGradient>
+        <Text style={[chatStyles.sheetTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={2}>
+          {t('project_details.add_mission_title')}
+        </Text>
+      </View>
+
+      <ScrollView
+        style={chatStyles.sheetBody}
+        contentContainerStyle={chatStyles.sheetBodyContent}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.mission_title')}
           </Text>
           <TextInput
-            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            style={[chatStyles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
             value={newMissionTitle}
             onChangeText={setNewMissionTitle}
             placeholder={t('project_details.mission_placeholder')}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor="#9C99AD"
           />
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        </View>
+
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.assign_to')}
           </Text>
           {assignableMembers.map((m) => {
@@ -1833,54 +1852,66 @@ export function ChatRoomScreen({ chatId }: Props) {
             return (
               <TouchableOpacity
                 key={m.id}
-                style={[chatStyles.missionAssignRow, { borderColor: selected ? '#004aad' : colors.border }, selected && chatStyles.missionAssignRowSelected]}
+                style={[chatStyles.sheetPersonRow, { flexDirection: rtl ? 'row-reverse' : 'row' }, selected && { borderColor: modeAccent, backgroundColor: '#F8F6FC' }]}
                 onPress={() => toggleAssignee(m.id)}
                 activeOpacity={0.8}
               >
-                <Text style={[chatStyles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>{m.displayName}</Text>
-                <View style={[chatStyles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
-                  {selected && <Text style={[chatStyles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
+                <Text style={[chatStyles.sheetPersonName, { textAlign: rtl ? 'right' : 'left', ...font.medium }]}>{m.displayName}</Text>
+                <View style={[chatStyles.sheetCheck, { borderColor: selected ? modeAccent : '#DDD7EC', backgroundColor: selected ? modeAccent : 'transparent' }]}>
+                  {selected && <Text style={[chatStyles.sheetCheckTick, { ...font.bold }]}>✓</Text>}
                 </View>
               </TouchableOpacity>
             );
           })}
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        </View>
+
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.due_date')}
           </Text>
           {newMissionDueDate ? (
-            <View style={[chatStyles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
-              <Calendar size={15} color="#004aad" strokeWidth={2} />
-              <Text style={[chatStyles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+            <View style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={chatStyles.sheetRowTile}>
+                <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+              </View>
+              <Text style={[chatStyles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                 {formatDueDate(newMissionDueDate, t('project_details.due'))}
               </Text>
-              <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={10} activeOpacity={0.7}>
-                <Text style={[chatStyles.missionDateClear, { ...font.bold }]}>✕</Text>
+              <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={12} activeOpacity={0.7}>
+                <Text style={[chatStyles.sheetPickClear, { ...font.bold }]}>✕</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity style={[chatStyles.missionDateRow, { borderColor: colors.border }]} onPress={() => setShowDueDatePicker(true)} activeOpacity={0.8}>
-              <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-              <Text style={[chatStyles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+            <TouchableOpacity
+              style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={() => setShowDueDatePicker(true)}
+              activeOpacity={0.8}
+            >
+              <View style={chatStyles.sheetRowTile}>
+                <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+              </View>
+              <Text style={[chatStyles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                 {t('project_details.add_due_date')}
               </Text>
             </TouchableOpacity>
           )}
-          <View style={chatStyles.modalActions}>
-            <TouchableOpacity style={[chatStyles.modalBtn, chatStyles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setShowAddMission(false)} activeOpacity={0.8}>
-              <Text style={[chatStyles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[chatStyles.modalBtn, chatStyles.modalBtnConfirm, (!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission) && chatStyles.completeBtnDisabled]}
-              onPress={handleAddMission}
-              disabled={!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission}
-              activeOpacity={0.8}
-            >
-              {isAddingMission ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[chatStyles.modalBtnConfirmText, { ...font.bold }]}>{t('project_details.add')}</Text>}
-            </TouchableOpacity>
-          </View>
         </View>
+      </ScrollView>
+
+      <View style={[chatStyles.sheetActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={() => setShowAddMission(false)} activeOpacity={0.8}>
+          <Text style={[chatStyles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[chatStyles.sheetPrimaryBtn, { backgroundColor: modeAccent }, (!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission) && chatStyles.completeBtnDisabled]}
+          onPress={handleAddMission}
+          disabled={!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission}
+          activeOpacity={0.8}
+        >
+          {isAddingMission ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[chatStyles.sheetPrimaryText, { ...font.bold }]}>{t('project_details.add')}</Text>}
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </BottomSheet>
     {showDueDatePicker && (
       <MiniCalendar
         value={newMissionDueDate}
@@ -1892,65 +1923,97 @@ export function ChatRoomScreen({ chatId }: Props) {
     )}
 
     {/* Add Meeting Modal */}
-    <Modal visible={showAddMeeting} transparent animationType="slide" onRequestClose={() => setShowAddMeeting(false)}>
-      <View style={chatStyles.modalOverlay}>
-        <View style={[chatStyles.modalSheet, { backgroundColor: colors.card }]}>
-          <Text style={[chatStyles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-            {t('project_details.add_meeting_title')}
-          </Text>
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+    <BottomSheet visible={showAddMeeting} onClose={() => setShowAddMeeting(false)}>
+      <View style={[chatStyles.sheetHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={chatStyles.sheetTile}>
+          <Calendar size={20} color="#FFFFFF" strokeWidth={2} />
+        </LinearGradient>
+        <Text style={[chatStyles.sheetTitle, { textAlign: rtl ? 'right' : 'left', ...font.bold }]} numberOfLines={2}>
+          {t('project_details.add_meeting_title')}
+        </Text>
+      </View>
+
+      <ScrollView
+        style={chatStyles.sheetBody}
+        contentContainerStyle={chatStyles.sheetBodyContent}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.meeting_title_label')}
           </Text>
           <TextInput
-            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            style={[chatStyles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
             value={newMeetingTitle}
             onChangeText={setNewMeetingTitle}
             placeholder={t('project_details.meeting_title_placeholder')}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor="#9C99AD"
           />
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        </View>
+
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.meeting_date')}
           </Text>
           {newMeetingDate ? (
-            <View style={[chatStyles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
-              <Calendar size={15} color="#004aad" strokeWidth={2} />
-              <Text style={[chatStyles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+            <View style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={chatStyles.sheetRowTile}>
+                <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+              </View>
+              <Text style={[chatStyles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                 {formatDueDate(newMeetingDate, '')}
               </Text>
-              <TouchableOpacity onPress={() => setNewMeetingDate('')} hitSlop={10} activeOpacity={0.7}>
-                <Text style={[chatStyles.missionDateClear, { ...font.bold }]}>✕</Text>
+              <TouchableOpacity onPress={() => setNewMeetingDate('')} hitSlop={12} activeOpacity={0.7}>
+                <Text style={[chatStyles.sheetPickClear, { ...font.bold }]}>✕</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity style={[chatStyles.missionDateRow, { borderColor: colors.border }]} onPress={() => setShowMeetingDatePicker(true)} activeOpacity={0.8}>
-              <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-              <Text style={[chatStyles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+            <TouchableOpacity
+              style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={() => setShowMeetingDatePicker(true)}
+              activeOpacity={0.8}
+            >
+              <View style={chatStyles.sheetRowTile}>
+                <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+              </View>
+              <Text style={[chatStyles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                 {t('project_details.meeting_date')}
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        </View>
+
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.meeting_time')}
           </Text>
           <TextInput
-            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            style={[chatStyles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
             value={newMeetingTime}
             onChangeText={setNewMeetingTime}
             placeholder={t('project_details.meeting_time_placeholder')}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor="#9C99AD"
             keyboardType="numbers-and-punctuation"
           />
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        </View>
+
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.meeting_location')}
           </Text>
           <TextInput
-            style={[chatStyles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+            style={[chatStyles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
             value={newMeetingLocation}
             onChangeText={setNewMeetingLocation}
             placeholder={t('project_details.meeting_location_placeholder')}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor="#9C99AD"
           />
-          <Text style={[chatStyles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+        </View>
+
+        <View>
+          <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.meeting_invitees')}
           </Text>
           {assignableMembers.map((m) => {
@@ -1958,33 +2021,34 @@ export function ChatRoomScreen({ chatId }: Props) {
             return (
               <TouchableOpacity
                 key={m.id}
-                style={[chatStyles.missionAssignRow, { borderColor: selected ? '#004aad' : colors.border }, selected && chatStyles.missionAssignRowSelected]}
+                style={[chatStyles.sheetPersonRow, { flexDirection: rtl ? 'row-reverse' : 'row' }, selected && { borderColor: modeAccent, backgroundColor: '#F8F6FC' }]}
                 onPress={() => toggleInvitee(m.id)}
                 activeOpacity={0.8}
               >
-                <Text style={[chatStyles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>{m.displayName}</Text>
-                <View style={[chatStyles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
-                  {selected && <Text style={[chatStyles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
+                <Text style={[chatStyles.sheetPersonName, { textAlign: rtl ? 'right' : 'left', ...font.medium }]}>{m.displayName}</Text>
+                <View style={[chatStyles.sheetCheck, { borderColor: selected ? modeAccent : '#DDD7EC', backgroundColor: selected ? modeAccent : 'transparent' }]}>
+                  {selected && <Text style={[chatStyles.sheetCheckTick, { ...font.bold }]}>✓</Text>}
                 </View>
               </TouchableOpacity>
             );
           })}
-          <View style={chatStyles.modalActions}>
-            <TouchableOpacity style={[chatStyles.modalBtn, chatStyles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setShowAddMeeting(false)} activeOpacity={0.8}>
-              <Text style={[chatStyles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[chatStyles.modalBtn, chatStyles.modalBtnConfirm, (!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting) && chatStyles.completeBtnDisabled]}
-              onPress={handleAddMeeting}
-              disabled={!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting}
-              activeOpacity={0.8}
-            >
-              {isAddingMeeting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[chatStyles.modalBtnConfirmText, { ...font.bold }]}>{t('project_details.add')}</Text>}
-            </TouchableOpacity>
-          </View>
         </View>
+      </ScrollView>
+
+      <View style={[chatStyles.sheetActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={() => setShowAddMeeting(false)} activeOpacity={0.8}>
+          <Text style={[chatStyles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[chatStyles.sheetPrimaryBtn, { backgroundColor: modeAccent }, (!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting) && chatStyles.completeBtnDisabled]}
+          onPress={handleAddMeeting}
+          disabled={!newMeetingTitle.trim() || !newMeetingDate || !newMeetingTime.trim() || !newMeetingLocation.trim() || newMeetingInvitedIds.length === 0 || isAddingMeeting}
+          activeOpacity={0.8}
+        >
+          {isAddingMeeting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={[chatStyles.sheetPrimaryText, { ...font.bold }]}>{t('project_details.add')}</Text>}
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </BottomSheet>
     {showMeetingDatePicker && (
       <MiniCalendar
         value={newMeetingDate}
@@ -2308,6 +2372,56 @@ const chatStyles = StyleSheet.create({
     paddingHorizontal: 22, paddingVertical: 9,
   },
   payFromChatText: { fontSize: 14, color: '#ffffff' },
+  // ── Add sheets (task / meeting), the project-details sheet pattern ──────
+  sheetHeader: { alignItems: 'center', gap: 11 },
+  sheetTile: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  sheetTitle: { flex: 1, fontSize: 20, fontWeight: '800', color: '#000000', letterSpacing: -0.2, lineHeight: 26 },
+  sheetBody: { flexShrink: 1 },
+  sheetBodyContent: { gap: 14 },
+  sheetFieldLabel: { fontSize: 11.5, color: '#000000', marginBottom: 6 },
+  sheetInput: {
+    backgroundColor: '#F8F6FC',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: '#1A1626',
+  },
+  sheetPickRow: { alignItems: 'center', gap: 11, paddingVertical: 11 },
+  sheetOutlined: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 12 },
+  sheetRowTile: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#F3EEFE', alignItems: 'center', justifyContent: 'center' },
+  sheetPickValue: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1A1626' },
+  sheetPickPlaceholder: { flex: 1, fontSize: 14, color: '#8B8898' },
+  sheetPickClear: { fontSize: 13, color: '#8B8898', paddingHorizontal: 4 },
+  sheetPersonRow: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EFEDF5',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 6,
+  },
+  sheetPersonName: { flex: 1, fontSize: 14, color: '#1A1626' },
+  sheetCheck: { width: 20, height: 20, borderRadius: 999, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  sheetCheckTick: { fontSize: 11, color: '#FFFFFF' },
+  sheetActions: { flexDirection: 'row', gap: 10 },
+  sheetDismissBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDD7EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetDismissText: { fontSize: 14.5, fontWeight: '600', color: '#4C1D95' },
+  sheetPrimaryBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sheetPrimaryText: { fontSize: 14.5, fontWeight: '700', color: '#FFFFFF' },
+
   menuSheet: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -2323,13 +2437,13 @@ const chatStyles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#e8f0fe',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuItemLabel: {
     fontSize: 11,
-    color: '#004aad',
+    color: '#000000',
     textAlign: 'center',
   },
   modalOverlay: {
