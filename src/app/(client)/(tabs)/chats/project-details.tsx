@@ -3092,7 +3092,7 @@ const styles = StyleSheet.create({
   },
   carouselCounter: {
     fontSize: 13,
-    color: 'rgba(30,79,163,0.5)',
+    color: '#000000',
     minWidth: 40,
     textAlign: 'center',
   },
