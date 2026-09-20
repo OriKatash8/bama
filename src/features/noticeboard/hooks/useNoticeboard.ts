@@ -45,6 +45,9 @@ export function useNoticeboard(
     setDismissed((prev) => new Set([...prev, projectId]));
     updateDocument(`users/${currentUserId}`, {
       dismissedNotices: arrayUnion(projectId),
+      // When it was hidden, so History can drop it once it is old enough. The
+      // id itself never expires: the notice stays off the board for good.
+      [`dismissedAt.${projectId}`]: Date.now(),
     }).catch(() => {});
   }
 

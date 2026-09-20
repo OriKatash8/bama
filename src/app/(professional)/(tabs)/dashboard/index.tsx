@@ -10,7 +10,7 @@ import { NoticeBoardCard } from '@features/noticeboard/components/NoticeBoardCar
 import { ProjectDetailModal } from '@features/noticeboard/components/ProjectDetailModal';
 import { NoticeHistoryView } from '@features/noticeboard/components/NoticeHistoryView';
 import { useHiddenProjects } from '@features/noticeboard/hooks/useHiddenProjects';
-import { hasNoticeHistory } from '@features/noticeboard/history';
+import { hasNoticeHistory, isWithinHistoryWindow } from '@features/noticeboard/history';
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 import { NotifSoftAskModal } from '@features/notifications/components/NotifSoftAskModal';
 import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
@@ -195,10 +195,21 @@ export default function DashboardScreen() {
   // Same hook instance the history badge already used — `offers` comes free, so
   // the "have I bid on this?" check costs no extra query or listener.
   const { pendingCount, offers: sentOffers, loading: sentOffersLoading } = useSentOffers();
+  // History lists only the last couple of days. Nothing is deleted: the offers
+  // stay live for their clients, and `sentOffers` itself still feeds the board's
+  // "already offered" logic below, whatever an offer's age.
+  const historyOffers = useMemo(
+    () => sentOffers.filter((o) => isWithinHistoryWindow(o.ts * 1000)),
+    [sentOffers],
+  );
+  const historyPendingCount = useMemo(
+    () => historyOffers.filter((o) => o.data.status === 'pending').length,
+    [historyOffers],
+  );
   // Restorable hidden notices. Always on for this page: the History button only
   // shows when there is something in it, so the page needs the count up front.
   const { projects: hiddenProjects, loading: hiddenLoading, restore: restoreHidden } = useHiddenProjects(true);
-  const historyAvailable = hasNoticeHistory(sentOffers.length, hiddenProjects.length);
+  const historyAvailable = hasNoticeHistory(historyOffers.length, hiddenProjects.length);
   const notifPrompt = useNotifPermissionPrompt();
   const softAsk = useNotifSoftAsk();
   const [draftSort, setDraftSort] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
@@ -417,14 +428,14 @@ export default function DashboardScreen() {
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showHistory ? t('noticeboard.notice_board') : t('history.title')}
             </AppText>
-            {!showHistory && pendingCount > 0 && (
+            {!showHistory && historyPendingCount > 0 && (
               <View
                 style={[
                   styles.historyBadge,
                   { [rtl ? 'left' : 'right']: -4 },
                 ]}
               >
-                <AppText weight="bold" style={styles.historyBadgeText}>{pendingCount > 99 ? '99+' : pendingCount}</AppText>
+                <AppText weight="bold" style={styles.historyBadgeText}>{historyPendingCount > 99 ? '99+' : historyPendingCount}</AppText>
               </View>
             )}
           </TouchableOpacity>
@@ -542,7 +553,7 @@ export default function DashboardScreen() {
         {/* ── History — shown only while that detour is on ── */}
         {showHistory && (
           <NoticeHistoryView
-            offers={sentOffers}
+            offers={historyOffers}
             offersLoading={sentOffersLoading}
             hidden={hiddenProjects}
             hiddenLoading={hiddenLoading}

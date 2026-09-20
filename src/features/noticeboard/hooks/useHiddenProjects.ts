@@ -3,6 +3,7 @@ import { arrayRemove } from 'firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { subscribeToDocument, getDocument, updateDocument } from '@core/firebase/firestore';
 import type { ProjectRequest } from '@core/types/project';
+import { isWithinHistoryWindow } from '@features/noticeboard/history';
 
 /**
  * Projects the professional dismissed (users/{uid}.dismissedNotices) that are
@@ -17,8 +18,14 @@ export function useHiddenProjects(enabled: boolean) {
 
   useEffect(() => {
     if (!uid || !enabled) { setIds([]); return; }
-    return subscribeToDocument<{ dismissedNotices?: string[] }>(
-      `users/${uid}`, (d) => setIds(d?.dismissedNotices ?? []),
+    return subscribeToDocument<{ dismissedNotices?: string[]; dismissedAt?: Record<string, number> }>(
+      `users/${uid}`,
+      (d) => {
+        // History only lists what was hidden recently. The id stays in
+        // dismissedNotices either way, so the notice stays off the board.
+        const stamps = d?.dismissedAt ?? {};
+        setIds((d?.dismissedNotices ?? []).filter((id) => isWithinHistoryWindow(stamps[id])));
+      },
     );
   }, [uid, enabled]);
 
