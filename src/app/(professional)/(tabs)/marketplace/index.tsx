@@ -58,7 +58,9 @@ const CATEGORIES: Category[] = [
     id: 'camera',
     labelKey: 'category_camera',
     icon: require('../../../../../assets/images/categories/camera.png'),
-    selectedIcon: require('../../../../../assets/images/categories/photographer.png'),
+    // A copy tiled in the sheet's own grey: the original is the client project
+    // builder's icon too, and stays as it is.
+    selectedIcon: require('../../../../../assets/images/categories/photographer-sheet.png'),
   },
   {
     id: 'lens',
