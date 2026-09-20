@@ -1416,7 +1416,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                             ? <UserMinus size={16} color={accent} strokeWidth={2} />
                             : <Calendar size={16} color={accent} strokeWidth={2} />}
                   <View style={{ flexShrink: 1 }}>
-                    <AppText weight="bold" style={[styles.systemHeadline, { color: accent }]}>
+                    <AppText weight="bold" style={styles.systemHeadline}>
                       {headline}
                     </AppText>
                     {!!detail && (
@@ -2285,13 +2285,15 @@ const styles = StyleSheet.create({
   systemPillPrice: { backgroundColor: 'rgba(28,157,99,0.10)' },
   systemPillCompletion: { backgroundColor: 'rgba(0,74,173,0.10)' },
   systemPillLeft: { backgroundColor: 'rgba(107,114,128,0.10)' },
+  // Black text on the tinted pill; the icon keeps the variant's own colour.
   systemHeadline: {
     fontSize: 13,
+    color: '#000000',
     textAlign: 'center',
   },
   systemDetail: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
   },
   bubble: {
