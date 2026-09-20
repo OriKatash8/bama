@@ -1679,10 +1679,13 @@ export function ChatRoomScreen({ chatId }: Props) {
                 <Plus size={24} color={menuOpen ? colors.text : modeAccent} strokeWidth={2} />
               </TouchableOpacity>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text, ...font.regular }]}
+                // The layout is forced LTR app-wide, so the field's own text
+                // side is set here: the placeholder and what is typed both start
+                // on the right in Hebrew.
+                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                 value={inputText}
                 onChangeText={setInputText}
-                placeholder="Message..."
+                placeholder={t('chats.message_placeholder')}
                 placeholderTextColor={colors.placeholder}
                 multiline
                 returnKeyType="default"

@@ -198,7 +198,8 @@
     "system_completion_title": "בקשה לסיום הפרויקט",
     "system_crew_title": "הצוות מוכן לעבודה",
     "system_left": "{{name}} עזב את הפרויקט",
-    "system_declined": "{{name}} החליט/ה לא להמשיך בפרויקט"
+    "system_declined": "{{name}} החליט/ה לא להמשיך בפרויקט",
+    "message_placeholder": "כתוב הודעה"
   },
   "project_details": {
     "add_pro_step_roles": "בחירת תפקידים",

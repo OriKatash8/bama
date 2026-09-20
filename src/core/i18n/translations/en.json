@@ -198,7 +198,8 @@
     "system_completion_title": "Project completion request",
     "system_crew_title": "The crew is set",
     "system_left": "{{name}} left the project",
-    "system_declined": "{{name}} decided not to continue with the project"
+    "system_declined": "{{name}} decided not to continue with the project",
+    "message_placeholder": "Write a message"
   },
   "project_details": {
     "add_pro_step_roles": "Choose roles",
