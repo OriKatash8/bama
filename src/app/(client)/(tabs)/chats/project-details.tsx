@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
   ActivityIndicator,
   Alert,
@@ -145,6 +146,9 @@ export default function ProjectDetailsScreen() {
   }>();
   const router = useRouter();
   const colors = useTheme();
+  // Back arrow and the primary buttons follow the mode: purple in the client
+  // app, blue in the pro app.
+  const { accent: modeAccent } = useModeAccent();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const { showToast } = useUiStore();
@@ -792,7 +796,7 @@ export default function ProjectDetailsScreen() {
     return (
       <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
         <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
-        <ActivityIndicator size="large" color="#004aad" />
+        <ActivityIndicator size="large" color={modeAccent} />
       </LinearGradient>
     );
   }
@@ -801,7 +805,7 @@ export default function ProjectDetailsScreen() {
     return (
       <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.centered}>
         <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
-        <Text style={[styles.errorText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+        <Text style={[styles.errorText, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
           {t('project_details.project_not_found')}
         </Text>
       </LinearGradient>
@@ -1053,7 +1057,7 @@ export default function ProjectDetailsScreen() {
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View style={[styles.header, { marginHorizontal: -16, marginTop: -16 }]}>
           <TouchableOpacity onPress={() => chatIdParam ? router.push(`/(client)/(tabs)/chats/${chatIdParam}` as never) : router.back()} style={styles.headerBack} activeOpacity={0.7}>
-            <AppText weight="regular" style={styles.headerBackText}>{'‹'}</AppText>
+            <AppText weight="regular" style={[styles.headerBackText, { color: modeAccent }]}>{'‹'}</AppText>
           </TouchableOpacity>
           <View style={styles.headerCenter} pointerEvents="none">
             <AppText weight="semiBold" style={styles.headerLabel}>
@@ -1098,7 +1102,7 @@ export default function ProjectDetailsScreen() {
         {/* Three meta cards side-by-side */}
         <View style={[styles.metaCardsRow, { flexDirection: rowDirection }]}>
           <View style={styles.metaCard}>
-            <Clapperboard size={16} color="#8890b0" strokeWidth={1.5} />
+            <Clapperboard size={16} color={modeAccent} strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.execution')}</AppText>
             <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.exec ? formatShortDate(project.exec) : t('project_details.tbd')}</AppText>
           </View>
@@ -1108,19 +1112,19 @@ export default function ProjectDetailsScreen() {
             onPress={isProjectClient ? () => setShowDeadlinePicker(true) : undefined}
             disabled={!isProjectClient}
           >
-            <CalendarDays size={16} color="#8890b0" strokeWidth={1.5} />
+            <CalendarDays size={16} color={modeAccent} strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.deadline')}</AppText>
             <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>
               {project.deadline === 'flexible' ? t('builder.flexible') : formatShortDate(project.deadline)}
             </AppText>
             {isProjectClient && (
               <View style={styles.editDeadlineBadge}>
-                <Pencil size={10} color="#004aad" strokeWidth={2} />
+                <Pencil size={10} color={modeAccent} strokeWidth={2} />
               </View>
             )}
           </TouchableOpacity>
           <View style={styles.metaCard}>
-            <MapPin size={16} color="#8890b0" strokeWidth={1.5} />
+            <MapPin size={16} color={modeAccent} strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.location')}</AppText>
             <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.location}</AppText>
           </View>
@@ -1195,7 +1199,7 @@ export default function ProjectDetailsScreen() {
                   ) : null}
                   <View style={[styles.pendingRequestActions, { flexDirection: rowDirection }]}>
                     <TouchableOpacity
-                      style={[styles.pendingActionBtn, styles.pendingActionAccept, isResponding && styles.completeBtnDisabled]}
+                      style={[styles.pendingActionBtn, styles.pendingActionAccept, { backgroundColor: modeAccent }, isResponding && styles.completeBtnDisabled]}
                       onPress={() => handleRespondToRequest(req, true)}
                       disabled={isResponding}
                       activeOpacity={0.8}
@@ -1253,7 +1257,7 @@ export default function ProjectDetailsScreen() {
                 )}
               </View>
               {isClient && !isReadOnly && (
-                <TouchableOpacity style={styles.addPill} onPress={() => setShowRolePicker(true)} activeOpacity={0.8}>
+                <TouchableOpacity style={[styles.addPill, { backgroundColor: modeAccent }]} onPress={() => setShowRolePicker(true)} activeOpacity={0.8}>
                   <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add_professional')}</AppText>
                 </TouchableOpacity>
               )}
@@ -1360,7 +1364,7 @@ export default function ProjectDetailsScreen() {
               )}
             </View>
             {(isClient || isTeamMember) && !isReadOnly && (
-              <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
+              <TouchableOpacity style={[styles.addPill, { backgroundColor: modeAccent }]} onPress={() => setShowAddMission(true)} activeOpacity={0.8}>
                 <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
               </TouchableOpacity>
             )}
@@ -1396,7 +1400,7 @@ export default function ProjectDetailsScreen() {
                           return info?.photoURL ? (
                             <Image key={id} source={{ uri: info.photoURL }} style={[styles.stackAvatar, idx > 0 && styles.stackAvatarOverlap]} />
                           ) : (
-                            <View key={id} style={[styles.stackAvatar, styles.stackAvatarFallback, idx > 0 && styles.stackAvatarOverlap]}>
+                            <View key={id} style={[styles.stackAvatar, styles.stackAvatarFallback, { backgroundColor: modeAccent }, idx > 0 && styles.stackAvatarOverlap]}>
                               <AppText weight="bold" style={styles.stackAvatarInitial}>{name.charAt(0).toUpperCase()}</AppText>
                             </View>
                           );
@@ -1425,7 +1429,7 @@ export default function ProjectDetailsScreen() {
                         const yy = String(d.getFullYear()).slice(2);
                         return (
                           <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                            <Calendar size={12} color="#8890b0" strokeWidth={1.5} />
+                            <Calendar size={12} color={modeAccent} strokeWidth={1.5} />
                             <AppText weight="regular" style={styles.missionDue}>
                               {t('project_details.mission_uploaded')}{dd}/{mm}/{yy}
                             </AppText>
@@ -1438,7 +1442,7 @@ export default function ProjectDetailsScreen() {
                         const dueFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0].slice(2)}` : mission.dueDate!;
                         return (
                           <View style={[styles.missionDueRow, { flexDirection: rowDirection }]}>
-                            <CalendarDays size={12} color="#8890b0" strokeWidth={1.5} />
+                            <CalendarDays size={12} color={modeAccent} strokeWidth={1.5} />
                             <AppText weight="regular" style={styles.missionDue}>
                               {t('project_details.due')}{dueFmt}
                             </AppText>
@@ -1481,13 +1485,13 @@ export default function ProjectDetailsScreen() {
             {missions.length > 1 && (
               <View style={styles.carouselNavRow}>
                 <TouchableOpacity onPress={rtl ? nextMission : prevMission} style={styles.carouselNavBtn} activeOpacity={0.7}>
-                  <ChevronLeft size={20} color="#1e4fa3" strokeWidth={2.5} />
+                  <ChevronLeft size={20} color={modeAccent} strokeWidth={2.5} />
                 </TouchableOpacity>
                 <AppText weight="semiBold" style={styles.carouselCounter}>
                   {Math.min(missionIndex, missions.length - 1) + 1} / {missions.length}
                 </AppText>
                 <TouchableOpacity onPress={rtl ? prevMission : nextMission} style={styles.carouselNavBtn} activeOpacity={0.7}>
-                  <ChevronRight size={20} color="#1e4fa3" strokeWidth={2.5} />
+                  <ChevronRight size={20} color={modeAccent} strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
             )}
@@ -1504,7 +1508,7 @@ export default function ProjectDetailsScreen() {
               )}
             </View>
             {(isClient || isTeamMember) && !isReadOnly && (
-              <TouchableOpacity style={styles.addPill} onPress={() => setShowAddMeeting(true)} activeOpacity={0.8} testID="add-meeting-pill">
+              <TouchableOpacity style={[styles.addPill, { backgroundColor: modeAccent }]} onPress={() => setShowAddMeeting(true)} activeOpacity={0.8} testID="add-meeting-pill">
                 <AppText weight="semiBold" style={styles.addPillText}>{t('project_details.add')}</AppText>
               </TouchableOpacity>
             )}
@@ -1520,6 +1524,7 @@ export default function ProjectDetailsScreen() {
             {(() => {
               const meeting = sortedMeetings[Math.min(meetingIndex, sortedMeetings.length - 1)];
               const urgency = getMeetingUrgency(meeting.date, meeting.time);
+              // The urgency colour marks the date block; the title stays black.
               const titleColor =
                 urgency === 'past'     ? '#1c9d63' :
                 urgency === 'imminent' ? '#ef4444' :
@@ -1545,7 +1550,7 @@ export default function ProjectDetailsScreen() {
                           return info?.photoURL ? (
                             <Image key={id} source={{ uri: info.photoURL }} style={[styles.stackAvatar, idx > 0 && styles.stackAvatarOverlap]} />
                           ) : name ? (
-                            <View key={id} style={[styles.stackAvatar, styles.stackAvatarFallback, idx > 0 && styles.stackAvatarOverlap]}>
+                            <View key={id} style={[styles.stackAvatar, styles.stackAvatarFallback, { backgroundColor: modeAccent }, idx > 0 && styles.stackAvatarOverlap]}>
                               <AppText weight="bold" style={styles.stackAvatarInitial}>{name.charAt(0).toUpperCase()}</AppText>
                             </View>
                           ) : null;
@@ -1561,19 +1566,19 @@ export default function ProjectDetailsScreen() {
 
                   {/* Info — middle */}
                   <View style={[styles.carouselCardInfo, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-                    <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left', color: titleColor }]} numberOfLines={2}>
+                    <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
                       {meeting.title}
                     </AppText>
                     <View style={styles.cardDivider} />
                     {!!meeting.time && (
                       <View style={[styles.missionDueRow, { flexDirection: rowDirection }]} testID="meeting-time-row">
-                        <Clock size={12} color="#8890b0" strokeWidth={1.5} />
+                        <Clock size={12} color={modeAccent} strokeWidth={1.5} />
                         <AppText weight="regular" style={styles.missionDue}>{meeting.time}</AppText>
                       </View>
                     )}
                     {!!meeting.location && (
                       <View style={[styles.missionDueRow, { flexDirection: rowDirection }]} testID="meeting-location-row">
-                        <MapPin size={12} color="#8890b0" strokeWidth={1.5} />
+                        <MapPin size={12} color={modeAccent} strokeWidth={1.5} />
                         <AppText weight="regular" style={styles.missionDue} numberOfLines={1}>{meeting.location}</AppText>
                       </View>
                     )}
@@ -1592,13 +1597,13 @@ export default function ProjectDetailsScreen() {
             {sortedMeetings.length > 1 && (
               <View style={styles.carouselNavRow}>
                 <TouchableOpacity onPress={rtl ? nextMeeting : prevMeeting} style={styles.carouselNavBtn} activeOpacity={0.7}>
-                  <ChevronLeft size={20} color="#1e4fa3" strokeWidth={2.5} />
+                  <ChevronLeft size={20} color={modeAccent} strokeWidth={2.5} />
                 </TouchableOpacity>
                 <AppText weight="semiBold" style={styles.carouselCounter}>
                   {Math.min(meetingIndex, sortedMeetings.length - 1) + 1} / {sortedMeetings.length}
                 </AppText>
                 <TouchableOpacity onPress={rtl ? prevMeeting : nextMeeting} style={styles.carouselNavBtn} activeOpacity={0.7}>
-                  <ChevronRight size={20} color="#1e4fa3" strokeWidth={2.5} />
+                  <ChevronRight size={20} color={modeAccent} strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
             )}
@@ -1617,7 +1622,7 @@ export default function ProjectDetailsScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              style={[styles.completeBtn, isCalculatingFee && styles.completeBtnDisabled]}
+              style={[styles.completeBtn, { backgroundColor: modeAccent }, isCalculatingFee && styles.completeBtnDisabled]}
               onPress={handleMarkComplete}
               disabled={isCalculatingFee}
               activeOpacity={0.8}
@@ -1637,7 +1642,7 @@ export default function ProjectDetailsScreen() {
       {!isClient && !isCancelled && canMarkComplete(myFee) && (
         <View style={styles.completeBar} testID="pro-complete-bar">
           <TouchableOpacity
-            style={styles.completeBtn}
+            style={[styles.completeBtn, { backgroundColor: modeAccent }]}
             onPress={() => setCompleteSheetOpen(true)}
             activeOpacity={0.8}
             accessibilityRole="button"
@@ -1682,26 +1687,26 @@ export default function ProjectDetailsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
           <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+            <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.add_mission_title')}
             </Text>
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.mission_title')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMissionTitle}
               onChangeText={setNewMissionTitle}
               placeholder={t('project_details.mission_placeholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.description_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMissionDescription}
               onChangeText={setNewMissionDescription}
               placeholder={t('project_details.description_placeholder')}
@@ -1710,7 +1715,7 @@ export default function ProjectDetailsScreen() {
               numberOfLines={3}
             />
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.assign_to')}
             </Text>
             {assignableMembers.map((m) => {
@@ -1720,29 +1725,29 @@ export default function ProjectDetailsScreen() {
                   key={m.id}
                   style={[
                     styles.missionAssignRow,
-                    { borderColor: selected ? '#004aad' : colors.border },
+                    { borderColor: selected ? modeAccent : colors.border },
                     selected && styles.missionAssignRowSelected,
                   ]}
                   onPress={() => toggleAssignee(m.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                  <Text style={[styles.missionAssignName, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                     {m.displayName}
                   </Text>
-                  <View style={[styles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
+                  <View style={[styles.missionCheckbox, { borderColor: selected ? modeAccent : colors.border, backgroundColor: selected ? modeAccent : 'transparent' }]}>
                     {selected && <Text style={[styles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
                   </View>
                 </TouchableOpacity>
               );
             })}
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.due_date')}
             </Text>
             {newMissionDueDate ? (
-              <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
-                <Calendar size={15} color="#004aad" strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+              <View style={[styles.missionDateRow, { borderColor: modeAccent, backgroundColor: '#00000010' }]}>
+                <Calendar size={15} color={modeAccent} strokeWidth={2} />
+                <Text style={[styles.missionDateText, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                   {formatDueDate(newMissionDueDate, t('project_details.due'))}
                 </Text>
                 <TouchableOpacity onPress={() => setNewMissionDueDate('')} hitSlop={10} activeOpacity={0.7}>
@@ -1756,7 +1761,7 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                <Text style={[styles.missionDatePlaceholder, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.add_due_date')}
                 </Text>
               </TouchableOpacity>
@@ -1768,12 +1773,13 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowAddMission(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.modalBtn,
                   styles.modalBtnConfirm,
+                  { backgroundColor: modeAccent },
                   (!newMissionTitle.trim() || newMissionAssignedTo.length === 0 || isAddingMission) && styles.completeBtnDisabled,
                 ]}
                 onPress={handleAddMission}
@@ -1811,26 +1817,26 @@ export default function ProjectDetailsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
           <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+            <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.add_meeting_title')}
             </Text>
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.meeting_title_label')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMeetingTitle}
               onChangeText={setNewMeetingTitle}
               placeholder={t('project_details.meeting_title_placeholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.description_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMeetingDescription}
               onChangeText={setNewMeetingDescription}
               placeholder={t('project_details.description_placeholder')}
@@ -1839,13 +1845,13 @@ export default function ProjectDetailsScreen() {
               numberOfLines={3}
             />
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.meeting_date')}
             </Text>
             {newMeetingDate ? (
-              <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
-                <Calendar size={15} color="#004aad" strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+              <View style={[styles.missionDateRow, { borderColor: modeAccent, backgroundColor: '#00000010' }]}>
+                <Calendar size={15} color={modeAccent} strokeWidth={2} />
+                <Text style={[styles.missionDateText, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                   {formatDueDate(newMeetingDate, '')}
                 </Text>
                 <TouchableOpacity onPress={() => setNewMeetingDate('')} hitSlop={10} activeOpacity={0.7}>
@@ -1859,19 +1865,19 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <Calendar size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                <Text style={[styles.missionDatePlaceholder, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.meeting_date')}
                 </Text>
               </TouchableOpacity>
             )}
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.meeting_time_optional')}
             </Text>
             {newMeetingTime ? (
-              <View style={[styles.missionDateRow, { borderColor: '#004aad', backgroundColor: '#004aad18' }]}>
-                <Clock size={15} color="#004aad" strokeWidth={2} />
-                <Text style={[styles.missionDateText, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+              <View style={[styles.missionDateRow, { borderColor: modeAccent, backgroundColor: '#00000010' }]}>
+                <Clock size={15} color={modeAccent} strokeWidth={2} />
+                <Text style={[styles.missionDateText, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                   {newMeetingTime}
                 </Text>
                 <TouchableOpacity onPress={() => setNewMeetingTime('')} hitSlop={10} activeOpacity={0.7}>
@@ -1885,24 +1891,24 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <Clock size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.missionDatePlaceholder, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                <Text style={[styles.missionDatePlaceholder, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.meeting_time_placeholder')}
                 </Text>
               </TouchableOpacity>
             )}
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.meeting_location_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={newMeetingLocation}
               onChangeText={setNewMeetingLocation}
               placeholder={t('project_details.meeting_location_placeholder')}
               placeholderTextColor={colors.textMuted}
             />
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.meeting_invitees')}
             </Text>
             {assignableMembers.map((m) => {
@@ -1912,16 +1918,16 @@ export default function ProjectDetailsScreen() {
                   key={m.id}
                   style={[
                     styles.missionAssignRow,
-                    { borderColor: selected ? '#004aad' : colors.border },
+                    { borderColor: selected ? modeAccent : colors.border },
                     selected && styles.missionAssignRowSelected,
                   ]}
                   onPress={() => toggleInvitee(m.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.missionAssignName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                  <Text style={[styles.missionAssignName, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                     {m.displayName}
                   </Text>
-                  <View style={[styles.missionCheckbox, { borderColor: selected ? '#004aad' : colors.border, backgroundColor: selected ? '#004aad' : 'transparent' }]}>
+                  <View style={[styles.missionCheckbox, { borderColor: selected ? modeAccent : colors.border, backgroundColor: selected ? modeAccent : 'transparent' }]}>
                     {selected && <Text style={[styles.missionCheckboxTick, { ...font.bold }]}>✓</Text>}
                   </View>
                 </TouchableOpacity>
@@ -1934,12 +1940,13 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowAddMeeting(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.modalBtn,
                   styles.modalBtnConfirm,
+                  { backgroundColor: modeAccent },
                   (!newMeetingTitle.trim() || !newMeetingDate || newMeetingInvitedIds.length === 0 || isAddingMeeting) && styles.completeBtnDisabled,
                 ]}
                 onPress={handleAddMeeting}
@@ -2001,7 +2008,7 @@ export default function ProjectDetailsScreen() {
             <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
                 <View style={[styles.detailHeaderRow, { flexDirection: rowDirection }]}>
-                  <Text style={[styles.modalTitle, { color: '#004aad', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+                  <Text style={[styles.modalTitle, { color: '#000000', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
                     {detailMission.title}
                   </Text>
                   <View style={[
@@ -2038,7 +2045,7 @@ export default function ProjectDetailsScreen() {
                 )}
 
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setDetailMission(null)} activeOpacity={0.8}>
-                  <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.close')}</Text>
+                  <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.close')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -2058,7 +2065,7 @@ export default function ProjectDetailsScreen() {
           {detailMeeting && (
             <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-                <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+                <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
                   {detailMeeting.title}
                 </Text>
 
@@ -2099,7 +2106,7 @@ export default function ProjectDetailsScreen() {
                 </View>
 
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => setDetailMeeting(null)} activeOpacity={0.8}>
-                  <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.close')}</Text>
+                  <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.close')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -2116,7 +2123,7 @@ export default function ProjectDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+            <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.payment_summary_title')}
             </Text>
 
@@ -2141,24 +2148,24 @@ export default function ProjectDetailsScreen() {
 
             {feeData && (
               <>
-                <Text style={[styles.modalSectionLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+                <Text style={[styles.modalSectionLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
                   {t('project_details.pay_crew')}
                 </Text>
 
                 {feeData.slots.map((slot) => (
                   <View key={slot.professionalId} style={styles.feeRow}>
-                    <Text style={[styles.feeName, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{slot.displayName}</Text>
-                    <Text style={[styles.feeAmount, { color: '#004aad', ...font.medium }]}>
+                    <Text style={[styles.feeName, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>{slot.displayName}</Text>
+                    <Text style={[styles.feeAmount, { color: '#000000', ...font.medium }]}>
                       ₪{slot.amount.toLocaleString()}
                     </Text>
                   </View>
                 ))}
 
                 <View style={styles.feeRow}>
-                  <Text style={[styles.feeLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                  <Text style={[styles.feeLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                     {t('project_details.subtotal')}
                   </Text>
-                  <Text style={[styles.feeAmountBold, { color: '#004aad', ...font.bold }]}>
+                  <Text style={[styles.feeAmountBold, { color: '#000000', ...font.bold }]}>
                     ₪{feeData.subtotal.toLocaleString()}
                   </Text>
                 </View>
@@ -2172,7 +2179,7 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowPaymentSummary(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -2206,36 +2213,36 @@ export default function ProjectDetailsScreen() {
         >
           <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <Text style={[styles.modalTitle, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+            <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.request_payment_update')}
             </Text>
 
             {selectedPrice && (
               <>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+                  <Text style={[styles.requestModalLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                     {t('project_details.professional')}
                   </Text>
-                  <Text style={[styles.requestModalValue, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+                  <Text style={[styles.requestModalValue, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                     {memberUsers[selectedPrice.professionalId]?.displayName ?? selectedPrice.professionalId}
                   </Text>
                 </View>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+                  <Text style={[styles.requestModalLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                     {t('project_details.current_amount')}
                   </Text>
-                  <Text style={[styles.requestModalValue, { color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+                  <Text style={[styles.requestModalValue, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                     ₪{selectedPrice.currentAmount.toLocaleString()}
                   </Text>
                 </View>
               </>
             )}
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.proposed_amount')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={proposedAmount}
               onChangeText={setProposedAmount}
               placeholder={t('project_details.enter_amount')}
@@ -2243,11 +2250,11 @@ export default function ProjectDetailsScreen() {
               keyboardType="decimal-pad"
             />
 
-            <Text style={[styles.missionInputLabel, { color: '#004aad99', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.note_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#004aad', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={requestNote}
               onChangeText={setRequestNote}
               placeholder={t('project_details.reason_placeholder')}
@@ -2262,12 +2269,13 @@ export default function ProjectDetailsScreen() {
                 onPress={() => setShowPaymentRequestModal(false)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnCancelText, { color: '#004aad', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.modalBtn,
                   styles.modalBtnConfirm,
+                  { backgroundColor: modeAccent },
                   (isSendingRequest || !proposedAmount.trim() || parseFloat(proposedAmount) <= 0) && styles.completeBtnDisabled,
                 ]}
                 onPress={handleSendPaymentRequest}
@@ -2313,7 +2321,7 @@ export default function ProjectDetailsScreen() {
             <View style={[styles.reportHeader, { flexDirection: rowDirection }]}>
               <AppText weight="bold" style={[styles.reportTitle, { textAlign: rtl ? 'right' : 'left' }]}>{t('report.title')}</AppText>
               <TouchableOpacity onPress={closeReport} hitSlop={8} activeOpacity={0.7}>
-                <AppText weight="regular" style={{ color: '#004aad', fontSize: 20 }}>✕</AppText>
+                <AppText weight="regular" style={{ color: '#000000', fontSize: 20 }}>✕</AppText>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.reportScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -2329,7 +2337,7 @@ export default function ProjectDetailsScreen() {
               value={reportReason}
               onChangeText={setReportReason}
               placeholder={t('report.reason_placeholder')}
-              placeholderTextColor="#004aad80"
+              placeholderTextColor="#00000066"
               textAlignVertical="top"
             />
             {reportReason.length > 0 && reportReason.length < 20 && (
@@ -2362,7 +2370,7 @@ export default function ProjectDetailsScreen() {
 
             </ScrollView>
             <TouchableOpacity
-              style={[styles.reportSubmitBtn, { opacity: reportReason.trim().length >= 20 && !reportSubmitting ? 1 : 0.45 }]}
+              style={[styles.reportSubmitBtn, { backgroundColor: modeAccent, opacity: reportReason.trim().length >= 20 && !reportSubmitting ? 1 : 0.45 }]}
               onPress={submitReport}
               disabled={reportReason.trim().length < 20 || reportSubmitting}
               activeOpacity={0.8}
@@ -2417,6 +2425,7 @@ function MemberRow({
    *  deadline applied. Same scoping again. */
   contestWindowEndsAt?: number;
 }) {
+  const { accent: modeAccent } = useModeAccent();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const lang: 'he' | 'en' = language === 'he' ? 'he' : 'en';
@@ -2440,7 +2449,7 @@ function MemberRow({
         {photoURL ? (
           <Image source={{ uri: photoURL }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatar, styles.avatarFallback]}>
+          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: modeAccent }]}>
             <AppText weight="bold" style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</AppText>
           </View>
         )}
@@ -2449,7 +2458,7 @@ function MemberRow({
           <View style={[styles.memberNameRow, { flexDirection: rowDir }]}>
             <AppText weight="bold" style={[styles.memberName, { textAlign: rtl ? 'right' : 'left' }]}>{displayName}</AppText>
             {badge !== undefined && (
-              <View style={styles.clientBadge}>
+              <View style={[styles.clientBadge, { backgroundColor: modeAccent }]}>
                 <AppText weight="bold" style={styles.clientBadgeText}>{badge}</AppText>
               </View>
             )}
@@ -2520,7 +2529,7 @@ function MemberRow({
             </TouchableOpacity>
           )}
           {canUpdate && (
-            <TouchableOpacity style={styles.updatePill} onPress={() => onUpdate!()} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.updatePill, { backgroundColor: modeAccent }]} onPress={() => onUpdate!()} activeOpacity={0.85}>
               <Pencil size={13} color="#ffffff" strokeWidth={2.2} />
               <AppText weight="semiBold" style={styles.updatePillText}>{t('project_details.update')}</AppText>
             </TouchableOpacity>
@@ -2553,7 +2562,7 @@ function MemberRow({
               accessibilityRole="button"
               testID="member-report"
             >
-              <Flag size={15} color="#9aa0b8" strokeWidth={1.9} />
+              <Flag size={15} color={modeAccent} strokeWidth={1.9} />
             </TouchableOpacity>
           )}
         </View>
@@ -2611,18 +2620,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   headerBack: { width: 40, alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
-  headerBackText: { fontSize: 36, color: '#1e4fa3', lineHeight: 44 },
+  headerBackText: { fontSize: 36, lineHeight: 44 },
   headerRight: { width: 40 },
   headerCenter: { flex: 1, alignItems: 'center', gap: 4 },
   headerLabel: {
     fontSize: 11,
-    color: '#8890b0',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
   headerProjectTitle: {
     fontSize: 20,
-    color: '#1e4fa3',
+    color: '#000000',
     fontWeight: '800',
     textAlign: 'center',
     lineHeight: 26,
@@ -2670,7 +2679,7 @@ const styles = StyleSheet.create({
   },
   metaCardLabel: {
     fontSize: 10,
-    color: '#8890b0',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     textAlign: 'center',
@@ -2678,7 +2687,7 @@ const styles = StyleSheet.create({
   metaCardValue: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1e4fa3',
+    color: '#000000',
     textAlign: 'center',
   },
 
@@ -2692,7 +2701,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
   },
-  descriptionText: { fontSize: 14, lineHeight: 20, color: '#3a4266' },
+  descriptionText: { fontSize: 14, lineHeight: 20, color: '#000000' },
 
   // ── Section headers ───────────────────────────────────────────────────────────
   sectionHeaderRow: {
@@ -2702,17 +2711,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sectionTitleGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e4fa3' },
-  sectionCount: { fontSize: 13, color: '#8890b0' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#000000' },
+  sectionCount: { fontSize: 13, color: '#000000' },
   addPill: {
-    backgroundColor: 'rgba(30,79,163,0.08)',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  addPillText: { fontSize: 13, color: '#1e4fa3' },
-  addButtonText: { fontSize: 14, fontWeight: '600', color: '#1e4fa3' },
-  emptyNote: { fontSize: 14, fontStyle: 'italic', color: '#004aad', textAlign: 'center' },
+  addPillText: { fontSize: 13, color: '#FFFFFF' },
+  addButtonText: { fontSize: 14, fontWeight: '600', color: '#000000' },
+  emptyNote: { fontSize: 14, fontStyle: 'italic', color: '#000000', textAlign: 'center' },
 
   // ── Member cards ──────────────────────────────────────────────────────────────
   memberCard: {
@@ -2740,13 +2748,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f0f1f7',
   },
-  memberSubtitle: { fontSize: 12, color: '#9aa0b8' },
+  memberSubtitle: { fontSize: 12, color: '#000000' },
   updatePill: {
     flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#3d5cc0',
     paddingHorizontal: 15,
     paddingVertical: 7,
     borderRadius: 10,
@@ -2767,10 +2774,10 @@ const styles = StyleSheet.create({
   // alignItems:'center' float it against the 48px avatar.
   reportSquare: { width: 32, height: 32, borderRadius: 9, backgroundColor: '#f4f5f9', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
   avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontSize: 18, fontWeight: '700' },
   memberNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  memberName: { fontSize: 15, fontWeight: '600', color: '#1e4fa3' },
+  memberName: { fontSize: 15, fontWeight: '600', color: '#000000' },
   rolePillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   rolePill: {
     backgroundColor: '#f0f0f7',
@@ -2778,13 +2785,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
   },
-  rolePillText: { fontSize: 12, color: '#5c6180' },
+  rolePillText: { fontSize: 12, color: '#000000' },
   memberPriceGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   engagementChip: {
     backgroundColor: 'rgba(30,79,163,0.08)', borderRadius: 6,
     paddingHorizontal: 8, paddingVertical: 4,
   },
-  engagementChipText: { color: '#1e4fa3', fontSize: 11 },
+  engagementChipText: { color: '#000000', fontSize: 11 },
   engagementDoneChip: {
     backgroundColor: 'rgba(47,143,98,0.11)', borderRadius: 6,
     paddingHorizontal: 8, paddingVertical: 4,
@@ -2803,15 +2810,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, paddingVertical: 6,
   },
   contestPillText: { fontSize: 13, color: DISPUTE_RED },
-  contestWindow: { fontSize: 11, color: '#8890b0', paddingHorizontal: 14, paddingBottom: 10 },
-  dateConsequence: { fontSize: 12, color: '#8890b0', lineHeight: 17, paddingHorizontal: 4 },
-  closeNowBody: { fontSize: 13, color: '#004aad99', lineHeight: 19, marginBottom: 4 },
+  contestWindow: { fontSize: 11, color: '#000000', paddingHorizontal: 14, paddingBottom: 10 },
+  dateConsequence: { fontSize: 12, color: '#000000', lineHeight: 17, paddingHorizontal: 4 },
+  closeNowBody: { fontSize: 13, color: '#00000099', lineHeight: 19, marginBottom: 4 },
   /** Amber, as in the builder: "no end date" is the answer with a consequence
    *  worth noticing, not the neutral one. */
   dateConsequenceFlexible: { color: '#8a6100' },
-  memberPrice: { fontSize: 16, fontWeight: '700', color: '#7d5fd0' },
+  memberPrice: { fontSize: 16, fontWeight: '700', color: '#000000' },
   clientBadge: {
-    backgroundColor: '#1e4fa3',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -2831,7 +2837,7 @@ const styles = StyleSheet.create({
   avatarStack: { flexDirection: 'row', alignItems: 'center' },
   stackAvatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: '#fff' },
   stackAvatarOverlap: { marginLeft: -8 },
-  stackAvatarFallback: { backgroundColor: '#1e4fa3', alignItems: 'center', justifyContent: 'center' },
+  stackAvatarFallback: { alignItems: 'center', justifyContent: 'center' },
   stackAvatarMore: { backgroundColor: '#8890b0', alignItems: 'center', justifyContent: 'center' },
   stackAvatarInitial: { color: '#fff', fontSize: 9, fontWeight: '700' },
   missionTitleCard: {
@@ -2845,9 +2851,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
   },
-  missionTitle: { fontSize: 14, color: '#1e4fa3', lineHeight: 18 },
+  missionTitle: { fontSize: 14, color: '#000000', lineHeight: 18 },
   missionDueRow: { alignItems: 'center', gap: 4 },
-  missionDue: { fontSize: 11, color: '#8890b0' },
+  missionDue: { fontSize: 11, color: '#000000' },
   missionDonePill: {
     backgroundColor: 'rgba(28,157,99,0.1)',
     borderRadius: 20,
@@ -2919,7 +2925,7 @@ const styles = StyleSheet.create({
   },
   descText: {
     fontSize: 14,
-    color: '#4a5578',
+    color: '#000000',
     lineHeight: 20,
   },
   detailHeaderRow: {
@@ -2928,12 +2934,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#8890b0',
+    color: '#000000',
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 15,
-    color: '#1e4fa3',
+    color: '#000000',
   },
   detailInlineRow: {
     gap: 12,
@@ -3018,7 +3024,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 6,
   },
-  missionAssignRowSelected: { backgroundColor: '#004aad18' },
+  missionAssignRowSelected: { backgroundColor: '#00000010' },
   missionAssignName: { fontSize: 14, fontWeight: '500', flex: 1 },
   missionCheckbox: {
     width: 20,
@@ -3051,7 +3057,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.2)',
   },
   completeBtn: {
-    backgroundColor: '#004aad',
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
@@ -3112,7 +3117,7 @@ const styles = StyleSheet.create({
   modalBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   modalBtnCancel: { borderWidth: 1 },
   modalBtnCancelText: { fontSize: 15, fontWeight: '600' },
-  modalBtnConfirm: { backgroundColor: '#004aad' },
+  modalBtnConfirm: {},
   modalBtnConfirmText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
   // ── Removal banner ────────────────────────────────────────────────────────────
@@ -3161,9 +3166,9 @@ const styles = StyleSheet.create({
   /** Incoming requests still need to stand out — but in the page's blue, as a
    *  left/right accent rather than a full amber outline. */
   pendingRequestCardIncoming: { borderColor: 'rgba(30,79,163,0.28)' },
-  pendingRequestText: { fontSize: 14, lineHeight: 20, color: '#1e4fa3' },
+  pendingRequestText: { fontSize: 14, lineHeight: 20, color: '#000000' },
   pendingRequestBold: { fontWeight: '700' },
-  pendingRequestNote: { fontSize: 13, fontStyle: 'italic', color: '#9aa0b8' },
+  pendingRequestNote: { fontSize: 13, fontStyle: 'italic', color: '#000000' },
   pendingRequestActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
   pendingActionBtn: {
     flex: 1,
@@ -3175,7 +3180,7 @@ const styles = StyleSheet.create({
   },
   // Accept is the page's solid blue; reject borrows removePill's soft red.
   // The raw #22c55e / #ef4444 pair appeared nowhere else on this page.
-  pendingActionAccept: { backgroundColor: '#004aad' },
+  pendingActionAccept: {},
   pendingActionReject: { backgroundColor: '#fdecec' },
   pendingActionBtnText: { fontSize: 13, fontWeight: '700' },
   pendingActionAcceptText: { color: '#ffffff' },
@@ -3194,13 +3199,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  pendingBadgeText: { color: '#1e4fa3', fontSize: 11, fontWeight: '600' },
+  pendingBadgeText: { color: '#000000', fontSize: 11, fontWeight: '600' },
 
   bottomPad: { height: 32 },
 
   // ── Report modal ──────────────────────────────────────────────────────────────
   // Matches the marketplace filter popup: white card, radius 24, maxWidth 440,
-  // maxHeight 85%, 20/20/24 padding, soft shadow, #004aad title.
+  // maxHeight 85%, 20/20/24 padding, soft shadow, black title.
   reportBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -3226,24 +3231,24 @@ const styles = StyleSheet.create({
   /** flexShrink, not flex:1 — the card is auto-height capped at maxHeight. */
   reportScroll: { flexShrink: 1 },
   reportHeader: { alignItems: 'center', justifyContent: 'space-between' },
-  reportTitle: { flex: 1, color: '#004aad', fontSize: 18 },
-  reportSubtitle: { color: '#8890b0', fontSize: 14 },
-  reportLabel: { color: '#1a1a2e', fontSize: 14 },
+  reportTitle: { flex: 1, color: '#000000', fontSize: 18 },
+  reportSubtitle: { color: '#000000', fontSize: 14 },
+  reportLabel: { color: '#000000', fontSize: 14 },
   reportInput: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.15)',
     borderRadius: 10,
     padding: 12,
-    color: '#1a1a2e',
+    color: '#000000',
     height: 120,
     textAlignVertical: 'top',
   },
-  reportHint: { color: '#8890b0', fontSize: 12 },
-  reportSubmitBtn: { backgroundColor: '#004aad', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
+  reportHint: { color: '#000000', fontSize: 12 },
+  reportSubmitBtn: { borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   reportSubmitText: { color: '#ffffff', fontSize: 15 },
   reportEvidenceBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 12, marginBottom: 12, gap: 6 },
-  reportEvidenceBtnText: { color: '#004aad', fontSize: 14 },
+  reportEvidenceBtnText: { color: '#000000', fontSize: 14 },
   reportThumbRow: { flexDirection: 'row', gap: 10, marginBottom: 16, flexWrap: 'wrap' },
   reportThumbWrap: { position: 'relative' },
   reportThumb: { width: 72, height: 72, borderRadius: 8 },
