@@ -125,13 +125,6 @@ const HEADER_TOP = Platform.OS === 'web'
  *  close-project bar only needs to clear the home indicator. */
 const BOTTOM_BAR_PAD = (initialWindowMetrics?.insets.bottom ?? 0) + 16;
 
-const STATUS_COLORS: Record<ProjectRequest['status'], string> = {
-  open: '#1c9d63',
-  in_progress: '#3b82f6',
-  completed: '#8b5cf6',
-  cancelled: '#ef4444',
-};
-
 function formatShortDate(iso: string): string {
   const d = new Date(iso);
   const dd = String(d.getDate()).padStart(2, '0');
@@ -955,7 +948,6 @@ export default function ProjectDetailsScreen() {
     return map[status];
   };
 
-  const statusColor = STATUS_COLORS[project.status];
   const filledSlots: FilledSlot[] = project.filledSlots ?? [];
 
   const reviewProfessionals: ReviewProfessional[] = Object.values(
@@ -1093,10 +1085,11 @@ export default function ProjectDetailsScreen() {
           </View>
         )}
 
-        {/* Status badge — centered */}
-        <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor, flexDirection: rowDirection, alignSelf: 'center' }]}>
-          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.statusText, { color: statusColor, ...font.bold }]}>{projectStatusLabel(project.status)}</Text>
+        {/* Status badge — centered: black label, dot and outline in the mode's
+            colour. The wording carries the state (open / done / cancelled). */}
+        <View style={[styles.statusBadge, { backgroundColor: modeAccent + '14', borderColor: modeAccent, flexDirection: rowDirection, alignSelf: 'center' }]}>
+          <View style={[styles.statusDot, { backgroundColor: modeAccent }]} />
+          <Text style={[styles.statusText, { color: '#000000', ...font.bold }]}>{projectStatusLabel(project.status)}</Text>
         </View>
 
         {/* Three meta cards side-by-side */}
