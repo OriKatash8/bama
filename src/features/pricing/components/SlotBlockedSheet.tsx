@@ -1,6 +1,7 @@
 import { Modal, View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
-import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { usePricingConfig } from '../hooks/usePricingConfig';
 import type { ProjectRequest, ProjectFee } from '@core/types/project';
@@ -58,26 +59,37 @@ export function SlotBlockedSheet({
   myFees?: Map<string, ProjectFee>;
   onClose: () => void;
 }) {
-  const colors = useTheme();
+  const router = useRouter();
   const pricing = usePricingConfig();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
   const align = rtl ? 'right' : 'left';
+  const Chevron = rtl ? ChevronLeft : ChevronRight;
+
+  /** Each slot opens the project holding it: the sheet says what to go and do,
+   *  so it also takes you there. Closing first leaves no modal over the screen
+   *  that is being pushed. */
+  const openProject = (p: ProjectRequest) => {
+    onClose();
+    router.push(
+      `/(client)/(tabs)/chats/project-details?projectId=${p.id}${p.chatId ? `&chatId=${p.chatId}` : ''}` as never,
+    );
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <AppText weight="bold" style={[styles.title, { color: colors.text, textAlign: align }]}>
+            <AppText weight="bold" style={[styles.title, { textAlign: align }]}>
               {t('noticeboard.blocked_title')}
             </AppText>
-            <AppText weight="regular" style={[styles.body, { color: colors.textMuted, textAlign: align }]}>
+            <AppText weight="regular" style={[styles.body, { textAlign: align }]}>
               {t('noticeboard.blocked_body', { project: targetProject?.title ?? '' })}
             </AppText>
-            <AppText weight="semiBold" style={[styles.slotCount, { color: colors.textMuted, textAlign: align }]}>
+            <AppText weight="semiBold" style={[styles.slotCount, { textAlign: align }]}>
               {t('noticeboard.blocked_slots', { used: occupied.length, cap: pricing.maxOpenProjects })}
             </AppText>
 
@@ -87,16 +99,24 @@ export function SlotBlockedSheet({
             {occupied.map((p) => {
               const reason = slotReason(p, myFees?.get(p.id));
               return (
-                <View key={p.id} style={[styles.slotRow, { flexDirection: rowDir }]}>
+                <TouchableOpacity
+                  key={p.id}
+                  style={[styles.slotRow, { flexDirection: rowDir }]}
+                  onPress={() => openProject(p)}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  testID={`slot-open-${p.id}`}
+                >
                   <View style={styles.slotInfo}>
-                    <AppText weight="semiBold" style={[styles.slotTitle, { color: colors.text, textAlign: align }]} numberOfLines={1}>
+                    <AppText weight="semiBold" style={[styles.slotTitle, { textAlign: align }]} numberOfLines={1}>
                       {p.title}
                     </AppText>
                     <AppText
                       weight={reason === 'under_review' ? 'semiBold' : 'regular'}
                       style={[
                         styles.slotStatus,
-                        { color: reason === 'under_review' ? UNDER_REVIEW : colors.textMuted, textAlign: align },
+                        reason === 'under_review' && { color: UNDER_REVIEW },
+                        { textAlign: align },
                       ]}
                     >
                       {reason === 'under_review'
@@ -106,11 +126,14 @@ export function SlotBlockedSheet({
                         : t('noticeboard.blocked_status_active')}
                     </AppText>
                   </View>
-                </View>
+                  <View style={styles.slotGo}>
+                    <Chevron size={16} color={BLUE} strokeWidth={2.4} />
+                  </View>
+                </TouchableOpacity>
               );
             })}
 
-            <AppText weight="regular" style={[styles.howBody, { color: colors.textMuted, textAlign: align }]}>
+            <AppText weight="regular" style={[styles.howBody, { textAlign: align }]}>
               {t('noticeboard.blocked_how')}
             </AppText>
             {/* Only when one actually is. The general rule above stays true for
@@ -123,7 +146,7 @@ export function SlotBlockedSheet({
             )}
 
             <TouchableOpacity style={styles.notNow} onPress={onClose} activeOpacity={0.7}>
-              <AppText weight="regular" style={[styles.notNowText, { color: colors.textMuted }]}>
+              <AppText weight="regular" style={styles.notNowText}>
                 {t('noticeboard.blocked_not_now')}
               </AppText>
             </TouchableOpacity>
@@ -134,9 +157,10 @@ export function SlotBlockedSheet({
   );
 }
 
-// The app's card convention, hardcoded per screen rather than themed — see the
-// note on `card` in src/core/hooks/useTheme.tsx for why the token is not used.
-const CARD_BORDER = 'rgba(30,79,163,0.07)';
+/** Professional mode's own colour — this sheet is only ever shown there. */
+const BLUE = '#1D4ED8';
+/** Everything the sheet says, except the dispute line. */
+const INK = '#000000';
 /** The contest palette, as project-details uses it — a slot held by a dispute is
  *  the same fact in a different place, and should look like it. */
 const UNDER_REVIEW = '#b4453c';
@@ -149,18 +173,23 @@ const styles = StyleSheet.create({
     padding: 24,
     maxHeight: '85%',
   },
-  title: { fontSize: 19, marginBottom: 6 },
-  body: { fontSize: 14, marginBottom: 10, lineHeight: 20 },
-  slotCount: { fontSize: 12, marginBottom: 12 },
+  title: { fontSize: 19, marginBottom: 6, color: INK },
+  body: { fontSize: 14, marginBottom: 10, lineHeight: 20, color: INK },
+  slotCount: { fontSize: 12, marginBottom: 12, color: INK },
   slotRow: {
     alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16,
-    borderColor: CARD_BORDER,
+    borderColor: BLUE,
     paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8,
   },
   slotInfo: { flex: 1, gap: 2 },
-  slotTitle: { fontSize: 14 },
-  slotStatus: { fontSize: 12 },
-  howBody: { fontSize: 13, lineHeight: 19, marginTop: 10 },
+  slotTitle: { fontSize: 14, color: INK },
+  slotStatus: { fontSize: 12, color: INK },
+  // The arrow that says the row goes somewhere. 28 + 8 either side = 44.
+  slotGo: {
+    width: 28, height: 28, borderRadius: 999,
+    backgroundColor: '#E6EDFC', alignItems: 'center', justifyContent: 'center',
+  },
+  howBody: { fontSize: 13, lineHeight: 19, marginTop: 10, color: INK },
   notNow: { alignItems: 'center', paddingVertical: 16 },
-  notNowText: { fontSize: 14 },
+  notNowText: { fontSize: 14, color: INK },
 });
