@@ -1391,7 +1391,9 @@ export function ChatRoomScreen({ chatId }: Props) {
             const msg = item as Message;
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '', t, rtl ? 'he' : 'en');
-              const accent = variant === 'mission' ? '#a23bc4' : variant === 'price_change' || variant === 'crew' ? '#1c9d63' : variant === 'completion' ? '#004aad' : variant === 'left' ? '#6b7280' : '#1e4fa3';
+              // Black, like the text beside it: the pill's own tint is what
+              // tells the variants apart now.
+              const accent = '#000000';
               // Each known kind names a section of project-details. 'neutral' has
               // nowhere to go — that is "X left the project" and the purchase-chat
               // notices — and a chat with no projectId has no details screen at
