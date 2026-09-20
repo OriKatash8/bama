@@ -1,14 +1,4 @@
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-  type Unsubscribe,
-  type QueryDocumentSnapshot,
-  type DocumentData,
-} from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, type Unsubscribe, type QueryDocumentSnapshot, type DocumentData, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../core/firebase/config';
 import type { Meeting } from '../../../core/types/project';
 
@@ -61,6 +51,10 @@ export function listenToMeetings(
     if (retryTimer) clearTimeout(retryTimer);
     if (inner) inner();
   };
+}
+
+export async function deleteMeeting(projectId: string, meetingId: string): Promise<void> {
+  await deleteDoc(doc(db, 'projects', projectId, 'meetings', meetingId));
 }
 
 export async function addMeeting(

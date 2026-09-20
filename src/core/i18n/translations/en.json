@@ -225,6 +225,7 @@
     "mission_todo": "To Do",
     "mission_in_progress": "In Progress",
     "mission_done": "Done",
+    "tap_to_close": "press here to close",
     "due": "Due: ",
     "mission_uploaded": "Uploaded: ",
     "project_not_found": "Project not found",

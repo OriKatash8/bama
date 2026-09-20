@@ -46,10 +46,7 @@ import {
   updateMissionStatus,
   deleteMission,
 } from '@features/chat/services/missionService';
-import {
-  listenToMeetings,
-  addMeeting,
-} from '@features/chat/services/meetingService';
+import { listenToMeetings, addMeeting, deleteMeeting } from '@features/chat/services/meetingService';
 import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/components';
 import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
@@ -922,6 +919,16 @@ export default function ProjectDetailsScreen() {
     }
   }
 
+  async function handleDeleteMeeting(meeting: Meeting) {
+    if (!projectId) return;
+    try {
+      await deleteMeeting(projectId, meeting.id);
+      setMeetingIndex(i => Math.max(0, i - 1));
+    } catch {
+      Alert.alert('Error', t('project_details.error_update_mission'));
+    }
+  }
+
   async function handleDeleteMission(mission: Mission) {
     if (!projectId) return;
     try {
@@ -1413,7 +1420,7 @@ export default function ProjectDetailsScreen() {
                   {/* Info — middle */}
                   <View style={[styles.carouselCardInfo, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
                     <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-                      {mission.title}
+                      {mission.status === 'done' ? `${mission.title} - ${t('project_details.tap_to_close')}` : mission.title}
                     </AppText>
                     <View style={styles.cardDivider} />
                     <View style={[styles.missionDatesRow, { flexDirection: rowDirection }]}>
@@ -1463,15 +1470,6 @@ export default function ProjectDetailsScreen() {
                         {mission.status === 'done' ? `✓ ${missionLabel(mission.status)}` : missionLabel(mission.status)}
                       </AppText>
                     </TouchableOpacity>
-                    {mission.status === 'done' && (
-                      <TouchableOpacity
-                        style={styles.missionTrashBtn}
-                        onPress={() => handleDeleteMission(mission)}
-                        activeOpacity={0.7}
-                      >
-                        <Trash2 size={15} color="#e04b4b" strokeWidth={1.8} />
-                      </TouchableOpacity>
-                    )}
                   </View>
                 </View>
                 </TouchableOpacity>
@@ -1520,12 +1518,16 @@ export default function ProjectDetailsScreen() {
             {(() => {
               const meeting = sortedMeetings[Math.min(meetingIndex, sortedMeetings.length - 1)];
               const urgency = getMeetingUrgency(meeting.date, meeting.time);
-              // The date block carries the urgency; the title stays black.
-              // Within a week (imminent ≤2d, soon ≤7d) it takes the mode accent;
-              // further out it is black. A past meeting keeps its green.
-              const titleColor =
-                urgency === 'past' ? '#1c9d63' :
-                urgency === 'imminent' || urgency === 'soon' ? modeAccent :
+              // The date block carries the urgency, and only by its outline:
+              // today or tomorrow (imminent, ≤2d) is red, later this week
+              // (soon, ≤7d) takes the mode accent, a past meeting is green, and
+              // anything further out is black. The date text itself is black
+              // throughout (green on a past meeting, which is done).
+              const dateTextColor = urgency === 'past' ? '#1c9d63' : '#000000';
+              const dateBorderColor =
+                urgency === 'past'     ? '#1c9d63' :
+                urgency === 'imminent' ? '#ef4444' :
+                urgency === 'soon'     ? modeAccent :
                 '#000000';
               const { monthAbbr, day } = getMeetingDateParts(meeting.date);
               return (
@@ -1564,7 +1566,7 @@ export default function ProjectDetailsScreen() {
                   {/* Info — middle */}
                   <View style={[styles.carouselCardInfo, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
                     <AppText weight="semiBold" style={[styles.missionTitle, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2}>
-                      {meeting.title}
+                      {urgency === 'past' ? `${meeting.title} - ${t('project_details.tap_to_close')}` : meeting.title}
                     </AppText>
                     <View style={styles.cardDivider} />
                     {!!meeting.time && (
@@ -1582,9 +1584,9 @@ export default function ProjectDetailsScreen() {
                   </View>
 
                   {/* Date block — trailing (left in RTL) */}
-                  <View style={[styles.meetingDateBlock, { borderColor: titleColor }]}>
-                    <AppText weight="semiBold" style={[styles.meetingDateMonth, { color: titleColor }]}>{monthAbbr}</AppText>
-                    <AppText weight="bold" style={[styles.meetingDateDay, { color: titleColor }]}>{day}</AppText>
+                  <View style={[styles.meetingDateBlock, { borderColor: dateBorderColor }]}>
+                    <AppText weight="semiBold" style={[styles.meetingDateMonth, { color: dateTextColor }]}>{monthAbbr}</AppText>
+                    <AppText weight="bold" style={[styles.meetingDateDay, { color: dateTextColor }]}>{day}</AppText>
                   </View>
                 </View>
                 </TouchableOpacity>
@@ -2016,6 +2018,18 @@ export default function ProjectDetailsScreen() {
                       {detailMission.status === 'done' ? `✓ ${missionLabel(detailMission.status)}` : missionLabel(detailMission.status)}
                     </AppText>
                   </View>
+                  {/* Closing a finished mission removes it from the project. */}
+                  {detailMission.status === 'done' && (
+                    <TouchableOpacity
+                      style={styles.missionTrashBtn}
+                      onPress={() => { const m = detailMission; setDetailMission(null); void handleDeleteMission(m); }}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      testID="mission-close"
+                    >
+                      <Trash2 size={15} color="#e04b4b" strokeWidth={1.8} />
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {!!detailMission.description && (
@@ -2062,9 +2076,23 @@ export default function ProjectDetailsScreen() {
           {detailMeeting && (
             <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-                <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
-                  {detailMeeting.title}
-                </Text>
+                <View style={[styles.detailHeaderRow, { flexDirection: rowDirection }]}>
+                  <Text style={[styles.modalTitle, { color: '#000000', flex: 1, textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+                    {detailMeeting.title}
+                  </Text>
+                  {/* Closing a meeting that already happened removes it. */}
+                  {getMeetingUrgency(detailMeeting.date, detailMeeting.time) === 'past' && (
+                    <TouchableOpacity
+                      style={styles.missionTrashBtn}
+                      onPress={() => { const m = detailMeeting; setDetailMeeting(null); void handleDeleteMeeting(m); }}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      testID="meeting-close"
+                    >
+                      <Trash2 size={15} color="#e04b4b" strokeWidth={1.8} />
+                    </TouchableOpacity>
+                  )}
+                </View>
 
                 {!!detailMeeting.description && (
                   <View>
