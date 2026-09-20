@@ -11,7 +11,6 @@ import {
   listenToPurchaseContext,
   confirmReceived,
   cancelPurchase,
-  markHandedOver,
   agreeToDeal,
   acceptDeal,
 } from '../services/marketplaceService';
@@ -138,13 +137,7 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
     if (!confirmed) return;
     setBuyerLoading(true);
     try {
-      await confirmReceived(
-        snap.id,
-        chatId,
-        currentUserId,
-        t('marketplace.sale_complete'),
-        snap.sellerConfirmed ?? false,
-      );
+      await confirmReceived(snap.id, chatId, currentUserId, t('marketplace.sale_complete'));
     } catch (err) {
       console.error('[PurchaseBanner] confirmReceived error:', err);
     } finally {
@@ -174,22 +167,6 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
       console.error('[PurchaseBanner] cancelPurchase error:', err);
     } finally {
       setBuyerLoading(false);
-    }
-  }
-
-  // ── Seller: "I handed it over" ────────────────────────────────────────────
-  async function handleMarkHandedOver() {
-    setSellerLoading(true);
-    try {
-      await markHandedOver(
-        snap.id,
-        chatId,
-        currentUserId,
-        t('marketplace.sale_complete'),
-        snap.buyerConfirmed ?? false,
-      );
-    } finally {
-      setSellerLoading(false);
     }
   }
 
@@ -261,62 +238,41 @@ export function PurchaseBanner({ chatId, onDismiss }: Props) {
 
       {/* ── ACCEPTED phase — BUYER buttons ─────────────────────────────────── */}
       {isAccepted && isBuyer && (
-        snap.buyerConfirmed && !snap.sellerConfirmed ? (
-          <View style={styles.sellerRow}>
-            <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-              {t('marketplace.waiting_seller')}
-            </Text>
-          </View>
-        ) : (
-          <View style={[styles.btnRow, { flexDirection: rowDir }]}>
-            <TouchableOpacity
-              style={[styles.primaryBtn, buyerLoading && styles.disabledBtn]}
-              onPress={handleMarkReceived}
-              disabled={buyerLoading}
-              activeOpacity={0.8}
-            >
-              {buyerLoading
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={[styles.primaryBtnText, { ...font.bold }]}>
-                    {t('marketplace.mark_received')}
-                  </Text>}
-            </TouchableOpacity>
+        <View style={[styles.btnRow, { flexDirection: rowDir }]}>
+          <TouchableOpacity
+            style={[styles.primaryBtn, buyerLoading && styles.disabledBtn]}
+            onPress={handleMarkReceived}
+            disabled={buyerLoading}
+            activeOpacity={0.8}
+          >
+            {buyerLoading
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={[styles.primaryBtnText, { ...font.bold }]}>
+                  {t('marketplace.mark_received')}
+                </Text>}
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.secondaryBtn, buyerLoading && styles.disabledBtn]}
-              onPress={handleCancelPurchase}
-              disabled={buyerLoading}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
-                {t('marketplace.cancel_purchase')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )
+          <TouchableOpacity
+            style={[styles.secondaryBtn, buyerLoading && styles.disabledBtn]}
+            onPress={handleCancelPurchase}
+            disabled={buyerLoading}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.secondaryBtnText, { ...font.semiBold }]}>
+              {t('marketplace.cancel_purchase')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
-      {/* ── ACCEPTED phase — SELLER button ─────────────────────────────────── */}
+      {/* ── ACCEPTED phase — the SELLER waits. Handing the product over is not
+           something the app can be told about twice: only the person who
+           receives it knows it arrived, and saying so closes the sale. ──── */}
       {isAccepted && isSeller && (
         <View style={styles.sellerRow}>
-          {snap.sellerConfirmed ? (
-            <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-              {t('marketplace.waiting_buyer')}
-            </Text>
-          ) : (
-            <TouchableOpacity
-              style={[styles.sellerBtn, sellerLoading && styles.disabledBtn]}
-              onPress={handleMarkHandedOver}
-              disabled={sellerLoading}
-              activeOpacity={0.8}
-            >
-              {sellerLoading
-                ? <ActivityIndicator color="#004aad" size="small" />
-                : <Text style={[styles.sellerBtnText, { ...font.semiBold }]}>
-                    {t('marketplace.mark_handed')}
-                  </Text>}
-            </TouchableOpacity>
-          )}
+          <Text style={[styles.waitingText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
+            {t('marketplace.waiting_buyer')}
+          </Text>
         </View>
       )}
     </View>
@@ -405,18 +361,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sellerRow: {},
-  sellerBtn: {
-    borderWidth: 1.5,
-    borderColor: '#004aad',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  sellerBtnText: {
-    color: '#004aad',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   waitingText: {
     fontSize: 13,
     color: '#004aad99',

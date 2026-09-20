@@ -132,30 +132,33 @@ export async function acceptDeal(
   await sendMessage(chatId, userId, systemMessage);
 }
 
+/**
+ * The buyer says they have the product, and that is the whole ending: the
+ * listing is sold and the chat is closed on the spot.
+ *
+ * It used to take both sides — the seller pressed "I handed it over" and the
+ * sale completed only once the other had pressed too, which left a deal that
+ * was done in life sitting open in the app until someone remembered. Only the
+ * person who receives the thing can know it arrived, so only they confirm.
+ */
 export async function confirmReceived(
   listingId: string,
   chatId: string,
   userId: string,
   systemMessage: string,
-  sellerAlreadyConfirmed: boolean,
 ): Promise<void> {
   const batch = writeBatch(db);
 
-  if (sellerAlreadyConfirmed) {
-    // Both confirmed — complete the transaction
-    batch.update(doc(db, 'marketplace_listings', listingId), { status: 'sold' });
-    batch.update(doc(db, 'chats', chatId), {
-      archived: true,
-      archiveReason: 'completed',
-      archivedAt: serverTimestamp(),
-    });
-  } else {
-    // Seller hasn't confirmed yet — record buyer's confirmation only
-    batch.update(doc(db, 'marketplace_listings', listingId), {
-      buyerConfirmed: true,
-      buyerConfirmedAt: serverTimestamp(),
-    });
-  }
+  batch.update(doc(db, 'marketplace_listings', listingId), {
+    status: 'sold',
+    buyerConfirmed: true,
+    buyerConfirmedAt: serverTimestamp(),
+  });
+  batch.update(doc(db, 'chats', chatId), {
+    archived: true,
+    archiveReason: 'completed',
+    archivedAt: serverTimestamp(),
+  });
 
   await batch.commit();
 
@@ -212,41 +215,6 @@ export async function cancelPurchase(
   await batch.commit();
 
   await sendMessage(chatId, userId, systemMessage);
-}
-
-export async function markHandedOver(
-  listingId: string,
-  chatId: string,
-  userId: string,
-  systemMessage: string,
-  buyerAlreadyConfirmed: boolean,
-): Promise<void> {
-  const batch = writeBatch(db);
-
-  if (buyerAlreadyConfirmed) {
-    // Both confirmed — complete the transaction
-    batch.update(doc(db, 'marketplace_listings', listingId), {
-      sellerConfirmed: true,
-      sellerConfirmedAt: serverTimestamp(),
-      status: 'sold',
-    });
-    batch.update(doc(db, 'chats', chatId), {
-      archived: true,
-      archiveReason: 'completed',
-      archivedAt: serverTimestamp(),
-    });
-  } else {
-    // Buyer hasn't confirmed yet — record seller's confirmation only
-    batch.update(doc(db, 'marketplace_listings', listingId), {
-      sellerConfirmed: true,
-      sellerConfirmedAt: serverTimestamp(),
-    });
-  }
-
-  await batch.commit();
-  if (buyerAlreadyConfirmed) {
-    await sendMessage(chatId, userId, systemMessage);
-  }
 }
 
 /**
