@@ -446,10 +446,11 @@ export default function ProjectsPage() {
                     style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
                     onPress={openSortModal}
                     activeOpacity={0.8}
-                    // 32 visual + 6 either side = 44.
+                    // The stacked pill is ~44 tall on its own; the slop is the
+                    // margin of error either side of it.
                     hitSlop={{ top: 6, bottom: 6 }}
                   >
-                    <SlidersHorizontal size={14} color="#000000" strokeWidth={2} />
+                    <SlidersHorizontal size={16} color={VIOLET} strokeWidth={2} />
                     <AppText weight="semiBold" style={styles.sortBtnText}>
                       {t('offers.filter')}
                     </AppText>
@@ -655,16 +656,19 @@ const styles = StyleSheet.create({
   },
   newOffersText: { fontSize: 13, color: '#4C1D95', flexShrink: 1 },
 
+  // Icon above its label, not beside it, so the control reads as one small
+  // tile rather than a text pill.
   sortBtn: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 5,
-    height: 32,
-    borderRadius: 999,
-    paddingHorizontal: 13,
-    backgroundColor: '#F3EEFE',
+    justifyContent: 'center',
+    gap: 2,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#6D28D9',
+    borderColor: VIOLET,
   },
   // A filter is on: the outline thickens against the same purple fill.
   sortBtnActive: { borderWidth: 1.5 },
