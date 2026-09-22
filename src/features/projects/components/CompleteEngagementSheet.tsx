@@ -111,9 +111,6 @@ export function CompleteEngagementSheet({
             <AppText weight="regular" style={[styles.howBody, { color: colors.textMuted, textAlign: align }]}>
               {t('engagement.complete_contest_note', { days: pricing.chargeWindowDays })}
             </AppText>
-            <AppText weight="regular" style={[styles.howBody, { color: colors.textMuted, textAlign: align }]}>
-              {t('engagement.complete_others_note')}
-            </AppText>
 
             <TouchableOpacity
               style={[styles.confirm, submitting && styles.confirmDisabled]}

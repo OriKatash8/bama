@@ -1096,8 +1096,8 @@
     "fee_base_note": "העמלה מחושבת על התמורה שלך בלבד, לא על התקציב הכולל של הפרויקט."
   },
   "hire": {
-    "fee_notice": "עמלת פלטפורמה לפרויקט זה: {{amount}} ₪",
-    "fee_notice_min": "עמלת פלטפורמה לפרויקט זה: {{amount}} ₪ (עמלת מינימום)",
+    "fee_notice": "עמלת תיווך: {{amount}} ₪",
+    "fee_notice_min": "עמלת תיווך: {{amount}} ₪ (עמלת מינימום)",
     "fee_notice_sub": "חלה מהרגע שתסמן שסיימת את חלקך בפרויקט — או בתאריך הסיום של הפרויקט, אם לא סימנת עד אז."
   },
   "admin_fees": {
@@ -1134,12 +1134,11 @@
   "engagement": {
     "complete_title": "לסמן את חלקך כמושלם",
     "complete_body": "אתה מצהיר שהעבודה שלך בפרויקט “{{project}}” הסתיימה. זו החלטה שלך בלבד — אין צורך באישור של אף אחד.",
-    "complete_fee": "עמלת BAMA · ₪{{amount}}",
+    "complete_fee": "עמלת התיווך · ₪{{amount}}",
     "complete_fee_rate": "{{percent}}% מהסכום שסוכם.",
     "complete_fee_min": "{{percent}}% הם ₪{{calculated}}, לכן חלה עמלת המינימום.",
     "complete_charge_when": "תיגבה בעוד {{days}} ימים.",
     "complete_contest_note": "אם הפרויקט לא התקיים, או שהסכום שגוי, יש לך {{days}} ימים לומר זאת.",
-    "complete_others_note": "זה סוגר את החלק שלך בלבד. כל השאר בפרויקט נשארים כפי שהם.",
     "complete_confirm": "סיימתי את חלקי",
     "complete_not_now": "לא עכשיו",
     "complete_done": "חלקך בפרויקט סומן כהושלם.",
