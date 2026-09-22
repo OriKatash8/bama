@@ -23,7 +23,7 @@ import { useFeeArrears } from '@features/pricing/hooks/useFeeArrears';
 import { FeeArrearsSheet } from '@features/pricing/components/FeeArrearsSheet';
 import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
 import { listenToMyFees } from '@features/pricing/services/feesService';
-import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
+import { visibleNotices, type NoticeSort } from '@features/noticeboard/visibleNotices';
 import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '@features/noticeboard/unoffered';
 import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { useProfile } from '@features/profile/hooks/useProfile';
@@ -168,7 +168,7 @@ export default function DashboardScreen() {
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
   // ── Sort & filter (client-side over the already-matched list) ──
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
+  const [sortBy, setSortBy] = useState<NoticeSort>('newest');
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   /** Visual only: the search field's focus border. */
   const [searchFocused, setSearchFocused] = useState(false);
@@ -212,7 +212,7 @@ export default function DashboardScreen() {
   const historyAvailable = hasNoticeHistory(historyOffers.length, hiddenProjects.length);
   const notifPrompt = useNotifPermissionPrompt();
   const softAsk = useNotifSoftAsk();
-  const [draftSort, setDraftSort] = useState<'newest' | 'oldest' | 'direct_first'>('newest');
+  const [draftSort, setDraftSort] = useState<NoticeSort>('newest');
   const [draftRole, setDraftRole] = useState<string | null>(null);
 
   const proRoles = useMemo(
@@ -257,33 +257,10 @@ export default function DashboardScreen() {
     [visible, roleSkills, offeredByProject, currentUserId],
   );
 
-  const displayed = useMemo(() => {
-    let list = biddable;
-    if (roleFilter) {
-      list = list.filter((r) => getVacantSlots(r).some((s) => roleIdForCategory(s.category) === roleFilter));
-    }
-    const q = search.trim().toLowerCase();
-    if (q) {
-      list = list.filter((r) =>
-        (r.title ?? '').toLowerCase().includes(q) ||
-        (r.description ?? '').toLowerCase().includes(q) ||
-        (r.location ?? '').toLowerCase().includes(q),
-      );
-    }
-    return [...list].sort((a, b) => {
-      if (sortBy === 'direct_first') {
-        // Notices addressed directly to this professional float to the top,
-        // newest-first within each group.
-        const ad = a.targetProfessionalId === currentUserId ? 0 : 1;
-        const bd = b.targetProfessionalId === currentUserId ? 0 : 1;
-        if (ad !== bd) return ad - bd;
-        return b.createdAt.seconds - a.createdAt.seconds;
-      }
-      return sortBy === 'oldest'
-        ? a.createdAt.seconds - b.createdAt.seconds
-        : b.createdAt.seconds - a.createdAt.seconds;
-    });
-  }, [biddable, roleFilter, sortBy, search, currentUserId]);
+  const displayed = useMemo(
+    () => visibleNotices(biddable, { roleFilter, search, sortBy, currentUserId }),
+    [biddable, roleFilter, sortBy, search, currentUserId],
+  );
 
   // Legacy category strings (for ProjectDetailModal's role-Q&A display, which is keyed by them).
   const categories = useMemo(
@@ -678,7 +655,7 @@ export default function DashboardScreen() {
               {t('noticeboard.sort_title')}
             </AppText>
             <View style={[styles.sortOptions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {(['newest', 'oldest', 'direct_first'] as const).map((opt) => (
+              {(['newest', 'oldest', 'direct_only'] as const satisfies readonly NoticeSort[]).map((opt) => (
                 <TouchableOpacity
                   key={opt}
                   style={[styles.sortOption, draftSort === opt && styles.sortOptionActive]}
@@ -686,7 +663,7 @@ export default function DashboardScreen() {
                   activeOpacity={0.8}
                 >
                   <AppText weight="semiBold" style={[styles.sortOptionText, draftSort === opt && styles.sortOptionTextActive]}>
-                    {t(opt === 'newest' ? 'noticeboard.sort_newest' : opt === 'oldest' ? 'noticeboard.sort_oldest' : 'noticeboard.sort_direct_first')}
+                    {t(opt === 'newest' ? 'noticeboard.sort_newest' : opt === 'oldest' ? 'noticeboard.sort_oldest' : 'noticeboard.sort_direct_only')}
                   </AppText>
                 </TouchableOpacity>
               ))}
