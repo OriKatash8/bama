@@ -734,12 +734,12 @@
     "show_bundle_only": "Bundle Only"
   },
   "marketplace": {
-    "category_camera": "Camera",
-    "category_lens": "Lens",
+    "category_camera": "Cameras",
+    "category_lens": "Lenses",
     "category_audio": "Audio",
-    "category_light": "Light",
-    "category_drone": "Drone",
-    "category_studio": "Studio",
+    "category_light": "Lights",
+    "category_drone": "Drones",
+    "category_studio": "Studios",
     "category_accessories": "Accessories",
     "category_other": "Other",
     "condition_new": "New",

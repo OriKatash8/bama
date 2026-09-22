@@ -734,11 +734,11 @@
     "show_bundle_only": "חבילות בלבד"
   },
   "marketplace": {
-    "category_camera": "מצלמה",
-    "category_lens": "עדשה",
+    "category_camera": "מצלמות",
+    "category_lens": "עדשות",
     "category_audio": "אודיו",
     "category_light": "תאורה",
-    "category_drone": "רחפן",
+    "category_drone": "רחפנים",
     "category_studio": "סטודיו",
     "category_accessories": "אביזרים",
     "category_other": "אחר",
