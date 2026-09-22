@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { ContentTabs } from '../ContentTabs';
 import { ROLES, getSpecializations, labelOf } from '@features/crew/data/categories';
@@ -93,5 +94,84 @@ describe('ContentTabs', () => {
       jest.runAllTimers();
     });
     expect(queryByText('Other')).toBeTruthy();
+  });
+});
+
+/**
+ * WHICH TAB THE COMPONENT OPENS ON.
+ *
+ * Equipment everywhere, except on the pro's own profile while it is still
+ * incomplete: a first-time pro is routed here and held until they add a role,
+ * and the role lives under Skills. Opening on Equipment showed them the one
+ * tab that cannot unlock the app.
+ */
+describe('ContentTabs initialSection', () => {
+  beforeEach(() => { jest.useFakeTimers(); jest.clearAllMocks(); });
+  afterEach(() => jest.useRealTimers());
+
+  const roleId = ROLES[0].id;
+  const roleSkillProps = {
+    ...baseProps,
+    isEditing: true,
+    roleSkills: [{ role: roleId, specializations: [] }],
+    onRoleSkillsChange: jest.fn(),
+  };
+
+  /** The Skills pane lists the roles; the Equipment pane never does. */
+  const skillsPaneShowing = (r: ReturnType<typeof render>) =>
+    r.queryAllByText(ROLES[0].en).length > 0;
+
+  it('opens on Equipment when no section is asked for', () => {
+    const r = render(<ContentTabs {...roleSkillProps} />);
+    expect(skillsPaneShowing(r)).toBe(false);
+    expect(r.getByText('Sony FX3')).toBeTruthy();
+  });
+
+  it('opens on Skills when asked for', () => {
+    const r = render(<ContentTabs {...roleSkillProps} initialSection="skills" />);
+    expect(skillsPaneShowing(r)).toBe(true);
+    expect(r.queryByText('Sony FX3')).toBeNull();
+  });
+
+  it('still lets the user leave the tab it opened on', () => {
+    const r = render(<ContentTabs {...roleSkillProps} initialSection="skills" />);
+    act(() => { fireEvent.press(r.getAllByText('Equipment')[0]); });
+    expect(skillsPaneShowing(r)).toBe(false);
+    expect(r.getByText('Sony FX3')).toBeTruthy();
+  });
+});
+
+/**
+ * The sliding pill is driven by its own Animated.Value, not by `active`, so it
+ * has to be told where to start too. It sat under Equipment while the Skills
+ * pane showed — the indicator disagreeing with the content under it.
+ */
+describe('ContentTabs sliding pill', () => {
+  beforeEach(() => { jest.useFakeTimers(); jest.clearAllMocks(); });
+  afterEach(() => jest.useRealTimers());
+
+  const TRACK_W = 300;
+
+  /** Renders, measures the track so the pill mounts, and returns its offset. */
+  function pillOffset(initialSection?: 'equipment' | 'reviews' | 'skills') {
+    const r = render(
+      <ContentTabs {...baseProps} isEditing roleSkills={[]} initialSection={initialSection} />,
+    );
+    act(() => {
+      fireEvent(r.getByTestId('tab-track'), 'layout', { nativeEvent: { layout: { width: TRACK_W } } });
+    });
+    const style = StyleSheet.flatten(r.getByTestId('tab-pill').props.style) as {
+      transform: [{ translateX: number }];
+    };
+    return style.transform[0].translateX;
+  }
+
+  it('starts the pill under the tab it opened on, not always under the first', () => {
+    const atEquipment = pillOffset();
+    const atSkills = pillOffset('skills');
+
+    expect(atSkills).toBeGreaterThan(atEquipment);
+    // Third of three segments, so it clears two thirds of the track.
+    expect(atSkills).toBeGreaterThan(TRACK_W * 0.6);
   });
 });

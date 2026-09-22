@@ -210,6 +210,12 @@ export default function ProfessionalProfileScreen() {
         )}
 
         <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
+        {/* The pro's own profile always opens on Skills. A first-time pro is
+            sent straight here and held until they add a role, and Skills is
+            where a role is added — but it is the tab that matters on a return
+            visit too, so it is not conditional on the profile being
+            incomplete. Browse profiles, which show someone else's work, still
+            open on Equipment. Read once, at mount. */}
         <ContentTabs
           equipment={equipment}
           reviews={reviews}
@@ -218,6 +224,7 @@ export default function ProfessionalProfileScreen() {
           onEquipmentChange={setEquipment}
           onRoleSkillsChange={setRoleSkills}
           onRequestEdit={() => setIsEditing(true)}
+          initialSection="skills"
         />
 
         <View style={styles.portfolioSection}>

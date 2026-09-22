@@ -50,6 +50,12 @@ type ContentTabsProps = {
   /** Own-profile only: invoked by the empty-state "add equipment" action to
    *  enter edit mode. Omitted on read-only (browse) profiles. */
   onRequestEdit?: () => void;
+  /** Which tab to open on. Omitted ⇒ Equipment, which is what the browse
+   *  profiles want. The pro's own profile passes 'skills': it is where a role
+   *  is added, and a first-time pro is held on that screen until they add one.
+   *  Read once, at mount: nothing should yank the tab out from under someone
+   *  mid-edit. */
+  initialSection?: SectionKey;
 };
 
 export function ContentTabs({
@@ -60,6 +66,7 @@ export function ContentTabs({
   onEquipmentChange,
   onRoleSkillsChange,
   onRequestEdit,
+  initialSection,
 }: ContentTabsProps) {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -92,7 +99,7 @@ export function ContentTabs({
     onRoleSkillsChange?.(next);
   }
 
-  const [active, setActive] = useState<SectionKey>('equipment');
+  const [active, setActive] = useState<SectionKey>(initialSection ?? 'equipment');
   const [newEquipment, setNewEquipment] = useState('');
   // Equipment categories and skill roles start closed; tapping a heading opens
   // it. Keys are 'eq:<category>' / 'sk:<role>'.
@@ -129,7 +136,7 @@ export function ContentTabs({
     );
   }
   const [tabBarWidth, setTabBarWidth] = useState(0);
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(SECTION_KEYS.indexOf(initialSection ?? 'equipment'))).current;
 
   function sectionLabel(key: SectionKey): string {
     const map: Record<SectionKey, string> = {
@@ -171,11 +178,13 @@ export function ContentTabs({
       {/* ── Segmented track ── */}
       <View
         style={styles.tabBar}
+        testID="tab-track"
         onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
       >
         {/* Selected segment, sliding behind the labels */}
         {tabBarWidth > 0 && (
           <Animated.View
+            testID="tab-pill"
             style={[
               styles.slidingPill,
               { backgroundColor: accent },
