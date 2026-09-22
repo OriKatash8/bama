@@ -665,8 +665,13 @@ const styles = StyleSheet.create({
   },
   dateSquareSel: { borderWidth: 1.5, borderColor: TILE_SEL_BORDER, backgroundColor: TILE_SEL_FILL },
   dateSquareErr: { borderWidth: 1.5, borderColor: '#fc8181' },
-  dateSquarePlaceholder: { fontSize: 12.5, lineHeight: 16, fontWeight: '400', color: TILE_PLACEHOLDER, textAlign: 'center' },
-  dateSquareValue: { fontSize: 12.5, lineHeight: 16, fontWeight: '500', color: VIOLET, textAlign: 'center' },
+  // Both RESERVE two lines (32 = 2 x lineHeight 16) whether or not they use the
+  // second. The stack is centred, so its height decides where the icon sits: on
+  // a phone one label wraps and its neighbour does not, and the taller tile
+  // pushed its icon up, leaving the three icons on three different lines.
+  // KEEP IN SYNC with (client)/(tabs)/home/index.tsx.
+  dateSquarePlaceholder: { fontSize: 12.5, lineHeight: 16, minHeight: 32, fontWeight: '400', color: TILE_PLACEHOLDER, textAlign: 'center' },
+  dateSquareValue: { fontSize: 12.5, lineHeight: 16, minHeight: 32, fontWeight: '500', color: VIOLET, textAlign: 'center' },
   optionalTag: {
     position: 'absolute',
     top: 7,

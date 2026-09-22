@@ -1363,9 +1363,21 @@ function createStyles(
     tileTitleSel: { color: '#3B0764' },
     /** Title then "?", in reading order: flexDirection is set inline per language. */
     tileTitleRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 5 },
+    /**
+     * Both label styles RESERVE two lines, whether or not they use the second.
+     *
+     * The stack is centred, so its height decides where the icon sits. On a
+     * phone the squares are narrow enough that one label wraps and its
+     * neighbour does not — and the tile with two lines pushed its icon up,
+     * leaving the three icons on three different lines. A desktop browser
+     * never showed it, because at that width nothing wraps.
+     *
+     * 32 = 2 x lineHeight 16, and numberOfLines={2} caps it there.
+     */
     dateSquarePlaceholder: {
       fontSize: 12.5,
       lineHeight: 16,
+      minHeight: 32,
       fontWeight: '400',
       color: INK_2,
       textAlign: 'center',
@@ -1374,6 +1386,7 @@ function createStyles(
     dateSquareValue: {
       fontSize: 12.5,
       lineHeight: 16,
+      minHeight: 32,
       fontWeight: '500',
       color: VIOLET,
       textAlign: 'center',
