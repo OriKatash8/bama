@@ -54,7 +54,8 @@ function renderWith(
   );
 }
 
-const placeholderName = (n: number) => en.communities.placeholder_name.replace('{{n}}', String(n));
+/** The name an empty slot used to carry — nothing should render it now. */
+const retiredPlaceholderName = (n: number) => en.communities.placeholder_name.replace('{{n}}', String(n));
 
 it('hides the whole "My Communities" section when the user is in none', () => {
   const r = renderWith([]);
@@ -63,20 +64,24 @@ it('hides the whole "My Communities" section when the user is in none', () => {
   expect(r.getByText(en.communities.discover)).toBeTruthy();
 });
 
-it('fills the strip up to five with "+" tiles numbered after the real communities', () => {
+it('fills the strip up to five with "+" tiles', () => {
   const r = renderWith(communities(1));
   expect(r.getByText(en.communities.my_communities)).toBeTruthy();
   expect(r.getByText('Guild 1')).toBeTruthy();
   expect(r.getAllByText('+')).toHaveLength(4);
-  [2, 3, 4, 5].forEach((n) => expect(r.getByText(placeholderName(n))).toBeTruthy());
-  expect(r.queryByText(placeholderName(1))).toBeNull();
 });
 
 it('shows only the tiles still missing — three communities leave two', () => {
   const r = renderWith(communities(3));
   expect(r.getAllByText('+')).toHaveLength(2);
-  expect(r.getByText(placeholderName(4))).toBeTruthy();
-  expect(r.getByText(placeholderName(5))).toBeTruthy();
+});
+
+it('leaves the empty slots nameless — only real communities are named', () => {
+  const r = renderWith(communities(1));
+
+  [1, 2, 3, 4, 5].forEach((n) => expect(r.queryByText(retiredPlaceholderName(n))).toBeNull());
+  // The real one keeps its own name; the strip did not go silent altogether.
+  expect(r.getByText('Guild 1')).toBeTruthy();
 });
 
 it.each([5, 7])('shows no "+" tiles once the user is in %i communities', (n) => {

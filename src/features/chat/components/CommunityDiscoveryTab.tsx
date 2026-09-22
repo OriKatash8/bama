@@ -242,9 +242,11 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
                 );
               })}
 
-              {/* Fill the strip up to STRIP_FILL_COUNT, numbered after the real
-                  communities. Each "+" is an invitation, not a community: it
-                  scrolls down to Discover, where the communities to join are. */}
+              {/* Fill the strip up to STRIP_FILL_COUNT. Each "+" is an
+                  invitation, not a community: it scrolls down to Discover,
+                  where the communities to join are. It carries no name — a
+                  "Community 4" under an empty slot named a thing that does not
+                  exist, and read as one the user had somehow already joined. */}
               {Array.from({ length: Math.max(0, STRIP_FILL_COUNT - myCommunities.length) }, (_, i) => {
                 const n = myCommunities.length + i + 1;
                 return (
@@ -259,17 +261,6 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
                     <View style={styles.placeholderSquare}>
                       <AppText weight="semiBold" style={styles.placeholderPlus}>+</AppText>
                     </View>
-                    {/* One row always: "Community 5" overflows the 68pt tile at the
-                        shared size while "קהילה 5" does not, so it shrinks to fit. */}
-                    <AppText
-                      weight="regular"
-                      style={styles.stripTitle}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.8}
-                    >
-                      {t('communities.placeholder_name', { n })}
-                    </AppText>
                   </TouchableOpacity>
                 );
               })}
