@@ -33,6 +33,42 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
     timestamp: data.timestamp,
     readBy: data.readBy ?? [],
     system: data.system ?? false,
+    mentions: data.mentions,
+    mentionsEveryone: data.mentionsEveryone,
+  };
+}
+
+/**
+ * The same job as `docToMessage`, for `chats/{id}/channels/{cid}/messages`.
+ *
+ * Two mappers rather than one because the two collections genuinely differ: a
+ * channel message never carries audio or `system`, and only a channel message
+ * carries the shared-listing payload. They are side by side here so the
+ * difference is visible — it used to live inline in ChatRoomScreen, where
+ * adding a field to one and forgetting the other was invisible until a bubble
+ * rendered wrong.
+ *
+ * Lives here, and exported, so it can be tested without rendering the screen.
+ */
+export function channelDocToMessage(id: string, data: DocumentData): Message {
+  return {
+    id,
+    senderId: data.senderId as string,
+    text: (data.text as string) ?? '',
+    timestamp: data.timestamp as Message['timestamp'],
+    readBy: (data.readBy as string[]) ?? [],
+    imageURL: data.imageURL as string | undefined,
+    videoUrl: data.videoUrl as string | undefined,
+    mentions: data.mentions as string[] | undefined,
+    mentionsEveryone: data.mentionsEveryone as boolean | undefined,
+    // Shared marketplace listing (Part B/C)
+    type: data.type as 'listing' | undefined,
+    listingId: data.listingId as string | undefined,
+    title: data.title as string | undefined,
+    price: data.price as number | undefined,
+    imageUrl: data.imageUrl as string | null | undefined,
+    posterId: data.posterId as string | undefined,
+    posterName: data.posterName as string | undefined,
   };
 }
 
@@ -251,7 +287,11 @@ export async function sendMessage(
   chatId: string,
   senderId: string,
   text: string,
-  opts?: { videoUrl?: string; imageURL?: string; audioUrl?: string; audioDuration?: number; system?: boolean }
+  opts?: {
+    videoUrl?: string; imageURL?: string; audioUrl?: string; audioDuration?: number;
+    /** Flat userIds; the create rule checks each against the chat's members. */
+    mentions?: string[];
+  }
 ): Promise<void> {
   const messagesRef = collection(db, 'chats', chatId, 'messages');
   const chatRef = doc(db, 'chats', chatId);
@@ -262,7 +302,11 @@ export async function sendMessage(
     timestamp: serverTimestamp(),
     readBy: [senderId],
   };
-  if (opts?.system) messageData.system = true;
+  // `system` used to be settable here and no caller ever passed it. The create
+  // rule now denies the key to clients outright — a faked server notice about
+  // payment is the worst thing a forged message could say — so the option is
+  // gone rather than left as a footgun that only fails at the server.
+  if (opts?.mentions?.length) messageData.mentions = opts.mentions;
   if (opts?.videoUrl) messageData.videoUrl = opts.videoUrl;
   if (opts?.imageURL) messageData.imageURL = opts.imageURL;
   if (opts?.audioUrl) messageData.audioUrl = opts.audioUrl;

@@ -53,7 +53,7 @@ import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
-import { listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
+import { channelDocToMessage, listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { showsOnBalance } from '@features/pricing/utils/balance';
@@ -866,26 +866,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       orderBy('timestamp', 'asc'),
     );
     return onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          senderId: data.senderId as string,
-          text: (data.text as string) ?? '',
-          timestamp: data.timestamp as Timestamp,
-          readBy: (data.readBy as string[]) ?? [],
-          imageURL: data.imageURL as string | undefined,
-          videoUrl: data.videoUrl as string | undefined,
-          // Shared marketplace listing (Part B/C)
-          type: data.type as 'listing' | undefined,
-          listingId: data.listingId as string | undefined,
-          title: data.title as string | undefined,
-          price: data.price as number | undefined,
-          imageUrl: data.imageUrl as string | null | undefined,
-          posterId: data.posterId as string | undefined,
-          posterName: data.posterName as string | undefined,
-        } satisfies Message;
-      }));
+      setMessages(snap.docs.map((d) => channelDocToMessage(d.id, d.data())));
     });
   }, [chatId, chatType, activeChannelId]);
 

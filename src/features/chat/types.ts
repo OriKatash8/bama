@@ -20,6 +20,22 @@ export interface Message {
   readBy: string[];
   /** Server-generated system notice (e.g. new mission/meeting). Rendered as a centered pill. */
   system?: boolean;
+  /**
+   * Members this message mentions, as flat userIds — NOT offsets into `text`.
+   *
+   * `text` keeps the readable "@Dana Cohen" it was sent with, and the highlight
+   * is recovered by scanning for it at render time (see utils/mentions.ts). So
+   * the push body and the chat-list preview, which both read `text` verbatim,
+   * need no special handling at all.
+   *
+   * Flat ids rather than {id, name} pairs because the create rule has to check
+   * them against the chat's members, and Firestore rules cannot project a field
+   * out of each map in a list.
+   */
+  mentions?: string[];
+  /** `@everyone` in a community channel. The community OWNER's alone, enforced
+   *  in the rules — it reaches the whole roster AND overrides mute. */
+  mentionsEveryone?: boolean;
   /** Shared marketplace listing — rendered as an actionable card. */
   type?: 'listing';
   listingId?: string;
