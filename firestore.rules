@@ -24,6 +24,48 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/chats/$(chatId)).data.get('readOnly', false) == true;
     }
 
+    // The whole parent chat, read ONCE and passed down. The message-create rules
+    // need members, readOnly and ownerId together; calling the three helpers
+    // above would read the same document three times.
+    function chatDoc(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId)).data;
+    }
+
+    /**
+     * Everything a client-written message must satisfy, in BOTH collections.
+     *
+     * Membership used to be the only check here — no required fields, no
+     * constrained fields, no allowlist. Three capabilities fell out of that,
+     * all of them live until now:
+     *
+     *  - `senderId` was free text, so a member could post AS ANOTHER MEMBER.
+     *    This is a marketplace where people negotiate paid work in chat; a
+     *    forged message from the counterparty is a fraud vector.
+     *  - `system: true` renders as an authoritative server notice, so a member
+     *    could fake one — including about payment. No client has ever set it:
+     *    sendMessage's `opts.system` is dead on the client, so denying it takes
+     *    away a capability nothing uses.
+     *  - `mentions` (new) drives a push that deliberately OVERRIDES mute. Every
+     *    id in it must belong to this chat, or a crafted message becomes an
+     *    unsolicited-notification channel aimed at arbitrary users.
+     *
+     * `hasAll` on a non-list errors, which denies — failing closed is correct
+     * for a field whose whole job is addressing notifications.
+     *
+     * readOnly is checked HERE, which also closes a gap: the channel block never
+     * had it, so a read-only community still accepted channel messages. No
+     * community is read-only today (it is set by confirmCompletion on project
+     * chats and by sendBamaSystemDM), so this cannot change live behaviour.
+     */
+    function messageCreateOk(chat) {
+      return isAuth()
+        && request.auth.uid in chat.members
+        && chat.get('readOnly', false) != true
+        && request.resource.data.senderId == request.auth.uid
+        && !request.resource.data.keys().hasAny(['system'])
+        && chat.members.hasAll(request.resource.data.get('mentions', []));
+    }
+
     // Fetches the parent project document data
     function projectDoc(projectId) {
       return get(/databases/$(database)/documents/projects/$(projectId)).data;
@@ -366,8 +408,11 @@ service cloud.firestore {
       // direct messages
       match /messages/{messageId} {
         allow read: if isAuth() && request.auth.uid in chatMembers(chatId);
-        // No client writes into a read-only chat (BAMA System DMs); Admin SDK bypasses.
-        allow create: if isAuth() && request.auth.uid in chatMembers(chatId) && !chatReadOnly(chatId);
+        // messageCreateOk covers membership AND read-only (BAMA System DMs);
+        // the Admin SDK bypasses all of it. `mentionsEveryone` belongs to
+        // community channels alone, so it is denied outright here.
+        allow create: if messageCreateOk(chatDoc(chatId))
+          && !request.resource.data.keys().hasAny(['mentionsEveryone']);
         allow update, delete: if false;
       }
 
@@ -383,7 +428,14 @@ service cloud.firestore {
           && resource.data.get('kind', '') != 'market';
 
         match /messages/{messageId} {
-          allow read, create: if isAuth() && request.auth.uid in chatMembers(chatId);
+          allow read: if isAuth() && request.auth.uid in chatMembers(chatId);
+          // @everyone reaches the whole roster and overrides mute, so it is the
+          // community OWNER's to send. There is no channel-admin concept in this
+          // data model — `roles` is vestigial and channels carry no membership of
+          // their own — so ownerId is the only real authority to key this on.
+          allow create: if messageCreateOk(chatDoc(chatId))
+            && (!request.resource.data.keys().hasAny(['mentionsEveryone'])
+                || chatDoc(chatId).get('ownerId', '') == request.auth.uid);
           allow update, delete: if false;
         }
       }
