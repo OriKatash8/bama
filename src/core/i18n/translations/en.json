@@ -209,6 +209,12 @@
     "system_declined": "{{name}} decided not to continue with the project",
     "message_placeholder": "Write a message"
   },
+  "mentions": {
+    "loading": "Loading members…",
+    "empty": "No one to mention",
+    "at_limit": "Up to 10 people per message",
+    "everyone": "everyone — notifies the whole channel"
+  },
   "project_details": {
     "add_pro_step_roles": "Choose roles",
     "add_pro_step_subskills": "Match subskills",

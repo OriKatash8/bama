@@ -209,6 +209,12 @@
     "system_declined": "{{name}} החליט/ה לא להמשיך בפרויקט",
     "message_placeholder": "כתוב הודעה"
   },
+  "mentions": {
+    "loading": "טוען חברים…",
+    "empty": "אין את מי להזכיר",
+    "at_limit": "עד 10 אנשים בהודעה",
+    "everyone": "כולם — התראה לכל הערוץ"
+  },
   "project_details": {
     "add_pro_step_roles": "בחירת תפקידים",
     "add_pro_step_subskills": "התאמת התמחויות",

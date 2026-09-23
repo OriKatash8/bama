@@ -32,6 +32,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { MentionAutocomplete } from '../components/MentionAutocomplete';
+import { EVERYONE_TOKENS, useMentionAutocomplete } from '../hooks/useMentionAutocomplete';
+import { splitMentionRuns, type MentionTarget } from '../utils/mentions';
+
 const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
 const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
 import {
@@ -357,6 +361,77 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
 
 type ListItem = Message | { type: 'date-separator'; id: string; label: string };
 
+/**
+ * A message's text, with its mentions marked.
+ *
+ * Rendered as plain <Text> rather than <AppText>: AppText picks Heebo vs
+ * Montserrat by regex-testing extractString(children), which returns '' for
+ * ELEMENT children — so the moment the bubble becomes nested runs, every Hebrew
+ * bubble silently switches to the Latin face. The font is resolved here from
+ * the whole raw string instead.
+ *
+ * Each mention is wrapped in U+2068 FIRST STRONG ISOLATE … U+2069 POP
+ * DIRECTIONAL ISOLATE. FSI takes its direction from the first strong character
+ * of the CONTENT, so a Hebrew name isolates RTL and a Latin one LTR with no
+ * script detection here. writingDirection on a nested Text would not do it:
+ * nested Text is one paragraph in RN, and react-native-web maps it to CSS
+ * `direction`, which does not isolate — that needs unicode-bidi:isolate, which
+ * RN Web does not emit. The Unicode characters are honoured by CoreText and by
+ * every browser under UAX#9, so this is the one part that behaves identically
+ * on iPhone and on web.
+ *
+ * Applied at RENDER ONLY. `text` is read verbatim by the push body and the
+ * chat-list preview, so invisible control characters must never be stored.
+ */
+const FSI = '\u2068';
+const PDI = '\u2069';
+
+function MessageBody({ msg, rtl, names, color, accent, font, onPressMention }: {
+  msg: Message;
+  rtl: boolean;
+  names: Record<string, string>;
+  color: string;
+  accent: string;
+  font: ReturnType<typeof useAppFont>;
+  onPressMention: (userId: string) => void;
+}) {
+  const targets: MentionTarget[] = (msg.mentions ?? []).map((userId) => ({
+    userId,
+    name: names[userId] ?? '',
+  }));
+  const runs = splitMentionRuns(
+    msg.text,
+    targets,
+    msg.mentionsEveryone ? [...EVERYONE_TOKENS] : [],
+  );
+
+  return (
+    <Text
+      testID="message-body"
+      style={[
+        styles.messageText,
+        { color, writingDirection: rtl ? 'rtl' : 'ltr', textAlign: rtl ? 'right' : 'left' },
+        font.forText(msg.text, 'regular'),
+      ]}
+    >
+      {runs.map((run, i) =>
+        run.userId || run.everyone ? (
+          <Text
+            key={i}
+            testID={run.userId ? `mention-${run.userId}` : 'mention-everyone'}
+            style={[styles.mentionRun, { color: accent }]}
+            onPress={run.userId ? () => onPressMention(run.userId!) : undefined}
+          >
+            {`${FSI}${run.text}${PDI}`}
+          </Text>
+        ) : (
+          run.text
+        ),
+      )}
+    </Text>
+  );
+}
+
 function DateSeparator({ label }: { label: string }) {
   return (
     <View style={styles.dateSepRow}>
@@ -563,6 +638,19 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatPhotoUploading, setChatPhotoUploading] = useState(false);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [chatMembers, setChatMembers] = useState<string[]>([]);
+  /** Caret, a logical index. Fed by onSelectionChange; drives @-detection. */
+  const [caret, setCaret] = useState(0);
+  /**
+   * Passed to the TextInput for EXACTLY ONE render after an insertion, then
+   * reset to undefined.
+   *
+   * react-native-web applies `selection` in a useLayoutEffect keyed on the
+   * object itself, so a fresh {start,end} literal every render re-runs it and
+   * forces the caret back on every keystroke — a web-only broken field. On iOS
+   * the same one-shot pattern also avoids the multiline quirk where a
+   * programmatic selection scrolls the field.
+   */
+  const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | undefined>();
   const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
   const [imageUploading, setImageUploading] = useState(false);
   const mediaActive = videoUploading || videoProcessing || imageUploading;
@@ -649,6 +737,26 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [newMeetingInvitedIds, setNewMeetingInvitedIds] = useState<string[]>([]);
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
+
+  /** Text + caret move together when a mention is inserted. */
+  const applyComposerChange = useCallback((next: string, nextCaret: number) => {
+    setInputText(next);
+    setCaret(nextCaret);
+    setPendingSelection({ start: nextCaret, end: nextCaret });
+  }, []);
+
+  const mention = useMentionAutocomplete({
+    text: inputText,
+    caret,
+    memberIds: chatMembers,
+    memberNames,
+    currentUserId,
+    // @everyone reaches the whole roster and overrides mute, so it is the
+    // community owner's alone — the same predicate the rule enforces.
+    canMentionEveryone: chatType === 'community' && currentUserId === chatOwnerId,
+    enabled: chatType !== 'dm',
+    onChange: applyComposerChange,
+  });
 
   const assignableMembers = chatMembers
     .filter(id => id !== currentUserId)
@@ -1008,17 +1116,26 @@ export function ChatRoomScreen({ chatId }: Props) {
   async function handleSend() {
     const text = inputText.trim();
     if (!text || !currentUserId) return;
+    // Derived from what is actually being sent, not from what was picked:
+    // backspace deletes one character rather than the whole token, so a
+    // half-deleted "@Dana Coh" must drop the push along with the highlight.
+    const { mentions, everyone } = mention.resolveMentions(text);
     setInputText('');
+    setCaret(0);
     if (chatType === 'community' && activeChannelId) {
       await addDoc(
         collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages'),
-        { senderId: currentUserId, text, timestamp: serverTimestamp(), readBy: [currentUserId] },
+        {
+          senderId: currentUserId, text, timestamp: serverTimestamp(), readBy: [currentUserId],
+          ...(mentions.length ? { mentions } : {}),
+          ...(everyone ? { mentionsEveryone: true } : {}),
+        },
       );
       await updateDoc(doc(db, 'chats', chatId, 'channels', activeChannelId), {
         lastMessage: { text, senderId: currentUserId, timestamp: serverTimestamp() },
       });
     } else {
-      await sendMessage(chatId, currentUserId, text);
+      await sendMessage(chatId, currentUserId, text, mentions.length ? { mentions } : undefined);
     }
   }
 
@@ -1502,9 +1619,17 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
-                    <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text }]}>
-                      {msg.text}
-                    </AppText>
+                    <MessageBody
+                      msg={msg}
+                      rtl={rtl}
+                      names={memberNames}
+                      color={isOwn ? '#fff' : colors.text}
+                      accent={isOwn ? '#fff' : modeAccent}
+                      font={font}
+                      onPressMention={(uid) =>
+                        router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}` as never)
+                      }
+                    />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
                       {formatMessageTime(msg.timestamp)}
                     </Text>
@@ -1652,6 +1777,20 @@ export function ChatRoomScreen({ chatId }: Props) {
 
       {/* Input */}
       {!isRecording && !isReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
+        <View style={styles.composerAnchor}>
+        <MentionAutocomplete
+          state={mention}
+          rtl={rtl}
+          accent={modeAccent}
+          tint={modeTint}
+          onPick={mention.pick}
+          labels={{
+            loading: t('mentions.loading'),
+            empty: t('mentions.empty'),
+            atLimit: t('mentions.at_limit'),
+            everyone: t('mentions.everyone'),
+          }}
+        />
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
           {mediaActive ? (
             <View style={styles.mediaSendingRow}>
@@ -1668,10 +1807,27 @@ export function ChatRoomScreen({ chatId }: Props) {
               <TextInput
                 // The layout is forced LTR app-wide, so the field's own text
                 // side is set here: the placeholder and what is typed both start
-                // on the right in Hebrew.
-                style={[styles.input, { backgroundColor: modeTint, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+                // on the right in Hebrew. writingDirection as well as textAlign,
+                // because iOS infers the paragraph direction from the first
+                // strong character while the web textarea inherits dir=ltr — the
+                // same Hebrew string laid out differently on the two platforms.
+                style={[styles.input, { backgroundColor: modeTint, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', writingDirection: rtl ? 'rtl' : 'ltr', ...font.regular }]}
                 value={inputText}
-                onChangeText={setInputText}
+                onChangeText={(next) => {
+                  setInputText(next);
+                  // Keep the caret plausible between change and selection
+                  // events; the effect in the hook settles on whichever lands
+                  // last, so this only has to avoid going backwards.
+                  setCaret((prev) => Math.min(prev + (next.length - inputText.length), next.length));
+                }}
+                selection={pendingSelection}
+                onSelectionChange={(e) => {
+                  setCaret(e.nativeEvent.selection.start);
+                  // One-shot: release control of the caret the moment it lands.
+                  if (pendingSelection) setPendingSelection(undefined);
+                }}
+                onBlur={mention.dismiss}
+                testID="chat-composer-input"
                 placeholder={t('chats.message_placeholder')}
                 placeholderTextColor={colors.placeholder}
                 multiline
@@ -1696,6 +1852,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               )}
             </>
           )}
+        </View>
         </View>
       )}
     </KeyboardAvoidingView>
@@ -2299,6 +2456,7 @@ const styles = StyleSheet.create({
     color: '#888',
     marginBottom: 2,
   },
+  mentionRun: { fontWeight: '700' },
   messageText: {
     fontSize: 15,
     lineHeight: 20,
@@ -2308,6 +2466,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     marginTop: 2,
   },
+  composerAnchor: { position: 'relative' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
