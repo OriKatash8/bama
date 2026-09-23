@@ -313,7 +313,7 @@
     "fee_line": "עמלת תיווך {{percent}}% · ₪{{amount}}",
     "fee_paid": "עמלת תיווך שולמה",
     "fee_included": "ללא עמלה",
-    "pay_fee": "יתרה ל-BAMA",
+    "pay_fee": "יתרת תיווך",
     "confirm_leave_title": "עזיבת הפרויקט",
     "confirm_leave_body": "לאשר את ההסרה ולעזוב את הפרויקט? הפעולה אינה הפיכה.",
     "reprice_no_offer": "אין הצעה מאושרת לעדכון מחיר בפרויקט הזה",
@@ -1081,7 +1081,7 @@
     "not_found": "הקהילה לא נמצאה"
   },
   "balance": {
-    "title": "יתרה ל-BAMA",
+    "title": "יתרת תיווך",
     "total_label": "סה״כ לתשלום",
     "nothing_owed": "אין יתרה פתוחה",
     "line_breakdown": "{{percent}}% מתוך ₪{{base}}",

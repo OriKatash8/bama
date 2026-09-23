@@ -313,7 +313,7 @@
     "fee_line": "Brokerage fee {{percent}}% · ₪{{amount}}",
     "fee_paid": "Brokerage fee paid",
     "fee_included": "No fee",
-    "pay_fee": "BAMA balance",
+    "pay_fee": "Brokerage balance",
     "confirm_leave_title": "Leave project",
     "confirm_leave_body": "Accept the removal and leave this project? This cannot be undone.",
     "reprice_no_offer": "There is no accepted offer to reprice on this project",
@@ -1081,7 +1081,7 @@
     "not_found": "Community not found"
   },
   "balance": {
-    "title": "BAMA balance",
+    "title": "Brokerage balance",
     "total_label": "Total due",
     "nothing_owed": "Nothing outstanding",
     "line_breakdown": "{{percent}}% of ₪{{base}}",
