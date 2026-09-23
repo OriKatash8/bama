@@ -46,14 +46,25 @@ function withAlpha(hex: string, alpha: number): string {
 
 export function SlidingTabBackground({ numTabs, tabNames, activeColor, bandHeight, sideInset = 0, radius = 0 }: Props) {
   const segments = useSegments();
-  const activeSegment = segments.find(s => tabNames.includes(s)) ?? tabNames[0];
-  const activeIndex = Math.max(0, tabNames.indexOf(activeSegment));
+  const activeSegment = segments.find(s => tabNames.includes(s));
+  /**
+   * -1 when the route on screen is not a tab at all.
+   *
+   * This used to fall back to `tabNames[0]`, which asserts "home" where the
+   * honest answer is "unknown". Once the chat room moved above the tab
+   * navigator its segments stopped containing a tab name, so opening a chat
+   * sprang the pill to the first tab behind it — and coming back to the list
+   * slid it the whole way across. Not a tab means the selection has not
+   * changed; leave the pill where it is.
+   */
+  const activeIndex = activeSegment ? tabNames.indexOf(activeSegment) : -1;
 
   const [width, setWidth] = useState(0);
   // Held in state, not a ref: created once, and safe to read while rendering.
-  const [slideAnim] = useState(() => new Animated.Value(activeIndex));
+  const [slideAnim] = useState(() => new Animated.Value(Math.max(0, activeIndex)));
 
   useEffect(() => {
+    if (activeIndex < 0) return;
     Animated.spring(slideAnim, {
       toValue: activeIndex,
       stiffness: STIFFNESS,
