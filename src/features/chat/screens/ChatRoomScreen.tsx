@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isolate } from '@utils/formatters';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
@@ -371,21 +372,10 @@ type ListItem = Message | { type: 'date-separator'; id: string; label: string };
  * bubble silently switches to the Latin face. The font is resolved here from
  * the whole raw string instead.
  *
- * Each mention is wrapped in U+2068 FIRST STRONG ISOLATE … U+2069 POP
- * DIRECTIONAL ISOLATE. FSI takes its direction from the first strong character
- * of the CONTENT, so a Hebrew name isolates RTL and a Latin one LTR with no
- * script detection here. writingDirection on a nested Text would not do it:
- * nested Text is one paragraph in RN, and react-native-web maps it to CSS
- * `direction`, which does not isolate — that needs unicode-bidi:isolate, which
- * RN Web does not emit. The Unicode characters are honoured by CoreText and by
- * every browser under UAX#9, so this is the one part that behaves identically
- * on iPhone and on web.
- *
- * Applied at RENDER ONLY. `text` is read verbatim by the push body and the
- * chat-list preview, so invisible control characters must never be stored.
+ * Each mention is wrapped in `isolate` (U+2068 FSI … U+2069 PDI), which lives
+ * in @utils/formatters beside rtlSafe — the reply quote needs the same thing
+ * for the name it shows, and the reasoning is written up there.
  */
-const FSI = '\u2068';
-const PDI = '\u2069';
 
 function MessageBody({ msg, rtl, names, color, accent, font, onPressMention }: {
   msg: Message;
@@ -423,7 +413,7 @@ function MessageBody({ msg, rtl, names, color, accent, font, onPressMention }: {
             style={[styles.mentionRun, { color: accent }]}
             onPress={run.userId ? () => onPressMention(run.userId!) : undefined}
           >
-            {`${FSI}${run.text}${PDI}`}
+            {isolate(run.text)}
           </Text>
         ) : (
           run.text

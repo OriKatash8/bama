@@ -4,39 +4,19 @@
  * professional is resolved — are testable without gestures.
  */
 
+import { CLAIM_PX, startedAtEdge, dragStartX } from '@features/chat/utils/swipeGeometry';
+
 /** Minimum horizontal travel (px) before a drag counts as a swipe. */
 export const SWIPE_THRESHOLD = 40;
 
 /**
- * Horizontal travel (px) before the carousel claims the gesture at all. Below
- * it, taps still reach the buttons underneath and vertical drags still scroll
- * the chat.
+ * Where a drag starts, which strip belongs to the screen, and the web
+ * back-navigation guard now live in utils/swipeGeometry.ts — swipe-to-reply
+ * needs the same three, inside the same screen, against the same competing
+ * gesture. Re-exported here so this file still reads as the carousel's whole
+ * story and nothing importing it had to change.
  */
-export const CLAIM_PX = 12;
-
-/** Width of the strip along each screen edge that belongs to the screen. */
-export const EDGE_PX = 32;
-
-/**
- * Whether a drag began in the screen's own gesture zone.
- *
- * Paging the card and swiping the screen away are the same motion, and in
- * Hebrew they are even the same direction. The edges stay the screen's: a drag
- * that starts there is left alone, so going back still works. Everywhere else
- * on the card is the carousel's.
- */
-export function startedAtEdge(x0: number, screenWidth: number, edge = EDGE_PX): boolean {
-  return x0 <= edge || x0 >= screenWidth - edge;
-}
-
-/**
- * On the web the browser reads a horizontal drag as "go back in history", and
- * a trackpad swipe as the same. Claiming the axis is what stops it; native
- * platforms have no such style and take null.
- */
-export function pageSwipeGuard(platform: string): object | null {
-  return platform === 'web' ? { touchAction: 'pan-y', overscrollBehaviorX: 'contain' } : null;
-}
+export { CLAIM_PX, EDGE_PX, startedAtEdge, pageSwipeGuard, dragStartX } from '@features/chat/utils/swipeGeometry';
 
 /** How long the card takes to leave, and the next one to arrive (ms, each way). */
 export const SLIDE_MS = 150;
@@ -109,17 +89,6 @@ export function slidePlan(step: -1 | 1, rtl: boolean, width: number): { out: num
 
 /** What a gesture gives us. Structural, so this file stays free of React Native. */
 type Gesture = { dx: number; dy: number; moveX: number };
-
-/**
- * Where the finger went down, worked back from where it is now.
- *
- * `gestureState.x0` would say the same thing, but it is only filled in once the
- * responder has been GRANTED — while the claim is still being decided it reads
- * 0, which put every drag on the left edge and refused the lot.
- */
-export function dragStartX(g: { moveX: number; dx: number }): number {
-  return g.moveX - g.dx;
-}
 
 /**
  * The carousel's gesture, as plain callbacks: claim clearly horizontal drags,

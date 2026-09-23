@@ -49,3 +49,27 @@ export function formatRelativeTime(timestamp: Pick<Timestamp, 'seconds'>): strin
 export function rtlSafe(text: string, rtl: boolean): string {
   return rtl ? `${text}‏` : text;
 }
+
+/**
+ * U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE.
+ *
+ * FSI takes its direction from the first strong character of its CONTENT, so a
+ * Hebrew name isolates right-to-left and a Latin one left-to-right with no
+ * script detection at the call site. `writingDirection` on a nested Text does
+ * not do this: nested Text is one paragraph in RN, and react-native-web maps
+ * writingDirection to CSS `direction`, which does not isolate — that needs
+ * unicode-bidi:isolate, which RN Web does not emit. Both CoreText and every
+ * browser implement UAX#9, so these are the one part that behaves identically
+ * on iPhone and on web.
+ *
+ * Like rtlSafe above, this belongs at the EDGE. Applied at render only — never
+ * to stored text, which flows verbatim into push bodies and chat-list previews
+ * where an invisible control character would be carried along.
+ */
+export const FSI = '⁨';
+export const PDI = '⁩';
+
+/** A name or other foreign-script run, isolated from the line around it. */
+export function isolate(text: string): string {
+  return `${FSI}${text}${PDI}`;
+}
