@@ -205,6 +205,7 @@
     "system_completion_done": "Project completed",
     "system_completion_title": "Project completion request",
     "system_crew_title": "The crew is set",
+    "crew_ready": "The team is ready",
     "system_left": "{{name}} left the project",
     "system_declined": "{{name}} decided not to continue with the project",
     "message_placeholder": "Write a message"

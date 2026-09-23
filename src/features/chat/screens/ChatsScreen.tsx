@@ -23,6 +23,7 @@ import { engagementStanding, feePaidEarly } from '@features/pricing/utils/balanc
 import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 import { usePendingMentions } from '../hooks/usePendingMentions';
+import { isCrewReady } from '../utils/systemMessages';
 
 type ProjectStatus = ProjectRequest['status'];
 type ProjectRoleInfo = {
@@ -485,6 +486,21 @@ export function ChatsScreen({
     // Three states, not two: a professional who owes is told to settle, but a
     // SUBSCRIBER (feeStatus 'included') or an exempt legacy project has nothing
     // to settle, so "tap to close" would be a lie — they just get the fact.
+    /**
+     * The preview line, with one substitution.
+     *
+     * activateProject copies its system message straight onto the chat's
+     * lastMessage (candidates.ts:258), so the list showed the stored HEBREW —
+     * "🎬 הצוות נסגר: דנה, אורי" — to every reader, emoji and roster included.
+     * The chat room already turns the same event into a localised pill; this is
+     * the surface that did not.
+     *
+     * The names are deliberately dropped: the row has one line for status, and
+     * who is on the crew is what opening the chat is for.
+     */
+    const previewFor = (text: string | undefined) =>
+      isCrewReady(text) ? t('chats.crew_ready') : text ?? '';
+
     const completedLine = viewerIsPro
       // A contest is its own state and gets its own sentence. Falling through to
       // "Project complete" would tell a professional their part is settled while
@@ -593,7 +609,7 @@ export function ChatsScreen({
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {completedLine ?? item.lastMessage?.text ?? ''}
+                {completedLine ?? previewFor(item.lastMessage?.text)}
               </AppText>
               {feeSettledEarly && (
                 <View style={styles.paidPill}>

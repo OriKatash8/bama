@@ -205,6 +205,7 @@
     "system_completion_done": "הפרויקט הושלם",
     "system_completion_title": "בקשה לסיום הפרויקט",
     "system_crew_title": "הצוות מוכן לעבודה",
+    "crew_ready": "הצוות מוכן",
     "system_left": "{{name}} עזב את הפרויקט",
     "system_declined": "{{name}} החליט/ה לא להמשיך בפרויקט",
     "message_placeholder": "כתוב הודעה"
