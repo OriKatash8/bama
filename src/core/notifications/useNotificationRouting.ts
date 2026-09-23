@@ -81,6 +81,8 @@ export function useNotificationRouting(): void {
       case 'message':
       case 'mission':
       case 'meeting':
+      // A mention lands in the chat it was written in, same as a message.
+      case 'mention':
       case 'system': {
         if (!data.chatId) return;
         await navigate(null, `/${modeSegment(current)}/chat/${data.chatId}`);

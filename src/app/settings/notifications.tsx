@@ -28,7 +28,7 @@ function makeT(translations: Translations) {
   };
 }
 
-const ESSENTIAL_TYPES = ['offer', 'offer_accepted', 'purchase'] as const;
+const ESSENTIAL_TYPES = ['offer', 'offer_accepted', 'purchase', 'mention'] as const;
 const OPTIONAL_TYPES = ['message', 'project', 'mission', 'meeting'] as const;
 type OptionalType = (typeof OPTIONAL_TYPES)[number];
 

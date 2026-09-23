@@ -967,6 +967,7 @@
     "notif_optional_title": "Optional",
     "notif_save_error": "Couldn't save. Please try again.",
     "notif_type_message": "Chat messages",
+    "notif_type_mention": "Mentions (@)",
     "notif_type_project": "New matching projects",
     "notif_type_mission": "Missions",
     "notif_type_meeting": "Meetings",

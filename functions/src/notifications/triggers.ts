@@ -8,6 +8,7 @@ import {
   type RoleSkillEntry,
 } from '../matching';
 import { SYSTEM_USER_ID } from '../system';
+import { fanOutMessage, needMuteCheck } from './fanOut';
 
 async function createNotification(
   db: admin.firestore.Firestore,
@@ -37,6 +38,8 @@ export const onNewChatMessage = functions.firestore
       audioUrl?: string;
       videoUrl?: string;
       system?: boolean;
+      mentions?: string[];
+      mentionsEveryone?: boolean;
     };
 
     if (!message.senderId) return;
@@ -69,17 +72,20 @@ export const onNewChatMessage = functions.firestore
       body = text.length > 100 ? text.slice(0, 97) + '...' : text;
     }
 
-    const recipients = members.filter((uid) => uid !== message.senderId);
-    await Promise.all(
-      recipients.map((userId) =>
-        createNotification(db, {
-          userId,
-          title: senderName,
-          message: body,
-          data: { type: 'message', chatId },
-        })
-      )
-    );
+    // A mentioned user gets type:'mention' INSTEAD of type:'message', so nobody
+    // is told twice about the same message.
+    await fanOutMessage(db, {
+      members,
+      senderId: message.senderId,
+      mentions: message.mentions,
+      // @everyone belongs to community channels; the rule denies it here.
+      mutedBy: [],
+      title: senderName,
+      body,
+      mentionBody: `הזכיר/ה אותך: ${body}`,
+      data: { chatId },
+      ref: { chatId, channelId: null, messageId: context.params.messageId },
+    });
   });
 
 /**
@@ -103,6 +109,8 @@ export const onNewCommunityMessage = functions.firestore
       audioUrl?: string;
       videoUrl?: string;
       system?: boolean;
+      mentions?: string[];
+      mentionsEveryone?: boolean;
     };
 
     if (!message.senderId) return;
@@ -148,25 +156,43 @@ export const onNewCommunityMessage = functions.firestore
       : senderName;
     const bodyLine = communityName ? `${senderName}: ${body}` : body;
 
-    const recipients = members.filter((uid) => uid !== message.senderId);
-    await Promise.all(
-      recipients.map(async (userId) => {
-        // Per-community mute. Checked HERE rather than in onNotificationCreate so
-        // it suppresses the in-app bell as well as the push — "cancel notifications
-        // from this community" means both. Same reasoning as the 'project' pref
-        // gate below: no point writing a doc the sender would only read to discard.
-        const userDoc = await db.collection('users').doc(userId).get();
-        const muted = (userDoc.data()?.mutedChats as string[] | undefined) ?? [];
-        if (muted.includes(chatId)) return;
+    // Per-community mute. Checked HERE rather than in onNotificationCreate so it
+    // suppresses the in-app bell as well as the push — "cancel notifications
+    // from this community" means both.
+    //
+    // The mention set is computed FIRST, because a mention overrides mute: only
+    // the recipients whose mute could still matter are read. With @everyone that
+    // is nobody, so 200 reads become none.
+    const askAbout = needMuteCheck({
+      members,
+      senderId: message.senderId,
+      mentions: message.mentions,
+      mentionsEveryone: message.mentionsEveryone,
+    });
+    const mutedBy = (
+      await Promise.all(
+        askAbout.map(async (userId) => {
+          const userDoc = await db.collection('users').doc(userId).get();
+          const muted = (userDoc.data()?.mutedChats as string[] | undefined) ?? [];
+          return muted.includes(chatId) ? userId : null;
+        }),
+      )
+    ).filter((uid): uid is string => uid !== null);
 
-        await createNotification(db, {
-          userId,
-          title,
-          message: bodyLine,
-          data: { type: 'message', chatId, channelId },
-        });
-      })
-    );
+    await fanOutMessage(db, {
+      members,
+      senderId: message.senderId,
+      mentions: message.mentions,
+      mentionsEveryone: message.mentionsEveryone,
+      mutedBy,
+      title,
+      body: bodyLine,
+      mentionBody: message.mentionsEveryone
+        ? `${senderName} הזכיר/ה את כולם: ${body}`
+        : `${senderName} הזכיר/ה אותך: ${body}`,
+      data: { chatId, channelId },
+      ref: { chatId, channelId, messageId: context.params.messageId },
+    });
   });
 
 export const onNewPriceOffer = functions.firestore

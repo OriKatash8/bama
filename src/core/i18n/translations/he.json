@@ -967,6 +967,7 @@
     "notif_optional_title": "נוספות",
     "notif_save_error": "השמירה נכשלה. נסו שוב.",
     "notif_type_message": "הודעות צ'אט",
+    "notif_type_mention": "אזכורים (@)",
     "notif_type_project": "פרויקטים חדשים שמתאימים לך",
     "notif_type_mission": "משימות",
     "notif_type_meeting": "פגישות",

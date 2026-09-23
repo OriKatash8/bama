@@ -24,6 +24,9 @@ export const onNotificationCreate = functions.firestore
 const ESSENTIAL = [
   'offer', 'offer_accepted', 'purchase', 'system',
   'engagement_completed', 'charge_failed', 'end_date_soon',
+  // A mention is addressed to you by name and already overrides mute; letting
+  // notifPrefs silence it would make @ mean nothing.
+  'mention',
 ];
     if (type && !ESSENTIAL.includes(type)) {
       const userDoc = await db.collection('users').doc(notification.userId).get();
