@@ -281,8 +281,18 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       // Owners may update their own doc, but never their moderation state —
       // that is written only by the moderateUser callable (Admin SDK).
+      // pendingMentions is written by the message triggers (Admin SDK, which
+      // bypasses all of this). A client may only ever SHRINK it — clearing what
+      // they have seen — so nobody can add a mention to somebody else's doc, or
+      // swap entries at the same length.
+      function pendingMentionsOnlyShrinks() {
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pendingMentions'])
+          || request.resource.data.get('pendingMentions', []).size()
+               < resource.data.get('pendingMentions', []).size();
+      }
       allow update: if isOwner(userId)
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['moderation']);
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['moderation'])
+        && pendingMentionsOnlyShrinks();
       allow delete: if false;
 
       match /profile/data {

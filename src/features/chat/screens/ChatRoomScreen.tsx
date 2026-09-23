@@ -35,6 +35,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MentionAutocomplete } from '../components/MentionAutocomplete';
 import { EVERYONE_TOKENS, useMentionAutocomplete } from '../hooks/useMentionAutocomplete';
 import { splitMentionRuns, type MentionTarget } from '../utils/mentions';
+import { usePendingMentions } from '../hooks/usePendingMentions';
 
 const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
 const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
@@ -609,11 +610,17 @@ export function ChatRoomScreen({ chatId }: Props) {
   // the view pinned to the newest message (initial open + new messages while at
   // the bottom) without yanking the user down when they've scrolled up.
   const isAtBottomRef = useRef(true);
-  // Opening a conversation (or switching channel) pins the list to the newest
-  // message until the user drags. isAtBottomRef alone is not enough: rows are
-  // measured as they render — images and listing cards land late — so the first
-  // scrollToEnd lands short and the last message sits below the fold.
-  const pinToBottomRef = useRef(true);
+  /**
+   * Where the list is pinned while opening, until the user drags.
+   *
+   * Was a boolean meaning "pin to bottom". It has to be a TARGET because
+   * jump-to-mention cannot win against it otherwise: onLayout and every
+   * onContentSizeChange re-scroll while pinned, and rows remeasure late as
+   * images and listing cards land, so a one-off scrollToIndex is overridden a
+   * frame later. isAtBottomRef alone is not enough for the same reason — the
+   * first scrollToEnd lands short and the last message sits below the fold.
+   */
+  const pinTargetRef = useRef<{ kind: 'bottom' } | { kind: 'message'; id: string } | null>({ kind: 'bottom' });
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [chatArchived, setChatArchived] = useState(false);
@@ -958,13 +965,61 @@ export function ChatRoomScreen({ chatId }: Props) {
     }, [chatId, chatType, activeChannelId]),
   );
 
-  // Entering a chat — or switching community channel — opens on the last message.
+  const pendingMentions = usePendingMentions();
+
+  /**
+   * Re-apply the pin. Called from onLayout and from every onContentSizeChange
+   * while a target is set, because rows remeasure late — that repetition is
+   * what makes the jump stick instead of being overridden a frame later.
+   */
+  const applyPin = useCallback(() => {
+    const target = pinTargetRef.current;
+    if (!target) return;
+    if (target.kind === 'bottom') { flatListRef.current?.scrollToEnd({ animated: false }); return; }
+    const index = listItems.findIndex((it) => it.id === target.id);
+    if (index < 0) return;
+    flatListRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.3 });
+  }, [listItems]);
+
+  /** Which chat/channel we have already jumped in, so a snapshot arriving
+   *  mid-read cannot yank the list a second time. */
+  const jumpedRef = useRef('');
+  const mentionChannelId = chatType === 'community' ? activeChannelId || null : null;
+
+  // Entering a chat — or switching channel — opens on the last message.
   useEffect(() => {
-    pinToBottomRef.current = true;
+    pinTargetRef.current = { kind: 'bottom' };
     isAtBottomRef.current = true;
     setShowScrollDown(false);
     flatListRef.current?.scrollToEnd({ animated: false });
   }, [chatId, activeChannelId]);
+
+  // ...unless a mention is waiting here, in which case open on the OLDEST one
+  // still unseen. That is what lets the @ pill clear on open without a
+  // per-message read receipt.
+  //
+  // Runs again when the snapshot lands, because opening from a push arrives
+  // before the mention list does — the ref keeps it to once per chat.
+  useEffect(() => {
+    const key = `${chatId}|${mentionChannelId ?? ''}`;
+    if (jumpedRef.current === key) return;
+    const jumpTo = pendingMentions.firstFor(chatId, mentionChannelId);
+    if (!jumpTo) return;
+    jumpedRef.current = key;
+    pinTargetRef.current = { kind: 'message', id: jumpTo.messageId };
+    isAtBottomRef.current = false;
+    applyPin();
+  }, [chatId, mentionChannelId, pendingMentions, applyPin]);
+
+  // Opening clears this chat's mentions — ONE path for group chats and channels
+  // alike, which is why it does not hang off unreadCount (communities have no
+  // unread state at all). Declared AFTER the jump so the jump reads the entry
+  // before it goes; `clear` no-ops when nothing matches, so this cannot loop
+  // against its own snapshot.
+  useEffect(() => {
+    if (!chatId) return;
+    void pendingMentions.clear(chatId, mentionChannelId);
+  }, [chatId, mentionChannelId, pendingMentions]);
 
   // Community: listen to active channel messages
   useEffect(() => {
@@ -1479,14 +1534,20 @@ export function ChatRoomScreen({ chatId }: Props) {
             setShowScrollDown(distanceFromBottom > 200);
           }}
           // The user taking hold of the list releases the open-at-bottom pin.
-          onScrollBeginDrag={() => { pinToBottomRef.current = false; }}
-          onLayout={() => {
-            if (pinToBottomRef.current) flatListRef.current?.scrollToEnd({ animated: false });
-          }}
+          onScrollBeginDrag={() => { pinTargetRef.current = null; }}
+          onLayout={() => applyPin()}
           onContentSizeChange={() => {
-            if (pinToBottomRef.current || isAtBottomRef.current) {
-              flatListRef.current?.scrollToEnd({ animated: false });
-            }
+            if (pinTargetRef.current) { applyPin(); return; }
+            if (isAtBottomRef.current) flatListRef.current?.scrollToEnd({ animated: false });
+          }}
+          // No getItemLayout on these variable-height rows, so scrollToIndex
+          // WILL fail until they are measured. Nudge toward the estimate and
+          // let the next content-size change try again.
+          onScrollToIndexFailed={(info) => {
+            flatListRef.current?.scrollToOffset({
+              offset: info.averageItemLength * info.index,
+              animated: false,
+            });
           }}
           renderItem={({ item }) => {
             if ('type' in item && item.type === 'date-separator') {

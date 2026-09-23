@@ -22,6 +22,7 @@ import { owesFee } from '@features/pricing/utils/fee';
 import { engagementStanding, feePaidEarly } from '@features/pricing/utils/balance';
 import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
+import { usePendingMentions } from '../hooks/usePendingMentions';
 
 type ProjectStatus = ProjectRequest['status'];
 type ProjectRoleInfo = {
@@ -142,6 +143,7 @@ export function ChatsScreen({
   // Buttons, the unread badge and avatar icons follow the mode, like the tab
   // bar: purple in client mode, blue in pro mode.
   const accent = modeSegment === '(client)' ? CLIENT_TAB_ACTIVE : PRO_TAB_ACTIVE;
+  const { chatIds: mentionedIn } = usePendingMentions();
   const avatarTint = modeSegment === '(client)' ? AVATAR_TINT.client : AVATAR_TINT.pro;
   const font = useAppFont();
   const user = useAuthStore((s) => s.user);
@@ -604,6 +606,16 @@ export function ChatsScreen({
                   was asking them to settle, and it came back the moment they paid.
                   That made leaving a conversation something a payment bought.
                   It also swallowed the unread badge on the same branch. */}
+              {/* Three-way now, not trash-vs-unread. An @ and a count are
+                  different signals — "someone needs you" and "there is
+                  activity" — so the pill sits BESIDE the number rather than
+                  replacing it, and is distinct by glyph and shape rather than
+                  by a new colour, which keeps the colour doctrine above intact. */}
+              {mentionedIn.has(item.id) && (
+                <View style={[styles.mentionBadge, { borderColor: accent }]} testID={`chat-mention-${item.id}`}>
+                  <Text style={[styles.mentionBadgeText, { color: accent, ...font.bold }]}>@</Text>
+                </View>
+              )}
               {showTrash ? (
                 <TouchableOpacity
                   onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
@@ -790,6 +802,16 @@ const styles = StyleSheet.create({
   },
   paidPillText: { fontSize: 10, fontWeight: '600', color: VIOLET },
   trashBtn: { padding: 4, flexShrink: 0 },
+  // OUTLINED, and a glyph rather than a number: the unread badge is a filled
+  // capsule in the mode accent, so shape and content carry the difference and
+  // no new colour is introduced.
+  mentionBadge: {
+    minWidth: 19, height: 19, borderRadius: 999, borderWidth: 1.5,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4, flexShrink: 0,
+  },
+  mentionBadgeText: { fontSize: 11, fontWeight: '700' },
   unreadBadge: {
     minWidth: 19,
     height: 19,

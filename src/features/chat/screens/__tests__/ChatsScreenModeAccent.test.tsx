@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { render, act } from '@testing-library/react-native';
 import { ChatsScreen } from '../ChatsScreen';
 import { listenToMyFees } from '@features/pricing/services/feesService';
-import { getDoc } from 'firebase/firestore';
+import { getDoc, onSnapshot } from 'firebase/firestore';
 import { CLIENT_TAB_ACTIVE, PRO_TAB_ACTIVE } from '@core/navigation/floatingTabBar';
 
 /**
@@ -19,7 +19,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
 jest.mock('@core/firebase/config', () => ({ db: {}, auth: { currentUser: null } }));
-jest.mock('firebase/firestore', () => ({ getDoc: jest.fn(), doc: jest.fn() }));
+jest.mock('firebase/firestore', () => ({ getDoc: jest.fn(), doc: jest.fn(), updateDoc: jest.fn(), onSnapshot: jest.fn(() => () => {}) }));
 jest.mock('../../services/chatService', () => ({ removeMemberFromGroup: jest.fn() }));
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn() }));
 jest.mock('@features/pricing/services/feesService', () => ({ listenToMyFees: jest.fn() }));
@@ -62,4 +62,44 @@ it('client mode: purple', async () => {
 
 it('pro mode: blue', async () => {
   expect(await accentsFor('(professional)')).toEqual({ chip: PRO_TAB_ACTIVE, badge: PRO_TAB_ACTIVE });
+});
+
+/**
+ * The @ pill, beside the unread count rather than instead of it.
+ *
+ * Two different signals — "someone needs you" and "there is activity" — so the
+ * trailing slot goes three-way instead of trash-wins-over-unread. Distinct by
+ * glyph and shape (outlined, an "@") rather than by a new colour, which keeps
+ * the colour doctrine at the top of ChatsScreen intact.
+ */
+describe('the mention pill', () => {
+  const mention = { chatId: 'chat-1', channelId: null, messageId: 'm1', at: { seconds: 1 } };
+
+  async function renderWith(entries: unknown[]) {
+    mockSegment = '(client)';
+    (onSnapshot as jest.Mock).mockImplementation((_ref, onNext: (snap: unknown) => void) => {
+      onNext({ data: () => ({ pendingMentions: entries }) });
+      return () => {};
+    });
+    const r = render(<ChatsScreen chats={[chat]} />);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    return r;
+  }
+
+  it('shows on a chat with a mention waiting', async () => {
+    const r = await renderWith([mention]);
+    expect(r.queryByTestId('chat-mention-chat-1')).not.toBeNull();
+  });
+
+  it('does not show on a chat without one', async () => {
+    const r = await renderWith([{ ...mention, chatId: 'somewhere-else' }]);
+    expect(r.queryByTestId('chat-mention-chat-1')).toBeNull();
+  });
+
+  it('sits BESIDE the unread count, not instead of it', async () => {
+    const r = await renderWith([mention]);
+    expect(r.queryByTestId('chat-mention-chat-1')).not.toBeNull();
+    // The fixture carries unreadCount { me: 3 }; the number must survive.
+    expect(r.queryByText('3')).not.toBeNull();
+  });
 });

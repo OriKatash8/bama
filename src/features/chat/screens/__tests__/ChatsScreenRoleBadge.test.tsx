@@ -23,7 +23,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
 jest.mock('@core/firebase/config', () => ({ db: {}, auth: { currentUser: null } }));
-jest.mock('firebase/firestore', () => ({ getDoc: jest.fn(), doc: jest.fn() }));
+jest.mock('firebase/firestore', () => ({ getDoc: jest.fn(), doc: jest.fn(), updateDoc: jest.fn(), onSnapshot: jest.fn(() => () => {}) }));
 jest.mock('../../services/chatService', () => ({ removeMemberFromGroup: jest.fn() }));
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn() }));
 jest.mock('@features/pricing/services/feesService', () => ({ listenToMyFees: jest.fn() }));

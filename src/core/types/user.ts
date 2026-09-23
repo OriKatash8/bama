@@ -28,6 +28,26 @@ export type User = {
    *  before creating a notification, so a mute suppresses the in-app bell as
    *  well as the push. Written by muteChat/unmuteChat. */
   mutedChats?: string[];
+  /**
+   * Mentions waiting for this user, written by the message triggers.
+   *
+   * SEPARATE FROM unreadCount on purpose: an unread count means "activity", a
+   * mention means "someone needs you". Community channels never bump
+   * unreadCount at all, so a pill derived from it would never appear there.
+   *
+   * Keyed by chatId AND channelId, so a mention in one channel is not cleared
+   * by opening another in the same community. `messageId` is what
+   * jump-to-mention scrolls to.
+   *
+   * Rules let the owner only SHRINK this list; the trigger (Admin SDK) is the
+   * only thing that adds to it.
+   */
+  pendingMentions?: {
+    chatId: ID;
+    channelId: ID | null;
+    messageId: ID;
+    at?: Timestamp | null;
+  }[];
 };
 
 /** Snapshot of the latest enforcement action against a user. `warned` is a
