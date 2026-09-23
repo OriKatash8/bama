@@ -27,6 +27,52 @@ service cloud.firestore {
     }
 
     /**
+     * `replyTo` — the denormalized quote a swipe-to-reply message carries.
+     *
+     * Shape and size only. Deliberately NO `get()` to check that `messageId`
+     * names a real message, for three reasons:
+     *
+     *  - It would cost a second document read on EVERY message create, forever,
+     *    on the hot path, for a field most messages do not carry.
+     *  - It would authenticate the pointer while leaving the payload forgeable.
+     *    `snippet` is denormalized and entirely caller-supplied, so proving the
+     *    id exists proves nothing about whether the quote says what that message
+     *    said — the only part anyone reads stays unverified either way.
+     *  - The forgery it appears to stop is already possible: quoting someone as
+     *    having said something they did not is bounded by the same trust model
+     *    as `text`, which any member can type freely.
+     *
+     * A dangling id degrades correctly on its own — the jump does findIndex and
+     * returns silently on -1, and the quote renders from its own snapshot.
+     *
+     * `senderId` is NOT checked against members: someone who has since left the
+     * chat can still be quoted legitimately, and rejecting that is a false
+     * negative on a real case for no gain.
+     *
+     * `hasOnly` is the only structural check here. A `hasAll` for the four keys,
+     * and an `is map` guard, were both written first and both DELETED after the
+     * probe showed no case could kill them: reading a field that is not there
+     * errors, and an error denies, so a partial object or a non-map dies on the
+     * first accessor below either way. That is the same failing-closed path this
+     * file already relies on for `mentions`, noted on messageCreateOk below. An
+     * unkillable clause is a clause with no evidence behind it, so neither was
+     * kept for decoration.
+     */
+    function replyToOk() {
+      return !request.resource.data.keys().hasAny(['replyTo'])
+        || (request.resource.data.replyTo.keys().hasOnly(['messageId', 'senderId', 'kind', 'snippet'])
+            && request.resource.data.replyTo.messageId is string
+            && request.resource.data.replyTo.messageId.size() > 0
+            && request.resource.data.replyTo.messageId.size() <= 64
+            && request.resource.data.replyTo.senderId is string
+            && request.resource.data.replyTo.senderId.size() > 0
+            && request.resource.data.replyTo.senderId.size() <= 128
+            && request.resource.data.replyTo.kind in ['text', 'image', 'video', 'audio']
+            && request.resource.data.replyTo.snippet is string
+            && request.resource.data.replyTo.snippet.size() <= 100);
+    }
+
+    /**
      * Everything a client-written message must satisfy, in BOTH collections.
      *
      * Membership used to be the only check here — no required fields, no
@@ -50,6 +96,8 @@ service cloud.firestore {
      *    two, so 10 is generous for the legitimate case and far below the point
      *    where a mention is really a broadcast. The picker stops at the same
      *    number so the limit is visible rather than a failed send.
+     *  - `replyTo` (new) is validated for shape and size by replyToOk below,
+     *    which also records why it is deliberately not checked for existence.
      *
      * `hasAll` on a non-list errors, which denies — failing closed is correct
      * for a field whose whole job is addressing notifications.
@@ -66,7 +114,8 @@ service cloud.firestore {
         && request.resource.data.senderId == request.auth.uid
         && !request.resource.data.keys().hasAny(['system'])
         && chat.members.hasAll(request.resource.data.get('mentions', []))
-        && request.resource.data.get('mentions', []).size() <= 10;
+        && request.resource.data.get('mentions', []).size() <= 10
+        && replyToOk();
     }
 
     // Fetches the parent project document data
