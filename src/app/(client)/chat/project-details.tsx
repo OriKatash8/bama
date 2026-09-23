@@ -1012,13 +1012,13 @@ export default function ProjectDetailsScreen() {
   }
 
   // Per-professional payment summary (bundles counted once at bundlePrice)
-  type MemberPaymentInfo = { price: number; hasBundle: boolean; individualOffer: PriceOffer | null; bundleId: string | null };
+  type MemberPaymentInfo = { price: number; individualOffer: PriceOffer | null; bundleId: string | null };
   const memberPaymentMap: Record<string, MemberPaymentInfo> = {};
   const seenBundleIds = new Set<string>();
   for (const offer of acceptedOffers) {
     const profId = offer.professionalId;
     if (!memberPaymentMap[profId]) {
-      memberPaymentMap[profId] = { price: 0, hasBundle: false, individualOffer: null, bundleId: null };
+      memberPaymentMap[profId] = { price: 0, individualOffer: null, bundleId: null };
     }
     const info = memberPaymentMap[profId];
     if (offer.bundleId) {
@@ -1027,7 +1027,6 @@ export default function ProjectDetailsScreen() {
         const bundle = bundleMap.get(offer.bundleId);
         if (bundle) {
           info.price += bundle.bundlePrice;
-          info.hasBundle = true;
           info.bundleId = offer.bundleId;
         }
       }
@@ -2567,7 +2566,7 @@ function MemberRow({
   isRemoving?: boolean;
   onRemove?: () => void;
   onReport?: () => void;
-  payment?: { price: number; hasBundle: boolean; individualOffer: PriceOffer | null; bundleId: string | null };
+  payment?: { price: number; individualOffer: PriceOffer | null; bundleId: string | null };
   onUpdate?: () => void;
   /** THIS engagement's status. Absent on every row but the viewing
    *  professional's own — the client must never see it (spec §6). */
@@ -2637,11 +2636,6 @@ function MemberRow({
           <View style={{ alignItems: rtl ? 'flex-start' : 'flex-end', gap: 2 }}>
             <View style={[styles.memberPriceGroup, { flexDirection: rowDir }]}>
               <AppText weight="bold" style={styles.memberPrice}>₪{payment.price.toLocaleString()}</AppText>
-              {payment.hasBundle && (
-                <View style={styles.bundlePayBadge}>
-                  <AppText weight="bold" style={styles.bundlePayBadgeText}>{t('offers.bundle_badge')}</AppText>
-                </View>
-              )}
             </View>
           </View>
         )}
@@ -2971,8 +2965,6 @@ const styles = StyleSheet.create({
   /** Amber, as in the builder: "no end date" is the answer with a consequence
    *  worth noticing, not the neutral one. */
   dateConsequenceFlexible: { color: '#8a6100' },
-  bundlePayBadge: { backgroundColor: '#cb6ce6', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  bundlePayBadgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   memberPrice: { fontSize: 16, fontWeight: '700', color: '#000000' },
   clientBadge: {
     borderRadius: 10,
