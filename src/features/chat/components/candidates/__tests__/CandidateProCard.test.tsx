@@ -146,7 +146,7 @@ describe('under review, not yet acknowledged', () => {
     const { getByTestId } = await renderCard();
     expect(disabled(getByTestId('pro-price'))).toBe(true);
     await act(async () => { fireEvent.press(getByTestId('chip-client-asked')); });
-    expect(mockPush).toHaveBeenCalledWith('/(client)/(tabs)/chats/project-details?projectId=p1&chatId=c1&section=payments');
+    expect(mockPush).toHaveBeenCalledWith('/(client)/chat/project-details?projectId=p1&chatId=c1&section=payments');
   });
 
   it('his own pending request reads as waiting on the client', async () => {

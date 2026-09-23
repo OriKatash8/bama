@@ -223,7 +223,7 @@ export default function CommunityDetailsScreen() {
           <TouchableOpacity
             onPress={() =>
               chatId
-                ? router.push(`/(client)/(tabs)/chats/${chatId}` as never)
+                ? router.push(`/(client)/chat/${chatId}` as never)
                 : router.replace(backHref as never)
             }
             style={styles.headerBack}

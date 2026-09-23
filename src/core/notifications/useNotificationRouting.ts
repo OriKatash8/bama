@@ -83,14 +83,14 @@ export function useNotificationRouting(): void {
       case 'meeting':
       case 'system': {
         if (!data.chatId) return;
-        await navigate(null, `/${modeSegment(current)}/(tabs)/chats/${data.chatId}`);
+        await navigate(null, `/${modeSegment(current)}/chat/${data.chatId}`);
         return;
       }
       case 'offer_accepted': {
         await navigate(
           'professional',
           data.chatId
-            ? `/(professional)/(tabs)/chats/${data.chatId}`
+            ? `/(professional)/chat/${data.chatId}`
             : '/(professional)/(tabs)/dashboard',
         );
         return;
@@ -120,7 +120,7 @@ export function useNotificationRouting(): void {
         if (data.projectId) {
           await navigate(
             'professional',
-            `/(client)/(tabs)/chats/project-details?projectId=${data.projectId}` +
+            `/(client)/chat/project-details?projectId=${data.projectId}` +
               (data.chatId ? `&chatId=${data.chatId}` : ''),
           );
           return;
@@ -134,7 +134,7 @@ export function useNotificationRouting(): void {
         if (data.projectId) {
           await navigate(
             'client',
-            `/(client)/(tabs)/chats/project-details?projectId=${data.projectId}` +
+            `/(client)/chat/project-details?projectId=${data.projectId}` +
               (data.chatId ? `&chatId=${data.chatId}` : ''),
           );
           return;
@@ -149,7 +149,7 @@ export function useNotificationRouting(): void {
         if (data.projectId) {
           await navigate(
             'professional',
-            `/(client)/(tabs)/chats/project-details?projectId=${data.projectId}` +
+            `/(client)/chat/project-details?projectId=${data.projectId}` +
               (data.chatId ? `&chatId=${data.chatId}` : ''),
           );
           return;
@@ -157,7 +157,7 @@ export function useNotificationRouting(): void {
         await navigate(
           'professional',
           data.chatId
-            ? `/(professional)/(tabs)/chats/${data.chatId}`
+            ? `/(professional)/chat/${data.chatId}`
             : '/(professional)/(tabs)/dashboard',
         );
         return;

@@ -47,7 +47,7 @@ it("stands the screen's own swipe-back down while the review card can be swiped"
   // two may be live. The screen is the single owner of the option.
   expect(SRC).toMatch(/<Stack\.Screen options=\{\{ headerShown: false, gestureEnabled: !cardSwipeable \}\} \/>/);
   expect(SRC).toMatch(/onSwipeableChange=\{setCardSwipeable\}/);
-  const route = readFileSync(join(__dirname, '..', '..', '..', '..', 'app', '(client)', '(tabs)', 'chats', '[chatId].tsx'), 'utf8');
+  const route = readFileSync(join(__dirname, '..', '..', '..', '..', 'app', '(client)', 'chat', '[chatId].tsx'), 'utf8');
   expect(route).not.toMatch(/gestureEnabled/);
 });
 

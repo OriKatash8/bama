@@ -57,7 +57,7 @@ export default function BrowseScreen() {
     const currentUserId = auth.currentUser?.uid;
     if (!currentUserId) return;
     const chatId = await getOrCreateDM(currentUserId, professionalId);
-    router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as never);
+    router.push(`/${segments[0]}/chat/${chatId}` as never);
   }
 
   const { results: modalResults, isLoading: modalLoading } = useSearchProfessionals(

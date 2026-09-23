@@ -230,7 +230,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
           {!!request.chatId && (
             <TouchableOpacity
               style={[styles.chatBtn, { flexDirection: rowDir }]}
-              onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${request.chatId}` as never)}
+              onPress={() => router.push(`/${modeSegment}/chat/${request.chatId}` as never)}
               activeOpacity={0.8}
             >
               <MessageCircle size={13} color="#ffffff" strokeWidth={2} />

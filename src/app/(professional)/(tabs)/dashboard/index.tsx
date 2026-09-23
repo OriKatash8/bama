@@ -500,7 +500,7 @@ export default function DashboardScreen() {
                   <View style={[styles.projectBottomRow, { flexDirection: rowDir }]}>
                     <TouchableOpacity
                       style={[styles.projectChatBtn, { flexDirection: rowDir }]}
-                      onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${chat.id}` as never)}
+                      onPress={() => router.push(`/${modeSegment}/chat/${chat.id}` as never)}
                       activeOpacity={0.8}
                     >
                       <MessageCircle size={13} color="#ffffff" strokeWidth={2} />

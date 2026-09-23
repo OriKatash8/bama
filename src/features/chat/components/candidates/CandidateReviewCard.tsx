@@ -218,7 +218,7 @@ export function CandidateReviewCard({
   };
 
   const openPayments = () => router.push(
-    `/(client)/(tabs)/chats/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
+    `/(client)/chat/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
   );
 
   // Chevrons mirror with the reading direction: "previous" sits on the leading

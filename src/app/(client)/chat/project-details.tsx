@@ -134,8 +134,9 @@ const HEADER_TOP = Platform.OS === 'web'
   ? 52
   : Math.max(64, (initialWindowMetrics?.insets.top ?? 0) + 16);
 
-/** The tab bar is hidden on this route (it matches /chats/…), so the pinned
- *  close-project bar only needs to clear the home indicator. */
+/** This route lives above the tab navigator (src/app/(client)/chat/_layout.tsx),
+ *  so there is no tab bar over it and the pinned close-project bar only needs to
+ *  clear the home indicator. */
 const BOTTOM_BAR_PAD = (initialWindowMetrics?.insets.bottom ?? 0) + 16;
 
 function formatShortDate(iso: string): string {
@@ -1148,7 +1149,7 @@ export default function ProjectDetailsScreen() {
 
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View style={[styles.header, { marginHorizontal: -16, marginTop: -16 }]}>
-          <TouchableOpacity onPress={() => chatIdParam ? router.push(`/(client)/(tabs)/chats/${chatIdParam}` as never) : router.back()} style={styles.headerBack} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => chatIdParam ? router.push(`/(client)/chat/${chatIdParam}` as never) : router.back()} style={styles.headerBack} activeOpacity={0.7}>
             <AppText weight="regular" style={[styles.headerBackText, { color: modeAccent }]}>{'‹'}</AppText>
           </TouchableOpacity>
           <View style={styles.headerCenter} pointerEvents="none">

@@ -14,7 +14,7 @@ export function useStartChat() {
     setIsLoading(true);
     try {
       const chatId = await getOrCreateDM(currentUserId, professionalId);
-      router.push(`/${segments[0]}/(tabs)/chats/${chatId}` as any);
+      router.push(`/${segments[0]}/chat/${chatId}` as any);
     } finally {
       setIsLoading(false);
     }

@@ -74,7 +74,7 @@ export function SlotBlockedSheet({
   const openProject = (p: ProjectRequest) => {
     onClose();
     router.push(
-      `/(client)/(tabs)/chats/project-details?projectId=${p.id}${p.chatId ? `&chatId=${p.chatId}` : ''}` as never,
+      `/(client)/chat/project-details?projectId=${p.id}${p.chatId ? `&chatId=${p.chatId}` : ''}` as never,
     );
   };
 

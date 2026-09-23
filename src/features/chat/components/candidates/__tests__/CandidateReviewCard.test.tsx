@@ -162,7 +162,7 @@ describe('blocked by a pending price change', () => {
     expect(queryByTestId('candidate-waiting-pro-pro-b')).toBeNull();
     expect(disabled(getByTestId('candidate-relevant-pro-b'))).toBe(true);
     await act(async () => { fireEvent.press(getByTestId('candidate-answer-pro-b')); });
-    expect(mockPush).toHaveBeenCalledWith('/(client)/(tabs)/chats/project-details?projectId=p1&chatId=c1&section=payments');
+    expect(mockPush).toHaveBeenCalledWith('/(client)/chat/project-details?projectId=p1&chatId=c1&section=payments');
   });
 
   it('a pending change on ANOTHER role of the same professional still blocks רלוונטי', async () => {

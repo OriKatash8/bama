@@ -184,7 +184,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
   }
 
   function navigateToCommunity(communityId: string) {
-    router.push(`/${modeSegment}/(tabs)/chats/${communityId}` as never);
+    router.push(`/${modeSegment}/chat/${communityId}` as never);
   }
 
   function formatLastMessage(c: Chat): string {

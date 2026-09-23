@@ -54,7 +54,10 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
   }, [userId]);
 
   const pathname = usePathname();
-  const inChatRoom = /\/chats\/.+/.test(pathname);
+  // The chat room lives above the tab navigator now
+  // (src/app/(professional)/chat/_layout.tsx), so this layout no longer erases
+  // itself for it — which is what made the header and tab bar arrive late after
+  // an edge-swipe back.
 
   // First-time / incomplete pros are locked on the profile screen.
   const locked = useAuthStore((s) => s.proProfileCompleted) === false;
@@ -64,15 +67,13 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
   const router = useRouter();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
-  const inChatRoomRef = useRef(inChatRoom);
-  inChatRoomRef.current = inChatRoom;
   const routerRef = useRef(router);
   routerRef.current = router;
 
   const tabPanResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => {
-        if (lockedRef.current || inChatRoomRef.current) return false;
+        if (lockedRef.current) return false;
         const startX = gs.moveX - gs.dx;
         const screenWidth = Dimensions.get('window').width;
         const EDGE_ZONE = 50;
@@ -81,7 +82,7 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
         return Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
       },
       onPanResponderRelease: (_, gs) => {
-        if (lockedRef.current || inChatRoomRef.current) return;
+        if (lockedRef.current) return;
         const idx = PROF_TABS.findIndex((t) => pathnameRef.current.includes(`/${t}`));
         if (idx === -1) return;
         if (gs.dx < -80) {
@@ -101,13 +102,13 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
 
   return (
     <View style={{ flex: 1 }} {...tabPanResponder.panHandlers}>
-      {!inChatRoom && <AppHeader />}
+      <AppHeader />
       <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0, bottom: 0 }}>
         <Tabs
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarStyle: (locked || inChatRoom || profileEditing) ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
+            tabBarStyle: (locked || profileEditing) ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
             // Docked glass bar; it owns the bottom safe-area inset (the provider
             // below zeroes it for the screens, so the real inset is passed in).
             tabBarBackground: () => <GlassTabBarBackground activeColor={PRO_TAB_ACTIVE} isDark={isDark} tabNames={['dashboard', 'marketplace', 'chats', 'profile']} />,

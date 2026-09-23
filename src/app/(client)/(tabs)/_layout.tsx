@@ -53,12 +53,15 @@ export default function ClientTabsLayout() {
   }, [userId]);
 
   const pathname = usePathname();
-  const inChatRoom = /\/chats\/.+/.test(pathname);
   // The project review screen is a focused wizard step with its own pinned
   // publish button — tab navigation mid-flow would drop the draft, and the
   // floating bar would sit on top of the button. Header stays.
-  const inProjectReview = pathname.includes('/home/summary');
-  const hideTabBar = inChatRoom || inProjectReview;
+  //
+  // The chat room used to be hidden from here too. It lives above the tab
+  // navigator now (src/app/(client)/chat/_layout.tsx), so this layout no longer
+  // has to erase itself for it — which is what made the header and tab bar
+  // arrive late after an edge-swipe back.
+  const hideTabBar = pathname.includes('/home/summary');
 
   // Badge the Projects tab for price offers the client hasn't seen. "Seen" means
   // they opened the price offers tab on the Projects page (which calls markSeen);
@@ -73,15 +76,12 @@ export default function ClientTabsLayout() {
   const router = useRouter();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
-  const inChatRoomRef = useRef(inChatRoom);
-  inChatRoomRef.current = inChatRoom;
   const routerRef = useRef(router);
   routerRef.current = router;
 
   const tabPanResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => {
-        if (inChatRoomRef.current) return false;
         const startX = gs.moveX - gs.dx;
         const screenWidth = Dimensions.get('window').width;
         const EDGE_ZONE = 50;
@@ -90,7 +90,6 @@ export default function ClientTabsLayout() {
         return Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
       },
       onPanResponderRelease: (_, gs) => {
-        if (inChatRoomRef.current) return;
         const idx = CLIENT_TABS.findIndex((t) => pathnameRef.current.includes(`/${t}`));
         if (idx === -1) return;
         if (gs.dx < -80) {
@@ -110,7 +109,7 @@ export default function ClientTabsLayout() {
 
   return (
     <View style={{ flex: 1 }} {...tabPanResponder.panHandlers}>
-      {!inChatRoom && <AppHeader />}
+      <AppHeader />
       <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0, bottom: 0 }}>
         <Tabs
           screenOptions={{

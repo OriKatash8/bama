@@ -535,7 +535,7 @@ export function ChatsScreen({
             pressed && styles.rowPressed,
           ]}
           testID={`chat-row-${item.id}`}
-          onPress={() => router.push(`/${modeSegment}/(tabs)/chats/${item.id}` as never)}
+          onPress={() => router.push(`/${modeSegment}/chat/${item.id}` as never)}
         >
           {renderAvatar(item)}
           <View style={styles.content}>

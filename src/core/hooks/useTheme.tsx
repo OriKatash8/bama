@@ -52,7 +52,7 @@ export const LIGHT: AppColors = {
    * Following this token on a new content surface produces a card that does not
    * match any other card in the app. That already happened once, to the pricing
    * screens. Reach for the hardcoded convention instead; see `memberCard` in
-   * src/app/(client)/(tabs)/chats/project-details.tsx for the reference.
+   * src/app/(client)/chat/project-details.tsx for the reference.
    */
   card: '#dce8ff',
   cardAlt: '#d0dfff',

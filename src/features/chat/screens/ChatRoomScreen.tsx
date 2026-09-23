@@ -1223,14 +1223,20 @@ export function ChatRoomScreen({ chatId }: Props) {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
-        <TouchableOpacity onPress={() => router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats${chatType === 'community' ? '?tab=communities' : ''}`)} style={styles.headerBack} activeOpacity={0.7}>
+        {/* dismissTo, not push: the list is already underneath us, and pushing
+            a second copy on top of it left this room mounted, played the
+            forward animation, and held the app header and the tab bar back
+            until the new list had rendered (they key off usePathname). Falls
+            back to navigating there for a chat opened cold from a
+            notification. */}
+        <TouchableOpacity onPress={() => router.dismissTo(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats${chatType === 'community' ? '?tab=communities' : ''}`)} style={styles.headerBack} activeOpacity={0.7}>
           <Text style={[styles.headerBackText, { color: modeAccent, ...font.regular }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           {chatType === 'group' && chatProjectId ? (
             <TouchableOpacity
               style={styles.headerNameTouchable}
-              onPress={() => router.push(`/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
+              onPress={() => router.push(`/(client)/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
               activeOpacity={0.8}
             >
               <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
@@ -1252,7 +1258,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           ) : chatType === 'community' ? (
             <TouchableOpacity
               style={styles.headerNameTouchable}
-              onPress={() => router.push(`/(client)/(tabs)/chats/community-details?chatId=${chatId}`)}
+              onPress={() => router.push(`/(client)/chat/community-details?chatId=${chatId}`)}
               activeOpacity={0.8}
             >
               <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
@@ -1433,8 +1439,8 @@ export function ChatRoomScreen({ chatId }: Props) {
                     <TouchableOpacity
                       onPress={() => router.push(
                         targetSection
-                          ? `/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}&section=${targetSection}`
-                          : `/(client)/(tabs)/chats/project-details?projectId=${chatProjectId}&chatId=${chatId}`,
+                          ? `/(client)/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}&section=${targetSection}`
+                          : `/(client)/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`,
                       )}
                       activeOpacity={0.75}
                       accessibilityRole="button"

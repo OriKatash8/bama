@@ -140,7 +140,7 @@ export function CandidateProCard({
   };
 
   const openPayments = () => router.push(
-    `/(client)/(tabs)/chats/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
+    `/(client)/chat/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
   );
 
   return (

@@ -166,7 +166,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
         autoMessage,
       );
       onClose();
-      router.push(`/${modeSegment}/(tabs)/chats/${chatId}` as never);
+      router.push(`/${modeSegment}/chat/${chatId}` as never);
     } catch {
       Alert.alert(t('marketplace.buy_error'));
     } finally {
