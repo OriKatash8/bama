@@ -153,18 +153,29 @@ export const FAB_SIZE = 56;
 
 /**
  * The accent for shared UI that appears in both modes (profile tabs, reviews,
- * portfolio): purple under the client app, blue under the pro app — the same
- * colours as the tab bar. `tint` is a light wash of it for backgrounds.
- * Off the two app sections (e.g. /settings), the user's active mode decides.
+ * portfolio, project details): purple under the client app, blue under the pro
+ * app — the same colours as the tab bar. `tint` is a light wash of it for
+ * backgrounds.
+ *
+ * THE VIEWER'S MODE DECIDES, not the route's folder. It was the other way round,
+ * and that made every shared screen parked in one section lie about who is
+ * looking at it. `chat/project-details` is the case that found it: one file,
+ * under (client), pushed to by both apps — so a professional opening project
+ * details had segments[0] === '(client)' and got the client's purple over the
+ * whole page, buttons, icons and outlines alike.
+ *
+ * The route section stays as the fallback for before the mode is known (at
+ * startup `activeMode` is null). Everywhere the two agree — which is everywhere
+ * except a shared route living in one section — this changes nothing.
  */
 export function useModeAccent(): { accent: string; tint: string } {
   const segments = useSegments();
   const activeMode = useAuthStore((s) => s.activeMode);
   const section = segments[0];
   const isClient =
-    section === '(client)' ? true
-    : section === '(professional)' ? false
-    : activeMode === 'client';
+    activeMode === 'client' ? true
+    : activeMode === 'professional' ? false
+    : section !== '(professional)';
   return isClient
     ? { accent: CLIENT_TAB_ACTIVE, tint: '#F3EEFE' }
     : { accent: PRO_TAB_ACTIVE, tint: '#E6EDFC' };

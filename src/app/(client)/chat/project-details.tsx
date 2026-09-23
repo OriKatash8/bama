@@ -155,7 +155,7 @@ export default function ProjectDetailsScreen() {
   const colors = useTheme();
   // Back arrow and the primary buttons follow the mode: purple in the client
   // app, blue in the pro app.
-  const { accent: modeAccent } = useModeAccent();
+  const { accent: modeAccent, tint: modeTint } = useModeAccent();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
   const { showToast } = useUiStore();
@@ -1076,8 +1076,8 @@ export default function ProjectDetailsScreen() {
   function renderSheetRow(Icon: typeof Users, label: string, value: React.ReactNode, outlined = false) {
     return (
       <View style={[styles.sheetRow, outlined && styles.sheetOutlined, outlined && { borderColor: modeAccent }, { flexDirection: rowDirection }]}>
-        <View style={styles.sheetRowTile}>
-          <Icon size={16} color="#6D28D9" strokeWidth={2} />
+        <View style={[styles.sheetRowTile, { backgroundColor: modeTint }]}>
+          <Icon size={16} color={modeAccent} strokeWidth={2} />
         </View>
         <View style={styles.sheetRowCol}>
           <Text style={[styles.sheetRowLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{label}</Text>
@@ -1105,7 +1105,7 @@ export default function ProjectDetailsScreen() {
                 <ExpoImage source={{ uri: member.photoURL }} style={styles.sheetChipAvatar} contentFit="cover" cachePolicy="memory-disk" />
               ) : (
                 <View style={[styles.sheetChipAvatar, styles.sheetChipAvatarFallback]}>
-                  <AppText weight="bold" style={styles.sheetChipInitial}>{(name[0] ?? '?').toUpperCase()}</AppText>
+                  <AppText weight="bold" style={[styles.sheetChipInitial, { color: modeAccent }]}>{(name[0] ?? '?').toUpperCase()}</AppText>
                 </View>
               )}
               <Text style={[styles.sheetChipName, { ...font.medium }]} numberOfLines={1}>{name}</Text>
@@ -1826,7 +1826,7 @@ export default function ProjectDetailsScreen() {
               return (
                 <TouchableOpacity
                   key={m.id}
-                  style={[styles.sheetPersonRow, { flexDirection: rowDirection }, selected && { borderColor: modeAccent, backgroundColor: '#F8F6FC' }]}
+                  style={[styles.sheetPersonRow, { flexDirection: rowDirection }, selected && { borderColor: modeAccent, backgroundColor: modeTint }]}
                   onPress={() => toggleAssignee(m.id)}
                   activeOpacity={0.8}
                 >
@@ -1848,7 +1848,7 @@ export default function ProjectDetailsScreen() {
             {newMissionDueDate ? (
               <View style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}>
                 <View style={styles.sheetRowTile}>
-                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                  <Calendar size={16} color={modeAccent} strokeWidth={2} />
                 </View>
                 <Text style={[styles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                   {formatDueDate(newMissionDueDate, t('project_details.due'))}
@@ -1864,7 +1864,7 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.sheetRowTile}>
-                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                  <Calendar size={16} color={modeAccent} strokeWidth={2} />
                 </View>
                 <Text style={[styles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.add_due_date')}
@@ -1966,7 +1966,7 @@ export default function ProjectDetailsScreen() {
             {newMeetingDate ? (
               <View style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}>
                 <View style={styles.sheetRowTile}>
-                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                  <Calendar size={16} color={modeAccent} strokeWidth={2} />
                 </View>
                 <Text style={[styles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                   {formatDueDate(newMeetingDate, '')}
@@ -1982,7 +1982,7 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.sheetRowTile}>
-                  <Calendar size={16} color="#6D28D9" strokeWidth={2} />
+                  <Calendar size={16} color={modeAccent} strokeWidth={2} />
                 </View>
                 <Text style={[styles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.meeting_date')}
@@ -1998,7 +1998,7 @@ export default function ProjectDetailsScreen() {
             {newMeetingTime ? (
               <View style={[styles.sheetPickRow, styles.sheetOutlined, { borderColor: modeAccent, flexDirection: rowDirection }]}>
                 <View style={styles.sheetRowTile}>
-                  <Clock size={16} color="#6D28D9" strokeWidth={2} />
+                  <Clock size={16} color={modeAccent} strokeWidth={2} />
                 </View>
                 <Text style={[styles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                   {newMeetingTime}
@@ -2014,7 +2014,7 @@ export default function ProjectDetailsScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.sheetRowTile}>
-                  <Clock size={16} color="#6D28D9" strokeWidth={2} />
+                  <Clock size={16} color={modeAccent} strokeWidth={2} />
                 </View>
                 <Text style={[styles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
                   {t('project_details.meeting_time_placeholder')}
@@ -2045,7 +2045,7 @@ export default function ProjectDetailsScreen() {
               return (
                 <TouchableOpacity
                   key={m.id}
-                  style={[styles.sheetPersonRow, { flexDirection: rowDirection }, selected && { borderColor: modeAccent, backgroundColor: '#F8F6FC' }]}
+                  style={[styles.sheetPersonRow, { flexDirection: rowDirection }, selected && { borderColor: modeAccent, backgroundColor: modeTint }]}
                   onPress={() => toggleInvitee(m.id)}
                   activeOpacity={0.8}
                 >
@@ -2971,6 +2971,8 @@ const styles = StyleSheet.create({
   /** Amber, as in the builder: "no end date" is the answer with a consequence
    *  worth noticing, not the neutral one. */
   dateConsequenceFlexible: { color: '#8a6100' },
+  bundlePayBadge: { backgroundColor: '#cb6ce6', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  bundlePayBadgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   memberPrice: { fontSize: 16, fontWeight: '700', color: '#000000' },
   clientBadge: {
     borderRadius: 10,
@@ -2979,8 +2981,6 @@ const styles = StyleSheet.create({
   },
   clientBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
-  bundlePayBadge: { backgroundColor: '#cb6ce6', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  bundlePayBadgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
 
 
   // ── Mission rows ──────────────────────────────────────────────────────────────
@@ -3283,7 +3283,8 @@ const styles = StyleSheet.create({
   sheetDescPanel: { backgroundColor: '#F8F6FC', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
   sheetDescText: { fontSize: 13.5, color: '#4C4859', lineHeight: 21 },
   sheetRow: { alignItems: 'center', gap: 11, paddingVertical: 11 },
-  sheetRowTile: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#F3EEFE', alignItems: 'center', justifyContent: 'center' },
+  // The tile's wash comes from the mode tint at the call site.
+  sheetRowTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   sheetRowCol: { flex: 1, gap: 3 },
   sheetRowLabel: { fontSize: 11.5, color: '#000000' },
   sheetRowValue: { fontSize: 14, fontWeight: '600', color: '#1A1626', lineHeight: 20 },
@@ -3301,7 +3302,8 @@ const styles = StyleSheet.create({
   },
   sheetChipAvatar: { width: 20, height: 20, borderRadius: 999 },
   sheetChipAvatarFallback: { backgroundColor: '#EDE4FB', alignItems: 'center', justifyContent: 'center' },
-  sheetChipInitial: { fontSize: 10, color: '#6D28D9' },
+  // Colour comes from the mode accent at the call site.
+  sheetChipInitial: { fontSize: 10 },
   sheetChipName: { fontSize: 12.5, fontWeight: '500', color: '#4C4859', flexShrink: 1 },
   sheetDismissBtn: {
     height: 48,
