@@ -55,3 +55,32 @@ it('create pushes the counterparty, only after the transaction committed', () =>
   expect(create.slice(tx, push)).toMatch(/\n  \}\);\n/);
   expect(create.slice(push)).toMatch(/type: 'system'/);
 });
+
+/**
+ * A finished engagement is frozen on BOTH callables. Create is the obvious half;
+ * respond is the half that is easy to forget — a request raised while the work
+ * was still running must not be acceptable once it has finished, or the freeze
+ * is a one-request delay rather than a freeze.
+ */
+it('create reads the engagement inside the transaction and feeds the decision', () => {
+  const tx = create.slice(create.indexOf('db.runTransaction'));
+  const read = tx.search(/tx\.get\(\s*feeRef\(projectId, targetPro\)\)/);
+  const decide = tx.indexOf('decideNewPriceRequest(');
+  expect(read).toBeGreaterThan(-1);
+  expect(read).toBeLessThan(decide);
+  expect(tx).toMatch(/engagementFinished/);
+});
+
+it('respond refuses to reprice a finished engagement, before touching an offer', () => {
+  const refuse = respond.indexOf('engagement-finished');
+  const write = respond.search(/price: newAmount|bundlePrice: newAmount/);
+  expect(refuse).toBeGreaterThan(-1);
+  expect(refuse).toBeLessThan(write);
+  expect(respond).toMatch(/engagementPriceFrozen\(/);
+});
+
+it('both callables decide from the shared policy module, never inline', () => {
+  expect(SRC).toMatch(/from '\.\/priceRequestPolicy'/);
+  // No second copy of the status list in the callable file.
+  expect(SRC).not.toMatch(/'completed'\s*,\s*'disputed'/);
+});

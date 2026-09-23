@@ -10,7 +10,15 @@
 export type PriceRequestHistoryItem = { fromClient: boolean; status: string; createdAtMs: number };
 export type PriceRequestDecision =
   | { allowed: true }
-  | { allowed: false; reason: 'price-change-pending' | 'counter-not-allowed' };
+  | { allowed: false; reason: 'engagement-finished' | 'price-change-pending' | 'counter-not-allowed' };
+
+/** An engagement that has ended: its agreed amount may no longer move. See the
+ *  server copy for why 'disputed' counts and the two end-requests do not. */
+const ENDED_ENGAGEMENT = new Set(['completed', 'disputed', 'withdrawn', 'cancelled']);
+
+export function engagementPriceFrozen(engagementStatus?: string | null): boolean {
+  return ENDED_ENGAGEMENT.has(engagementStatus ?? '');
+}
 
 export function roleKeyOf(req: { bundleId?: unknown; category?: unknown }): string {
   if (typeof req.bundleId === 'string' && req.bundleId) return `bundle:${req.bundleId}`;
@@ -24,11 +32,15 @@ export function sameRole(a: string, b: string): boolean {
 
 export function decideNewPriceRequest(args: {
   callerIsClient: boolean;
+  engagementFinished: boolean;
   underReview: boolean;
   proAccepted: boolean;
   history: readonly PriceRequestHistoryItem[];
 }): PriceRequestDecision {
   const history = [...args.history].sort((a, b) => a.createdAtMs - b.createdAtMs);
+  if (args.engagementFinished) {
+    return { allowed: false, reason: 'engagement-finished' };
+  }
   if (history.some((r) => r.status === 'pending')) {
     return { allowed: false, reason: 'price-change-pending' };
   }

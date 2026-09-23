@@ -41,6 +41,7 @@ import {
   type ClientCostBreakdown,
 } from '@features/chat/services/paymentService';
 import { repriceErrorKey } from '@features/chat/utils/repriceErrors';
+import { engagementPriceFrozen } from '@features/chat/utils/priceRequestPolicy';
 import { ChatMediaSection } from '@features/chat/components/ChatMediaSection';
 import {
   listenToMissions,
@@ -1043,6 +1044,26 @@ export default function ProjectDetailsScreen() {
   const isReadOnly = isCompleted || isCancelled;
   const isTeamMember = (project.filledSlots ?? []).some((s) => s.professionalId === currentUserId);
 
+  /**
+   * Whose price is frozen — the professionals who have finished their part.
+   *
+   * Two sources, because the two viewers learn it differently. The CLIENT may
+   * not read a fee document (§6), so they get the project's derived cache; a
+   * project the derivation has never stamped carries no array at all and must
+   * read as "nobody has finished", not "everybody has". The PROFESSIONAL gets
+   * their own engagement on top, which is authoritative for their own row and
+   * ahead of the cache — applyDerivedProjectState is deliberately not atomic, so
+   * the array can lag their completion by a round trip.
+   *
+   * The same freeze createPaymentRequest and respondToPaymentRequest refuse on,
+   * so the button can never be tapped into `engagement-finished` except in a
+   * race.
+   */
+  const frozenEngagements = new Set(project.endedEngagementIds ?? []);
+  if (!isClient && engagementPriceFrozen(myFee?.engagementStatus)) {
+    frozenEngagements.add(currentUserId);
+  }
+
   const removalMap = Object.fromEntries(
     removalRequests.map((r) => [r.professionalId, r.status]),
   );
@@ -1396,7 +1417,9 @@ export default function ProjectDetailsScreen() {
                   ? contestWindowEndsAt(myFee) ?? undefined
                   : undefined
               }
-              onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly && (payment?.individualOffer || payment?.bundleId)
+              onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly
+                && !frozenEngagements.has(professionalId)
+                && (payment?.individualOffer || payment?.bundleId)
                 ? () => {
                     if (!payment) return;
                     setSelectedPrice(

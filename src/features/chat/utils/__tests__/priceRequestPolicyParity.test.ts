@@ -30,13 +30,24 @@ function* histories(max: number): Generator<{ fromClient: boolean; status: strin
 it('client mirror and server policy agree on every case', () => {
   let cases = 0;
   for (const history of histories(3)) {
-    for (const callerIsClient of [true, false]) for (const underReview of [true, false]) for (const proAccepted of [true, false]) {
-      const args = { callerIsClient, underReview, proAccepted, history };
+    for (const callerIsClient of [true, false]) for (const underReview of [true, false]) for (const proAccepted of [true, false]) for (const engagementFinished of [true, false]) {
+      const args = { callerIsClient, engagementFinished, underReview, proAccepted, history };
       expect(client.decideNewPriceRequest(args)).toEqual(server.decideNewPriceRequest(args));
       cases++;
     }
   }
   expect(cases).toBeGreaterThan(1000);
+});
+
+it('the frozen-engagement predicate agrees', () => {
+  for (const status of ['completed', 'disputed', 'withdrawn', 'cancelled', 'hired',
+    'end_requested_by_pro', 'end_requested_by_client', '', undefined]) {
+    expect(client.engagementPriceFrozen(status)).toBe(server.engagementPriceFrozen(status));
+  }
+  // The predicate really does separate the two groups — otherwise two copies of
+  // "always false" would agree perfectly.
+  expect(client.engagementPriceFrozen('completed')).toBe(true);
+  expect(client.engagementPriceFrozen('hired')).toBe(false);
 });
 
 it('role keys agree', () => {

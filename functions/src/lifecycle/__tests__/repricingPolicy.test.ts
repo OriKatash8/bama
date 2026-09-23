@@ -1,9 +1,9 @@
-import { decideNewPriceRequest, roleKeyOf, sameRole } from '../priceRequestPolicy';
+import { decideNewPriceRequest, engagementPriceFrozen, roleKeyOf, sameRole } from '../priceRequestPolicy';
 
 const client = (status: string, t: number) => ({ fromClient: true, status, createdAtMs: t });
 const pro = (status: string, t: number) => ({ fromClient: false, status, createdAtMs: t });
 const decide = (callerIsClient: boolean, underReview: boolean, history: ReturnType<typeof client>[], proAccepted = false) =>
-  decideNewPriceRequest({ callerIsClient, underReview, proAccepted, history });
+  decideNewPriceRequest({ callerIsClient, underReview, proAccepted, engagementFinished: false, history });
 
 describe('one pending request per role, either direction', () => {
   it('a pending client request blocks both sides', () => {
@@ -101,5 +101,50 @@ describe('role keys', () => {
     expect(sameRole('category:Editor', 'category:Editor')).toBe(true);
     expect(sameRole('legacy', 'category:Editor')).toBe(true);
     expect(sameRole('bundle:b1', 'legacy')).toBe(true);
+  });
+});
+
+describe('a finished engagement is frozen', () => {
+  const finished = (callerIsClient: boolean, history: ReturnType<typeof client>[] = []) =>
+    decideNewPriceRequest({ callerIsClient, underReview: false, proAccepted: false, engagementFinished: true, history });
+
+  it('neither side may reprice once the professional finished their part', () => {
+    expect(finished(true)).toEqual({ allowed: false, reason: 'engagement-finished' });
+    expect(finished(false)).toEqual({ allowed: false, reason: 'engagement-finished' });
+  });
+
+  it('outranks every other reason — the price is frozen whatever the history says', () => {
+    // Reported ahead of price-change-pending: "he has finished" is the actionable
+    // fact, and the pending request it beats can no longer be accepted either.
+    expect(finished(true, [client('pending', 1)])).toEqual({ allowed: false, reason: 'engagement-finished' });
+    expect(finished(false, [pro('rejected', 1)])).toEqual({ allowed: false, reason: 'engagement-finished' });
+  });
+
+  it('an OPEN engagement is untouched by the new rule', () => {
+    // The anchor: without it every case above passes on a policy that refuses
+    // everything.
+    expect(decide(true, false, [])).toEqual({ allowed: true });
+    expect(decide(false, false, [])).toEqual({ allowed: true });
+  });
+});
+
+describe('engagementPriceFrozen', () => {
+  it('is true once the engagement has ended, by any route', () => {
+    expect(engagementPriceFrozen('completed')).toBe(true);
+    // A contest does not undo the completion — it puts the fee in front of a
+    // human. The price stays frozen while they look at it.
+    expect(engagementPriceFrozen('disputed')).toBe(true);
+    expect(engagementPriceFrozen('withdrawn')).toBe(true);
+    expect(engagementPriceFrozen('cancelled')).toBe(true);
+  });
+
+  it('is false while the engagement is live, and for an engagement that has none', () => {
+    expect(engagementPriceFrozen('hired')).toBe(false);
+    expect(engagementPriceFrozen('end_requested_by_pro')).toBe(false);
+    expect(engagementPriceFrozen('end_requested_by_client')).toBe(false);
+    // A re-hire sets 'hired' again (hire.ts), so a professional brought back
+    // after finishing is repriceable on the new engagement.
+    expect(engagementPriceFrozen(undefined)).toBe(false);
+    expect(engagementPriceFrozen('')).toBe(false);
   });
 });

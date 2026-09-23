@@ -1,8 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { db, FieldValue, requireAuth, notify } from './helpers';
+import { db, FieldValue, requireAuth, notify, feeRef, type FeeDoc } from './helpers';
 import { isOfferPriceValid } from '../pricing';
 import { isPendingReview } from './review';
-import { decideNewPriceRequest, roleKeyOf, sameRole } from './priceRequestPolicy';
+import { decideNewPriceRequest, engagementPriceFrozen, roleKeyOf, sameRole } from './priceRequestPolicy';
 
 
 type Party = { clientId: string; professionalIds: string[]; chatId?: string; title?: string };
@@ -112,6 +112,16 @@ export const createPaymentRequest = onCall(async (request) => {
   // landed. The history is read through the transaction (server SDK queries
   // lock), so the loser re-runs and finds the winner's pending request.
   await db.runTransaction(async (tx) => {
+    // The engagement is read HERE rather than before the transaction, for the
+    // same reason the history is: a professional pressing "I have finished my
+    // part" while a client is composing a price change is the exact race this
+    // rule exists to lose. Inside, the completion either precedes this read (and
+    // the request is refused) or follows the commit (and cannot be accepted,
+    // because respondToPaymentRequest re-checks).
+    const engSnap = await tx.get(feeRef(projectId, targetPro));
+    const engagementFinished = engagementPriceFrozen(
+      (engSnap.data() as FeeDoc | undefined)?.engagementStatus,
+    );
     const historySnap = await tx.get(
       db.collection(`projects/${projectId}/paymentRequests`).where('professionalId', '==', targetPro),
     );
@@ -123,7 +133,7 @@ export const createPaymentRequest = onCall(async (request) => {
         status: r.status as string,
         createdAtMs: typeof r.createdAt?.toMillis === 'function' ? r.createdAt.toMillis() : 0,
       }));
-    const decision = decideNewPriceRequest({ callerIsClient, underReview, proAccepted, history });
+    const decision = decideNewPriceRequest({ callerIsClient, engagementFinished, underReview, proAccepted, history });
     if (!decision.allowed) {
       throw new HttpsError('failed-precondition', decision.reason);
     }
@@ -243,9 +253,21 @@ export const respondToPaymentRequest = onCall(async (request) => {
     throw new HttpsError('failed-precondition', 'parties-do-not-match-the-engagement');
   }
 
+  // Rejecting stays open whatever the engagement's state: a request left pending
+  // against a finished engagement should still be dismissable, and rejecting
+  // moves no money.
   if (!accept) {
     await reqRef.update({ status: 'rejected' });
     return { ok: true, accepted: false };
+  }
+
+  // The engagement may have finished since the request was raised — accepting
+  // now would move the very amount the fee was priced from. Re-checked here and
+  // not only at creation, or the freeze would merely delay a reprice by one
+  // already-pending request instead of preventing it.
+  const engSnap = await feeRef(projectId, req.professionalId as string).get();
+  if (engagementPriceFrozen((engSnap.data() as FeeDoc | undefined)?.engagementStatus)) {
+    throw new HttpsError('failed-precondition', 'engagement-finished');
   }
 
   const proId = req.professionalId as string;

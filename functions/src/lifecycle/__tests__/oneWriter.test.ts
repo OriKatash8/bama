@@ -39,7 +39,10 @@ const ENGAGEMENT_TARGETS = [
   'feeRef(', 'fRef', 'myFeeRef', 'engRef', 'f.ref', 'd.ref', 'ref.update', 'fSnap.ref',
 ];
 
-const GUARDED = ['completion', 'remindedDays'];
+// `endedEngagementIds` joins them for the same reason: it is a per-professional
+// cache the client's project-details screen reads to know whose price is frozen,
+// and a second writer would let the button and the engagements disagree.
+const GUARDED = ['completion', 'remindedDays', 'endedEngagementIds'];
 
 function tsFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -160,5 +163,6 @@ describe('one writer: projects/{id}.completion belongs to derive.ts alone', () =
     // while the cache went stale forever. Assert the writer still writes.
     const derive = readFileSync(join(LIFECYCLE, SOLE_WRITER), 'utf8');
     expect(derive).toMatch(/update\.completion\s*=/);
+    expect(derive).toMatch(/endedEngagementIds: derived\.endedEngagementIds/);
   });
 });

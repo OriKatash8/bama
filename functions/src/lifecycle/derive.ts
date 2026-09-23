@@ -1,4 +1,5 @@
 import { db, feesCol, contestWindowEndsAt, FieldValue, type FeeDoc } from './helpers';
+import { engagementPriceFrozen } from './priceRequestPolicy';
 import * as admin from 'firebase-admin';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
@@ -60,6 +61,21 @@ export type DerivedProjectState = {
    * Opposite directions, same principle: neither may be cut short.
    */
   endRequestedAt: admin.firestore.Timestamp | null;
+  /**
+   * The professionals whose engagement has ENDED, by any route.
+   *
+   * Cached on the project for one reader: the client's project-details screen,
+   * which must stop offering "update price" once a professional has finished
+   * their part. The client cannot read a fee document by rule (§6), so a field
+   * on the project is the only way they can be told — and deriving it here,
+   * with everything else, is what keeps it from becoming a second write that
+   * each completion path has to remember.
+   *
+   * Computed from the RAW engagement list, before the filters below: an
+   * engagement dropped so that a project stays OPEN is still an engagement that
+   * ended, and listing it is the whole point.
+   */
+  endedEngagementIds: string[];
 };
 
 /**
@@ -87,10 +103,17 @@ export function everCompleted(
 export function deriveProjectState(
   engagements: readonly Pick<
     FeeDoc,
-    'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'completion' | 'releaseReason'
+    'professionalId' | 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'completion' | 'releaseReason'
   >[],
   now: number = Date.now(),
 ): DerivedProjectState {
+  // Before either filter below removes anything. The same predicate the
+  // repricing callables refuse on, so the button and the server cannot drift.
+  const endedEngagementIds = engagements
+    .filter((e) => engagementPriceFrozen(e.engagementStatus))
+    .map((e) => e.professionalId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
   // A candidate the client rejected during review never started. Counting their
   // voided engagement as a terminal one completed the project the moment the
   // only candidate was turned down — status 'completed', slots emptied, and a
@@ -134,7 +157,7 @@ export function deriveProjectState(
     ? openRequests.reduce((a, b) => (a.toMillis() <= b.toMillis() ? a : b))
     : null;
 
-  const base = { disputeWindowEndsAt, adminReviewPending, endRequestedAt };
+  const base = { disputeWindowEndsAt, adminReviewPending, endRequestedAt, endedEngagementIds };
 
   if (engagements.length === 0) {
     return { ...base, isComplete: false, reason: 'no engagements', completionState: 'none' as const };
@@ -199,6 +222,7 @@ export async function applyDerivedProjectState(projectId: string): Promise<Deriv
   const update: Update = {
     adminReviewPending: derived.adminReviewPending,
     disputeWindowEndsAt: derived.disputeWindowEndsAt,
+    endedEngagementIds: derived.endedEngagementIds,
   };
 
   // The project-level `completion` object, written HERE AND NOWHERE ELSE.

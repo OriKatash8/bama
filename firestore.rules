@@ -47,7 +47,12 @@ service cloud.firestore {
         'adminReviewPending', 'adminReview',
         // Stamped at confirmation; bounds the professional's dispute window. A
         // client that could write it could close the window on the same day.
-        'disputeWindowEndsAt'
+        'disputeWindowEndsAt',
+        // Who has finished — derived from the engagements by
+        // applyDerivedProjectState. It is what stops the client's "update price"
+        // button once a professional is done, so a client who could write it
+        // could hand the button back to themselves.
+        'endedEngagementIds'
       ];
     }
 

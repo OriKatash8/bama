@@ -128,6 +128,6 @@ describe('item 3: the professional side', () => {
     const REPRICING = readFileSync(join(__dirname, '..', 'repricing.ts'), 'utf8');
     expect(REPRICING).toMatch(/proAccepted = bd\.proAccepted === true/);
     expect(REPRICING).toMatch(/proAccepted = offers\.docs\.some\(\(d\) => d\.data\(\)\.proAccepted === true\)/);
-    expect(REPRICING).toMatch(/decideNewPriceRequest\(\{ callerIsClient, underReview, proAccepted, history \}\)/);
+    expect(REPRICING).toMatch(/decideNewPriceRequest\(\{ callerIsClient, engagementFinished, underReview, proAccepted, history \}\)/);
   });
 });

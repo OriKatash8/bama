@@ -125,6 +125,20 @@ export type ProjectRequest = {
    *  fee settles (paid / included / cancelled / archived), independently of the
    *  others. Maintained by the lifecycle callables. */
   slotHolders?: string[];
+  /** DERIVED: pros whose engagement on this project has ENDED — finished,
+   *  disputed after finishing, withdrawn or cancelled. Written only by
+   *  `applyDerivedProjectState`, from the engagements themselves.
+   *
+   *  It exists because the client cannot read a professional's fee document by
+   *  rule (§6) and therefore has no other way to know that someone has finished
+   *  their part. project-details reads it to stop offering "update price" for
+   *  them — the same freeze `createPaymentRequest` and `respondToPaymentRequest`
+   *  refuse on, so the button matches the server.
+   *
+   *  ABSENT on projects the derivation has not touched since this shipped. Treat
+   *  a missing array as "nobody has finished": a legacy project must keep its
+   *  button, and the callables refuse anyway if it turns out otherwise. */
+  endedEngagementIds?: ID[];
   /** DERIVED and LEGACY-SHAPED: `slotHolders.length > 0`, i.e. "at least one pro
    *  is still unsettled". NOT authoritative for any individual pro — never gate a
    *  pro's slot on this, use `slotHolders` / ProjectFee.slotActive.

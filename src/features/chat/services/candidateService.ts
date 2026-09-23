@@ -222,6 +222,11 @@ export function rolesProMayReprice(
     if (!doc) return false;
     const decision = decideNewPriceRequest({
       callerIsClient: false,
+      // Never frozen here. This is the CANDIDATE REVIEW card: every offer it
+      // reads is `review: 'pending'`, which is before the hire is confirmed and
+      // therefore long before any engagement can finish. The screen that has to
+      // care about a finished engagement is project-details.
+      engagementFinished: false,
       underReview: isPendingReview(doc),
       proAccepted: doc.proAccepted === true,
       history: history

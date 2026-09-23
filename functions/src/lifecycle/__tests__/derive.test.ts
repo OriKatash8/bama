@@ -1,4 +1,5 @@
 import { deriveProjectState, remindersDueFor, everCompleted } from '../derive';
+import { engagementPriceFrozen } from '../priceRequestPolicy';
 
 const DAY = 86400_000;
 const now = Date.UTC(2026, 8, 12);
@@ -353,5 +354,65 @@ describe('a professional declining during review is not an engagement outcome', 
     // role, was re-hired into review, and declined. A declined candidacy is not
     // delivered work, so it is filtered before the ever-completed rule looks.
     expect(deriveProjectState([e('withdrawn', { releaseReason: 'candidate_declined', chargeDueAt: past })], now).isComplete).toBe(false);
+  });
+});
+
+/**
+ * `endedEngagementIds` exists for ONE reader: the client's project-details
+ * screen, which must stop offering "update price" for a professional who has
+ * finished. The client cannot read a fee document by rule (§6), so the only way
+ * they can know is a field on the project — derived here, with everything else,
+ * rather than by a second write from each completion path.
+ */
+describe('endedEngagementIds — who is past repricing', () => {
+  const eng = (professionalId: string, engagementStatus: string) =>
+    ({ professionalId, engagementStatus }) as never;
+
+  it('names the professionals whose engagement has ended', () => {
+    const d = deriveProjectState(
+      [eng('pro-1', 'completed'), eng('pro-2', 'hired'), eng('pro-3', 'disputed')],
+      now,
+    );
+    expect(d.endedEngagementIds.sort()).toEqual(['pro-1', 'pro-3']);
+  });
+
+  it('is empty while everyone is still working', () => {
+    expect(deriveProjectState([eng('pro-1', 'hired'), eng('pro-2', 'hired')], now).endedEngagementIds)
+      .toEqual([]);
+  });
+
+  it('counts a withdrawal as ended, and survives the withdrawal filter above it', () => {
+    // deriveProjectState drops withdrawn engagements before the roll-up when
+    // nothing ever completed. That filter must not erase them from this list —
+    // it exists to keep such a project OPEN, not to pretend the engagement is
+    // still live.
+    expect(deriveProjectState([eng('pro-1', 'withdrawn')], now).endedEngagementIds).toEqual(['pro-1']);
+    expect(deriveProjectState([eng('pro-1', 'withdrawn')], now).isComplete).toBe(false);
+  });
+
+  it('counts a candidate release as ended, though it is not an engagement outcome', () => {
+    // Same reasoning: the review-release filter keeps a rejected candidate from
+    // completing the project. Their price is still not repriceable.
+    const d = deriveProjectState(
+      [{ professionalId: 'pro-1', engagementStatus: 'withdrawn', releaseReason: 'candidate_rejected' } as never],
+      now,
+    );
+    expect(d.endedEngagementIds).toEqual(['pro-1']);
+    expect(d.isComplete).toBe(false);
+  });
+
+  it('skips an engagement with no professionalId rather than listing undefined', () => {
+    expect(deriveProjectState([{ engagementStatus: 'completed' } as never], now).endedEngagementIds)
+      .toEqual([]);
+  });
+
+  it('uses the same predicate the repricing callables refuse on', () => {
+    // One rule, one place. If these ever diverge the button and the server
+    // disagree, which is the whole failure mode the mirror exists to prevent.
+    for (const status of ['completed', 'disputed', 'withdrawn', 'cancelled', 'hired',
+      'end_requested_by_pro', 'end_requested_by_client']) {
+      const listed = deriveProjectState([eng('p', status)], now).endedEngagementIds.length === 1;
+      expect(listed).toBe(engagementPriceFrozen(status));
+    }
   });
 });

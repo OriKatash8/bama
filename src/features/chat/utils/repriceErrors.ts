@@ -10,6 +10,8 @@ export function repriceErrorKey(err: unknown, phase: 'create' | 'respond'): stri
   if (msg.includes('offer-price-out-of-range')) {
     return phase === 'create' ? 'project_details.reprice_out_of_range' : 'chats_page.hire_price_invalid';
   }
+  // Both phases: create refuses to raise one, respond refuses to accept one.
+  if (msg.includes('engagement-finished')) return 'project_details.reprice_engagement_finished';
   if (phase === 'create') {
     if (msg.includes('price-change-pending')) return 'project_details.reprice_pending';
     if (msg.includes('counter-not-allowed')) return 'project_details.reprice_counter_not_allowed';

@@ -320,6 +320,7 @@
     "reprice_not_a_party": "You are not a party to this project",
     "reprice_out_of_range": "The price must be between ₪1 and ₪50,000",
     "reprice_pending": "There's already a price change waiting for an answer on this role",
+    "reprice_engagement_finished": "The price is locked once a professional has finished their part",
     "reprice_counter_not_allowed": "You can suggest a price after declining the client's price change",
     "fee_line_min": "Brokerage fee · ₪{{amount}} (minimum fee)",
     "edit_deadline_error": "Could not update the date. Please try again.",
