@@ -96,6 +96,52 @@ it('excludes system pills and listing cards from the swipeable row by RETURNING 
   expect(listing).toBeLessThan(row);
 });
 
+describe('jumping to a quoted message', () => {
+  const jump = SRC.slice(SRC.indexOf('const jumpToMessage'), SRC.indexOf('const startReply'));
+
+  it('reuses the existing pin rather than a one-off scrollToIndex', () => {
+    // A bare scrollToIndex loses: onContentSizeChange re-applies the pin on
+    // every remeasure, and rows remeasure late as images and listing cards
+    // land, so the jump would be overridden a frame later.
+    expect(jump).toMatch(/pinTargetRef\.current = \{ kind: 'message', id: messageId \}/);
+    expect(jump).toMatch(/applyPin\(\)/);
+  });
+
+  it('RELEASES the pin when the highlight ends', () => {
+    // The pin is otherwise sticky until onScrollBeginDrag. Left set after a
+    // tap-jump it keeps re-scrolling, and the list silently stops following new
+    // messages until the user happens to drag it. The timeout is the release.
+    const release = SRC.slice(SRC.indexOf('if (!highlightId) return;'), SRC.indexOf('const startReply'));
+    expect(release).toMatch(/setHighlightId\(null\)/);
+    expect(release).toMatch(/pinTargetRef\.current\?\.kind === 'message'/);
+    expect(release).toMatch(/pinTargetRef\.current = null/);
+    expect(release).toMatch(/clearTimeout/);
+  });
+
+  it('starts a reply through buildReplyTo, which is the one not-repliable guard', () => {
+    const start = SRC.slice(SRC.indexOf('const startReply'), SRC.indexOf('const jumpedRef'));
+    expect(start).toMatch(/buildReplyTo\(msg\)/);
+    expect(start).toMatch(/if \(!quote\) return/);
+    // Picking a target has to put the cursor where the reply is typed.
+    expect(start).toMatch(/inputRef\.current\?\.focus\(\)/);
+  });
+
+  it('clears the reply target on send, and captures it BEFORE clearing', () => {
+    const send = SRC.slice(SRC.indexOf('async function handleSend'), SRC.indexOf('async function handleAttachMedia'));
+    expect(send.indexOf('const replyTo = replyTarget;')).toBeLessThan(send.indexOf('setReplyTarget(null)'));
+
+    // BOTH write paths, each asserted inside its own block. The two spreads are
+    // textually identical, so a single whole-function match is satisfied by the
+    // root path alone — and the community channel, which writes its messages
+    // inline rather than through sendMessage, would lose every reply in silence.
+    const channel = send.slice(send.indexOf("chatType === 'community'"), send.indexOf('} else {'));
+    const root = send.slice(send.indexOf('} else {'));
+    expect(channel).toMatch(/\.\.\.\(replyTo \? \{ replyTo \} : \{\}\)/);
+    expect(root).toMatch(/\.\.\.\(replyTo \? \{ replyTo \} : \{\}\)/);
+    expect(root).toMatch(/sendMessage\(chatId, currentUserId, text, \(mentions\.length \|\| replyTo\)/);
+  });
+});
+
 /**
  * The stored text is always Hebrew — written by the app and by the triggers in
  * functions/. The pill's headline is rebuilt from the variant instead, so an
