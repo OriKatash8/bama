@@ -35,6 +35,7 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
     system: data.system ?? false,
     mentions: data.mentions,
     mentionsEveryone: data.mentionsEveryone,
+    replyTo: data.replyTo,
   };
 }
 
@@ -61,6 +62,7 @@ export function channelDocToMessage(id: string, data: DocumentData): Message {
     videoUrl: data.videoUrl as string | undefined,
     mentions: data.mentions as string[] | undefined,
     mentionsEveryone: data.mentionsEveryone as boolean | undefined,
+    replyTo: data.replyTo as Message['replyTo'],
     // Shared marketplace listing (Part B/C)
     type: data.type as 'listing' | undefined,
     listingId: data.listingId as string | undefined,
@@ -291,6 +293,9 @@ export async function sendMessage(
     videoUrl?: string; imageURL?: string; audioUrl?: string; audioDuration?: number;
     /** Flat userIds; the create rule checks each against the chat's members. */
     mentions?: string[];
+    /** The denormalized quote, from buildReplyTo. Four keys exactly — the
+     *  create rule uses hasOnly, so a fifth is denied at the server. */
+    replyTo?: Message['replyTo'];
   }
 ): Promise<void> {
   const messagesRef = collection(db, 'chats', chatId, 'messages');
@@ -307,6 +312,9 @@ export async function sendMessage(
   // payment is the worst thing a forged message could say — so the option is
   // gone rather than left as a footgun that only fails at the server.
   if (opts?.mentions?.length) messageData.mentions = opts.mentions;
+  // Conditional, like mentions: the overwhelming majority of messages quote
+  // nothing, and an always-present key would be bytes on every one of them.
+  if (opts?.replyTo) messageData.replyTo = opts.replyTo;
   if (opts?.videoUrl) messageData.videoUrl = opts.videoUrl;
   if (opts?.imageURL) messageData.imageURL = opts.imageURL;
   if (opts?.audioUrl) messageData.audioUrl = opts.audioUrl;

@@ -81,6 +81,45 @@ it('still writes media alongside a mention', async () => {
 });
 
 /**
+ * `replyTo` — the denormalized quote, written only when there is one.
+ *
+ * The first test in this file asserts the exact key set of an ordinary send, so
+ * an unconditional `replyTo: undefined` would break it. That test is the anchor
+ * for everything here: it is what stops the field leaking onto the overwhelming
+ * majority of messages, which quote nothing.
+ */
+describe('replyTo on the way out', () => {
+  const quote = { messageId: 'm0', senderId: 'you', kind: 'text' as const, snippet: 'the original' };
+
+  it('writes the quote when the composer has one', async () => {
+    await sendMessage('c1', 'me', 'on it', { replyTo: quote });
+    expect(sent().replyTo).toEqual(quote);
+  });
+
+  it('omits the key entirely on an ordinary send', async () => {
+    await sendMessage('c1', 'me', 'hello');
+    expect('replyTo' in sent()).toBe(false);
+  });
+
+  it('writes all four keys and nothing else — the rule uses hasOnly', async () => {
+    await sendMessage('c1', 'me', 'on it', { replyTo: quote });
+    expect(Object.keys(sent().replyTo as object).sort())
+      .toEqual(['kind', 'messageId', 'senderId', 'snippet']);
+  });
+
+  it('carries a quote and a mention on the same message', async () => {
+    await sendMessage('c1', 'me', 'hey @You', { mentions: ['you'], replyTo: quote });
+    expect(sent().replyTo).toEqual(quote);
+    expect(sent().mentions).toEqual(['you']);
+  });
+
+  it('leaves the reply text alone — the quote is separate from what was typed', async () => {
+    await sendMessage('c1', 'me', 'on it', { replyTo: quote });
+    expect(sent().text).toBe('on it');
+  });
+});
+
+/**
  * The READ side of the same field.
  *
  * `docToMessage` is an explicit whitelist, so a field that is written but not
@@ -113,6 +152,15 @@ describe('reading a message back', () => {
     const m = read({ senderId: 'me', text: 'hello' });
     expect(m.mentions).toBeUndefined();
     expect(m.mentionsEveryone).toBeUndefined();
+  });
+
+  it('carries replyTo through to the Message', () => {
+    const quote = { messageId: 'm0', senderId: 'you', kind: 'text', snippet: 'the original' };
+    expect(read({ senderId: 'me', text: 'on it', replyTo: quote }).replyTo).toEqual(quote);
+  });
+
+  it('leaves replyTo undefined on a message that quotes nothing', () => {
+    expect(read({ senderId: 'me', text: 'hello' }).replyTo).toBeUndefined();
   });
 
   it('still maps everything it mapped before', () => {
@@ -149,6 +197,18 @@ describe('reading a channel message back', () => {
     const m = channelDocToMessage('m9', { senderId: 'me', text: 'hello' });
     expect(m.mentions).toBeUndefined();
     expect(m.mentionsEveryone).toBeUndefined();
+  });
+
+  it('carries replyTo, which this mapper needs just as much', () => {
+    // The gap this whole describe block exists for: a field added to one mapper
+    // and forgotten in the other renders a bubble wrong with nothing to say why.
+    const quote = { messageId: 'm0', senderId: 'you', kind: 'image', snippet: '' };
+    expect(channelDocToMessage('m9', { senderId: 'me', text: 'nice', replyTo: quote }).replyTo)
+      .toEqual(quote);
+  });
+
+  it('leaves replyTo undefined on an ordinary channel message', () => {
+    expect(channelDocToMessage('m9', { senderId: 'me', text: 'hello' }).replyTo).toBeUndefined();
   });
 
   it('still maps the shared-listing payload, which only this collection has', () => {

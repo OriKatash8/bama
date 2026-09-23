@@ -36,6 +36,24 @@ export interface Message {
   /** `@everyone` in a community channel. The community OWNER's alone, enforced
    *  in the rules — it reaches the whole roster AND overrides mute. */
   mentionsEveryone?: boolean;
+  /**
+   * The message this one replies to, DENORMALIZED — a snapshot, never a live
+   * lookup. Written by utils/replyTo.ts and validated for shape and size by
+   * replyToOk in firestore.rules.
+   *
+   * Denormalized because a live lookup would be a read per rendered bubble, and
+   * a get() in the rules would be a read per message WRITE. The cost of the
+   * snapshot is that it can go stale — it cannot, in practice, since message
+   * update and delete are both denied — and that a quoted message may no longer
+   * be reachable, which degrades to a quote that does not jump rather than a
+   * bubble that fails to render.
+   */
+  replyTo?: {
+    messageId: string;
+    senderId: string;
+    kind: 'text' | 'image' | 'video' | 'audio';
+    snippet: string;
+  };
   /** Shared marketplace listing — rendered as an actionable card. */
   type?: 'listing';
   listingId?: string;
