@@ -18,15 +18,10 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/chats/$(chatId)).data.members;
     }
 
-    // True if the parent chat is read-only (e.g. BAMA System DMs). Clients may
-    // not post into it; the Admin SDK (bypasses rules) still can.
-    function chatReadOnly(chatId) {
-      return get(/databases/$(database)/documents/chats/$(chatId)).data.get('readOnly', false) == true;
-    }
-
     // The whole parent chat, read ONCE and passed down. The message-create rules
-    // need members, readOnly and ownerId together; calling the three helpers
-    // above would read the same document three times.
+    // need members, readOnly and ownerId together, and a helper per field would
+    // read the same document three times. This replaced a `chatReadOnly` helper
+    // whose only caller was that path.
     function chatDoc(chatId) {
       return get(/databases/$(database)/documents/chats/$(chatId)).data;
     }
