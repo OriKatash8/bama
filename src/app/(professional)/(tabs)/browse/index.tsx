@@ -48,8 +48,6 @@ export default function BrowseScreen() {
   const segments = useSegments();
   const rtl = language === 'he';
 
-  const currentUid = auth.currentUser?.uid;
-
   function closeModal() {
     setSelectedCategory(null);
     setModalQuery('');
@@ -66,13 +64,12 @@ export default function BrowseScreen() {
     selectedCategory ?? ''
   );
 
-  const filteredModalResults: ProfessionalResult[] = (
-    modalQuery.trim()
-      ? modalResults.filter((r) =>
-          r.user.displayName.toLowerCase().includes(modalQuery.toLowerCase())
-        )
-      : modalResults
-  ).filter((r) => r.user.id !== currentUid);
+  // The signed-in user is already dropped by useSearchProfessionals.
+  const filteredModalResults: ProfessionalResult[] = modalQuery.trim()
+    ? modalResults.filter((r) =>
+        r.user.displayName.toLowerCase().includes(modalQuery.toLowerCase())
+      )
+    : modalResults;
 
   const filteredCategories = query.trim()
     ? CATEGORIES.filter((c) => categoryLabel(c.key, rtl ? 'he' : 'en').toLowerCase().includes(query.toLowerCase()))

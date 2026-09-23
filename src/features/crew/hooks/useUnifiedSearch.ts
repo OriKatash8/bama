@@ -7,6 +7,7 @@ import type { ProfessionalResult } from './useSearchProfessionals';
 import { computeAverageRating } from '@features/reviews/utils/rating';
 import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import { ROLE_BY_ID } from '@features/crew/data/categories';
+import { useAuthStore } from '@core/stores/authStore';
 
 type MatchPriority = 0 | 1; // 0=name, 1=category
 
@@ -15,6 +16,9 @@ type RankedResult = ProfessionalResult & { priority: MatchPriority };
 export function useUnifiedSearch(query: string): { results: ProfessionalResult[]; isLoading: boolean } {
   const [results, setResults] = useState<ProfessionalResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // You are never a search result for yourself — see the note in
+  // __tests__/excludesSelf.test.ts.
+  const currentUserId = useAuthStore((s) => s.user?.id);
 
   useEffect(() => {
     const trimmed = query.trim().toLowerCase();
@@ -36,6 +40,7 @@ export function useUnifiedSearch(query: string): { results: ProfessionalResult[]
 
           await Promise.all(
             users.map(async (user) => {
+              if (user.id === currentUserId) return;
               const profile = await getDocument<ProfessionalProfile>(
                 `users/${user.id}/profile/data`
               );
@@ -77,7 +82,7 @@ export function useUnifiedSearch(query: string): { results: ProfessionalResult[]
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, currentUserId]);
 
   return { results, isLoading };
 }

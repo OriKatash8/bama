@@ -6,6 +6,7 @@ import type { Review } from '@core/types/project';
 import { computeAverageRating } from '@features/reviews/utils/rating';
 import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import { roleIdForCategory } from '@features/noticeboard/matching';
+import { useAuthStore } from '@core/stores/authStore';
 
 export type ProfessionalResult = {
   user: User;
@@ -15,6 +16,9 @@ export type ProfessionalResult = {
 export function useSearchProfessionals(category: string, subcategory?: string) {
   const [results, setResults] = useState<ProfessionalResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // You are never a search result for yourself — see the note in
+  // __tests__/excludesSelf.test.ts.
+  const currentUserId = useAuthStore((s) => s.user?.id);
 
   void subcategory; // subcategory no longer stored on skills — kept as param for API compat
 
@@ -35,6 +39,7 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
 
       await Promise.all(
         users.map(async (user) => {
+          if (user.id === currentUserId) return;
           const profile = await getDocument<ProfessionalProfile>(
             `users/${user.id}/profile/data`
           );
@@ -64,7 +69,7 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
     });
 
     return () => { cancelled = true; };
-  }, [category]);
+  }, [category, currentUserId]);
 
   return { results, isLoading };
 }
