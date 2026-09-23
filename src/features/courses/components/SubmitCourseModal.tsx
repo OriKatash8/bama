@@ -11,6 +11,7 @@ import { db } from '@core/firebase/config';
 import { uploadFile } from '@core/firebase/storage';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { rtlSafe } from '@utils/formatters';
 import { useAuthStore } from '@core/stores/authStore';
 import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
@@ -40,6 +41,19 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const user = useAuthStore((s) => s.user);
+  /** Prose reads from the side the language starts on. Applied to every label,
+   *  the title and the category list — the inputs and rows already flipped, but
+   *  the text inside them did not, so the Hebrew form hugged the wrong edge. */
+  const align = { textAlign: rtl ? 'right' : 'left' } as const;
+
+  /** A field label. `required` appends the marker on the READING side: the app
+   *  lays out LTR, so a trailing "*" after Hebrew falls to the LTR end and
+   *  lands in front of the words. rtlSafe anchors it. */
+  const fieldLabel = (key: string, required = false) => (
+    <Text style={[styles.label, { ...font.semiBold }, align]}>
+      {rtlSafe(required ? `${t(key)} *` : t(key), rtl)}
+    </Text>
+  );
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
@@ -114,7 +128,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
         <View style={styles.sheet}>
             {/* Header */}
             <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.headerTitle, { ...font.bold }]}>{t('courses.add_your_course')}</Text>
+              <Text style={[styles.headerTitle, { ...font.bold }, align]}>{t('courses.add_your_course')}</Text>
               <TouchableOpacity onPress={onClose} hitSlop={12} activeOpacity={0.7}>
                 <X size={20} color="#004aad" />
               </TouchableOpacity>
@@ -122,7 +136,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form} style={styles.formScroll}>
               {/* Title */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.course_title_label')} *</Text>
+              {fieldLabel('courses.course_title_label', true)}
               <TextInput
                 style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                 value={title}
@@ -132,14 +146,18 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               />
 
               {/* Category */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.course_category')} *</Text>
+              {fieldLabel('courses.course_category', true)}
               <TouchableOpacity
                 style={styles.input}
                 onPress={() => setShowCategoryPicker(!showCategoryPicker)}
                 activeOpacity={0.8}
               >
-                <Text style={[{ color: category ? '#004aad' : 'rgba(0,74,173,0.4)', ...font.regular }]}>
-                  {category || t('courses.select_category')}
+                <Text style={[{ color: category ? '#004aad' : 'rgba(0,74,173,0.4)', ...font.regular }, align]}>
+                  {/* The localised name. `category` itself stays the raw
+                      ROLE_CATEGORIES key — it is what the document is saved
+                      under — so echoing it put an English word in the middle
+                      of a Hebrew form. */}
+                  {category ? categoryLabel(category, rtl ? 'he' : 'en') : t('courses.select_category')}
                 </Text>
               </TouchableOpacity>
               {showCategoryPicker && (
@@ -151,14 +169,14 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                       onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.pickerItemText, { ...font.regular }]}>{categoryLabel(cat, rtl ? 'he' : 'en')}</Text>
+                      <Text style={[styles.pickerItemText, { ...font.regular }, align]}>{categoryLabel(cat, rtl ? 'he' : 'en')}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
 
               {/* Link */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.course_link')} *</Text>
+              {fieldLabel('courses.course_link', true)}
               <TextInput
                 style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                 value={courseUrl}
@@ -170,7 +188,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               />
 
               {/* Instructor */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.instructor_label')} *</Text>
+              {fieldLabel('courses.instructor_label', true)}
               <TextInput
                 style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                 value={instructorName}
@@ -180,7 +198,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               />
 
               {/* Price */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.price_label')}</Text>
+              {fieldLabel('courses.price_label')}
               <TextInput
                 style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                 value={price}
@@ -191,7 +209,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               />
 
               {/* Description */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.description_label')}</Text>
+              {fieldLabel('courses.description_label')}
               <TextInput
                 style={[styles.input, styles.inputMulti, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                 value={description}
@@ -203,7 +221,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               />
 
               {/* Cover image */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.cover_image_label')}</Text>
+              {fieldLabel('courses.cover_image_label')}
               <TouchableOpacity style={styles.coverPickerBtn} onPress={handlePickCover} activeOpacity={0.8}>
                 {coverImageUri ? (
                   <Image source={{ uri: coverImageUri }} style={styles.coverPreview} contentFit="cover" />
@@ -215,7 +233,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               {/* Duration + lessons */}
               <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.duration_label')}</Text>
+                  {fieldLabel('courses.duration_label')}
                   <TextInput
                     style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                     value={durationHours}
@@ -226,7 +244,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.lessons_label')}</Text>
+                  {fieldLabel('courses.lessons_label')}
                   <TextInput
                     style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
                     value={lessonsCount}
@@ -239,7 +257,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
               </View>
 
               {/* Level */}
-              <Text style={[styles.label, { ...font.semiBold }]}>{t('courses.level_label')}</Text>
+              {fieldLabel('courses.level_label')}
               <View style={[styles.levelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {(['beginner', 'intermediate', 'advanced'] as const).map((key) => {
                   const active = level === key;
@@ -336,7 +354,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   submitBtnDisabled: { opacity: 0.5 },
-  submitBtnText: { color: '#ffffff', fontSize: 15 },
+  submitBtnText: { color: '#ffffff', fontSize: 15, textAlign: 'center' },
   coverPickerBtn: {
     width: '100%',
     aspectRatio: 16 / 9,
@@ -350,7 +368,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   coverPreview: { width: '100%', height: '100%' },
-  coverPickerText: { color: 'rgba(0,74,173,0.5)', fontSize: 13 },
+  coverPickerText: { color: 'rgba(0,74,173,0.5)', fontSize: 13, textAlign: 'center' },
   levelRow: { gap: 8 },
   levelBtn: {
     flex: 1,
@@ -362,6 +380,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   levelBtnActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  levelBtnText: { fontSize: 12, color: '#004aad' },
+  levelBtnText: { fontSize: 12, color: '#004aad', textAlign: 'center' },
   levelBtnTextActive: { color: '#fff' },
 });
