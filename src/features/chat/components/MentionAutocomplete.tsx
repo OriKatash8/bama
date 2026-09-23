@@ -12,6 +12,10 @@ type Props = {
   /** Wash behind the selected-looking @everyone row. */
   tint: string;
   onPick: (row: MentionRow) => void;
+  /** Called on pointerdown/up around a row, so the composer's blur cannot
+   *  cancel a press that has already begun. */
+  onPressStart: () => void;
+  onPressEnd: () => void;
   /** "No one left to mention" / "Up to 10 people" — passed in so the component
    *  holds no translation table of its own. */
   labels: { loading: string; empty: string; atLimit: string; everyone: string };
@@ -31,7 +35,7 @@ type Props = {
  * permanent aliases for left/right. Sides are chosen explicitly from `rtl`, the
  * same way the scroll-down button already does it.
  */
-export function MentionAutocomplete({ state, rtl, accent, tint, onPick, labels }: Props) {
+export function MentionAutocomplete({ state, rtl, accent, tint, onPick, onPressStart, onPressEnd, labels }: Props) {
   if (!state.open) return null;
 
   const rowDir = rtl ? 'row-reverse' : 'row';
@@ -64,7 +68,9 @@ export function MentionAutocomplete({ state, rtl, accent, tint, onPick, labels }
                 key={row.id}
                 testID={`mention-row-${row.id}`}
                 style={[styles.row, { flexDirection: rowDir }, row.everyone && { backgroundColor: tint }]}
-                onPress={() => onPick(row)}
+                onPressIn={onPressStart}
+                onPressOut={onPressEnd}
+                onPress={() => { onPressEnd(); onPick(row); }}
                 activeOpacity={0.7}
               >
                 <View style={[styles.avatar, { backgroundColor: accent }]}>

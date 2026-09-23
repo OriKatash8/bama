@@ -1845,6 +1845,8 @@ export function ChatRoomScreen({ chatId }: Props) {
           accent={modeAccent}
           tint={modeTint}
           onPick={mention.pick}
+          onPressStart={mention.notePressStart}
+          onPressEnd={mention.notePressEnd}
           labels={{
             loading: t('mentions.loading'),
             empty: t('mentions.empty'),
@@ -1887,7 +1889,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                   // One-shot: release control of the caret the moment it lands.
                   if (pendingSelection) setPendingSelection(undefined);
                 }}
-                onBlur={mention.dismiss}
+                onBlur={mention.handleBlur}
                 testID="chat-composer-input"
                 placeholder={t('chats.message_placeholder')}
                 placeholderTextColor={colors.placeholder}

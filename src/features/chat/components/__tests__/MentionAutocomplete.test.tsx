@@ -53,6 +53,7 @@ function Harness({
       <MentionAutocomplete
         state={mention} rtl={rtl} accent="#6D28D9" tint="#F3EEFE"
         onPick={mention.pick} labels={LABELS}
+        onPressStart={mention.notePressStart} onPressEnd={mention.notePressEnd}
       />
       <TextInput
         testID="composer"
@@ -63,6 +64,7 @@ function Harness({
           setCaret(e.nativeEvent.selection.start);
           if (selection) setSelection(undefined);
         }}
+        onBlur={mention.handleBlur}
       />
       <TextInput
         testID="send"
@@ -181,6 +183,68 @@ describe('picking a member', () => {
       });
     });
     expect(r.getByTestId('composer').props.selection).toBeUndefined();
+  });
+});
+
+describe('the web mousedown race', () => {
+  /**
+   * On RN Web the input blurs on POINTERDOWN, while TouchableOpacity fires
+   * onPress on POINTERUP. A blur handler that closes the picker synchronously
+   * therefore unmounts the row between the two, and the press never lands —
+   * the popup appears, filters correctly, and picking does nothing at all.
+   *
+   * The other tests in this file press the row directly, which skips the blur
+   * entirely and passes against exactly that bug. This one fires the real
+   * ordering.
+   */
+  it('still inserts when the input blurs first', () => {
+    const r = render(<Harness />);
+    type(r, 'hello @dan');
+    act(() => { fireEvent(r.getByTestId('composer'), 'blur'); });
+    act(() => { fireEvent.press(r.getByTestId('mention-row-u-dana')); });
+    expect(r.getByTestId('composer').props.value).toBe('hello @Dana Cohen ');
+  });
+
+  it('the row is still mounted immediately after the blur', () => {
+    const r = render(<Harness />);
+    type(r, 'hello @dan');
+    act(() => { fireEvent(r.getByTestId('composer'), 'blur'); });
+    expect(r.queryByTestId('mention-row-u-dana')).not.toBeNull();
+  });
+
+  it('survives a press held longer than the dismiss delay', () => {
+    // The deferral alone is not enough — the timer has to RE-CHECK whether a
+    // press is underway. Without that, holding the mouse down past 150ms
+    // dismisses the popup out from under the finger.
+    jest.useFakeTimers();
+    try {
+      const r = render(<Harness />);
+      type(r, 'hello @dan');
+      act(() => { fireEvent(r.getByTestId('composer'), 'blur'); });
+      act(() => { fireEvent(r.getByTestId('mention-row-u-dana'), 'pressIn'); });
+      act(() => { jest.advanceTimersByTime(500); });
+
+      expect(r.queryByTestId('mention-row-u-dana')).not.toBeNull();
+      act(() => { fireEvent.press(r.getByTestId('mention-row-u-dana')); });
+      expect(r.getByTestId('composer').props.value).toBe('hello @Dana Cohen ');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('but a blur with no press does close it', () => {
+    // The deferral must not turn into "never closes": tapping away with
+    // "@dan" still in the box has to dismiss the popup.
+    jest.useFakeTimers();
+    try {
+      const r = render(<Harness />);
+      type(r, 'hello @dan');
+      act(() => { fireEvent(r.getByTestId('composer'), 'blur'); });
+      act(() => { jest.advanceTimersByTime(500); });
+      expect(r.queryByTestId('mention-autocomplete')).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 

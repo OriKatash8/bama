@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { detectMentionQuery, insertMention } from '../utils/mentions';
 
 /** The `@everyone` row, and the literal token it inserts. */
@@ -52,8 +52,13 @@ export function useMentionAutocomplete(args: {
   pick: (row: MentionRow) => void;
   /** userIds to store on the message, derived from the FINAL text. */
   resolveMentions: (finalText: string) => { mentions: string[]; everyone: boolean };
-  /** Close without picking — the send button and blur both use this. */
+  /** Close without picking. */
   dismiss: () => void;
+  /** Wire to the composer's `onBlur` — NOT `dismiss`. See the note on the race. */
+  handleBlur: () => void;
+  /** The picker calls these around a row press so a blur cannot cancel it. */
+  notePressStart: () => void;
+  notePressEnd: () => void;
 } {
   const { text, caret, memberIds, memberNames, currentUserId, canMentionEveryone, enabled, onChange } = args;
 
@@ -102,6 +107,8 @@ export function useMentionAutocomplete(args: {
 
   const pick = useCallback(
     (row: MentionRow) => {
+      // TEMPORARY [mention] tracing — remove once the web insert is confirmed.
+      if (__DEV__) console.log('[mention] pick fired', { id: row.id, name: row.name, queryActive: query.active });
       if (!query.active) return;
       // @everyone is a flag on the document, so it does not consume a slot in
       // the bounded `mentions` array.
@@ -109,6 +116,7 @@ export function useMentionAutocomplete(args: {
       setPicked((prev) => new Map(prev).set(row.everyone ? EVERYONE_ID : row.id, row.name));
       const name = row.everyone ? EVERYONE_TOKENS[1].slice(1) : row.name;
       const next = insertMention(text, query.start, caret, name);
+      if (__DEV__) console.log('[mention] insert', { from: text, to: next.text, caret: next.caret });
       onChange(next.text, next.caret);
     },
     [query, text, caret, onChange, picked],
@@ -132,6 +140,40 @@ export function useMentionAutocomplete(args: {
     setDismissedAt(query.active ? query.start : null);
   }, [query]);
 
+  /**
+   * Closing on blur, without cancelling a press that is already underway.
+   *
+   * On RN Web the input blurs on POINTERDOWN while TouchableOpacity fires
+   * onPress on POINTERUP, so a blur handler that dismisses synchronously
+   * unmounts the row between the two and the press never lands. The popup
+   * appears, filters correctly, and picking does nothing — which is exactly
+   * how this shipped.
+   *
+   * Deferred AND re-checked, because the two orderings both happen: if the
+   * blur arrives first the flag is still false when it is scheduled, so the
+   * check at fire time is what saves it; if the press starts first the flag is
+   * already set. A press that outlives the delay is covered for the same
+   * reason.
+   */
+  const pressingRef = useRef(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notePressStart = useCallback(() => {
+    if (__DEV__) console.log('[mention] pressIn — a press is underway');
+    pressingRef.current = true;
+  }, []);
+  const notePressEnd = useCallback(() => { pressingRef.current = false; }, []);
+
+  const handleBlur = useCallback(() => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    if (__DEV__) console.log('[mention] blur — dismiss scheduled');
+    blurTimer.current = setTimeout(() => {
+      if (__DEV__) console.log('[mention] blur timer fired', { pressing: pressingRef.current });
+      if (!pressingRef.current) dismiss();
+    }, 150);
+  }, [dismiss]);
+
+  useEffect(() => () => { if (blurTimer.current) clearTimeout(blurTimer.current); }, []);
+
   const state: MentionAutocompleteState =
     !query.active || dismissed || memberIds.length === 0
       ? { open: false }
@@ -139,5 +181,5 @@ export function useMentionAutocomplete(args: {
         ? { open: true, loading: true, rows: [] }
         : { open: true, loading: false, rows, atLimit };
 
-  return { ...state, pick, resolveMentions, dismiss };
+  return { ...state, pick, resolveMentions, dismiss, handleBlur, notePressStart, notePressEnd };
 }
