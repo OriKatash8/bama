@@ -42,7 +42,14 @@ service cloud.firestore {
      *    away a capability nothing uses.
      *  - `mentions` (new) drives a push that deliberately OVERRIDES mute. Every
      *    id in it must belong to this chat, or a crafted message becomes an
-     *    unsolicited-notification channel aimed at arbitrary users.
+     *    unsolicited-notification channel aimed at arbitrary users. It is also
+     *    BOUNDED AT 10: @everyone is owner-gated, but an unbounded mentions
+     *    array let any member reach the whole community by listing ids, mute
+     *    override included — guarding the front door while this stood open.
+     *    A project crew is a handful of people and a real message names one or
+     *    two, so 10 is generous for the legitimate case and far below the point
+     *    where a mention is really a broadcast. The picker stops at the same
+     *    number so the limit is visible rather than a failed send.
      *
      * `hasAll` on a non-list errors, which denies — failing closed is correct
      * for a field whose whole job is addressing notifications.
@@ -58,7 +65,8 @@ service cloud.firestore {
         && chat.get('readOnly', false) != true
         && request.resource.data.senderId == request.auth.uid
         && !request.resource.data.keys().hasAny(['system'])
-        && chat.members.hasAll(request.resource.data.get('mentions', []));
+        && chat.members.hasAll(request.resource.data.get('mentions', []))
+        && request.resource.data.get('mentions', []).size() <= 10;
     }
 
     // Fetches the parent project document data

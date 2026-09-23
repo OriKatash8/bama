@@ -134,6 +134,14 @@ await adminDb.doc(`chats/${RO_COMMUNITY}/channels/${CHANNEL}`).set({
   name: 'General', kind: 'general', createdBy: OWNER, createdAt: new Date(), lastMessage: null,
 });
 
+// A 12-member chat, so the cap can be crossed. The extra ids are never signed
+// in as; the rule only asks whether they are in `members`.
+const MANY = 'probe-msg-many';
+const CROWD = Array.from({ length: 12 }, (_, i) => `probe-crowd-${i}`);
+await adminDb.collection('chats').doc(MANY).set({
+  type: 'group', name: 'Crowd', members: [MEMBER, ...CROWD], createdAt: new Date(),
+});
+
 const root = (chatId) => ['chats', chatId, 'messages'];
 const chan = (chatId) => ['chats', chatId, 'channels', CHANNEL, 'messages'];
 /** The shape every client send actually writes. */
@@ -190,6 +198,18 @@ const CASES = [
     path: chan(COMMUNITY), payload: () => base(MEMBER, { mentions: [OUTSIDER] }), expected: false },
   { group: 'mentions', name: 'mentions a fellow member in a channel', identity: 'member',
     path: chan(COMMUNITY), payload: () => base(MEMBER, { mentions: [THIRD] }), expected: true },
+
+  // ── the cap ────────────────────────────────────────────────────────────────
+  // @everyone is owner-gated, but an unbounded mentions array let any member
+  // reach the whole community by listing ids — with the mute override.
+  { group: 'cap', name: 'mentions exactly 10 members', identity: 'member',
+    path: root(MANY), payload: () => base(MEMBER, { mentions: CROWD.slice(0, 10) }), expected: true },
+  { group: 'cap', name: 'mentions 11 members', identity: 'member',
+    path: root(MANY), payload: () => base(MEMBER, { mentions: CROWD.slice(0, 11) }), expected: false },
+  { group: 'cap', name: 'mentions 12 members', identity: 'member',
+    path: root(MANY), payload: () => base(MEMBER, { mentions: CROWD }), expected: false },
+  { group: 'cap', name: '11 ids where one is a non-member (both reasons)', identity: 'member',
+    path: root(MANY), payload: () => base(MEMBER, { mentions: [...CROWD.slice(0, 10), OUTSIDER] }), expected: false },
 
   // ── @everyone ──────────────────────────────────────────────────────────────
   { group: 'everyone', name: 'community OWNER sends @everyone', identity: 'owner',
