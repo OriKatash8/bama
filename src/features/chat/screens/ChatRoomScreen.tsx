@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isolate } from '@utils/formatters';
+import { ReplyQuote } from '../components/ReplyQuote';
+import { SwipeableMessageRow } from '../components/SwipeableMessageRow';
+import { buildReplyTo, type ReplyTo } from '../utils/replyTo';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
@@ -629,6 +632,14 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [projectStatus, setProjectStatus] = useState<string | undefined>(undefined);
   // True while the review card is a carousel the client can swipe through.
   const [cardSwipeable, setCardSwipeable] = useState(false);
+
+  /** The message being replied to, or null. Cleared on send and on cancel —
+   *  NOT on blur, so tapping away and coming back keeps the quote. */
+  const [replyTarget, setReplyTarget] = useState<ReplyTo | null>(null);
+  /** Picking a target focuses the composer; there was no ref on it before. */
+  const inputRef = useRef<TextInput>(null);
+  /** Flashes the message a quote jumped to, so the landing is visible. */
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [chatPhotoURL, setChatPhotoURL] = useState<string | null>(null);
   const [chatPhotoModalOpen, setChatPhotoModalOpen] = useState(false);
@@ -971,6 +982,43 @@ export function ChatRoomScreen({ chatId }: Props) {
     flatListRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.3 });
   }, [listItems]);
 
+  /**
+   * Jump to the message a quote points at.
+   *
+   * The pin is STICKY — it re-applies on every onContentSizeChange until the
+   * user drags — which is what makes it survive rows remeasuring late. For a
+   * tap that is right while landing and wrong afterwards, so the highlight's
+   * timeout doubles as the release: without it the list would keep re-scrolling
+   * and stop following new messages until the user touched it.
+   *
+   * A message that is not in the list (a different channel, or one that never
+   * loaded) makes applyPin a silent no-op, so the quote simply does not move —
+   * see the `index < 0` early return above.
+   */
+  const jumpToMessage = useCallback((messageId: string) => {
+    pinTargetRef.current = { kind: 'message', id: messageId };
+    isAtBottomRef.current = false;
+    applyPin();
+    setHighlightId(messageId);
+  }, [applyPin]);
+
+  useEffect(() => {
+    if (!highlightId) return;
+    const timer = setTimeout(() => {
+      setHighlightId(null);
+      if (pinTargetRef.current?.kind === 'message') pinTargetRef.current = null;
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [highlightId]);
+
+  /** Start a reply to a message, and put the cursor where it is typed. */
+  const startReply = useCallback((msg: Message) => {
+    const quote = buildReplyTo(msg);
+    if (!quote) return;
+    setReplyTarget(quote);
+    inputRef.current?.focus();
+  }, []);
+
   /** Which chat/channel we have already jumped in, so a snapshot arriving
    *  mid-read cannot yank the list a second time. */
   const jumpedRef = useRef('');
@@ -1165,8 +1213,10 @@ export function ChatRoomScreen({ chatId }: Props) {
     // backspace deletes one character rather than the whole token, so a
     // half-deleted "@Dana Coh" must drop the push along with the highlight.
     const { mentions, everyone } = mention.resolveMentions(text);
+    const replyTo = replyTarget;
     setInputText('');
     setCaret(0);
+    setReplyTarget(null);
     if (chatType === 'community' && activeChannelId) {
       await addDoc(
         collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages'),
@@ -1174,13 +1224,16 @@ export function ChatRoomScreen({ chatId }: Props) {
           senderId: currentUserId, text, timestamp: serverTimestamp(), readBy: [currentUserId],
           ...(mentions.length ? { mentions } : {}),
           ...(everyone ? { mentionsEveryone: true } : {}),
+          ...(replyTo ? { replyTo } : {}),
         },
       );
       await updateDoc(doc(db, 'chats', chatId, 'channels', activeChannelId), {
         lastMessage: { text, senderId: currentUserId, timestamp: serverTimestamp() },
       });
     } else {
-      await sendMessage(chatId, currentUserId, text, mentions.length ? { mentions } : undefined);
+      await sendMessage(chatId, currentUserId, text, (mentions.length || replyTo)
+        ? { ...(mentions.length ? { mentions } : {}), ...(replyTo ? { replyTo } : {}) }
+        : undefined);
     }
   }
 
@@ -1358,7 +1411,14 @@ export function ChatRoomScreen({ chatId }: Props) {
       the header still goes back, and the gesture returns the moment the client
       is down to one professional to decide on.
     */}
-    <Stack.Screen options={{ headerShown: false, gestureEnabled: !cardSwipeable }} />
+    {/* fullScreenGestureEnabled is FALSE deliberately: on iOS 26+ it defaults
+        to true, which makes swipe-back span the whole screen — and then no edge
+        exclusion could keep a reply swipe out of its way. Pinned to 24px here
+        against the row's EDGE_PX of 32, the two zones are disjoint by
+        construction, so neither has to be switched off while the other is live.
+        That is why there is no per-swipe flag: lifting one would re-render this
+        screen, and every visible row with it, in the frames the drag needs. */}
+    <Stack.Screen options={{ headerShown: false, gestureEnabled: !cardSwipeable, fullScreenGestureEnabled: false, gestureResponseDistance: { start: 24 } }} />
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1604,8 +1664,36 @@ export function ChatRoomScreen({ chatId }: Props) {
               return <SharedListingCard msg={msg} />;
             }
             const isOwn = msg.senderId === currentUserId;
+            const quote = msg.replyTo ? (
+              <ReplyQuote
+                replyTo={msg.replyTo}
+                rtl={rtl}
+                accent={isOwn ? '#fff' : modeAccent}
+                color={isOwn ? '#fff' : colors.text}
+                names={memberNames}
+                currentUserId={currentUserId}
+                t={t}
+                variant="bubble"
+                onPress={jumpToMessage}
+              />
+            ) : null;
             return (
-              <View style={[styles.bubbleWrapper, isOwn ? styles.wrapperOwn : styles.wrapperPeer]}>
+              // Every row that reaches here IS repliable: the date separator,
+              // the system pill and the shared listing card all return above,
+              // and those are exactly what buildReplyTo refuses. A `repliable`
+              // ternary here would be a branch nothing can take —
+              // chatRoomCandidateMount pins that ordering instead.
+              <SwipeableMessageRow
+                enabled
+                rtl={rtl}
+                accent={modeAccent}
+                onReply={() => startReply(msg)}
+                style={[
+                  styles.bubbleWrapper,
+                  isOwn ? styles.wrapperOwn : styles.wrapperPeer,
+                  highlightId === msg.id ? { backgroundColor: modeTint, borderRadius: 12 } : null,
+                ]}
+              >
                 {msg.videoUrl ? (
                   <View style={[styles.mediaBubble, { backgroundColor: isOwn ? modeAccent : '#ffffff' }]}>
                     {!isOwn && (
@@ -1613,6 +1701,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
+                    {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.videoUrl!, type: 'video' })} activeOpacity={0.9}>
                       <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} thumbnailOnly />
                     </TouchableOpacity>
@@ -1632,6 +1721,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
+                    {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.imageURL!, type: 'image' })} activeOpacity={0.9}>
                       <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
                     </TouchableOpacity>
@@ -1651,6 +1741,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
+                    {quote}
                     <VoiceMessageBubble
                       messageId={msg.id}
                       audioUrl={msg.audioUrl!}
@@ -1670,6 +1761,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {userNames[msg.senderId] ?? 'Loading...'}
                       </AppText>
                     )}
+                    {quote}
                     <MessageBody
                       msg={msg}
                       rtl={rtl}
@@ -1686,7 +1778,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     </Text>
                   </View>
                 )}
-              </View>
+              </SwipeableMessageRow>
             );
           }}
         />
@@ -1829,6 +1921,23 @@ export function ChatRoomScreen({ chatId }: Props) {
       {/* Input */}
       {!isRecording && !isReadOnly && !((chatType === 'purchase' || chatType === 'group') && chatArchived) && (
         <View style={styles.composerAnchor}>
+        {/* In FLOW, above the input row. MentionAutocomplete is absolute with
+            bottom:'100%' measured against this anchor, so the picker floats
+            above the reply bar rather than over it — the two coexist with no
+            change to the picker. */}
+        {replyTarget && (
+          <ReplyQuote
+            replyTo={replyTarget}
+            rtl={rtl}
+            accent={modeAccent}
+            color={colors.text}
+            names={memberNames}
+            currentUserId={currentUserId}
+            t={t}
+            variant="composer"
+            onCancel={() => setReplyTarget(null)}
+          />
+        )}
         <MentionAutocomplete
           state={mention}
           rtl={rtl}
@@ -1858,6 +1967,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 <Plus size={24} color={menuOpen ? colors.text : modeAccent} strokeWidth={2} />
               </TouchableOpacity>
               <TextInput
+                ref={inputRef}
                 // The layout is forced LTR app-wide, so the field's own text
                 // side is set here: the placeholder and what is typed both start
                 // on the right in Hebrew. writingDirection as well as textAlign,
@@ -2520,6 +2630,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   composerAnchor: { position: 'relative' },
+  // The media bubbles have no horizontal padding of their own — the image runs
+  // edge to edge — so a quote inside one needs its own.
+  bubbleQuote: { paddingHorizontal: 10, paddingTop: 4 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

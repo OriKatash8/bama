@@ -208,7 +208,14 @@
     "crew_ready": "The team is ready",
     "system_left": "{{name}} left the project",
     "system_declined": "{{name}} decided not to continue with the project",
-    "message_placeholder": "Write a message"
+    "message_placeholder": "Write a message",
+    "reply": "Reply",
+    "reply_to_you": "You",
+    "reply_photo": "Photo",
+    "reply_video": "Video",
+    "reply_voice": "Voice message",
+    "reply_message": "Message",
+    "cancel_reply": "Cancel reply"
   },
   "mentions": {
     "loading": "Loading members…",

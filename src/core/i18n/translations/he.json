@@ -208,7 +208,14 @@
     "crew_ready": "הצוות מוכן",
     "system_left": "{{name}} עזב את הפרויקט",
     "system_declined": "{{name}} החליט/ה לא להמשיך בפרויקט",
-    "message_placeholder": "כתוב הודעה"
+    "message_placeholder": "כתוב הודעה",
+    "reply": "השב",
+    "reply_to_you": "את/ה",
+    "reply_photo": "תמונה",
+    "reply_video": "סרטון",
+    "reply_voice": "הודעה קולית",
+    "reply_message": "הודעה",
+    "cancel_reply": "ביטול תגובה"
   },
   "mentions": {
     "loading": "טוען חברים…",

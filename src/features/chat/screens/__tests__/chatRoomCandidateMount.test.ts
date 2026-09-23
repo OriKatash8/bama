@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { EDGE_PX } from '../../utils/swipeGeometry';
 
 /**
  * Where the review card and chip mount in ChatRoomScreen, and who gets which.
@@ -45,10 +46,54 @@ it("renders 'left the project' and 'chose not to continue' as their own pill", (
 it("stands the screen's own swipe-back down while the review card can be swiped", () => {
   // Same motion, same starting edge (the app lays out LTR), so only one of the
   // two may be live. The screen is the single owner of the option.
-  expect(SRC).toMatch(/<Stack\.Screen options=\{\{ headerShown: false, gestureEnabled: !cardSwipeable \}\} \/>/);
+  expect(SRC).toMatch(/<Stack\.Screen options=\{\{ headerShown: false, gestureEnabled: !cardSwipeable, fullScreenGestureEnabled: false, gestureResponseDistance: \{ start: 24 \} \}\} \/>/);
   expect(SRC).toMatch(/onSwipeableChange=\{setCardSwipeable\}/);
   const route = readFileSync(join(__dirname, '..', '..', '..', '..', 'app', '(client)', 'chat', '[chatId].tsx'), 'utf8');
   expect(route).not.toMatch(/gestureEnabled/);
+});
+
+it('pins swipe-back to the EDGE, because iOS 26 defaults it to the whole screen', () => {
+  // fullScreenGestureEnabled defaults to TRUE on iOS 26+. Left at the default,
+  // swipe-back spans the entire screen and no edge exclusion could keep a reply
+  // swipe out of its way — a right-drag anywhere would leave the chat.
+  //
+  // 24 here against EDGE_PX = 32 in the row: the two zones are disjoint by
+  // construction, which is what lets both gestures stay live at once. Widening
+  // this past 32, or removing it, silently breaks the row on iOS 26 only —
+  // which is precisely the kind of regression no simulator run would surface.
+  expect(SRC).toMatch(/fullScreenGestureEnabled: false/);
+  const distance = SRC.match(/gestureResponseDistance: \{ start: (\d+) \}/);
+  expect(distance).not.toBeNull();
+  expect(Number(distance![1])).toBeLessThan(EDGE_PX);
+});
+
+it('excludes system pills and listing cards from the swipeable row by RETURNING first', () => {
+  /**
+   * What makes `enabled` unconditional on SwipeableMessageRow safe.
+   *
+   * buildReplyTo refuses exactly three things — the date separator, the system
+   * pill and the shared listing card — and all three return from renderItem
+   * before the row wrapper is reached. So every row that gets there is
+   * repliable, and a `repliable ?` ternary at the wrapper would be a branch
+   * nothing could take.
+   *
+   * That is only true while the ordering holds. Move the listing card below the
+   * wrapper and a marketplace card becomes swipeable, quoting a listing as if
+   * someone had said it — which no test would otherwise notice.
+   */
+  const separator = SRC.indexOf("item.type === 'date-separator'");
+  const systemPill = SRC.indexOf("if (msg.system || msg.senderId === 'system')");
+  const listing = SRC.indexOf("if (msg.type === 'listing')");
+  const row = SRC.indexOf('<SwipeableMessageRow');
+
+  expect(separator).toBeGreaterThan(-1);
+  expect(systemPill).toBeGreaterThan(-1);
+  expect(listing).toBeGreaterThan(-1);
+  expect(row).toBeGreaterThan(-1);
+
+  expect(separator).toBeLessThan(row);
+  expect(systemPill).toBeLessThan(row);
+  expect(listing).toBeLessThan(row);
 });
 
 /**
