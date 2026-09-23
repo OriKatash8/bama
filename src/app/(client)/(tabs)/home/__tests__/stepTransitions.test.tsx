@@ -241,7 +241,7 @@ describe('a failed Next takes you to the problem', () => {
     const r = render(<HomeScreen />);
     act(() => useUiStore.getState().requestBuilderStep(2));
     jest.clearAllMocks();
-    fireEvent.press(r.getByText(en.builder.next_step));
+    fireEvent.press(r.getByTestId('step2-cta'));
 
     expect(warnFeedback).toHaveBeenCalledTimes(1);
     expect(commitFeedback).not.toHaveBeenCalled();

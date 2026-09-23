@@ -34,9 +34,12 @@ const mockSetQuantity = jest.fn((cat: string, q: number) => { mockQuantities[cat
 
 jest.mock('@features/crew/hooks', () => ({
   useCrewBuilder: () => ({
-    slots: Object.entries(mockQuantities).flatMap(([category, q]) =>
-      Array.from({ length: q }, () => ({ category, capability: undefined })),
-    ),
+    // The real hook groups: one entry per (category, capability) carrying a
+    // `quantity`, NOT one entry per person. The tray reads that quantity, so a
+    // mock shaped per-person made it read undefined.
+    slots: Object.entries(mockQuantities)
+      .filter(([, q]) => q > 0)
+      .map(([category, quantity]) => ({ category, quantity })),
     totalCount: Object.values(mockQuantities).reduce((a, b) => a + b, 0),
     roleQuantity: (cat: string) => mockQuantities[cat] ?? 0,
     slotCaps: (cat: string) => Array.from({ length: mockQuantities[cat] ?? 0 }, () => undefined),

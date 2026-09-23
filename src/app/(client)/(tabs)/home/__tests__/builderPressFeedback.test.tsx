@@ -25,9 +25,12 @@ const mockSetSlotCapability = jest.fn();
 
 jest.mock('@features/crew/hooks', () => ({
   useCrewBuilder: () => ({
-    slots: Object.entries(mockQuantities).flatMap(([category, q]) =>
-      Array.from({ length: q }, () => ({ category, capability: undefined })),
-    ),
+    // The real hook groups: one entry per (category, capability) carrying a
+    // `quantity`, NOT one entry per person. The tray reads that quantity, so a
+    // mock shaped per-person made it read undefined.
+    slots: Object.entries(mockQuantities)
+      .filter(([, q]) => q > 0)
+      .map(([category, quantity]) => ({ category, quantity })),
     totalCount: Object.values(mockQuantities).reduce((a, b) => a + b, 0),
     roleQuantity: (cat: string) => mockQuantities[cat] ?? 0,
     slotCaps: (cat: string) => Array.from({ length: mockQuantities[cat] ?? 0 }, () => undefined),
@@ -175,7 +178,7 @@ describe('next-step buttons', () => {
   it('step 2 stays silent with no roles chosen', () => {
     mockQuantities = {};
     const r = goToStep(2);
-    fireEvent.press(r.getByText(en.builder.next_step));
+    fireEvent.press(r.getByTestId('step2-cta'));
 
     expect(r.getByText(en.builder.error_role)).toBeTruthy();
     expect(commitFeedback).not.toHaveBeenCalled();

@@ -151,7 +151,7 @@ describe('entering step 3', () => {
     act(() => useUiStore.getState().requestBuilderStep(2));
     s.scrollTo.mockClear();
 
-    fireEvent.press(s.r.getByText(en.builder.next_step));
+    fireEvent.press(s.r.getByTestId('step2-cta'));
 
     expect(s.scrollTo).toHaveBeenCalledWith({ y: 0, animated: false });
     expect(s.scrollToEnd).not.toHaveBeenCalled();
@@ -175,7 +175,7 @@ describe('a failed Next takes you to the error', () => {
     act(() => useUiStore.getState().requestBuilderStep(2));
     s.scrollTo.mockClear();
 
-    fireEvent.press(s.r.getByText(en.builder.next_step));
+    fireEvent.press(s.r.getByTestId('step2-cta'));
 
     expect(s.scrollTo).toHaveBeenCalledWith({ y: 0, animated: true });
   });
