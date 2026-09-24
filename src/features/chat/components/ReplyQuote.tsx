@@ -74,7 +74,7 @@ export function ReplyQuote({
         variant === 'composer' ? styles.composer : styles.bubble,
       ]}
     >
-      <View style={styles.body}>
+      <View testID="reply-quote-body" style={styles.body}>
         <Text
           testID="reply-quote-name"
           numberOfLines={1}
@@ -126,7 +126,18 @@ const styles = StyleSheet.create({
   // reads as part of the message rather than a second card.
   bubble: { backgroundColor: 'rgba(0,0,0,0.06)', marginBottom: 4, paddingHorizontal: 6 },
   composer: { backgroundColor: 'rgba(0,0,0,0.04)', marginHorizontal: 12, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 6 },
-  body: { flex: 1 },
+  /**
+   * NOT `flex: 1`, which is `flexGrow:1 flexShrink:1 flexBasis:0`.
+   *
+   * A flexBasis of 0 makes this box contribute nothing to the bubble's
+   * intrinsic width, and `styles.bubble` has no width of its own — only
+   * `maxWidth: '75%'`. So the bubble sized itself to the reply text alone and a
+   * two-word answer crushed the quote above it into the leftovers.
+   *
+   * `flexBasis: 'auto'` lets the quoted text push the bubble out to the 75% cap
+   * before anything wraps; flexShrink keeps it from pushing past it.
+   */
+  body: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto' },
   name: { fontSize: 12, marginBottom: 1 },
   snippet: { fontSize: 13, opacity: 0.8 },
 });

@@ -157,6 +157,54 @@ describe('RTL', () => {
   });
 });
 
+describe('the bubble is sized by the QUOTE, not by the reply', () => {
+  /**
+   * Replying "ok" to a long message must not squeeze the quote to the width of
+   * the word "ok".
+   *
+   * `styles.bubble` is `maxWidth: '75%'` with no width of its own, so the bubble
+   * takes the intrinsic width of its widest child. `flex: 1` in React Native is
+   * `flexGrow:1, flexShrink:1, flexBasis:0` — and a flexBasis of 0 means the
+   * quote contributes NOTHING to that intrinsic width. The bubble then sizes
+   * itself to the reply text alone and the quote is crushed into the remainder.
+   *
+   * Jest runs no layout, so this pins the flex properties that decide it rather
+   * than a measured width.
+   */
+  it('lets the quote contribute its own width to the bubble', () => {
+    const s = flat(show().getByTestId('reply-quote-body'));
+    // Asserting `flexBasis !== 0` alone would NOT catch this: the shorthand
+    // flattens to `{ flex: 1 }` and leaves flexBasis undefined, so the bug
+    // would sail past. The shorthand itself is what has to be absent.
+    expect(s.flex).toBeUndefined();
+    expect(s.flexBasis).toBe('auto');
+  });
+
+  it('still lets the quote grow into a wide bubble', () => {
+    expect(flat(show().getByTestId('reply-quote-body')).flexGrow).toBe(1);
+  });
+
+  it('still lets the quote shrink rather than overflow a bubble at its 75% cap', () => {
+    // The anchor for the two above: flexBasis:'auto' with no shrink would push
+    // the bubble past maxWidth and clip on the other side instead.
+    expect(flat(show().getByTestId('reply-quote-body')).flexShrink).toBe(1);
+  });
+
+  it('does not cap the quote to some fixed width of its own', () => {
+    const s = flat(show().getByTestId('reply-quote-body'));
+    expect(s.width).toBeUndefined();
+    expect(s.maxWidth).toBeUndefined();
+  });
+
+  it('leaves the snippet free to use the width it just won', () => {
+    // Two lines is the cap; anything narrower is the quote being re-squeezed
+    // after the bubble already made room for it.
+    const snippet = show({ replyTo: quote({ snippet: 'x'.repeat(100) }) }).getByTestId('reply-quote-snippet');
+    expect(snippet.props.numberOfLines).toBe(2);
+    expect(flat(snippet).width).toBeUndefined();
+  });
+});
+
 describe('the two variants', () => {
   it('offers a cancel in the composer', () => {
     const cancelled: boolean[] = [];
