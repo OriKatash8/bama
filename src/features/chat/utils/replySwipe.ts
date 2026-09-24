@@ -93,13 +93,31 @@ export function replyPanConfig(o: {
   onDrag: (x: number) => void;
   onReply: () => void;
   onSettle: () => void;
+  /**
+   * Optional trace of the responder lifecycle. TEMPORARY — see the call site.
+   *
+   * Deliberately has no arming step and no enable flag. A previous round of
+   * instrumentation in this app early-returned unless something had been
+   * switched on, and the switch was wired to the very interaction being
+   * measured, so a device session printed nothing at all.
+   */
+  onEvent?: (name: string, info?: Record<string, unknown>) => void;
 }) {
+  const claim = (g: Gesture) =>
+    o.enabled()
+    && towardReply(g.dx, o.rtl())
+    && !startedAtEdge(dragStartX(g), o.screenWidth())
+    && Math.abs(g.dx) > REPLY_CLAIM_PX && Math.abs(g.dx) > Math.abs(g.dy) * 1.5;
+
   return {
-    onMoveShouldSetPanResponder: (_e: unknown, g: Gesture) =>
-      o.enabled()
-      && towardReply(g.dx, o.rtl())
-      && !startedAtEdge(dragStartX(g), o.screenWidth())
-      && Math.abs(g.dx) > REPLY_CLAIM_PX && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+    onMoveShouldSetPanResponder: (_e: unknown, g: Gesture) => {
+      const ok = claim(g);
+      // Only the decision to take the gesture, never every move — a log on
+      // each frame drowns the one line that matters.
+      if (ok) o.onEvent?.('claim', { dx: Math.round(g.dx), dy: Math.round(g.dy), rtl: o.rtl() });
+      return ok;
+    },
+    onPanResponderGrant: () => o.onEvent?.('grant'),
     // Once the row has the drag it keeps it: handing it back mid-swipe is how
     // one motion ends up moving both the row and the screen.
     onPanResponderTerminationRequest: () => false,
@@ -107,12 +125,16 @@ export function replyPanConfig(o: {
       o.onDrag(replyOffset(g.dx, o.rtl()));
     },
     onPanResponderRelease: (_e: unknown, g: Gesture) => {
+      const fired = replyTriggered(g.dx, o.rtl());
+      o.onEvent?.('release', { dx: Math.round(g.dx), fired });
       // The row springs back either way — the reply shows in the composer, not
       // by leaving the message displaced.
       o.onSettle();
-      if (replyTriggered(g.dx, o.rtl())) o.onReply();
+      if (fired) o.onReply();
     },
-    // Lost the gesture (the list took over): put the row back.
-    onPanResponderTerminate: () => { o.onSettle(); },
+    // Lost the gesture (the list took over): put the row back. With
+    // onPanResponderTerminationRequest returning false this should not happen;
+    // if the trace shows it, something is taking the gesture forcibly.
+    onPanResponderTerminate: () => { o.onEvent?.('TERMINATED'); o.onSettle(); },
   };
 }

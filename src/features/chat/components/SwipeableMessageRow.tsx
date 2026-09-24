@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, Platform, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Animated, PanResponder, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Reply } from 'lucide-react-native';
 import { replyPanConfig, REPLY_MAX_DRAG } from '../utils/replySwipe';
 import { pageSwipeGuard } from '../utils/swipeGeometry';
@@ -18,10 +18,36 @@ import { pageSwipeGuard } from '../utils/swipeGeometry';
  * whatever is inside the bubble: opening a photo, scrubbing a voice note,
  * tapping a mention.
  *
- * The row is NOT wrapped when it cannot be replied to — system notices, the
- * shared listing card, date separators. A disabled Pressable around them would
- * still sit between the bubble and the list for no reason.
+ * THE SHAPE OF THIS COMPONENT IS LOAD-BEARING, and the first version got it
+ * wrong in two ways that shipped together. Both are pinned by
+ * SwipeableMessageRowLayout.test.tsx.
+ *
+ * 1. The caller's style goes on the box that DIRECTLY PARENTS the children.
+ *    `styles.bubble` is `maxWidth: '75%'` and `styles.mediaBubble` is
+ *    `width: '75%'`, and a percentage resolves against its parent's width. The
+ *    first version put the caller's `bubbleWrapper` on the outer node and slid
+ *    an unstyled `Animated.View` in between, so both percentages began
+ *    resolving against a box that was itself sized by the very content they
+ *    were supposed to bound. Every bubble in every chat was clipped.
+ *
+ * 2. The pan handlers and the long-press live on DIFFERENT nodes. Pressable
+ *    renders `<View {...restProps} {...pressabilityHandlers}>`, so spreading
+ *    panHandlers onto one silently replaces onResponderGrant, onResponderMove,
+ *    onResponderRelease, onResponderTerminate and onResponderTerminationRequest
+ *    with Pressability's. Only onMoveShouldSetResponder survives — so the row
+ *    claims the touch and then nothing happens, which looks exactly like the
+ *    list stealing the gesture. The handlers are on the plain outer View here;
+ *    only the long-press is on a Pressable.
+ *
+ * Neither extra node changes layout: the outer is a default column box, so its
+ * child stretches to full width, and the animated Pressable inside it is the
+ * caller's row exactly as it was before this component existed.
  */
+
+// Module scope. Created inside the component, this would remount the row — and
+// every bubble in it — on each render.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function SwipeableMessageRow({
   enabled, rtl, accent, onReply, style, children,
 }: {
@@ -64,6 +90,18 @@ export function SwipeableMessageRow({
   const getRtl = useCallback(() => latest.current.rtl, []);
   const getWidth = useCallback(() => latest.current.width, []);
   const fireReply = useCallback(() => latest.current.onReply(), []);
+  /**
+   * TEMPORARY. Remove once the swipe is confirmed on a device.
+   *
+   * Prints three lines per gesture at most — claim, grant, release — plus
+   * TERMINATED if something takes the responder away. Silence means the row was
+   * never offered the gesture at all, which is a different problem from being
+   * offered it and losing it.
+   */
+  const trace = useCallback((name: string, info?: Record<string, unknown>) => {
+    if (__DEV__) console.log(`[reply-swipe] ${name}`, info ?? '');
+  }, []);
+
   const drag = useCallback((x: number) => translateX.setValue(x), [translateX]);
   const settle = useCallback(() => {
     Animated.spring(translateX, {
@@ -79,23 +117,18 @@ export function SwipeableMessageRow({
       onDrag: drag,
       onReply: fireReply,
       onSettle: settle,
+      onEvent: trace,
     })),
-    [getEnabled, getRtl, getWidth, drag, fireReply, settle],
+    [getEnabled, getRtl, getWidth, drag, fireReply, settle, trace],
   );
 
   return (
-    <Pressable
+    <View
       testID="message-row"
-      accessibilityHint={enabled ? 'Hold to reply to this message' : undefined}
-      // No onPress: a tap has to keep reaching the bubble's own touchables.
-      onLongPress={enabled ? onReply : undefined}
-      delayLongPress={400}
       style={[
-        styles.row,
         // Without this the browser reads a horizontal drag as "go back in
         // history" and leaves the chat halfway through a reply.
         Platform.OS === 'web' ? pageSwipeGuard('web') : null,
-        style,
       ]}
       {...(enabled ? pan.panHandlers : {})}
     >
@@ -119,15 +152,23 @@ export function SwipeableMessageRow({
           <Reply size={18} color={accent} strokeWidth={2} />
         </Animated.View>
       )}
-      <Animated.View style={{ transform: [{ translateX }] }}>
+      {/* The caller's row, unchanged — this is the bubble's OWN parent, and the
+          box both '75%' widths measure against. No onPress: a tap has to keep
+          reaching the photo, the voice scrubber and the mentions underneath. */}
+      <AnimatedPressable
+        testID="message-row-press"
+        accessibilityHint={enabled ? 'Hold to reply to this message' : undefined}
+        onLongPress={enabled ? onReply : undefined}
+        delayLongPress={400}
+        style={[style, { transform: [{ translateX }] }]}
+      >
         {children}
-      </Animated.View>
-    </Pressable>
+      </AnimatedPressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { justifyContent: 'center' },
   hint: {
     position: 'absolute',
     top: 0,

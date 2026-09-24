@@ -38,11 +38,15 @@ function show(props: Partial<React.ComponentProps<typeof SwipeableMessageRow>> =
   );
 }
 
+/** The long-press lives on the inner animated Pressable; the pan handlers live
+ *  on the plain outer View. They cannot share a node — see the layout suite. */
+const PRESS = 'message-row-press';
+
 describe('long-press — the web entry point', () => {
   it('replies on a long press', () => {
     const replied: boolean[] = [];
     const r = show({ onReply: () => replied.push(true) });
-    fireEvent(r.getByTestId('message-row'), 'longPress');
+    fireEvent(r.getByTestId(PRESS), 'longPress');
     expect(replied).toEqual([true]);
   });
 
@@ -51,19 +55,19 @@ describe('long-press — the web entry point', () => {
     // photo, playing a voice note, tapping a mention.
     const replied: boolean[] = [];
     const r = show({ onReply: () => replied.push(true) });
-    fireEvent.press(r.getByTestId('message-row'));
+    fireEvent.press(r.getByTestId(PRESS));
     expect(replied).toEqual([]);
   });
 
   it('does not long-press a row that cannot be replied to', () => {
     const replied: boolean[] = [];
     const r = show({ enabled: false, onReply: () => replied.push(true) });
-    fireEvent(r.getByTestId('message-row'), 'longPress');
+    fireEvent(r.getByTestId(PRESS), 'longPress');
     expect(replied).toEqual([]);
   });
 
   it('carries a reply label for screen readers', () => {
-    expect(show().getByTestId('message-row').props.accessibilityHint ?? '').not.toBe('');
+    expect(show().getByTestId(PRESS).props.accessibilityHint ?? '').not.toBe('');
   });
 });
 
