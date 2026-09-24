@@ -560,8 +560,12 @@ export default function HomeScreen() {
                         {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
                       </Text>
                     </View>
-                    {/* "(optional)" only while the date is still empty. */}
-                    {!exec && <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>}
+                    {/* The note sits UNDER the label, and its line is reserved in all
+                        three squares — the required one leaves it empty — so every
+                        square holds the same stack and the marks stay level. */}
+                    <View style={styles.dateSquareOptBox}>
+                      {!exec && <Text style={styles.dateSquareOptText}>{t('builder.optional_note')}</Text>}
+                    </View>
                   </PressableScale>
                 </View>
 
@@ -596,6 +600,10 @@ export default function HomeScreen() {
                         {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
                       </Text>
                     </View>
+                    {/* The note sits UNDER the label, and its line is reserved in all
+                        three squares — the required one leaves it empty — so every
+                        square holds the same stack and the marks stay level. */}
+                    <View style={styles.dateSquareOptBox} />
                   </PressableScale>
 {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
@@ -625,8 +633,12 @@ export default function HomeScreen() {
                         {location || t('builder.placeholder_location')}
                       </Text>
                     </View>
-                    {/* "(optional)" only while no location is picked. */}
-                    {!location && <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>}
+                    {/* The note sits UNDER the label, and its line is reserved in all
+                        three squares — the required one leaves it empty — so every
+                        square holds the same stack and the marks stay level. */}
+                    <View style={styles.dateSquareOptBox}>
+                      {!location && <Text style={styles.dateSquareOptText}>{t('builder.optional_note')}</Text>}
+                    </View>
                   </PressableScale>
                   {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
                 </View>
@@ -1070,17 +1082,6 @@ function createStyles(
     /** "(optional)" / "(לא חובה)", above the icon at the top of the square.
      *  Absolute, so it takes no room in the centred column. Stays visible
      *  whether or not the field has been filled. */
-    optionalTag: {
-      position: 'absolute',
-      top: 7,
-      left: 0,
-      right: 0,
-      fontSize: 11,
-      lineHeight: 14,
-      fontFamily: ff,
-      color: PLACEHOLDER,
-      textAlign: 'center',
-    },
     /** Aligned to the input's own text origin: same padding, same size and
      *  leading, so the typed text sits exactly where the user's will. */
     typingPlaceholder: {
@@ -1428,14 +1429,13 @@ function createStyles(
       // identically in all three squares and sit on the same line.
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 6,
-      // 16/8, not 12/12: the label's reserved second line is empty in the
-      // common case and sits BELOW the text, so the content you can see hangs
-      // 4pt above the middle. Moving 4 from the bottom padding to the top puts
-      // a one-line square's icon-and-text exactly on the centre line. The pair
-      // still sums to 24, so the square's height is unchanged.
-      paddingTop: 16,
-      paddingBottom: 8,
+      // 19 mark + 2 + 28 label + 2 + 14 note = 65, well inside the 100 floor.
+      // 8/12 rather than even: the note hangs below everything else, so an
+      // evenly padded stack reads low. Moving 2 from the top to the bottom
+      // lifts the mark and the label without moving the square itself.
+      gap: 2,
+      paddingTop: 8,
+      paddingBottom: 12,
       paddingHorizontal: 11,
     },
     deadlineIcon: { width: 19, height: 19 },
@@ -1476,18 +1476,25 @@ function createStyles(
      *
      * 32 = 2 x lineHeight 16, and numberOfLines={2} caps it there.
      */
-    dateSquareLabelBox: { height: 32, alignSelf: 'stretch', justifyContent: 'center' },
+    /** 28 = 2 x lineHeight 14, the cap numberOfLines={2} sets. Reserved so a
+     *  label that wraps cannot push its own mark out of line with the rest. */
+    dateSquareLabelBox: { height: 28, alignSelf: 'stretch', justifyContent: 'center' },
+    /** The note's reservation, empty on the required square. Its own height
+     *  now: it sits under the label rather than balancing the mark, so there
+     *  is nothing for it to match. */
+    dateSquareOptBox: { height: 14, alignSelf: 'stretch', justifyContent: 'center' },
+    dateSquareOptText: { fontSize: 10, lineHeight: 12, color: PLACEHOLDER, textAlign: 'center', fontFamily: ff },
     dateSquarePlaceholder: {
-      fontSize: 12.5,
-      lineHeight: 16,
+      fontSize: 11,
+      lineHeight: 14,
       fontWeight: '400',
       color: INK_2,
       textAlign: 'center',
       fontFamily: ff,
     },
     dateSquareValue: {
-      fontSize: 12.5,
-      lineHeight: 16,
+      fontSize: 11,
+      lineHeight: 14,
       fontWeight: '500',
       color: VIOLET,
       textAlign: 'center',

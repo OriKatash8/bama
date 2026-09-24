@@ -44,7 +44,65 @@ jest.mock('@core/haptics', () => ({
 
 /** A label's own text style, found by its placeholder. */
 function labelStyle(r: ReturnType<typeof render>, placeholder: string) {
-  return StyleSheet.flatten(r.getByText(placeholder).props.style) as { lineHeight?: number };
+  return StyleSheet.flatten(r.getByText(placeholder).props.style) as { lineHeight?: number; fontSize?: number };
+}
+
+/**
+ * What the square stacks, in render order: the note's reservation, the mark,
+ * then the label's. Styles cannot tell you the order, and moving the note from
+ * below the label to above it changes nothing a style assertion can see.
+ */
+function textWithin(n: ReactTestInstance): string {
+  let out = '';
+  const visit = (node: ReactTestInstance) => {
+    node.children.forEach((c) => {
+      if (typeof c === 'string') out += c;
+      else visit(c);
+    });
+  };
+  visit(n);
+  return out;
+}
+
+function stackOrder(r: ReturnType<typeof render>, placeholder: string): string[] {
+  const out: string[] = [];
+  const visit = (n: ReactTestInstance) => {
+    const st = StyleSheet.flatten(n.props?.style) as
+      { height?: number; alignSelf?: string; justifyContent?: string } | undefined;
+    if (typeof n.type === 'string' && typeof st?.height === 'number'
+        && st.alignSelf === 'stretch' && st.justifyContent === 'center') {
+      // A reservation. Which one it is depends on whether the label is inside.
+      out.push(textWithin(n).includes(placeholder) ? 'label' : 'note');
+      return;
+    }
+    if (typeof n.props?.strokeWidth === 'number' && !out.includes('mark')) out.push('mark');
+    n.children.forEach((c) => typeof c !== 'string' && visit(c));
+  };
+  visit(squareNode(r, placeholder));
+  return out;
+}
+
+/**
+ * Every fixed-height box inside one square, in order: the label's reservation
+ * then the note's. Collected by walking the square rather than by sibling
+ * index, which depends on how the tree happens to nest.
+ */
+function reservedBoxes(r: ReturnType<typeof render>, placeholder: string): number[] {
+  const out: number[] = [];
+  const visit = (n: ReactTestInstance) => {
+    const st = StyleSheet.flatten(n.props?.style) as
+      { height?: number; alignSelf?: string; justifyContent?: string } | undefined;
+    // A RESERVATION, not an icon: icons carry a height too, but only these
+    // stretch across the square and centre their content.
+    // Host elements only — a box appears as both composite and host.
+    if (typeof n.type === 'string' && typeof st?.height === 'number'
+        && st.alignSelf === 'stretch' && st.justifyContent === 'center') {
+      out.push(st.height);
+    }
+    n.children.forEach((c) => typeof c !== 'string' && visit(c));
+  };
+  visit(squareNode(r, placeholder));
+  return out;
 }
 
 /**
@@ -52,15 +110,23 @@ function labelStyle(r: ReturnType<typeof render>, placeholder: string) {
  * carrying a fixed height. The reservation lives on the box rather than the
  * Text so the text can be centred inside it.
  */
-function labelBox(r: ReturnType<typeof render>, placeholder: string) {
+function labelBoxNode(r: ReturnType<typeof render>, placeholder: string): ReactTestInstance {
   let node: ReactTestInstance | null = r.getByText(placeholder).parent;
   while (node) {
-    const st = StyleSheet.flatten(node.props?.style) as { height?: number; justifyContent?: string } | undefined;
-    if (typeof st?.height === 'number') return st;
+    const st = StyleSheet.flatten(node.props?.style) as { height?: number } | undefined;
+    if (typeof st?.height === 'number') return node;
     node = node.parent;
   }
   throw new Error(`no height-reserving box above "${placeholder}"`);
 }
+
+function labelBox(r: ReturnType<typeof render>, placeholder: string) {
+  return StyleSheet.flatten(labelBoxNode(r, placeholder).props?.style) as
+    { height?: number; justifyContent?: string };
+}
+
+/** The role mark's own size, the one thing in the stack that is not a box. */
+const MARK = 19;
 
 const PLACEHOLDERS = [
   en.builder.placeholder_date,
@@ -88,28 +154,81 @@ it('centres the label inside its reservation, so the square looks centred', () =
 });
 
 /** The square itself: the label box's nearest ancestor that pads and centres. */
-function square(r: ReturnType<typeof render>, placeholder: string) {
+function squareNode(r: ReturnType<typeof render>, placeholder: string): ReactTestInstance {
   let node: ReactTestInstance | null = r.getByText(placeholder).parent;
   while (node) {
     const st = StyleSheet.flatten(node.props?.style) as
-      { paddingTop?: number; paddingBottom?: number; minHeight?: number } | undefined;
-    if (typeof st?.minHeight === 'number' && typeof st?.paddingTop === 'number') return st;
+      { paddingTop?: number; minHeight?: number } | undefined;
+    if (typeof st?.minHeight === 'number' && typeof st?.paddingTop === 'number') return node;
     node = node.parent;
   }
   throw new Error(`no square above "${placeholder}"`);
 }
 
-it('pads the square top-heavy, to offset the label\'s empty second line', () => {
+function square(r: ReturnType<typeof render>, placeholder: string) {
+  return StyleSheet.flatten(squareNode(r, placeholder).props?.style) as
+    { paddingTop?: number; paddingBottom?: number; minHeight?: number; gap?: number };
+}
+
+it('pads the square top-light, lifting the stack off its own centre', () => {
   const r = render(<HomeScreen />);
 
   for (const p of PLACEHOLDERS) {
-    const { paddingTop, paddingBottom } = square(r, p);
-    // Half the reservation sits between icon and text and half below it, so
-    // the visible block still hangs high until the difference moves to the top.
-    expect(paddingTop).toBeGreaterThan(paddingBottom ?? 0);
-    // The pair must still sum to what it was, or the square changes height.
-    expect((paddingTop ?? 0) + (paddingBottom ?? 0)).toBe(24);
+    const { paddingTop, paddingBottom, minHeight, gap } = square(r, p);
+    // The note hangs below everything else, so an evenly padded stack reads
+    // low. Less padding at the top lifts the mark and the label.
+    expect(paddingTop).toBeLessThan(paddingBottom ?? 0);
+
+    // The real measurements, not copies of them: mark + gap + label + gap +
+    // note has to clear the padding inside the square's floor, or the square
+    // grows past 100 and the row of three gets taller.
+    const [label, note] = reservedBoxes(r, p);
+    const stack = MARK + (gap ?? 0) + label + (gap ?? 0) + note;
+    expect(stack + (paddingTop ?? 0) + (paddingBottom ?? 0)).toBeLessThanOrEqual(minHeight ?? 0);
   }
+});
+
+it('puts the note UNDER the label, on its own line, smaller than it', () => {
+  const r = render(<HomeScreen />);
+
+  const notes = r.getAllByText(en.builder.optional_note);
+  // Two optional squares; the deadline is required and names no note.
+  expect(notes).toHaveLength(2);
+  for (const note of notes) {
+    const st = StyleSheet.flatten(note.props.style) as { position?: string; fontSize?: number };
+    // Never absolutely positioned again: pinned to the top of the square it
+    // sat outside the stack entirely, which is what read top-heavy.
+    expect(st.position).toBeUndefined();
+    expect(st.fontSize).toBeLessThan(labelStyle(r, PLACEHOLDERS[0]).fontSize ?? 0);
+  }
+  // ORDER, which a style assertion cannot see: mark, then label, then note.
+  // An earlier version of this test checked only position and size, and went
+  // on passing when the note moved from below the label to above the mark.
+  for (const p of PLACEHOLDERS) expect(stackOrder(r, p)).toEqual(['mark', 'label', 'note']);
+});
+
+it('keeps the note line shorter than the label it qualifies', () => {
+  const r = render(<HomeScreen />);
+
+  for (const p of PLACEHOLDERS) {
+    const [label, note] = reservedBoxes(r, p);
+    // The note borrowed the label's height while it had to balance the mark
+    // across from it. Under the label it answers to nothing, so it takes the
+    // one line it actually needs.
+    expect(note).toBeLessThan(label);
+  }
+});
+
+it('reserves the note line in all three squares, so the icons stay level', () => {
+  const r = render(<HomeScreen />);
+
+  // Including the required square, which renders no note text but must still
+  // hold the same stack height as its neighbours.
+  const perSquare = PLACEHOLDERS.map((p) => reservedBoxes(r, p));
+  expect(new Set(perSquare.map((b) => JSON.stringify(b))).size).toBe(1);
+  // A label reservation and a note reservation, both real.
+  expect(perSquare[0]).toHaveLength(2);
+  expect(perSquare[0].every((h) => h > 0)).toBe(true);
 });
 
 it('reserves the full two lines the labels are capped at', () => {
