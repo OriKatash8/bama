@@ -3,6 +3,7 @@ import { isolate } from '@utils/formatters';
 import { ReplyQuote } from '../components/ReplyQuote';
 import { SwipeableMessageRow } from '../components/SwipeableMessageRow';
 import { buildReplyTo, type ReplyTo } from '../utils/replyTo';
+import { bubbleSide } from '../utils/bubbleSide';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
@@ -1690,7 +1691,10 @@ export function ChatRoomScreen({ chatId }: Props) {
                 onReply={() => startReply(msg)}
                 style={[
                   styles.bubbleWrapper,
-                  isOwn ? styles.wrapperOwn : styles.wrapperPeer,
+                  // Mirrored: yours on the right in English, on the LEFT in
+                  // Hebrew, as every chat app does. The layout is LTR-locked
+                  // app-wide, so this cannot come for free from the platform.
+                  { justifyContent: bubbleSide(isOwn, rtl) },
                   highlightId === msg.id ? { backgroundColor: modeTint, borderRadius: 12 } : null,
                 ]}
               >
@@ -2469,12 +2473,6 @@ const styles = StyleSheet.create({
   },
   bubbleWrapper: {
     flexDirection: 'row',
-  },
-  wrapperOwn: {
-    justifyContent: 'flex-end',
-  },
-  wrapperPeer: {
-    justifyContent: 'flex-start',
   },
   listingAnnouncePill: {
     alignItems: 'center',

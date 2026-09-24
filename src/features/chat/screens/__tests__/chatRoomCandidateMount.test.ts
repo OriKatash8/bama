@@ -96,6 +96,21 @@ it('excludes system pills and listing cards from the swipeable row by RETURNING 
   expect(listing).toBeLessThan(row);
 });
 
+it('sides the bubbles from the READER\'s language, not a hardcoded direction', () => {
+  /**
+   * bubbleSide is unit-tested, but a correct helper called with a literal is
+   * still a chat where every message sits on the wrong side. Both of those
+   * mutations — `bubbleSide(isOwn, false)` and `bubbleSide(isOwn, true)` —
+   * passed the entire suite until this existed.
+   *
+   * The two static styles are asserted GONE as well: leaving them behind is an
+   * invitation to reintroduce the unmirrored version next to the mirrored one.
+   */
+  expect(SRC).toMatch(/justifyContent: bubbleSide\(isOwn, rtl\)/);
+  expect(SRC).not.toMatch(/bubbleSide\(isOwn, (true|false)\)/);
+  expect(SRC).not.toMatch(/wrapperOwn|wrapperPeer/);
+});
+
 describe('jumping to a quoted message', () => {
   const jump = SRC.slice(SRC.indexOf('const jumpToMessage'), SRC.indexOf('const startReply'));
 
