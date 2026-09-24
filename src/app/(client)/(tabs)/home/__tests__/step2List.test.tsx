@@ -5,6 +5,7 @@ import type { ReactTestInstance } from 'react-test-renderer';
 import HomeScreen from '../index';
 import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 
 /**
  * STEP 2 AS A ROW LIST.
@@ -31,6 +32,10 @@ const ROW_BORDER = '#ECE9F5';
 const ROW_ON_BG = '#F1EEFF';
 const CTA_OFF_BG = '#B9B3D1';
 const VIDEOGRAPHER = 'Video Photographer';
+const ADD = en.builder.add_role_a11y.replace('{{role}}', 'Videographer');
+const REMOVE = en.builder.remove_role_a11y.replace('{{role}}', 'Videographer');
+/** The same label when the app is in Hebrew. */
+const ADD_HE = he.builder.add_role_a11y.replace('{{role}}', 'צלם וידאו');
 const EDITOR = 'Editor';
 
 let mockQuantities: Record<string, number> = {};
@@ -83,6 +88,28 @@ function atStepTwo() {
 
 const flat = (n: ReactTestInstance) => StyleSheet.flatten(n.props.style) as Record<string, unknown>;
 
+/** Any text rendered inside a node. */
+function textWithin(n: ReactTestInstance): string {
+  let out = '';
+  const visit = (node: ReactTestInstance) => node.children.forEach((c) => {
+    if (typeof c === 'string') out += c;
+    else visit(c);
+  });
+  visit(n);
+  return out.trim();
+}
+
+/** How many SVG primitives a node draws — lucide renders RNSVG elements. */
+function svgWithin(n: ReactTestInstance): number {
+  let count = 0;
+  const visit = (node: ReactTestInstance) => {
+    if (typeof node.type === 'string' && node.type.startsWith('RNSVG')) count += 1;
+    node.children.forEach((c) => typeof c !== 'string' && visit(c));
+  };
+  visit(n);
+  return count;
+}
+
 /** Every role row, by the radius-and-border pair only the rows carry. */
 function rowStyles(r: ReturnType<typeof render>) {
   const out: { backgroundColor?: string; borderColor?: string; borderWidth?: number }[] = [];
@@ -129,8 +156,8 @@ describe('a role row', () => {
 
     // Seven roles are still empty, so seven pills remain — not eight.
     expect(r.getAllByText(en.builder.add_role).length).toBe(7);
-    expect(r.getByText('+')).toBeTruthy();
-    expect(r.getByText('−')).toBeTruthy();
+    expect(r.getByLabelText(ADD)).toBeTruthy();
+    expect(r.getByLabelText(REMOVE)).toBeTruthy();
     expect(r.getByText('2')).toBeTruthy();
   });
 
@@ -153,28 +180,18 @@ describe('a role row', () => {
     expect(name.props.ellipsizeMode).toBe('tail');
   });
 
-  it('nudges the + and − down so they sit centred in their circles', () => {
+  it('draws + and − as icons, not text glyphs', () => {
     mockQuantities[VIDEOGRAPHER] = 1;
     const r = atStepTwo();
 
-    for (const glyph of ['+', '−']) {
-      const st = flat(r.getByText(glyph)) as { marginTop?: number; includeFontPadding?: boolean };
-      // Centring aligns the line box, and these glyphs sit high within it.
-      expect(st.marginTop).toBeGreaterThan(0);
-      expect(st.includeFontPadding).toBe(false);
+    // They were <Text>, nudged down by an eyeballed 2pt to sit centred. A font
+    // glyph sits on the font's math axis, which the web and a phone place
+    // differently inside the line box — so it centred on one and not the other.
+    // An SVG has no metrics to disagree about.
+    for (const label of [ADD, REMOVE]) {
+      expect(textWithin(r.getByLabelText(label))).toBe('');
+      expect(svgWithin(r.getByLabelText(label))).toBeGreaterThan(0);
     }
-  });
-
-  it('keeps the two glyphs on the same baseline as each other', () => {
-    mockQuantities[VIDEOGRAPHER] = 1;
-    const r = atStepTwo();
-
-    const plus = flat(r.getByText('+')) as { marginTop?: number; fontSize?: number; lineHeight?: number };
-    const minus = flat(r.getByText('−')) as { marginTop?: number; fontSize?: number; lineHeight?: number };
-    // One shared nudge, so correcting one cannot leave the other behind.
-    expect(minus.marginTop).toBe(plus.marginTop);
-    expect(minus.fontSize).toBe(plus.fontSize);
-    expect(minus.lineHeight).toBe(plus.lineHeight);
   });
 
   it('switches the row fill and border when it is seated', () => {
@@ -261,7 +278,7 @@ describe('in Hebrew', () => {
     mockQuantities[VIDEOGRAPHER] = 1;
     const r = atStepTwo();
 
-    const plus = r.getByText('+');
+    const plus = r.getByLabelText(ADD_HE);
     // The stepper row is the plus's nearest ancestor with a flexDirection.
     let node: ReactTestInstance | null = plus.parent;
     let dir: unknown;

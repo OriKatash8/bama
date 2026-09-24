@@ -26,7 +26,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { ROLE_BY_ID, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, X, MapPin, Lock, Info } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, X, MapPin, Lock, Info, Plus, Minus } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -766,7 +766,7 @@ export default function HomeScreen() {
                           accessibilityRole="button"
                           accessibilityLabel={t('builder.add_role_a11y', { role: label })}
                         >
-                          <Text style={[styles.s2StepGlyph, styles.s2StepAddText]}>+</Text>
+                          <Plus size={16} color="#FFFFFF" strokeWidth={3} />
                         </PressableScale>
                         <Text style={[styles.s2Count, rtl ? { fontFamily: 'Heebo-ExtraBold' } : null]}>{q}</Text>
                         <PressableScale
@@ -781,7 +781,7 @@ export default function HomeScreen() {
                         >
                           {locked
                             ? <Lock size={13} color={STEP2.accent} strokeWidth={2.5} />
-                            : <Text style={[styles.s2StepGlyph, styles.s2StepRemoveText]}>−</Text>}
+                            : <Minus size={16} color={STEP2.accent} strokeWidth={3} />}
                         </PressableScale>
                       </View>
                     ) : (
@@ -1198,18 +1198,7 @@ function createStyles(
       alignItems: 'center',
       justifyContent: 'center',
     },
-    /**
-     * The +/− glyphs are nudged down inside their circles.
-     *
-     * Centring puts the text's LINE BOX in the middle, and '+' and '−' sit on
-     * the font's math axis — above the middle of that box — so both read high.
-     * includeFontPadding:false drops Android's extra top padding, which tilts
-     * it further up, and the 2pt margin is the optical correction on top. It is
-     * an eyeballed number, not a derived one: change it by looking, not by
-     * arithmetic.
-     */
-    s2StepGlyph: { fontSize: 18, lineHeight: 21, fontWeight: '700', fontFamily: ffBold, includeFontPadding: false, marginTop: 2 },
-    s2StepAddText: { color: '#FFFFFF' },
+
     s2StepRemove: {
       width: 30,
       height: 30,
@@ -1219,7 +1208,6 @@ function createStyles(
       justifyContent: 'center',
     },
     s2StepLocked: { opacity: 0.55 },
-    s2StepRemoveText: { color: STEP2.accent },
     // 800 has no useAppFont entry; Hebrew names the ExtraBold face outright.
     s2Count: { fontSize: 16, fontWeight: '800', fontFamily: ffBold, color: STEP2.text, minWidth: 14, textAlign: 'center' },
 

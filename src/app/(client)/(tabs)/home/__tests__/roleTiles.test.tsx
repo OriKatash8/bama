@@ -3,6 +3,7 @@ import { render, fireEvent, act } from '@testing-library/react-native';
 import HomeScreen from '../index';
 import { useUiStore } from '@core/stores/uiStore';
 import { commitFeedback } from '@core/haptics';
+import en from '@core/i18n/translations/en.json';
 
 /**
  * Step 2 of the builder: a grid of role tiles. A tile with no seats is itself
@@ -21,6 +22,15 @@ import { commitFeedback } from '@core/haptics';
  */
 
 const VIDEOGRAPHER = 'Video Photographer';
+
+/**
+ * The +/− buttons are lucide icons, not text glyphs, so they are found by the
+ * accessibility label they carry. A font glyph could not be centred in its
+ * circle the same way on a phone as on the web; an SVG has no font metrics to
+ * disagree about.
+ */
+const ADD = en.builder.add_role_a11y.replace('{{role}}', 'Videographer');
+const REMOVE = en.builder.remove_role_a11y.replace('{{role}}', 'Videographer');
 
 /**
  * The −/+ handlers call e.stopPropagation?.() — a web guard. RN always hands a
@@ -128,7 +138,7 @@ it('the tile itself is inert once it has seats, so + and − own the count', () 
 it('− removes exactly one seat and nothing else', () => {
   mockQuantities[VIDEOGRAPHER] = 2;
   const r = renderAtStepTwo();
-  fireEvent.press(r.getByText('−'), pressEvent());
+  fireEvent.press(r.getByLabelText(REMOVE), pressEvent());
   expect(mockSetQuantity).toHaveBeenCalledTimes(1);
   expect(mockSetQuantity).toHaveBeenCalledWith(VIDEOGRAPHER, 1);
 });
@@ -136,7 +146,7 @@ it('− removes exactly one seat and nothing else', () => {
 it('+ adds exactly one seat and nothing else', () => {
   mockQuantities[VIDEOGRAPHER] = 2;
   const r = renderAtStepTwo();
-  fireEvent.press(r.getByText('+'), pressEvent());
+  fireEvent.press(r.getByLabelText(ADD), pressEvent());
   expect(mockSetQuantity).toHaveBeenCalledTimes(1);
   expect(mockSetQuantity).toHaveBeenCalledWith(VIDEOGRAPHER, 3);
 });
@@ -157,14 +167,14 @@ it('stays silent when the tile is inert — no feedback without a cause', () => 
 it('− buzzes: removing a seat is a commit', () => {
   mockQuantities[VIDEOGRAPHER] = 2;
   const r = renderAtStepTwo();
-  fireEvent.press(r.getByText('−'), pressEvent());
+  fireEvent.press(r.getByLabelText(REMOVE), pressEvent());
   expect(commitFeedback).toHaveBeenCalledTimes(1);
 });
 
 it('+ buzzes: adding a seat is a commit', () => {
   mockQuantities[VIDEOGRAPHER] = 2;
   const r = renderAtStepTwo();
-  fireEvent.press(r.getByText('+'), pressEvent());
+  fireEvent.press(r.getByLabelText(ADD), pressEvent());
   expect(commitFeedback).toHaveBeenCalledTimes(1);
 });
 
