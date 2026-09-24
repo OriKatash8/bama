@@ -91,7 +91,9 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
   const isTeamFull = totalSlots > 0 && filledCount >= totalSlots;
   // The crew line is black, and turns purple once every seat is filled.
   const teamColor = isTeamFull ? VIOLET : TEXT;
-  const canEdit = request.status === 'open';
+  // Editing follows the same rule as deleting: once anyone has joined, they
+  // joined the project as it stood, so the Edit button goes away.
+  const canEdit = request.status === 'open' && filledCount === 0;
   // Deleting the project is only the client's to do while nobody has joined it.
   // Once a single seat is filled there is a crew with a stake in it, so the ⋯
   // menu — whose only item is the delete — disappears with it.
