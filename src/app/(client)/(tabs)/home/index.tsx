@@ -555,9 +555,11 @@ export default function HomeScreen() {
                       </PressableScale>
                     ) : null}
                     <CalendarDays size={19} color={exec ? VIOLET : INK_2} strokeWidth={1.8} />
-                    <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                      {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
-                    </Text>
+                    <View style={styles.dateSquareLabelBox}>
+                      <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                        {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
+                      </Text>
+                    </View>
                     {/* "(optional)" only while the date is still empty. */}
                     {!exec && <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>}
                   </PressableScale>
@@ -589,9 +591,11 @@ export default function HomeScreen() {
                         <Clock size={9} color={deadline ? VIOLET : INK_2} strokeWidth={2.4} />
                       </View>
                     </View>
-                    <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                      {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
-                    </Text>
+                    <View style={styles.dateSquareLabelBox}>
+                      <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                        {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
+                      </Text>
+                    </View>
                   </PressableScale>
 {errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
                 </View>
@@ -616,9 +620,11 @@ export default function HomeScreen() {
                       </PressableScale>
                     ) : null}
                     <MapPin size={19} color={location ? VIOLET : INK_2} strokeWidth={1.8} />
-                    <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                      {location || t('builder.placeholder_location')}
-                    </Text>
+                    <View style={styles.dateSquareLabelBox}>
+                      <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
+                        {location || t('builder.placeholder_location')}
+                      </Text>
+                    </View>
                     {/* "(optional)" only while no location is picked. */}
                     {!location && <Text style={styles.optionalTag}>{t('builder.optional_note')}</Text>}
                   </PressableScale>
@@ -1423,7 +1429,13 @@ function createStyles(
       justifyContent: 'center',
       alignItems: 'center',
       gap: 6,
-      paddingVertical: 12,
+      // 16/8, not 12/12: the label's reserved second line is empty in the
+      // common case and sits BELOW the text, so the content you can see hangs
+      // 4pt above the middle. Moving 4 from the bottom padding to the top puts
+      // a one-line square's icon-and-text exactly on the centre line. The pair
+      // still sums to 24, so the square's height is unchanged.
+      paddingTop: 16,
+      paddingBottom: 8,
       paddingHorizontal: 11,
     },
     deadlineIcon: { width: 19, height: 19 },
@@ -1448,20 +1460,26 @@ function createStyles(
     /** Title then "?", in reading order: flexDirection is set inline per language. */
     tileTitleRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 5 },
     /**
-     * Both label styles RESERVE two lines, whether or not they use the second.
+     * The label's box RESERVES two lines, whether or not the second is used,
+     * and centres the text inside that reservation.
      *
-     * The stack is centred, so its height decides where the icon sits. On a
-     * phone the squares are narrow enough that one label wraps and its
-     * neighbour does not — and the tile with two lines pushed its icon up,
-     * leaving the three icons on three different lines. A desktop browser
-     * never showed it, because at that width nothing wraps.
+     * The reservation keeps the three icons on one line: the stack is centred,
+     * so its height decides where the icon sits, and on a phone one label wraps
+     * where its neighbour does not. Without it the wrapped tile pushed its icon
+     * up. A desktop browser never showed that, because at that width nothing
+     * wraps.
+     *
+     * Centring the text inside the box is what keeps the VISIBLE content on the
+     * square's centre line. Painted at the top of its reservation, a one-line
+     * label left 16pt of dead space below it, putting everything you can
+     * actually see 8pt high.
      *
      * 32 = 2 x lineHeight 16, and numberOfLines={2} caps it there.
      */
+    dateSquareLabelBox: { height: 32, alignSelf: 'stretch', justifyContent: 'center' },
     dateSquarePlaceholder: {
       fontSize: 12.5,
       lineHeight: 16,
-      minHeight: 32,
       fontWeight: '400',
       color: INK_2,
       textAlign: 'center',
@@ -1470,7 +1488,6 @@ function createStyles(
     dateSquareValue: {
       fontSize: 12.5,
       lineHeight: 16,
-      minHeight: 32,
       fontWeight: '500',
       color: VIOLET,
       textAlign: 'center',
