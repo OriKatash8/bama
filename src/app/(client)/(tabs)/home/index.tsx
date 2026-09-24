@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  useWindowDimensions, ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable,
+  ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -61,20 +61,23 @@ const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object
 const TILE_GAP = 9;
 /**
  * Step 2's own palette. Kept apart from the wizard's violet above because the
- * crew step is a flat card grid — no gradients on its cards, tiles or buttons —
+ * crew step is a flat row list — no gradients on its rows, tiles or buttons —
  * and reusing VIOLET here would tie the two restyles together.
  */
 const STEP2 = {
   text: '#16132B',
   textSec: '#5B5870',
-  accent: '#4A33D1',
-  accentDark: '#2A1C8F',
-  cardBorder: '#ECE9F5',
-  tileBg: '#F1EEFF',
+  accent: '#5B3FE0',
+  rowSelectedBg: '#F1EEFF',
+  rowBorder: '#ECE9F5',
+  tileBg: '#EFECFA',
   addBorder: '#DAD5EA',
+  stepperMinusBg: '#E4DFF7',
+  ctaDisabledBg: '#B9B3D1',
 } as const;
-/** Gutter between the two columns, and between rows. */
-const S2_GRID_GAP = 12;
+/** Gap between rows. */
+const S2_ROW_GAP = 10;
+
 /** The step buttons' fill: solid purple (a two-stop gradient of one colour, so
  *  the LinearGradient that clips the corners stays in place). */
 const BUTTON_GRADIENT = {
@@ -127,7 +130,6 @@ export default function HomeScreen() {
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const isEditMode = !!projectId;
   const [isLoadingProject, setIsLoadingProject] = useState(false);
-  const { width } = useWindowDimensions();
 
   const language = useSettingsStore((s) => s.language);
   // The sheet's last child (submitWrap) carries its own 14pt under the button,
@@ -212,25 +214,6 @@ export default function HomeScreen() {
     return m;
   }, [filledSlots]);
 
-  /** Step 2's grid: two columns inside the sheet's own 20pt side padding. */
-  const s2CardWidth = Math.floor((width - 40 - S2_GRID_GAP) / 2);
-
-  /**
-   * The team tray: one chip per role, carrying that role's total headcount.
-   * `slots` is already grouped by (category, capability), so two entries of one
-   * category — a general seat and a drone seat, say — are one chip of 2 here.
-   */
-  const teamChips = useMemo(() => {
-    const byCategory = new Map<string, number>();
-    for (const slot of slots) {
-      byCategory.set(slot.category, (byCategory.get(slot.category) ?? 0) + slot.quantity);
-    }
-    return [...byCategory].map(([category, count]) => ({
-      category,
-      count,
-      label: labelOf(ROLE_BY_ID[roleIdForCategory(category)], lang),
-    }));
-  }, [slots, lang]);
 
   // After a new project is submitted (from the summary screen), wipe this form.
   const projectSubmittedNonce = useUiStore((s) => s.projectSubmittedNonce);
@@ -697,41 +680,18 @@ export default function HomeScreen() {
 
             {errors.slots ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left', marginTop: 16 }]}>{errors.slots}</Text> : null}
 
-            {/* ── A. The team so far. Absent until there IS a team: an empty
-                   tray is a heading over nothing, and the grid below it already
-                   says what there is to pick. ── */}
-            {teamChips.length > 0 && (
-              <View style={styles.s2Tray}>
-                <Text style={[styles.s2TrayLabel, { textAlign: rtl ? 'right' : 'left' }]}>
-                  {t('builder.team_so_far')}
-                </Text>
-                <View style={[styles.s2ChipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  {teamChips.map((chip) => (
-                    <View key={chip.category} style={styles.s2Chip}>
-                      <Text style={styles.s2ChipText} numberOfLines={1}>
-                        {chip.count > 1
-                          ? t('builder.chip_count', { count: chip.count, role: chip.label })
-                          : chip.label}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* ── B. The role grid ── */}
+            {/* ── The roles, one full-width row each ── */}
             <FlatList
               data={CATEGORIES}
               extraData={slots}
-              numColumns={2}
+              numColumns={1}
               scrollEnabled={false}
-              style={styles.s2Grid}
+              style={styles.s2List}
               keyExtractor={(cat) => cat.key}
               initialNumToRender={8}
               maxToRenderPerBatch={8}
               windowSize={3}
-              columnWrapperStyle={{ gap: S2_GRID_GAP }}
-              ItemSeparatorComponent={() => <View style={{ height: S2_GRID_GAP }} />}
+              ItemSeparatorComponent={() => <View style={{ height: S2_ROW_GAP }} />}
               renderItem={({ item: cat }) => {
                 const q = roleQuantity(cat.key);
                 const label = labelOf(ROLE_BY_ID[cat.roleId], lang);
@@ -741,11 +701,15 @@ export default function HomeScreen() {
                 const on = q > 0;
                 return (
                   <PressableScale
-                    style={[styles.s2Card, { width: s2CardWidth }, on && styles.s2CardOn]}
-                    // The card is the add target while it is empty, so the whole
-                    // 156pt of it takes the tap and not just the 36pt pill. Once
-                    // seated it is inert — the stepper owns the count — which is
-                    // also why the haptic is conditional.
+                    style={[
+                      styles.s2Row,
+                      { flexDirection: rtl ? 'row-reverse' : 'row' },
+                      on && styles.s2RowOn,
+                    ]}
+                    // The row is the add target while it is empty, so its whole
+                    // width takes the tap and not just the pill. Once seated it
+                    // is inert — the stepper owns the count — which is also why
+                    // the haptic is conditional.
                     onPress={() => { if (q === 0) setQuantity(cat.key, 1); }}
                     haptic={q === 0 ? 'commit' : undefined}
                     accessibilityRole="button"
@@ -765,55 +729,57 @@ export default function HomeScreen() {
                       ) : null}
                     </View>
 
-                    <View style={styles.s2CardBottom}>
-                      <Text style={[styles.s2RoleName, on && styles.s2RoleNameOn]} numberOfLines={2}>
-                        {label}
-                      </Text>
+                    <Text
+                      style={[styles.s2RoleName, { textAlign: rtl ? 'right' : 'left' }]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {label}
+                    </Text>
 
-                      {on ? (
-                        <View style={[styles.s2Stepper, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                          <PressableScale
-                            style={styles.s2StepAdd}
-                            onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q + 1); }}
-                            hitSlop={10}
-                            activeScale={0.88}
-                            haptic="commit"
-                            accessibilityRole="button"
-                            accessibilityLabel={t('builder.add_role_a11y', { role: label })}
-                          >
-                            <Text style={styles.s2StepAddText}>+</Text>
-                          </PressableScale>
-                          <Text style={[styles.s2Count, rtl ? { fontFamily: 'Heebo-ExtraBold' } : null]}>{q}</Text>
-                          <PressableScale
-                            style={[styles.s2StepRemove, locked && styles.s2StepLocked]}
-                            onPress={(e) => { e.stopPropagation?.(); if (!locked) setQuantity(cat.key, q - 1); }}
-                            disabled={locked}
-                            hitSlop={10}
-                            activeScale={0.88}
-                            haptic="commit"
-                            accessibilityRole="button"
-                            accessibilityLabel={locked ? t('builder.role_locked_a11y') : t('builder.remove_role_a11y', { role: label })}
-                          >
-                            {locked
-                              ? <Lock size={13} color="#ffffff" strokeWidth={2.5} />
-                              : <Text style={styles.s2StepRemoveText}>−</Text>}
-                          </PressableScale>
-                        </View>
-                      ) : (
+                    {on ? (
+                      <View style={[styles.s2Stepper, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                         <PressableScale
-                          style={styles.s2AddPill}
-                          onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, 1); }}
-                          activeScale={0.96}
+                          style={styles.s2StepAdd}
+                          onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, q + 1); }}
+                          hitSlop={10}
+                          activeScale={0.88}
                           haptic="commit"
                           accessibilityRole="button"
                           accessibilityLabel={t('builder.add_role_a11y', { role: label })}
                         >
-                          {/* One Text node, not a '+' beside a word: the tests
-                              find the stepper's plus by exact text. */}
-                          <Text style={styles.s2AddPillText}>{t('builder.add_role')}</Text>
+                          <Text style={[styles.s2StepGlyph, styles.s2StepAddText]}>+</Text>
                         </PressableScale>
-                      )}
-                    </View>
+                        <Text style={[styles.s2Count, rtl ? { fontFamily: 'Heebo-ExtraBold' } : null]}>{q}</Text>
+                        <PressableScale
+                          style={[styles.s2StepRemove, locked && styles.s2StepLocked]}
+                          onPress={(e) => { e.stopPropagation?.(); if (!locked) setQuantity(cat.key, q - 1); }}
+                          disabled={locked}
+                          hitSlop={10}
+                          activeScale={0.88}
+                          haptic="commit"
+                          accessibilityRole="button"
+                          accessibilityLabel={locked ? t('builder.role_locked_a11y') : t('builder.remove_role_a11y', { role: label })}
+                        >
+                          {locked
+                            ? <Lock size={13} color={STEP2.accent} strokeWidth={2.5} />
+                            : <Text style={[styles.s2StepGlyph, styles.s2StepRemoveText]}>−</Text>}
+                        </PressableScale>
+                      </View>
+                    ) : (
+                      <PressableScale
+                        style={styles.s2AddPill}
+                        onPress={(e) => { e.stopPropagation?.(); setQuantity(cat.key, 1); }}
+                        activeScale={0.96}
+                        haptic="commit"
+                        accessibilityRole="button"
+                        accessibilityLabel={t('builder.add_role_a11y', { role: label })}
+                      >
+                        {/* One Text node, not a '+' beside a word: the tests
+                            find the stepper's plus by exact text. */}
+                        <Text style={styles.s2AddPillText}>{t('builder.add_role')}</Text>
+                      </PressableScale>
+                    )}
                   </PressableScale>
                 );
               }}
@@ -1167,100 +1133,100 @@ function createStyles(
     // ── Step 2: the crew grid ───────────────────────────────────────────────
     // Flat, no gradients. The sheet supplies the 20pt side padding, so nothing
     // here adds its own or the gutters double.
-    s2Tray: {
-      marginTop: 16,
-      backgroundColor: '#FFFFFF',
-      borderWidth: 1,
-      borderColor: STEP2.cardBorder,
+    s2List: { marginTop: 16 },
+    s2Row: {
       borderRadius: 18,
       paddingVertical: 12,
       paddingHorizontal: 14,
-      gap: 8,
-    },
-    s2TrayLabel: { fontSize: 12.5, fontWeight: '700', fontFamily: ffBold, color: STEP2.textSec },
-    s2ChipRow: { flexWrap: 'wrap', gap: 6 },
-    s2Chip: {
-      height: 30,
-      borderRadius: 15,
-      backgroundColor: STEP2.text,
-      justifyContent: 'center',
-      paddingHorizontal: 12,
-    },
-    s2ChipText: { fontSize: 13, fontWeight: '600', fontFamily: ffSemiBold, color: '#FFFFFF' },
-
-    s2Grid: { marginTop: 16 },
-    s2Card: {
-      height: 156,
-      borderRadius: 22,
-      padding: 14,
-      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 14,
       backgroundColor: '#FFFFFF',
-      borderWidth: 1,
-      borderColor: STEP2.cardBorder,
+      // 2 in both states, so selecting a row cannot nudge the list.
+      borderWidth: 2,
+      borderColor: STEP2.rowBorder,
     },
-    s2CardOn: { backgroundColor: STEP2.accent, borderColor: STEP2.accent },
+    s2RowOn: { backgroundColor: STEP2.rowSelectedBg, borderColor: STEP2.accent },
     s2Tile: {
-      width: 44,
-      height: 44,
-      borderRadius: 13,
+      width: 52,
+      height: 52,
+      borderRadius: 14,
       backgroundColor: STEP2.tileBg,
       alignItems: 'center',
       justifyContent: 'center',
+      flexShrink: 0,
     },
-    s2TileOn: { backgroundColor: 'rgba(255,255,255,0.18)' },
-    s2Glyph: { width: 26, height: 26 },
-    s2CardBottom: { gap: 10 },
-    s2RoleName: { fontSize: 16, fontWeight: '700', fontFamily: ffBold, color: STEP2.text },
-    s2RoleNameOn: { color: '#FFFFFF' },
+    s2TileOn: { backgroundColor: STEP2.accent },
+    s2Glyph: { width: 28, height: 28 },
+    // flex 1 with minWidth 0 so a long name truncates instead of pushing the
+    // stepper off the end of the row.
+    s2RoleName: { flex: 1, minWidth: 0, fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: STEP2.text },
     s2AddPill: {
+      height: 36,
+      borderRadius: 18,
+      paddingHorizontal: 14,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: STEP2.addBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    s2AddPillText: { fontSize: 14, fontWeight: '600', fontFamily: ffSemiBold, color: STEP2.text },
+    s2Stepper: {
       height: 36,
       borderRadius: 18,
       backgroundColor: '#FFFFFF',
       borderWidth: 1,
       borderColor: STEP2.addBorder,
       alignItems: 'center',
-      justifyContent: 'center',
-    },
-    s2AddPillText: { fontSize: 14, fontWeight: '600', fontFamily: ffSemiBold, color: STEP2.text },
-    s2Stepper: {
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: 'rgba(255,255,255,0.16)',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 4,
+      paddingHorizontal: 3,
+      gap: 10,
+      flexShrink: 0,
     },
     s2StepAdd: {
       width: 30,
       height: 30,
       borderRadius: 15,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: STEP2.accent,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    s2StepAddText: { fontSize: 18, lineHeight: 21, fontWeight: '700', fontFamily: ffBold, color: STEP2.accentDark },
+    /**
+     * The +/− glyphs are nudged down inside their circles.
+     *
+     * Centring puts the text's LINE BOX in the middle, and '+' and '−' sit on
+     * the font's math axis — above the middle of that box — so both read high.
+     * includeFontPadding:false drops Android's extra top padding, which tilts
+     * it further up, and the 2pt margin is the optical correction on top. It is
+     * an eyeballed number, not a derived one: change it by looking, not by
+     * arithmetic.
+     */
+    s2StepGlyph: { fontSize: 18, lineHeight: 21, fontWeight: '700', fontFamily: ffBold, includeFontPadding: false, marginTop: 2 },
+    s2StepAddText: { color: '#FFFFFF' },
     s2StepRemove: {
       width: 30,
       height: 30,
       borderRadius: 15,
-      backgroundColor: 'rgba(255,255,255,0.22)',
+      backgroundColor: STEP2.stepperMinusBg,
       alignItems: 'center',
       justifyContent: 'center',
     },
     s2StepLocked: { opacity: 0.55 },
-    s2StepRemoveText: { fontSize: 18, lineHeight: 21, fontWeight: '700', fontFamily: ffBold, color: '#FFFFFF' },
+    s2StepRemoveText: { color: STEP2.accent },
     // 800 has no useAppFont entry; Hebrew names the ExtraBold face outright.
-    s2Count: { fontSize: 16, fontWeight: '800', fontFamily: ffBold, color: '#FFFFFF' },
+    s2Count: { fontSize: 16, fontWeight: '800', fontFamily: ffBold, color: STEP2.text, minWidth: 14, textAlign: 'center' },
 
     s2CtaWrap: { backgroundColor: '#FFFFFF', paddingTop: 12, paddingBottom: 16, marginTop: SPACE.lg },
     s2Cta: {
-      height: 58,
-      borderRadius: 18,
-      backgroundColor: STEP2.text,
+      height: 56,
+      borderRadius: 16,
+      backgroundColor: STEP2.accent,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    s2CtaOff: { opacity: 0.5 },
+    // A different fill, not an opacity: the button is still pressable, and a
+    // dimmed one reads as inert.
+    s2CtaOff: { backgroundColor: STEP2.ctaDisabledBg },
     s2CtaText: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: '#FFFFFF' },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 16, lineHeight: 22, fontWeight: '600', fontFamily: ffSemiBold, color: INK, marginTop: FIELD_GAP, marginBottom: SPACE.sm },

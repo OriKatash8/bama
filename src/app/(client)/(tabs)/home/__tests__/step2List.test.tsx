@@ -7,12 +7,12 @@ import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
 
 /**
- * STEP 2 AS A CARD GRID.
+ * STEP 2 AS A ROW LIST.
  *
- * A role is a flat card: its own mark tinted in a rounded tile, the name, and a
- * control — an add pill while empty, a +/count/− stepper once seated. A tray
- * above the grid names the team so far, and the CTA states the headcount
- * instead of saying "next step".
+ * A role is a full-width row: its own mark tinted in a rounded tile, the name
+ * over a hint naming what the role covers, and a control at the end — an add
+ * pill while empty, a +/count/− stepper once seated. The CTA states the
+ * headcount instead of saying "next step".
  *
  * The behavioural invariants (what seats a role, what is inert, what buzzes)
  * live in roleTiles.test.tsx and are unchanged by the redesign. This file is
@@ -26,7 +26,10 @@ import en from '@core/i18n/translations/en.json';
  * tile and is verified on device instead.
  */
 
-const ACCENT = '#4A33D1';
+const ACCENT = '#5B3FE0';
+const ROW_BORDER = '#ECE9F5';
+const ROW_ON_BG = '#F1EEFF';
+const CTA_OFF_BG = '#B9B3D1';
 const VIDEOGRAPHER = 'Video Photographer';
 const EDITOR = 'Editor';
 
@@ -80,12 +83,29 @@ function atStepTwo() {
 
 const flat = (n: ReactTestInstance) => StyleSheet.flatten(n.props.style) as Record<string, unknown>;
 
+/** Every role row, by the radius-and-border pair only the rows carry. */
+function rowStyles(r: ReturnType<typeof render>) {
+  const out: { backgroundColor?: string; borderColor?: string; borderWidth?: number }[] = [];
+  const visit = (n: ReactTestInstance) => {
+    const s = flat(n) as { borderWidth?: number; borderRadius?: number; backgroundColor?: string; borderColor?: string };
+    // Host elements only. A row appears twice in the tree — composite and the
+    // host it renders to — and the seven unselected rows are identical, so
+    // collapsing by value would fold them into one.
+    if (typeof n.type === 'string' && s?.borderWidth === 2 && s?.borderRadius === 18) {
+      out.push({ backgroundColor: s.backgroundColor, borderColor: s.borderColor, borderWidth: s.borderWidth });
+    }
+    n.children.forEach((c) => typeof c !== 'string' && visit(c));
+  };
+  visit(r.root);
+  return out;
+}
+
 /** Every Image the screen renders, deduped across composite/host layers. */
 function glyphs(r: ReturnType<typeof render>) {
   const out: ReactTestInstance[] = [];
   const visit = (n: ReactTestInstance) => {
     const s = flat(n);
-    if (s?.width === 26 && s?.height === 26) out.push(n);
+    if (s?.width === 28 && s?.height === 28) out.push(n);
     n.children.forEach((c) => typeof c !== 'string' && visit(c));
   };
   visit(r.root);
@@ -94,49 +114,7 @@ function glyphs(r: ReturnType<typeof render>) {
     || out[i - 1] !== n.children[0]);
 }
 
-describe('the team tray', () => {
-  it('is not there at all until something is picked', () => {
-    const r = atStepTwo();
-    // Heading included: an empty tray would be a title over nothing, and the
-    // grid underneath already says what there is to pick.
-    expect(r.queryByText(en.builder.team_so_far)).toBeNull();
-  });
-
-  it('appears as soon as one seat is taken', () => {
-    mockQuantities[VIDEOGRAPHER] = 1;
-    const r = atStepTwo();
-
-    expect(r.getByText(en.builder.team_so_far)).toBeTruthy();
-  });
-
-  it('names a single seat plainly, with no count in front of it', () => {
-    mockQuantities[VIDEOGRAPHER] = 1;
-    const r = atStepTwo();
-
-    // Two matches: the card's own name and the chip. Both are the bare label.
-    expect(r.getAllByText('Videographer').length).toBe(2);
-  });
-
-  it('puts the count in front once a role holds more than one', () => {
-    mockQuantities[VIDEOGRAPHER] = 3;
-    const r = atStepTwo();
-
-    expect(r.getByText('3 × Videographer')).toBeTruthy();
-    // The card still carries the bare name; only the chip counts.
-    expect(r.getAllByText('Videographer').length).toBe(1);
-  });
-
-  it('gives each role its own chip', () => {
-    mockQuantities[VIDEOGRAPHER] = 2;
-    mockQuantities[EDITOR] = 1;
-    const r = atStepTwo();
-
-    expect(r.getByText('2 × Videographer')).toBeTruthy();
-    expect(r.getAllByText('Editor').length).toBe(2);
-  });
-});
-
-describe('a role card', () => {
+describe('a role row', () => {
   it('offers the add pill while empty, and no stepper', () => {
     const r = atStepTwo();
 
@@ -156,6 +134,64 @@ describe('a role card', () => {
     expect(r.getByText('2')).toBeTruthy();
   });
 
+  it('carries the role name alone — no description under it', () => {
+    const r = atStepTwo();
+
+    // The row briefly had a line of specializations under the name. Nothing
+    // from that vocabulary should render now.
+    expect(r.getByText('Videographer')).toBeTruthy();
+    expect(r.queryByText(/Events, Ads & Brands/)).toBeNull();
+    expect(r.queryByText(/Brand Identity/)).toBeNull();
+    expect(r.queryByText(/General/)).toBeNull();
+  });
+
+  it('keeps the role name to one line', () => {
+    const r = atStepTwo();
+
+    const name = r.getByText('Stills Photographer');
+    expect(name.props.numberOfLines).toBe(1);
+    expect(name.props.ellipsizeMode).toBe('tail');
+  });
+
+  it('nudges the + and − down so they sit centred in their circles', () => {
+    mockQuantities[VIDEOGRAPHER] = 1;
+    const r = atStepTwo();
+
+    for (const glyph of ['+', '−']) {
+      const st = flat(r.getByText(glyph)) as { marginTop?: number; includeFontPadding?: boolean };
+      // Centring aligns the line box, and these glyphs sit high within it.
+      expect(st.marginTop).toBeGreaterThan(0);
+      expect(st.includeFontPadding).toBe(false);
+    }
+  });
+
+  it('keeps the two glyphs on the same baseline as each other', () => {
+    mockQuantities[VIDEOGRAPHER] = 1;
+    const r = atStepTwo();
+
+    const plus = flat(r.getByText('+')) as { marginTop?: number; fontSize?: number; lineHeight?: number };
+    const minus = flat(r.getByText('−')) as { marginTop?: number; fontSize?: number; lineHeight?: number };
+    // One shared nudge, so correcting one cannot leave the other behind.
+    expect(minus.marginTop).toBe(plus.marginTop);
+    expect(minus.fontSize).toBe(plus.fontSize);
+    expect(minus.lineHeight).toBe(plus.lineHeight);
+  });
+
+  it('switches the row fill and border when it is seated', () => {
+    mockQuantities[VIDEOGRAPHER] = 1;
+    const r = atStepTwo();
+
+    const rows = rowStyles(r);
+    const on = rows.filter((x) => x.backgroundColor === ROW_ON_BG);
+    const off = rows.filter((x) => x.backgroundColor === '#FFFFFF');
+    expect(on).toHaveLength(1);
+    expect(off).toHaveLength(7);
+    expect(on[0].borderColor).toBe(ACCENT);
+    expect(off[0].borderColor).toBe(ROW_BORDER);
+    // Same border width either way, or selecting a row would nudge the list.
+    expect(on[0].borderWidth).toBe(off[0].borderWidth);
+  });
+
   it('tints the mark accent while empty and white once seated', () => {
     mockQuantities[VIDEOGRAPHER] = 1;
     const r = atStepTwo();
@@ -170,12 +206,12 @@ describe('a role card', () => {
 });
 
 describe('the CTA', () => {
-  it('asks for at least one, and is dimmed but NOT announced disabled', () => {
+  it('asks for at least one, and is greyed but NOT announced disabled', () => {
     const r = atStepTwo();
     const cta = r.getByTestId('step2-cta');
 
     expect(r.getByText(en.builder.pick_at_least_one)).toBeTruthy();
-    expect(flat(cta).opacity).toBe(0.5);
+    expect(flat(cta).backgroundColor).toBe(CTA_OFF_BG);
     // It is pressable — pressing is how the error is raised — so saying
     // "disabled" would tell a screen reader the opposite of the truth.
     expect(cta.props.accessibilityState?.disabled).toBeUndefined();
@@ -188,7 +224,7 @@ describe('the CTA', () => {
     const r = atStepTwo();
 
     expect(r.getByText('Continue · 3 professionals')).toBeTruthy();
-    expect(flat(r.getByTestId('step2-cta')).opacity).toBeUndefined();
+    expect(flat(r.getByTestId('step2-cta')).backgroundColor).toBe(ACCENT);
   });
 
   it('says "1 professional", not "1 professionals"', () => {
@@ -200,16 +236,24 @@ describe('the CTA', () => {
 });
 
 describe('in Hebrew', () => {
-  it('fills the count into both the chip and the CTA', () => {
+  it('fills the count into the CTA', () => {
     mockLanguage = 'he';
     mockQuantities[VIDEOGRAPHER] = 2;
     const r = atStepTwo();
 
-    // {{count}} and {{role}} both resolved — the screen's own t() had no
-    // interpolation before this step needed it.
-    expect(r.getByText('2 × צלם וידאו')).toBeTruthy();
+    // {{count}} resolved — the screen's own t() had no interpolation before
+    // this step needed it.
     expect(r.getByText('המשך · 2 אנשי מקצוע')).toBeTruthy();
     expect(r.queryByText(/\{\{/)).toBeNull();
+  });
+
+  it('writes the role names in Hebrew', () => {
+    mockLanguage = 'he';
+    const r = atStepTwo();
+
+    expect(r.getByText('צלם וידאו')).toBeTruthy();
+    expect(r.getByText('אולפן הקלטות')).toBeTruthy();
+    expect(r.queryByText('אירועים, פרסומות ומותגים')).toBeNull();
   });
 
   it('mirrors the stepper so + is on the trailing side', () => {
