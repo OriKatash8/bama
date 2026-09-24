@@ -173,7 +173,9 @@ export default function ClientTabsLayout() {
             options={{
               title: t('tabs.projects'),
               tabBarBadge: newOffers > 0 ? (newOffers > 99 ? '99+' : newOffers) : undefined,
-              tabBarBadgeStyle: { backgroundColor: '#cb6ce6', color: 'white', fontSize: 10 },
+              // Same purple as the chats badge beside it: one unread mark, one
+              // colour. It was the old magenta accent, alone on the bar.
+              tabBarBadgeStyle: { backgroundColor: CLIENT_TAB_ACTIVE, color: 'white', fontSize: 10 },
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
