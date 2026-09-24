@@ -36,10 +36,19 @@ const personStyles = StyleSheet.create({
   body:  { width: 16, height: 10, borderRadius: 4, backgroundColor: '#fff' },
 });
 
+/**
+ * Each mode wears its own colour. The professional blue is the tab bar's
+ * exactly; the client violet is one step lighter than the tab bar's #6D28D9,
+ * which carries better on a white card at this size than the darker tone does.
+ * Both are named here because the web pressed-state gradient below has to use
+ * the same two, and a literal in one place and not the other would drift.
+ */
+const CLIENT_VIOLET = '#7C3AED';
+const PRO_BLUE = '#1D4ED8';
+
 const CARD_MODES: { mode: ActiveMode; key: string; color: string }[] = [
-  // Each mode wears its own colour, the same pair as the tab bar and header.
-  { mode: 'client',       key: 'mode_picker.client',       color: '#6D28D9' },
-  { mode: 'professional', key: 'mode_picker.professional', color: '#1D4ED8' },
+  { mode: 'client',       key: 'mode_picker.client',       color: CLIENT_VIOLET },
+  { mode: 'professional', key: 'mode_picker.professional', color: PRO_BLUE },
 ];
 
 export function ModePicker() {
@@ -61,7 +70,7 @@ export function ModePicker() {
               style={[
                 styles.btn,
                 Platform.OS === 'web'
-                  ? ({ background: isPressed ? 'linear-gradient(to right, #6D28D9, #1D4ED8)' : '#ffffff' } as any)
+                  ? ({ background: isPressed ? `linear-gradient(to right, ${CLIENT_VIOLET}, ${PRO_BLUE})` : '#ffffff' } as any)
                   : { backgroundColor: isPressed ? color : '#ffffff' },
               ]}
               onPress={() => switchMode(mode)}
