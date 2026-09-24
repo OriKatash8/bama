@@ -744,17 +744,12 @@
     "confirm_accept_body": "{{name}}'s offer of ₪{{price}} will be accepted.",
     "confirm_reject_title": "Deny this offer?",
     "confirm_reject_body": "{{name}}'s offer of ₪{{price}} will be declined.",
-    "sort_title": "Sort By",
     "sort_price_low": "Price: Low to High",
     "sort_price_high": "Price: High to Low",
-    "sort_stars": "Most Stars First",
-    "sort_none": "Default · Newest First",
-    "filter": "Sort & Filter",
-    "apply": "Apply",
-    "clear": "Clear",
-    "show_label": "Show",
-    "show_all": "All Offers",
-    "show_bundle_only": "Bundle Only"
+    "sort_stars": "Stars",
+    "show_bundle_only": "Bundle Only",
+    "sort_price": "Price",
+    "sort_newest": "Newest"
   },
   "marketplace": {
     "category_camera": "Cameras",

@@ -744,17 +744,12 @@
     "confirm_accept_body": "ההצעה של {{name}} על סך ₪{{price}} תאושר.",
     "confirm_reject_title": "לדחות את ההצעה?",
     "confirm_reject_body": "ההצעה של {{name}} על סך ₪{{price}} תידחה.",
-    "sort_title": "מיין לפי",
     "sort_price_low": "מחיר: נמוך לגבוה",
     "sort_price_high": "מחיר: גבוה לנמוך",
-    "sort_stars": "הכי הרבה כוכבים",
-    "sort_none": "ברירת מחדל · החדשים ביותר",
-    "filter": "מיון וסינון",
-    "apply": "החל",
-    "clear": "נקה",
-    "show_label": "הצג",
-    "show_all": "כל ההצעות",
-    "show_bundle_only": "חבילות בלבד"
+    "sort_stars": "דירוג",
+    "show_bundle_only": "חבילות בלבד",
+    "sort_price": "מחיר",
+    "sort_newest": "החדשות ביותר"
   },
   "marketplace": {
     "category_camera": "מצלמות",

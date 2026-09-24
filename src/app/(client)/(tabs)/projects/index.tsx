@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, TouchableOpacity, Modal, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Animated } from 'react-native';
-import { SlidersHorizontal, X, FolderPlus, Plus, Inbox, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Animated } from 'react-native';
+import { ArrowUp, ArrowDown, FolderPlus, Plus, Inbox, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -26,11 +26,10 @@ import he from '@core/i18n/translations/he.json';
 import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/project';
 import type { User, ProfessionalProfile } from '@core/types/user';
 import { useTabBarClearance } from '@core/navigation/floatingTabBar';
+import {
+  nextPriceSort, effectiveShowOnly, type OfferSort, type ShowOnly,
+} from '@features/offers/utils/offerFilters';
 
-/** `null` is the default: newest first. There is no separate 'date' member —
- *  date-descending IS the default order, so a chip for it would duplicate it. */
-type OfferSort = 'price_asc' | 'price_desc' | 'stars' | null;
-type ShowOnly = 'all' | 'bundle';
 /** Which list the single vertical column is showing. Projects is always the
  *  default — deliberately NOT switched based on whether offers are pending. */
 type Segment = 'projects' | 'offers';
@@ -104,18 +103,10 @@ export default function ProjectsPage() {
 
   const [offerSort, setOfferSort] = useState<OfferSort>(null);
   const [showOnly, setShowOnly] = useState<ShowOnly>('all');
-  const [draftSort, setDraftSort] = useState<OfferSort>(null);
-  const [draftShowOnly, setDraftShowOnly] = useState<ShowOnly>('all');
-  const [sortModalVisible, setSortModalVisible] = useState(false);
-
-  function openSortModal() { setDraftSort(offerSort); setDraftShowOnly(showOnly); setSortModalVisible(true); }
-  function applySort() { setOfferSort(draftSort); setShowOnly(draftShowOnly); setSortModalVisible(false); }
-  function clearSort() { setDraftSort(null); setDraftShowOnly('all'); setOfferSort(null); setShowOnly('all'); setSortModalVisible(false); }
-
   /**
-   * Switching segments RESETS the filter rather than persisting it. The sort
-   * control only renders in the Offers segment, so a filter left active while
-   * its control is off-screen is invisible state the client cannot undo.
+   * Switching segments RESETS the filter rather than persisting it. The chips
+   * only render in the Offers segment, so a filter left active while its
+   * control is off-screen is invisible state the client cannot undo.
    */
   function switchSegment(next: Segment) {
     if (next === segment) return;
@@ -285,7 +276,9 @@ export default function ProjectsPage() {
     const priceItems: CombinedOffer[] = offers.map((o) => ({ kind: 'price', data: o }));
 
     const combined: CombinedOffer[] =
-      showOnly === 'bundle' ? bundleItems : [...bundleItems, ...priceItems];
+      effectiveShowOnly(showOnly, bundles.length > 0) === 'bundle'
+        ? bundleItems
+        : [...bundleItems, ...priceItems];
 
     if (offerSort === 'price_asc')  return [...combined].sort((a, b) => getPrice(a) - getPrice(b));
     if (offerSort === 'price_desc') return [...combined].sort((a, b) => getPrice(b) - getPrice(a));
@@ -296,19 +289,10 @@ export default function ProjectsPage() {
     return [...combined].sort((a, b) => getDate(b) - getDate(a));
   }, [offers, bundles, offerSort, showOnly, professionalProfiles]);
 
-  const filterActive = offerSort !== null || showOnly !== 'all';
-
-  const SORT_OPTIONS: { value: OfferSort; label: string }[] = [
-    { value: null,          label: t('offers.sort_none') },
-    { value: 'price_asc',  label: t('offers.sort_price_low') },
-    { value: 'price_desc', label: t('offers.sort_price_high') },
-    { value: 'stars',      label: t('offers.sort_stars') },
-  ];
-
-  const SHOW_OPTIONS: { value: ShowOnly; label: string }[] = [
-    { value: 'all',    label: t('offers.show_all') },
-    { value: 'bundle', label: t('offers.show_bundle_only') },
-  ];
+  /** The bundle chip exists only when there is something to filter to. */
+  const hasBundles = bundles.length > 0;
+  const bundleOnly = effectiveShowOnly(showOnly, hasBundles) === 'bundle';
+  const priceActive = offerSort === 'price_asc' || offerSort === 'price_desc';
 
   const activeRequests = requests.filter((r) => r.status !== 'completed' && r.status !== 'cancelled');
 
@@ -440,21 +424,76 @@ export default function ProjectsPage() {
               {/* No heading — the active segment already says "price offers".
                   The filter lives here ONLY: switchSegment resets it, so it can
                   never stay active while its control is off-screen. */}
-              {combinedOffers.length > 0 && (
+              {/* Gated on the UNFILTERED total, never on combinedOffers: a row
+                  that vanished because the filter emptied the list would take
+                  the only way of switching that filter off with it. */}
+              {(offers.length > 0 || bundles.length > 0) && (
                 <View style={[styles.filterRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                  {/* Price first, as asked. Tapping it again flips the
+                      direction — both orders existed in the old sheet, so the
+                      arrow keeps the capability rather than dropping half. */}
                   <TouchableOpacity
-                    style={[styles.sortBtn, filterActive && styles.sortBtnActive]}
-                    onPress={openSortModal}
+                    style={[styles.chip, priceActive && styles.chipActive]}
+                    onPress={() => setOfferSort(nextPriceSort(offerSort))}
                     activeOpacity={0.8}
-                    // The stacked pill is ~44 tall on its own; the slop is the
-                    // margin of error either side of it.
                     hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: priceActive }}
+                    accessibilityLabel={t(offerSort === 'price_desc' ? 'offers.sort_price_high' : 'offers.sort_price_low')}
                   >
-                    <SlidersHorizontal size={16} color={VIOLET} strokeWidth={2} />
-                    <AppText weight="semiBold" style={styles.sortBtnText}>
-                      {t('offers.filter')}
+                    <AppText weight="semiBold" style={[styles.chipText, priceActive && styles.chipTextActive]}>
+                      {t('offers.sort_price')}
+                    </AppText>
+                    {priceActive && (offerSort === 'price_asc'
+                      ? <ArrowUp size={13} color="#FFFFFF" strokeWidth={2.5} />
+                      : <ArrowDown size={13} color="#FFFFFF" strokeWidth={2.5} />)}
+                  </TouchableOpacity>
+
+                  {/* Newest is the default, so this chip is the way back. */}
+                  <TouchableOpacity
+                    style={[styles.chip, offerSort === null && styles.chipActive]}
+                    onPress={() => setOfferSort(null)}
+                    activeOpacity={0.8}
+                    hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: offerSort === null }}
+                  >
+                    <AppText weight="semiBold" style={[styles.chipText, offerSort === null && styles.chipTextActive]}>
+                      {t('offers.sort_newest')}
                     </AppText>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.chip, offerSort === 'stars' && styles.chipActive]}
+                    onPress={() => setOfferSort('stars')}
+                    activeOpacity={0.8}
+                    hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: offerSort === 'stars' }}
+                  >
+                    <AppText weight="semiBold" style={[styles.chipText, offerSort === 'stars' && styles.chipTextActive]}>
+                      {t('offers.sort_stars')}
+                    </AppText>
+                  </TouchableOpacity>
+
+                  {/* Only when there is something to filter TO. effectiveShowOnly
+                      drops the filter at the same moment, so the last bundle
+                      being accepted cannot leave an empty list behind. */}
+                  {hasBundles && (
+                    <TouchableOpacity
+                      testID="chip-bundle-only"
+                      style={[styles.chip, bundleOnly && styles.chipActive]}
+                      onPress={() => setShowOnly(bundleOnly ? 'all' : 'bundle')}
+                      activeOpacity={0.8}
+                      hitSlop={{ top: 6, bottom: 6 }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: bundleOnly }}
+                    >
+                      <AppText weight="semiBold" style={[styles.chipText, bundleOnly && styles.chipTextActive]}>
+                        {t('offers.show_bundle_only')}
+                      </AppText>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
 
@@ -511,65 +550,6 @@ export default function ProjectsPage() {
       </ScrollView>
 
       {/* Sort modal */}
-      <Modal visible={sortModalVisible} transparent animationType="fade" onRequestClose={() => setSortModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setSortModalVisible(false)} />
-          <View style={styles.modalCard}>
-            <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <AppText weight="bold" style={[styles.modalTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('offers.filter')}
-              </AppText>
-              <TouchableOpacity onPress={() => setSortModalVisible(false)} style={styles.modalClose} activeOpacity={0.7}>
-                <X size={20} color={VIOLET} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
-              <AppText weight="semiBold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('offers.sort_title')}
-              </AppText>
-              <View style={[styles.sortOptions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {SORT_OPTIONS.map((opt) => (
-                  <TouchableOpacity
-                    key={String(opt.value)}
-                    style={[styles.sortOption, draftSort === opt.value && styles.sortOptionActive]}
-                    onPress={() => setDraftSort(opt.value)}
-                    activeOpacity={0.8}
-                  >
-                    <AppText weight="semiBold" style={[styles.sortOptionText, draftSort === opt.value && styles.sortOptionTextActive]}>
-                      {opt.label}
-                    </AppText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <AppText weight="semiBold" style={[styles.modalSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('offers.show_label')}
-              </AppText>
-              <View style={[styles.showOptions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {SHOW_OPTIONS.map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[styles.sortOption, styles.showOption, draftShowOnly === opt.value && styles.sortOptionActive]}
-                    onPress={() => setDraftShowOnly(opt.value)}
-                    activeOpacity={0.8}
-                  >
-                    <AppText weight="semiBold" style={[styles.sortOptionText, draftShowOnly === opt.value && styles.sortOptionTextActive]}>
-                      {opt.label}
-                    </AppText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-            <View style={[styles.modalActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <TouchableOpacity style={styles.clearBtn} onPress={clearSort} activeOpacity={0.7}>
-                <AppText weight="semiBold" style={styles.clearBtnText}>{t('offers.clear')}</AppText>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.applyBtn} onPress={applySort} activeOpacity={0.85}>
-                <AppText weight="bold" style={styles.applyBtnText}>{t('offers.apply')}</AppText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </Screen>
   );
 }
@@ -596,10 +576,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   section: { gap: 10 },
-  // The filter is alone on its row now that the heading is gone. flex-end puts
-  // it on the TRAILING edge in both directions — left under row-reverse, right
-  // under row — which is where it sat when the heading held the leading edge.
-  filterRow: { alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8 },
+  // Four chips rather than the one "Sort & Filter" tile, so the row wraps and
+  // starts from the READING edge: flex-start is the left under `row` and the
+  // right under `row-reverse`, which is where a list of options belongs.
+  filterRow: { alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   // ── Segmented control ── one translucent track on the band, white thumb.
   segBar: {
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -656,55 +636,20 @@ const styles = StyleSheet.create({
   },
   newOffersText: { fontSize: 13, color: '#4C1D95', flexShrink: 1 },
 
-  // Icon above its label, not beside it, so the control reads as one small
-  // tile rather than a text pill.
-  sortBtn: {
-    flexDirection: 'column',
+  // One chip per option: state is on the chip itself, so the current sort is
+  // readable without opening anything.
+  chip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
+    gap: 4,
     borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: VIOLET,
+    borderColor: 'rgba(109,40,217,0.25)',
   },
-  // A filter is on: the outline thickens against the same purple fill.
-  sortBtnActive: { borderWidth: 1.5 },
-  sortBtnText: { fontSize: 12.5, fontWeight: '600', color: '#000000' },
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalCard: {
-    width: '100%',
-    maxWidth: 440,
-    maxHeight: '85%',
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  modalHeader: { alignItems: 'center', marginBottom: 12 },
-  modalTitle: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#000000' },
-  modalClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  modalScroll: { flexShrink: 1, marginBottom: 4 },
-  modalSectionLabel: { fontSize: 12, color: '#000000', marginBottom: 8, marginTop: 10 },
-  sortOptions: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  showOptions: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  showOption: {},
-  sortOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(109,40,217,0.25)', backgroundColor: '#fff' },
-  sortOptionActive: { backgroundColor: VIOLET, borderColor: VIOLET },
-  sortOptionText: { fontSize: 13, color: VIOLET },
-  sortOptionTextActive: { color: '#fff' },
-  modalActions: { alignItems: 'center', gap: 12, marginTop: 18 },
-  // The pair splits the row 70 / 30 (flexBasis 0, so the grow values are the
-  // ratio itself): apply is the filled primary, clear its outlined companion.
-  clearBtn: { flex: 3, borderRadius: 16, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(109,40,217,0.25)' },
-  clearBtnText: { color: VIOLET, fontSize: 14 },
-  applyBtn: { flex: 7, borderRadius: 16, paddingVertical: 14, alignItems: 'center', backgroundColor: VIOLET },
-  applyBtnText: { color: '#fff', fontSize: 15 },
+  chipActive: { backgroundColor: VIOLET, borderColor: VIOLET },
+  chipText: { fontSize: 12.5, fontWeight: '600', color: VIOLET },
+  chipTextActive: { color: '#FFFFFF' },
 });
