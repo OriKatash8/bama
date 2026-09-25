@@ -1,8 +1,7 @@
-import { useColorScheme } from 'react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import { ADMIN_DARK, ADMIN_LIGHT, type AdminPalette } from './theme';
+import { ADMIN_LIGHT, type AdminPalette } from './theme';
 
 type Translations = typeof en;
 export type AdminT = (key: string, vars?: Record<string, string | number>) => string;
@@ -32,9 +31,13 @@ export function useAdminT() {
   };
 }
 
-/** The dashboard follows the device scheme; the rest of the app stays light. */
+/**
+ * Light only for now, like the rest of the app — the device's dark mode is
+ * ignored. ADMIN_DARK stays defined in theme.ts; returning to "follow the
+ * device" is `useColorScheme() === 'dark' ? ADMIN_DARK : ADMIN_LIGHT` here.
+ */
 export function useAdminPalette(): AdminPalette {
-  return useColorScheme() === 'dark' ? ADMIN_DARK : ADMIN_LIGHT;
+  return ADMIN_LIGHT;
 }
 
 const DAY_MS = 86_400_000;

@@ -1,9 +1,10 @@
 import { Platform, type ViewStyle } from 'react-native';
 
 /**
- * Tokens for the community-owner dashboard. This screen follows the device
- * colour scheme (the rest of the app is light-only), so both palettes live
- * here and nothing in the dashboard inlines a hex.
+ * Tokens for the community-owner dashboard; nothing in the dashboard inlines a
+ * hex. The screen is light-only for now, like the rest of the app
+ * (useAdminPalette); ADMIN_DARK is kept, unused, for when it follows the
+ * device again.
  *
  * The blue/red joins-vs-exits pair (series1/series2) is colorblind-validated:
  * don't swap series colours or add a fourth without checking with design.
@@ -40,14 +41,19 @@ export type AdminPalette = {
   shadow: string;
 };
 
+/**
+ * Light: the chat list's colours — its #FAFAFC grey page, white cards with
+ * the #EAE8F0 card border, and black text — so the dashboard reads as the
+ * same app as the Chats tab.
+ */
 export const ADMIN_LIGHT: AdminPalette = {
-  bg: '#F1F1F4',
+  bg: '#FAFAFC',
   surface: '#FFFFFF',
   surface2: '#F6F6F9',
   surface3: '#ECECF1',
-  border: 'rgba(16,16,22,.08)',
+  border: '#EAE8F0',
   borderStrong: 'rgba(16,16,22,.14)',
-  text: '#101014',
+  text: '#000000',
   text2: '#5B5B67',
   text3: '#8E8E9A',
   accent: '#2a78d6',
@@ -69,6 +75,7 @@ export const ADMIN_LIGHT: AdminPalette = {
   shadow: '#101016',
 };
 
+/** Not used for now — see useAdminPalette. */
 export const ADMIN_DARK: AdminPalette = {
   bg: '#0D0D10',
   surface: '#16161A',
