@@ -18,7 +18,7 @@ import { confirmDialog } from '@utils/confirmDialog';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, updateDoc, arrayUnion, serverTimestamp, addDoc, collection, deleteField } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, addDoc, collection, deleteField } from 'firebase/firestore';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { db } from '@core/firebase/config';
@@ -64,6 +64,7 @@ import {
   ContestEngagementSheet, type ContestReason,
 } from '@features/projects/components/ContestEngagementSheet';
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
+import { mergeCrewSlots } from '@features/noticeboard/matching';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
@@ -781,14 +782,18 @@ export default function ProjectDetailsScreen() {
     if (!projectId || !project) return;
     setIsPostingRoles(true);
     try {
-      const updates: Record<string, unknown> = {
-        crewSlots: arrayUnion(...newSlots),
-      };
+      // The whole merged array, not arrayUnion: arrayUnion skips a slot equal
+      // to one already stored, so a second "camera ×1" was never written.
+      const crewSlots = mergeCrewSlots(project.crewSlots ?? [], newSlots);
+      const updates: Record<string, unknown> = { crewSlots };
       if (project.status !== 'open') updates.status = 'open';
+      // A direct project is on the board for its one pro only. Asking for more
+      // people makes it a public notice.
+      if (project.targetProfessionalId != null) updates.targetProfessionalId = null;
       await updateDoc(doc(db, 'projects', projectId), updates);
       setProject((prev) =>
         prev
-          ? { ...prev, crewSlots: [...(prev.crewSlots ?? []), ...newSlots], status: 'open' }
+          ? { ...prev, crewSlots, status: 'open', ...(prev.targetProfessionalId != null && { targetProfessionalId: null }) }
           : prev,
       );
       setShowRolePicker(false);

@@ -35,6 +35,22 @@ function sameSlotKind(
 }
 
 /**
+ * Add `added` to `existing`: a slot of a kind already present raises that
+ * slot's quantity, a new kind is appended. Never two entries of one kind —
+ * getVacantSlots subtracts every same-kind fill from each entry, so a duplicate
+ * would read as no vacancy. Does not mutate its inputs.
+ */
+export function mergeCrewSlots(existing: CrewRequestSlot[], added: CrewRequestSlot[]): CrewRequestSlot[] {
+  const out = existing.map((s) => ({ ...s }));
+  for (const slot of added) {
+    const same = out.find((s) => sameSlotKind(s, slot));
+    if (same) same.quantity += slot.quantity;
+    else out.push({ ...slot });
+  }
+  return out;
+}
+
+/**
  * Vacant slots = requested minus filled, matched by (category + requiredCapability).
  * A drone slot is only consumed by a drone-attributed fill; a general fill only
  * consumes a general slot. Preserves requiredCapability on the returned slots.
