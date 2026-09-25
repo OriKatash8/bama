@@ -1,3 +1,4 @@
+import { useAuthStore } from '@core/stores/authStore';
 import React from 'react';
 import { Alert, StyleSheet } from 'react-native';
 import { render, act, fireEvent } from '@testing-library/react-native';
@@ -142,11 +143,13 @@ describe('under review, not yet acknowledged', () => {
   });
 
   it('שינוי מחיר disabled while anything is pending; the client-asked line opens payments', async () => {
+    // The professional's card, seen in the pro app: project details opens in the pro stack.
+    useAuthStore.setState({ activeMode: 'professional' });
     mockHistory = [req('client', 'pending', 1)];
     const { getByTestId } = await renderCard();
     expect(disabled(getByTestId('pro-price'))).toBe(true);
     await act(async () => { fireEvent.press(getByTestId('chip-client-asked')); });
-    expect(mockPush).toHaveBeenCalledWith('/(client)/chat/project-details?projectId=p1&chatId=c1&section=payments');
+    expect(mockPush).toHaveBeenCalledWith('/(professional)/chat/project-details?projectId=p1&chatId=c1&section=payments');
   });
 
   it('his own pending request reads as waiting on the client', async () => {

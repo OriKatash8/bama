@@ -8,6 +8,8 @@ import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import { slotReason } from '../utils/balance';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { chatGroupOf } from '@features/chat/utils/chatGroup';
+import { useAuthStore } from '@core/stores/authStore';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -60,6 +62,8 @@ export function SlotBlockedSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
+  // The viewer's own stack, or back from project details could not return here.
+  const chatGroup = chatGroupOf(useAuthStore((s) => s.activeMode));
   const pricing = usePricingConfig();
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
@@ -74,7 +78,7 @@ export function SlotBlockedSheet({
   const openProject = (p: ProjectRequest) => {
     onClose();
     router.push(
-      `/(client)/chat/project-details?projectId=${p.id}${p.chatId ? `&chatId=${p.chatId}` : ''}` as never,
+      `/${chatGroup}/chat/project-details?projectId=${p.id}${p.chatId ? `&chatId=${p.chatId}` : ''}` as never,
     );
   };
 

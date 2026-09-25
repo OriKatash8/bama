@@ -1450,7 +1450,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           {chatType === 'group' && chatProjectId ? (
             <TouchableOpacity
               style={styles.headerNameTouchable}
-              onPress={() => router.push(`/(client)/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
+              onPress={() => router.push(`/${chatGroup}/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
               activeOpacity={0.8}
             >
               <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
@@ -1659,8 +1659,8 @@ export function ChatRoomScreen({ chatId }: Props) {
                     <TouchableOpacity
                       onPress={() => router.push(
                         targetSection
-                          ? `/(client)/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}&section=${targetSection}`
-                          : `/(client)/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`,
+                          ? `/${chatGroup}/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}&section=${targetSection}`
+                          : `/${chatGroup}/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`,
                       )}
                       activeOpacity={0.75}
                       accessibilityRole="button"

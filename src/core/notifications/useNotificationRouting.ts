@@ -122,7 +122,7 @@ export function useNotificationRouting(): void {
         if (data.projectId) {
           await navigate(
             'professional',
-            `/(client)/chat/project-details?projectId=${data.projectId}` +
+            `/(professional)/chat/project-details?projectId=${data.projectId}` +
               (data.chatId ? `&chatId=${data.chatId}` : ''),
           );
           return;
@@ -151,7 +151,7 @@ export function useNotificationRouting(): void {
         if (data.projectId) {
           await navigate(
             'professional',
-            `/(client)/chat/project-details?projectId=${data.projectId}` +
+            `/(professional)/chat/project-details?projectId=${data.projectId}` +
               (data.chatId ? `&chatId=${data.chatId}` : ''),
           );
           return;

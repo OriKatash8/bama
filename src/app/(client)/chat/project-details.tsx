@@ -65,6 +65,8 @@ import {
 } from '@features/projects/components/ContestEngagementSheet';
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { mergeCrewSlots } from '@features/noticeboard/matching';
+import { chatGroupOf } from '@features/chat/utils/chatGroup';
+import { useAuthStore } from '@core/stores/authStore';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
@@ -153,6 +155,8 @@ export default function ProjectDetailsScreen() {
     projectId: string; chatId: string; section?: string;
   }>();
   const router = useRouter();
+  /** The viewer's own stack: where the chat room this page returns to lives. */
+  const chatGroup = chatGroupOf(useAuthStore((s) => s.activeMode));
   const colors = useTheme();
   // Back arrow and the primary buttons follow the mode: purple in the client
   // app, blue in the pro app.
@@ -1153,7 +1157,20 @@ export default function ProjectDetailsScreen() {
 
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View style={[styles.header, { marginHorizontal: -16, marginTop: -16 }]}>
-          <TouchableOpacity onPress={() => chatIdParam ? router.push(`/(client)/chat/${chatIdParam}` as never) : router.back()} style={styles.headerBack} activeOpacity={0.7}>
+          {/* Pops to the chat room underneath — there because every link opens
+              this page in the viewer's own stack (chatGroupOf). It used to PUSH a
+              client copy of the room, which stacked a second one and left the
+              swipe out of it landing back here. Opened cold (a notification),
+              it replaces itself with the room, or the chat list. */}
+          <TouchableOpacity
+            onPress={() =>
+              router.canGoBack()
+                ? router.back()
+                : router.replace((chatIdParam ? `/${chatGroup}/chat/${chatIdParam}` : `/${chatGroup}/(tabs)/chats`) as never)
+            }
+            style={styles.headerBack}
+            activeOpacity={0.7}
+          >
             <AppText weight="regular" style={[styles.headerBackText, { color: modeAccent }]}>{'‹'}</AppText>
           </TouchableOpacity>
           <View style={styles.headerCenter} pointerEvents="none">

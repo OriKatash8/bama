@@ -15,6 +15,8 @@ import { useCandidateText } from './useCandidateText';
 import { chromeStyles } from './chromeStyles';
 import { ActionButton } from './ActionButton';
 import { PriceChangeSheet } from './PriceChangeSheet';
+import { chatGroupOf } from '../../utils/chatGroup';
+import { useAuthStore } from '@core/stores/authStore';
 
 type Busy = 'acknowledge' | 'decline' | 'price';
 
@@ -54,6 +56,8 @@ export function CandidateProCard({
   projectStatus: string | undefined;
 }) {
   const router = useRouter();
+  // The viewer's own stack, or back from project details could not return here.
+  const chatGroup = chatGroupOf(useAuthStore((s) => s.activeMode));
   const showToast = useUiStore((s) => s.showToast);
   const { t, lang, align, rowDir, money } = useCandidateText();
   const [accepted, setAccepted] = useState<{ offers: PriceOffer[]; bundles: BundleOffer[] } | null>(null);
@@ -140,7 +144,7 @@ export function CandidateProCard({
   };
 
   const openPayments = () => router.push(
-    `/(client)/chat/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
+    `/${chatGroup}/chat/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
   );
 
   return (

@@ -1,3 +1,4 @@
+import { useAuthStore } from '@core/stores/authStore';
 import React from 'react';
 import { Alert, Platform, StyleSheet } from 'react-native';
 import { render, act, fireEvent } from '@testing-library/react-native';
@@ -155,6 +156,8 @@ describe('blocked by a pending price change', () => {
   });
 
   it('waiting on the client: an action line that opens the payments section', async () => {
+    // The client's card, seen in the client app: project details opens in the client stack.
+    useAuthStore.setState({ activeMode: 'client' });
     mockRequests = [{ id: 'r2', professionalId: 'pro-b', fromUserId: 'pro-b', toUserId: CLIENT, status: 'pending' }];
     const r = await renderCard();
     await next(r);

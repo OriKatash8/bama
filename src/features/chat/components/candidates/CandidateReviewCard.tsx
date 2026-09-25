@@ -19,6 +19,8 @@ import { PriceChangeSheet } from './PriceChangeSheet';
 import { chromeStyles } from './chromeStyles';
 import { ActionButton } from './ActionButton';
 import { carouselPanConfig, pageSwipeGuard, resolveShownIndex, slidePlan, SLIDE_MS } from './carousel';
+import { chatGroupOf } from '../../utils/chatGroup';
+import { useAuthStore } from '@core/stores/authStore';
 
 type Busy = 'confirm' | 'reject' | 'price';
 
@@ -55,6 +57,8 @@ export function CandidateReviewCard({
   onSwipeableChange?: (swipeable: boolean) => void;
 }) {
   const router = useRouter();
+  // The viewer's own stack, or back from project details could not return here.
+  const chatGroup = chatGroupOf(useAuthStore((s) => s.activeMode));
   const { width: screenWidth } = useWindowDimensions();
   const showToast = useUiStore((s) => s.showToast);
   const { t, lang, rtl, align, rowDir, money, dir } = useCandidateText();
@@ -218,7 +222,7 @@ export function CandidateReviewCard({
   };
 
   const openPayments = () => router.push(
-    `/(client)/chat/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
+    `/${chatGroup}/chat/project-details?projectId=${projectId}&chatId=${chatId}&section=payments` as never,
   );
 
   // Chevrons mirror with the reading direction: "previous" sits on the leading
