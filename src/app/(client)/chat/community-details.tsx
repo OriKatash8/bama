@@ -22,6 +22,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { chatGroupOf } from '@features/chat/utils/chatGroup';
+import { ChatMediaSection } from '@features/chat/components/ChatMediaSection';
 import { AppText } from '@components/ui/AppText';
 import { ToggleSwitch } from '@components/ui/ToggleSwitch';
 import { communityCategoryLabel } from '@features/crew/data/categories';
@@ -242,11 +243,14 @@ export default function CommunityDetailsScreen() {
           </TouchableOpacity>
           <AppText
             weight="semiBold"
-            style={[styles.headerTitle, { color: colors.text, textAlign: align }]}
+            style={[styles.headerTitle, { color: colors.text, textAlign: 'center' }]}
             numberOfLines={1}
           >
             {t('community_details.header')}
           </AppText>
+          {/* Balances the back button, so the title centres on the screen rather
+              than in the space beside it. */}
+          <View style={styles.headerBack} />
         </View>
 
         {/* Identity card — photo, name, and under the name: the owner's manage
@@ -355,6 +359,10 @@ export default function CommunityDetailsScreen() {
             </>
           )}
         </View>
+
+        {/* Media — every photo and video sent in any of the community's channels,
+            as on project details. Hidden when there is none. */}
+        <ChatMediaSection chatId={chatId} community titleColor={colors.text} />
 
         {/* Notifications */}
         <View style={styles.settingCard}>

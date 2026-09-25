@@ -30,6 +30,10 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, back: mockBack, canGoBack: () => mockCanGoBack }),
 }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
+const mockMediaProps: Record<string, unknown>[] = [];
+jest.mock('@features/chat/components/ChatMediaSection', () => ({
+  ChatMediaSection: (props: Record<string, unknown>) => { mockMediaProps.push(props); return null; },
+}));
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -205,7 +209,7 @@ describe('bio', () => {
 });
 
 describe('header', () => {
-  it.each(['he', 'en'] as const)('in %s back is on the left, pointing left', async (lang) => {
+  it.each(['he', 'en'] as const)('in %s back is on the left, pointing left, and the title is centred', async (lang) => {
     mockLanguage = lang;
     const r = await renderScreen();
     const dict = lang === 'he' ? he : en;
@@ -213,7 +217,7 @@ describe('header', () => {
     expect(r.UNSAFE_queryAllByType(ChevronLeft)).toHaveLength(1);
     expect(r.UNSAFE_queryAllByType(ChevronRight)).toHaveLength(0);
     const title = flat(r.getByText(dict.community_details.header));
-    expect(title.textAlign).toBe(lang === 'he' ? 'right' : 'left');
+    expect(title.textAlign).toBe('center');
     expect(title.fontSize).toBeGreaterThanOrEqual(19);
     expect(title.color).toBe('#0f0f1f'); // theme `text`, not the faint #8890b0
     expect(title.textTransform).toBeUndefined();
@@ -237,5 +241,16 @@ describe('back', () => {
     // The mocked viewer is in pro mode, so the room is the pro one.
     expect(mockReplace).toHaveBeenCalledWith('/(professional)/chat/c1');
     expect(mockPush).not.toHaveBeenCalled();
+  });
+});
+
+describe('media', () => {
+  beforeEach(() => { mockMediaProps.length = 0; });
+
+  it('shows the community\'s media card, reading its channels', async () => {
+    await renderScreen();
+    expect(mockMediaProps.length).toBeGreaterThan(0);
+    // Black like the page's other card titles; project details keeps its blue.
+    expect(mockMediaProps[mockMediaProps.length - 1]).toEqual({ chatId: 'c1', community: true, titleColor: '#0f0f1f' });
   });
 });

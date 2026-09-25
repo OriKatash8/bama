@@ -21,6 +21,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn() }),
 }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
+jest.mock('@features/chat/components/ChatMediaSection', () => ({ ChatMediaSection: () => null }));
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
 }));

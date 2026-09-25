@@ -8,6 +8,7 @@ import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import type { MediaAsset } from '@core/types/media';
 import { useChatMedia } from '../hooks/useChatMedia';
+import { useCommunityMedia } from '../hooks/useCommunityMedia';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -41,16 +42,27 @@ function Thumb({ asset, size, testID }: { asset: MediaAsset; size: number; testI
 }
 
 /**
- * WhatsApp-style media for a project's chat: a one-line card with the title and the
- * count. The items themselves only appear in the pop-up grid it opens, where any item
+ * WhatsApp-style media for a project's chat, or a community (`community`): a
+ * one-line card with the title and the count. The items themselves only appear in the pop-up grid it opens, where any item
  * opens the full-screen viewer (swipe, pinch-zoom, video playback). Renders nothing when
  * there's no chat or no media.
+ *
+ * A community's messages live in its channels, not in the chat itself, so it reads
+ * them through useCommunityMedia. Both hooks are always called (hooks cannot be
+ * conditional); the one not in use gets no chat id and listens to nothing.
  */
-export function ChatMediaSection({ chatId }: { chatId: string | undefined }) {
+export function ChatMediaSection({ chatId, community = false, titleColor }: {
+  chatId: string | undefined;
+  community?: boolean;
+  /** The card title's colour. Project details keeps the default blue. */
+  titleColor?: string;
+}) {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const media = useChatMedia(chatId);
+  const chatMedia = useChatMedia(community ? undefined : chatId);
+  const communityMedia = useCommunityMedia(community ? chatId : undefined);
+  const media = community ? communityMedia : chatMedia;
   const { width } = useWindowDimensions();
 
   const [gridOpen, setGridOpen] = useState(false);
@@ -74,7 +86,7 @@ export function ChatMediaSection({ chatId }: { chatId: string | undefined }) {
           accessibilityRole="button"
           accessibilityLabel={`${t('project_details.media')} ${media.length}`}
         >
-          <AppText weight="semiBold" style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
+          <AppText weight="semiBold" style={[styles.title, { textAlign: rtl ? 'right' : 'left' }, titleColor ? { color: titleColor } : null]}>
             {t('project_details.media')}
           </AppText>
           <AppText weight="regular" style={styles.count}>{String(media.length)}</AppText>

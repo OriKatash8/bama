@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ChatMediaSection } from '../ChatMediaSection';
 import { useChatMedia } from '../../hooks/useChatMedia';
+import { useCommunityMedia } from '../../hooks/useCommunityMedia';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -14,6 +15,7 @@ import he from '@core/i18n/translations/he.json';
 
 const mockViewer = jest.fn();
 jest.mock('../../hooks/useChatMedia', () => ({ useChatMedia: jest.fn() }));
+jest.mock('../../hooks/useCommunityMedia', () => ({ useCommunityMedia: jest.fn(() => []) }));
 jest.mock('@features/profile/components/PortfolioViewer', () => ({
   PortfolioViewer: (props: Record<string, unknown>) => { mockViewer(props); return null; },
 }));
@@ -100,4 +102,34 @@ it('pop-up title: centred across the header line, a little lower than the old 52
   expect(title).toEqual(expect.objectContaining({ position: 'absolute', left: 0, right: 0, textAlign: 'center' }));
   const screen = StyleSheet.flatten(r.getByTestId('media-grid').props.style);
   expect(screen.paddingTop).toBeGreaterThan(52);
+});
+
+describe('a community', () => {
+  const mockUseCommunityMedia = useCommunityMedia as jest.MockedFunction<typeof useCommunityMedia>;
+
+  it('reads its channels, not the chat\'s own messages', () => {
+    mockUseChatMedia.mockReturnValue([]);
+    mockUseCommunityMedia.mockReturnValue([item(1), item(2, 'video')]);
+
+    const r = render(<ChatMediaSection chatId="c1" community />);
+
+    expect(mockUseCommunityMedia).toHaveBeenLastCalledWith('c1');
+    expect(mockUseChatMedia).toHaveBeenLastCalledWith(undefined);
+    expect(r.getByTestId('media-header')).toBeTruthy();
+    expect(r.getByText('2')).toBeTruthy();
+  });
+
+  it('takes a title colour; without one the title keeps its blue', () => {
+    mockUseChatMedia.mockReturnValue([item(1)]);
+    const title = (r: ReturnType<typeof render>) => StyleSheet.flatten(r.getByText(en.project_details.media).props.style);
+    expect(title(render(<ChatMediaSection chatId="c1" />)).color).toBe('#004aad');
+    expect(title(render(<ChatMediaSection chatId="c1" titleColor="#0f0f1f" />)).color).toBe('#0f0f1f');
+  });
+
+  it('a project chat does not listen to channels', () => {
+    mockUseChatMedia.mockReturnValue([item(1)]);
+    render(<ChatMediaSection chatId="c1" />);
+    expect(mockUseCommunityMedia).toHaveBeenLastCalledWith(undefined);
+    expect(mockUseChatMedia).toHaveBeenLastCalledWith('c1');
+  });
 });
