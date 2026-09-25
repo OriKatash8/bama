@@ -85,7 +85,8 @@ it('owner: "Dashboard" replaces the category under the name, and there is no Man
 it('owner: Dashboard opens the community dashboard', async () => {
   const r = await renderAs('owner-1');
   fireEvent.press(r.getByRole('button', { name: he.community_admin.open_dashboard }));
-  expect(mockPush).toHaveBeenCalledWith('/(client)/chat/community-admin?chatId=c1');
+  // The mocked viewer is in pro mode, so the dashboard opens in the pro stack.
+  expect(mockPush).toHaveBeenCalledWith('/(professional)/chat/community-admin?chatId=c1');
 });
 
 it('member: sees the category and no dashboard button', async () => {

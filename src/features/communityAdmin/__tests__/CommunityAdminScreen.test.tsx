@@ -41,8 +41,8 @@ jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
 }));
 jest.mock('@core/stores/authStore', () => ({
-  useAuthStore: (s: (x: { user: { id: string; displayName: string } }) => unknown) =>
-    s({ user: { id: mockUid, displayName: 'Olive Owner' } }),
+  useAuthStore: (s: (x: { user: { id: string; displayName: string }; activeMode: string }) => unknown) =>
+    s({ user: { id: mockUid, displayName: 'Olive Owner' }, activeMode: 'client' }),
 }));
 jest.mock('@features/chat/services/communityMembership', () => ({
   approveJoinRequest: jest.fn(() => Promise.resolve(true)),

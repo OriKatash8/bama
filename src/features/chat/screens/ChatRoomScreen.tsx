@@ -41,6 +41,7 @@ import { MentionAutocomplete } from '../components/MentionAutocomplete';
 import { EVERYONE_TOKENS, useMentionAutocomplete } from '../hooks/useMentionAutocomplete';
 import { splitMentionRuns, type MentionTarget } from '../utils/mentions';
 import { usePendingMentions } from '../hooks/usePendingMentions';
+import { chatGroupOf } from '../utils/chatGroup';
 
 const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
 const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
@@ -569,6 +570,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const router = useRouter();
   const language = useSettingsStore((s) => s.language);
   const activeMode = useAuthStore((s) => s.activeMode);
+  /** The viewer's own stack: details pushed into the other one could not come back here. */
+  const chatGroup = chatGroupOf(activeMode);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const currentUserId = auth.currentUser?.uid ?? '';
@@ -1462,7 +1465,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           ) : chatType === 'community' ? (
             <TouchableOpacity
               style={styles.headerNameTouchable}
-              onPress={() => router.push(`/(client)/chat/community-details?chatId=${chatId}`)}
+              onPress={() => router.push(`/${chatGroup}/chat/community-details?chatId=${chatId}`)}
               activeOpacity={0.8}
             >
               <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>

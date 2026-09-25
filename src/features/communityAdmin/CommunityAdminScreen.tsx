@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } 
 import { Redirect, Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@core/stores/authStore';
+import { chatGroupOf } from '@features/chat/utils/chatGroup';
 import { confirmDialog } from '@utils/confirmDialog';
 import {
   approveAllJoinRequests,
@@ -27,7 +28,8 @@ import { StatTiles } from './components/StatTiles';
 import { MemberFlowChart } from './components/MemberFlowChart';
 import { MarketChart } from './components/MarketChart';
 
-const detailsHref = (chatId: string) => `/(client)/chat/community-details?chatId=${chatId}`;
+/** In the viewer's own stack, or back from details could not return here. */
+const detailsHref = (group: string, chatId: string) => `/${group}/chat/community-details?chatId=${chatId}`;
 
 /**
  * The community owner's dashboard. Owner only: anyone else is sent back to
@@ -41,6 +43,7 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   const { width } = useWindowDimensions();
   const uid = useAuthStore((s) => s.user?.id);
   const myName = useAuthStore((s) => s.user?.displayName) ?? '';
+  const chatGroup = chatGroupOf(useAuthStore((s) => s.activeMode));
   const { community, loading } = useCommunity(chatId);
   const isOwner = !!community && !!uid && community.ownerId === uid;
 
@@ -85,7 +88,7 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
       </View>
     );
   }
-  if (!isOwner) return <Redirect href={detailsHref(chatId) as never} />;
+  if (!isOwner) return <Redirect href={detailsHref(chatGroup, chatId) as never} />;
 
   const pendingNotLeaving = req.rows.filter((r) => !r.leaving).length;
 
@@ -170,7 +173,7 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
           <AdminHeader
             communityName={community.name}
             ownerName={myName}
-            onBack={() => (router.canGoBack() ? router.back() : router.replace(detailsHref(chatId) as never))}
+            onBack={() => (router.canGoBack() ? router.back() : router.replace(detailsHref(chatGroup, chatId) as never))}
           />
         </View>
         <View style={styles.content}>

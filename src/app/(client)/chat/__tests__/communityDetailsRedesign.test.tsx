@@ -234,7 +234,8 @@ describe('back', () => {
     mockCanGoBack = false;
     const r = await renderScreen();
     fireEvent.press(r.getByTestId('details-back'));
-    expect(mockReplace).toHaveBeenCalledWith('/(client)/chat/c1');
+    // The mocked viewer is in pro mode, so the room is the pro one.
+    expect(mockReplace).toHaveBeenCalledWith('/(professional)/chat/c1');
     expect(mockPush).not.toHaveBeenCalled();
   });
 });

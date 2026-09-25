@@ -21,6 +21,7 @@ import { auth } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { chatGroupOf } from '@features/chat/utils/chatGroup';
 import { AppText } from '@components/ui/AppText';
 import { ToggleSwitch } from '@components/ui/ToggleSwitch';
 import { communityCategoryLabel } from '@features/crew/data/categories';
@@ -67,6 +68,7 @@ export default function CommunityDetailsScreen() {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const activeMode = useAuthStore((s) => s.activeMode);
+  const chatGroup = chatGroupOf(activeMode);
   const rtl = language === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   const t = makeT(rtl ? he : en);
@@ -145,7 +147,7 @@ export default function CommunityDetailsScreen() {
   }, [currentUserId, chatId]);
 
   const backHref =
-    `/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats?tab=communities`;
+    `/${chatGroup}/(tabs)/chats?tab=communities`;
 
   if (isLoading) {
     return (
@@ -218,15 +220,17 @@ export default function CommunityDetailsScreen() {
           testID="details-header"
           style={[styles.header, { flexDirection: 'row', marginHorizontal: -16, marginTop: -16 }]}
         >
-          {/* Pops to the chat room underneath. It used to PUSH a second copy of
-              the room, so an edge-swipe out of that copy landed back here. A page
-              opened cold, with nothing underneath, replaces itself with the room. */}
+          {/* Pops to the chat room underneath — which is there because the room
+              opens this page in the viewer's own stack (chatGroupOf). It used to
+              PUSH a second copy of the room, so an edge-swipe out of that copy
+              landed back here. Opened cold, with nothing underneath, the page
+              replaces itself with the room. */}
           <TouchableOpacity
             testID="details-back"
             onPress={() =>
               router.canGoBack()
                 ? router.back()
-                : router.replace((chatId ? `/(client)/chat/${chatId}` : backHref) as never)
+                : router.replace((chatId ? `/${chatGroup}/chat/${chatId}` : backHref) as never)
             }
             style={styles.headerBack}
             activeOpacity={0.7}
@@ -255,7 +259,7 @@ export default function CommunityDetailsScreen() {
           {isOwner ? (
             <TouchableOpacity
               style={[styles.manageBtn, { flexDirection: rowDir, backgroundColor: colors.primary }]}
-              onPress={() => router.push(`/(client)/chat/community-admin?chatId=${chatId}` as never)}
+              onPress={() => router.push(`/${chatGroup}/chat/community-admin?chatId=${chatId}` as never)}
               activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel={t('community_admin.open_dashboard')}
