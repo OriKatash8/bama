@@ -15,6 +15,14 @@ export function reanimatedMock() {
     useSharedValue: (v: number) => ({ value: v }),
     useAnimatedStyle: (fn: () => unknown) => fn(),
     withSpring: (v: number) => v,
+    // Timing helpers jump to their end value, like withSpring above.
+    withTiming: (v: number) => v,
+    withDelay: (_ms: number, v: number) => v,
+    withRepeat: (v: number) => v,
+    withSequence: (...vs: number[]) => vs[vs.length - 1],
+    cancelAnimation: () => {},
+    Easing: { bezier: () => (t: number) => t, out: (f: unknown) => f, cubic: (t: number) => t, linear: (t: number) => t },
+    useAnimatedProps: (fn: () => unknown) => fn(),
     runOnJS: (fn: unknown) => fn,
     useReducedMotion: () => false,
   };

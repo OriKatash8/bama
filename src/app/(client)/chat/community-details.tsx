@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LogOut, Settings, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Settings, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -252,18 +252,33 @@ export default function CommunityDetailsScreen() {
             {community.name}
           </AppText>
           {isOwner ? (
-            <TouchableOpacity
-              style={[styles.manageBtn, { flexDirection: rowDir, backgroundColor: colors.primary }]}
-              onPress={() => setManageOpen(true)}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('community_details.manage')}
-            >
-              <Settings size={15} color="#ffffff" strokeWidth={2.2} />
-              <AppText weight="semiBold" style={styles.manageBtnText}>
-                {t('community_details.manage')}
-              </AppText>
-            </TouchableOpacity>
+            <View style={[styles.ownerActions, { flexDirection: rowDir }]}>
+              <TouchableOpacity
+                style={[styles.manageBtn, { flexDirection: rowDir, backgroundColor: colors.primary }]}
+                onPress={() => setManageOpen(true)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('community_details.manage')}
+              >
+                <Settings size={15} color="#ffffff" strokeWidth={2.2} />
+                <AppText weight="semiBold" style={styles.manageBtnText}>
+                  {t('community_details.manage')}
+                </AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.manageBtn, styles.dashboardBtn, { flexDirection: rowDir, borderColor: colors.primary }]}
+                onPress={() => router.push(`/(client)/chat/community-admin?chatId=${chatId}` as never)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('community_admin.open_dashboard')}
+                testID="open-community-dashboard"
+              >
+                <LayoutDashboard size={15} color={colors.primary} strokeWidth={2.2} />
+                <AppText weight="semiBold" style={[styles.manageBtnText, { color: colors.primary }]}>
+                  {t('community_admin.open_dashboard')}
+                </AppText>
+              </TouchableOpacity>
+            </View>
           ) : community.category ? (
             <View style={styles.categoryChip}>
               <AppText weight="semiBold" style={styles.categoryChipText}>
@@ -479,6 +494,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   manageBtnText: { fontSize: 14, color: '#ffffff' },
+  ownerActions: { gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
+  // Outlined, so Manage stays the primary action.
+  dashboardBtn: { backgroundColor: '#ffffff', borderWidth: 1.5 },
 
   // ── Bio ─────────────────────────────────────────────────────────────────────
   descriptionCard: {

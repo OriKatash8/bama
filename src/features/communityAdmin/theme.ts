@@ -66,7 +66,7 @@ export const ADMIN_LIGHT: AdminPalette = {
   warnBg: 'rgba(237,161,0,.16)',
   gridLine: 'rgba(16,16,22,.07)',
   priorityRing: 'rgba(237,161,0,.34)',
-  headerBg: 'rgba(241,241,244,.82)',
+  headerBg: 'rgba(241,241,244,.78)',
   toastBg: '#101014',
   toastText: '#F4F4F7',
   shadow: '#101016',
@@ -89,18 +89,36 @@ export const ADMIN_DARK: AdminPalette = {
   series2: '#e66767',
   series3: '#199e70',
   good: '#43c495',
-  goodBg: 'rgba(27,175,122,.13)',
+  goodBg: 'rgba(25,158,112,.18)',
   bad: '#f08080',
-  badBg: 'rgba(227,73,72,.12)',
+  badBg: 'rgba(230,103,103,.16)',
   warn: '#e0b45c',
   warnBg: 'rgba(237,161,0,.16)',
   gridLine: 'rgba(255,255,255,.08)',
   priorityRing: 'rgba(237,161,0,.34)',
-  headerBg: 'rgba(13,13,16,.82)',
+  headerBg: 'rgba(13,13,16,.78)',
   toastBg: '#26262D',
   toastText: '#F4F4F7',
   shadow: '#000000',
 };
+
+/** Heebo for every script on this screen (AppText would switch Latin to Montserrat). */
+export const HEEBO = {
+  regular: 'Heebo-Regular',
+  medium: 'Heebo-Medium',
+  semiBold: 'Heebo-SemiBold',
+  bold: 'Heebo-Bold',
+} as const;
+export type HeeboWeight = keyof typeof HEEBO;
+
+/** Initials avatars: colour picked from the name, so a person keeps theirs. */
+export const AVATAR_COLORS = ['#3f7fd6', '#c9564f', '#2a9d7a', '#8f7bd9', '#d99a2b', '#4f9ac4', '#c26aa0', '#5e8f4a'] as const;
+export const AVATAR_TEXT = '#FFFFFF';
+
+/** The community mark in the header: 145° blue gradient. */
+export const BRAND_GRADIENT = ['#3f8ae8', '#1f5fbe'] as const;
+/** The owner's avatar in the header chip. */
+export const OWNER_GRADIENT = ['#8f7bd9', '#5d47b0'] as const;
 
 export const RADIUS = { card: 20, pill: 999, bar: 4 } as const;
 
@@ -112,10 +130,11 @@ export const SPACE = {
   gutter: 16,
 } as const;
 
-/** Heebo type scale. Weights map onto AppText's `weight` prop. */
+/** Heebo type scale (weights go on AdminText's `weight`). */
 export const TYPE = {
   screenTitle: { fontSize: 30, letterSpacing: -0.75 },
-  cardTitle: { fontSize: 15.5 },
+  cardTitle: { fontSize: 15, letterSpacing: -0.15 },
+  priorityTitle: { fontSize: 16, letterSpacing: -0.15 },
   statValue: { fontSize: 34, letterSpacing: -1.2 },
   statLabel: { fontSize: 11.5, letterSpacing: 0.6, textTransform: 'uppercase' as const },
   rowName: { fontSize: 13.5 },
@@ -142,15 +161,35 @@ export function cardShadow(p: AdminPalette): ViewStyle {
     : { shadowColor: p.shadow, shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } };
 }
 
-/** Card shadow plus the 1px inset amber ring that marks the priority card. */
-export function priorityShadow(p: AdminPalette): ViewStyle {
+/** The selected pill in a segmented control. */
+export function segmentShadow(p: AdminPalette): ViewStyle {
+  if (Platform.OS === 'web') return { boxShadow: '0 1px 3px rgba(0,0,0,.14)' } as ViewStyle;
+  return Platform.OS === 'android'
+    ? { elevation: 1 }
+    : { shadowColor: p.shadow, shadowOpacity: 0.14, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } };
+}
+
+/** The raised shadow: priority card, tooltips, toast. */
+export function liftShadow(p: AdminPalette): ViewStyle {
   if (Platform.OS === 'web') {
-    return {
-      boxShadow: `inset 0 0 0 1px ${p.priorityRing}, 0 1px 2px rgba(16,16,22,.05), 0 8px 24px -12px rgba(16,16,22,.16)`,
-    } as ViewStyle;
+    return { boxShadow: '0 2px 6px rgba(16,16,22,.07), 0 18px 40px -18px rgba(16,16,22,.28)' } as ViewStyle;
   }
-  // Native has no inset shadow; a 1px border draws the same ring.
-  return { ...cardShadow(p), borderWidth: 1, borderColor: p.priorityRing };
+  return Platform.OS === 'android'
+    ? { elevation: 6 }
+    : { shadowColor: p.shadow, shadowOpacity: 0.16, shadowRadius: 20, shadowOffset: { width: 0, height: 10 } };
+}
+
+/**
+ * The 1px amber ring that marks something needing attention (the requests card,
+ * the requests tile while count > 0), over the given base shadow.
+ */
+export function attentionRing(p: AdminPalette, base: ViewStyle): ViewStyle {
+  if (Platform.OS === 'web') {
+    const under = (base as { boxShadow?: string }).boxShadow;
+    return { boxShadow: `inset 0 0 0 1px ${p.priorityRing}${under ? `, ${under}` : ''}` } as ViewStyle;
+  }
+  // Native has no inset shadow; Card draws the ring as its inner border.
+  return base;
 }
 
 /** Motion timings from the spec. */
