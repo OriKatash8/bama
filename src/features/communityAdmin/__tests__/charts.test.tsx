@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { act, fireEvent, render, within } from '@testing-library/react-native';
 import en from '@core/i18n/translations/en.json';
 import { MemberFlowChart } from '../components/MemberFlowChart';
@@ -8,6 +8,7 @@ import { StatTiles } from '../components/StatTiles';
 import { tileStats } from '../stats';
 import { dayStarts } from '../aggregate';
 import { FLOW_INSETS } from '../chartGeometry';
+import { Ltr } from '../components/ChartParts';
 
 /**
  * Tiles and charts: nothing drawn before a width, empty data drawn as empty
@@ -115,7 +116,7 @@ describe('MemberFlowChart', () => {
     mockLang = 'he';
     const r = render(flow([1, 0, 2, 0, 0, 1, 3], [0, 1, 0, 0, 0, 0, 1]));
     layout(r, 'flow-plot');
-    expect(StyleSheet.flatten(r.getByTestId('chart-ltr').props.style).direction).toBe('ltr');
+    expect(StyleSheet.flatten(r.getByTestId('chart-ltr').props.style)?.direction).toBe('ltr');
     expect(within(r.getByTestId('chart-ltr')).getByTestId('flow-plot')).toBeTruthy();
     for (const label of r.getAllByTestId('y-label')) {
       const s = StyleSheet.flatten(label.props.style);
@@ -128,6 +129,24 @@ describe('MemberFlowChart', () => {
     expect(within(r.getByTestId('chart-ltr')).queryByTestId('chart-legend')).toBeNull();
     // Hebrew dates read d.m
     expect(r.getAllByTestId('x-label').map((n) => n.props.children)).toContain('25.9');
+  });
+});
+
+describe('Ltr on web', () => {
+  // The native Yoga style would be rejected (and deleted) by react-native-web's
+  // StyleSheet; on web the wrapper must use the dir attribute instead.
+  it('uses dir="ltr" and no direction style', () => {
+    const { Platform } = jest.requireActual('react-native');
+    const original = Platform.OS;
+    Platform.OS = 'web';
+    try {
+      const r = render(<Ltr><View /></Ltr>);
+      const node = r.getByTestId('chart-ltr');
+      expect(node.props.dir).toBe('ltr');
+      expect(StyleSheet.flatten(node.props.style)?.direction).toBeUndefined();
+    } finally {
+      Platform.OS = original;
+    }
   });
 });
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, type ViewProps } from 'react-native';
 import { useAdminPalette, useAdminT } from '../i18n';
 import { RADIUS, SPACE, TYPE, liftShadow } from '../theme';
 import { gridValues, tickLabel, yAt, type Insets } from '../chartGeometry';
@@ -61,10 +61,20 @@ export function Legend({ items }: { items: { color: string; label: string }[] })
 /**
  * Keeps a chart left-to-right in both languages: time runs left to right and
  * the y axis stays on the left. Only the text around the chart mirrors.
+ *
+ * Today nothing would mirror it anyway (the app never enables RTL layout, the
+ * SVG uses absolute x and the labels absolute `left`), so this is a guard for
+ * the day RTL layout is switched on:
+ * - web: the `dir` attribute. react-native-web's View forwards it and scopes
+ *   direction for everything inside. A `direction` STYLE is not an option
+ *   there: RNW's StyleSheet rejects it ("Did you mean writingDirection?") and
+ *   deletes it.
+ * - native: Yoga's `direction` layout style, which is valid there.
  */
 export function Ltr({ children }: { children: ReactNode }) {
+  const ltr: ViewProps = Platform.OS === 'web' ? ({ dir: 'ltr' } as ViewProps) : { style: { direction: 'ltr' } };
   return (
-    <View style={styles.ltr} testID="chart-ltr">
+    <View {...ltr} testID="chart-ltr">
       {children}
     </View>
   );
@@ -180,7 +190,6 @@ const styles = StyleSheet.create({
   legend: { gap: 14, flexWrap: 'wrap', alignItems: 'center', paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
   legendItem: { alignItems: 'center', gap: 6 },
   legendText: { fontSize: 12.5 },
-  ltr: { direction: 'ltr' },
   yLabel: { position: 'absolute', left: 0, textAlign: 'right' },
   xLabel: { position: 'absolute', width: 64, textAlign: 'center' },
   emptyPlot: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
