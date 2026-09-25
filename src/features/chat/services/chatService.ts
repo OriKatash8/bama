@@ -20,7 +20,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../../core/firebase/config';
 import type { Chat, Message } from '../types';
-import { logOwnerJoin } from './communityMembership';
+import { logOwnerJoin, withEvents } from './communityMembership';
 
 function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
   const data = doc.data();
@@ -192,22 +192,25 @@ export async function createCommunityChat(
   photoURL?: string,
   category?: string,
 ): Promise<string> {
-  // One batch with the owner's 'join', so the dashboard's member log starts at creation.
+  // One batch with the owner's 'join', so the dashboard's member log starts at
+  // creation — best-effort, like every membership event (see withEvents).
   const ref = doc(collection(db, 'chats'));
-  const batch = writeBatch(db);
-  batch.set(ref, {
-    type: 'community' as const,
-    name,
-    description,
-    ownerId,
-    members: [ownerId],
-    lastMessage: null,
-    createdAt: serverTimestamp(),
-    ...(photoURL ? { photoURL } : {}),
-    ...(category ? { category } : {}),
+  await withEvents('create community', async (events) => {
+    const batch = writeBatch(db);
+    batch.set(ref, {
+      type: 'community' as const,
+      name,
+      description,
+      ownerId,
+      members: [ownerId],
+      lastMessage: null,
+      createdAt: serverTimestamp(),
+      ...(photoURL ? { photoURL } : {}),
+      ...(category ? { category } : {}),
+    });
+    if (events) logOwnerJoin(batch, ref.id, ownerId);
+    await batch.commit();
   });
-  logOwnerJoin(batch, ref.id, ownerId);
-  await batch.commit();
   return ref.id;
 }
 

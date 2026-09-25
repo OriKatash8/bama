@@ -8,12 +8,9 @@ type Op = { kind: 'set' | 'update'; path: string; data: Record<string, unknown> 
 
 const mockOps: Op[] = [];
 let mockCommits = 0;
+/** Errors the next commits throw, in order (a failed commit writes nothing). */
+let mockCommitErrors: unknown[] = [];
 let mockTxDocs: Record<string, Record<string, unknown> | undefined> = {};
-
-const mockWriter = () => ({
-  set: (ref: { path: string }, data: Record<string, unknown>) => { mockOps.push({ kind: 'set', path: ref.path, data }); },
-  update: (ref: { path: string }, data: Record<string, unknown>) => { mockOps.push({ kind: 'update', path: ref.path, data }); },
-});
 
 let mockAutoId = 0;
 jest.mock('firebase/firestore', () => ({
@@ -27,15 +24,33 @@ jest.mock('firebase/firestore', () => ({
   arrayRemove: (...v: string[]) => ({ op: 'remove', v }),
   serverTimestamp: () => 'SERVER_TS',
   updateDoc: async (ref: { path: string }, data: Record<string, unknown>) => { mockOps.push({ kind: 'update', path: ref.path, data }); },
-  writeBatch: () => ({ ...mockWriter(), commit: async () => { mockCommits++; } }),
-  runTransaction: async (_db: unknown, fn: (tx: unknown) => unknown) =>
-    fn({
-      ...mockWriter(),
+  writeBatch: () => {
+    const staged: Op[] = [];
+    return {
+      set: (ref: { path: string }, data: Record<string, unknown>) => { staged.push({ kind: 'set', path: ref.path, data }); },
+      update: (ref: { path: string }, data: Record<string, unknown>) => { staged.push({ kind: 'update', path: ref.path, data }); },
+      commit: async () => {
+        mockCommits++;
+        if (mockCommitErrors.length) throw mockCommitErrors.shift();
+        mockOps.push(...staged);
+      },
+    };
+  },
+  runTransaction: async (_db: unknown, fn: (tx: unknown) => unknown) => {
+    const staged: Op[] = [];
+    const result = await fn({
+      set: (ref: { path: string }, data: Record<string, unknown>) => { staged.push({ kind: 'set', path: ref.path, data }); },
+      update: (ref: { path: string }, data: Record<string, unknown>) => { staged.push({ kind: 'update', path: ref.path, data }); },
       get: async (ref: { path: string }) => ({
         exists: () => mockTxDocs[ref.path] !== undefined,
         data: () => mockTxDocs[ref.path],
       }),
-    }),
+    });
+    mockCommits++;
+    if (mockCommitErrors.length) throw mockCommitErrors.shift();
+    mockOps.push(...staged);
+    return result;
+  },
 }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 
@@ -53,6 +68,7 @@ const memberWrites = () => mockOps.filter((o) => o.path === 'chats/c1' && 'membe
 beforeEach(() => {
   mockOps.length = 0;
   mockCommits = 0;
+  mockCommitErrors = [];
   mockTxDocs = {};
 });
 
@@ -127,4 +143,59 @@ it('leaveCommunity removes self and logs a leave in one batch', async () => {
   expect(memberWrites()[0].data.members).toEqual({ op: 'remove', v: ['u1'] });
   expect(events().map((e) => e.data.type)).toEqual(['leave']);
   expect(mockCommits).toBe(1);
+});
+
+/**
+ * Production can run rules older than the app (the communityEvents rules ship
+ * separately). The membership change must still go through then: the event
+ * is best-effort, the leave/remove/approve is not.
+ */
+describe('when the rules refuse the event', () => {
+  const denied = Object.assign(new Error('Missing or insufficient permissions.'), { code: 'permission-denied' });
+  beforeEach(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
+
+  it('leaving still removes the member, without the event', async () => {
+    mockCommitErrors = [denied];
+    await leaveCommunity('c1', 'u1');
+    expect(mockCommits).toBe(2);
+    expect(memberWrites()[0].data.members).toEqual({ op: 'remove', v: ['u1'] });
+    expect(events()).toHaveLength(0);
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('removing a member still removes them', async () => {
+    mockCommitErrors = [denied];
+    await removeCommunityMember('c1', 'u1', 'owner');
+    expect(memberWrites()[0].data.members).toEqual({ op: 'remove', v: ['u1'] });
+    expect(events()).toHaveLength(0);
+  });
+
+  it('approving still approves and adds the member', async () => {
+    mockCommitErrors = [denied];
+    mockTxDocs = { 'chats/c1/joinRequests/u1': { status: 'pending' }, 'chats/c1': { members: ['owner'] } };
+    await expect(approveJoinRequest('c1', 'u1')).resolves.toBe(true);
+    expect(mockOps.find((o) => o.path === 'chats/c1/joinRequests/u1')?.data.status).toBe('approved');
+    expect(memberWrites()[0].data.members).toEqual({ op: 'union', v: ['u1'] });
+    expect(events()).toHaveLength(0);
+  });
+
+  it('approve all still approves everyone', async () => {
+    mockCommitErrors = [denied];
+    await approveAllJoinRequests('c1', ['u1', 'u2'], ['owner']);
+    expect(memberWrites()[0].data.members).toEqual({ op: 'union', v: ['u1', 'u2'] });
+    expect(events()).toHaveLength(0);
+  });
+
+  it('does not retry any other failure', async () => {
+    mockCommitErrors = [Object.assign(new Error('offline'), { code: 'unavailable' })];
+    await expect(leaveCommunity('c1', 'u1')).rejects.toThrow('offline');
+    expect(mockCommits).toBe(1);
+    expect(mockOps).toHaveLength(0);
+  });
+
+  it('surfaces a refusal of the membership change itself', async () => {
+    mockCommitErrors = [denied, denied];
+    await expect(leaveCommunity('c1', 'u1')).rejects.toMatchObject({ code: 'permission-denied' });
+    expect(mockCommits).toBe(2);
+  });
 });
