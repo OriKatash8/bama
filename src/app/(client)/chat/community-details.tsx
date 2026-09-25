@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Settings, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -25,7 +25,6 @@ import { AppText } from '@components/ui/AppText';
 import { ToggleSwitch } from '@components/ui/ToggleSwitch';
 import { communityCategoryLabel } from '@features/crew/data/categories';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
-import { CommunityManageModal } from '@features/chat/components/CommunityManageModal';
 import {
   muteChat,
   unmuteChat,
@@ -81,7 +80,6 @@ export default function CommunityDetailsScreen() {
   const [muted, setMuted] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [membersExpanded, setMembersExpanded] = useState(false);
-  const [manageOpen, setManageOpen] = useState(false);
 
   // Live, not a one-shot read: the member list changes when the owner approves a
   // join request while this page is open, and leaving has to be reflected too.
@@ -252,33 +250,19 @@ export default function CommunityDetailsScreen() {
             {community.name}
           </AppText>
           {isOwner ? (
-            <View style={[styles.ownerActions, { flexDirection: rowDir }]}>
-              <TouchableOpacity
-                style={[styles.manageBtn, { flexDirection: rowDir, backgroundColor: colors.primary }]}
-                onPress={() => setManageOpen(true)}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={t('community_details.manage')}
-              >
-                <Settings size={15} color="#ffffff" strokeWidth={2.2} />
-                <AppText weight="semiBold" style={styles.manageBtnText}>
-                  {t('community_details.manage')}
-                </AppText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.manageBtn, styles.dashboardBtn, { flexDirection: rowDir, borderColor: colors.primary }]}
-                onPress={() => router.push(`/(client)/chat/community-admin?chatId=${chatId}` as never)}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={t('community_admin.open_dashboard')}
-                testID="open-community-dashboard"
-              >
-                <LayoutDashboard size={15} color={colors.primary} strokeWidth={2.2} />
-                <AppText weight="semiBold" style={[styles.manageBtnText, { color: colors.primary }]}>
-                  {t('community_admin.open_dashboard')}
-                </AppText>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.manageBtn, { flexDirection: rowDir, backgroundColor: colors.primary }]}
+              onPress={() => router.push(`/(client)/chat/community-admin?chatId=${chatId}` as never)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('community_admin.open_dashboard')}
+              testID="open-community-dashboard"
+            >
+              <LayoutDashboard size={15} color="#ffffff" strokeWidth={2.2} />
+              <AppText weight="semiBold" style={styles.manageBtnText}>
+                {t('community_admin.open_dashboard')}
+              </AppText>
+            </TouchableOpacity>
           ) : community.category ? (
             <View style={styles.categoryChip}>
               <AppText weight="semiBold" style={styles.categoryChipText}>
@@ -413,23 +397,6 @@ export default function CommunityDetailsScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
-
-      {isOwner && chatId && (
-        <CommunityManageModal
-          visible={manageOpen}
-          onClose={() => setManageOpen(false)}
-          chatId={chatId}
-          chatName={community.name ?? ''}
-          ownerId={community.ownerId ?? ''}
-          photoURL={community.photoURL ?? null}
-          members={members}
-          memberNames={Object.fromEntries(
-            Object.entries(memberUsers)
-              .filter(([, u]) => typeof u?.displayName === 'string' && u.displayName)
-              .map(([uid, u]) => [uid, u.displayName as string]),
-          )}
-        />
-      )}
     </LinearGradient>
   );
 }
@@ -494,9 +461,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   manageBtnText: { fontSize: 14, color: '#ffffff' },
-  ownerActions: { gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
-  // Outlined, so Manage stays the primary action.
-  dashboardBtn: { backgroundColor: '#ffffff', borderWidth: 1.5 },
 
   // ── Bio ─────────────────────────────────────────────────────────────────────
   descriptionCard: {
