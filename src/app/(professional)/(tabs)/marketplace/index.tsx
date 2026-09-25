@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
 
   modeDesc: { fontSize: 12.5, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginTop: 10 },
 
-  searchRow: { alignItems: 'center', gap: 8, marginBottom: 8 },
+  searchRow: { alignItems: 'center', gap: 8 },
   searchWrapFlex: { flex: 1 },
   searchWrap: {
     flexDirection: 'row',
@@ -615,6 +615,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: -20,
+    marginTop: -2,
+    marginBottom: 12,
   },
   categoriesScroll: {
     flex: 1,
