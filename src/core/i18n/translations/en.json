@@ -1289,6 +1289,12 @@
     "market_a11y": "Market notices over the last {{weeks}} weeks: {{total}} in total.",
     "week_short": "W{{n}}",
     "week_tip": "Week {{n}}",
-    "notices": "notices"
+    "notices": "notices",
+    "confirm_approve_title": "Approve {{name}}?",
+    "confirm_approve_body": "{{name}} will join the community right away.",
+    "confirm_reject_title": "Reject {{name}}'s request?",
+    "confirm_reject_body": "The request will be closed. They can ask to join again later.",
+    "confirm_all_title": "Approve {{n}} requests?",
+    "confirm_all_body": "All {{n}} will join the community right away."
   }
 }

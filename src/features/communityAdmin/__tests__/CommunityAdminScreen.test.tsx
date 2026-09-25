@@ -11,6 +11,7 @@ import {
   removeCommunityMember,
 } from '@features/chat/services/communityMembership';
 import * as hooks from '../hooks';
+import { confirmDialog } from '@utils/confirmDialog';
 
 /**
  * The owner dashboard (checkpoint 3: header, title, requests, members).
@@ -49,6 +50,7 @@ jest.mock('@features/chat/services/communityMembership', () => ({
   rejectJoinRequest: jest.fn(() => Promise.resolve()),
   removeCommunityMember: jest.fn(() => Promise.resolve()),
 }));
+jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn(() => Promise.resolve(true)) }));
 jest.mock('../hooks', () => ({
   useCommunity: jest.fn(),
   useJoinRequests: jest.fn(),
@@ -173,6 +175,61 @@ describe('join requests', () => {
     expect(halfWidth(render(<CommunityAdminScreen chatId="c1" />))).toBe('100%');
     mockWidth = 1000;
     expect(halfWidth(render(<CommunityAdminScreen chatId="c1" />))).toBe('50%');
+  });
+});
+
+describe('join requests ask first', () => {
+  const confirm = confirmDialog as jest.Mock;
+
+  it('approve asks, naming the person, then approves', async () => {
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    await act(async () => { fireEvent.press(r.getByTestId('approve-r1')); });
+    expect(confirm).toHaveBeenCalledWith(
+      E.confirm_approve_title.replace('{{name}}', 'Noa Bareket'),
+      E.confirm_approve_body.replace('{{name}}', 'Noa Bareket'),
+      { confirm: E.approve, cancel: E.cancel, destructive: false },
+    );
+    expect(approveJoinRequest).toHaveBeenCalledWith('c1', 'r1');
+  });
+
+  it('cancelling approve writes nothing and leaves the row as it was', async () => {
+    confirm.mockResolvedValueOnce(false);
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    await act(async () => { fireEvent.press(r.getByTestId('approve-r1')); });
+    expect(approveJoinRequest).not.toHaveBeenCalled();
+    expect(r.getByTestId('approve-r1').props.accessibilityState.disabled).toBe(false);
+    expect(within(r.getByTestId('requests-count')).getByText('2')).toBeTruthy();
+  });
+
+  it('reject asks as a destructive choice; cancelling writes nothing', async () => {
+    confirm.mockResolvedValueOnce(false);
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    await act(async () => { fireEvent.press(r.getByTestId('reject-r2')); });
+    expect(confirm).toHaveBeenCalledWith(
+      E.confirm_reject_title.replace('{{name}}', 'Itay Segev'),
+      E.confirm_reject_body,
+      { confirm: E.reject, cancel: E.cancel, destructive: true },
+    );
+    expect(rejectJoinRequest).not.toHaveBeenCalled();
+  });
+
+  it('approve all asks with the count; cancelling writes nothing', async () => {
+    confirm.mockResolvedValueOnce(false);
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    await act(async () => { fireEvent.press(r.getByTestId('approve-all')); });
+    expect(confirm).toHaveBeenCalledWith(
+      E.confirm_all_title.replace('{{n}}', '2'),
+      E.confirm_all_body.replace('{{n}}', '2'),
+      { confirm: E.approve_all, cancel: E.cancel, destructive: false },
+    );
+    expect(approveAllJoinRequests).not.toHaveBeenCalled();
+  });
+
+  it('asks in Hebrew in Hebrew', async () => {
+    mockLang = 'he';
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    await act(async () => { fireEvent.press(r.getByTestId('approve-r1')); });
+    expect(confirm.mock.calls[0][0]).toBe(H.confirm_approve_title.replace('{{name}}', 'Noa Bareket'));
   });
 });
 

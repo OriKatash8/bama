@@ -1289,6 +1289,12 @@
     "market_a11y": "מודעות שוק ב־{{weeks}} השבועות האחרונים: {{total}} בסך הכול.",
     "week_short": "W{{n}}",
     "week_tip": "שבוע {{n}}",
-    "notices": "מודעות"
+    "notices": "מודעות",
+    "confirm_approve_title": "לאשר את {{name}}?",
+    "confirm_approve_body": "{{name}} יצטרף לקהילה מיד.",
+    "confirm_reject_title": "לדחות את הבקשה של {{name}}?",
+    "confirm_reject_body": "הבקשה תיסגר. אפשר יהיה לבקש להצטרף שוב.",
+    "confirm_all_title": "לאשר {{n}} בקשות?",
+    "confirm_all_body": "כל {{n}} המבקשים יצטרפו לקהילה מיד."
   }
 }

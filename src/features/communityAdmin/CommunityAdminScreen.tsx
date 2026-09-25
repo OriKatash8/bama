@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } 
 import { Redirect, Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@core/stores/authStore';
+import { confirmDialog } from '@utils/confirmDialog';
 import {
   approveAllJoinRequests,
   approveJoinRequest,
@@ -88,7 +89,16 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
 
   const pendingNotLeaving = req.rows.filter((r) => !r.leaving).length;
 
+  // Every decision on a request asks first (confirmDialog: window.confirm on
+  // web, where Alert.alert does nothing). The row only starts leaving once the
+  // owner says yes; cancelling leaves everything as it was.
   async function approve(r: RequestRowData) {
+    const sure = await confirmDialog(t('confirm_approve_title', { name: r.name }), t('confirm_approve_body', { name: r.name }), {
+      confirm: t('approve'),
+      cancel: t('cancel'),
+      destructive: false,
+    });
+    if (!sure) return;
     req.start([r.userId]);
     try {
       const ok = await approveJoinRequest(chatId, r.userId);
@@ -101,6 +111,12 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   }
 
   async function reject(r: RequestRowData) {
+    const sure = await confirmDialog(t('confirm_reject_title', { name: r.name }), t('confirm_reject_body'), {
+      confirm: t('reject'),
+      cancel: t('cancel'),
+      destructive: true,
+    });
+    if (!sure) return;
     req.start([r.userId]);
     try {
       await rejectJoinRequest(chatId, r.userId);
@@ -115,6 +131,12 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   async function approveAll() {
     const ids = req.rows.filter((r) => !r.leaving).map((r) => r.item.userId);
     if (ids.length === 0 || !community) return;
+    const sure = await confirmDialog(t('confirm_all_title', { n: ids.length }), t('confirm_all_body', { n: ids.length }), {
+      confirm: t('approve_all'),
+      cancel: t('cancel'),
+      destructive: false,
+    });
+    if (!sure) return;
     req.start(ids);
     try {
       await approveAllJoinRequests(chatId, ids, community.members);
