@@ -214,8 +214,7 @@ export default function ProfessionalProfileScreen() {
             sent straight here and held until they add a role, and Skills is
             where a role is added — but it is the tab that matters on a return
             visit too, so it is not conditional on the profile being
-            incomplete. Browse profiles, which show someone else's work, still
-            open on Equipment. Read once, at mount. */}
+            incomplete. Browse profiles open on Skills too. Read once, at mount. */}
         <ContentTabs
           equipment={equipment}
           reviews={reviews}

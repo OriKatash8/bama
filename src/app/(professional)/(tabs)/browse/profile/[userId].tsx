@@ -246,6 +246,7 @@ export default function PublicProfileScreen() {
           reviews={reviews}
           roleSkills={roleSkills}
           isEditing={false}
+          initialSection="skills"
         />
 
         {/* ── Portfolio ── */}
