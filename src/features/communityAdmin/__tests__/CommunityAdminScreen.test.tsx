@@ -103,6 +103,15 @@ it('puts the join requests first, with their count', () => {
   expect(r.getByText(E.members_count.replace('{{n}}', '3'))).toBeTruthy();
 });
 
+it('the header is part of the page: it scrolls with it and is not pinned', () => {
+  const r = render(<CommunityAdminScreen chatId="c1" />);
+  const scroll = r.UNSAFE_root.findAll((n) => n.props.contentContainerStyle !== undefined && n.props.onScroll !== undefined)[0]
+    ?? r.UNSAFE_root.findAll((n) => n.props.contentContainerStyle !== undefined)[0];
+  expect(scroll.props.stickyHeaderIndices).toBeUndefined();
+  // Inside the scroll content, not beside it.
+  expect(within(scroll).getByTestId('admin-header')).toBeTruthy();
+});
+
 it('sends a non-owner back to the community page and starts no owner listener', () => {
   mockUid = 'm1';
   const r = render(<CommunityAdminScreen chatId="c1" />);

@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { Platform, Pressable, StyleSheet, View, useColorScheme, type ViewStyle } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
@@ -19,10 +18,9 @@ import { AdminText, initialsOf } from './primitives';
 const CONTENT_MAX = 1180;
 
 /**
- * Sticky translucent bar: back, community mark + name, owner chip on the far
- * side. bg at 78% under a 20px blur — CSS backdrop-filter on web, BlurView on
- * iOS; Android has no blur target wired (see GlassTabBarBackground), so it
- * keeps the translucent fill alone.
+ * The page's top bar: back, community mark + name, owner chip on the far side.
+ * It is part of the page and scrolls away with it (not pinned), so it sits on
+ * the page background with no blur — nothing ever passes behind it.
  */
 export function AdminHeader({
   communityName,
@@ -34,16 +32,11 @@ export function AdminHeader({
   onBack: () => void;
 }) {
   const p = useAdminPalette();
-  const scheme = useColorScheme();
   const { t, rtl, rowDir, textAlign } = useAdminT();
   const Back = rtl ? ChevronRight : ChevronLeft;
-  const webBlur = Platform.OS === 'web' ? ({ backdropFilter: 'saturate(180%) blur(20px)' } as ViewStyle) : null;
 
   return (
-    <View style={[styles.bar, { backgroundColor: p.headerBg, borderBottomColor: p.border }, webBlur]}>
-      {Platform.OS === 'ios' && (
-        <BlurView intensity={40} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-      )}
+    <View style={[styles.bar, { backgroundColor: p.bg, borderBottomColor: p.border }]} testID="admin-header">
       <View style={[styles.inner, { flexDirection: rowDir }]}>
         <Pressable onPress={onBack} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('back')} testID="admin-back">
           <Back size={22} color={p.text2} strokeWidth={2.2} />
@@ -169,7 +162,7 @@ export function LiveDot() {
 }
 
 const styles = StyleSheet.create({
-  bar: { borderBottomWidth: 1, paddingVertical: 12, paddingHorizontal: SPACE.gutter, overflow: 'hidden' },
+  bar: { borderBottomWidth: 1, paddingVertical: 12, paddingHorizontal: SPACE.gutter },
   inner: { alignItems: 'center', gap: 12, width: '100%', maxWidth: CONTENT_MAX, alignSelf: 'center' },
   brand: { alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
   mark: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

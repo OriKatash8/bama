@@ -34,8 +34,6 @@ export type AdminPalette = {
   gridLine: string;
   /** The 1px amber ring on the priority (join-requests) card and the requests tile. */
   priorityRing: string;
-  /** Translucent fill behind the sticky header. */
-  headerBg: string;
   /** The dark pill toast reads dark in both schemes. */
   toastBg: string;
   toastText: string;
@@ -66,7 +64,6 @@ export const ADMIN_LIGHT: AdminPalette = {
   warnBg: 'rgba(237,161,0,.16)',
   gridLine: 'rgba(16,16,22,.07)',
   priorityRing: 'rgba(237,161,0,.34)',
-  headerBg: 'rgba(241,241,244,.78)',
   toastBg: '#101014',
   toastText: '#F4F4F7',
   shadow: '#101016',
@@ -96,7 +93,6 @@ export const ADMIN_DARK: AdminPalette = {
   warnBg: 'rgba(237,161,0,.16)',
   gridLine: 'rgba(255,255,255,.08)',
   priorityRing: 'rgba(237,161,0,.34)',
-  headerBg: 'rgba(13,13,16,.78)',
   toastBg: '#26262D',
   toastText: '#F4F4F7',
   shadow: '#000000',

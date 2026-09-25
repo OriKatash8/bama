@@ -142,7 +142,8 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   return (
     <View style={[styles.root, { backgroundColor: p.bg }]}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
-      <ScrollView stickyHeaderIndices={[0]} contentContainerStyle={{ paddingBottom: 56 + insets.bottom }}>
+      {/* The header is the top of the page and scrolls away with it — not pinned. */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 56 + insets.bottom }}>
         <View style={{ paddingTop: insets.top }}>
           <AdminHeader
             communityName={community.name}
