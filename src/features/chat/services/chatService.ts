@@ -13,12 +13,14 @@ import {
   doc,
   onSnapshot,
   serverTimestamp,
+  writeBatch,
   DocumentData,
   QueryDocumentSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../../../core/firebase/config';
 import type { Chat, Message } from '../types';
+import { logOwnerJoin } from './communityMembership';
 
 function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
   const data = doc.data();
@@ -190,7 +192,10 @@ export async function createCommunityChat(
   photoURL?: string,
   category?: string,
 ): Promise<string> {
-  const ref = await addDoc(collection(db, 'chats'), {
+  // One batch with the owner's 'join', so the dashboard's member log starts at creation.
+  const ref = doc(collection(db, 'chats'));
+  const batch = writeBatch(db);
+  batch.set(ref, {
     type: 'community' as const,
     name,
     description,
@@ -201,6 +206,8 @@ export async function createCommunityChat(
     ...(photoURL ? { photoURL } : {}),
     ...(category ? { category } : {}),
   });
+  logOwnerJoin(batch, ref.id, ownerId);
+  await batch.commit();
   return ref.id;
 }
 

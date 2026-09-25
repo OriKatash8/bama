@@ -550,8 +550,18 @@ service cloud.firestore {
           || get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
           || isAdmin()
         );
+        // The owner decides a request: `status` to approved/rejected, plus the
+        // server's clock as `decidedAt`. Nothing else — before this the owner
+        // branch accepted any shape at all.
+        function isOwnerDecision() {
+          let d = request.resource.data;
+          return get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
+            && d.diff(resource.data).affectedKeys().hasOnly(['status', 'decidedAt'])
+            && d.status in ['approved', 'rejected']
+            && (!('decidedAt' in d) || d.decidedAt == request.time || d.decidedAt == resource.data.get('decidedAt', null));
+        }
         allow update: if isAuth() && (
-          get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid
+          isOwnerDecision()
           || isAdmin()
           // Asking again. The doc id is the requester's uid, so a second request
           // reuses the doc and `setDoc` lands here as an UPDATE — which used to be
@@ -570,6 +580,51 @@ service cloud.firestore {
         allow delete: if isAuth()
           && request.auth.uid == requestId
           && resource.data.status == 'pending';
+      }
+
+      // Membership log for the owner's dashboard: one doc per join or leave.
+      // An event must describe a membership change that happens IN THE SAME
+      // write — `join` only if the user was not a member before and is after,
+      // `leave` the reverse — so the log can't be padded with events that
+      // didn't happen, and a retried write can't count twice. Written in the
+      // same batch/transaction as the `members` change (communityMembership.ts).
+      // `get` on a chat that doesn't exist yet is guarded by `exists`, so the
+      // owner's own join can be logged in the batch that creates the community.
+      match /communityEvents/{eventId} {
+        function chatPath() { return /databases/$(database)/documents/chats/$(chatId); }
+        function membersBefore() { return exists(chatPath()) ? get(chatPath()).data.members : []; }
+        function chatAfter() { return getAfter(chatPath()).data; }
+        function isRealTransition(d) {
+          return d.type == 'join'
+            ? !(d.userId in membersBefore()) && d.userId in chatAfter().members
+            : d.userId in membersBefore() && !(d.userId in chatAfter().members);
+        }
+        allow read: if isAuth() && (
+          get(chatPath()).data.get('ownerId', '') == request.auth.uid || isAdmin()
+        );
+        allow create: if isAuth()
+          && request.resource.data.keys().hasOnly(['type', 'userId', 'at'])
+          && request.resource.data.type in ['join', 'leave']
+          && request.resource.data.userId is string
+          && request.resource.data.at == request.time
+          && isRealTransition(request.resource.data)
+          && (
+            chatAfter().get('ownerId', '') == request.auth.uid
+            || isAdmin()
+            // A member logging their own leave.
+            || (request.resource.data.type == 'leave' && request.resource.data.userId == request.auth.uid)
+          );
+        allow update, delete: if false;
+      }
+
+      // Per-member message counts, kept by the onNewCommunityMessage trigger.
+      // Admin SDK only; the owner reads them for the dashboard's activity bars.
+      match /memberStats/{userId} {
+        allow read: if isAuth() && (
+          get(/databases/$(database)/documents/chats/$(chatId)).data.get('ownerId', '') == request.auth.uid
+          || isAdmin()
+        );
+        allow write: if false;
       }
     }
 

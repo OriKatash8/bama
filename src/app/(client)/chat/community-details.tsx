@@ -27,10 +27,10 @@ import { communityCategoryLabel } from '@features/crew/data/categories';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
 import { CommunityManageModal } from '@features/chat/components/CommunityManageModal';
 import {
-  removeMemberFromGroup,
   muteChat,
   unmuteChat,
 } from '@features/chat/services/chatService';
+import { leaveCommunity } from '@features/chat/services/communityMembership';
 import type { Chat } from '@features/chat/types';
 import type { User } from '@core/types/user';
 import en from '@core/i18n/translations/en.json';
@@ -200,7 +200,7 @@ export default function CommunityDetailsScreen() {
     if (!confirmed) return;
     setLeaving(true);
     try {
-      await removeMemberFromGroup(chatId, currentUserId);
+      await leaveCommunity(chatId, currentUserId);
       // replace, not back(): back() would land on the chat we just left.
       router.replace(backHref as never);
     } catch (err) {

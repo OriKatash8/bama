@@ -1,16 +1,15 @@
 import React from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { CommunityManageModal } from '../CommunityManageModal';
-import {
-  addDoc, arrayRemove, arrayUnion, deleteDoc, onSnapshot, updateDoc,
-} from 'firebase/firestore';
+import { addDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { approveJoinRequest, rejectJoinRequest, removeCommunityMember } from '../../services/communityMembership';
 import { confirmDialog } from '@utils/confirmDialog';
 import en from '@core/i18n/translations/en.json';
 
 /**
- * The owner's manage panel, now opened from the community details page. Same
- * behaviour it had inside the chat screen: approve writes the request status then
- * membership, reject writes the status, the owner can't be removed, General and
+ * The owner's manage panel, now opened from the community details page. Approve,
+ * reject and remove go through communityMembership (which pairs each membership
+ * change with its dashboard event — tested there); the owner can't be removed, General and
  * Market can't be deleted, and a delete asks first. A non-owner gets nothing, and
  * no listener, since the pending-requests query is only provable for the owner.
  */
@@ -23,6 +22,11 @@ jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { chil
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn(() => Promise.resolve(true)) }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
+}));
+jest.mock('../../services/communityMembership', () => ({
+  approveJoinRequest: jest.fn(() => Promise.resolve(true)),
+  rejectJoinRequest: jest.fn(() => Promise.resolve()),
+  removeCommunityMember: jest.fn(() => Promise.resolve()),
 }));
 jest.mock('firebase/firestore', () => ({
   collection: jest.fn((_db, ...path: string[]) => ({ path: path.join('/') })),
@@ -75,26 +79,26 @@ beforeEach(() => {
   setupListeners();
 });
 
-it('shows pending requests; approve writes status then membership', async () => {
+it('shows pending requests; approve goes through the membership service', async () => {
   const r = render(<CommunityManageModal {...baseProps} />);
   expect(r.getByText('Nina Newcomer')).toBeTruthy();
   await act(async () => { fireEvent.press(r.getByText(en.communities.approve)); });
-  expect(updateDoc).toHaveBeenNthCalledWith(1, { path: 'chats/c1/joinRequests/u9' }, { status: 'approved' });
-  expect(updateDoc).toHaveBeenNthCalledWith(2, { path: 'chats/c1' }, { members: arrayUnion('u9') });
+  expect(approveJoinRequest).toHaveBeenCalledWith('c1', 'u9');
+  expect(rejectJoinRequest).not.toHaveBeenCalled();
 });
 
-it('reject writes the status only', async () => {
+it('reject goes through the membership service', async () => {
   const r = render(<CommunityManageModal {...baseProps} />);
   await act(async () => { fireEvent.press(r.getByText(en.communities.reject)); });
-  expect(updateDoc).toHaveBeenCalledTimes(1);
-  expect(updateDoc).toHaveBeenCalledWith({ path: 'chats/c1/joinRequests/u9' }, { status: 'rejected' });
+  expect(rejectJoinRequest).toHaveBeenCalledWith('c1', 'u9');
+  expect(approveJoinRequest).not.toHaveBeenCalled();
 });
 
 it('removes a member; the owner has no remove control', async () => {
   const r = render(<CommunityManageModal {...baseProps} />);
   expect(r.queryByTestId('manage-remove-owner-1')).toBeNull();
   await act(async () => { fireEvent.press(r.getByTestId('manage-remove-u2')); });
-  expect(updateDoc).toHaveBeenCalledWith({ path: 'chats/c1' }, { members: arrayRemove('u2') });
+  expect(removeCommunityMember).toHaveBeenCalledWith('c1', 'u2', 'owner-1');
 });
 
 it('General and Market have no delete; a normal channel deletes after confirming', async () => {

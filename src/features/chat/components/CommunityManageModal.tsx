@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'lucide-react-native';
 import {
-  addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, onSnapshot, orderBy, query,
+  addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query,
   serverTimestamp, updateDoc, where,
 } from 'firebase/firestore';
 import { auth, db } from '@core/firebase/config';
@@ -16,6 +16,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { AppText } from '@components/ui/AppText';
 import { confirmDialog } from '@utils/confirmDialog';
 import { isGeneralChannel, isMarketChannel, sortChannels, type Channel } from '../communityChannels';
+import { approveJoinRequest, rejectJoinRequest, removeCommunityMember } from '../services/communityMembership';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -101,17 +102,15 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
   if (!isOwner) return null;
 
   async function handleApproveRequest(userId: string) {
-    await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'approved' });
-    await updateDoc(doc(db, 'chats', chatId), { members: arrayUnion(userId) });
+    await approveJoinRequest(chatId, userId);
   }
 
   async function handleRejectRequest(userId: string) {
-    await updateDoc(doc(db, 'chats', chatId, 'joinRequests', userId), { status: 'rejected' });
+    await rejectJoinRequest(chatId, userId);
   }
 
   async function handleRemoveMember(userId: string) {
-    if (userId === ownerId) return;
-    await updateDoc(doc(db, 'chats', chatId), { members: arrayRemove(userId) });
+    await removeCommunityMember(chatId, userId, ownerId);
   }
 
   async function handleAddChannel() {

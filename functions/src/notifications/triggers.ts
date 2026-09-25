@@ -9,6 +9,7 @@ import {
 } from '../matching';
 import { SYSTEM_USER_ID } from '../system';
 import { fanOutMessage, needMuteCheck } from './fanOut';
+import { bumpMemberStats } from '../communities/memberStats';
 
 async function createNotification(
   db: admin.firestore.Firestore,
@@ -129,6 +130,9 @@ export const onNewCommunityMessage = functions.firestore
     // The path is community-shaped, but guard on the type anyway so this can never
     // double-fire alongside onNewChatMessage if channels are ever added elsewhere.
     if (chatDoc.data()?.type !== 'community') return;
+
+    // Activity for the owner's dashboard. Never throws.
+    await bumpMemberStats(db, chatId, message.senderId);
 
     const senderName: string = (senderDoc.data()?.displayName as string | undefined) ?? 'BAMA';
     const communityName: string = (chatDoc.data()?.name as string | undefined) ?? '';
