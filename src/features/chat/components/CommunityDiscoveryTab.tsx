@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   // The pro chats sheet supplies the side padding.
   container: { paddingTop: 0 },
   sectionRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  sectionLabel: { fontSize: 13, fontWeight: '700', color: INK },
+  sectionLabel: { fontSize: 17, fontWeight: '700', color: INK },
   // One container for every Discover row; rows carry no surface of their own.
   listCard: {
     backgroundColor: '#FFFFFF',
