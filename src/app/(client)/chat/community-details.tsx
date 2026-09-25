@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronUp, LayoutDashboard, LogOut, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -216,22 +216,25 @@ export default function CommunityDetailsScreen() {
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View
           testID="details-header"
-          style={[styles.header, { flexDirection: rowDir, marginHorizontal: -16, marginTop: -16 }]}
+          style={[styles.header, { flexDirection: 'row', marginHorizontal: -16, marginTop: -16 }]}
         >
+          {/* Pops to the chat room underneath. It used to PUSH a second copy of
+              the room, so an edge-swipe out of that copy landed back here. A page
+              opened cold, with nothing underneath, replaces itself with the room. */}
           <TouchableOpacity
+            testID="details-back"
             onPress={() =>
-              chatId
-                ? router.push(`/(client)/chat/${chatId}` as never)
-                : router.replace(backHref as never)
+              router.canGoBack()
+                ? router.back()
+                : router.replace((chatId ? `/(client)/chat/${chatId}` : backHref) as never)
             }
             style={styles.headerBack}
             activeOpacity={0.7}
             accessibilityRole="button"
           >
-            {/* Back sits on the reading-start side and points outward: right in Hebrew. */}
-            {rtl
-              ? <ChevronRight size={28} color={colors.primary} strokeWidth={2.2} />
-              : <ChevronLeft size={28} color={colors.primary} strokeWidth={2.2} />}
+            {/* On the left, pointing left, in both languages: the same side as the
+                chat room's back arrow, which is where this returns to. */}
+            <ChevronLeft size={28} color={colors.primary} strokeWidth={2.2} />
           </TouchableOpacity>
           <AppText
             weight="semiBold"

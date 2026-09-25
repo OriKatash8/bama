@@ -11,15 +11,23 @@ import he from '@core/i18n/translations/he.json';
 /**
  * The community details page: members fold into one expandable card, the mute
  * toggle is visible and says what is actually true, and the header title sits
- * beside a back chevron on the reading-start side.
+ * beside a back chevron.
+ *
+ * Back is on the LEFT in both languages, pointing left — the same side as the
+ * chat room's back arrow it returns to. It pops to that room: it used to PUSH
+ * a second copy, so an edge-swipe out of the room landed back on details.
  */
 
 let mockLanguage: 'he' | 'en' = 'he';
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
+const mockBack = jest.fn();
+let mockCanGoBack = true;
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useLocalSearchParams: () => ({ chatId: 'c1' }),
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace, back: mockBack, canGoBack: () => mockCanGoBack }),
 }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
 jest.mock('expo-linear-gradient', () => ({
@@ -197,18 +205,36 @@ describe('bio', () => {
 });
 
 describe('header', () => {
-  it.each([
-    ['he', 'row-reverse', ChevronRight],
-    ['en', 'row', ChevronLeft],
-  ] as const)('in %s the row runs %s with the back chevron pointing outward', async (lang, dir, Chevron) => {
+  it.each(['he', 'en'] as const)('in %s back is on the left, pointing left', async (lang) => {
     mockLanguage = lang;
     const r = await renderScreen();
     const dict = lang === 'he' ? he : en;
-    expect(flat(r.getByTestId('details-header')).flexDirection).toBe(dir);
-    expect(r.UNSAFE_queryAllByType(Chevron)).toHaveLength(1);
+    expect(flat(r.getByTestId('details-header')).flexDirection).toBe('row');
+    expect(r.UNSAFE_queryAllByType(ChevronLeft)).toHaveLength(1);
+    expect(r.UNSAFE_queryAllByType(ChevronRight)).toHaveLength(0);
     const title = flat(r.getByText(dict.community_details.header));
+    expect(title.textAlign).toBe(lang === 'he' ? 'right' : 'left');
     expect(title.fontSize).toBeGreaterThanOrEqual(19);
     expect(title.color).toBe('#0f0f1f'); // theme `text`, not the faint #8890b0
     expect(title.textTransform).toBeUndefined();
+  });
+});
+
+describe('back', () => {
+  beforeEach(() => { mockPush.mockClear(); mockReplace.mockClear(); mockBack.mockClear(); mockCanGoBack = true; });
+
+  it('pops to the chat underneath instead of pushing another one', async () => {
+    const r = await renderScreen();
+    fireEvent.press(r.getByTestId('details-back'));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('opened cold, with nothing underneath, it replaces itself with the chat', async () => {
+    mockCanGoBack = false;
+    const r = await renderScreen();
+    fireEvent.press(r.getByTestId('details-back'));
+    expect(mockReplace).toHaveBeenCalledWith('/(client)/chat/c1');
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });
