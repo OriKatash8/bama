@@ -1303,5 +1303,16 @@
     "confirm_reject_body": "The request will be closed. They can ask to join again later.",
     "confirm_all_title": "Approve {{n}} requests?",
     "confirm_all_body": "All {{n}} will join the community right away."
+  },
+  "community_search": {
+    "open": "Search in chat",
+    "title": "Search",
+    "placeholder": "Search messages…",
+    "min_chars": "Type at least 2 characters",
+    "loading": "Loading messages…",
+    "no_results": "No messages found",
+    "results_count": "{{n}} results",
+    "error": "Couldn't load the messages",
+    "back": "Back"
   }
 }

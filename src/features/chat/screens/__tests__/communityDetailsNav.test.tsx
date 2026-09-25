@@ -23,7 +23,7 @@ const DETAILS_SRC = readFileSync(join(APP, '(client)', 'chat', 'community-detail
 const ADMIN_SRC = readFileSync(join(__dirname, '..', '..', '..', 'communityAdmin', 'CommunityAdminScreen.tsx'), 'utf8');
 
 describe('route files', () => {
-  it.each(['community-details', 'community-admin'])('%s exists in the pro chat stack too', (name) => {
+  it.each(['community-details', 'community-admin', 'community-search'])('%s exists in the pro chat stack too', (name) => {
     expect(() => readFileSync(join(APP, '(professional)', 'chat', `${name}.tsx`))).not.toThrow();
   });
 });
@@ -56,6 +56,7 @@ describe('driven through a real router, shaped like the app', () => {
     '(professional)/chat/_layout': () => <Stack screenOptions={{ headerShown: false }} />,
     '(professional)/chat/[chatId]': () => <Text>PRO-ROOM</Text>,
     '(professional)/chat/community-details': () => <Text>DETAILS</Text>,
+    '(professional)/chat/community-search': () => <Text>SEARCH</Text>,
   };
 
   it('from a pro chat, back from details returns to that chat', () => {
@@ -77,5 +78,21 @@ describe('driven through a real router, shaped like the app', () => {
     act(() => { router.push('/(client)/chat/community-details?chatId=abc'); });
     act(() => { if (router.canGoBack()) router.back(); });
     expect(screen.queryByText('PRO-ROOM')).toBeNull();
+  });
+
+  it('a search result pops search AND details, landing on the room itself', () => {
+    renderRouter(routes, { initialUrl: '/(professional)/(tabs)/chats' });
+    act(() => { router.push('/(professional)/chat/abc'); });
+    act(() => { router.push('/(professional)/chat/community-details?chatId=abc'); });
+    act(() => { router.push('/(professional)/chat/community-search?chatId=abc'); });
+    expect(screen.getByText('SEARCH')).toBeTruthy();
+
+    // What CommunitySearchScreen calls on a tap.
+    act(() => { router.dismissTo('/(professional)/chat/abc'); });
+    expect(screen.getByText('PRO-ROOM')).toBeTruthy();
+
+    // Nothing stacked on the way: back from the room is the list.
+    act(() => { router.back(); });
+    expect(screen.getByText('PRO-LIST')).toBeTruthy();
   });
 });

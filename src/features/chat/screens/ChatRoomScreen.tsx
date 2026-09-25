@@ -42,6 +42,7 @@ import { EVERYONE_TOKENS, useMentionAutocomplete } from '../hooks/useMentionAuto
 import { splitMentionRuns, type MentionTarget } from '../utils/mentions';
 import { usePendingMentions } from '../hooks/usePendingMentions';
 import { chatGroupOf } from '../utils/chatGroup';
+import { useSearchJump } from '../hooks/useSearchJump';
 
 const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
 const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
@@ -1052,6 +1053,12 @@ export function ChatRoomScreen({ chatId }: Props) {
     isAtBottomRef.current = false;
     applyPin();
   }, [chatId, mentionChannelId, pendingMentions, applyPin]);
+
+  // Back from community search with a result tapped: switch to its channel and
+  // jump to it once loaded. After the two effects above, so the channel switch's
+  // "open at the bottom" runs first and the jump wins.
+  const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
+  useSearchJump({ chatId, activeChannelId, messageIds, setActiveChannelId, jumpToMessage });
 
   // Opening clears this chat's mentions — ONE path for group chats and channels
   // alike, which is why it does not hang off unreadCount (communities have no

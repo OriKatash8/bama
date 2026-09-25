@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronUp, LayoutDashboard, LogOut, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronUp, LayoutDashboard, LogOut, Search, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -283,6 +283,23 @@ export default function CommunityDetailsScreen() {
           ) : null}
         </View>
 
+        {/* Search in chat — members only: nobody else can read the messages. */}
+        {members.includes(currentUserId) && (
+          <TouchableOpacity
+            style={[styles.settingCard, styles.searchRow, { flexDirection: rowDir }]}
+            onPress={() => router.push(`/${chatGroup}/chat/community-search?chatId=${chatId}` as never)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={t('community_search.open')}
+            testID="open-community-search"
+          >
+            <Search size={18} color={colors.primary} strokeWidth={2} />
+            <AppText weight="semiBold" style={[styles.settingLabel, { color: colors.text, textAlign: align }]}>
+              {t('community_search.open')}
+            </AppText>
+          </TouchableOpacity>
+        )}
+
         {/* Bio */}
         {community.description ? (
           <View style={styles.descriptionCard}>
@@ -536,6 +553,7 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   settingRow: { alignItems: 'center', gap: 10 },
+  searchRow: { alignItems: 'center', gap: 10 },
   settingLabel: { flex: 1, fontSize: 14, color: '#3a4266' },
   settingNote: { fontSize: 12, lineHeight: 17, color: '#8890b0' },
 

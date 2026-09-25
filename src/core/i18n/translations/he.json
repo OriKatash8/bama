@@ -1303,5 +1303,16 @@
     "confirm_reject_body": "הבקשה תיסגר. אפשר יהיה לבקש להצטרף שוב.",
     "confirm_all_title": "לאשר {{n}} בקשות?",
     "confirm_all_body": "כל {{n}} המבקשים יצטרפו לקהילה מיד."
+  },
+  "community_search": {
+    "open": "חיפוש בצ'אט",
+    "title": "חיפוש",
+    "placeholder": "חיפוש הודעות…",
+    "min_chars": "יש להקליד לפחות 2 תווים",
+    "loading": "טוען הודעות…",
+    "no_results": "לא נמצאו הודעות",
+    "results_count": "{{n}} תוצאות",
+    "error": "לא ניתן לטעון את ההודעות",
+    "back": "חזרה"
   }
 }

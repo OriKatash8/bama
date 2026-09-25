@@ -100,3 +100,16 @@ it('has the dashboard label in both languages', () => {
   expect(en.community_admin.open_dashboard).toBe('Dashboard');
   expect(he.community_admin.open_dashboard).toBe('לוח ניהול');
 });
+
+describe('search in chat', () => {
+  it('a member can open search, in the viewer\'s stack', async () => {
+    const r = await renderAs('u2');
+    fireEvent.press(r.getByRole('button', { name: he.community_search.open }));
+    expect(mockPush).toHaveBeenCalledWith('/(professional)/chat/community-search?chatId=c1');
+  });
+
+  it('someone who is not a member gets no search — they could not read the messages', async () => {
+    const r = await renderAs('stranger');
+    expect(r.queryByRole('button', { name: he.community_search.open })).toBeNull();
+  });
+});
