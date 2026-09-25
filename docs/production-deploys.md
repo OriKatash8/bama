@@ -12,6 +12,8 @@ while later commits leave that file alone.
 
 | Released (UTC) | Commit | Ruleset | How verified |
 |---|---|---|---|
+| 2026-09-25 20:55 | `c987f39` | `dab1742f-f2f7-4442-b02f-f876a9e4db2c` | Pre-deploy: live byte-identical to `5587b4a`, and `5587b4a..c987f39` is the only change to the file (communityEvents + memberStats rules; owner joinRequests update limited to status approved/rejected + decidedAt). Same file passed 32/32 rule cases on the emulator, incl. old-build approve/leave. Deployed by the user with `--only firestore:rules,firestore:indexes`. Post-deploy: live ruleset downloaded, byte-identical to `c987f39:firestore.rules` (== HEAD); drift check rules ok |
+| 2026-09-24 10:43 | `5587b4a` | `16441152-fd10-4193-b8cb-a948d3345946` | **Not recorded at the time.** Found on 2026-09-25 while preparing the deploy above: live ruleset downloaded, byte-identical to `5587b4a:firestore.rules` (the last 30 rules commits were compared; only this one matched). Carries everything between `0152f73` and `5587b4a` (mentions bound, sender/system forgery, replyTo validation, frozen price) |
 | 2026-09-17 15:59 | `0152f73` | `981106c2-7690-4424-a5d7-972bdae6335c` | Pre-deploy: live byte-identical to `5fe615c`, and `5fe615c..0152f73` touches only the V1 hunks (client cannot enter `in_progress`; create requires `open`; `paymentRequests` create `if false`). Post-deploy: live ruleset downloaded, byte-identical to `0152f73:firestore.rules`; drift check rules ok |
 | 2026-09-13 15:01 | `5fe615c` | `3338f2ee-4058-4b42-bd08-5398c165ed12` | Live ruleset byte-identical to `5fe615c:firestore.rules` (pre-deploy: live == `c9e13e4`, so only the invite rules shipped); drift check clean; plain request, via-live-invite, revoked, foreign-invite and direct invite read exercised against production |
 | 2026-09-13 14:49 | `c9e13e4` | `3a538282-f54b-47bd-be72-1774dc52d30a` | Live ruleset downloaded, byte-identical to `c9e13e4:firestore.rules`; drift check clean; joinRequests behaviour exercised against production |
@@ -21,6 +23,7 @@ while later commits leave that file alone.
 
 | Checked (UTC) | Commit | How verified |
 |---|---|---|
+| 2026-09-25 20:59 | `c987f39` | Pre-deploy drift check: the only missing composite was `messages (type ASC, timestamp ASC)` (the community dashboard's market-listings query). Deployed with the rules above; build polled via the Firestore Admin API: CREATING at 20:56:07Z, READY at 20:59:56Z. Drift check: all 16 present |
 | 2026-09-13 15:02 | `335c0ad` | Pre-deploy: live == local, same 14 composites and field overrides, no extras. Deployed `--only firestore:indexes`; new `communityInvites (communityId, createdBy, revoked)` confirmed READY via the Firestore Admin API at 15:02:24Z; drift check: all 15 present |
 | 2026-09-13 14:50 | `952f5d6` | Drift check: all 14 composite indexes in the file are present in production |
 
