@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { formatCurrency, formatDate, formatDuration, formatRelativeTime, formatIsoDay } from '../formatters';
+import { formatCurrency, formatDate, formatDuration, formatRelativeTime, formatIsoDay, formatShortDay } from '../formatters';
 
 describe('formatCurrency', () => {
   it('formats shekels by default', () => {
@@ -87,5 +87,31 @@ describe('formatIsoDay', () => {
     expect(formatIsoDay('flexible')).toBe('flexible');
     expect(formatIsoDay('14/09/2026')).toBe('14/09/2026');
     expect(formatIsoDay('2026-09-14T10:00:00Z')).toBe('2026-09-14T10:00:00Z');
+  });
+});
+
+describe('formatShortDay', () => {
+  // 2026-09-26: the current year is 2026.
+  const now = new Date(2026, 8, 26);
+
+  it('Hebrew: day and abbreviated month with ב, no weekday, no year', () => {
+    expect(formatShortDay('2026-10-12', 'he', now)).toBe('12 באוק׳');
+  });
+
+  it('English: month first', () => {
+    expect(formatShortDay('2026-10-12', 'en', now)).toBe('Oct 12');
+  });
+
+  it('drops the leading zero of the day', () => {
+    expect(formatShortDay('2026-12-05', 'en', now)).toBe('Dec 5');
+  });
+
+  it('adds the year only when it is not the current one', () => {
+    expect(formatShortDay('2027-01-03', 'he', now)).toBe('3 בינו׳ 2027');
+    expect(formatShortDay('2027-01-03', 'en', now)).toBe('Jan 3, 2027');
+  });
+
+  it('returns anything that is not an ISO day unchanged', () => {
+    expect(formatShortDay('flexible', 'he', now)).toBe('flexible');
   });
 });

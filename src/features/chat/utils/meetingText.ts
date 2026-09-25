@@ -1,5 +1,4 @@
-const HE_MONTHS_ABBR = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
-const EN_MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+import { EN_MONTHS_ABBR, HE_MONTHS_ABBR } from '@utils/formatters';
 
 /** Turn a "…{title} · YYYY-MM-DD HH:MM" system text into a nice detail line, in
  *  the reader's language. The system text itself is always written in Hebrew —

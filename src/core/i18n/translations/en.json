@@ -116,7 +116,14 @@
     "flexible_no_autocomplete": "You chose a flexible date — the project has no end date, so it will not close on its own. Each professional marks when they have finished their part.",
     "end_date_note": "On the end date, the project closes on its own if the professionals have not already marked their parts finished.",
     "end_date_calendar_note": "The project will close on this date (editable)",
-    "tip_details": "The more details you add, the more offers your project is likely to get"
+    "tip_details": "The more details you add, the more offers your project is likely to get",
+    "dates_location_title": "Dates & location",
+    "optional_tag": "Optional",
+    "choose": "Choose",
+    "clear_field_a11y": "Clear {{field}}",
+    "not_selected_a11y": "Not selected",
+    "start_date": "Start date",
+    "end_date": "End date"
   },
   "search": {
     "no_professionals_yet": "No professionals yet",

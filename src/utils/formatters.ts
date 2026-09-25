@@ -25,6 +25,27 @@ export function formatIsoDay(iso: string): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
+export const HE_MONTHS_ABBR = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+export const EN_MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/**
+ * An ISO day string as a short day + month: '12 באוק׳' / 'Oct 12'. No weekday;
+ * the year only when it is not the current one. Reads the string, not a Date,
+ * for the same timezone reason as formatIsoDay. Anything that is not exactly an
+ * ISO day (e.g. 'flexible') is returned unchanged.
+ */
+export function formatShortDay(iso: string, lang: 'he' | 'en', now: Date = new Date()): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const year = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10) - 1;
+  const day = parseInt(m[3], 10);
+  const otherYear = year !== now.getFullYear();
+  return lang === 'en'
+    ? `${EN_MONTHS_ABBR[month]} ${day}${otherYear ? `, ${year}` : ''}`
+    : `${day} ב${HE_MONTHS_ABBR[month]}${otherYear ? ` ${year}` : ''}`;
+}
+
 export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);

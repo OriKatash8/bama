@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
   ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable,
@@ -10,7 +10,7 @@ import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
 import { GradientBand } from '@components/ui/GradientBand';
-import { HelpTooltip } from '@components/ui/HelpTooltip';
+import { BottomSheet } from '@components/ui/BottomSheet';
 import { PressableScale } from '@components/ui/PressableScale';
 import { TypingPlaceholder } from '@components/ui/TypingPlaceholder';
 import Animated, {
@@ -35,7 +35,7 @@ import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest, FilledSlot } from '@core/types/project';
 import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@features/projects/constants/roleQuestions';
 import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
-import { formatIsoDay, rtlSafe } from '@utils/formatters';
+import { formatShortDay, rtlSafe } from '@utils/formatters';
 import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
 import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
 import { useTabBarHeight } from '@core/navigation/floatingTabBar';
@@ -46,7 +46,6 @@ import { useTabBarHeight } from '@core/navigation/floatingTabBar';
  */
 const VIOLET = '#6D28D9';
 const INK = '#1A1626';
-const INK_2 = '#6B6880';
 const PLACEHOLDER = '#9C99AD';
 const FIELD_FILL = '#F6F5FA';
 const FIELD_BORDER = '#EAE8F0';
@@ -58,18 +57,24 @@ const DESCRIPTION_MIN = 10;
 /** Chrome draws `outline: auto` over the violet ring on focus, whatever the
  *  width; RN's types have no 'none', hence the cast (web only). */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
-const TILE_GAP = 9;
+/** Gap between step 1's three date/location tiles. */
+const DL_TILE_GAP = 10;
 /**
- * Step 2's own palette. Kept apart from the wizard's violet above because the
- * crew step is a flat row list — no gradients on its rows, tiles or buttons —
- * and reusing VIOLET here would tie the two restyles together.
+ * The flat palette of the restyled parts of the wizard: step 2's row list and
+ * step 1's date/location tiles. Kept apart from the violet above because these
+ * have no gradients on their rows, tiles or buttons, and reusing VIOLET here
+ * would tie the restyles to the older parts of the screen.
  */
-const STEP2 = {
+const WIZARD = {
   text: '#16132B',
   textSec: '#5B5870',
+  placeholder: '#8A8799',
   accent: '#5B3FE0',
   rowSelectedBg: '#F1EEFF',
   rowBorder: '#ECE9F5',
+  emptyBg: '#F7F6FB',
+  tagBg: '#EEEDF3',
+  tagText: '#6A6780',
   tileBg: '#EFECFA',
   addBorder: '#DAD5EA',
   stepperMinusBg: '#E4DFF7',
@@ -204,6 +209,8 @@ export default function HomeScreen() {
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
+  /** The one help sheet for the dates and location tiles. */
+  const [dlHelpOpen, setDlHelpOpen] = useState(false);
   const [roleAnswers, setRoleAnswers] = useState<Record<string, Record<string, string>>>({});
   // Slots already occupied by an assigned professional (edit mode). Roles with
   // any occupied slot cannot be removed — only added to.
@@ -407,6 +414,78 @@ export default function HomeScreen() {
     });
   }, [slots, roleAnswers]);
 
+  /**
+   * One of step 1's three date/location tiles. The icon sits at the start
+   * corner, and at the other one either the "Optional" tag (empty) or the clear
+   * ✕ (filled); underneath, the field name and "Choose" or the value. The whole
+   * tile opens its picker.
+   *
+   * The filled border is 2 and the empty one 1, so the padding gives back the
+   * difference and the tile never changes size when it fills.
+   */
+  function renderDlTile(o: {
+    field: 'exec' | 'deadline' | 'location';
+    label: string;
+    value: string;
+    optional: boolean;
+    error?: string;
+    icon: (color: string, tileBg: string) => ReactNode;
+    onPress: () => void;
+    onClear: () => void;
+  }) {
+    const filled = o.value !== '';
+    const rowDir = rtl ? 'row-reverse' : 'row';
+    const align = rtl ? 'right' : 'left';
+    const tileBg = filled ? WIZARD.accent : WIZARD.tileBg;
+    return (
+      <View style={{ flex: 1 }}>
+        <PressableScale
+          testID={`tile-${o.field}`}
+          style={[styles.dlTile, filled && styles.dlTileOn, o.error ? styles.dlTileError : null]}
+          onPress={o.onPress}
+          activeScale={0.96}
+          accessibilityRole="button"
+          accessibilityLabel={`${o.label}, ${filled ? o.value : t('builder.not_selected_a11y')}`}
+        >
+          <View style={[styles.dlTopRow, { flexDirection: rowDir }]}>
+            <View style={[styles.dlIconTile, { backgroundColor: tileBg }]}>
+              {o.icon(filled ? '#FFFFFF' : WIZARD.accent, tileBg)}
+            </View>
+            {filled ? (
+              <PressableScale
+                testID={`clear-${o.field}`}
+                style={styles.dlClear}
+                onPress={(e) => { e.stopPropagation?.(); o.onClear(); }}
+                hitSlop={10}
+                activeScale={0.85}
+                haptic="commit"
+                accessibilityRole="button"
+                accessibilityLabel={t('builder.clear_field_a11y', { field: o.label })}
+              >
+                <X size={14} color={WIZARD.accent} strokeWidth={2.5} />
+              </PressableScale>
+            ) : o.optional ? (
+              <View style={styles.dlTag}>
+                <Text style={styles.dlTagText} numberOfLines={1}>{t('builder.optional_tag')}</Text>
+              </View>
+            ) : null}
+          </View>
+          <View style={styles.dlBottom}>
+            <Text style={[styles.dlLabel, { textAlign: align }]} numberOfLines={1}>{o.label}</Text>
+            <Text
+              style={[filled ? styles.dlValue : styles.dlChoose, { textAlign: align }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {filled ? o.value : t('builder.choose')}
+            </Text>
+          </View>
+        </PressableScale>
+        {o.error ? <Text style={[styles.error, { textAlign: 'center' }]}>{o.error}</Text> : null}
+      </View>
+    );
+  }
+
   if (isLoadingProject) {
     return (
       <Screen scrollable={false} backgroundColor="#FFFFFF">
@@ -512,136 +591,68 @@ export default function HomeScreen() {
               </View>
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
-              {/* Labels row — exec / deadline / location */}
-              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: TILE_GAP, alignItems: 'flex-start', marginTop: FIELD_GAP }}>
-                <View style={[styles.tileTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.tileTitle, exec ? styles.tileTitleSel : null]}>
-                    {t('builder.execution')}
-                  </Text>
-                  <HelpTooltip text={t('builder.help_execution')} />
-                </View>
-                <View style={[styles.tileTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.tileTitle, deadline ? styles.tileTitleSel : null]}>
-                    {t('builder.deadline')}
-                  </Text>
-                  <HelpTooltip text={t('builder.help_deadline')} />
-                </View>
-                <View style={[styles.tileTitleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.tileTitle, location ? styles.tileTitleSel : null]}>
-                    {t('builder.location')}
-                  </Text>
-                  <HelpTooltip text={t('builder.help_location')} />
-                </View>
+              {/* Dates and location: one header, one "?" for all three. */}
+              <View style={[styles.dlHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <Text style={styles.dlTitle}>{t('builder.dates_location_title')}</Text>
+                <Pressable
+                  onPress={() => setDlHelpOpen(true)}
+                  style={styles.dlHelpBtn}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.help')}
+                >
+                  <Text style={styles.dlHelpQ}>?</Text>
+                </Pressable>
               </View>
 
-              {/* Squares row — exec / deadline / location */}
               <View
-                style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: TILE_GAP, alignItems: 'flex-start', marginTop: 8 }}
+                style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: DL_TILE_GAP, alignItems: 'flex-start', marginTop: 10 }}
                 onLayout={(e) => { fieldY.current.deadline = e.nativeEvent.layout.y; }}
               >
-                {/* Execution square */}
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <PressableScale style={[styles.dateSquare, exec ? styles.dateSquareSel : null]} onPress={() => setCalOpen('exec')} activeScale={0.96}>
-                    {exec ? (
-                      <PressableScale
-                        style={styles.dateSquareClear}
-                        onPress={(e) => { e.stopPropagation?.(); setExec(''); }}
-                        hitSlop={8}
-                        activeScale={0.85}
-                        haptic="commit"
-                        testID="clear-exec"
-                      >
-                        <X size={12} color="#fff" strokeWidth={2.5} />
-                      </PressableScale>
-                    ) : null}
-                    <CalendarDays size={19} color={exec ? VIOLET : INK_2} strokeWidth={1.8} />
-                    <View style={styles.dateSquareLabelBox}>
-                      <Text style={exec ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                        {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
-                      </Text>
-                    </View>
-                    {/* The note sits UNDER the label, and its line is reserved in all
-                        three squares — the required one leaves it empty — so every
-                        square holds the same stack and the marks stay level. */}
-                    <View style={styles.dateSquareOptBox}>
-                      {!exec && <Text style={styles.dateSquareOptText}>{t('builder.optional_note')}</Text>}
-                    </View>
-                  </PressableScale>
-                </View>
-
-                {/* Deadline square */}
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <PressableScale
-                    style={[styles.dateSquare, deadline ? styles.dateSquareSel : null, errors.deadline ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
-                    onPress={() => setCalOpen('deadline')}
-                    activeScale={0.96}
-                  >
-                    {deadline ? (
-                      <PressableScale
-                        style={styles.dateSquareClear}
-                        onPress={(e) => { e.stopPropagation?.(); setDeadline(''); }}
-                        hitSlop={8}
-                        activeScale={0.85}
-                        haptic="commit"
-                        testID="clear-deadline"
-                      >
-                        <X size={12} color="#fff" strokeWidth={2.5} />
-                      </PressableScale>
-                    ) : null}
-                    {/* Calendar with a small clock at its bottom-right: a deadline. */}
+                {renderDlTile({
+                  field: 'exec',
+                  label: t('builder.start_date'),
+                  value: exec ? formatShortDay(exec, language === 'he' ? 'he' : 'en') : '',
+                  optional: true,
+                  icon: (color) => <CalendarDays size={18} color={color} strokeWidth={1.8} />,
+                  onPress: () => setCalOpen('exec'),
+                  onClear: () => setExec(''),
+                })}
+                {renderDlTile({
+                  field: 'deadline',
+                  label: t('builder.end_date'),
+                  value: deadline === 'flexible'
+                    ? t('builder.flexible')
+                    : (deadline ? formatShortDay(deadline, language === 'he' ? 'he' : 'en') : ''),
+                  // Required: step 1 does not advance without it.
+                  optional: false,
+                  error: errors.deadline,
+                  // Calendar with a small clock at its bottom-right: a deadline.
+                  // The clock's fill punches it out of the calendar's lines, so it
+                  // takes the icon tile's colour.
+                  icon: (color, tileBg) => (
                     <View style={styles.deadlineIcon}>
-                      <CalendarDays size={19} color={deadline ? VIOLET : INK_2} strokeWidth={1.8} />
-                      <View style={[styles.deadlineClock, deadline ? styles.deadlineClockSel : null]}>
-                        <Clock size={9} color={deadline ? VIOLET : INK_2} strokeWidth={2.4} />
+                      <CalendarDays size={18} color={color} strokeWidth={1.8} />
+                      <View style={[styles.deadlineClock, { backgroundColor: tileBg }]}>
+                        <Clock size={9} color={color} strokeWidth={2.4} />
                       </View>
                     </View>
-                    <View style={styles.dateSquareLabelBox}>
-                      <Text style={deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                        {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
-                      </Text>
-                    </View>
-                    {/* The note sits UNDER the label, and its line is reserved in all
-                        three squares — the required one leaves it empty — so every
-                        square holds the same stack and the marks stay level. */}
-                    <View style={styles.dateSquareOptBox} />
-                  </PressableScale>
-{errors.deadline ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.deadline}</Text> : null}
-                </View>
-
-                {/* Location square */}
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <PressableScale
-                    style={[styles.dateSquare, location ? styles.dateSquareSel : null, errors.location ? { borderWidth: 1.5, borderColor: '#fc8181' } : null]}
-                    onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
-                    activeScale={0.96}
-                  >
-                    {location ? (
-                      <PressableScale
-                        style={styles.dateSquareClear}
-                        onPress={(e) => { e.stopPropagation?.(); setLocation(''); }}
-                        hitSlop={8}
-                        activeScale={0.85}
-                        haptic="commit"
-                        testID="clear-location"
-                      >
-                        <X size={12} color="#fff" strokeWidth={2.5} />
-                      </PressableScale>
-                    ) : null}
-                    <MapPin size={19} color={location ? VIOLET : INK_2} strokeWidth={1.8} />
-                    <View style={styles.dateSquareLabelBox}>
-                      <Text style={location ? styles.dateSquareValue : styles.dateSquarePlaceholder} numberOfLines={2}>
-                        {location || t('builder.placeholder_location')}
-                      </Text>
-                    </View>
-                    {/* The note sits UNDER the label, and its line is reserved in all
-                        three squares — the required one leaves it empty — so every
-                        square holds the same stack and the marks stay level. */}
-                    <View style={styles.dateSquareOptBox}>
-                      {!location && <Text style={styles.dateSquareOptText}>{t('builder.optional_note')}</Text>}
-                    </View>
-                  </PressableScale>
-                  {errors.location ? <Text style={[styles.error, { textAlign: 'center' }]}>{errors.location}</Text> : null}
-                </View>
+                  ),
+                  onPress: () => setCalOpen('deadline'),
+                  onClear: () => setDeadline(''),
+                })}
+                {renderDlTile({
+                  field: 'location',
+                  label: t('builder.location'),
+                  // A city from the list is already short; typed text may be a
+                  // full address, so the tile shows its first part.
+                  value: location ? (location.split(',')[0].trim() || location) : '',
+                  optional: true,
+                  error: errors.location,
+                  icon: (color) => <MapPin size={18} color={color} strokeWidth={1.8} />,
+                  onPress: () => { setLocationSearch(''); setLocationModalOpen(true); },
+                  onClear: () => setLocation(''),
+                })}
               </View>
 
               <View style={[styles.tipBox, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -742,7 +753,7 @@ export default function HomeScreen() {
                           style={styles.s2Glyph}
                           contentFit="contain"
                           cachePolicy="memory-disk"
-                          tintColor={on ? '#FFFFFF' : STEP2.accent}
+                          tintColor={on ? '#FFFFFF' : WIZARD.accent}
                         />
                       ) : null}
                     </View>
@@ -780,8 +791,8 @@ export default function HomeScreen() {
                           accessibilityLabel={locked ? t('builder.role_locked_a11y') : t('builder.remove_role_a11y', { role: label })}
                         >
                           {locked
-                            ? <Lock size={13} color={STEP2.accent} strokeWidth={2.5} />
-                            : <Minus size={16} color={STEP2.accent} strokeWidth={3} />}
+                            ? <Lock size={13} color={WIZARD.accent} strokeWidth={2.5} />
+                            : <Minus size={16} color={WIZARD.accent} strokeWidth={3} />}
                         </PressableScale>
                       </View>
                     ) : (
@@ -1040,6 +1051,21 @@ export default function HomeScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* The dates & location help: the three fields' texts, one after another. */}
+      <BottomSheet visible={dlHelpOpen} onClose={() => setDlHelpOpen(false)}>
+        <Text style={[styles.dlHelpSheetTitle, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.dates_location_title')}</Text>
+        {([
+          ['start_date', 'help_execution'],
+          ['end_date', 'help_deadline'],
+          ['location', 'help_location'],
+        ] as const).map(([name, help]) => (
+          <View key={name} style={styles.dlHelpSection}>
+            <Text style={[styles.dlHelpName, { textAlign: rtl ? 'right' : 'left' }]}>{t(`builder.${name}`)}</Text>
+            <Text style={[styles.dlHelpText, { textAlign: rtl ? 'right' : 'left' }]}>{t(`builder.${help}`)}</Text>
+          </View>
+        ))}
+      </BottomSheet>
+
       {calOpen !== null && (
         <MiniCalendar
           value={calOpen === 'exec' ? exec : (deadline === 'flexible' ? '' : deadline)}
@@ -1150,41 +1176,41 @@ function createStyles(
       backgroundColor: '#FFFFFF',
       // 2 in both states, so selecting a row cannot nudge the list.
       borderWidth: 2,
-      borderColor: STEP2.rowBorder,
+      borderColor: WIZARD.rowBorder,
     },
-    s2RowOn: { backgroundColor: STEP2.rowSelectedBg, borderColor: STEP2.accent },
+    s2RowOn: { backgroundColor: WIZARD.rowSelectedBg, borderColor: WIZARD.accent },
     s2Tile: {
       width: 52,
       height: 52,
       borderRadius: 14,
-      backgroundColor: STEP2.tileBg,
+      backgroundColor: WIZARD.tileBg,
       alignItems: 'center',
       justifyContent: 'center',
       flexShrink: 0,
     },
-    s2TileOn: { backgroundColor: STEP2.accent },
+    s2TileOn: { backgroundColor: WIZARD.accent },
     s2Glyph: { width: 28, height: 28 },
     // flex 1 with minWidth 0 so a long name truncates instead of pushing the
     // stepper off the end of the row.
-    s2RoleName: { flex: 1, minWidth: 0, fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: STEP2.text },
+    s2RoleName: { flex: 1, minWidth: 0, fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: WIZARD.text },
     s2AddPill: {
       height: 36,
       borderRadius: 18,
       paddingHorizontal: 14,
       backgroundColor: '#FFFFFF',
       borderWidth: 1,
-      borderColor: STEP2.addBorder,
+      borderColor: WIZARD.addBorder,
       alignItems: 'center',
       justifyContent: 'center',
       flexShrink: 0,
     },
-    s2AddPillText: { fontSize: 14, fontWeight: '600', fontFamily: ffSemiBold, color: STEP2.text },
+    s2AddPillText: { fontSize: 14, fontWeight: '600', fontFamily: ffSemiBold, color: WIZARD.text },
     s2Stepper: {
       height: 36,
       borderRadius: 18,
       backgroundColor: '#FFFFFF',
       borderWidth: 1,
-      borderColor: STEP2.addBorder,
+      borderColor: WIZARD.addBorder,
       alignItems: 'center',
       paddingHorizontal: 3,
       gap: 10,
@@ -1194,7 +1220,7 @@ function createStyles(
       width: 30,
       height: 30,
       borderRadius: 15,
-      backgroundColor: STEP2.accent,
+      backgroundColor: WIZARD.accent,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -1203,25 +1229,25 @@ function createStyles(
       width: 30,
       height: 30,
       borderRadius: 15,
-      backgroundColor: STEP2.stepperMinusBg,
+      backgroundColor: WIZARD.stepperMinusBg,
       alignItems: 'center',
       justifyContent: 'center',
     },
     s2StepLocked: { opacity: 0.55 },
     // 800 has no useAppFont entry; Hebrew names the ExtraBold face outright.
-    s2Count: { fontSize: 16, fontWeight: '800', fontFamily: ffBold, color: STEP2.text, minWidth: 14, textAlign: 'center' },
+    s2Count: { fontSize: 16, fontWeight: '800', fontFamily: ffBold, color: WIZARD.text, minWidth: 14, textAlign: 'center' },
 
     s2CtaWrap: { backgroundColor: '#FFFFFF', paddingTop: 12, paddingBottom: 16, marginTop: SPACE.lg },
     s2Cta: {
       height: 56,
       borderRadius: 16,
-      backgroundColor: STEP2.accent,
+      backgroundColor: WIZARD.accent,
       alignItems: 'center',
       justifyContent: 'center',
     },
     // A different fill, not an opacity: the button is still pressable, and a
     // dimmed one reads as inert.
-    s2CtaOff: { backgroundColor: STEP2.ctaDisabledBg },
+    s2CtaOff: { backgroundColor: WIZARD.ctaDisabledBg },
     s2CtaText: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: '#FFFFFF' },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 16, lineHeight: 22, fontWeight: '600', fontFamily: ffSemiBold, color: INK, marginTop: FIELD_GAP, marginBottom: SPACE.sm },
@@ -1403,32 +1429,58 @@ function createStyles(
     qtyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: ffBold },
     dateRow: { flexDirection: 'row', gap: 16, marginTop: 0 },
     dateCol: { flex: 1 },
-    dateSquare: {
-      backgroundColor: FIELD_FILL,
-      borderWidth: 1,
-      borderColor: FIELD_BORDER,
-      borderRadius: 16,
-      width: '100%',
-      // 100, not 84: the two optional squares carry an extra "(optional)" line,
-      // and the required one must stay the same height beside them.
-      minHeight: 100,
-      // Centred. The "(optional)" line is positioned over the top of the
-      // square rather than stacked in the column, so the icon and text centre
-      // identically in all three squares and sit on the same line.
-      justifyContent: 'center',
+    // ── Step 1: dates & location ──
+    dlHeader: { alignItems: 'center', gap: 8, marginTop: FIELD_GAP },
+    dlTitle: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: WIZARD.text },
+    dlHelpBtn: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: WIZARD.tagBg,
       alignItems: 'center',
-      // 19 mark + 2 + 28 label + 2 + 14 note = 65, well inside the 100 floor.
-      // 8/12 rather than even: the note hangs below everything else, so an
-      // evenly padded stack reads low. Moving 2 from the top to the bottom
-      // lifts the mark and the label without moving the square itself.
-      gap: 2,
-      paddingTop: 8,
-      paddingBottom: 12,
-      paddingHorizontal: 11,
+      justifyContent: 'center',
     },
-    deadlineIcon: { width: 19, height: 19 },
-    // Sits on the calendar's corner; the fill punches it out of the calendar's
-    // lines so the two don't blur together.
+    dlHelpQ: { fontSize: 12, fontWeight: '700', fontFamily: ffBold, color: WIZARD.textSec },
+    /** Empty: 1pt border + 8 padding. The filled and error states are 2 + 7, so
+     *  the tile is the same size in every state. */
+    dlTile: {
+      height: 116,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: WIZARD.rowBorder,
+      backgroundColor: WIZARD.emptyBg,
+      padding: 8,
+      justifyContent: 'space-between',
+    },
+    dlTileOn: { borderWidth: 2, borderColor: WIZARD.accent, backgroundColor: WIZARD.rowSelectedBg, padding: 7 },
+    dlTileError: { borderWidth: 2, borderColor: '#fc8181', padding: 7 },
+    dlTopRow: { justifyContent: 'space-between', alignItems: 'flex-start' },
+    dlIconTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    /** Shrinks rather than overflows on the narrowest phones. */
+    dlTag: {
+      height: 20,
+      borderRadius: 10,
+      paddingHorizontal: 5,
+      backgroundColor: WIZARD.tagBg,
+      justifyContent: 'center',
+      flexShrink: 1,
+    },
+    dlTagText: { fontSize: 10.5, fontWeight: '500', fontFamily: ffMedium, color: WIZARD.tagText },
+    dlClear: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dlBottom: { gap: 2 },
+    dlLabel: { fontSize: 12.5, fontWeight: '600', fontFamily: ffSemiBold, color: WIZARD.textSec },
+    dlChoose: { fontSize: 14, fontWeight: '500', fontFamily: ffMedium, color: WIZARD.placeholder },
+    dlValue: { fontSize: 15, fontWeight: '700', fontFamily: ffBold, color: WIZARD.text },
+    deadlineIcon: { width: 18, height: 18 },
+    // Sits on the calendar's corner; its fill (set inline to the icon tile's
+    // colour) punches it out of the calendar's lines.
     deadlineClock: {
       position: 'absolute',
       right: -4,
@@ -1438,67 +1490,11 @@ function createStyles(
       borderRadius: 6,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: FIELD_FILL,
     },
-    /** Matches dateSquareSel's fill once a deadline is picked. */
-    deadlineClockSel: { backgroundColor: '#F3EEFE' },
-    dateSquareSel: { borderWidth: 1.5, borderColor: '#8B5CF6', backgroundColor: '#F3EEFE' },
-    tileTitle: { fontSize: 14, lineHeight: 18, fontWeight: '600', fontFamily: ffSemiBold, color: INK, textAlign: 'center' },
-    tileTitleSel: { color: '#3B0764' },
-    /** Title then "?", in reading order: flexDirection is set inline per language. */
-    tileTitleRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 5 },
-    /**
-     * The label's box RESERVES two lines, whether or not the second is used,
-     * and centres the text inside that reservation.
-     *
-     * The reservation keeps the three icons on one line: the stack is centred,
-     * so its height decides where the icon sits, and on a phone one label wraps
-     * where its neighbour does not. Without it the wrapped tile pushed its icon
-     * up. A desktop browser never showed that, because at that width nothing
-     * wraps.
-     *
-     * Centring the text inside the box is what keeps the VISIBLE content on the
-     * square's centre line. Painted at the top of its reservation, a one-line
-     * label left 16pt of dead space below it, putting everything you can
-     * actually see 8pt high.
-     *
-     * 32 = 2 x lineHeight 16, and numberOfLines={2} caps it there.
-     */
-    /** 28 = 2 x lineHeight 14, the cap numberOfLines={2} sets. Reserved so a
-     *  label that wraps cannot push its own mark out of line with the rest. */
-    dateSquareLabelBox: { height: 28, alignSelf: 'stretch', justifyContent: 'center' },
-    /** The note's reservation, empty on the required square. Its own height
-     *  now: it sits under the label rather than balancing the mark, so there
-     *  is nothing for it to match. */
-    dateSquareOptBox: { height: 14, alignSelf: 'stretch', justifyContent: 'center' },
-    dateSquareOptText: { fontSize: 10, lineHeight: 12, color: PLACEHOLDER, textAlign: 'center', fontFamily: ff },
-    dateSquarePlaceholder: {
-      fontSize: 11,
-      lineHeight: 14,
-      fontWeight: '400',
-      color: INK_2,
-      textAlign: 'center',
-      fontFamily: ff,
-    },
-    dateSquareValue: {
-      fontSize: 11,
-      lineHeight: 14,
-      fontWeight: '500',
-      color: VIOLET,
-      textAlign: 'center',
-      fontFamily: ffMedium,
-    },
-    dateSquareClear: {
-      position: 'absolute',
-      top: 6,
-      right: 6,
-      backgroundColor: VIOLET,
-      borderRadius: 10,
-      width: 18,
-      height: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+    dlHelpSheetTitle: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: WIZARD.text },
+    dlHelpSection: { gap: 4 },
+    dlHelpName: { fontSize: 14, fontWeight: '600', fontFamily: ffSemiBold, color: WIZARD.text },
+    dlHelpText: { fontSize: 14, lineHeight: 20, fontFamily: ff, color: WIZARD.textSec },
     // Summary modal
     summaryCard: { width: '100%', maxHeight: '90%', borderRadius: 24, overflow: 'hidden' },
     summaryGradient: { flex: 1, borderRadius: 24 },

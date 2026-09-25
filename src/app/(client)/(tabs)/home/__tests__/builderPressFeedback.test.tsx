@@ -107,7 +107,7 @@ describe('date squares', () => {
     const r = goToStep(1);
     expect(r.queryByTestId('mini-calendar')).toBeNull();
 
-    fireEvent.press(r.getByText(en.builder.placeholder_date));
+    fireEvent.press(r.getByTestId('tile-exec'));
 
     expect(r.getByTestId('mini-calendar')).toBeTruthy();
     expect(commitFeedback).not.toHaveBeenCalled();
@@ -116,26 +116,28 @@ describe('date squares', () => {
 
   it('the clear badge empties the field and buzzes — clearing IS a commit', () => {
     const r = goToStep(1);
-    fireEvent.press(r.getByText(en.builder.placeholder_date));
+    fireEvent.press(r.getByTestId('tile-exec'));
     fireEvent.press(r.getByTestId('mini-calendar'));
     // The square now shows a value, so the clear badge exists.
-    expect(r.queryByText(en.builder.placeholder_date)).toBeNull();
+    expect(r.getByTestId('clear-exec')).toBeTruthy();
     jest.clearAllMocks();
 
     fireEvent.press(r.getByTestId('clear-exec'), pressEvent());
 
-    expect(r.getByText(en.builder.placeholder_date)).toBeTruthy();
+    expect(r.queryByTestId('clear-exec')).toBeNull();
     expect(commitFeedback).toHaveBeenCalledTimes(1);
   });
 
   it('clearing one square leaves the others alone', () => {
     const r = goToStep(1);
-    fireEvent.press(r.getByText(en.builder.placeholder_deadline));
+    fireEvent.press(r.getByTestId('tile-exec'));
+    fireEvent.press(r.getByTestId('mini-calendar'));
+    fireEvent.press(r.getByTestId('tile-deadline'));
     fireEvent.press(r.getByTestId('mini-calendar'));
     fireEvent.press(r.getByTestId('clear-deadline'), pressEvent());
 
-    expect(r.getByText(en.builder.placeholder_deadline)).toBeTruthy();
-    expect(r.getByText(en.builder.placeholder_date)).toBeTruthy();
+    expect(r.queryByTestId('clear-deadline')).toBeNull();
+    expect(r.getByTestId('clear-exec')).toBeTruthy();
   });
 });
 
@@ -166,7 +168,7 @@ describe('next-step buttons', () => {
       r.getByTestId('description-input'),
       'A long enough description to pass validation',
     );
-    fireEvent.press(r.getByText(en.builder.placeholder_deadline));
+    fireEvent.press(r.getByTestId('tile-deadline'));
     fireEvent.press(r.getByTestId('mini-calendar'));
     jest.clearAllMocks();
 

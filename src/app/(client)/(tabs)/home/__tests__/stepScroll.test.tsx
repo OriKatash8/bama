@@ -100,7 +100,7 @@ function fillStepOne(r: ReturnType<typeof render>) {
     r.getByTestId('description-input'),
     'A long enough description to pass validation',
   );
-  fireEvent.press(r.getByText(en.builder.placeholder_deadline));
+  fireEvent.press(r.getByTestId('tile-deadline'));
   fireEvent.press(r.getByTestId('mini-calendar'));
 }
 
