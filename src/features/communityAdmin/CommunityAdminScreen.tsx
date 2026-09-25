@@ -9,9 +9,11 @@ import {
   rejectJoinRequest,
   removeCommunityMember,
 } from '@features/chat/services/communityMembership';
-import { latestJoinByUser, type RangeDays } from './aggregate';
+import { flowSeries, latestJoinByUser, weeklyBuckets, type RangeDays } from './aggregate';
+import { marketWeeks } from './chartGeometry';
+import { tileStats } from './stats';
 import { useAdminPalette, useAdminT } from './i18n';
-import { useCommunity, useCommunityEvents, useJoinRequests, useMemberStats, usePeople } from './hooks';
+import { useCommunity, useCommunityEvents, useJoinRequests, useMarketListings, useMemberStats, usePeople } from './hooks';
 import { buildMemberRows, buildRequestRows, filterMembers } from './rows';
 import { useVanishingList } from './useVanishingList';
 import { SPACE, TWO_COL_MIN_WIDTH } from './theme';
@@ -20,6 +22,9 @@ import { AdminText } from './components/primitives';
 import { RequestsCard, type RequestRowData } from './components/RequestsCard';
 import { MembersCard, type MemberRowData } from './components/MembersCard';
 import { AdminToast, useAdminToast } from './components/AdminToast';
+import { StatTiles } from './components/StatTiles';
+import { MemberFlowChart } from './components/MemberFlowChart';
+import { MarketChart } from './components/MarketChart';
 
 const detailsHref = (chatId: string) => `/(client)/chat/community-details?chatId=${chatId}`;
 
@@ -30,7 +35,7 @@ const detailsHref = (chatId: string) => `/(client)/chat/community-details?chatId
 export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   const router = useRouter();
   const p = useAdminPalette();
-  const { t, lang } = useAdminT();
+  const { t, lang, rowDir } = useAdminT();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const uid = useAuthStore((s) => s.user?.id);
@@ -45,6 +50,7 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   const requests = useJoinRequests(chatId, isOwner);
   const events = useCommunityEvents(chatId, isOwner);
   const counts = useMemberStats(chatId, isOwner);
+  const listingDates = useMarketListings(chatId, isOwner);
   const members = useMemo(() => community?.members ?? [], [community?.members]);
   const people = usePeople(useMemo(() => [...members, ...requests.map((r) => r.userId)], [members, requests]));
 
@@ -53,6 +59,8 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   const requestRows = buildRequestRows(requests, people, t, lang, now);
   const memberRows = buildMemberRows(members, community?.ownerId ?? '', people, counts, latestJoinByUser(events), t, lang, now);
   const req = useVanishingList(requestRows, (r) => r.userId);
+  const requestedAt = new Map(requests.map((r) => [r.userId, r.requestedAt]));
+  const flow = flowSeries(events, range, now);
   const mem = useVanishingList(memberRows, (m) => m.userId);
   const shownMembers = filterMembers(
     mem.rows.map((r) => r.item),
@@ -153,7 +161,32 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
             onApproveAll={approveAll}
             onGone={req.finish}
           />
-          {/* Checkpoint 4: stat tiles and the two charts go here. */}
+          <StatTiles
+            width={width}
+            range={range}
+            now={now}
+            stats={tileStats({
+              memberCount: members.length,
+              events,
+              // Pending as the owner sees it: rows already collapsing away don't count.
+              pendingSince: req.rows.filter((r) => !r.leaving).map((r) => requestedAt.get(r.item.userId) ?? null),
+              listingDates,
+              range,
+              now,
+            })}
+          />
+          <View style={[styles.charts, width >= TWO_COL_MIN_WIDTH && { flexDirection: rowDir }]}>
+            <MemberFlowChart
+              {...flow}
+              range={range}
+              style={width >= TWO_COL_MIN_WIDTH ? styles.flowWide : undefined}
+            />
+            <MarketChart
+              weeks={weeklyBuckets(listingDates, marketWeeks(range), now)}
+              range={range}
+              style={width >= TWO_COL_MIN_WIDTH ? styles.marketWide : undefined}
+            />
+          </View>
           <MembersCard
             rows={mem.rows.filter((r) => shownIds.has(r.item.userId))}
             memberCount={members.length}
@@ -179,4 +212,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACE.gutter,
     gap: SPACE.cardGap,
   },
+  charts: { gap: SPACE.cardGap },
+  // Member flow ~1.55fr, market ~1fr, side by side from 900px.
+  flowWide: { flex: 1.55, minWidth: 0 },
+  marketWide: { flex: 1, minWidth: 0 },
 });

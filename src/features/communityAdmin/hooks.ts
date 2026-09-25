@@ -176,3 +176,31 @@ export function usePeople(uids: string[]) {
   }, [key]);
   return people;
 }
+
+/** Enough history for the longest range and the window before it (2 × 90d), and 13 weeks. */
+const LISTING_HISTORY_DAYS = 180;
+
+/**
+ * Shared marketplace listings in the Market channel: messages with
+ * `type: 'listing'` (normal chat messages have no `type`). One listener over
+ * the last 180 days; switching range filters it client-side, no re-subscribe.
+ * Needs the (type, timestamp) index on `messages`.
+ */
+export function useMarketListings(chatId: string, enabled: boolean) {
+  const [dates, setDates] = useState<Date[]>([]);
+  const [since] = useState(() => new Date(Date.now() - LISTING_HISTORY_DAYS * 86_400_000));
+  useEffect(() => {
+    if (!enabled) return;
+    const q = query(
+      collection(db, 'chats', chatId, 'channels', 'market', 'messages'),
+      where('type', '==', 'listing'),
+      where('timestamp', '>=', since),
+    );
+    return onSnapshot(
+      q,
+      (snap) => setDates(snap.docs.flatMap((d) => toDate(d.data(SNAP).timestamp) ?? [])),
+      (err) => console.error('[community-admin] market listings listener failed:', err),
+    );
+  }, [chatId, enabled, since]);
+  return dates;
+}

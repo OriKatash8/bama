@@ -54,6 +54,7 @@ jest.mock('../hooks', () => ({
   useJoinRequests: jest.fn(),
   useCommunityEvents: jest.fn(() => []),
   useMemberStats: jest.fn(() => ({})),
+  useMarketListings: jest.fn(() => []),
   usePeople: jest.fn(() => ({})),
 }));
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
