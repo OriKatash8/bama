@@ -50,6 +50,7 @@ functions/node_modules
 # Firebase emulator / CLI debug logs
 firebase-debug.log
 firebase-debug.*.log
+firebase-debug*.log
 firestore-debug.log
 database-debug.log
 pubsub-debug.log
