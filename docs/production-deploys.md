@@ -8,6 +8,22 @@ ruleset), never from the CLI's success message alone.
 The commit is the last commit that changed the deployed file, so it stays correct
 while later commits leave that file alone.
 
+## ⚠ Held back on purpose (not deployed)
+
+Email verification (`11f783a`) put its server half in the repo, but it must NOT go
+live until the app update with the verify screen has shipped. Before that, old
+installed builds would hit bare permission errors. Until then:
+
+- **`firestore.rules`**: `verified()` differs from production on purpose, so the
+  drift check reports rules drift. Don't run `firebase deploy --only
+  firestore:rules` for anything else without first deciding about this.
+- **`callClaude`**: now calls `assertVerifiedEmail`. Leave `functions:callClaude` out
+  of any functions deploy until the app update is out, or it goes live early.
+  (`createCommunityInvite` has the guard too, but it's held/undeployed anyway.)
+
+When the update is out, deploy both, verify (`scripts/probe-email-verified-rules.mjs`),
+record them below, and delete this section.
+
 ## Firestore rules (`firestore.rules`)
 
 | Released (UTC) | Commit | Ruleset | How verified |
