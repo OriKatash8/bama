@@ -16,6 +16,10 @@ import { formatPhoneForDisplay, normalizePhone } from '@features/auth/utils/phon
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
+/** White page, grey card, black text. */
+const BLACK = '#000000';
+const GREY = '#F2F2F5';
+
 type Translations = typeof en;
 function makeT(translations: Translations) {
   return (key: string): string => {
@@ -99,7 +103,7 @@ export default function PhoneSettings() {
   }
 
   return (
-    <Screen style={styles.content} scrollable>
+    <Screen style={styles.content} scrollable backgroundColor="#FFFFFF">
       {/* The gate cannot be swiped away: the number is required. */}
       <Stack.Screen options={{ headerShown: false, gestureEnabled: !isRequired }} />
 
@@ -112,16 +116,16 @@ export default function PhoneSettings() {
             accessibilityRole="button"
             hitSlop={10}
           >
-            {rtl ? <ChevronRight size={22} color={accent} strokeWidth={2} /> : <ChevronLeft size={22} color={accent} strokeWidth={2} />}
+            {rtl ? <ChevronRight size={22} color={BLACK} strokeWidth={2} /> : <ChevronLeft size={22} color={BLACK} strokeWidth={2} />}
           </TouchableOpacity>
         )}
-        <AppText weight="bold" style={[styles.title, { color: accent }]}>{t('phone_settings.title')}</AppText>
+        <AppText weight="bold" style={[styles.title, { color: BLACK }]}>{t('phone_settings.title')}</AppText>
       </View>
 
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
+      <View testID="phone-card" style={styles.card}>
         <View style={[styles.explainRow, { flexDirection: rowDir }]}>
-          <Phone size={18} color={accent} strokeWidth={2} />
-          <AppText weight="regular" style={[styles.explain, { color: colors.text, textAlign }]}>
+          <Phone size={18} color={BLACK} strokeWidth={2} />
+          <AppText weight="regular" style={[styles.explain, { color: BLACK, textAlign }]}>
             {t(isRequired ? 'phone_settings.required_explain' : 'phone_settings.edit_explain')}
           </AppText>
         </View>
@@ -136,7 +140,7 @@ export default function PhoneSettings() {
           textContentType="telephoneNumber"
           error={error}
           textAlign={textAlign}
-          style={{ borderColor: accent, color: colors.text, ...font.regular, textAlign }}
+          style={{ backgroundColor: '#FFFFFF', borderColor: '#DCDCE2', color: BLACK, ...font.regular, textAlign }}
           autoFocus={isRequired}
         />
 
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   header: { alignItems: 'center', gap: 6, marginTop: 8 },
   title: { fontSize: 22 },
-  card: { borderRadius: 16, padding: 16, gap: 14 },
+  card: { borderRadius: 16, padding: 16, gap: 14, backgroundColor: GREY },
   explainRow: { alignItems: 'flex-start', gap: 10 },
   explain: { flex: 1, fontSize: 14, lineHeight: 20 },
   saveBtn: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

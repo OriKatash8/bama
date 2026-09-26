@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import PhoneSettings from '../phone';
 import { useAuthStore } from '@core/stores/authStore';
@@ -29,7 +30,10 @@ const mockToast = jest.fn();
 jest.mock('@core/stores/uiStore', () => ({
   useUiStore: (s: (x: { showToast: typeof mockToast }) => unknown) => s({ showToast: mockToast }),
 }));
-jest.mock('@components/layout/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => children }));
+const mockScreenProps: Record<string, unknown>[] = [];
+jest.mock('@components/layout/Screen', () => ({
+  Screen: ({ children, ...props }: { children: React.ReactNode }) => { mockScreenProps.push(props); return children; },
+}));
 jest.mock('@core/navigation/floatingTabBar', () => ({ useModeAccent: () => ({ accent: '#1e4fa3', tint: '#E6EDFC' }) }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
@@ -109,3 +113,18 @@ describe('from Settings (edit)', () => {
     expect(mockBack).not.toHaveBeenCalled();
   });
 });
+
+describe('look', () => {
+  beforeEach(() => { mockRequired = '1'; mockScreenProps.length = 0; });
+
+  it('white page, grey card, black text', () => {
+    const r = render(<PhoneSettings />);
+    expect(mockScreenProps[mockScreenProps.length - 1].backgroundColor).toBe('#FFFFFF');
+    expect(StyleSheet.flatten(r.getByTestId('phone-card').props.style).backgroundColor).toBe(GREY);
+    expect(StyleSheet.flatten(r.getByText(p.title).props.style).color).toBe(BLACK);
+    expect(StyleSheet.flatten(r.getByText(p.required_explain).props.style).color).toBe(BLACK);
+  });
+});
+
+const GREY = '#F2F2F5';
+const BLACK = '#000000';
