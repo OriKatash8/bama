@@ -20,7 +20,7 @@ let mockNeedsPhone = false;
 jest.mock('@features/auth/hooks/usePhoneGate', () => ({ usePhoneGate: () => mockNeedsPhone }));
 jest.mock('@core/firebase/firestore', () => ({ subscribeToDocument: jest.fn(() => () => {}) }));
 
-beforeEach(() => { mockRedirects.length = 0; mockNeedsPhone = false; });
+beforeEach(() => { mockRedirects.length = 0; mockNeedsPhone = false; useAuthStore.setState({ needsEmailVerification: null }); });
 
 describe.each([
   ['client', ClientLayout, { clientOnboarded: false }],
@@ -31,6 +31,13 @@ describe.each([
     mockNeedsPhone = true;
     render(<Layout />);
     expect(mockRedirects).toEqual(['/settings/phone?required=1']);
+  });
+
+  it('sends an unverified password account to verify its email — before the phone and onboarding', () => {
+    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, needsEmailVerification: true, ...lockedOnboarding });
+    mockNeedsPhone = true;
+    render(<Layout />);
+    expect(mockRedirects).toEqual(['/(auth)/verify-email']);
   });
 
   it('leaves a user with a number alone', () => {

@@ -11,7 +11,9 @@ export function useLogout() {
   const showToast = useUiStore((s) => s.showToast);
   const router = useRouter();
 
-  async function logout() {
+  /** Signs out and goes to `to` — the start screen unless told otherwise (the
+   *  verify-email screen's "change address" goes to registration). */
+  async function logout(to: string = '/(auth)') {
     setIsLoading(true);
     try {
       // Release this device's push token BEFORE signing out — the rules only
@@ -25,7 +27,7 @@ export function useLogout() {
       // A saved deep link belongs to the person who tapped it; never hand it to
       // whoever signs in next on this device.
       usePendingIntentStore.getState().clearAll();
-      router.replace('/(auth)');
+      router.replace(to as never);
     } catch {
       showToast('Failed to sign out. Please try again.', 'error');
       setIsLoading(false);

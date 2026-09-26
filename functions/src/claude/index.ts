@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
+import { assertVerifiedEmail } from '../auth/verifiedEmail';
 
 const claudeApiKey = defineSecret('CLAUDE_API_KEY');
 
@@ -17,6 +18,8 @@ export const callClaude = onCall(
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Authentication required');
     }
+    // Costs money per call: an unverified password account may not spend it.
+    assertVerifiedEmail(request);
 
     const { system, messages, max_tokens = 600 } = request.data as CallClaudeInput;
 

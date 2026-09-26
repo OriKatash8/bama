@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Stack, Redirect, usePathname } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
-import { usePhoneGate } from '@features/auth/hooks/usePhoneGate';
+import { useOnboardingGate } from '@features/auth/hooks/useOnboardingGate';
 import { subscribeToDocument } from '@core/firebase/firestore';
 import type { ProfessionalProfile } from '@core/types/user';
 
@@ -13,7 +13,7 @@ export default function ProfessionalLayout() {
   const proProfileCompleted = useAuthStore((s) => s.proProfileCompleted);
   const setProProfileCompleted = useAuthStore((s) => s.setProProfileCompleted);
   const pathname = usePathname();
-  const needsPhone = usePhoneGate();
+  const gate = useOnboardingGate();
 
   // Single subscription to the pro's profile doc — feeds the lock signal read by
   // this guard, the tabs layout (tab bar / swipe) and the profile screen.
@@ -28,9 +28,10 @@ export default function ProfessionalLayout() {
     );
   }, [userId, activeMode, setProProfileCompleted]);
 
-  // A phone number is required. Anyone signed in without one (Google/Apple
-  // sign-in, older accounts) enters it before anything else, onboarding included.
-  if (needsPhone) return <Redirect href={"/settings/phone?required=1" as never} />;
+  // The onboarding gate, before anything else — onboarding included: an
+  // unverified password account verifies its email, then anyone without a
+  // phone number adds one (useOnboardingGate).
+  if (gate) return <Redirect href={gate as never} />;
 
   // First-time / incomplete pros are locked to the profile screen: any attempt to
   // be anywhere else redirects back there.

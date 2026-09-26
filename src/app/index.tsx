@@ -3,7 +3,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { View, ActivityIndicator } from 'react-native';
 
 export default function Index() {
-  const { user, activeMode, isLoading } = useAuthStore();
+  const { user, activeMode, isLoading, needsEmailVerification } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -14,6 +14,8 @@ export default function Index() {
   }
 
   if (!user) return <Redirect href="/(auth)" />;
+  // The first gate rung, before a mode is even chosen (useOnboardingGate).
+  if (needsEmailVerification === true) return <Redirect href={'/(auth)/verify-email' as never} />;
   if (activeMode === null) return <Redirect href="/(auth)/mode-select" />;
   if (activeMode === 'client') return <Redirect href="/(client)/(tabs)/browse" />;
   return <Redirect href="/(professional)/(tabs)/dashboard" />;

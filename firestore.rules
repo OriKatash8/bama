@@ -12,6 +12,17 @@ service cloud.firestore {
     function isOwner(uid) {
       return isAuth() && request.auth.uid == uid;
     }
+    // A verified email, for writes that create user-visible content. Google and
+    // Apple accounts arrive verified, so only a PASSWORD sign-in must carry
+    // email_verified (the app's gate: useOnboardingGate → /(auth)/verify-email).
+    // NOT on users/{uid} or users/{uid}/private/* — both are written at sign-up,
+    // before the link is clicked, and the gate reads them.
+    function verified() {
+      return isAuth() && (
+        request.auth.token.email_verified == true ||
+        request.auth.token.firebase.sign_in_provider != 'password'
+      );
+    }
 
     // Fetches members[] of the parent chat document (for subcollection guards)
     function chatMembers(chatId) {
@@ -109,6 +120,7 @@ service cloud.firestore {
      */
     function messageCreateOk(chat) {
       return isAuth()
+        && verified()
         && request.auth.uid in chat.members
         && chat.get('readOnly', false) != true
         && request.resource.data.senderId == request.auth.uid
@@ -346,7 +358,7 @@ service cloud.firestore {
 
       match /profile/data {
         allow read: if isAuth();
-        allow write: if isOwner(userId);
+        allow write: if isOwner(userId) && verified();
       }
 
       // The user's phone number. PRIVATE: users/{uid} is readable by every
@@ -367,7 +379,7 @@ service cloud.firestore {
 
       match /portfolio/{assetId} {
         allow read: if isAuth();
-        allow write: if isOwner(userId);
+        allow write: if isOwner(userId) && verified();
       }
     }
 
@@ -377,7 +389,7 @@ service cloud.firestore {
         request.auth.uid in resource.data.members ||
         resource.data.type == 'community'  // all authed users can see community metadata for discovery
       );
-      allow create: if isAuth() && (
+      allow create: if isAuth() && verified() && (
         request.resource.data.type != 'community' || isAdmin()
       );
       // ── Update guard ────────────────────────────────────────────────────
@@ -679,7 +691,7 @@ service cloud.firestore {
       // A new project starts 'open' — the only status either create site writes
       // (useProjectRequests, DirectProjectSheet). Unchecked, a client could create
       // one already 'in_progress' and skip the review gate the update rule holds.
-      allow create: if isAuth() &&
+      allow create: if isAuth() && verified() &&
         request.resource.data.get('status', 'open') == 'open' &&
         request.resource.data.get('filledSlots', []) == [] &&
         !request.resource.data.keys().hasAny(
@@ -868,8 +880,8 @@ service cloud.firestore {
 
     match /marketplace_listings/{listingId} {
       allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.posterId == request.auth.uid;
-      allow update: if isAuth()
+      allow create: if isAuth() && verified() && request.resource.data.posterId == request.auth.uid;
+      allow update: if isAuth() && verified()
         && listingIdentityStable()
         && listingStatusTransitionAllowed()
         && (
@@ -950,7 +962,7 @@ service cloud.firestore {
       // hole. Existing self-reviews are untouched: reviews are already immutable
       // to clients (`allow update, delete: if false`) and this constrains only
       // creation.
-      allow create: if isAuth() &&
+      allow create: if isAuth() && verified() &&
         request.resource.data.reviewerId == request.auth.uid &&
         request.resource.data.professionalId != request.auth.uid &&
         !request.resource.data.keys().hasAny(['published', 'visibleAt']);

@@ -17,6 +17,7 @@ import {
   type Membership,
 } from './inviteCore';
 import { checkRateLimit } from './rateLimit';
+import { assertVerifiedEmail } from '../auth/verifiedEmail';
 
 /**
  * Community invites. Region: europe-west1, next to the eur3 database.
@@ -69,6 +70,7 @@ async function lookupInvite(tokenOrCode: unknown): Promise<
 
 export const createCommunityInvite = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request.auth?.uid);
+  assertVerifiedEmail(request);
   const communityId = request.data?.communityId;
   if (typeof communityId !== 'string' || !communityId || communityId.includes('/')) {
     throw new HttpsError('invalid-argument', 'communityId required');

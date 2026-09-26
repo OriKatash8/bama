@@ -1330,5 +1330,19 @@
     "save": "Save",
     "saved": "Phone number saved",
     "error": "Couldn't save. Please try again."
+  },
+  "email_verification": {
+    "title": "Verify your email",
+    "sent_to": "We sent a verification link to:",
+    "explain": "Open the link in that email, then come back here. We'll notice on our own, or tap Check again.",
+    "check_again": "Check again",
+    "resend": "Send again",
+    "resend_in": "Send again in {{s}}s",
+    "sent_ok": "A new link is on its way.",
+    "change_email": "Change email address",
+    "logout": "Log out",
+    "not_yet": "Not verified yet — open the link in the email first.",
+    "err_too_many": "Too many attempts. Please wait a few minutes and try again.",
+    "err_generic": "Something went wrong. Please try again."
   }
 }

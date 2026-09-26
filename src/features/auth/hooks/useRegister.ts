@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { signUp } from '@core/firebase/auth';
+import { sendVerificationEmail, signUp } from '@core/firebase/auth';
 import { setDocument } from '@core/firebase/firestore';
 import { savePhone } from '@features/auth/services/phoneService';
 import { useAuthStore } from '@core/stores/authStore';
@@ -28,6 +28,13 @@ export function useRegister(): RegisterState {
     setIsLoading(true);
     try {
       const firebaseUser = await signUp(email, password);
+      // Best effort: a failed send (rate limit, network) must not fail sign-up —
+      // the verify screen, where the gate sends this user next, can resend.
+      try {
+        await sendVerificationEmail(firebaseUser);
+      } catch (err) {
+        console.warn('[register] verification email not sent:', (err as { code?: string })?.code ?? err);
+      }
       const userData = {
         id: firebaseUser.uid,
         email,
@@ -43,7 +50,9 @@ export function useRegister(): RegisterState {
       // Private, in its own owner-only doc: users/{uid} is readable by everyone.
       await savePhone(firebaseUser.uid, phone);
       setUser(userData);
-      router.replace('/(auth)/mode-select');
+      // Straight to the verify screen: a new password account is unverified,
+      // and `/` routes on to mode-select once it is.
+      router.replace('/(auth)/verify-email' as never);
     } catch (e: any) {
       const msg = toRegisterError(e.code);
       setError(msg);

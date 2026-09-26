@@ -4,7 +4,8 @@ import { deleteField, serverTimestamp } from 'firebase/firestore';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@core/stores/authStore';
 import { useModerationStore } from '@core/stores/moderationStore';
-import { onAuthChange, signOut } from '@core/firebase/auth';
+import { onAuthChange, onTokenChange, signOut } from '@core/firebase/auth';
+import { needsEmailVerification } from '@features/auth/utils/emailVerification';
 import { getDocument, updateDocument, setDocument } from '@core/firebase/firestore';
 import { registerIfGranted } from '@core/notifications/registerForPushNotifications';
 import { handleForegroundNotification } from '@core/notifications/foregroundHandler';
@@ -18,6 +19,13 @@ Notifications.setNotificationHandler({ handleNotification: handleForegroundNotif
 
 export function useAuth() {
   const { user, activeMode, isLoading, setUser, setLoading, clear } = useAuthStore();
+
+  // The email-verification gate follows the ID token, not the auth state:
+  // verifying and pressing "check again" refreshes the token (reload +
+  // getIdToken(true)) without any auth-state change.
+  useEffect(() => onTokenChange((firebaseUser) => {
+    useAuthStore.getState().setNeedsEmailVerification(needsEmailVerification(firebaseUser));
+  }), []);
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {

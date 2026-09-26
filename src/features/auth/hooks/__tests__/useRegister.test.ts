@@ -5,8 +5,10 @@ import { setDocument } from '@core/firebase/firestore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 
+const mockSendVerification = jest.fn();
 jest.mock('@core/firebase/auth', () => ({
   signUp: jest.fn(),
+  sendVerificationEmail: (...a: unknown[]) => mockSendVerification(...a),
 }));
 
 jest.mock('@core/i18n', () => ({
@@ -77,14 +79,14 @@ describe('useRegister', () => {
     expect(useAuthStore.getState().activeMode).toBeNull();
   });
 
-  it('navigates to mode-select after registration', async () => {
+  it('goes to the verify-email screen after registration (then / routes on to mode-select)', async () => {
     mockSignUp.mockResolvedValue({ uid: 'u1' } as any);
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
       await result.current.register('Jane', 'jane@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
     });
-    expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
+    expect(mockReplace).toHaveBeenCalledWith('/(auth)/verify-email');
   });
 
   it('sets error on email-already-in-use', async () => {
@@ -116,5 +118,32 @@ describe('useRegister', () => {
     expect(mockSavePhone).toHaveBeenCalledWith('u1', '+972501234567');
     // users/{uid} is readable by every signed-in user.
     expect(mockSetDocument.mock.calls[0][1]).not.toHaveProperty('phone');
+  });
+
+  it('sends the verification email right after sign-up', async () => {
+    const fbUser = { uid: 'u1' };
+    mockSignUp.mockResolvedValue(fbUser as any);
+    mockSetDocument.mockResolvedValue(undefined);
+    mockSavePhone.mockResolvedValue(undefined);
+    mockSendVerification.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useRegister());
+    await act(async () => {
+      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
+    });
+    expect(mockSendVerification).toHaveBeenCalledWith(fbUser);
+  });
+
+  it('a failed send never fails sign-up — the verify screen can resend', async () => {
+    mockSignUp.mockResolvedValue({ uid: 'u1' } as any);
+    mockSetDocument.mockResolvedValue(undefined);
+    mockSavePhone.mockResolvedValue(undefined);
+    mockSendVerification.mockRejectedValue(Object.assign(new Error('x'), { code: 'auth/too-many-requests' }));
+    const { result } = renderHook(() => useRegister());
+    await act(async () => {
+      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
+    });
+    expect(result.current.error).toBeNull();
+    expect(mockSetDocument).toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalled();
   });
 });
