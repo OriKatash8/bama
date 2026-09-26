@@ -30,6 +30,7 @@
 
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { initializeApp } from 'firebase/app';
 import {
   getFirestore, connectFirestoreEmulator, collection, addDoc, serverTimestamp,
@@ -45,7 +46,9 @@ process.env.FIRESTORE_EMULATOR_HOST ??= `127.0.0.1:${FS_PORT}`;
 process.env.FIREBASE_AUTH_EMULATOR_HOST ??= `127.0.0.1:${AUTH_PORT}`;
 const PROJECT = 'bama-af0a0';
 
-const adminDb = getAdminFirestore(initAdmin({ projectId: PROJECT }));
+const adminApp = initAdmin({ projectId: PROJECT });
+const adminDb = getAdminFirestore(adminApp);
+const adminAuth = getAdminAuth(adminApp);
 const clientApp = initializeApp({ apiKey: 'emulator-key', projectId: PROJECT }, 'probe-mentions');
 const db = getFirestore(clientApp);
 const auth = getAuth(clientApp);
@@ -56,6 +59,19 @@ const PW = 'probe-password-123';
 const ids = {};
 const rows = [];
 
+/**
+ * EMAIL MUST BE MARKED VERIFIED. messageCreateOk requires verified(), which for
+ * a password account means the token carries email_verified.
+ *
+ * This probe predates that gate: `verified()` arrived in 11f783a3 ("email
+ * verification for email/password sign-up"), AFTER this file's last change in
+ * b0af32e4 ("bound the mentions array at 10"). Nobody re-ran it in between, so
+ * every case expecting a successful send has been failing ever since — 9 of 27,
+ * all of them the ALLOWED half, which is the half that matters. The denials kept
+ * passing for the wrong reason: verified() was failing, not the rule under test.
+ *
+ * Same fix as probe-email-verified-rules.mjs: flip the flag with the Admin SDK.
+ */
 async function ensureUser(label) {
   const email = `${label}@probe.invalid`;
   try {
@@ -65,6 +81,7 @@ async function ensureUser(label) {
     const cred = await signInWithEmailAndPassword(auth, email, PW);
     ids[label] = cred.user.uid;
   }
+  await adminAuth.updateUser(ids[label], { emailVerified: true });
   await signOut(auth);
   return ids[label];
 }
@@ -72,6 +89,9 @@ async function ensureUser(label) {
 async function as(label) {
   await signOut(auth).catch(() => {});
   await signInWithEmailAndPassword(auth, `${label}@probe.invalid`, PW);
+  // A token minted before updateUser still says email_verified: false, and rules
+  // read the TOKEN, not the Auth record. Force a fresh one.
+  await auth.currentUser.getIdToken(true);
 }
 
 /**
