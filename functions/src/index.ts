@@ -19,6 +19,7 @@ export * from './lifecycle/cron';
 export * from './lifecycle/adminViews';
 export * from './lifecycle/endDate';
 export * from './lifecycle/contact';
+export * from './lifecycle/closingTrigger';
 
 // Community invites (europe-west1). resolveCommunityInvite is exported but NOT
 // deployed until the web landing task; deploy the others by name.

@@ -220,7 +220,11 @@
     "reply_video": "Video",
     "reply_voice": "Voice message",
     "reply_message": "Message",
-    "cancel_reply": "Cancel reply"
+    "cancel_reply": "Cancel reply",
+    "closed_title": "The project has ended — team contacts",
+    "cancelled_title": "The project was cancelled — team contacts",
+    "closing_client": "Client",
+    "closing_contact": "For questions:"
   },
   "mentions": {
     "loading": "Loading members…",

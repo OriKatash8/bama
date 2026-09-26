@@ -8,6 +8,17 @@ export interface LastMessage {
   timestamp: Timestamp;
 }
 
+/** One member in a project's closing message (functions/src/lifecycle/closingNotice.ts). */
+export type ClosingMember = {
+  uid: string;
+  name: string;
+  isClient: boolean;
+  /** Legacy category strings; shown with categoryLabel. */
+  roles: string[];
+  /** E.164, or null when the member never added one. */
+  phone: string | null;
+};
+
 export interface Message {
   id: string;
   senderId: string;
@@ -63,6 +74,11 @@ export interface Message {
   imageUrl?: string | null;
   posterId?: string;
   posterName?: string;
+  /** 'project_closed': the team's contact list, posted once when the project ends. */
+  kind?: 'project_closed';
+  closedAs?: 'completed' | 'cancelled';
+  team?: ClosingMember[];
+  contactEmail?: string;
 }
 
 export interface Chat {

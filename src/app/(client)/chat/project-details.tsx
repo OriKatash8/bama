@@ -2306,7 +2306,9 @@ export default function ProjectDetailsScreen() {
         onRequestClose={() => setShowPaymentSummary(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+          {/* White, with black text — this is the one decision the client makes
+              about closing, so nothing on it should read as faint. */}
+          <View testID="close-now-sheet" style={[styles.modalSheet, { backgroundColor: '#FFFFFF' }]}>
             <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.payment_summary_title')}
             </Text>
@@ -2323,7 +2325,7 @@ export default function ProjectDetailsScreen() {
                 project cannot keep. */}
             <AppText
               weight="regular"
-              style={[styles.closeNowBody, { textAlign: rtl ? 'right' : 'left' }]}
+              style={[styles.closeNowBody, { color: '#000000', textAlign: rtl ? 'right' : 'left' }]}
             >
               {projectEndDate
                 ? t('project_details.close_now_body', { date: formatShortDate(projectEndDate) })
@@ -2332,7 +2334,7 @@ export default function ProjectDetailsScreen() {
 
             {feeData && (
               <>
-                <Text style={[styles.modalSectionLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
+                <Text style={[styles.modalSectionLabel, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
                   {t('project_details.pay_crew')}
                 </Text>
 
@@ -2346,7 +2348,7 @@ export default function ProjectDetailsScreen() {
                 ))}
 
                 <View style={styles.feeRow}>
-                  <Text style={[styles.feeLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
+                  <Text style={[styles.feeLabel, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.medium }]}>
                     {t('project_details.subtotal')}
                   </Text>
                   <Text style={[styles.feeAmountBold, { color: '#000000', ...font.bold }]}>
@@ -2366,16 +2368,19 @@ export default function ProjectDetailsScreen() {
                 <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
 
+              {/* An outline in the mode's colour. It used to have no background at
+                  all, which left its white label invisible on the white sheet. */}
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnConfirm, isConfirming && styles.completeBtnDisabled]}
+                testID="close-now-confirm"
+                style={[styles.modalBtn, styles.closeNowConfirm, { borderColor: modeAccent }, isConfirming && styles.completeBtnDisabled]}
                 onPress={handleConfirmComplete}
                 disabled={isConfirming}
                 activeOpacity={0.8}
               >
                 {isConfirming ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={modeAccent} size="small" />
                 ) : (
-                  <Text style={[styles.modalBtnConfirmText, { ...font.bold }]}>{t('project_details.confirm_complete')}</Text>
+                  <Text style={[styles.modalBtnConfirmText, { color: modeAccent, ...font.bold }]}>{t('project_details.confirm_complete')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -3399,6 +3404,8 @@ const styles = StyleSheet.create({
   modalBtnCancelText: { fontSize: 15, fontWeight: '600' },
   modalBtnConfirm: {},
   modalBtnConfirmText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  /** Close-now's confirm: an outline in the mode's colour (set inline). */
+  closeNowConfirm: { borderWidth: 1.5, backgroundColor: '#FFFFFF' },
 
   // ── Removal banner ────────────────────────────────────────────────────────────
   removalBanner: {

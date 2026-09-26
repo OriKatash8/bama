@@ -43,6 +43,8 @@ import { splitMentionRuns, type MentionTarget } from '../utils/mentions';
 import { usePendingMentions } from '../hooks/usePendingMentions';
 import { chatGroupOf } from '../utils/chatGroup';
 import { useSearchJump } from '../hooks/useSearchJump';
+import { ClosingTeamCard } from '../components/ClosingTeamCard';
+import { BAMA_CONTACT_EMAIL } from '@core/constants/contact';
 
 const TOP_INSET = initialWindowMetrics?.insets.top ?? 0;
 const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
@@ -1615,6 +1617,17 @@ export function ChatRoomScreen({ chatId }: Props) {
               return <DateSeparator label={(item as { label: string }).label} />;
             }
             const msg = item as Message;
+            // A project's closing message: the team's contact list. Also
+            // `system`, so it is caught here, ahead of the generic pill.
+            if (msg.kind === 'project_closed' && msg.team?.length) {
+              return (
+                <ClosingTeamCard
+                  team={msg.team}
+                  closedAs={msg.closedAs ?? 'completed'}
+                  contactEmail={msg.contactEmail ?? BAMA_CONTACT_EMAIL}
+                />
+              );
+            }
             if (msg.system || msg.senderId === 'system') {
               const { variant, headline, detail } = parseSystemMessage(msg.text ?? '', t, rtl ? 'he' : 'en');
               // Black, like the text beside it: the pill's own tint is what

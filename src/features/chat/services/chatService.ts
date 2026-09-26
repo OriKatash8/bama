@@ -38,6 +38,11 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
     mentions: data.mentions,
     mentionsEveryone: data.mentionsEveryone,
     replyTo: data.replyTo,
+    // The closing contact list (onProjectClosed). Written by the server only.
+    kind: data.kind === 'project_closed' ? 'project_closed' : undefined,
+    closedAs: data.closedAs,
+    team: Array.isArray(data.team) ? data.team : undefined,
+    contactEmail: data.contactEmail,
   };
 }
 

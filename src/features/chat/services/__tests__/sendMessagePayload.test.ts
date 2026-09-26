@@ -140,6 +140,18 @@ describe('reading a message back', () => {
     return out[0];
   }
 
+  it('carries the project-closed team list through to the Message', () => {
+    const team = [{ uid: 'c', name: 'Dana', isClient: true, roles: [], phone: '+972501234567' }];
+    const m = read({
+      senderId: 'system', system: true, text: 'closed', kind: 'project_closed',
+      closedAs: 'cancelled', team, contactEmail: 'bama.app.hk@gmail.com',
+    });
+    expect(m.kind).toBe('project_closed');
+    expect(m.closedAs).toBe('cancelled');
+    expect(m.team).toEqual(team);
+    expect(m.contactEmail).toBe('bama.app.hk@gmail.com');
+  });
+
   it('carries mentions through to the Message', () => {
     expect(read({ senderId: 'me', text: 'hey @You', mentions: ['you'] }).mentions).toEqual(['you']);
   });

@@ -220,7 +220,11 @@
     "reply_video": "סרטון",
     "reply_voice": "הודעה קולית",
     "reply_message": "הודעה",
-    "cancel_reply": "ביטול תגובה"
+    "cancel_reply": "ביטול תגובה",
+    "closed_title": "הפרויקט הסתיים — פרטי הקשר של הצוות",
+    "cancelled_title": "הפרויקט בוטל — פרטי הקשר של הצוות",
+    "closing_client": "לקוח",
+    "closing_contact": "לפניות:"
   },
   "mentions": {
     "loading": "טוען חברים…",
