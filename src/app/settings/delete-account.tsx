@@ -10,7 +10,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { callFunction } from '@core/firebase/functions';
-import { signOut } from '@core/firebase/auth';
+import { useLogout } from '@features/auth/hooks/useLogout';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -67,6 +67,7 @@ export default function DeleteAccountSettings() {
   const rtl = language === 'he';
   const textAlign = rtl ? 'right' : ('left' as const);
   const showToast = useUiStore((s) => s.showToast);
+  const { logout } = useLogout();
 
   const [status, setStatus] = useState<DeletionStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,9 +97,14 @@ export default function DeleteAccountSettings() {
     try {
       await deleteAccount({});
       showToast(t('delete_account.done'), 'success');
-      // The Auth user is gone; signing out clears local state and the auth
-      // listener routes back to the sign-in screen on its own.
-      await signOut();
+      // The Auth user is gone. Sign out AND go to the log-in screen: the auth
+      // listener (useAuth) only clears the store on sign-out — it does not
+      // navigate — and this route sits outside the app groups, so without the
+      // replace the user stayed on this screen of an account that no longer
+      // exists. useLogout signs out, drops any saved deep link and replaces to
+      // /(auth). Its push-token delete fails quietly now the user is gone; the
+      // server already removed their tokens.
+      await logout();
     } catch (e: any) {
       console.error('[deleteAccount] failed:', e?.code, e?.message, e?.details);
       showToast(t('delete_account.failed'), 'error');
@@ -195,6 +201,7 @@ export default function DeleteAccountSettings() {
                 {t('delete_account.confirm_label')}
               </AppText>
               <Input
+                testID="delete-confirm-input"
                 value={confirmText}
                 onChangeText={setConfirmText}
                 autoCapitalize="characters"
