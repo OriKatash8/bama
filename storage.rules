@@ -52,7 +52,16 @@ service firebase.storage {
 
     // ─── helpers ──────────────────────────────────────────────────────────
     function isAuth()        { return request.auth != null; }
-    function isAdmin()       { return isAuth() && request.auth.token.role == 'admin'; }
+    // `request.auth.token.role` THROWS for a user with no role claim — it does
+    // not evaluate false. The probe caught it: three EvaluationExceptions,
+    // "Property role is undefined on object", one per non-admin request that
+    // reached this function. The outcomes were still correct (an error denies,
+    // and an error beside a true `||` still allows) but a rule that raises on an
+    // ordinary request is one refactor away from denying a legitimate one, so
+    // the key is checked before it is read.
+    function isAdmin() {
+      return isAuth() && 'role' in request.auth.token && request.auth.token.role == 'admin';
+    }
     function isOwner(uid)    { return isAuth() && request.auth.uid == uid; }
 
     // See the header note on why octet-stream is accepted.
