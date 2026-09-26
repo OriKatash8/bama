@@ -27,7 +27,7 @@ describe.each([
   ['professional', ProfessionalLayout, { proProfileCompleted: false }],
 ] as const)('%s app', (mode, Layout, lockedOnboarding) => {
   it('sends a user with no phone number to enter one — ahead of onboarding', () => {
-    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, ...lockedOnboarding });
+    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, needsEmailVerification: false, ...lockedOnboarding });
     mockNeedsPhone = true;
     render(<Layout />);
     expect(mockRedirects).toEqual(['/settings/phone?required=1']);
@@ -40,8 +40,15 @@ describe.each([
     expect(mockRedirects).toEqual(['/(auth)/verify-email']);
   });
 
+  it('while verification is still unknown, shows a loading screen — never the app, never a redirect', () => {
+    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, needsEmailVerification: null, clientOnboarded: true, proProfileCompleted: true });
+    const r = render(<Layout />);
+    expect(r.getByTestId('gate-pending')).toBeTruthy();
+    expect(mockRedirects).toEqual([]);
+  });
+
   it('leaves a user with a number alone', () => {
-    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, clientOnboarded: true, proProfileCompleted: true });
+    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, needsEmailVerification: false, clientOnboarded: true, proProfileCompleted: true });
     render(<Layout />);
     expect(mockRedirects).toEqual([]);
   });

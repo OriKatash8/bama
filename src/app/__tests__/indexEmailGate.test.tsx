@@ -27,6 +27,13 @@ it('verified (or exempt) → carries on as before', () => {
   expect(mockRedirects).toEqual(['/(auth)/mode-select']);
 });
 
+it('signed in but verification still UNKNOWN → a loading screen, never the app', () => {
+  useAuthStore.setState({ user: { id: 'u1' } as never, isLoading: false, activeMode: 'client', needsEmailVerification: null });
+  const r = render(<Index />);
+  expect(r.getByTestId('gate-pending')).toBeTruthy();
+  expect(mockRedirects).toEqual([]);
+});
+
 it('signed out → the auth stack', () => {
   useAuthStore.setState({ user: null, isLoading: false, activeMode: null, needsEmailVerification: null });
   render(<Index />);

@@ -3,6 +3,7 @@ import { Stack, Redirect, usePathname } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { useOnboardingGate } from '@features/auth/hooks/useOnboardingGate';
+import { GatePendingScreen, useGatePending } from '@features/auth/components/GatePending';
 import { subscribeToDocument } from '@core/firebase/firestore';
 import type { ProfessionalProfile } from '@core/types/user';
 
@@ -14,6 +15,7 @@ export default function ProfessionalLayout() {
   const setProProfileCompleted = useAuthStore((s) => s.setProProfileCompleted);
   const pathname = usePathname();
   const gate = useOnboardingGate();
+  const gatePending = useGatePending();
 
   // Single subscription to the pro's profile doc — feeds the lock signal read by
   // this guard, the tabs layout (tab bar / swipe) and the profile screen.
@@ -31,6 +33,9 @@ export default function ProfessionalLayout() {
   // The onboarding gate, before anything else — onboarding included: an
   // unverified password account verifies its email, then anyone without a
   // phone number adds one (useOnboardingGate).
+  // Signed in but the email answer has not arrived: neither the app nor a
+  // guess — a loading screen until it does.
+  if (gatePending) return <GatePendingScreen />;
   if (gate) return <Redirect href={gate as never} />;
 
   // First-time / incomplete pros are locked to the profile screen: any attempt to

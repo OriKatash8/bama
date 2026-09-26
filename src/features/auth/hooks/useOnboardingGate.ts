@@ -12,7 +12,10 @@ import { usePhoneGate } from '@features/auth/hooks/usePhoneGate';
  *   in order. The client onboarding and the pro profile lock still live in their
  *   group layouts, after this.
  *
- * Unknown never blocks: a rung only fires on a confirmed "not yet".
+ * A rung only redirects on a confirmed "not yet". An UNKNOWN email answer is not
+ * treated as a pass, though: the root and the layouts show GatePendingScreen
+ * until it arrives (useGatePending), so the app never renders for someone who
+ * might still need to verify.
  * Both group layouts call this — and nothing else calls the rungs directly.
  */
 export function useOnboardingGate(): string | null {

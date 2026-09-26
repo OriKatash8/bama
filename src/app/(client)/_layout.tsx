@@ -3,6 +3,7 @@ import { Stack, Redirect, usePathname } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
 import { useOnboardingGate } from '@features/auth/hooks/useOnboardingGate';
+import { GatePendingScreen, useGatePending } from '@features/auth/components/GatePending';
 import { subscribeToDocument } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 
@@ -14,6 +15,7 @@ export default function ClientLayout() {
   const setClientOnboarded = useAuthStore((s) => s.setClientOnboarded);
   const pathname = usePathname();
   const gate = useOnboardingGate();
+  const gatePending = useGatePending();
 
   // Track the first-time client onboarding flag from the user doc.
   useEffect(() => {
@@ -29,6 +31,9 @@ export default function ClientLayout() {
   // The onboarding gate, before anything else — onboarding included: an
   // unverified password account verifies its email, then anyone without a
   // phone number adds one (useOnboardingGate).
+  // Signed in but the email answer has not arrived: neither the app nor a
+  // guess — a loading screen until it does.
+  if (gatePending) return <GatePendingScreen />;
   if (gate) return <Redirect href={gate as never} />;
 
   // First-time clients are routed to the onboarding screen until they finish it.
