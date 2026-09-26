@@ -49,9 +49,22 @@ const bad = (m) => { drift += 1; console.log(`  DRIFT ${m}`); };
 // over.
 const releases = await get(`https://firebaserules.googleapis.com/v1/projects/${projectId}/releases`);
 
-async function checkRules(localPath, releaseSuffix, deployTarget) {
-  const rel = releases.releases?.find((r) => r.name.endsWith(releaseSuffix));
-  if (!rel) { bad(`${localPath}: no release at all`); return; }
+/**
+ * `match` is a PREDICATE, not a suffix, because the two services name releases
+ * differently. Firestore's ends at the service: `.../releases/cloud.firestore`.
+ * Storage APPENDS THE BUCKET: `.../releases/firebase.storage/<bucket>` — and a
+ * project with several buckets has one release each. A suffix check on
+ * 'firebase.storage' therefore matches nothing and reports "no release at all"
+ * for rules that are in fact deployed, which is worse than not checking: it is
+ * a false alarm that trains you to ignore the output.
+ */
+async function checkRules(localPath, match, deployTarget) {
+  const found = (releases.releases ?? []).filter((r) => match(r.name));
+  if (found.length === 0) { bad(`${localPath}: no release at all`); return; }
+  if (found.length > 1) {
+    console.log(`  note  ${localPath}: ${found.length} releases (one per bucket); checking ${found[0].name.split('/').pop()}`);
+  }
+  const rel = found[0];
   const rs = await get(`https://firebaserules.googleapis.com/v1/projects/${projectId}/rulesets/${rel.rulesetName.split('/').pop()}`);
   const deployed = rs.source.files.map((f) => f.content).join('');
   const local = readFileSync(localPath, 'utf8');
@@ -62,8 +75,8 @@ async function checkRules(localPath, releaseSuffix, deployTarget) {
   }
 }
 
-await checkRules('firestore.rules', 'cloud.firestore', 'firestore:rules');
-await checkRules('storage.rules', 'firebase.storage', 'storage');
+await checkRules('firestore.rules', (n) => n.endsWith('cloud.firestore'), 'firestore:rules');
+await checkRules('storage.rules', (n) => n.includes('/releases/firebase.storage'), 'storage');
 
 // ── indexes ────────────────────────────────────────────────────────────────
 // Compared as a set of (collectionGroup, fields) rather than textually: the API
