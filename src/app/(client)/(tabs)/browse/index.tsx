@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#4C1D95',
+    color: '#000000',
     flex: 1,
   },
   modalClose: {
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   subChipActive: { backgroundColor: VIOLET, borderColor: VIOLET },
-  subChipText: { fontSize: 13, fontWeight: '600', color: '#5B5768' },
+  subChipText: { fontSize: 13, fontWeight: '600', color: '#000000' },
   subChipTextActive: { color: '#FFFFFF' },
 
   emptyResults: {

@@ -400,8 +400,8 @@ export default function DashboardScreen() {
             testID="noticeboard-history-btn"
           >
             {showHistory
-              ? <LayoutGrid size={14} color={BLUE} strokeWidth={2.3} />
-              : <History size={14} color={BLUE} strokeWidth={2.1} />}
+              ? <LayoutGrid size={14} color="#FFFFFF" strokeWidth={2.3} />
+              : <History size={14} color="#FFFFFF" strokeWidth={2.1} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showHistory ? t('noticeboard.notice_board') : t('history.title')}
             </AppText>
@@ -429,8 +429,8 @@ export default function DashboardScreen() {
             accessibilityRole="button"
           >
             {showInProgress
-              ? <LayoutGrid size={14} color={BLUE} strokeWidth={2.3} />
-              : <Briefcase size={14} color={BLUE} strokeWidth={2.3} />}
+              ? <LayoutGrid size={14} color="#FFFFFF" strokeWidth={2.3} />
+              : <Briefcase size={14} color="#FFFFFF" strokeWidth={2.3} />}
             <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
               {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
             </AppText>
@@ -441,7 +441,7 @@ export default function DashboardScreen() {
               onPress={openSortModal}
               activeOpacity={0.8}
             >
-              <SlidersHorizontal size={14} color={filterActive ? '#ffffff' : BLUE} strokeWidth={2.3} />
+              <SlidersHorizontal size={14} color="#FFFFFF" strokeWidth={2.3} />
               <AppText weight="semiBold" style={[styles.navBtnText, filterActive && styles.navBtnTextActive]} numberOfLines={2}>
                 {t('noticeboard.filter_short')}
               </AppText>
@@ -798,11 +798,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: BLUE,
-    backgroundColor: '#FFFFFF',
+    // Transparent over the violet band: a white edge, white outline icon and
+    // label.
+    borderColor: 'rgba(255,255,255,0.55)',
   },
-  navBtnActive: { backgroundColor: BLUE },
-  navBtnText: { fontSize: 9, lineHeight: 11, fontWeight: '600', color: '#000000', textAlign: 'center' },
+  // Applied filter: a solid white edge (the fill stays transparent).
+  navBtnActive: { borderColor: '#FFFFFF' },
+  navBtnText: { fontSize: 9, lineHeight: 11, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' },
   navBtnTextActive: { color: '#FFFFFF' },
   // White ring so the badge reads against the gradient behind the button.
   historyBadge: {
