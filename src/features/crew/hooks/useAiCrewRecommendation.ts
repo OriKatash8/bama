@@ -25,20 +25,11 @@ export type UseAiCrewRecommendationReturn = {
   clear: () => void;
 };
 
-const CATEGORIES_LIST = ROLE_CATEGORIES.join('\n');
-
-const SYSTEM_PROMPT = `You are a film and media production expert helping clients assemble the right crew for their project.
-
-You must recommend roles ONLY from this exact list — use the exact category names as written:
-${CATEGORIES_LIST}
-
-Respond ONLY with a valid JSON object in this exact format (no markdown, no text outside the JSON):
-{
-  "explanation": "2-3 sentences explaining why you recommend these roles for this specific project",
-  "slots": [
-    { "category": "exact category name", "quantity": 1 }
-  ]
-}`;
+// The system prompt — including the allowed category list — and the token
+// budget live server-side, in functions/src/claude/tasks.ts under
+// 'crew-recommendation'. AI_ROLE_CATEGORIES there mirrors ROLE_CATEGORIES here
+// and a test fails if the two diverge. ROLE_CATEGORIES is still imported below:
+// it validates what comes BACK, which stays the client's job.
 
 export function useAiCrewRecommendation(): UseAiCrewRecommendationReturn {
   const [result, setResult] = useState<RecommendationResult | null>(null);
@@ -67,11 +58,7 @@ export function useAiCrewRecommendation(): UseAiCrewRecommendationReturn {
     setIsLoading(true);
 
     try {
-      const text = await callClaudeAI(
-        SYSTEM_PROMPT,
-        [{ role: 'user', content: userMessage }],
-        600,
-      );
+      const text = await callClaudeAI('crew-recommendation', userMessage);
 
       const parsed = JSON.parse(text);
       if (typeof parsed.explanation !== 'string' || !Array.isArray(parsed.slots)) {

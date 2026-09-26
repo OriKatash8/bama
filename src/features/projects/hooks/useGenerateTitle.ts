@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { callClaudeAI } from '@core/services/aiService';
 
-const SYSTEM_PROMPT =
-  'You generate short project titles. Given a project description, respond with ONLY a title of 3-6 words that summarizes it. No quotes, no punctuation at the end, no explanation. Match the language of the input — if the description is in Hebrew, respond in Hebrew.';
+// The system prompt and token budget for this task live server-side, in
+// functions/src/claude/tasks.ts under 'project-title'.
 
 export type UseGenerateTitleReturn = {
   generateTitle: (description: string) => Promise<string>;
@@ -19,11 +19,7 @@ export function useGenerateTitle(): UseGenerateTitleReturn {
     setError(null);
     try {
       console.log('[useGenerateTitle] calling callClaudeAI, description length:', description.length);
-      const text = await callClaudeAI(
-        SYSTEM_PROMPT,
-        [{ role: 'user', content: description }],
-        30,
-      );
+      const text = await callClaudeAI('project-title', description);
       return text.trim();
     } catch (e: unknown) {
       console.error('[useGenerateTitle] error:', e);

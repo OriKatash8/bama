@@ -18,9 +18,78 @@ const firstPass = new SlidingWindowCounter({
 });
 
 /** Doc id for a key's current window. The key is hashed so no IP or uid is stored. */
-export function rateWindowDocId(key: string, now: number): string {
-  const window = Math.floor(now / RATE_WINDOW_MS);
+export function rateWindowDocId(key: string, now: number, windowMs: number = RATE_WINDOW_MS): string {
+  const window = Math.floor(now / windowMs);
   return `${createHash('sha256').update(key).digest('hex').slice(0, 32)}_${window}`;
+}
+
+/** A named quota: how many hits of `key` are allowed per window. */
+export type WindowSpec = {
+  /** Distinguishes this quota's documents from every other quota's. */
+  prefix: string;
+  limit: number;
+  windowMs: number;
+};
+
+/**
+ * The shared Firestore window, parameterised. `checkRateLimit` below is this
+ * with the invite quota and an in-memory pre-filter; callers wanting a
+ * different limit, a different window, or several quotas at once (see
+ * checkAllWindows) use this directly.
+ *
+ * Same guarantees as documented on checkRateLimit: exact across instances,
+ * writes-per-doc bounded by the limit itself, and FAILS CLOSED.
+ */
+export async function checkWindow(
+  key: string,
+  spec: WindowSpec,
+  now: number = Date.now(),
+): Promise<RateDecision> {
+  const windowStart = Math.floor(now / spec.windowMs) * spec.windowMs;
+  const retryAfterSec = Math.max(1, Math.ceil((windowStart + spec.windowMs - now) / 1000));
+  const limited = { allowed: false as const, retryAfterSec };
+
+  const ref = db
+    .collection('rateLimits')
+    .doc(`${spec.prefix}_${rateWindowDocId(key, now, spec.windowMs)}`);
+  try {
+    const allowed = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const count = (snap.exists ? (snap.get('count') as number) : 0) ?? 0;
+      if (count >= spec.limit) return false;
+      tx.set(ref, {
+        count: count + 1,
+        expireAt: Timestamp.fromMillis(windowStart + 2 * spec.windowMs),
+      });
+      return true;
+    }, { maxAttempts: 3 });
+    return allowed ? { allowed: true } : limited;
+  } catch (err) {
+    console.error(`[rateLimit:${spec.prefix}] window transaction failed; failing closed`, err);
+    return limited;
+  }
+}
+
+/**
+ * Every spec must allow, and the LONGEST retryAfter wins so the caller is not
+ * told to retry in one second against a quota that resets tomorrow.
+ *
+ * Specs are evaluated in order and it STOPS AT THE FIRST DENIAL, so a burst
+ * quota placed first spares the daily quota a write during a flood. The cost of
+ * that: a request denied by the burst window is not counted against the daily
+ * one. That is the correct direction — a user who is being throttled should not
+ * also be burning their day's budget on rejected calls.
+ */
+export async function checkAllWindows(
+  key: string,
+  specs: WindowSpec[],
+  now: number = Date.now(),
+): Promise<RateDecision> {
+  for (const spec of specs) {
+    const d = await checkWindow(key, spec, now);
+    if (!d.allowed) return d;
+  }
+  return { allowed: true };
 }
 
 /**

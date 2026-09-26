@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { callClaudeAI } from '@core/services/aiService';
 
-const SYSTEM_PROMPT =
-  'You are a film and media production expert. Given a project description, list the crew roles the client will likely need, with approximate quantities. Be concise — one short paragraph, plain text, no bullet points, no markdown. Focus only on crew (people), not equipment or locations.';
+// The system prompt and token budget for this task live server-side, in
+// functions/src/claude/tasks.ts under 'crew-suggestion'.
 
 export type UseAiCrewSuggestionReturn = {
   suggest: (description: string) => Promise<void>;
@@ -24,11 +24,7 @@ export function useAiCrewSuggestion(): UseAiCrewSuggestionReturn {
     setIsLoading(true);
 
     try {
-      const text = await callClaudeAI(
-        SYSTEM_PROMPT,
-        [{ role: 'user', content: description }],
-        300,
-      );
+      const text = await callClaudeAI('crew-suggestion', description);
       setSuggestion(text);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to get suggestions');

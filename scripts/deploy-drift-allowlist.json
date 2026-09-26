@@ -5,6 +5,11 @@
       "name": "resolveCommunityInvite",
       "reason": "Public, unauthenticated invite resolver. Deploys with the web landing task (waiting on the real domain); nothing in the app calls it. Its IP rate key is unverified until deployed.",
       "addedOn": "2026-09-13"
+    },
+    {
+      "name": "callClaude",
+      "reason": "Hardened (task registry, per-uid burst+daily quotas) but UNDEPLOYED on purpose: the three hooks that call it (useGenerateTitle, useAiCrewSuggestion, useAiCrewRecommendation) are exported from src/features/crew/hooks and imported by NOTHING, so no screen invokes it. An authenticated endpoint spending the platform's Anthropic key with zero legitimate callers is liability without upside. Deploy it in the same change that ships the UI.",
+      "addedOn": "2026-09-26"
     }
   ]
 }
