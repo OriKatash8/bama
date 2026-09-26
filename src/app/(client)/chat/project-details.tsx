@@ -24,7 +24,7 @@ import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
-import { uploadFile } from '@core/firebase/storage';
+import { uploadReportEvidence } from '@core/firebase/storage';
 import { auth } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -726,19 +726,16 @@ export default function ProjectDetailsScreen() {
       });
 
       if (reportEvidence.length > 0) {
-        const urls = await Promise.all(
-          reportEvidence.map(async (uri, i) => {
-            const blob = await (await fetch(uri)).blob();
-            const ext = uri.split('.').pop() ?? 'jpg';
-            return uploadFile(`reports/${docRef.id}/evidence/${Date.now()}_${i}.${ext}`, blob);
-          })
-        );
+        const urls = await uploadReportEvidence(docRef.id, currentUserId, reportEvidence);
         await updateDoc(doc(db, 'reports', docRef.id), { evidenceURLs: urls });
       }
 
       closeReport();
       showToast(t('report.success'), 'success');
-    } catch {
+    } catch (e: any) {
+      // Was a bare `catch {}`, so a permission denial and a network blip were
+      // indistinguishable. Log the real one.
+      console.error('[report] submit failed — code:', e?.code, 'message:', e?.message, e);
       Alert.alert('Error', 'Failed to submit report. Please try again.');
     } finally {
       setReportSubmitting(false);

@@ -1,31 +1,225 @@
 rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BAMA Storage rules
+//
+// Previous version was a single `match /{allPaths=**} { allow write: if
+// request.auth != null; }`. That granted EVERY signed-in account create, update
+// AND delete on EVERY object in the bucket: overwrite another user's avatar or
+// portfolio video, delete a listing photo, or upload unbounded bytes. It also
+// fed `compressVideo`, which runs 300s on 1GiB for any video landing under
+// portfolio/, chat-videos/ or courses/ — so an unbounded upload was also an
+// unbounded compute bill.
+//
+// This version is deny-by-default. Every prefix below was taken from the actual
+// call sites of `uploadFile` / `uploadVideo` (src/core/firebase/storage.ts is
+// the only upload helper in the app); a path not listed here cannot be written
+// by any client.
+//
+// THREE LEVELS OF CONTROL, strongest first:
+//   1. Owner scoping — the uid is in the path, so only that user may write it.
+//      avatars/, users/{uid}/avatar/, portfolio/, chat-videos/, courses/.
+//   2. Firestore-backed scoping — the path carries a chatId or listingId, and
+//      membership/ownership is read from Firestore. chat-images/{chatId}/,
+//      chat-audio/{chatId}/, and marketplace deletes.
+//   3. Size + content-type only — the path carries an id that does not exist in
+//      Firestore yet at upload time (marketplace create, report evidence), or
+//      carries no id at all (community-images, course-images). Marked RESIDUAL
+//      below; each one names what is still possible and what would close it.
+//
+// CONTENT-TYPE CHECKS ACCEPT application/octet-stream, AND MUST.
+//
+// Cloud Storage does not leave contentType absent — it ASSIGNS
+// `application/octet-stream` to anything uploaded without one. An earlier
+// version of this file tested `contentType == null`, which is therefore never
+// true, and a strict `matches('image/.*')` rejected every avatar: on React
+// Native `fetch(fileUri).blob()` routinely yields `blob.type === ''`, so
+// undeclared is the common case, not the edge.
+//
+// Two changes came out of that. src/core/firebase/storage.ts now DECLARES a
+// contentType on every upload (caller's value, else blob.type, else the file
+// extension), so the strict branch is the normal path. And the octet-stream
+// branch below stays as the safety net for anything that still slips through.
+//
+// Be clear about what that costs: a client can always decline to declare a
+// type, so this check stops an honest mistake and a lazy abuser, not a
+// determined one. It is hygiene. The SIZE CAPS and the OWNER SCOPING are the
+// controls that actually hold, and neither depends on contentType.
+// ─────────────────────────────────────────────────────────────────────────────
+
 service firebase.storage {
   match /b/{bucket}/o {
-    // Any signed-in user may upload anywhere (unchanged upload behavior).
-    // Note: image display uses tokenized getDownloadURL links that bypass these
-    // rules, so read rules below only affect rule-based (ref/list) access.
-    match /{allPaths=**} {
-      allow write: if request.auth != null;
+
+    // ─── helpers ──────────────────────────────────────────────────────────
+    function isAuth()        { return request.auth != null; }
+    function isAdmin()       { return isAuth() && request.auth.token.role == 'admin'; }
+    function isOwner(uid)    { return isAuth() && request.auth.uid == uid; }
+
+    // See the header note on why octet-stream is accepted.
+    function typeIs(pattern) {
+      return request.resource.contentType == null
+          || request.resource.contentType == 'application/octet-stream'
+          || request.resource.contentType.matches(pattern);
+    }
+    function under(mb) {
+      return request.resource.size < mb * 1024 * 1024;
     }
 
-    // Report evidence is sensitive: only admins may read it via rules.
-    // Reporters still upload via the write rule above. There is deliberately
-    // no recursive read catch-all — Storage grants access if ANY matching rule
-    // allows, so a read-all wildcard would defeat this restriction.
-    match /reports/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.token.role == 'admin';
+    function imageUpload() { return typeIs('image/.*')               && under(10);  }
+    function audioUpload() { return typeIs('audio/.*|video/mp4')     && under(25);  }
+    // 300MB: a phone clip, generously. This is also the ceiling on what
+    // compressVideo will ever be handed.
+    function videoUpload() { return typeIs('video/.*')               && under(300); }
+
+    // Chat membership, read from Firestore. A chat doc always exists before any
+    // message attachment is uploaded into it, so this cannot deny a real upload.
+    function isChatMember(chatId) {
+      return isAuth() && request.auth.uid in
+        firestore.get(/databases/(default)/documents/chats/$(chatId)).data.members;
     }
 
-    // All other content stays readable by any signed-in user.
-    match /users/{allPaths=**}            { allow read: if request.auth != null; }
-    match /avatars/{allPaths=**}          { allow read: if request.auth != null; }
-    match /portfolio/{allPaths=**}        { allow read: if request.auth != null; }
-    match /marketplace/{allPaths=**}      { allow read: if request.auth != null; }
-    match /chat-images/{allPaths=**}      { allow read: if request.auth != null; }
-    match /chat-audio/{allPaths=**}       { allow read: if request.auth != null; }
-    match /chat-videos/{allPaths=**}      { allow read: if request.auth != null; }
-    match /community-images/{allPaths=**} { allow read: if request.auth != null; }
-    match /course-images/{allPaths=**}    { allow read: if request.auth != null; }
-    match /courses/{allPaths=**}          { allow read: if request.auth != null; }
+    // ─── avatars ──────────────────────────────────────────────────────────
+    // useProfile.ts:64 — `avatars/{uid}` (no filename segment).
+    match /avatars/{userId} {
+      allow read:           if isAuth();
+      allow create, update: if isOwner(userId) && imageUpload();
+      allow delete:         if isOwner(userId);
+    }
+
+    // ─── users/{uid}/avatar/{file} ────────────────────────────────────────
+    // AppHeader.tsx:121 and onboarding.tsx:66 write the same shape. Scoped to
+    // `avatar` deliberately: nothing else under users/ is an upload target.
+    match /users/{userId}/avatar/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isOwner(userId) && imageUpload();
+      allow delete:         if isOwner(userId);
+    }
+
+    // ─── portfolio ────────────────────────────────────────────────────────
+    // usePortfolio.ts:34 (images) and useVideoUpload.ts:69 (videos), both
+    // `portfolio/{uid}/…`. compressVideo writes `…_compressed.mp4` back into
+    // this folder with the Admin SDK, which bypasses these rules.
+    match /portfolio/{userId}/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isOwner(userId) && (imageUpload() || videoUpload());
+      allow delete:         if isOwner(userId);
+    }
+
+    // ─── chat videos ──────────────────────────────────────────────────────
+    // ChatRoomScreen.tsx:1282 — uploadVideo('chat-videos', currentUserId).
+    match /chat-videos/{userId}/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isOwner(userId) && videoUpload();
+      allow delete:         if isOwner(userId);
+    }
+
+    // ─── chat message images ──────────────────────────────────────────────
+    // ChatRoomScreen.tsx:1292,1311 — `chat-images/{chatId}/{ts}.jpg`.
+    // Members only: previously any account could drop an image into any chat's
+    // folder, or overwrite one already sent.
+    match /chat-images/{chatId}/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isChatMember(chatId) && imageUpload();
+      allow delete:         if false;   // no client path deletes chat media
+    }
+
+    // ─── chat voice notes ─────────────────────────────────────────────────
+    // ChatRoomScreen.tsx:1400 — `chat-audio/{chatId}/{ts}-{uid}.m4a`.
+    match /chat-audio/{chatId}/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isChatMember(chatId) && audioUpload();
+      allow delete:         if false;
+    }
+
+    // ─── chat / group photo ───────────────────────────────────────────────
+    // RESIDUAL. ChatRoomScreen.tsx:1202 writes `chat-images/{chatId}.jpg` — the
+    // chatId is fused into the FILENAME, not a path segment, so it cannot be
+    // bound as a wildcard and membership cannot be read from it without string
+    // surgery on the object name. Any signed-in user can therefore still
+    // overwrite any chat's photo (size- and type-capped).
+    // TO CLOSE: change that call site to `chat-images/{chatId}/photo.jpg` and
+    // delete this block — the nested rule above then covers it. Existing photos
+    // keep working; their download URLs are unaffected.
+    match /chat-images/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isAuth() && imageUpload();
+      allow delete:         if false;
+    }
+
+    // ─── community images ─────────────────────────────────────────────────
+    // RESIDUAL. chats/index.tsx:241 (`community-images/{ts}.jpg`, written while
+    // CREATING a community, before the chat doc exists) and
+    // CommunityManageModal.tsx:147 (`community-images/{chatId}.jpg`). Same
+    // filename-fusion problem as above, plus the create-order problem, so no
+    // ownership check is possible here without changing both call sites.
+    // TO CLOSE: have both write `community-images/{chatId}/photo.jpg` and create
+    // the chat doc before uploading, then gate on the chat's ownerId.
+    match /community-images/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isAuth() && imageUpload();
+      allow delete:         if false;
+    }
+
+    // ─── course cover images ──────────────────────────────────────────────
+    // RESIDUAL. SubmitCourseModal.tsx:90 — `course-images/{ts}.jpg`, uploaded by
+    // an ordinary user submitting a course for review, before any doc exists.
+    // Nothing to scope on. Capped only.
+    match /course-images/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isAuth() && imageUpload();
+      allow delete:         if false;
+    }
+
+    // ─── course videos ────────────────────────────────────────────────────
+    // admin/courses.tsx:192 — uploadVideo('courses', user.id), admin screen only.
+    match /courses/{userId}/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isAdmin() && isOwner(userId) && videoUpload();
+      allow delete:         if isAdmin();
+    }
+
+    // ─── marketplace listing images ───────────────────────────────────────
+    // useCreateListing.ts:31 uploads to `marketplace/{docId}/{ts}` BEFORE the
+    // listing document is written, so create cannot be checked against Firestore.
+    // DELETE can and is: marketplaceService.deleteListing removes the image while
+    // the doc still exists, so the poster check below always has something to
+    // read. That call is already wrapped in try/catch ("orphaned image is
+    // harmless"), so a denial degrades to a leftover file rather than an error.
+    match /marketplace/{listingId}/{fileName} {
+      allow read:           if isAuth();
+      allow create, update: if isAuth() && imageUpload();
+      allow delete:         if isAuth() && (
+                              isAdmin() ||
+                              firestore.get(/databases/(default)/documents/marketplace_listings/$(listingId))
+                                .data.posterId == request.auth.uid
+                            );
+    }
+
+    // ─── report evidence ──────────────────────────────────────────────────
+    // `reports/{reportId}/evidence/{reporterUid}/{file}`, written by all three
+    // report flows via uploadReportEvidence (src/core/firebase/storage.ts).
+    //
+    // The uid segment is load-bearing, and not only for the write check.
+    // `uploadFile` finishes by calling getDownloadURL to produce the URL stored
+    // on the report document, and getDownloadURL REQUIRES READ ACCESS. With
+    // evidence readable by admins alone, the bytes uploaded fine and then the
+    // URL fetch was denied — the upload appeared to fail for every non-admin
+    // reporter. Scoping by uid lets a reporter read back their own evidence and
+    // nothing else, while other users still cannot read any of it.
+    //
+    // READ IS STILL WEAKER THAN IT LOOKS: getDownloadURL returns a tokenised URL
+    // that bypasses these rules entirely, and the reporter holds it. Anyone they
+    // forward it to can read that evidence forever. To make this real, evidence
+    // must be served through a callable that mints a short-lived signed URL for
+    // admins, and the tokenised URL must never be written into the report
+    // document.
+    match /reports/{reportId}/evidence/{reporterUid}/{fileName} {
+      allow read:           if isAdmin() || isOwner(reporterUid);
+      allow create, update: if isOwner(reporterUid) && imageUpload();
+      allow delete:         if false;
+    }
+
+    // ─── everything else ──────────────────────────────────────────────────
+    // No catch-all. An unlisted path is denied for read and write.
   }
 }

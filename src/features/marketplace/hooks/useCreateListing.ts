@@ -28,7 +28,7 @@ export function useCreateListing() {
       let imageUrl: string | null = null;
       if (input.imageUri) {
         const blob = await fetch(input.imageUri).then((r) => r.blob());
-        imageUrl = await uploadFile(`marketplace/${docId}/${Date.now()}`, blob);
+        imageUrl = await uploadFile(`marketplace/${docId}/${Date.now()}`, blob, undefined, { contentType: blob.type || 'image/jpeg' });
       }
       await addDocument('marketplace_listings', {
         type: input.type,

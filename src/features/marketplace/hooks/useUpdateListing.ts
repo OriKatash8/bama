@@ -20,7 +20,7 @@ export function useUpdateListing() {
       } else if (input.imageUri !== original.imageUrl) {
         // a newly-picked local image → upload; unchanged remote URL is kept as-is
         const blob = await fetch(input.imageUri).then((r) => r.blob());
-        imageUrl = await uploadFile(`marketplace/${listingId}/${Date.now()}`, blob);
+        imageUrl = await uploadFile(`marketplace/${listingId}/${Date.now()}`, blob, undefined, { contentType: blob.type || 'image/jpeg' });
       }
       await updateDocument(`marketplace_listings/${listingId}`, {
         type: input.type,

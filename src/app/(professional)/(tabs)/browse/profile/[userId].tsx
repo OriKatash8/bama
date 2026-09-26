@@ -18,7 +18,7 @@ import { DirectProjectSheet } from '@features/projects/components/DirectProjectS
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { visibleReviews } from '@features/reviews/utils/rating';
 import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
-import { uploadFile } from '@core/firebase/storage';
+import { uploadReportEvidence } from '@core/firebase/storage';
 import { db } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -145,20 +145,17 @@ export default function PublicProfileScreen() {
       });
 
       if (reportEvidence.length > 0) {
-        const urls = await Promise.all(
-          reportEvidence.map(async (uri, i) => {
-            const response = await fetch(uri);
-            const blob = await response.blob();
-            const ext = uri.split('.').pop() ?? 'jpg';
-            return uploadFile(`reports/${docRef.id}/evidence/${Date.now()}_${i}.${ext}`, blob);
-          })
-        );
+        const urls = await uploadReportEvidence(docRef.id, currentUserId, reportEvidence);
         await updateDoc(doc(db, 'reports', docRef.id), { evidenceURLs: urls });
       }
 
       closeReport();
       showToast(t('report.success'), 'success');
-    } catch {
+    } catch (e: any) {
+      // Was a bare `catch {}` showing the min-chars string for EVERY failure,
+      // including permission denials — which is how a broken evidence upload
+      // read as a validation error. Log the real one.
+      console.error('[report] submit failed — code:', e?.code, 'message:', e?.message, e);
       Alert.alert('Error', t('report.min_chars'));
     } finally {
       setReportSubmitting(false);
