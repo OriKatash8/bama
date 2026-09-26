@@ -1,0 +1,41 @@
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import ClientLayout from '../../../../app/(client)/_layout';
+import ProfessionalLayout from '../../../../app/(professional)/_layout';
+import { useAuthStore } from '@core/stores/authStore';
+
+/**
+ * Both apps send a signed-in user with no phone number to enter one, before
+ * anything else — including the client onboarding and the pro profile lock,
+ * which would otherwise redirect first.
+ */
+
+const mockRedirects: string[] = [];
+jest.mock('expo-router', () => ({
+  Stack: () => null,
+  Redirect: ({ href }: { href: string }) => { mockRedirects.push(href); return null; },
+  usePathname: () => '/(client)/(tabs)/browse',
+}));
+let mockNeedsPhone = false;
+jest.mock('@features/auth/hooks/usePhoneGate', () => ({ usePhoneGate: () => mockNeedsPhone }));
+jest.mock('@core/firebase/firestore', () => ({ subscribeToDocument: jest.fn(() => () => {}) }));
+
+beforeEach(() => { mockRedirects.length = 0; mockNeedsPhone = false; });
+
+describe.each([
+  ['client', ClientLayout, { clientOnboarded: false }],
+  ['professional', ProfessionalLayout, { proProfileCompleted: false }],
+] as const)('%s app', (mode, Layout, lockedOnboarding) => {
+  it('sends a user with no phone number to enter one — ahead of onboarding', () => {
+    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, ...lockedOnboarding });
+    mockNeedsPhone = true;
+    render(<Layout />);
+    expect(mockRedirects).toEqual(['/settings/phone?required=1']);
+  });
+
+  it('leaves a user with a number alone', () => {
+    useAuthStore.setState({ user: { id: 'u1' } as never, activeMode: mode, clientOnboarded: true, proProfileCompleted: true });
+    render(<Layout />);
+    expect(mockRedirects).toEqual([]);
+  });
+});

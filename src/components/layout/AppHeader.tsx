@@ -25,6 +25,7 @@ import {
   Info,
   LogOut,
   Percent,
+  Phone,
   Settings,
   Shield,
   User,
@@ -273,6 +274,20 @@ export function AppHeader() {
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
 
+
+            {/* Phone number — both modes. Private; the gate asks for it once, this
+                is where it is changed. */}
+            <TouchableOpacity
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => { setSettingsVisible(false); router.push('/settings/phone' as never); }}
+              activeOpacity={0.7}
+            >
+              <Phone size={18} color={colors.textMuted} strokeWidth={1.5} />
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                {t('settings.phone')}
+              </AppText>
+              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+            </TouchableOpacity>
 
             {/* Pricing — professionals only. A client is never charged a
                 commission, so the row would answer a question they do not have.

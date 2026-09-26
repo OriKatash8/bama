@@ -36,6 +36,8 @@ jest.mock('@core/firebase/config', () => ({
   get auth() { return { currentUser: mockViewer }; },
 }));
 jest.mock('@core/firebase/functions', () => ({ callFunction: () => jest.fn() }));
+// The phone row asks a callable once a part has ended; not what this file tests.
+jest.mock('@features/projects/hooks/useRevealedPhone', () => ({ useRevealedPhone: () => null }));
 jest.mock('@core/firebase/storage', () => ({ uploadFile: jest.fn() }));
 jest.mock('firebase/firestore', () => ({
   doc: jest.fn(), updateDoc: jest.fn(), arrayUnion: jest.fn(),

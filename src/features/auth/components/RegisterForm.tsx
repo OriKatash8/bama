@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Linking, StyleSheet, TouchableOpacity, View, Text, Platform } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
+import { normalizePhone } from '@features/auth/utils/phone';
 
 const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
 import { useRouter } from 'expo-router';
@@ -37,6 +38,7 @@ function makeT(translations: Translations) {
 export function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -44,6 +46,7 @@ export function RegisterForm() {
   const [fieldErrors, setFieldErrors] = useState<{
     fullName?: string;
     email?: string;
+    phone?: string;
     confirmPassword?: string;
     terms?: string;
     age?: string;
@@ -67,6 +70,8 @@ export function RegisterForm() {
     const errors: typeof fieldErrors = {};
     if (!isNonEmpty(fullName)) errors.fullName = t('auth.err_full_name_required');
     if (!isValidEmail(email)) errors.email = t('auth.err_valid_email');
+    // Required, and checked by format only (no SMS).
+    if (!normalizePhone(phone)) errors.phone = t('auth.err_phone_invalid');
     if (password !== confirmPassword) errors.confirmPassword = t('auth.err_passwords_dont_match');
     if (!termsAccepted) errors.terms = t('auth.err_terms_required');
     if (!ageConfirmed) errors.age = t('auth.err_age_required');
@@ -77,7 +82,8 @@ export function RegisterForm() {
   async function handleSubmit() {
     if (!validate() || !pwValid) return;
     const now = Date.now();
-    await register(fullName, email, password, { acceptedAt: now, version: TERMS_VERSION, ageConfirmedAt: now });
+    // validate() has already rejected anything normalizePhone cannot read.
+    await register(fullName, email, password, { acceptedAt: now, version: TERMS_VERSION, ageConfirmedAt: now }, normalizePhone(phone) as string);
   }
 
   function handleBeforeSocialSignIn(): boolean {
@@ -135,6 +141,18 @@ export function RegisterForm() {
           keyboardType="email-address"
           autoCapitalize="none"
           error={fieldErrors.email}
+          textAlign={textAlign}
+          style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
+        />
+        <Input
+          placeholder={t('auth.phone')}
+          placeholderTextColor={colors.placeholder}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          autoComplete="tel"
+          textContentType="telephoneNumber"
+          error={fieldErrors.phone}
           textAlign={textAlign}
           style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
         />

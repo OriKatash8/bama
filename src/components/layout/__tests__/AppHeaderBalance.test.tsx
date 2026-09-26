@@ -51,3 +51,10 @@ it('a client has no balance row', () => {
   expect(r.getByText(en.settings.notifications)).toBeTruthy(); // the menu really is open
   expect(r.queryByText(en.balance.title)).toBeNull();
 });
+
+it.each(['client', 'professional'] as const)('in %s mode the menu has a phone number row', (mode) => {
+  mockMode.activeMode = mode;
+  const r = openSettings();
+  fireEvent.press(r.getByText(en.settings.phone));
+  expect(mockPush).toHaveBeenCalledWith('/settings/phone');
+});

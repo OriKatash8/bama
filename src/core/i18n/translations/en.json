@@ -344,7 +344,8 @@
     "fee_line_min": "Brokerage fee · ₪{{amount}} (minimum fee)",
     "edit_deadline_error": "Could not update the date. Please try again.",
     "close_now_body": "You don’t have to do this. Each professional closes their own part when they finish, and on {{date}} anything still open closes by itself. This just does it now, for everyone.",
-    "close_now_body_flexible": "You don’t have to do this. Each professional closes their own part when they finish. This project has no end date, so nothing closes by itself — use this when the work is over."
+    "close_now_body_flexible": "You don’t have to do this. Each professional closes their own part when they finish. This project has no end date, so nothing closes by itself — use this when the work is over.",
+    "phone": "Phone"
   },
   "chats_page": {
     "title": "Chats",
@@ -920,7 +921,9 @@
     "terms_and": "and",
     "privacy_policy": "Privacy Policy",
     "age_confirm": "I confirm I am 18 years of age or older",
-    "err_age_required": "You must be 18 or older to use this app"
+    "err_age_required": "You must be 18 or older to use this app",
+    "phone": "Phone number",
+    "err_phone_invalid": "Enter a valid phone number."
   },
   "common": {
     "cancel": "Cancel",
@@ -982,7 +985,8 @@
     "notif_type_offer": "Price offers",
     "notif_type_offer_accepted": "Offer accepted",
     "notif_type_purchase": "Marketplace purchases",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "phone": "Phone number"
   },
   "communities": {
     "ask_delete": "Ask to delete the community",
@@ -1314,5 +1318,13 @@
     "results_count": "{{n}} results",
     "error": "Couldn't load the messages",
     "back": "Back"
+  },
+  "phone_settings": {
+    "title": "Phone number",
+    "required_explain": "Add your phone number to continue. It stays private: it's shared only with the other side of a project, once the work is done.",
+    "edit_explain": "Private: shared only with the other side of a project, once the work is done.",
+    "save": "Save",
+    "saved": "Phone number saved",
+    "error": "Couldn't save. Please try again."
   }
 }

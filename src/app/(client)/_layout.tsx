@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack, Redirect, usePathname } from 'expo-router';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAuthStore } from '@core/stores/authStore';
+import { usePhoneGate } from '@features/auth/hooks/usePhoneGate';
 import { subscribeToDocument } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 
@@ -12,6 +13,7 @@ export default function ClientLayout() {
   const clientOnboarded = useAuthStore((s) => s.clientOnboarded);
   const setClientOnboarded = useAuthStore((s) => s.setClientOnboarded);
   const pathname = usePathname();
+  const needsPhone = usePhoneGate();
 
   // Track the first-time client onboarding flag from the user doc.
   useEffect(() => {
@@ -23,6 +25,10 @@ export default function ClientLayout() {
       setClientOnboarded(data?.clientOnboarded === true),
     );
   }, [userId, activeMode, setClientOnboarded]);
+
+  // A phone number is required. Anyone signed in without one (Google/Apple
+  // sign-in, older accounts) enters it before anything else, onboarding included.
+  if (needsPhone) return <Redirect href={"/settings/phone?required=1" as never} />;
 
   // First-time clients are routed to the onboarding screen until they finish it.
   const needsOnboarding = activeMode === 'client' && clientOnboarded === false;

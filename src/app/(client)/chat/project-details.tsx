@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -67,11 +68,13 @@ import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { mergeCrewSlots } from '@features/noticeboard/matching';
 import { chatGroupOf } from '@features/chat/utils/chatGroup';
 import { useAuthStore } from '@core/stores/authStore';
+import { useRevealedPhone } from '@features/projects/hooks/useRevealedPhone';
+import { formatPhoneForDisplay } from '@features/auth/utils/phone';
 import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
-import { Calendar, CalendarDays, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Trash2, Users, X } from 'lucide-react-native';
+import { Calendar, CalendarDays, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -1387,6 +1390,8 @@ export default function ProjectDetailsScreen() {
             roles={[t('project_details.project_client')]}
             badge={t('project_details.client')}
             rtl={rtl}
+            // The pro sees the client's number once their own part has ended.
+            phoneFor={{ projectId, userId: project.clientId, eligible: !isClient && PHONE_SHARED.has(myFee?.engagementStatus ?? '') }}
             onReport={!isClient ? () => { setReportedUserId(project.clientId); setReportedUserName(clientUser.displayName); setReportVisible(true); } : undefined}
           />
         )}
@@ -1439,6 +1444,9 @@ export default function ProjectDetailsScreen() {
                   ? contestWindowEndsAt(myFee) ?? undefined
                   : undefined
               }
+              // The client sees this pro's number once the pro's part has ended —
+              // the derived list is all the client can read of that (§6).
+              phoneFor={{ projectId, userId: professionalId, eligible: isClient && (project.endedEngagementIds ?? []).includes(professionalId) }}
               onUpdate={(isClient || professionalId === currentUserId) && !isReadOnly
                 && !frozenEngagements.has(professionalId)
                 && (payment?.individualOffer || payment?.bundleId)
@@ -2563,6 +2571,9 @@ export default function ProjectDetailsScreen() {
 }
 
 
+/** Engagement states in which the phone numbers are shared — contactPolicy on the server. */
+const PHONE_SHARED = new Set(['completed', 'disputed']);
+
 function MemberRow({
   displayName,
   photoURL,
@@ -2578,6 +2589,7 @@ function MemberRow({
   engagementStatus,
   onContest,
   contestWindowEndsAt,
+  phoneFor,
 }: {
   displayName: string;
   photoURL: string | null;
@@ -2600,6 +2612,9 @@ function MemberRow({
    *  — the field the server enforces against — so the deadline shown is the
    *  deadline applied. Same scoping again. */
   contestWindowEndsAt?: number;
+  /** Whose phone number this card may show, and whether the viewer can already
+   *  tell it is allowed (the pro's part has ended). The server decides for real. */
+  phoneFor?: { projectId: string | undefined; userId: string; eligible: boolean };
 }) {
   const { accent: modeAccent } = useModeAccent();
   const font = useAppFont();
@@ -2608,6 +2623,7 @@ function MemberRow({
   const t = makeT(language === 'he' ? he : en);
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   const isClient = badge !== undefined;
+  const phone = useRevealedPhone(phoneFor?.projectId, phoneFor?.userId ?? '', !!phoneFor?.eligible);
   const canUpdate = !!onUpdate && (!!payment?.individualOffer || !!payment?.bundleId);
   const canContest = !!onContest;
   const awaitingClient = engagementStatus === 'end_requested_by_pro';
@@ -2663,6 +2679,23 @@ function MemberRow({
         )}
 
       </View>
+
+      {/* Phone — only once the professional's part has ended; tapping calls. */}
+      {phone && (
+        <TouchableOpacity
+          testID="member-phone"
+          style={[styles.memberPhoneRow, { flexDirection: rowDir }]}
+          onPress={() => void Linking.openURL(`tel:${phone}`)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('project_details.phone')} ${formatPhoneForDisplay(phone)}`}
+        >
+          <Phone size={15} color={modeAccent} strokeWidth={2} />
+          <AppText weight="semiBold" style={[styles.memberPhoneText, { color: modeAccent }]}>
+            {formatPhoneForDisplay(phone)}
+          </AppText>
+        </TouchableOpacity>
+      )}
 
       {/* Action bar */}
       {showActions && (
@@ -2903,6 +2936,8 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   memberTopRow: { alignItems: 'center', gap: 12 },
+  memberPhoneRow: { alignItems: 'center', gap: 6, marginTop: 10, alignSelf: 'flex-start' },
+  memberPhoneText: { fontSize: 14 },
   memberActionBar: {
     // WRAPS. The professional's own row can carry four pills at once — mark
     // complete, contest, pay and update — and on a narrow screen in Hebrew that

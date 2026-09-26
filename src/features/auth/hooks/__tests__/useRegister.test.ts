@@ -27,6 +27,11 @@ jest.mock('@core/firebase/firestore', () => ({
   setDocument: jest.fn(),
 }));
 
+const mockSavePhone = jest.fn();
+jest.mock('@features/auth/services/phoneService', () => ({
+  savePhone: (...a: unknown[]) => mockSavePhone(...a),
+}));
+
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace }),
@@ -47,7 +52,7 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 });
+      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
     });
     expect(mockSignUp).toHaveBeenCalledWith('john@example.com', 'password123');
     expect(mockSetDocument).toHaveBeenCalledWith(
@@ -66,7 +71,7 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 });
+      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
     });
     expect(useAuthStore.getState().user?.id).toBe('u1');
     expect(useAuthStore.getState().activeMode).toBeNull();
@@ -77,7 +82,7 @@ describe('useRegister', () => {
     mockSetDocument.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('Jane', 'jane@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 });
+      await result.current.register('Jane', 'jane@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
     });
     expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
   });
@@ -86,7 +91,7 @@ describe('useRegister', () => {
     mockSignUp.mockRejectedValue({ code: 'auth/email-already-in-use' });
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 });
+      await result.current.register('John', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
     });
     expect(result.current.error).toBe('An account with this email already exists.');
   });
@@ -95,8 +100,21 @@ describe('useRegister', () => {
     mockSignUp.mockRejectedValue({ code: 'auth/email-already-in-use' });
     const { result } = renderHook(() => useRegister());
     await act(async () => {
-      await result.current.register('John', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 });
+      await result.current.register('John', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
     });
     expect(result.current.isLoading).toBe(false);
+  });
+
+  it('saves the phone number privately, never on the public user doc', async () => {
+    mockSignUp.mockResolvedValue({ uid: 'u1' } as any);
+    mockSetDocument.mockResolvedValue(undefined);
+    mockSavePhone.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useRegister());
+    await act(async () => {
+      await result.current.register('John Doe', 'john@example.com', 'password123', { acceptedAt: 0, version: '1.0', ageConfirmedAt: 0 }, '+972501234567');
+    });
+    expect(mockSavePhone).toHaveBeenCalledWith('u1', '+972501234567');
+    // users/{uid} is readable by every signed-in user.
+    expect(mockSetDocument.mock.calls[0][1]).not.toHaveProperty('phone');
   });
 });
