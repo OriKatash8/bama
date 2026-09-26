@@ -74,7 +74,11 @@ describe('useCreateListing', () => {
     });
     expect(mockUploadFile).toHaveBeenCalledWith(
       expect.stringContaining('marketplace/'),
-      expect.anything()
+      expect.anything(),
+      undefined,
+      // The path has no extension, so the content type is passed explicitly —
+      // Storage would otherwise store it as application/octet-stream.
+      { contentType: 'image/jpeg' },
     );
     expect(mockAddDocument).toHaveBeenCalledWith(
       'marketplace_listings',

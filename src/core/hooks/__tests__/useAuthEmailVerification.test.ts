@@ -23,6 +23,12 @@ jest.mock('expo-notifications', () => ({ setNotificationHandler: jest.fn() }));
 jest.mock('@core/notifications/registerForPushNotifications', () => ({ registerIfGranted: jest.fn() }));
 jest.mock('@core/notifications/foregroundHandler', () => ({ handleForegroundNotification: jest.fn() }));
 jest.mock('@core/i18n', () => ({ __esModule: true, default: { language: 'he' } }));
+// useAuth subscribes to the block list. Mocked here rather than let through
+// because blockService imports @core/firebase/config, which pulls the real
+// Firebase SDK into a suite that mocks everything else about it.
+jest.mock('@features/blocking/services/blockService', () => ({
+  subscribeBlocks: jest.fn(() => jest.fn()),
+}));
 
 const user = (providerId: string, emailVerified: boolean) => ({ emailVerified, providerData: [{ providerId }] });
 

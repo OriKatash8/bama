@@ -22,9 +22,10 @@ describe('useAiCrewSuggestion', () => {
     });
 
     expect(mockCallClaudeAI).toHaveBeenCalledWith(
-      expect.any(String),
-      [{ role: 'user', content: 'Music video shoot' }],
-      300,
+      // The system prompt and token budget moved server-side; the client sends
+      // a task name and the user's text, nothing else.
+      'crew-suggestion',
+      'Music video shoot',
     );
     expect(result.current.suggestion).toBe('You need 1 DP and 2 camera operators.');
     expect(result.current.isLoading).toBe(false);

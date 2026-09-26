@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { BlockUserSheet } from '@features/blocking/components/BlockUserSheet';
+import { useBlockStore } from '@core/stores/blockStore';
 import {
   View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator,
   Modal, TextInput, ScrollView, Alert,
@@ -6,7 +8,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronRight, Flag, X } from 'lucide-react-native';
+import { ChevronRight, Flag, X, Ban } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -77,6 +79,8 @@ export default function PublicProfileScreen() {
 
   // Report modal state
   const [reportVisible, setReportVisible] = useState(false);
+  const [blockVisible, setBlockVisible] = useState(false);
+  const isBlocked = useBlockStore((s) => s.blocked).includes(userId as string);
   const [reportReason, setReportReason] = useState('');
   const [reportEvidence, setReportEvidence] = useState<string[]>([]);
   const [reportSubmitting, setReportSubmitting] = useState(false);
@@ -168,6 +172,12 @@ export default function PublicProfileScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#6D28D9" />
         </View>
+        <BlockUserSheet
+          visible={blockVisible}
+          onClose={() => setBlockVisible(false)}
+          targetUserId={userId as string}
+          targetName={user?.displayName ?? ''}
+        />
       </Screen>
     );
   }
@@ -208,6 +218,19 @@ export default function PublicProfileScreen() {
             testID="profile-report"
           >
             <Flag size={18} color={REPORT_FLAG} strokeWidth={2} />
+          </TouchableOpacity>
+          {/* Block, beside report. Report is asynchronous — it asks an admin to
+              act. Block is immediate self-help, which is the distinction Apple
+              1.2 draws and the reason both have to exist. */}
+          <TouchableOpacity
+            onPress={() => setBlockVisible(true)}
+            style={styles.reportBtn}
+            activeOpacity={0.7}
+            hitSlop={8}
+            accessibilityRole="button"
+            testID="profile-block"
+          >
+            <Ban size={18} color={isBlocked ? '#C0392B' : REPORT_FLAG} strokeWidth={2} />
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
           <TouchableOpacity

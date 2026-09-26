@@ -62,6 +62,44 @@ export async function fanOutMessage(
   });
   if (recipients.length === 0) return recipients;
 
+  /**
+   * Drop anyone who has BLOCKED the sender. Without this, blocking is cosmetic
+   * in the way users notice first: their chat list hides the conversation, and
+   * then a push notification arrives from the person they blocked.
+   *
+   * SIZE-CAPPED AT 10 ON PURPOSE. This costs one document read per recipient.
+   * That is nothing for a DM (one read) or a project group, and unacceptable for
+   * a 200-member community on every single message — the whole point of this
+   * function's arrayUnion note above is that per-recipient reads are the cost to
+   * avoid. Blocking exists for the harassment vector Apple 1.2 names, which is
+   * direct contact; a community is a public broadcast, already mutable per chat,
+   * and a blocked member's messages are hidden there by the client instead.
+   *
+   * getAll, not N gets: one round trip regardless of member count.
+   */
+  let delivered = recipients;
+  if (recipients.length <= 10) {
+    try {
+      const refs = recipients.map((r) =>
+        db.collection('users').doc(r.userId).collection('blocks').doc(args.senderId),
+      );
+      const snaps = await db.getAll(...refs);
+      const blockedBy = new Set(
+        snaps.map((snap, i) => (snap.exists ? recipients[i].userId : null)).filter(Boolean) as string[],
+      );
+      if (blockedBy.size > 0) {
+        delivered = recipients.filter((r) => !blockedBy.has(r.userId));
+        console.log('[fanOut] suppressed for blockers:', blockedBy.size);
+      }
+    } catch (e) {
+      // Fail OPEN: a lookup failure must not silence legitimate notifications.
+      // The client still hides blocked conversations, so the worst case is one
+      // stray push rather than a chat nobody is told about.
+      console.error('[fanOut] block lookup failed; delivering anyway', (e as Error)?.message);
+    }
+  }
+  if (delivered.length === 0) return delivered;
+
   const batch = db.batch();
   const entry = {
     chatId: args.ref.chatId,
@@ -70,7 +108,7 @@ export async function fanOutMessage(
     at: admin.firestore.Timestamp.now(),
   };
 
-  for (const r of recipients) {
+  for (const r of delivered) {
     batch.set(db.collection('notifications').doc(), {
       userId: r.userId,
       title: args.title,
@@ -96,7 +134,9 @@ export async function fanOutMessage(
   }
 
   await batch.commit();
-  return recipients;
+  // `delivered`, not `recipients`: the return value is who was actually
+  // notified, which is what a caller or test should be able to assert on.
+  return delivered;
 }
 
 /**

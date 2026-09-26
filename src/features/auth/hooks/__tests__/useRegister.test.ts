@@ -61,11 +61,17 @@ describe('useRegister', () => {
       'users/u1',
       expect.objectContaining({
         id: 'u1',
-        email: 'john@example.com',
         displayName: 'John Doe',
         photoURL: null,
-      })
+      }),
     );
+    // NO `email` ON THE USER DOCUMENT. users/{uid} is readable by every signed-in
+    // user, so an email here would make every address on the platform
+    // enumerable. Auth is the authoritative store; the admin screen reads it
+    // through the adminFindUser callable. Asserted as an absence because that is
+    // the security property — objectContaining above would not catch a
+    // regression that re-added it.
+    expect(mockSetDocument.mock.calls[0][1]).not.toHaveProperty('email');
   });
 
   it('updates authStore user on success', async () => {

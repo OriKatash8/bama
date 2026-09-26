@@ -6,6 +6,7 @@ export * from './video';
 export * from './moderation';
 export * from './moderation/lookup';
 export * from './system';
+export * from './account/deletion';
 
 // Pricing & project lifecycle (slice 1)
 export * from './lifecycle/hire';

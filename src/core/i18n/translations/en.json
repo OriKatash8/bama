@@ -990,7 +990,8 @@
     "notif_type_offer_accepted": "Offer accepted",
     "notif_type_purchase": "Marketplace purchases",
     "pricing": "Pricing",
-    "phone": "Phone number"
+    "phone": "Phone number",
+    "delete_account": "Delete account"
   },
   "communities": {
     "ask_delete": "Ask to delete the community",
@@ -1344,5 +1345,40 @@
     "not_yet": "Not verified yet — open the link in the email first.",
     "err_too_many": "Too many attempts. Please wait a few minutes and try again.",
     "err_generic": "Something went wrong. Please try again."
+  },
+  "delete_account": {
+    "title": "Delete account",
+    "intro": "Deleting your account is permanent. It cannot be undone.",
+    "what_goes_title": "What is deleted",
+    "what_goes": "Your login, profile, photos, portfolio, phone number and saved devices.",
+    "what_stays_title": "What stays",
+    "what_stays": "Messages you sent, reviews you wrote or received, and the record of projects you took part in. These belong to other people's history too, so they remain — your name is replaced.",
+    "blocked_title": "You have open work",
+    "blocked_intro": "Finish or cancel these first, then come back:",
+    "blocker_engagement": "An open project you were hired for",
+    "blocker_client_project": "A project of yours with hired professionals",
+    "blocker_listing": "A marketplace deal in progress",
+    "fee_title": "You have an unpaid brokerage fee",
+    "fee_body": "₪{{amount}} across {{count}} project(s). Deleting your account does not cancel this — it stays owed under the Terms, and BAMA will still invoice it.",
+    "confirm_label": "Type DELETE to confirm",
+    "confirm_word": "DELETE",
+    "confirm_button": "Delete my account permanently",
+    "deleting": "Deleting…",
+    "failed": "Couldn't delete your account. Please try again.",
+    "done": "Your account has been deleted."
+  },
+  "blocking": {
+    "block": "Block",
+    "unblock": "Unblock",
+    "blocked_badge": "Blocked",
+    "confirm_title": "Block {{name}}?",
+    "confirm_body": "They won't be able to message you, and you won't see them in search, the marketplace or your chats. They are not told.",
+    "confirm_note_project": "If you're working together on a project, that project's chat keeps working so the job isn't disrupted.",
+    "unblock_title": "Unblock {{name}}?",
+    "unblock_body": "You'll see them again and they'll be able to message you.",
+    "blocked_toast": "Blocked",
+    "unblocked_toast": "Unblocked",
+    "failed": "Couldn't do that. Please try again.",
+    "cancel": "Cancel"
   }
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useBlockStore } from '@core/stores/blockStore';
 import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import type { User } from '@core/types/user';
 import type { ProfessionalProfile } from '@core/types/user';
@@ -40,6 +41,11 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
       await Promise.all(
         users.map(async (user) => {
           if (user.id === currentUserId) return;
+          // Someone you blocked should not come back in a search result — that
+          // is the surface where you would next be tempted to message them.
+          // Read at call time rather than through a dependency: run() is async
+          // and this list can change mid-flight.
+          if (useBlockStore.getState().blocked.includes(user.id)) return;
           const profile = await getDocument<ProfessionalProfile>(
             `users/${user.id}/profile/data`
           );

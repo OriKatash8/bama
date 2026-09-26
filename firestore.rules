@@ -417,6 +417,28 @@ service cloud.firestore {
         allow read: if isAuth();
         allow write: if isOwner(userId) && verified();
       }
+
+      /**
+       * Who this user has blocked. Doc id IS the blocked uid.
+       *
+       * OWNER-ONLY READ, and that is the whole design: `users/{uid}` is public to
+       * every signed-in user, so a `blockedUsers` array there would tell the
+       * blocked person they had been blocked — and someone who knows they are
+       * blocked simply makes another account. Rules can still read this with
+       * get()/exists(), because rules are not themselves subject to rules, so
+       * enforcement works without either client being able to see the list.
+       *
+       * Shape is deliberately trivial: the id carries the meaning, the body
+       * carries only when. Nothing else may be written, so this cannot quietly
+       * become a place to store notes about another user.
+       */
+      match /blocks/{blockedUserId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && blockedUserId != userId
+          && request.resource.data.keys().hasOnly(['blockedAt']);
+        allow delete: if isOwner(userId);
+      }
     }
 
     // ─── chats ──────────────────────────────────────────────────────
@@ -425,9 +447,36 @@ service cloud.firestore {
         request.auth.uid in resource.data.members ||
         resource.data.type == 'community'  // all authed users can see community metadata for discovery
       );
+      /**
+       * Neither party may open a DM with someone who has blocked them, in either
+       * direction — the blocker must not be reachable, and the blocked user must
+       * not be able to re-open the conversation from their side.
+       *
+       * DMs ONLY. A project group chat is created by the server (createProjectGroup,
+       * Admin SDK) and must keep working even between blocked users: blocking a
+       * counterparty mid-project must not sabotage paid work that both sides are
+       * still owed. See the blocking design note — DMs, discovery and the
+       * marketplace are cut; the shared project chat is not.
+       *
+       * `members` on a new DM is exactly two uids, one of them the caller.
+       */
+      function dmOtherMember() {
+        return request.resource.data.members[0] == request.auth.uid
+          ? request.resource.data.members[1]
+          : request.resource.data.members[0];
+      }
+      function dmNotBlocked() {
+        return request.resource.data.get('type', '') != 'dm'
+          || request.resource.data.members.size() != 2
+          || (
+            !exists(/databases/$(database)/documents/users/$(dmOtherMember())/blocks/$(request.auth.uid))
+            && !exists(/databases/$(database)/documents/users/$(request.auth.uid)/blocks/$(dmOtherMember()))
+          );
+      }
+
       allow create: if isAuth() && verified() && (
         request.resource.data.type != 'community' || isAdmin()
-      );
+      ) && dmNotBlocked();
       // ── Update guard ────────────────────────────────────────────────────
       // Membership used to be the ONLY check, with no field restriction at all,
       // so any member of a community could rename it, replace its photo, kick

@@ -4,6 +4,8 @@ import { deleteField, serverTimestamp } from 'firebase/firestore';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@core/stores/authStore';
 import { useModerationStore } from '@core/stores/moderationStore';
+import { useBlockStore } from '@core/stores/blockStore';
+import { subscribeBlocks } from '@features/blocking/services/blockService';
 import { onAuthChange, onTokenChange, signOut } from '@core/firebase/auth';
 import { needsEmailVerification } from '@features/auth/utils/emailVerification';
 import { getDocument, updateDocument, setDocument } from '@core/firebase/firestore';
@@ -106,6 +108,27 @@ export function useAuth() {
     });
     return unsubscribe;
   }, []);
+
+  /**
+   * The block list, live, for as long as someone is signed in.
+   *
+   * Subscribed here rather than per screen because it is read on every surface
+   * where one user can see another — chat list, browse, search, marketplace. A
+   * per-screen fetch would be slower and, worse, easy to forget in the next
+   * screen somebody adds.
+   */
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId) {
+      useBlockStore.getState().clear();
+      return;
+    }
+    const unsub = subscribeBlocks(userId, useBlockStore.getState().setBlocked);
+    return () => {
+      unsub();
+      useBlockStore.getState().clear();
+    };
+  }, [user?.id]);
 
   return { user, activeMode, isLoading };
 }
