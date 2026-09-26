@@ -98,8 +98,18 @@ const content = [
   ['review', (uid) => addDoc(collection(db, 'reviews'), { reviewerId: uid, professionalId: 'someone-else', rating: 5, text: 'great' })],
 ];
 const signUpWrites = [
-  ['own user doc', (uid) => setDoc(doc(db, 'users', uid), { id: uid, displayName: 'Probe', email: 'x@probe.invalid' }, { merge: true })],
+  // NO `email` in this payload. The field is denied on users/{uid} — the doc is
+  // readable by every signed-in user, so an email there made every address on
+  // the platform enumerable, and it existed only for an admin-screen query that
+  // is now the adminFindUser callable. This case carried one and started failing
+  // the moment the rule landed, which is the probe doing its job.
+  ['own user doc', (uid) => setDoc(doc(db, 'users', uid), { id: uid, displayName: 'Probe' }, { merge: true })],
   ['own phone (private contact)', (uid) => setDoc(doc(db, 'users', uid, 'private', 'contact'), { phone: '+972501234567', updatedAt: serverTimestamp() })],
+];
+
+/** Writes that must be DENIED regardless of how the user signed in. */
+const alwaysDenied = [
+  ['own user doc carrying an email', (uid) => setDoc(doc(db, 'users', uid), { id: uid, displayName: 'Probe', email: 'x@probe.invalid' }, { merge: true })],
 ];
 
 for (const [name, run] of content) {
@@ -109,6 +119,10 @@ for (const [name, run] of content) {
 }
 for (const [name, run] of signUpWrites) {
   await attempt('sign-up writes stay open', `${name} — UNVERIFIED password`, 'unverified', true, run);
+}
+for (const [name, run] of alwaysDenied) {
+  await attempt('denied for everyone', `${name} — verified password`, 'verified', false, run);
+  await attempt('denied for everyone', `${name} — Google`, 'google', false, run);
 }
 
 // ── Report ──────────────────────────────────────────────────────────────────

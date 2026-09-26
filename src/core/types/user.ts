@@ -6,7 +6,19 @@ export type ActiveMode = 'client' | 'professional';
 
 export type User = {
   id: ID;
-  email: string;
+  /**
+   * From Firebase Auth, NOT from the user document.
+   *
+   * `users/{uid}` is readable by every signed-in user, so storing an email there
+   * let one throwaway account enumerate every address on the platform. Auth is
+   * the source of truth and always was; the Firestore copy existed only so the
+   * admin screen could query it (that lookup is now the adminFindUser callable).
+   *
+   * Populated in memory at sign-in from `firebaseUser.email`. Optional because a
+   * User assembled from a Firestore read alone — a profile someone is viewing —
+   * legitimately has no email, and must not.
+   */
+  email?: string;
   displayName: string;
   photoURL: string | null;
   createdAt: Timestamp;

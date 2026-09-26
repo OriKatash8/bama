@@ -35,9 +35,9 @@ export function useRegister(): RegisterState {
       } catch (err) {
         console.warn('[register] verification email not sent:', (err as { code?: string })?.code ?? err);
       }
+      // No `email`: it lives in Auth, not here — see User.email.
       const userData = {
         id: firebaseUser.uid,
-        email,
         displayName: fullName,
         photoURL: null,
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
@@ -49,7 +49,7 @@ export function useRegister(): RegisterState {
       await setDocument(`users/${firebaseUser.uid}`, userData);
       // Private, in its own owner-only doc: users/{uid} is readable by everyone.
       await savePhone(firebaseUser.uid, phone);
-      setUser(userData);
+      setUser({ ...userData, email });
       // Straight to the verify screen: a new password account is unverified,
       // and `/` routes on to mode-select once it is.
       router.replace('/(auth)/verify-email' as never);

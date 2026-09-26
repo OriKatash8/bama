@@ -13,7 +13,6 @@ type ProfileHeaderProps = {
   onPhotoPress?: () => void;
   onNameChange?: (v: string) => void;
   size?: number;
-  email?: string;
   reviews?: Review[];
   /** The professional's roles; shown as one line under the name, joined with
    *  " · ". Omitted or empty renders nothing. */
@@ -34,7 +33,6 @@ export function ProfileHeader({
   onPhotoPress,
   onNameChange,
   size = 90,
-  email,
   reviews,
   roleSkills,
   tone = 'band',
@@ -111,7 +109,6 @@ export function ProfileHeader({
         </AppText>
       )}
 
-      {email && <Text style={[styles.email, { ...font.regular }]}>{email}</Text>}
 
       {!isEditing && reviews && <AverageRatingDisplay reviews={reviews} />}
     </View>
@@ -188,5 +185,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  email: { fontSize: 13, color: 'rgba(0,74,173,0.6)' },
 });

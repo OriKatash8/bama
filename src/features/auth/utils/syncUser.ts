@@ -7,11 +7,12 @@ export async function syncUser(
   setUser: (user: User) => void,
   terms?: { acceptedAt: number; version: string; ageConfirmedAt: number },
 ): Promise<void> {
+  // `info.email` is used for the IN-MEMORY user only; it is deliberately absent
+  // from every write below. See User.email.
   const existing = await getDocument<User>(`users/${uid}`);
   if (!existing) {
     const userData: User = {
       id: uid,
-      email: info.email,
       displayName: info.displayName,
       photoURL: info.photoURL,
       createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
@@ -21,20 +22,20 @@ export async function syncUser(
       ageConfirmedAt: terms?.ageConfirmedAt ?? null,
     };
     await setDocument(`users/${uid}`, userData);
-    setUser(userData);
+    // In memory only — `email` is never persisted to the document.
+    setUser({ ...userData, email: info.email });
   } else {
     // Backfill any fields that are blank on the stored doc but present in info.
     // Only fills blanks — never overwrites non-empty values.
     const backfill: Partial<User> = {};
     if (!existing.displayName && info.displayName) backfill.displayName = info.displayName;
-    if (!existing.email && info.email) backfill.email = info.email;
     if (!existing.photoURL && info.photoURL) backfill.photoURL = info.photoURL;
 
     if (Object.keys(backfill).length > 0) {
       await updateDocument<User>(`users/${uid}`, backfill);
-      setUser({ ...existing, ...backfill });
+      setUser({ ...existing, ...backfill, email: info.email });
     } else {
-      setUser(existing);
+      setUser({ ...existing, email: info.email });
     }
   }
 }

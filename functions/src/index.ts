@@ -4,6 +4,7 @@ export * from './notifications';
 export * from './claude';
 export * from './video';
 export * from './moderation';
+export * from './moderation/lookup';
 export * from './system';
 
 // Pricing & project lifecycle (slice 1)

@@ -5,10 +5,15 @@ if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
+/**
+ * No `email` field. `users/{uid}` is readable by every signed-in user, so an
+ * email stored here made every address on the platform enumerable by one
+ * throwaway account. Auth already holds it authoritatively; the admin screen
+ * reads it through the adminFindUser callable.
+ */
 export const onUserCreate = functions.auth.user().onCreate(async (user) => {
   await admin.firestore().collection('users').doc(user.uid).set({
     id: user.uid,
-    email: user.email ?? '',
     displayName: user.displayName ?? '',
     photoURL: user.photoURL ?? null,
     role: null,

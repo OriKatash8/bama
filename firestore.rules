@@ -339,7 +339,42 @@ service cloud.firestore {
     // ─── users ──────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isAuth();
-      allow create: if isOwner(userId);
+
+      /**
+       * `email` IS NOT ALLOWED ON THIS DOCUMENT. Do not add it back.
+       *
+       * This doc is readable by every signed-in user — the rule directly above
+       * — because displayName and photoURL are needed everywhere. An `email`
+       * field alongside them meant one throwaway account could enumerate the
+       * address of every person on the platform, and it existed only so the
+       * admin screen could run where('email','==',term) from the client.
+       *
+       * Firebase Auth is the source of truth and always was. The admin lookup
+       * is now the adminFindUser callable, which asks Auth with the Admin SDK.
+       * Enforced here rather than trusted to the client so a future write site
+       * cannot quietly reintroduce it.
+       */
+      /**
+       * CREATE and UPDATE are checked DIFFERENTLY, and the difference matters.
+       *
+       * On create the whole document is new, so the field must simply be absent.
+       *
+       * On update, `request.resource.data` is the FULL RESULTING document — so
+       * an absence check there would deny every write by every user whose doc
+       * still carries an email from before the backfill, locking them out of
+       * editing their own name and photo until it ran. The update form checks
+       * the DIFF instead: the field may not be added or changed, but an existing
+       * one riding along untouched is fine. That makes the rules deploy and the
+       * backfill safe to run in either order.
+       */
+      function emailAbsentOnCreate() {
+        return !request.resource.data.keys().hasAny(['email']);
+      }
+      function emailUntouchedOnUpdate() {
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']);
+      }
+
+      allow create: if isOwner(userId) && emailAbsentOnCreate();
       // Owners may update their own doc, but never their moderation state —
       // that is written only by the moderateUser callable (Admin SDK).
       // pendingMentions is written by the message triggers (Admin SDK, which
@@ -353,6 +388,7 @@ service cloud.firestore {
       }
       allow update: if isOwner(userId)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['moderation'])
+        && emailUntouchedOnUpdate()
         && pendingMentionsOnlyShrinks();
       allow delete: if false;
 

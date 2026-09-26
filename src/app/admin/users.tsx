@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, MessageSquare } from 'lucide-react-native';
 import { where } from 'firebase/firestore';
-import { queryDocuments } from '@core/firebase/firestore';
+import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { callFunction } from '@core/firebase/functions';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -34,6 +34,13 @@ const HEADER_PURPLE = '#cb6ce6';
 type ModerateArgs = { targetUid: string; action: AdminActionType; reason?: string; reportId?: string };
 type ModerateResult = { success: boolean; actionId: string };
 const moderateUser = callFunction<ModerateArgs, ModerateResult>('moderateUser');
+/**
+ * Email lookup moved server-side. `users/{uid}` no longer carries an `email`
+ * field — it was readable by every signed-in user, which made the whole user
+ * base's addresses enumerable for the sake of this one query. Auth holds the
+ * authoritative email; adminFindUser asks it with the Admin SDK.
+ */
+const adminFindUser = callFunction<{ term: string }, { uid: string; email: string | null; disabled: boolean }>('adminFindUser');
 const sendSystemMessage = callFunction<{ targetUid: string; text: string }, { chatId: string }>('sendSystemMessage');
 
 const STATUS_COLOR: Record<'active' | 'warned' | 'suspended', string> = {
@@ -91,18 +98,22 @@ export default function UsersAdmin() {
     setUser(null);
     setHistory([]);
     try {
-      let results = await queryDocuments<User>('users', where('email', '==', value));
-      if (results.length === 0) {
-        results = await queryDocuments<User>('users', where('displayName', '==', value));
-      }
-      if (results.length === 0) {
+      // The callable resolves BOTH an email (via Auth) and a display name (via
+      // Firestore) and hands back a uid; the document is then read by id.
+      const found = await adminFindUser({ term: value });
+      const doc = await getDocument<User>(`users/${found.uid}`);
+      if (!doc) {
         setNotFound(true);
       } else {
-        setUser(results[0]);
-        await loadHistory(results[0].id);
+        // `email` is not on the document any more — it rides along from Auth so
+        // the screen can still show it.
+        setUser({ ...doc, email: found.email ?? undefined });
+        await loadHistory(found.uid);
       }
-    } catch {
-      showToast(t('admin_users.search_failed'), 'error');
+    } catch (e) {
+      // not-found is the ordinary "no such user", not a failure to search.
+      if ((e as { code?: string })?.code === 'functions/not-found') setNotFound(true);
+      else showToast(t('admin_users.search_failed'), 'error');
     } finally {
       setSearching(false);
     }
@@ -114,8 +125,10 @@ export default function UsersAdmin() {
     try {
       await moderateUser({ targetUid: user.id, action, reason: withReason });
       showToast(t('admin_users.action_applied'), 'success');
-      const refreshed = await queryDocuments<User>('users', where('email', '==', user.email));
-      if (refreshed.length > 0) setUser(refreshed[0]);
+      // By uid. This used to re-query by email, which is both a wasted query and
+      // impossible now that the field is gone.
+      const refreshed = await getDocument<User>(`users/${user.id}`);
+      if (refreshed) setUser({ ...refreshed, email: user.email });
       await loadHistory(user.id);
     } catch (e) {
       showToast((e as { message?: string })?.message ?? t('admin_users.action_failed'), 'error');

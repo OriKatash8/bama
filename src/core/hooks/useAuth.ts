@@ -50,8 +50,11 @@ export function useAuth() {
           if ('role' in userData) {
             void updateDocument(`users/${firebaseUser.uid}`, { role: deleteField() } as any);
           }
-          const { role: _role, ...cleanUser } = userData as any;
-          setUser(cleanUser as User);
+          // `email` comes from Auth, not the document — see User.email. A doc
+          // written before the field was removed may still carry one; dropping
+          // it here keeps a stale value from outliving the backfill.
+          const { role: _role, email: _staleEmail, ...cleanUser } = userData as any;
+          setUser({ ...cleanUser, email: firebaseUser.email ?? undefined } as User);
           setLoading(false);
           if (moderation?.status === 'warned') {
             useModerationStore.getState().setNotice({ status: 'warned', reason: moderation.reason });
