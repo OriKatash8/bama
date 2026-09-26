@@ -10,6 +10,31 @@
       "name": "callClaude",
       "reason": "Hardened (task registry, per-uid burst+daily quotas) but UNDEPLOYED on purpose: the three hooks that call it (useGenerateTitle, useAiCrewSuggestion, useAiCrewRecommendation) are exported from src/features/crew/hooks and imported by NOTHING, so no screen invokes it. An authenticated endpoint spending the platform's Anthropic key with zero legitimate callers is liability without upside. Deploy it in the same change that ships the UI.",
       "addedOn": "2026-09-26"
+    },
+    {
+      "name": "createCommunityInvite",
+      "reason": "Community-invite backend. Deploys with the web landing task, alongside resolveCommunityInvite. Nothing in src/ calls it: the deep-link intake exists (deepLinks/allowlist.ts matches /c/{token}, pendingIntentStore holds a requestJoin intent) but no screen creates, resolves or revokes an invite yet, so deploying would add a live endpoint for an unshipped feature. The firestore.rules joinRequests guard fails closed meanwhile: hasValidInviteOrigin requires exists(communityInvites/{token}), and with no creator deployed no token exists, so a via:'invite' request is always denied.",
+      "addedOn": "2026-09-26"
+    },
+    {
+      "name": "getCommunityInvite",
+      "reason": "Community-invite backend. Deploys with the web landing task, alongside resolveCommunityInvite. Nothing in src/ calls it: the deep-link intake exists (deepLinks/allowlist.ts matches /c/{token}, pendingIntentStore holds a requestJoin intent) but no screen creates, resolves or revokes an invite yet, so deploying would add a live endpoint for an unshipped feature. The firestore.rules joinRequests guard fails closed meanwhile: hasValidInviteOrigin requires exists(communityInvites/{token}), and with no creator deployed no token exists, so a via:'invite' request is always denied.",
+      "addedOn": "2026-09-26"
+    },
+    {
+      "name": "revokeCommunityInvite",
+      "reason": "Community-invite backend. Deploys with the web landing task, alongside resolveCommunityInvite. Nothing in src/ calls it: the deep-link intake exists (deepLinks/allowlist.ts matches /c/{token}, pendingIntentStore holds a requestJoin intent) but no screen creates, resolves or revokes an invite yet, so deploying would add a live endpoint for an unshipped feature. The firestore.rules joinRequests guard fails closed meanwhile: hasValidInviteOrigin requires exists(communityInvites/{token}), and with no creator deployed no token exists, so a via:'invite' request is always denied.",
+      "addedOn": "2026-09-26"
+    },
+    {
+      "name": "onCommunityInviteJoinRequest",
+      "reason": "Community-invite backend. Deploys with the web landing task, alongside resolveCommunityInvite. Nothing in src/ calls it: the deep-link intake exists (deepLinks/allowlist.ts matches /c/{token}, pendingIntentStore holds a requestJoin intent) but no screen creates, resolves or revokes an invite yet, so deploying would add a live endpoint for an unshipped feature. The firestore.rules joinRequests guard fails closed meanwhile: hasValidInviteOrigin requires exists(communityInvites/{token}), and with no creator deployed no token exists, so a via:'invite' request is always denied.",
+      "addedOn": "2026-09-26"
+    },
+    {
+      "name": "onCommunityDeleted",
+      "reason": "Community-invite backend. Deploys with the web landing task, alongside resolveCommunityInvite. Nothing in src/ calls it: the deep-link intake exists (deepLinks/allowlist.ts matches /c/{token}, pendingIntentStore holds a requestJoin intent) but no screen creates, resolves or revokes an invite yet, so deploying would add a live endpoint for an unshipped feature. The firestore.rules joinRequests guard fails closed meanwhile: hasValidInviteOrigin requires exists(communityInvites/{token}), and with no creator deployed no token exists, so a via:'invite' request is always denied.",
+      "addedOn": "2026-09-26"
     }
   ]
 }

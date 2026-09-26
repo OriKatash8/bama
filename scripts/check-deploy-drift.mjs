@@ -42,19 +42,28 @@ const ok = (m) => console.log(`  ok    ${m}`);
 const bad = (m) => { drift += 1; console.log(`  DRIFT ${m}`); };
 
 // ── rules ──────────────────────────────────────────────────────────────────
+// BOTH rules files. This checked firestore.rules alone until storage.rules was
+// rewritten from a single `allow write: if request.auth != null` into 13 scoped
+// path blocks — the largest rules change the project has had, on the one surface
+// this script could not see. Exactly the failure in the header note, one file
+// over.
 const releases = await get(`https://firebaserules.googleapis.com/v1/projects/${projectId}/releases`);
-const rel = releases.releases?.find((r) => r.name.endsWith('cloud.firestore'));
-if (!rel) bad('firestore rules: no release at all');
-else {
+
+async function checkRules(localPath, releaseSuffix, deployTarget) {
+  const rel = releases.releases?.find((r) => r.name.endsWith(releaseSuffix));
+  if (!rel) { bad(`${localPath}: no release at all`); return; }
   const rs = await get(`https://firebaserules.googleapis.com/v1/projects/${projectId}/rulesets/${rel.rulesetName.split('/').pop()}`);
   const deployed = rs.source.files.map((f) => f.content).join('');
-  const local = readFileSync('firestore.rules', 'utf8');
-  if (deployed === local) ok(`firestore.rules matches (released ${rel.updateTime})`);
+  const local = readFileSync(localPath, 'utf8');
+  if (deployed === local) ok(`${localPath} matches (released ${rel.updateTime})`);
   else {
-    bad(`firestore.rules DIFFERS from the deployed ruleset (released ${rel.updateTime})`);
-    console.log('        run: firebase deploy --only firestore:rules');
+    bad(`${localPath} DIFFERS from the deployed ruleset (released ${rel.updateTime})`);
+    console.log(`        run: firebase deploy --only ${deployTarget}`);
   }
 }
+
+await checkRules('firestore.rules', 'cloud.firestore', 'firestore:rules');
+await checkRules('storage.rules', 'firebase.storage', 'storage');
 
 // ── indexes ────────────────────────────────────────────────────────────────
 // Compared as a set of (collectionGroup, fields) rather than textually: the API
