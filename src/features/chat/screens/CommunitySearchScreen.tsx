@@ -10,7 +10,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useChatJumpStore } from '@core/stores/chatJumpStore';
-import { formatShortDay, rtlSafe } from '@utils/formatters';
+import { formatShortDay, isoDayFromSeconds, rtlSafe } from '@utils/formatters';
 import type { User } from '@core/types/user';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -27,13 +27,6 @@ function makeT(translations: Translations) {
     if (vars) for (const [k, v] of Object.entries(vars)) str = str.replace(`{{${k}}}`, v);
     return str;
   };
-}
-
-/** A message's day, as the date helper wants it: local 'YYYY-MM-DD'. */
-function isoDay(seconds: number): string {
-  const d = new Date(seconds * 1000);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 /**
@@ -157,7 +150,7 @@ export function CommunitySearchScreen({ chatId }: { chatId: string }) {
                 </AppText>
                 {r.message.timestamp && (
                   <AppText style={styles.date}>
-                    {formatShortDay(isoDay(r.message.timestamp.seconds), rtl ? 'he' : 'en')}
+                    {formatShortDay(isoDayFromSeconds(r.message.timestamp.seconds), rtl ? 'he' : 'en')}
                   </AppText>
                 )}
               </View>

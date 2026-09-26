@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
-import { PortfolioViewer } from './PortfolioViewer';
+import { PortfolioFeed } from './PortfolioFeed';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -177,6 +177,7 @@ export function PortfolioGrid({
         {assets.map((asset) => (
           <TouchableOpacity
             key={asset.id}
+            testID={`portfolio-tile-${asset.id}`}
             style={[styles.tile, { width: tileSize, height: tileSize }]}
             onPress={() => !isEditing && setViewerIndex(assets.indexOf(asset))}
             activeOpacity={isEditing ? 1 : 0.9}
@@ -204,7 +205,9 @@ export function PortfolioGrid({
         ))}
       </View>
 
-      <PortfolioViewer
+      {/* The Instagram-style feed: photo/video, then its caption and date, then the
+          next. Chat media keeps the one-per-page PortfolioViewer. */}
+      <PortfolioFeed
         assets={assets}
         initialIndex={viewerIndex ?? 0}
         visible={viewerIndex !== null}

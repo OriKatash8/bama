@@ -46,6 +46,13 @@ export function formatShortDay(iso: string, lang: 'he' | 'en', now: Date = new D
     : `${day} ב${HE_MONTHS_ABBR[month]}${otherYear ? ` ${year}` : ''}`;
 }
 
+/** A timestamp's LOCAL calendar day as 'YYYY-MM-DD' — the form formatShortDay reads. */
+export function isoDayFromSeconds(seconds: number): string {
+  const d = new Date(seconds * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);

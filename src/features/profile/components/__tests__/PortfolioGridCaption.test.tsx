@@ -25,7 +25,7 @@ jest.mock('expo-video', () => ({
   useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn(), muted: false }),
   VideoView: 'VideoView',
 }));
-jest.mock('../PortfolioViewer', () => ({ PortfolioViewer: () => null }));
+jest.mock('../PortfolioFeed', () => ({ PortfolioFeed: () => null }));
 jest.mock('@core/stores/authStore', () => ({
   useAuthStore: (s: (x: { user: { id: string } }) => unknown) => s({ user: { id: 'u1' } }),
 }));

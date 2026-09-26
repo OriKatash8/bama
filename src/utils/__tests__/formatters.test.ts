@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { formatCurrency, formatDate, formatDuration, formatRelativeTime, formatIsoDay, formatShortDay } from '../formatters';
+import { formatCurrency, formatDate, formatDuration, formatRelativeTime, formatIsoDay, formatShortDay, isoDayFromSeconds } from '../formatters';
 
 describe('formatCurrency', () => {
   it('formats shekels by default', () => {
@@ -113,5 +113,12 @@ describe('formatShortDay', () => {
 
   it('returns anything that is not an ISO day unchanged', () => {
     expect(formatShortDay('flexible', 'he', now)).toBe('flexible');
+  });
+});
+
+describe('isoDayFromSeconds', () => {
+  it('gives the LOCAL calendar day as YYYY-MM-DD, zero-padded', () => {
+    const local = new Date(2026, 0, 5, 23, 30); // 5 Jan 2026, 23:30 local
+    expect(isoDayFromSeconds(local.getTime() / 1000)).toBe('2026-01-05');
   });
 });

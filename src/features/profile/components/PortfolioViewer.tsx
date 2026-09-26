@@ -5,7 +5,6 @@ import {
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { X, Info as InfoIcon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, runOnJS,
@@ -14,6 +13,9 @@ import type { ViewToken } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
+import {
+  makeT, NativeVideoSlide, useModalInsets, WebVideoSlide, type SlideSize,
+} from './mediaViewerParts';
 import he from '@core/i18n/translations/he.json';
 import { useTheme } from '@core/hooks/useTheme';
 import {
@@ -22,49 +24,11 @@ import {
 } from '@core/constants/mediaViewer';
 import type { MediaAsset } from '@core/types/media';
 
-// Slide size is measured live rather than captured once at module load: the pager
-// is vertical, so a stale viewport height would settle every page mid-item after
-// any resize or rotation.
-type SlideSize = { width: number; height: number };
-
 // Rough height of expo-video's nativeControls bar; the caption clears it on video
 // slides so the scrubber stays reachable.
 const VIDEO_CONTROLS_HEIGHT = 64;
 
 const TOP_BAR_HEIGHT = 56;
-
-/**
- * Safe-area insets inside a React Native `Modal`.
- *
- * `useSafeAreaInsets()` reports zeros in here on iOS: the modal is presented
- * outside the app's SafeAreaProvider, so there is nothing to measure against.
- * Trusting it put the close button underneath the notch, and since videos have no
- * dismiss gesture that left no way out of the viewer at all.
- *
- * `initialWindowMetrics` is captured natively at startup and stays correct inside a
- * modal, so it is the real source. The floors are the last resort if both are
- * missing — enough to clear a status bar and most of a notch.
- */
-function useModalInsets() {
-  const insets = useSafeAreaInsets();
-  const fallback = initialWindowMetrics?.insets;
-  return {
-    top: Math.max(insets.top, fallback?.top ?? 0, 44),
-    bottom: Math.max(insets.bottom, fallback?.bottom ?? 0, 20),
-  };
-}
-
-// Same shape as PortfolioGrid's and ChatMediaSection's — the local-t convention
-// these components use instead of the react-i18next hook.
-type Translations = typeof en;
-function makeT(translations: Translations) {
-  return (key: string): string => {
-    const keys = key.split('.');
-    let result: unknown = translations;
-    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
-  };
-}
 
 type ImageSlideProps = SlideSize & {
   asset: MediaAsset;
@@ -173,58 +137,6 @@ function ZoomableImageSlide({ asset, width, height, onZoomChange, onClose }: Ima
           resizeMode="contain"
         />
       </GestureDetector>
-    </View>
-  );
-}
-
-// ── Video slides ──────────────────────────────────────────────────────────────
-
-// No gesture of its own. Swipe-down-to-dismiss used to live here, but on a vertical
-// pager that is the same motion as paging to the previous item — the two raced on
-// every downward swipe. Paging owns it; the close button, Android back and the
-// image slides' tap-to-close remain the ways out.
-function NativeVideoSlide({ asset, isActive, width, height }: SlideSize & { asset: MediaAsset; isActive: boolean }) {
-  const { VideoView, useVideoPlayer } = require('expo-video') as typeof import('expo-video');
-  const player = useVideoPlayer(asset.url, (p: import('expo-video').VideoPlayer) => {
-    p.loop = true;
-  });
-
-  useEffect(() => {
-    if (isActive) player.play();
-    else player.pause();
-  }, [isActive, player]);
-
-  return (
-    <View testID={`viewer-slide-${asset.id}`} style={[slide.container, { width, height }]}>
-      <VideoView player={player} style={{ width, height }} contentFit="contain" nativeControls />
-    </View>
-  );
-}
-
-function WebVideoSlide({ asset, isActive, width, height }: SlideSize & { asset: MediaAsset; isActive: boolean }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isActive) video.play().catch(() => {});
-    else video.pause();
-  }, [isActive]);
-
-  return (
-    <View
-      testID={`viewer-slide-${asset.id}`}
-      style={[slide.container, { width, height, alignItems: 'center', justifyContent: 'center' }]}
-    >
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <video
-        ref={videoRef}
-        src={asset.url}
-        style={{ maxWidth: '100%', maxHeight: '100%' } as React.CSSProperties}
-        controls
-        playsInline
-        loop
-      />
     </View>
   );
 }
