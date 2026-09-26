@@ -35,6 +35,13 @@ function createAuth(): Auth {
   }
 }
 
+// App Check runs on the native SDK and is bridged in — see ./appCheck. Started
+// fire-and-forget and never awaited: it must not delay or block sign-in, and a
+// failure leaves requests unverified rather than broken. Harmless while App
+// Check is in monitoring mode; re-read that file before enforcing.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+void (require('./appCheck') as typeof import('./appCheck')).initAppCheck(app);
+
 export const auth = createAuth();
 export const googleProvider = new GoogleAuthProvider();
 export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });

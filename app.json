@@ -15,7 +15,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "BAMA needs microphone access to record voice messages."
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -64,7 +65,16 @@
           "icon": "./assets/images/icon.png",
           "color": "#208AEF"
         }
-      ]
+      ],
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
+      "@react-native-firebase/app-check"
     ],
     "experiments": {
       "typedRoutes": true
