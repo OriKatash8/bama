@@ -403,3 +403,29 @@ describe('fit to screen', () => {
     expect(flat(r.getByTestId('empty-illustration', H)).height).toBe(420);
   });
 });
+
+describe('the main button and link follow the mode', () => {
+  const flat = (n: { props: Record<string, unknown> }) => StyleSheet.flatten(n.props.style as never) as Record<string, unknown>;
+  const withActions = () => render(
+    <AnimatedEmptyState variant="board" {...base}
+      primaryCta={{ label: 'Upgrade profile', onPress: jest.fn() }}
+      secondaryLink={{ label: 'or browse', onPress: jest.fn() }} />,
+  );
+
+  it('pro: a blue button (ending in the pro blue), a blue link', () => {
+    mockAccent = '#1D4ED8';
+    const r = withActions();
+    const colors = r.getByTestId('empty-cta-fill').props.colors as string[];
+    expect(colors[colors.length - 1]).toBe('#1D4ED8');
+    expect(colors.some((c) => c.toUpperCase() === '#C96BDA')).toBe(false);
+    expect(flat(r.getByText('or browse')).color).toBe('#1D4ED8');
+  });
+
+  it('client: a purple button (ending in the client purple), a purple link', () => {
+    mockAccent = '#6D28D9';
+    const r = withActions();
+    const colors = r.getByTestId('empty-cta-fill').props.colors as string[];
+    expect(colors[colors.length - 1]).toBe('#6D28D9');
+    expect(flat(r.getByText('or browse')).color).toBe('#6D28D9');
+  });
+});

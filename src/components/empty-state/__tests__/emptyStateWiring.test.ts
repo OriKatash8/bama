@@ -113,3 +113,9 @@ it.each([0, 1])('the projects page (empty state %i) fits the screen and keeps it
   expect(block).toContain('singleLineTitle');
   expect(block).toContain('fitToScreen={{ bottomInset: tabBarClearance }}');
 });
+
+it('the notice board fits the screen and keeps its English title on one row', () => {
+  const block = blocks(read('(professional)', '(tabs)', 'dashboard', 'index.tsx'))[0];
+  expect(block).toContain('singleLineTitle');
+  expect(block).toContain('fitToScreen={{ bottomInset: tabBarClearance }}');
+});

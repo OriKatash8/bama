@@ -65,17 +65,30 @@ type Props = {
 const PANEL_BG = '#F4F2FB';
 const INK = '#1A1530';
 const INK_SOFT = '#5A566C';
-const LINK = '#5B3FD0';
-const CTA_GRADIENT = ['#2A45D8', '#6E58E2', '#C96BDA'] as const;
-/** The icon squares and the chat avatars take the viewer's mode colour (as the
- *  tab bar does): a purple gradient for a client, a blue one for a professional. */
+/** The icon squares, chat avatars, outlines, ₪ pill, main button and link take
+ *  the viewer's mode colour (as the tab bar does): purple for a client, blue for a pro. */
 const BADGE_GRADIENT_CLIENT = ['#8B5CF6', CLIENT_TAB_ACTIVE] as const;
 const BADGE_GRADIENT_PRO = ['#3B82F6', PRO_TAB_ACTIVE] as const;
 
 /** Everything in the cards that follows the mode: purple for a client, blue for a pro. */
-type Tone = { badge: readonly [string, string]; border: string; pillBg: string; pillText: string };
-const CLIENT_TONE: Tone = { badge: BADGE_GRADIENT_CLIENT, border: 'rgba(165,150,235,0.55)', pillBg: 'rgba(110,88,226,0.14)', pillText: '#4B34B8' };
-const PRO_TONE: Tone = { badge: BADGE_GRADIENT_PRO, border: 'rgba(59,110,235,0.55)', pillBg: 'rgba(29,78,216,0.12)', pillText: PRO_TAB_ACTIVE };
+type Tone = {
+  badge: readonly [string, string];
+  border: string;
+  pillBg: string;
+  pillText: string;
+  /** The main button's fill and glow, and the link under it. */
+  cta: readonly [string, string];
+  ctaShadow: string;
+  link: string;
+};
+const CLIENT_TONE: Tone = {
+  badge: BADGE_GRADIENT_CLIENT, border: 'rgba(165,150,235,0.55)', pillBg: 'rgba(110,88,226,0.14)', pillText: '#4B34B8',
+  cta: ['#8B5CF6', CLIENT_TAB_ACTIVE], ctaShadow: CLIENT_TAB_ACTIVE, link: CLIENT_TAB_ACTIVE,
+};
+const PRO_TONE: Tone = {
+  badge: BADGE_GRADIENT_PRO, border: 'rgba(59,110,235,0.55)', pillBg: 'rgba(29,78,216,0.12)', pillText: PRO_TAB_ACTIVE,
+  cta: ['#3B82F6', PRO_TAB_ACTIVE], ctaShadow: PRO_TAB_ACTIVE, link: PRO_TAB_ACTIVE,
+};
 
 /** Final values the entrance springs to — also the static reduced-motion frame. */
 const ENTER_SPRING = { damping: 14, stiffness: 120, mass: 1 };
@@ -212,9 +225,9 @@ export function AnimatedEmptyState({
         <Text style={[styles.subtitle, font.regular]}>{subtitle}</Text>
         {note ? <Text style={[styles.note, font.regular]}>{note}</Text> : null}
         {primaryCta && (
-          <View style={styles.ctaShadow}>
+          <View style={[styles.ctaShadow, { shadowColor: tone.ctaShadow }]}>
             <TouchableOpacity testID="empty-cta" onPress={primaryCta.onPress} activeOpacity={0.88} accessibilityRole="button" style={styles.ctaTouch}>
-              <LinearGradient colors={CTA_GRADIENT} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.cta}>
+              <LinearGradient testID="empty-cta-fill" colors={tone.cta} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.cta}>
                 {primaryCta.icon}
                 <Text style={[styles.ctaText, font.bold]}>{primaryCta.label}</Text>
               </LinearGradient>
@@ -223,7 +236,7 @@ export function AnimatedEmptyState({
         )}
         {secondaryLink && (
           <TouchableOpacity testID="empty-link" onPress={secondaryLink.onPress} activeOpacity={0.7} accessibilityRole="link" hitSlop={8}>
-            <Text style={[styles.link, font.bold]}>{secondaryLink.label}</Text>
+            <Text style={[styles.link, font.bold, { color: tone.link }]}>{secondaryLink.label}</Text>
           </TouchableOpacity>
         )}
       </FadeUp>
@@ -444,7 +457,6 @@ const styles = StyleSheet.create({
   ctaShadow: {
     marginTop: 14,
     borderRadius: 28,
-    shadowColor: '#5F4BD7',
     shadowOpacity: 0.35,
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 28,
@@ -453,5 +465,5 @@ const styles = StyleSheet.create({
   ctaTouch: { borderRadius: 28, overflow: 'hidden' },
   cta: { width: 260, height: 56, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   ctaText: { color: '#FFFFFF', fontSize: 17 },
-  link: { marginTop: 6, fontSize: 15, color: LINK, textDecorationLine: 'underline', textAlign: 'center' },
+  link: { marginTop: 6, fontSize: 15, textDecorationLine: 'underline', textAlign: 'center' },
 });

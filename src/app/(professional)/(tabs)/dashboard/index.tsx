@@ -578,6 +578,10 @@ export default function DashboardScreen() {
             bleedTop={(notifPrompt.visible && pendingCount > 0) || biddable.length > 0 ? 0 : 18}
             radius={26}
             variant="board"
+            // English: the title on one row; and the text shows without scrolling,
+            // the illustration giving up height above it if needed.
+            singleLineTitle
+            fitToScreen={{ bottomInset: tabBarClearance }}
             title={t('noticeboard.no_projects')}
             subtitle={t('noticeboard.check_back')}
             {...(!activeProjectsLoading && activeProjects.length === 0
