@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import en from '../translations/en.json';
 import he from '../translations/he.json';
@@ -217,5 +217,91 @@ describe('translation glyph coverage', () => {
       const missing = [...base].filter((cp) => !cm.has(cp));
       expect({ face, missing }).toEqual({ face, missing: [] });
     }
+  });
+});
+
+// ── Source literals: the Android backlog ─────────────────────────────────────
+
+/**
+ * GLYPHS HARDCODED IN JSX, TRACKED AS A BASELINE UNTIL ANDROID SHIPS.
+ *
+ * The translation files are clean, but '✕ ✓ ★ ☆ ← ▲ ▼ ✦ ⋯' also sit directly
+ * in .tsx source — close buttons, star ratings, chevrons. iOS and the browser
+ * substitute a system font for them, so they look right on every device BAMA
+ * is tested on today. Android does not: each one is a tofu box there.
+ *
+ * iOS ships first, so they are not fixed yet. Instead this test pins the
+ * current set in androidGlyphBaseline.json and fails on any change to it:
+ *   - a NEW tofu glyph anywhere in src fails, naming file and character;
+ *   - fixing one also fails until the baseline is regenerated, so the list
+ *     only ever shrinks and never silently drifts out of date.
+ * Before an Android release the baseline must be empty.
+ *
+ * Regenerate after fixing some:
+ *   UPDATE_GLYPH_BASELINE=1 npx jest src/core/i18n/__tests__/fontCoverage.test.ts
+ */
+
+const SRC_DIR = join(__dirname, '..', '..', '..');
+const BASELINE = join(__dirname, 'androidGlyphBaseline.json');
+
+/** Dingbats that default to EMOJI presentation, so the emoji font draws them. */
+const EMOJI_DEFAULT = new Set([0x2705, 0x2728, 0x274c, 0x274e, 0x2753, 0x2754, 0x2755, 0x2757, 0x26a1]);
+
+function walk(dir: string): string[] {
+  const out: string[] = [];
+  for (const e of readdirSync(dir)) {
+    if (e === '__tests__' || e === 'node_modules') continue;
+    const full = join(dir, e);
+    if (statSync(full).isDirectory()) out.push(...walk(full));
+    else if (/\.tsx?$/.test(e) && !e.endsWith('.d.ts')) out.push(full);
+  }
+  return out;
+}
+
+/** Code with comments removed: block comments (JSX ones included) and line comments. */
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[\s;{}(),])\/\/.*$/gm, '$1');
+}
+
+function scanSource(cm: Set<number>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const file of walk(SRC_DIR)) {
+    const code = stripComments(readFileSync(file, 'utf8'));
+    // console.* strings are logs, never rendered.
+    const rendered = code.replace(/console\.\w+\([^\n]*/g, '');
+    const chars = [...rendered];
+    const bad = new Set<string>();
+    chars.forEach((ch, i) => {
+      const cp = ch.codePointAt(0)!;
+      if (cp <= 0x7e || cm.has(cp) || INVISIBLE.has(cp)) return;
+      if (cp >= 0x0590 && cp <= 0x05ff) return;             // Hebrew
+      if (cp >= 0x1f000 || EMOJI_DEFAULT.has(cp)) return;   // emoji font
+      if (chars[i + 1] === '\ufe0f') return;                // forced emoji
+      if (cp === 0xfe0f || cp === 0xfe0e) return;            // the selector itself
+      bad.add(ch);
+    });
+    if (bad.size) {
+      const rel = file.slice(SRC_DIR.length + 1).split('\\').join('/');
+      result[rel] = [...bad].sort().join(' ');
+    }
+  }
+  return Object.fromEntries(Object.entries(result).sort(([a], [b]) => a.localeCompare(b)));
+}
+
+describe('hardcoded glyphs in source (Android backlog)', () => {
+  it('matches androidGlyphBaseline.json exactly', () => {
+    const cm = readCmap('Heebo-Regular.ttf');
+    const actual = scanSource(cm);
+
+    if (process.env.UPDATE_GLYPH_BASELINE) {
+      writeFileSync(BASELINE, JSON.stringify(actual, null, 2) + '\n', 'utf8');
+    }
+    const baseline = JSON.parse(readFileSync(BASELINE, 'utf8')) as Record<string, string>;
+
+    // New file or new character here? Use a Lucide icon instead of a text glyph.
+    // Fixed some? Regenerate the baseline (see the comment above).
+    expect(actual).toEqual(baseline);
   });
 });

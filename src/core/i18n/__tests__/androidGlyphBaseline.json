@@ -1,0 +1,21 @@
+{
+  "app/(client)/(tabs)/browse/index.tsx": "✕",
+  "app/(client)/(tabs)/chats/index.tsx": "✕",
+  "app/(client)/(tabs)/home/builder.tsx": "✕",
+  "app/(client)/chat/project-details.tsx": "✓ ✕",
+  "app/(professional)/(tabs)/browse/index.tsx": "✕",
+  "app/(professional)/(tabs)/chats/index.tsx": "✕",
+  "app/(professional)/(tabs)/dashboard/index.tsx": "✕",
+  "app/(professional)/(tabs)/marketplace/index.tsx": "✕",
+  "app/admin/courses.tsx": "✓",
+  "components/layout/Header.tsx": "←",
+  "features/auth/components/ModePicker.tsx": "✦",
+  "features/chat/components/CommunityDiscoveryTab.tsx": "✕",
+  "features/chat/components/CommunityManageModal.tsx": "★ ✕",
+  "features/chat/screens/ChatRoomScreen.tsx": "✓ ✕",
+  "features/crew/components/CategoryItem.tsx": "▲ ▼",
+  "features/marketplace/components/ListingDetailModal.tsx": "✓",
+  "features/profile/components/ContentTabs.tsx": "✓",
+  "features/profile/components/ReviewsList.tsx": "★ ☆",
+  "features/profile/components/StarRating.tsx": "★ ☆"
+}
