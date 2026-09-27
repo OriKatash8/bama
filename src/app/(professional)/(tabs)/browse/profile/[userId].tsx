@@ -446,7 +446,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Montserrat-Regular',
+    // No fontFamily here: the call site spreads font.bold, which sets the
+    // script-correct family. A literal one was 'Montserrat-Regular', a family
+    // never registered with useFonts.
   },
 
   bottomPad: { height: 40 },

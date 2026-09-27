@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, MessageCircle, Plus } from 'lucide-react-native';
+import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, MessageCircle, Plus, ExternalLink } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -606,6 +606,7 @@ export default function ProfessionalChatsScreen() {
                           hitSlop={{ top: 4, bottom: 4 }}
                         >
                           <Text style={[styles.visitBtnText, { ...font.bold }]}>{t('courses.visit_course')}</Text>
+                          <ExternalLink size={14} color="#FFFFFF" strokeWidth={2.4} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -1055,8 +1056,10 @@ const styles = StyleSheet.create({
     backgroundColor: BLUE,
     borderRadius: 12,
     paddingHorizontal: 18,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     flexShrink: 0,
   },
   visitBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },

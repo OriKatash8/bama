@@ -74,7 +74,7 @@ import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
-import { Calendar, CalendarDays, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
+import { Calendar, CalendarDays, Check, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -1735,7 +1735,8 @@ export default function ProjectDetailsScreen() {
       {isClient && !isCancelled && (
         <View style={styles.completeBar}>
           {isCompleted ? (
-            <View style={styles.completedBadge}>
+            <View style={[styles.completedBadge, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Check size={18} color="#16a34a" strokeWidth={3} />
               <Text style={[styles.completedBadgeText, { ...font.bold }]}>{t('project_details.completed')}</Text>
             </View>
           ) : (
@@ -2718,7 +2719,8 @@ function MemberRow({
               </AppText>
             </View>
           ) : isEngagementDone ? (
-            <View style={styles.engagementDoneChip}>
+            <View style={[styles.engagementDoneChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <Check size={11} color={COMPLETE_GREEN} strokeWidth={3} />
               <AppText weight="semiBold" style={styles.engagementDoneText}>
                 {t('project_details.completed')}
               </AppText>
@@ -3003,6 +3005,7 @@ const styles = StyleSheet.create({
   engagementDoneChip: {
     backgroundColor: 'rgba(47,143,98,0.11)', borderRadius: 6,
     paddingHorizontal: 8, paddingVertical: 4,
+    alignItems: 'center', gap: 3,   // flexDirection comes from the call site
   },
   engagementDoneText: { color: COMPLETE_GREEN, fontSize: 11 },
   engagementContestedChip: {
@@ -3243,7 +3246,13 @@ const styles = StyleSheet.create({
     borderColor: '#22c55e',
     borderRadius: 12,
     paddingVertical: 12,
+    // Row, not column: the check is a Lucide glyph beside the label. It used to
+    // be a '✓' inside the string, which Heebo has no glyph for. The call site
+    // supplies flexDirection — the app forces LTR layout, so 'row' never flips
+    // on its own and the check has to be put on the Hebrew side by hand.
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   completedBadgeText: { color: '#16a34a', fontSize: 16, fontWeight: '700' },
   // Outlined, not filled: raising an issue is a secondary action next to the

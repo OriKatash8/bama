@@ -4,7 +4,7 @@ import {
   StyleSheet, TextInput, Switch, useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { X } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Sparkles, X } from 'lucide-react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
 import { usePriceOffer } from '@features/noticeboard/hooks/usePriceOffer';
 import { getVacantSlots } from '@features/noticeboard/hooks/useNoticeboard';
@@ -354,7 +354,12 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               })}
 
               <View style={styles.actions}>
-                <TouchableOpacity style={styles.applyBtn} onPress={openBid} activeOpacity={0.8}>
+                <TouchableOpacity
+                  style={[styles.applyBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+                  onPress={openBid}
+                  activeOpacity={0.8}
+                >
+                  <Sparkles size={18} color="#fff" strokeWidth={2.2} />
                   <AppText weight="bold" style={styles.applyText}>{t('noticeboard.make_offer_action')}</AppText>
                 </TouchableOpacity>
               </View>
@@ -368,7 +373,16 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
             >
-              <TouchableOpacity onPress={() => setView('details')} style={styles.backBtn}>
+              <TouchableOpacity
+                onPress={() => setView('details')}
+                style={[styles.backBtn, {
+                  alignSelf: rtl ? 'flex-end' : 'flex-start',
+                  flexDirection: rtl ? 'row-reverse' : 'row',
+                }]}
+              >
+                {rtl
+                  ? <ChevronRight size={18} color={INK} strokeWidth={2.4} />
+                  : <ChevronLeft size={18} color={INK} strokeWidth={2.4} />}
                 <AppText style={styles.backText}>{t('noticeboard.back_to_details')}</AppText>
               </TouchableOpacity>
               <AppText style={[styles.bidHint, { textAlign: align }]}>{t('noticeboard.bid_hint')}</AppText>
@@ -549,10 +563,12 @@ const styles = StyleSheet.create({
   },
   offeredTagText: { fontSize: 11, color: INK },
   actions: { marginTop: 20, gap: 10 },
-  applyBtn: { backgroundColor: '#004aad', borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
+  // flexDirection comes from the call site: the app forces LTR layout, so 'row'
+  // never flips and the Sparkles has to be put on the Hebrew side by hand.
+  applyBtn: { backgroundColor: '#004aad', borderRadius: 12, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', gap: 8 },
   disabled: { opacity: 0.4 },
   applyText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  backBtn: { marginBottom: 12 },
+  backBtn: { marginBottom: 12, alignItems: 'center', gap: 4 },
   backText: { fontSize: 14, color: INK, fontWeight: '600' },
   bidHint: { fontSize: 14, marginBottom: 16, lineHeight: 20, color: INK },
   bidRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,74,173,0.08)' },

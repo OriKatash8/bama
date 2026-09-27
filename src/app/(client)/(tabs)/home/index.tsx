@@ -704,7 +704,7 @@ export default function HomeScreen() {
               {rtl
                 ? <ChevronRight size={20} color="#000000" strokeWidth={2.5} />
                 : <ChevronLeft size={20} color="#000000" strokeWidth={2.5} />}
-              <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
+              <Text style={styles.backArrowText}>{t('search.back')}</Text>
             </TouchableOpacity>
 
             {errors.slots ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left', marginTop: 16 }]}>{errors.slots}</Text> : null}
@@ -866,7 +866,7 @@ export default function HomeScreen() {
               {rtl
                 ? <ChevronRight size={20} color="#000000" strokeWidth={2.5} />
                 : <ChevronLeft size={20} color="#000000" strokeWidth={2.5} />}
-              <Text style={styles.backArrowText}>{t('search.back').replace('← ', '')}</Text>
+              <Text style={styles.backArrowText}>{t('search.back')}</Text>
             </TouchableOpacity>
 
             {[...new Set(slots.map((s) => s.category))].map((category) => {
