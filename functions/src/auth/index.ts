@@ -12,13 +12,26 @@ if (admin.apps.length === 0) {
  * reads it through the adminFindUser callable.
  */
 export const onUserCreate = functions.auth.user().onCreate(async (user) => {
-  await admin.firestore().collection('users').doc(user.uid).set({
-    id: user.uid,
-    displayName: user.displayName ?? '',
-    photoURL: user.photoURL ?? null,
-    role: null,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  await admin.firestore().collection('users').doc(user.uid).set(
+    {
+      id: user.uid,
+      displayName: user.displayName ?? '',
+      photoURL: user.photoURL ?? null,
+      role: null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    // MERGE IS LOAD-BEARING. This trigger and the client both write
+    // users/{uid} at sign-up, and the order is a race. Without merge this
+    // overwrote the whole document, destroying the fields ONLY the client
+    // knows — termsAcceptedAt, termsVersion, ageConfirmed, ageConfirmedAt.
+    //
+    // The result was that BAMA held no evidence any user had accepted the
+    // Terms or confirmed they were 18+, on any account, ever: the consent was
+    // collected by the UI, written, and then erased milliseconds later.
+    //
+    // Anything this trigger does not name is now left alone.
+    { merge: true },
+  );
 });
 
 export const getAdminStatus = functions.https.onCall((_data, context) => {
