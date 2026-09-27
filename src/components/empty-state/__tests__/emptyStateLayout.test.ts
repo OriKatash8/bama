@@ -1,4 +1,4 @@
-import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom } from '../emptyStateLayout';
+import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom, fitTitleSize } from '../emptyStateLayout';
 import { ROLES } from '@features/crew/data/categories';
 import { ROLE_GLYPHS } from '@features/crew/data/roleTiles';
 
@@ -58,4 +58,21 @@ it('fills from where the panel sits down to the bottom of the screen', () => {
   expect(fillToBottom(844, 300)).toBe(544);
   // Never negative (a panel scrolled partly above the top, or measured late).
   expect(fillToBottom(844, 900)).toBe(0);
+});
+
+describe('fitTitleSize — one line in English', () => {
+  it('keeps the full 26pt when the title already fits', () => {
+    expect(fitTitleSize('No chats', 342)).toBe(26);
+  });
+
+  it('shrinks a long title so it fits the width on one line', () => {
+    const size = fitTitleSize("You don't have any inquiries yet", 342);
+    expect(size).toBeLessThan(26);
+    // Estimated Montserrat 800 width at that size fits the space.
+    expect("You don't have any inquiries yet".length * 0.62 * size).toBeLessThanOrEqual(342);
+  });
+
+  it('never goes below a readable floor', () => {
+    expect(fitTitleSize('x'.repeat(200), 342)).toBe(14);
+  });
 });

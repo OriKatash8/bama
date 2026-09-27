@@ -4,7 +4,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { AnimatedEmptyState } from '../AnimatedEmptyState';
 import { ROLES, labelOf } from '@features/crew/data/categories';
 import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
-import { scaleLeft } from '../emptyStateLayout';
+import { scaleLeft, fitTitleSize } from '../emptyStateLayout';
 
 /**
  * The shared animated empty state: floating glass cards over soft glows, then
@@ -327,5 +327,64 @@ describe('pro mode is blue throughout; client mode keeps its purple', () => {
     expect(flat(symbol).color).toBe('#4B34B8');
     expect(flat(symbol.parent!.parent!).backgroundColor).toBe('rgba(110,88,226,0.14)');
     expect(flat(r.getByTestId('role-card-videographer', H)).borderColor).toBe('rgba(165,150,235,0.55)');
+  });
+});
+
+describe('role names show in full', () => {
+  const flat = (n: { props: Record<string, unknown> }) => StyleSheet.flatten(n.props.style as never) as Record<string, unknown>;
+
+  it('English: the photographer card says "Photographer" (no "Stills")', () => {
+    mockLang = 'en';
+    const r = render(<AnimatedEmptyState variant="tiles" {...base} />);
+    expect(r.getByText('Photographer', H)).toBeTruthy();
+    expect(r.queryByText('Stills Photographer', H)).toBeNull();
+  });
+
+  it('English: a two-word name may wrap to a second line rather than being cut', () => {
+    mockLang = 'en';
+    const r = render(<AnimatedEmptyState variant="tiles" {...base} />);
+    const label = r.getByText('Graphic Designer', H);
+    expect(label.props.numberOfLines).toBe(2);
+    expect(flat(label).fontSize).toBe(13);
+  });
+
+  it('Hebrew: names unchanged, still 14pt', () => {
+    const r = render(<AnimatedEmptyState variant="tiles" {...base} />);
+    expect(flat(r.getByText('צלם תמונות', H)).fontSize).toBe(14);
+    expect(r.getByText('גרפיקאי', H)).toBeTruthy();
+  });
+});
+
+describe('single-line title (the chats pages, in English)', () => {
+  const flat = (n: { props: Record<string, unknown> }) => StyleSheet.flatten(n.props.style as never) as Record<string, unknown>;
+  const long = "You don't have any inquiries yet";
+
+  it('English: one row, shrunk to fit, with the native auto-shrink as a fine-tune', () => {
+    mockLang = 'en';
+    const r = render(<AnimatedEmptyState variant="bubbles" title={long} subtitle="s" singleLineTitle />);
+    const title = r.getByText(long);
+    expect(title.props.numberOfLines).toBe(1);
+    expect(title.props.adjustsFontSizeToFit).toBe(true);
+    // Sized for the real width (the test window is 750pt wide; on a 390pt phone
+    // the same title comes out smaller — see fitTitleSize's own tests).
+    let w = 0;
+    const Probe = () => { w = useWindowDimensions().width; return null; };
+    render(<Probe />);
+    expect(flat(title).fontSize).toBe(fitTitleSize(long, w - 48));
+    expect(fitTitleSize(long, 390 - 48)).toBeLessThan(26);
+  });
+
+  it('Hebrew: unchanged — 26pt, free to wrap', () => {
+    const r = render(<AnimatedEmptyState variant="bubbles" title="עוד אין לך פניות" subtitle="s" singleLineTitle />);
+    const title = r.getByText('עוד אין לך פניות');
+    expect(title.props.numberOfLines).toBeUndefined();
+    expect(flat(title).fontSize).toBe(26);
+  });
+
+  it('without the prop, English titles keep 26pt and may wrap', () => {
+    mockLang = 'en';
+    const title = render(<AnimatedEmptyState variant="tiles" title={long} subtitle="s" />).getByText(long);
+    expect(title.props.numberOfLines).toBeUndefined();
+    expect(flat(title).fontSize).toBe(26);
   });
 });

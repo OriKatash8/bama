@@ -62,3 +62,15 @@ export function floatFor(index: number) {
 export function fillToBottom(windowHeight: number, top: number): number {
   return Math.max(0, windowHeight - top);
 }
+
+/**
+ * A title size that fits `text` on ONE line in `available` points, for the
+ * English (Montserrat 800) title: 26pt when it already fits, never below 14.
+ * An estimate from the average glyph width (~0.62em at 800), so it works on
+ * web too, where adjustsFontSizeToFit does nothing; on native that prop
+ * fine-tunes from here.
+ */
+export function fitTitleSize(text: string, available: number, max = 26, min = 14): number {
+  const fit = Math.floor(available / (Math.max(1, text.length) * 0.62));
+  return Math.max(min, Math.min(max, fit));
+}

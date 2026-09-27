@@ -1381,5 +1381,10 @@
     "unblocked_toast": "החסימה בוטלה",
     "failed": "לא הצלחנו. נסו שוב.",
     "cancel": "ביטול"
+  },
+  "empty_state": {
+    "role_label": {
+      "photographer": "צלם תמונות"
+    }
   }
 }

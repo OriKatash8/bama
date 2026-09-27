@@ -334,6 +334,8 @@ export default function ProfessionalChatsScreen() {
               bleedTop={16}
               radius={26}
               variant="bubbles"
+              // English: "You don't have any …" on one row, shrunk to fit.
+              singleLineTitle
               title={t('chats.empty_pro_title')}
               subtitle={proProfileCompleted === false ? t('chats.empty_pro_incomplete_desc') : t('chats.empty_pro_complete_desc')}
               primaryCta={proProfileCompleted === false

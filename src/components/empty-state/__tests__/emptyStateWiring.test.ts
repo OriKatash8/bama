@@ -100,3 +100,10 @@ it.each(cases)('$name meets the sheet: top bleed = the sheet paddingTop, corners
     expect(block).toContain(`bleedTop={${above} ? 0 : ${paddingTop}}`);
   }
 });
+
+it.each([
+  ['client chats', ['(client)', '(tabs)', 'chats', 'index.tsx']],
+  ['pro chats', ['(professional)', '(tabs)', 'chats', 'index.tsx']],
+])('%s keeps its English title on one row', (_n, file) => {
+  expect(blocks(read(...file))[0]).toContain('singleLineTitle');
+});

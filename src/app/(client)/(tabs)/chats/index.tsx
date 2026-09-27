@@ -75,7 +75,9 @@ export default function ChatsPage() {
   const hasChats = realChats.length > 0;
 
   return (
-    <Screen style={{ padding: 0, paddingBottom: tabBarClearance }} scrollable={hasChats} backgroundColor={PAGE_BG}>
+    // Always scrollable: the animated empty state is taller than the screen, so
+    // with no chats it must scroll too (it used to scroll only with chats).
+    <Screen style={{ padding: 0, paddingBottom: tabBarClearance }} backgroundColor={PAGE_BG}>
       <GradientBand style={styles.band} flip>
         <PageTitle style={titleType}>{t(tr, 'chats_page.title')}</PageTitle>
       </GradientBand>
@@ -95,6 +97,8 @@ export default function ChatsPage() {
             bleedTop={18}
             radius={26}
             variant="bubbles"
+            // English: "You don't have any …" on one row, shrunk to fit.
+            singleLineTitle
             title={t(tr, 'chats.empty_client_title')}
             subtitle={t(tr, 'chats.empty_client_desc')}
             primaryCta={{

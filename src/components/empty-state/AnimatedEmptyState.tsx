@@ -13,9 +13,11 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { CLIENT_TAB_ACTIVE, PRO_TAB_ACTIVE, useModeAccent } from '@core/navigation/floatingTabBar';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { ROLES, labelOf } from '@features/crew/data/categories';
+import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
 import {
-  BUBBLE_LAYOUT, DEFAULT_ROLES, TILE_LAYOUT, fillToBottom, floatFor, scaleLeft, type Placement, type RoleId,
+  BUBBLE_LAYOUT, DEFAULT_ROLES, TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, scaleLeft, type Placement, type RoleId,
 } from './emptyStateLayout';
 
 export type EmptyStateVariant = 'tiles' | 'bubbles' | 'board';
@@ -44,6 +46,12 @@ type Props = {
   bleedTop?: number;
   /** Top corner radius: the sheet's own (26) when the panel meets its top edge. */
   radius?: number;
+  /**
+   * English only: keep the title on one row, shrinking it to fit (the chats
+   * pages' "You don't have any …" wrapped at 26pt in the wide Montserrat 800).
+   * Hebrew titles are unaffected.
+   */
+  singleLineTitle?: boolean;
 };
 
 // ── Palette (the spec's; the app's brand gradients differ, so these are local) ──
@@ -67,6 +75,19 @@ const ILLUSTRATION_HEIGHT = 420;
 const ENTER_SPRING = { damping: 14, stiffness: 120, mass: 1 };
 const FLOAT_EASING = Easing.inOut(Easing.sin);
 
+/**
+ * A role's name on its card: the empty state's own shorter label where one is
+ * set (English "Photographer" rather than "Stills Photographer"), else the role's
+ * label from ROLES. Only the cards use the short form; the rest of the app keeps
+ * the full one.
+ */
+function cardLabel(id: RoleId, lang: 'he' | 'en'): string {
+  const short = ((lang === 'he' ? he : en).empty_state.role_label as Record<string, string | undefined>)[id];
+  if (short) return short;
+  const role = ROLES.find((r) => r.id === id);
+  return role ? labelOf(role, lang) : '';
+}
+
 /** Title weight 800: Heebo-ExtraBold in Hebrew, Montserrat 800 in English (as the app). */
 function extraBold(rtl: boolean) {
   return rtl ? { fontFamily: 'Heebo-ExtraBold', fontWeight: '800' as const } : { fontFamily: 'Montserrat', fontWeight: '800' as const };
@@ -89,6 +110,7 @@ function extraBold(rtl: boolean) {
  */
 export function AnimatedEmptyState({
   variant, title, subtitle, note, primaryCta, secondaryLink, roles = DEFAULT_ROLES, bleed = 0, bleedTop = 0, radius = 32,
+  singleLineTitle = false,
 }: Props) {
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
@@ -138,13 +160,12 @@ export function AnimatedEmptyState({
             </Floating>
           ))
           : tiles.map((t, i) => {
-            const role = ROLES.find((r) => r.id === t.role);
             return (
               <Floating key={t.role} index={i} placement={t} width={width} reduced={reduced} testID={`empty-card-${t.role}`}>
                 <RoleCard
                   id={t.role}
                   tone={tone}
-                  label={role ? labelOf(role, lang) : ''}
+                  label={cardLabel(t.role, lang)}
                   // Pre-sized for 28pt (base/@2x/@3x): no per-frame minification.
                   // A require()d image asset: a number at runtime (the map is typed loosely).
                   glyph={EMPTY_STATE_GLYPHS[t.role] as number}
@@ -159,7 +180,18 @@ export function AnimatedEmptyState({
       <View style={{ height: ILLUSTRATION_HEIGHT - 12 }} />
 
       <FadeUp delay={450} reduced={reduced} style={styles.textBlock}>
-        <Text style={[styles.title, extraBold(rtl)]}>{title}</Text>
+        {singleLineTitle && !rtl ? (
+          <Text
+            style={[styles.title, extraBold(rtl), { fontSize: fitTitleSize(title, width - 48) }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+          >
+            {title}
+          </Text>
+        ) : (
+          <Text style={[styles.title, extraBold(rtl)]}>{title}</Text>
+        )}
         <Text style={[styles.subtitle, font.regular]}>{subtitle}</Text>
         {note ? <Text style={[styles.note, font.regular]}>{note}</Text> : null}
         {primaryCta && (
@@ -295,7 +327,15 @@ function RoleCard({ id, label, glyph, price, rtl, tone }: {
       <LinearGradient testID="role-badge" colors={tone.badge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.badge}>
         <Image source={glyph} style={styles.glyph} contentFit="contain" tintColor="#FFFFFF" />
       </LinearGradient>
-      <Text style={[styles.roleLabel, extraBold(rtl), { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{label}</Text>
+      {/* Up to two lines: a two-word name ("Graphic Designer") wraps rather than
+          being cut; the card grows to fit. English is a point smaller — Montserrat
+          800 is much wider than Heebo. */}
+      <Text
+        style={[styles.roleLabel, extraBold(rtl), { textAlign: rtl ? 'right' : 'left', fontSize: rtl ? 14 : 13 }]}
+        numberOfLines={2}
+      >
+        {label}
+      </Text>
       <View style={[styles.lines, { alignItems: align }]}>
         <Skeleton width="100%" strong height={5} />
         {price ? (

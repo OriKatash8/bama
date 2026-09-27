@@ -1381,5 +1381,10 @@
     "unblocked_toast": "Unblocked",
     "failed": "Couldn't do that. Please try again.",
     "cancel": "Cancel"
+  },
+  "empty_state": {
+    "role_label": {
+      "photographer": "Photographer"
+    }
   }
 }
