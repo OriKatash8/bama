@@ -3,7 +3,7 @@ import { StyleSheet, Text, useWindowDimensions } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { AnimatedEmptyState } from '../AnimatedEmptyState';
 import { ROLES, labelOf } from '@features/crew/data/categories';
-import { ROLE_GLYPHS } from '@features/crew/data/roleTiles';
+import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
 import { scaleLeft } from '../emptyStateLayout';
 
 /**
@@ -42,8 +42,19 @@ jest.mock('expo-router', () => {
   const React = jest.requireActual('react');
   return { useFocusEffect: (cb: () => void) => React.useEffect(cb, [cb]) };
 });
-jest.mock('expo-linear-gradient', () => ({
-  LinearGradient: ({ children }: { children?: React.ReactNode }) => children ?? null,
+jest.mock('expo-linear-gradient', () => {
+  const RN = jest.requireActual('react-native');
+  // A View carrying the gradient's colours and testID, so a test can read them.
+  return {
+    LinearGradient: ({ children, colors, testID }: { children?: React.ReactNode; colors: string[]; testID?: string }) =>
+      require('react').createElement(RN.View, { testID, colors }, children),
+  };
+});
+let mockAccent = '#6D28D9';
+jest.mock('@core/navigation/floatingTabBar', () => ({
+  CLIENT_TAB_ACTIVE: '#6D28D9',
+  PRO_TAB_ACTIVE: '#1D4ED8',
+  useModeAccent: () => ({ accent: mockAccent, tint: '#fff' }),
 }));
 jest.mock('expo-image', () => {
   const RN = jest.requireActual('react-native');
@@ -67,7 +78,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 const H = { includeHiddenElements: true };
 const base = { title: 'עוד אין לך פרויקטים', subtitle: 'פרסמו פרויקט' };
 
-beforeEach(() => { jest.clearAllMocks(); mockReduced = false; mockLang = 'he'; });
+beforeEach(() => { jest.clearAllMocks(); mockReduced = false; mockLang = 'he'; mockAccent = '#6D28D9'; });
 
 describe('text and actions', () => {
   it('shows the title, subtitle, CTA and link, and each does its job', () => {
@@ -123,7 +134,8 @@ describe('the illustration', () => {
     }
     const glyphs = r.getAllByTestId('glyph', H);
     expect(glyphs).toHaveLength(6);
-    expect(glyphs[0].props.source).toBe(ROLE_GLYPHS.videographer);
+    // The pre-sized set (28/56/84 px), not the 256px originals.
+    expect(glyphs[0].props.source).toBe(EMPTY_STATE_GLYPHS.videographer);
     expect(glyphs.every((g) => g.props.tintColor === '#FFFFFF')).toBe(true);
     expect(r.queryAllByText('₪', H)).toHaveLength(0);
   });
@@ -238,5 +250,82 @@ describe('card contents stay inside the card', () => {
     expect(typeof pill.height).toBe('number');
     expect(pill.alignItems).toBe('center');
     expect(pill.justifyContent).toBe('center');
+  });
+});
+
+it('draws each role glyph large in its 38pt badge (28pt, a 5pt margin all round)', () => {
+  const r = render(<AnimatedEmptyState variant="tiles" {...base} />);
+  const glyph = StyleSheet.flatten(r.getAllByTestId('glyph', H)[0].props.style);
+  expect([glyph.width, glyph.height]).toEqual([28, 28]);
+});
+
+describe('the icon squares follow the mode', () => {
+  const badgeColors = () =>
+    render(<AnimatedEmptyState variant="tiles" {...base} />).getAllByTestId('role-badge', H).map((b) => b.props.colors);
+
+  it('purple for a client', () => {
+    mockAccent = '#6D28D9';
+    const all = badgeColors();
+    expect(all).toHaveLength(6);
+    for (const c of all) expect(c[c.length - 1]).toBe('#6D28D9');
+  });
+
+  it('blue for a professional', () => {
+    mockAccent = '#1D4ED8';
+    for (const c of badgeColors()) expect(c[c.length - 1]).toBe('#1D4ED8');
+  });
+});
+
+describe('smooth motion', () => {
+  it('each floating card is drawn once and moved as a bitmap (iOS rasterise, Android hardware texture)', () => {
+    const card = render(<AnimatedEmptyState variant="tiles" {...base} />).getByTestId('empty-card-videographer', H);
+    expect(card.props.shouldRasterizeIOS).toBe(true);
+    expect(card.props.renderToHardwareTextureAndroid).toBe(true);
+  });
+});
+
+describe('chat bubbles follow the mode too', () => {
+  const avatarColors = () =>
+    render(<AnimatedEmptyState variant="bubbles" {...base} />).getAllByTestId('bubble-avatar', H).map((a) => a.props.colors);
+
+  it('purple for a client', () => {
+    mockAccent = '#6D28D9';
+    const all = avatarColors();
+    expect(all).toHaveLength(6);
+    for (const c of all) expect(c[c.length - 1]).toBe('#6D28D9');
+  });
+
+  it('blue for a professional', () => {
+    mockAccent = '#1D4ED8';
+    for (const c of avatarColors()) expect(c[c.length - 1]).toBe('#1D4ED8');
+  });
+});
+
+describe('pro mode is blue throughout; client mode keeps its purple', () => {
+  const flat = (n: { props: Record<string, unknown> }) => StyleSheet.flatten(n.props.style as never) as Record<string, unknown>;
+
+  it('pro: the ₪ and its pill are blue, and every card is outlined in blue', () => {
+    mockAccent = '#1D4ED8';
+    const r = render(<AnimatedEmptyState variant="board" {...base} />);
+    const symbol = r.getAllByText('₪', H)[0];
+    expect(flat(symbol).color).toBe('#1D4ED8');
+    expect(flat(symbol.parent!.parent!).backgroundColor).toBe('rgba(29,78,216,0.12)');
+    const card = flat(r.getByTestId('role-card-videographer', H));
+    expect(card.borderColor).toBe('rgba(59,110,235,0.55)');
+  });
+
+  it('pro: the chat bubbles are outlined in blue too', () => {
+    mockAccent = '#1D4ED8';
+    const r = render(<AnimatedEmptyState variant="bubbles" {...base} />);
+    expect(flat(r.getAllByTestId('bubble-card', H)[0]).borderColor).toBe('rgba(59,110,235,0.55)');
+  });
+
+  it('client: unchanged — purple ₪ pill, lavender outline', () => {
+    mockAccent = '#6D28D9';
+    const r = render(<AnimatedEmptyState variant="board" {...base} />);
+    const symbol = r.getAllByText('₪', H)[0];
+    expect(flat(symbol).color).toBe('#4B34B8');
+    expect(flat(symbol.parent!.parent!).backgroundColor).toBe('rgba(110,88,226,0.14)');
+    expect(flat(r.getByTestId('role-card-videographer', H)).borderColor).toBe('rgba(165,150,235,0.55)');
   });
 });

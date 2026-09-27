@@ -10,9 +10,10 @@ import { Image } from 'expo-image';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { User } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { CLIENT_TAB_ACTIVE, PRO_TAB_ACTIVE, useModeAccent } from '@core/navigation/floatingTabBar';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { ROLES, labelOf } from '@features/crew/data/categories';
-import { ROLE_GLYPHS } from '@features/crew/data/roleTiles';
+import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
 import {
   BUBBLE_LAYOUT, DEFAULT_ROLES, TILE_LAYOUT, fillToBottom, floatFor, scaleLeft, type Placement, type RoleId,
 } from './emptyStateLayout';
@@ -51,8 +52,15 @@ const INK = '#1A1530';
 const INK_SOFT = '#5A566C';
 const LINK = '#5B3FD0';
 const CTA_GRADIENT = ['#2A45D8', '#6E58E2', '#C96BDA'] as const;
-const BADGE_GRADIENT = ['#3A4FDC', '#9A5EDD'] as const;
-const AVATAR_GRADIENT = ['#3A4FDC', '#B064DC'] as const;
+/** The icon squares and the chat avatars take the viewer's mode colour (as the
+ *  tab bar does): a purple gradient for a client, a blue one for a professional. */
+const BADGE_GRADIENT_CLIENT = ['#8B5CF6', CLIENT_TAB_ACTIVE] as const;
+const BADGE_GRADIENT_PRO = ['#3B82F6', PRO_TAB_ACTIVE] as const;
+
+/** Everything in the cards that follows the mode: purple for a client, blue for a pro. */
+type Tone = { badge: readonly [string, string]; border: string; pillBg: string; pillText: string };
+const CLIENT_TONE: Tone = { badge: BADGE_GRADIENT_CLIENT, border: 'rgba(165,150,235,0.55)', pillBg: 'rgba(110,88,226,0.14)', pillText: '#4B34B8' };
+const PRO_TONE: Tone = { badge: BADGE_GRADIENT_PRO, border: 'rgba(59,110,235,0.55)', pillBg: 'rgba(29,78,216,0.12)', pillText: PRO_TAB_ACTIVE };
 const ILLUSTRATION_HEIGHT = 420;
 
 /** Final values the entrance springs to — also the static reduced-motion frame. */
@@ -86,6 +94,8 @@ export function AnimatedEmptyState({
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   const font = useAppFont();
   const reduced = useReducedMotion();
+  const { accent } = useModeAccent();
+  const tone = accent === PRO_TAB_ACTIVE ? PRO_TONE : CLIENT_TONE;
   // The live WINDOW width. The panel spans it (see `bleed`), and card positions
   // scale from the 390pt reference to it — 390 is never a container width.
   const { width, height: windowHeight } = useWindowDimensions();
@@ -124,7 +134,7 @@ export function AnimatedEmptyState({
         {variant === 'bubbles'
           ? BUBBLE_LAYOUT.map((p, i) => (
             <Floating key={i} index={i} placement={p} width={width} reduced={reduced} testID={`empty-card-${i}`}>
-              <BubbleCard rtl={rtl} />
+              <BubbleCard rtl={rtl} tone={tone} />
             </Floating>
           ))
           : tiles.map((t, i) => {
@@ -133,9 +143,11 @@ export function AnimatedEmptyState({
               <Floating key={t.role} index={i} placement={t} width={width} reduced={reduced} testID={`empty-card-${t.role}`}>
                 <RoleCard
                   id={t.role}
+                  tone={tone}
                   label={role ? labelOf(role, lang) : ''}
+                  // Pre-sized for 28pt (base/@2x/@3x): no per-frame minification.
                   // A require()d image asset: a number at runtime (the map is typed loosely).
-                  glyph={ROLE_GLYPHS[t.role] as number}
+                  glyph={EMPTY_STATE_GLYPHS[t.role] as number}
                   price={variant === 'board'}
                   rtl={rtl}
                 />
@@ -209,7 +221,14 @@ function Floating({ index, placement, width, reduced, testID, children }: {
   }));
 
   return (
-    <Animated.View testID={testID} style={[styles.floating, { left: scaleLeft(placement.left, width), top: placement.top }, style]}>
+    // Drawn once and moved as a bitmap while it floats: smoother, and nothing is
+    // re-rasterised mid-rotation.
+    <Animated.View
+      testID={testID}
+      shouldRasterizeIOS
+      renderToHardwareTextureAndroid
+      style={[styles.floating, { left: scaleLeft(placement.left, width), top: placement.top }, style]}
+    >
       {children}
     </Animated.View>
   );
@@ -267,11 +286,13 @@ function Skeleton({ width, strong, height }: { width: number | `${number}%`; str
   return <View style={{ width, height, borderRadius: height / 2, backgroundColor: strong ? 'rgba(120,115,145,0.30)' : 'rgba(120,115,145,0.20)' }} />;
 }
 
-function RoleCard({ id, label, glyph, price, rtl }: { id: string; label: string; glyph: number; price: boolean; rtl: boolean }) {
+function RoleCard({ id, label, glyph, price, rtl, tone }: {
+  id: string; label: string; glyph: number; price: boolean; rtl: boolean; tone: Tone;
+}) {
   const align = rtl ? 'flex-end' : 'flex-start';
   return (
-    <View testID={`role-card-${id}`} style={[styles.card, styles.roleCard, { alignItems: align }]}>
-      <LinearGradient colors={BADGE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.badge}>
+    <View testID={`role-card-${id}`} style={[styles.card, styles.roleCard, { alignItems: align, borderColor: tone.border }]}>
+      <LinearGradient testID="role-badge" colors={tone.badge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.badge}>
         <Image source={glyph} style={styles.glyph} contentFit="contain" tintColor="#FFFFFF" />
       </LinearGradient>
       <Text style={[styles.roleLabel, extraBold(rtl), { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{label}</Text>
@@ -280,7 +301,7 @@ function RoleCard({ id, label, glyph, price, rtl }: { id: string; label: string;
         {price ? (
           <View style={[styles.priceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <View style={{ flex: 1 }}><Skeleton width="100%" strong={false} height={5} /></View>
-            <View style={styles.pricePill}><Text style={styles.priceText}>₪</Text></View>
+            <View style={[styles.pricePill, { backgroundColor: tone.pillBg }]}><Text style={[styles.priceText, { color: tone.pillText }]}>₪</Text></View>
           </View>
         ) : (
           <Skeleton width="60%" strong={false} height={5} />
@@ -290,10 +311,10 @@ function RoleCard({ id, label, glyph, price, rtl }: { id: string; label: string;
   );
 }
 
-function BubbleCard({ rtl }: { rtl: boolean }) {
+function BubbleCard({ rtl, tone }: { rtl: boolean; tone: Tone }) {
   return (
-    <View style={[styles.card, styles.bubble, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-      <LinearGradient colors={AVATAR_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
+    <View testID="bubble-card" style={[styles.card, styles.bubble, { flexDirection: rtl ? 'row-reverse' : 'row', borderColor: tone.border }]}>
+      <LinearGradient testID="bubble-avatar" colors={tone.badge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
         <User size={20} color="#FFFFFF" strokeWidth={2} />
       </LinearGradient>
       <View style={[styles.bubbleLines, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
@@ -319,7 +340,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'rgba(255,255,255,0.58)',
     borderWidth: 1,
-    borderColor: 'rgba(165,150,235,0.55)',
     shadowColor: '#5A46C8',
     shadowOpacity: 0.13,
     shadowOffset: { width: 0, height: 12 },
@@ -331,7 +351,8 @@ const styles = StyleSheet.create({
   // + badge 38 + 6 + label 16 + 6 + two 5pt lines with a 5pt gap = 105.
   roleCard: { width: 142, minHeight: 104, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 12 },
   badge: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  glyph: { width: 20, height: 20 },
+  // 28 in the 38pt badge: the mark reads at a glance, with a 5pt margin all round.
+  glyph: { width: 28, height: 28 },
   // Pinned line height: Heebo's natural line box on iOS is ~21pt at 14pt.
   roleLabel: { fontSize: 14, lineHeight: 16, color: INK, marginTop: 6, alignSelf: 'stretch' },
   lines: { alignSelf: 'stretch', gap: 5, marginTop: 6 },
@@ -345,10 +366,8 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(110,88,226,0.14)',
   },
   priceText: {
-    color: '#4B34B8',
     fontSize: 11,
     lineHeight: 13,
     fontWeight: '700',

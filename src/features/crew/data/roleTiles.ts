@@ -35,6 +35,23 @@ export const ROLE_GLYPHS: Record<string, ReturnType<typeof require>> = {
   sound:            require('../../../../assets/images/categories/sound-glyph.png'),
 };
 
+/**
+ * The same glyphs, pre-sized for the empty state's floating cards: 28 / 56 / 84
+ * px as base / @2x / @3x (React Native picks the one for the screen). The cards
+ * draw them at 28pt while rotating and drifting; minifying the 256px originals
+ * 3× on every frame aliased into visible "pixels".
+ */
+export const EMPTY_STATE_GLYPHS: Record<string, ReturnType<typeof require>> = {
+  videographer:     require('../../../../assets/images/categories/empty-state/videographer-glyph.png'),
+  photographer:     require('../../../../assets/images/categories/empty-state/photographer-glyph.png'),
+  editor:           require('../../../../assets/images/categories/empty-state/editor-glyph.png'),
+  graphic_designer: require('../../../../assets/images/categories/empty-state/graphic_designer-glyph.png'),
+  social_media:     require('../../../../assets/images/categories/empty-state/social_media-glyph.png'),
+  studio_audio:     require('../../../../assets/images/categories/empty-state/studio_audio-glyph.png'),
+  lighting:         require('../../../../assets/images/categories/empty-state/lighting-glyph.png'),
+  sound:            require('../../../../assets/images/categories/empty-state/sound-glyph.png'),
+};
+
 // Round category icons — the same set the client browse (search) page uses,
 // keyed by the legacy category string stored on crewSlot.category.
 export const CATEGORY_ICON: Record<string, ReturnType<typeof require>> = {
