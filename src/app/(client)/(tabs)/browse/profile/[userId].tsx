@@ -210,7 +210,7 @@ export default function PublicProfileScreen() {
             In Hebrew the row mirrors, so report sits right and back sits left.
             The chevron points OUTWARD, away from the band's content and toward
             the edge the button sits on — right in English, left in Hebrew. ── */}
-        <View style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <View testID="profile-title-row" style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <TouchableOpacity
             onPress={() => setReportVisible(true)}
             style={styles.reportBtn}
@@ -420,7 +420,9 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, fontWeight: '500' },
   backFallback: { paddingVertical: 8 },
 
-  titleRow: { alignItems: 'center', alignSelf: 'stretch' },
+  // gap: room between the report and block buttons; the flex spacer before
+  // back absorbs it, so nothing else in the row moves.
+  titleRow: { alignItems: 'center', alignSelf: 'stretch', gap: 10 },
   backBtn: { paddingHorizontal: 4 },
   // A soft violet tile under the flag, the same fill the builder's picked date
   // squares use, with the flag itself in the deep violet of that pair. Pale

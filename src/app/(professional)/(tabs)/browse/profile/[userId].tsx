@@ -208,7 +208,7 @@ export default function PublicProfileScreen() {
       <GradientBand style={styles.band}>
         {/* ── Title row: report at the leading edge, back at the trailing one,
             as on the client's copy of this screen. ── */}
-        <View style={styles.titleRow}>
+        <View testID="profile-title-row" style={styles.titleRow}>
           <TouchableOpacity
             onPress={() => setReportVisible(true)}
             style={styles.reportBtn}
@@ -416,7 +416,9 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, fontWeight: '500' },
   backFallback: { paddingVertical: 8 },
 
-  titleRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+  // gap: room between the report and block buttons; the flex spacer before
+  // back absorbs it, so nothing else in the row moves.
+  titleRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 10 },
   backBtn: { paddingHorizontal: 4 },
   // A soft violet tile under the flag, the same fill the builder's picked date
   // squares use, with the flag itself in the deep violet of that pair. Pale

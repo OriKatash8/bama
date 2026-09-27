@@ -119,3 +119,12 @@ it('turns the chevron the other way in Hebrew, where back sits on the left', asy
   expect(back.findAllByType(ChevronLeft)).toHaveLength(1);
   expect(back.findAllByType(ChevronRight)).toHaveLength(0);
 });
+
+it('leaves room between the report and block buttons', async () => {
+  const r = await openProfile();
+  // Both sit directly in the band's title row; its gap is the space between them.
+  const row = r.getByTestId('profile-title-row');
+  const rowStyle = StyleSheet.flatten(row.props.style);
+  expect(rowStyle.gap).toBeGreaterThanOrEqual(10);
+  expect(row.findByProps({ testID: 'profile-block' })).toBeTruthy();
+});
