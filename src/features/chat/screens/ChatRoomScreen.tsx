@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SYSTEM_USER_ID } from '@core/constants/system';
 import { isolate } from '@utils/formatters';
 import { ReplyQuote } from '../components/ReplyQuote';
 import { SwipeableMessageRow } from '../components/SwipeableMessageRow';
@@ -607,7 +608,9 @@ export function ChatRoomScreen({ chatId }: Props) {
    * Never navigates to your own profile — that screen is about someone else.
    */
   const pushProfile = useCallback((uid: string) => {
-    if (!uid || uid === currentUserId) return;
+    // The BAMA System account is not a person: no profile, nothing to block.
+    // Its read-only DM is the only 'dm' chat that exists today.
+    if (!uid || uid === currentUserId || uid === SYSTEM_USER_ID || uid === 'system') return;
     router.push(
       `/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}` as never,
     );
@@ -1538,7 +1541,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               </AppText>
               <AppText style={chatStyles.headerHint}>{t('chats.click_for_community_info')}</AppText>
             </TouchableOpacity>
-          ) : chatType === 'dm' && dmOtherUserId ? (
+          ) : chatType === 'dm' && dmOtherUserId && dmOtherUserId !== SYSTEM_USER_ID ? (
             <TouchableOpacity
               style={styles.headerNameTouchable}
               onPress={() => pushProfile(dmOtherUserId)}
