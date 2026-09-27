@@ -602,47 +602,6 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
 
-  /**
-   * Open someone's profile. The only screen Block is reachable from, so every
-   * route to it goes through here rather than rebuilding the path inline.
-   * Never navigates to your own profile — that screen is about someone else.
-   */
-  const pushProfile = useCallback((uid: string) => {
-    // The BAMA System account is not a person: no profile, nothing to block.
-    // Its read-only DM is the only 'dm' chat that exists today.
-    if (!uid || uid === currentUserId || uid === SYSTEM_USER_ID || uid === 'system') return;
-    router.push(
-      `/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}` as never,
-    );
-  }, [activeMode, currentUserId, router]);
-  /**
-   * The name above someone else's bubble, and a route to their profile — which
-   * is where Block lives. Four bubble kinds render this (video, image, audio,
-   * text) and two of them need the media bubble's inset, so it is one helper
-   * rather than four copies of the touchable.
-   */
-  const senderLabel = useCallback((senderId: string, isOwn: boolean, inset: boolean) => {
-    if (isOwn) return null;
-    return (
-      <TouchableOpacity
-        onPress={() => pushProfile(senderId)}
-        activeOpacity={0.6}
-        accessibilityRole="button"
-        accessibilityLabel={t('chats.click_for_profile')}
-      >
-        <AppText
-          weight="regular"
-          style={[
-            styles.senderName,
-            { color: colorForUser(senderId) },
-            inset ? { paddingHorizontal: 10, paddingTop: 6 } : null,
-          ]}
-        >
-          {userNames[senderId] ?? 'Loading...'}
-        </AppText>
-      </TouchableOpacity>
-    );
-  }, [pushProfile, t, userNames]);
 
   const fetchedIdsRef = useRef<Set<string>>(new Set());
   const creatingGeneralRef = useRef(false);
@@ -711,6 +670,55 @@ export function ChatRoomScreen({ chatId }: Props) {
    * this under Guideline 1.2.
    */
   const [dmOtherUserId, setDmOtherUserId] = useState<string | null>(null);
+  /**
+   * Open someone's profile. The only screen Block is reachable from, so every
+   * route to it goes through here rather than rebuilding the path inline.
+   * Never navigates to your own profile — that screen is about someone else.
+   */
+  const pushProfile = useCallback((uid: string) => {
+    // The BAMA System account is not a person: no profile, nothing to block.
+    // Its read-only DM is the only 'dm' chat that exists today.
+    if (!uid || uid === currentUserId || uid === SYSTEM_USER_ID || uid === 'system') return;
+    router.push(
+      `/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}` as never,
+    );
+  }, [activeMode, currentUserId, router]);
+  /**
+   * The name above someone else's bubble, and a route to their profile — which
+   * is where Block lives. Four bubble kinds render this (video, image, audio,
+   * text) and two of them need the media bubble's inset, so it is one helper
+   * rather than four copies of the touchable.
+   */
+  const senderLabel = useCallback((senderId: string, isOwn: boolean, inset: boolean) => {
+    if (isOwn) return null;
+    const label = (
+      <AppText
+        weight="regular"
+        style={[
+          styles.senderName,
+          { color: colorForUser(senderId) },
+          inset ? { paddingHorizontal: 10, paddingTop: 6 } : null,
+        ]}
+      >
+        {userNames[senderId] ?? 'Loading...'}
+      </AppText>
+    );
+    // Project chats: plain name, no route to the profile. A product decision —
+    // project members were hired into the chat and are already reachable
+    // through the project, so Block is not offered from here. Purchase chats and
+    // communities, where strangers meet, keep the route.
+    if (chatType === 'group') return label;
+    return (
+      <TouchableOpacity
+        onPress={() => pushProfile(senderId)}
+        activeOpacity={0.6}
+        accessibilityRole="button"
+        accessibilityLabel={t('chats.click_for_profile')}
+      >
+        {label}
+      </TouchableOpacity>
+    );
+  }, [chatType, pushProfile, t, userNames]);
   /** Caret, a logical index. Fed by onSelectionChange; drives @-detection. */
   const [caret, setCaret] = useState(0);
   /**
