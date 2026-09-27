@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Animated } from 'react-native';
-import { ArrowUp, ArrowDown, FolderPlus, Plus, Inbox, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ArrowUp, ArrowDown, Plus, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
 import { AppText } from '@components/ui/AppText';
-import { EmptyState } from '@components/ui/EmptyState';
+import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { useTheme } from '@core/hooks/useTheme';
 import { ProjectRequestCard } from '@features/crew/components';
 import { useProjectRequests } from '@features/crew/hooks';
@@ -394,16 +394,21 @@ export default function ProjectsPage() {
                 <ActivityIndicator color={colors.accent} />
               ) : activeRequests.length === 0 ? (
                 <View style={{ minHeight: Dimensions.get('window').height * 0.6 }}>
-                  <EmptyState
-                    icon={FolderPlus}
+                  <AnimatedEmptyState
+                    // Cancels the sheet's paddingHorizontal: the empty state spans the screen.
+                    bleed={20}
+                    // The sheet's paddingTop too — unless the new-offers strip sits above it.
+                    bleedTop={newOffersCount > 0 ? 0 : 18}
+                    radius={26}
+                    variant="tiles"
                     title={t('chats_page.empty_projects_title')}
-                    description={t('chats_page.empty_projects_desc')}
-                    primaryAction={{
+                    subtitle={t('chats_page.empty_projects_desc')}
+                    primaryCta={{
                       label: t('chats_page.empty_projects_primary'),
-                      icon: Plus,
+                      icon: <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />,
                       onPress: () => router.push('/(client)/(tabs)/home'),
                     }}
-                    secondaryAction={{
+                    secondaryLink={{
                       label: t('chats_page.empty_projects_secondary'),
                       onPress: () => router.push('/(client)/(tabs)/browse'),
                     }}
@@ -501,15 +506,20 @@ export default function ProjectsPage() {
                 <ActivityIndicator color={colors.accent} />
               ) : combinedOffers.length === 0 ? (
                 <View style={{ minHeight: Dimensions.get('window').height * 0.5 }}>
-                  <EmptyState
-                    icon={Inbox}
+                  <AnimatedEmptyState
+                    // Cancels the sheet's paddingHorizontal: the empty state spans the screen.
+                    bleed={20}
+                    // The sheet's paddingTop too — unless the filter chips sit above it.
+                    bleedTop={offers.length > 0 || bundles.length > 0 ? 0 : 18}
+                    radius={26}
+                    variant="tiles"
                     title={t('chats_page.empty_offers_title')}
-                    description={t('chats_page.empty_offers_desc')}
-                    primaryAction={{
+                    subtitle={t('chats_page.empty_offers_desc')}
+                    primaryCta={{
                       label: t('chats_page.empty_offers_primary'),
                       onPress: () => switchSegment('projects'),
                     }}
-                    secondaryAction={{
+                    secondaryLink={{
                       label: t('chats_page.empty_projects_secondary'),
                       onPress: () => router.push('/(client)/(tabs)/browse'),
                     }}

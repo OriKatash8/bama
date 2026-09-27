@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions, Platform } from 'react-native';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
-import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, Inbox, History, Briefcase, LayoutGrid } from 'lucide-react-native';
+import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
+import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, History, Briefcase, LayoutGrid } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
 import { AppText } from '@components/ui/AppText';
@@ -84,7 +85,7 @@ const CARD_SHADOW = {
 } as const;
 
 export default function DashboardScreen() {
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { width: screenWidth } = useWindowDimensions();
   // The sheet's 20pt side padding, both sides.
   const cardWidth = screenWidth - 40;
 
@@ -567,29 +568,28 @@ export default function DashboardScreen() {
         {!onBoard ? null : isLoading ? (
           <ActivityIndicator size="large" color={BLUE} style={{ marginTop: 40 }} />
         ) : displayed.length === 0 ? (
-          <View style={[styles.center, { minHeight: screenHeight * 0.6 }]}>
-            <Inbox size={48} color={BLUE} strokeWidth={1.5} style={{ marginBottom: 8 }} />
-            <Text style={[styles.emptyText, { ...font.semiBold, color: TEXT, textAlign: 'center' }]}>
-              {t('noticeboard.no_projects')}
-            </Text>
-            <Text style={[styles.emptySubtext, { ...font.regular, color: TEXT, textAlign: 'center' }]}>
-              {t('noticeboard.check_back')}
-            </Text>
-            {!activeProjectsLoading && activeProjects.length === 0 && (
-              <View style={styles.upgradeWrap}>
-                <Text style={[styles.upgradeHint, { ...font.regular, color: TEXT, textAlign: 'center' }]}>
-                  {t('noticeboard.upgrade_profile_hint')}
-                </Text>
-                <TouchableOpacity
-                  style={styles.upgradeBtn}
-                  onPress={() => router.push('/(professional)/(tabs)/profile?edit=1')}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.upgradeBtnText, { ...font.bold }]}>{t('noticeboard.upgrade_profile_btn')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
+          // The upgrade hint and button appear, as before, only for a pro with no
+          // active projects: the button becomes the CTA, the hint an extra line.
+          <AnimatedEmptyState
+            // Cancels the sheet's paddingHorizontal: the empty state spans the screen.
+            bleed={20}
+            // The sheet's paddingTop too — unless the notifications prompt or the
+            // search row (projects exist but none match) sits above it.
+            bleedTop={(notifPrompt.visible && pendingCount > 0) || biddable.length > 0 ? 0 : 18}
+            radius={26}
+            variant="board"
+            title={t('noticeboard.no_projects')}
+            subtitle={t('noticeboard.check_back')}
+            {...(!activeProjectsLoading && activeProjects.length === 0
+              ? {
+                note: t('noticeboard.upgrade_profile_hint'),
+                primaryCta: {
+                  label: t('noticeboard.upgrade_profile_btn'),
+                  onPress: () => router.push('/(professional)/(tabs)/profile?edit=1'),
+                },
+              }
+              : {})}
+          />
         ) : (
           <FlatList
             data={displayed}

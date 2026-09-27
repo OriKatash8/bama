@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
-import { Search, MessageCircle, Plus } from 'lucide-react-native';
+import { Search, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { useUserChats } from '@features/chat/hooks/useUserChats';
 import { Screen } from '@components/layout/Screen';
 import { PageTitle } from '@components/ui/PageTitle';
 import { GradientBand } from '@components/ui/GradientBand';
-import { EmptyState } from '@components/ui/EmptyState';
+import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { NotifSoftAskModal } from '@features/notifications/components/NotifSoftAskModal';
@@ -87,21 +87,27 @@ export default function ChatsPage() {
           <ActivityIndicator color={CLIENT_TAB_ACTIVE} />
         </View>
       ) : !hasChats ? (
-        <EmptyState
-          icon={MessageCircle}
-          title={t(tr, 'chats.empty_client_title')}
-          description={t(tr, 'chats.empty_client_desc')}
-          style={[styles.emptyBias, { paddingBottom: tabBarClearance }]}
-          primaryAction={{
-            label: t(tr, 'chats.empty_client_primary'),
-            icon: Plus,
-            onPress: () => router.push('/(client)/(tabs)/home'),
-          }}
-          secondaryAction={{
-            label: t(tr, 'chats.empty_client_secondary'),
-            onPress: () => router.push('/(client)/(tabs)/browse'),
-          }}
-        />
+        <View style={{ paddingBottom: tabBarClearance }}>
+          <AnimatedEmptyState
+            // Cancels the sheet's paddingHorizontal: the empty state spans the screen.
+            bleed={20}
+            // Nothing sits above it: meet the sheet's top edge.
+            bleedTop={18}
+            radius={26}
+            variant="bubbles"
+            title={t(tr, 'chats.empty_client_title')}
+            subtitle={t(tr, 'chats.empty_client_desc')}
+            primaryCta={{
+              label: t(tr, 'chats.empty_client_primary'),
+              icon: <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />,
+              onPress: () => router.push('/(client)/(tabs)/home'),
+            }}
+            secondaryLink={{
+              label: t(tr, 'chats.empty_client_secondary'),
+              onPress: () => router.push('/(client)/(tabs)/browse'),
+            }}
+          />
+        </View>
       ) : (
         <>
           <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>

@@ -28,7 +28,7 @@ jest.mock('expo-router', () => ({
   useSegments: () => ['(client)'],
 }));
 jest.mock('@components/layout/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => children }));
-jest.mock('@components/ui/EmptyState', () => ({ EmptyState: () => null }));
+jest.mock('@components/empty-state/AnimatedEmptyState', () => ({ AnimatedEmptyState: () => null }));
 jest.mock('@features/crew/components', () => ({ ProjectRequestCard: () => null }));
 jest.mock('@features/crew/hooks', () => ({ useProjectRequests: () => ({ requests: [], isLoading: false }) }));
 jest.mock('@features/offers/components/PriceOfferCard', () => {

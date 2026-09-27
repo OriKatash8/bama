@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, MessageCircle, Plus, ExternalLink } from 'lucide-react-native';
+import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, Plus, ExternalLink } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';
@@ -20,7 +20,7 @@ import { normalizeLevel, type CourseLevelKey } from '@features/courses/levels';
 import { PRICE_BANDS, priceBandTest, type PriceBandId } from '@features/courses/priceBands';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
 import { useUserChats } from '@features/chat/hooks/useUserChats';
-import { EmptyState } from '@components/ui/EmptyState';
+import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { CommunityDiscoveryTab } from '@features/chat/components/CommunityDiscoveryTab';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -327,14 +327,19 @@ export default function ProfessionalChatsScreen() {
           </View>
         ) : !hasChats ? (
           <View style={{ minHeight: windowHeight * 0.6 }}>
-            <EmptyState
-              icon={MessageCircle}
+            <AnimatedEmptyState
+              // Cancels the sheet's paddingHorizontal: the empty state spans the screen.
+              bleed={20}
+              // Nothing sits above it: meet the sheet's top edge.
+              bleedTop={16}
+              radius={26}
+              variant="bubbles"
               title={t('chats.empty_pro_title')}
-              description={proProfileCompleted === false ? t('chats.empty_pro_incomplete_desc') : t('chats.empty_pro_complete_desc')}
-              primaryAction={proProfileCompleted === false
+              subtitle={proProfileCompleted === false ? t('chats.empty_pro_incomplete_desc') : t('chats.empty_pro_complete_desc')}
+              primaryCta={proProfileCompleted === false
                 ? { label: t('chats.empty_pro_incomplete_primary'), onPress: () => router.push('/(professional)/(tabs)/profile?edit=1') }
                 : { label: t('chats.empty_pro_complete_primary'), onPress: () => router.push('/(professional)/(tabs)/dashboard') }}
-              secondaryAction={proProfileCompleted === false
+              secondaryLink={proProfileCompleted === false
                 ? { label: t('chats.empty_pro_secondary_board'), onPress: () => router.push('/(professional)/(tabs)/dashboard') }
                 : undefined}
             />
