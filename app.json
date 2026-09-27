@@ -14,7 +14,8 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSMicrophoneUsageDescription": "BAMA needs microphone access to record voice messages."
+        "NSMicrophoneUsageDescription": "BAMA uses the microphone to record voice messages in chats.",
+        "CFBundleAllowMixedLocalizations": true
       },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
@@ -56,7 +57,15 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "BAMA needs microphone access to record voice messages."
+          "microphonePermission": "BAMA uses the microphone to record voice messages in chats."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "BAMA uses your photo library so you can choose photos and videos for your profile, portfolio, chats and marketplace listings.",
+          "cameraPermission": "BAMA uses the camera so you can take a photo and send it in a chat.",
+          "microphonePermission": "BAMA uses the microphone to record voice messages in chats."
         }
       ],
       [
@@ -84,6 +93,10 @@
       "eas": {
         "projectId": "b693c677-cec0-4f8b-baed-2333d9418a66"
       }
+    },
+    "locales": {
+      "he": "./locales/he.json",
+      "en": "./locales/en.json"
     }
   }
 }
