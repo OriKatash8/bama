@@ -74,3 +74,30 @@ export function fitTitleSize(text: string, available: number, max = 26, min = 14
   const fit = Math.floor(available / (Math.max(1, text.length) * 0.62));
   return Math.max(min, Math.min(max, fit));
 }
+
+/** The illustration's full height; card tops are laid out against it. */
+export const ILLUSTRATION_HEIGHT = 420;
+/** Below this the cards (≈105pt tall) start to pile on each other. */
+export const MIN_ILLUSTRATION_HEIGHT = 300;
+
+/**
+ * How tall the illustration can be so the text block (title, subtitle, CTA,
+ * link) shows without scrolling: the room between where the panel starts and the
+ * tab bar, less the text. Full height when it fits or before anything is
+ * measured; never below MIN_ILLUSTRATION_HEIGHT.
+ */
+export function illustrationHeightFor(m: {
+  windowHeight: number;
+  panelTop: number | null;
+  textHeight: number | null;
+  bottomInset: number;
+}): number {
+  if (m.panelTop === null || m.textHeight === null) return ILLUSTRATION_HEIGHT;
+  const room = m.windowHeight - m.panelTop - m.textHeight - m.bottomInset;
+  return Math.max(MIN_ILLUSTRATION_HEIGHT, Math.min(ILLUSTRATION_HEIGHT, Math.floor(room)));
+}
+
+/** A card's top in an illustration of `height` (tops are specced against 420). */
+export function scaleTop(top: number, height: number): number {
+  return (top * height) / ILLUSTRATION_HEIGHT;
+}

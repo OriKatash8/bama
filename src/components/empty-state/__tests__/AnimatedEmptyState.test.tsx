@@ -388,3 +388,18 @@ describe('single-line title (the chats pages, in English)', () => {
     expect(flat(title).fontSize).toBe(26);
   });
 });
+
+describe('fit to screen', () => {
+  const flat = (n: { props: Record<string, unknown> }) => StyleSheet.flatten(n.props.style as never) as Record<string, unknown>;
+
+  it('without it, the illustration is its full 420pt and cards sit where specced', () => {
+    const r = render(<AnimatedEmptyState variant="tiles" {...base} />);
+    expect(flat(r.getByTestId('empty-illustration', H)).height).toBe(420);
+    expect(flat(r.getByTestId('empty-card-graphic_designer', H)).top).toBe(284);
+  });
+
+  it('with it but nothing measured yet, it starts at full height (no jump before layout)', () => {
+    const r = render(<AnimatedEmptyState variant="tiles" {...base} fitToScreen={{ bottomInset: 90 }} />);
+    expect(flat(r.getByTestId('empty-illustration', H)).height).toBe(420);
+  });
+});

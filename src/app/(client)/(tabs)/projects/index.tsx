@@ -401,6 +401,10 @@ export default function ProjectsPage() {
                     bleedTop={newOffersCount > 0 ? 0 : 18}
                     radius={26}
                     variant="tiles"
+                    // English: the title on one row; and the text shows without scrolling,
+                    // the illustration giving up height above it if needed.
+                    singleLineTitle
+                    fitToScreen={{ bottomInset: tabBarClearance }}
                     title={t('chats_page.empty_projects_title')}
                     subtitle={t('chats_page.empty_projects_desc')}
                     primaryCta={{
@@ -513,6 +517,10 @@ export default function ProjectsPage() {
                     bleedTop={offers.length > 0 || bundles.length > 0 ? 0 : 18}
                     radius={26}
                     variant="tiles"
+                    // English: the title on one row; and the text shows without scrolling,
+                    // the illustration giving up height above it if needed.
+                    singleLineTitle
+                    fitToScreen={{ bottomInset: tabBarClearance }}
                     title={t('chats_page.empty_offers_title')}
                     subtitle={t('chats_page.empty_offers_desc')}
                     primaryCta={{

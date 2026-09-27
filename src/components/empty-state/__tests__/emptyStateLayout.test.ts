@@ -1,4 +1,4 @@
-import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom, fitTitleSize } from '../emptyStateLayout';
+import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom, fitTitleSize, illustrationHeightFor, scaleTop, ILLUSTRATION_HEIGHT } from '../emptyStateLayout';
 import { ROLES } from '@features/crew/data/categories';
 import { ROLE_GLYPHS } from '@features/crew/data/roleTiles';
 
@@ -74,5 +74,29 @@ describe('fitTitleSize — one line in English', () => {
 
   it('never goes below a readable floor', () => {
     expect(fitTitleSize('x'.repeat(200), 342)).toBe(14);
+  });
+});
+
+describe('fit to screen — the text shows without scrolling', () => {
+  it('keeps the full 420pt illustration when everything already fits', () => {
+    // 1100 tall, panel at 200, text 220, tab bar 90 → 590pt free, more than 420.
+    expect(illustrationHeightFor({ windowHeight: 1100, panelTop: 200, textHeight: 220, bottomInset: 90 })).toBe(ILLUSTRATION_HEIGHT);
+  });
+
+  it('shrinks the illustration to exactly the room left above the text', () => {
+    expect(illustrationHeightFor({ windowHeight: 844, panelTop: 190, textHeight: 220, bottomInset: 90 })).toBe(344);
+  });
+
+  it('never squeezes it below 300pt, so the cards do not pile up', () => {
+    expect(illustrationHeightFor({ windowHeight: 667, panelTop: 190, textHeight: 220, bottomInset: 90 })).toBe(300);
+  });
+
+  it('before anything is measured, keeps the full height', () => {
+    expect(illustrationHeightFor({ windowHeight: 844, panelTop: null, textHeight: null, bottomInset: 90 })).toBe(ILLUSTRATION_HEIGHT);
+  });
+
+  it('moves card tops proportionally, and not at all at full height', () => {
+    expect(scaleTop(284, ILLUSTRATION_HEIGHT)).toBe(284);
+    expect(scaleTop(284, 315)).toBeCloseTo(284 * 315 / 420);
   });
 });

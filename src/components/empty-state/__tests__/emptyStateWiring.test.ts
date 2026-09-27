@@ -107,3 +107,9 @@ it.each([
 ])('%s keeps its English title on one row', (_n, file) => {
   expect(blocks(read(...file))[0]).toContain('singleLineTitle');
 });
+
+it.each([0, 1])('the projects page (empty state %i) fits the screen and keeps its English title on one row', (index) => {
+  const block = blocks(read('(client)', '(tabs)', 'projects', 'index.tsx'))[index];
+  expect(block).toContain('singleLineTitle');
+  expect(block).toContain('fitToScreen={{ bottomInset: tabBarClearance }}');
+});

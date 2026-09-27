@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue,
   withDelay, withRepeat, withSequence, withSpring, withTiming,
@@ -17,7 +17,8 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
 import {
-  BUBBLE_LAYOUT, DEFAULT_ROLES, TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, scaleLeft, type Placement, type RoleId,
+  BUBBLE_LAYOUT, DEFAULT_ROLES, ILLUSTRATION_HEIGHT, TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, illustrationHeightFor,
+  scaleLeft, scaleTop, type Placement, type RoleId,
 } from './emptyStateLayout';
 
 export type EmptyStateVariant = 'tiles' | 'bubbles' | 'board';
@@ -52,6 +53,12 @@ type Props = {
    * Hebrew titles are unaffected.
    */
   singleLineTitle?: boolean;
+  /**
+   * Compress the illustration vertically (cards keep their size, only move
+   * closer) so the text block shows without scrolling, above a bottom inset of
+   * `bottomInset` (the tab bar). Never below 300pt of illustration.
+   */
+  fitToScreen?: { bottomInset: number };
 };
 
 // ── Palette (the spec's; the app's brand gradients differ, so these are local) ──
@@ -69,7 +76,6 @@ const BADGE_GRADIENT_PRO = ['#3B82F6', PRO_TAB_ACTIVE] as const;
 type Tone = { badge: readonly [string, string]; border: string; pillBg: string; pillText: string };
 const CLIENT_TONE: Tone = { badge: BADGE_GRADIENT_CLIENT, border: 'rgba(165,150,235,0.55)', pillBg: 'rgba(110,88,226,0.14)', pillText: '#4B34B8' };
 const PRO_TONE: Tone = { badge: BADGE_GRADIENT_PRO, border: 'rgba(59,110,235,0.55)', pillBg: 'rgba(29,78,216,0.12)', pillText: PRO_TAB_ACTIVE };
-const ILLUSTRATION_HEIGHT = 420;
 
 /** Final values the entrance springs to — also the static reduced-motion frame. */
 const ENTER_SPRING = { damping: 14, stiffness: 120, mass: 1 };
@@ -110,7 +116,7 @@ function extraBold(rtl: boolean) {
  */
 export function AnimatedEmptyState({
   variant, title, subtitle, note, primaryCta, secondaryLink, roles = DEFAULT_ROLES, bleed = 0, bleedTop = 0, radius = 32,
-  singleLineTitle = false,
+  singleLineTitle = false, fitToScreen,
 }: Props) {
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
@@ -126,7 +132,18 @@ export function AnimatedEmptyState({
   // Measured from where the panel really sits, which differs per screen.
   const panelRef = useRef<View>(null);
   const [fillMin, setFillMin] = useState(0);
-  const measure = () => panelRef.current?.measureInWindow((_x, y) => setFillMin(fillToBottom(windowHeight, y)));
+  const [panelTop, setPanelTop] = useState<number | null>(null);
+  const [textHeight, setTextHeight] = useState<number | null>(null);
+  const measure = () => panelRef.current?.measureInWindow((_x, y) => {
+    setPanelTop(y);
+    setFillMin(fillToBottom(windowHeight, y));
+  });
+
+  // The illustration's height: full, or — with fitToScreen — just enough room
+  // above the text so nothing needs scrolling.
+  const h = fitToScreen
+    ? illustrationHeightFor({ windowHeight, panelTop, textHeight, bottomInset: fitToScreen.bottomInset })
+    : ILLUSTRATION_HEIGHT;
 
   // Tile / board cards follow the role list, in the specced back-to-front order.
   const tiles = TILE_LAYOUT.filter((t) => roles.includes(t.role));
@@ -144,24 +161,24 @@ export function AnimatedEmptyState({
       {/* Decoration only: no touches, invisible to screen readers. */}
       <View
         testID="empty-illustration"
-        style={styles.illustration}
+        style={[styles.illustration, { height: h }]}
         pointerEvents="none"
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       >
-        <Glow color="rgba(70,100,235,0.38)" size={280} left={scaleLeft(-90, width)} top={330} loopMs={7000} reduced={reduced} />
-        <Glow color="rgba(150,95,235,0.34)" size={260} left={scaleLeft(85, width)} top={175} loopMs={8000} reduced={reduced} />
+        <Glow color="rgba(70,100,235,0.38)" size={280} left={scaleLeft(-90, width)} top={scaleTop(330, h)} loopMs={7000} reduced={reduced} />
+        <Glow color="rgba(150,95,235,0.34)" size={260} left={scaleLeft(85, width)} top={scaleTop(175, h)} loopMs={8000} reduced={reduced} />
         <Glow color="rgba(215,110,215,0.30)" size={240} left={width - 240 + scaleLeft(70, width)} top={-10} loopMs={9000} reduced={reduced} />
 
         {variant === 'bubbles'
           ? BUBBLE_LAYOUT.map((p, i) => (
-            <Floating key={i} index={i} placement={p} width={width} reduced={reduced} testID={`empty-card-${i}`}>
+            <Floating key={i} index={i} placement={{ ...p, top: scaleTop(p.top, h) }} width={width} reduced={reduced} testID={`empty-card-${i}`}>
               <BubbleCard rtl={rtl} tone={tone} />
             </Floating>
           ))
           : tiles.map((t, i) => {
             return (
-              <Floating key={t.role} index={i} placement={t} width={width} reduced={reduced} testID={`empty-card-${t.role}`}>
+              <Floating key={t.role} index={i} placement={{ ...t, top: scaleTop(t.top, h) }} width={width} reduced={reduced} testID={`empty-card-${t.role}`}>
                 <RoleCard
                   id={t.role}
                   tone={tone}
@@ -177,9 +194,9 @@ export function AnimatedEmptyState({
           })}
       </View>
 
-      <View style={{ height: ILLUSTRATION_HEIGHT - 12 }} />
+      <View style={{ height: h - 12 }} />
 
-      <FadeUp delay={450} reduced={reduced} style={styles.textBlock}>
+      <FadeUp delay={450} reduced={reduced} style={styles.textBlock} onLayout={(e) => setTextHeight(e.nativeEvent.layout.height)}>
         {singleLineTitle && !rtl ? (
           <Text
             style={[styles.title, extraBold(rtl), { fontSize: fitTitleSize(title, width - 48) }]}
@@ -302,14 +319,16 @@ function Glow({ color, size, left, top, loopMs, reduced }: {
 }
 
 /** The text block's entrance: fades up from 8pt, once. */
-function FadeUp({ delay, reduced, style, children }: { delay: number; reduced: boolean; style: object; children: ReactNode }) {
+function FadeUp({ delay, reduced, style, onLayout, children }: {
+  delay: number; reduced: boolean; style: object; onLayout?: (e: LayoutChangeEvent) => void; children: ReactNode;
+}) {
   const v = useSharedValue(reduced ? 1 : 0);
   useEffect(() => {
     if (reduced) { v.set(1); return; }
     v.set(withDelay(delay, withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) })));
   }, [reduced, delay, v]);
   const a = useAnimatedStyle(() => ({ opacity: v.value, transform: [{ translateY: 8 * (1 - v.value) }] }));
-  return <Animated.View style={[style, a]}>{children}</Animated.View>;
+  return <Animated.View style={[style, a]} onLayout={onLayout}>{children}</Animated.View>;
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────────────
@@ -375,7 +394,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingBottom: 28,
   },
-  illustration: { position: 'absolute', top: 0, left: 0, right: 0, height: ILLUSTRATION_HEIGHT },
+  illustration: { position: 'absolute', top: 0, left: 0, right: 0 },
   floating: { position: 'absolute' },
   card: {
     backgroundColor: 'rgba(255,255,255,0.58)',
