@@ -600,6 +600,47 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+
+  /**
+   * Open someone's profile. The only screen Block is reachable from, so every
+   * route to it goes through here rather than rebuilding the path inline.
+   * Never navigates to your own profile — that screen is about someone else.
+   */
+  const pushProfile = useCallback((uid: string) => {
+    if (!uid || uid === currentUserId) return;
+    router.push(
+      `/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}` as never,
+    );
+  }, [activeMode, currentUserId, router]);
+  /**
+   * The name above someone else's bubble, and a route to their profile — which
+   * is where Block lives. Four bubble kinds render this (video, image, audio,
+   * text) and two of them need the media bubble's inset, so it is one helper
+   * rather than four copies of the touchable.
+   */
+  const senderLabel = useCallback((senderId: string, isOwn: boolean, inset: boolean) => {
+    if (isOwn) return null;
+    return (
+      <TouchableOpacity
+        onPress={() => pushProfile(senderId)}
+        activeOpacity={0.6}
+        accessibilityRole="button"
+        accessibilityLabel={t('chats.click_for_profile')}
+      >
+        <AppText
+          weight="regular"
+          style={[
+            styles.senderName,
+            { color: colorForUser(senderId) },
+            inset ? { paddingHorizontal: 10, paddingTop: 6 } : null,
+          ]}
+        >
+          {userNames[senderId] ?? 'Loading...'}
+        </AppText>
+      </TouchableOpacity>
+    );
+  }, [pushProfile, t, userNames]);
+
   const fetchedIdsRef = useRef<Set<string>>(new Set());
   const creatingGeneralRef = useRef(false);
   const creatingMarketRef = useRef(false);
@@ -653,6 +694,20 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatPhotoUploading, setChatPhotoUploading] = useState(false);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [chatMembers, setChatMembers] = useState<string[]>([]);
+  /**
+   * The other party in a DM. Held in state, not derived, because the chat doc's
+   * members array is what names them and it arrives with the subscription.
+   *
+   * It exists so a DM can reach that person's PROFILE, which is where Block
+   * lives. Before this, a DM was a dead end: the header name was plain text, the
+   * avatar opened the change-photo sheet, and the only route to a profile
+   * anywhere in a chat was tapping an @mention — which nobody writes in a 1:1.
+   * Someone being harassed in a DM had no way to block their harasser, and if
+   * that harasser was a client rather than a listed professional they did not
+   * appear in browse either, so there was no way at all. App Review looks for
+   * this under Guideline 1.2.
+   */
+  const [dmOtherUserId, setDmOtherUserId] = useState<string | null>(null);
   /** Caret, a logical index. Fed by onSelectionChange; drives @-detection. */
   const [caret, setCaret] = useState(0);
   /**
@@ -836,6 +891,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         nameResolved = true;
         if (data.type === 'dm') {
           const otherId = (data.members as string[]).find((id) => id !== currentUserId);
+          if (otherId) setDmOtherUserId(otherId);
           if (otherId) {
             const userSnap = await getDoc(doc(db, 'users', otherId));
             const displayName = userSnap.exists()
@@ -1482,6 +1538,19 @@ export function ChatRoomScreen({ chatId }: Props) {
               </AppText>
               <AppText style={chatStyles.headerHint}>{t('chats.click_for_community_info')}</AppText>
             </TouchableOpacity>
+          ) : chatType === 'dm' && dmOtherUserId ? (
+            <TouchableOpacity
+              style={styles.headerNameTouchable}
+              onPress={() => pushProfile(dmOtherUserId)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t('chats.click_for_profile')}
+            >
+              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+                {chatName}
+              </AppText>
+              <AppText style={chatStyles.headerHint}>{t('chats.click_for_profile')}</AppText>
+            </TouchableOpacity>
           ) : (
             <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
@@ -1723,11 +1792,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               >
                 {msg.videoUrl ? (
                   <View style={[styles.mediaBubble, { backgroundColor: isOwn ? modeAccent : '#ffffff' }]}>
-                    {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId), paddingHorizontal: 10, paddingTop: 6 }]}>
-                        {userNames[msg.senderId] ?? 'Loading...'}
-                      </AppText>
-                    )}
+                    {senderLabel(msg.senderId, isOwn, true)}
                     {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.videoUrl!, type: 'video' })} activeOpacity={0.9}>
                       <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} thumbnailOnly />
@@ -1743,11 +1808,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                   </View>
                 ) : msg.imageURL ? (
                   <View style={[styles.mediaBubble, { backgroundColor: isOwn ? modeAccent : '#ffffff' }]}>
-                    {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId), paddingHorizontal: 10, paddingTop: 6 }]}>
-                        {userNames[msg.senderId] ?? 'Loading...'}
-                      </AppText>
-                    )}
+                    {senderLabel(msg.senderId, isOwn, true)}
                     {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.imageURL!, type: 'image' })} activeOpacity={0.9}>
                       <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
@@ -1763,11 +1824,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                   </View>
                 ) : msg.audioUrl ? (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: modeAccent } : { backgroundColor: '#ffffff' }]}>
-                    {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
-                        {userNames[msg.senderId] ?? 'Loading...'}
-                      </AppText>
-                    )}
+                    {senderLabel(msg.senderId, isOwn, false)}
                     {quote}
                     <VoiceMessageBubble
                       messageId={msg.id}
@@ -1783,11 +1840,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                   </View>
                 ) : (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: modeAccent } : { backgroundColor: '#ffffff' }]}>
-                    {!isOwn && (
-                      <AppText weight="regular" style={[styles.senderName, { color: colorForUser(msg.senderId) }]}>
-                        {userNames[msg.senderId] ?? 'Loading...'}
-                      </AppText>
-                    )}
+                    {senderLabel(msg.senderId, isOwn, false)}
                     {quote}
                     <MessageBody
                       msg={msg}
@@ -1796,9 +1849,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                       color={isOwn ? '#fff' : colors.text}
                       accent={isOwn ? '#fff' : modeAccent}
                       font={font}
-                      onPressMention={(uid) =>
-                        router.push(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}` as never)
-                      }
+                      onPressMention={pushProfile}
                     />
                     <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
                       {formatMessageTime(msg.timestamp)}

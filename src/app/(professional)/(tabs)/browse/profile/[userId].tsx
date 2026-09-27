@@ -8,7 +8,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronRight, Flag, X, Ban } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Flag, X, Ban } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -183,18 +183,63 @@ export default function PublicProfileScreen() {
   }
 
   if (!user || !profile) {
+    /**
+     * BLOCK HAS TO SURVIVE THIS BRANCH.
+     *
+     * This runs whenever users/{uid}/profile/data is missing — which is every
+     * client who never set up a professional profile. It used to render only the
+     * not-found text and a back link, and Block lives further down in the part
+     * that never got rendered. So the one person most likely to need blocking,
+     * a client harassing another client from a DM, was unblockable: not in
+     * browse either, because they are not a listed professional.
+     *
+     * Blocking is keyed on the uid, which the route already carries, so it works
+     * here with no profile and no user document at all.
+     */
     return (
       <Screen scrollable={false} backgroundColor={colors.bg}>
         <View style={styles.center}>
           <Text style={[styles.errorText, { color: colors.textMuted }]}>{t('profile.not_found')}</Text>
-          <TouchableOpacity onPress={goToBrowse} style={styles.backFallback} activeOpacity={0.7}>
-            {/* The arrow is rendered here rather than baked into the string, so it
-                points back in both directions. */}
+
+          {userId && userId !== currentUserId && (
+            <TouchableOpacity
+              onPress={() => setBlockVisible(true)}
+              style={[styles.fallbackBlockBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              testID="profile-block-fallback"
+            >
+              <Ban size={16} color={isBlocked ? '#C0392B' : REPORT_FLAG} strokeWidth={2} />
+              <Text style={{ color: isBlocked ? '#C0392B' : REPORT_FLAG, fontSize: 14, fontWeight: '600' }}>
+                {isBlocked ? t('blocking.unblock') : t('blocking.block')}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            onPress={goToBrowse}
+            style={[styles.backFallback, { flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }]}
+            activeOpacity={0.7}
+          >
+            {/* A Lucide chevron, not an arrow character: Heebo has no glyph for
+                '←' or '→', so those were tofu boxes wherever the platform did not
+                quietly substitute another font. It still points back in both
+                directions. */}
+            {rtl
+              ? <ChevronRight size={16} color={colors.accent} strokeWidth={2.4} />
+              : <ChevronLeft size={16} color={colors.accent} strokeWidth={2.4} />}
             <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '600' }}>
-              {rtl ? '→' : '←'} {t('profile.go_back')}
+              {t('profile.go_back')}
             </Text>
           </TouchableOpacity>
         </View>
+
+        <BlockUserSheet
+          visible={blockVisible}
+          onClose={() => setBlockVisible(false)}
+          targetUserId={userId as string}
+          targetName={user?.displayName ?? ''}
+        />
       </Screen>
     );
   }
@@ -415,6 +460,17 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   errorText: { fontSize: 16, fontWeight: '500' },
   backFallback: { paddingVertical: 8 },
+  // The not-found branch's own Block button: an outlined pill, because there is
+  // no violet band behind it to sit the bare icon on.
+  fallbackBlockBtn: {
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
+  },
 
   // gap: room between the report and block buttons; the flex spacer before
   // back absorbs it, so nothing else in the row moves.
