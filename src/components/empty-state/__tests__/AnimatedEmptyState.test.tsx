@@ -207,3 +207,36 @@ describe('full width', () => {
   });
 });
 
+
+describe('card contents stay inside the card', () => {
+  // Heebo's natural line box on iOS (~21pt for 14pt text) pushed the skeleton
+  // lines out of a fixed-height card. The text line height is pinned, and the
+  // card grows to its content rather than clipping or overflowing.
+  it('role cards size to their content (min 104pt), never a fixed height', () => {
+    const r = render(<AnimatedEmptyState variant="board" {...base} />);
+    const card = StyleSheet.flatten(r.getByTestId('role-card-videographer', H).props.style);
+    expect(card.height).toBeUndefined();
+    expect(card.minHeight).toBe(104);
+    expect(card.width).toBe(142);
+  });
+
+  it('pins the role name to an explicit line height', () => {
+    const r = render(<AnimatedEmptyState variant="board" {...base} />);
+    const label = StyleSheet.flatten(r.getByText(labelOf(ROLES.find((x) => x.id === 'editor')!, 'he'), H).props.style);
+    expect(label.lineHeight).toBe(16);
+  });
+
+  it('centres the ₪ in its pill: a fixed-height box centred both ways, drawn in the system font', () => {
+    // Heebo's lopsided ascent/descent drew the ₪ off-centre on iOS.
+    const r = render(<AnimatedEmptyState variant="board" {...base} />);
+    const symbol = r.getAllByText('₪', H)[0];
+    const text = StyleSheet.flatten(symbol.props.style);
+    expect(text.fontFamily).toBeUndefined();
+    expect(text.textAlign).toBe('center');
+    expect(text.includeFontPadding).toBe(false);
+    const pill = StyleSheet.flatten(symbol.parent!.parent!.props.style);
+    expect(typeof pill.height).toBe('number');
+    expect(pill.alignItems).toBe('center');
+    expect(pill.justifyContent).toBe('center');
+  });
+});

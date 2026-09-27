@@ -132,6 +132,7 @@ export function AnimatedEmptyState({
             return (
               <Floating key={t.role} index={i} placement={t} width={width} reduced={reduced} testID={`empty-card-${t.role}`}>
                 <RoleCard
+                  id={t.role}
                   label={role ? labelOf(role, lang) : ''}
                   // A require()d image asset: a number at runtime (the map is typed loosely).
                   glyph={ROLE_GLYPHS[t.role] as number}
@@ -266,10 +267,10 @@ function Skeleton({ width, strong, height }: { width: number | `${number}%`; str
   return <View style={{ width, height, borderRadius: height / 2, backgroundColor: strong ? 'rgba(120,115,145,0.30)' : 'rgba(120,115,145,0.20)' }} />;
 }
 
-function RoleCard({ label, glyph, price, rtl }: { label: string; glyph: number; price: boolean; rtl: boolean }) {
+function RoleCard({ id, label, glyph, price, rtl }: { id: string; label: string; glyph: number; price: boolean; rtl: boolean }) {
   const align = rtl ? 'flex-end' : 'flex-start';
   return (
-    <View style={[styles.card, styles.roleCard, { alignItems: align }]}>
+    <View testID={`role-card-${id}`} style={[styles.card, styles.roleCard, { alignItems: align }]}>
       <LinearGradient colors={BADGE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.badge}>
         <Image source={glyph} style={styles.glyph} contentFit="contain" tintColor="#FFFFFF" />
       </LinearGradient>
@@ -325,14 +326,36 @@ const styles = StyleSheet.create({
     shadowRadius: 30,
     elevation: 4,
   },
-  roleCard: { width: 142, height: 104, borderRadius: 20, padding: 14 },
+  // Height follows the content (min 104): a fixed 104 overflowed on iPhone,
+  // where the board's ₪ row made the cards taller still. 12pt vertical padding
+  // + badge 38 + 6 + label 16 + 6 + two 5pt lines with a 5pt gap = 105.
+  roleCard: { width: 142, minHeight: 104, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 12 },
   badge: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   glyph: { width: 20, height: 20 },
-  roleLabel: { fontSize: 14, color: INK, marginTop: 8, alignSelf: 'stretch' },
-  lines: { alignSelf: 'stretch', gap: 5, marginTop: 7 },
+  // Pinned line height: Heebo's natural line box on iOS is ~21pt at 14pt.
+  roleLabel: { fontSize: 14, lineHeight: 16, color: INK, marginTop: 6, alignSelf: 'stretch' },
+  lines: { alignSelf: 'stretch', gap: 5, marginTop: 6 },
   priceRow: { alignSelf: 'stretch', alignItems: 'center', gap: 6 },
-  pricePill: { paddingVertical: 2, paddingHorizontal: 8, borderRadius: 999, backgroundColor: 'rgba(110,88,226,0.14)' },
-  priceText: { color: '#4B34B8', fontSize: 11, fontFamily: 'Heebo-Bold', fontWeight: '700' },
+  // A fixed-height box centred both ways, and the ₪ in the SYSTEM font: Heebo's
+  // lopsided ascent/descent drew it visibly off-centre on iOS.
+  pricePill: {
+    height: 14,
+    minWidth: 22,
+    paddingHorizontal: 6,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(110,88,226,0.14)',
+  },
+  priceText: {
+    color: '#4B34B8',
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
   bubble: { width: 188, height: 62, borderRadius: 24, paddingHorizontal: 12, gap: 12, alignItems: 'center' },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   bubbleLines: { flex: 1, gap: 7 },
