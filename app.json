@@ -8,6 +8,7 @@
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "icon": "./assets/bama.icon",
       "supportsTablet": true,
       "bundleIdentifier": "com.bamaapp.bama",
       "usesAppleSignIn": true,
