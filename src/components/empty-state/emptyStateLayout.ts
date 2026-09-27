@@ -14,12 +14,14 @@ export const DEFAULT_ROLES: RoleId[] = ['videographer', 'photographer', 'editor'
 
 export type Placement = { left: number; top: number; rotate: number };
 
-/** Tiles / board cards, back to front: editing renders ABOVE sound, overlapping it. */
+/** Tiles / board cards, back to front. */
 export const TILE_LAYOUT: (Placement & { role: RoleId })[] = [
   { role: 'videographer', left: 226, top: 22, rotate: -4 },
   { role: 'photographer', left: -14, top: 64, rotate: 5 },
   { role: 'sound', left: 196, top: 158, rotate: -2 },
-  { role: 'editor', left: 92, top: 136, rotate: 3 },
+  // Moved left, clear of sound even tilted and floating (it used to sit on it);
+  // it now just tucks slightly under photography above and lighting below.
+  { role: 'editor', left: 38, top: 162, rotate: 3 },
   { role: 'lighting', left: -12, top: 262, rotate: -5 },
   { role: 'graphic_designer', left: 236, top: 284, rotate: 6 },
 ];

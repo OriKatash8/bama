@@ -16,12 +16,12 @@ it('defaults to six real roles: video, stills, editing, sound, lighting, design'
   }
 });
 
-it('places the tiles back to front exactly as specced, editing above sound', () => {
+it('places the tiles back to front as specced (editor moved clear of sound)', () => {
   expect(TILE_LAYOUT.map((t) => [t.role, t.left, t.top, t.rotate])).toEqual([
     ['videographer', 226, 22, -4],
     ['photographer', -14, 64, 5],
     ['sound', 196, 158, -2],
-    ['editor', 92, 136, 3],
+    ['editor', 38, 162, 3],
     ['lighting', -12, 262, -5],
     ['graphic_designer', 236, 284, 6],
   ]);
@@ -99,4 +99,17 @@ describe('fit to screen — the text shows without scrolling', () => {
     expect(scaleTop(284, ILLUSTRATION_HEIGHT)).toBe(284);
     expect(scaleTop(284, 315)).toBeCloseTo(284 * 315 / 420);
   });
+});
+
+it('the editor card never covers the sound card — tilted, floating or squeezed', () => {
+  // Worst case: 142 wide, tilted by base + the float's 1.3°, carried 3pt sideways.
+  const reach = (t: { left: number; rotate: number }) => {
+    const a = ((Math.abs(t.rotate) + 1.3) * Math.PI) / 180;
+    const half = (142 * Math.cos(a) + 121 * Math.sin(a)) / 2 + 3;
+    return { x0: t.left + 71 - half, x1: t.left + 71 + half };
+  };
+  const editor = reach(TILE_LAYOUT.find((t) => t.role === 'editor')!);
+  const sound = reach(TILE_LAYOUT.find((t) => t.role === 'sound')!);
+  // Side by side horizontally: squeezing only moves cards vertically, so this holds at any height.
+  expect(editor.x1).toBeLessThanOrEqual(sound.x0);
 });
