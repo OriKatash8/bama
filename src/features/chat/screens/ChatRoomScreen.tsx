@@ -2091,7 +2091,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                   onPress={handleSend}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.sendLabel, { ...font.semiBold }]}>Send</Text>
+                  <Text style={[styles.sendLabel, { ...font.semiBold }]}>{t('chats.record_send')}</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
@@ -2202,12 +2202,15 @@ export function ChatRoomScreen({ chatId }: Props) {
           )}
         </View>
         <View style={[previewStyles.bottomBar, { paddingBottom: BOTTOM_INSET + 12 }]}>
+          {/* The same rounded box as the chat's message field: its shape, the
+              mode tint and accent border, and its Hebrew text direction. */}
           <TextInput
-            style={[previewStyles.captionInput, { ...font.regular }]}
+            testID="media-caption-input"
+            style={[styles.input, { backgroundColor: modeTint, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', writingDirection: rtl ? 'rtl' : 'ltr', ...font.regular }]}
             value={pendingCaption}
             onChangeText={setPendingCaption}
             placeholder={t('chats.caption_placeholder')}
-            placeholderTextColor="rgba(255,255,255,0.5)"
+            placeholderTextColor={colors.placeholder}
             multiline
             returnKeyType="default"
           />
@@ -3002,13 +3005,6 @@ const previewStyles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(255,255,255,0.2)',
-  },
-  captionInput: {
-    flex: 1,
-    color: '#fff',
-    fontSize: 15,
-    maxHeight: 80,
-    paddingVertical: 4,
   },
   sendBtn: {
     backgroundColor: '#004aad',
