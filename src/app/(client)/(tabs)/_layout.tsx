@@ -9,6 +9,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useOffersSeenStore, unseenOfferCount } from '@core/stores/offersSeenStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { listenToUserChats } from '@features/chat/services/chatService';
+import { tabUnreadTotal } from '@features/chat/utils/tabUnreadTotal';
 import { usePriceOffers } from '@features/offers/hooks/usePriceOffers';
 import { useBundleOffers } from '@features/offers/hooks/useBundleOffers';
 import { AppHeader } from '@components/layout/AppHeader';
@@ -47,8 +48,8 @@ export default function ClientTabsLayout() {
   useEffect(() => {
     if (!userId) { setTotalUnread(0); return; }
     return listenToUserChats(userId, (chats) => {
-      const sum = chats.reduce((acc, c) => acc + (c.unreadCount?.[userId] ?? 0), 0);
-      setTotalUnread(sum);
+      // Communities stay out: they have their own badge, on their own strip.
+      setTotalUnread(tabUnreadTotal(chats, userId));
     });
   }, [userId]);
 

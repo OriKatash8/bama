@@ -14,6 +14,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { listenToUserChats } from '@features/chat/services/chatService';
+import { tabUnreadTotal } from '@features/chat/utils/tabUnreadTotal';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { LayoutDashboard, MessageCircle, ShoppingBag, User } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
@@ -48,8 +49,8 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
   useEffect(() => {
     if (!userId) { setTotalUnread(0); return; }
     return listenToUserChats(userId, (chats) => {
-      const sum = chats.reduce((acc, c) => acc + (c.unreadCount?.[userId] ?? 0), 0);
-      setTotalUnread(sum);
+      // Communities stay out: they have their own badge, on their own strip.
+      setTotalUnread(tabUnreadTotal(chats, userId));
     });
   }, [userId]);
 

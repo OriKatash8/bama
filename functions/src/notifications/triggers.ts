@@ -10,6 +10,7 @@ import {
 import { SYSTEM_USER_ID } from '../system';
 import { fanOutMessage, needMuteCheck } from './fanOut';
 import { bumpMemberStats } from '../communities/memberStats';
+import { communityUnreadUpdate } from './communityUnread';
 
 async function createNotification(
   db: admin.firestore.Firestore,
@@ -138,6 +139,15 @@ export const onNewCommunityMessage = functions.firestore
     const communityName: string = (chatDoc.data()?.name as string | undefined) ?? '';
     const channelName: string = (channelDoc.data()?.name as string | undefined) ?? '';
     const members: string[] = (chatDoc.data()?.members as string[] | undefined) ?? [];
+
+    // Unread for everyone but the sender: the badge on the community's icon in
+    // "My communities". The client writes channel messages inline and never
+    // touched the parent doc, so until this the count stayed 0 for ever. Never
+    // throws: a failed count must not cost anyone their notification.
+    const unread = communityUnreadUpdate(members, message.senderId);
+    if (Object.keys(unread).length > 0) {
+      await chatDoc.ref.update(unread).catch((e) => console.warn('[onNewCommunityMessage] unread count failed', e));
+    }
 
     let body: string;
     if (message.imageURL) {
