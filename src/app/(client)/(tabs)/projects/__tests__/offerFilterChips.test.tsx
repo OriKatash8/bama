@@ -111,6 +111,15 @@ describe('which chips are on screen', () => {
     expect(r.queryByText(en.offers.sort_stars)).not.toBeNull();
   });
 
+  it('puts Newest first, then Price, then Stars', async () => {
+    const r = await openOffers();
+    const labels = [en.offers.sort_newest, en.offers.sort_price, en.offers.sort_stars];
+    const rendered = r.UNSAFE_root
+      .findAll((n) => typeof n.type === 'string' && labels.includes(n.props.children))
+      .map((n) => n.props.children);
+    expect(rendered).toEqual(labels);
+  });
+
   it('has no "Sort & Filter" button and no sheet to open', async () => {
     const r = await openOffers();
     // The whole point of the change: the state is on the chips, not behind a

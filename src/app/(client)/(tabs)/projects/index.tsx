@@ -438,7 +438,21 @@ export default function ProjectsPage() {
                   the only way of switching that filter off with it. */}
               {(offers.length > 0 || bundles.length > 0) && (
                 <View style={[styles.filterRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                  {/* Price first, as asked. Tapping it again flips the
+                  {/* Newest first: it is the default, so this chip is the way back. */}
+                  <TouchableOpacity
+                    style={[styles.chip, offerSort === null && styles.chipActive]}
+                    onPress={() => setOfferSort(null)}
+                    activeOpacity={0.8}
+                    hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: offerSort === null }}
+                  >
+                    <AppText weight="semiBold" style={[styles.chipText, offerSort === null && styles.chipTextActive]}>
+                      {t('offers.sort_newest')}
+                    </AppText>
+                  </TouchableOpacity>
+
+                  {/* Price second, after Newest. Tapping it again flips the
                       direction — both orders existed in the old sheet, so the
                       arrow keeps the capability rather than dropping half. */}
                   <TouchableOpacity
@@ -456,20 +470,6 @@ export default function ProjectsPage() {
                     {priceActive && (offerSort === 'price_asc'
                       ? <ArrowUp size={13} color="#FFFFFF" strokeWidth={2.5} />
                       : <ArrowDown size={13} color="#FFFFFF" strokeWidth={2.5} />)}
-                  </TouchableOpacity>
-
-                  {/* Newest is the default, so this chip is the way back. */}
-                  <TouchableOpacity
-                    style={[styles.chip, offerSort === null && styles.chipActive]}
-                    onPress={() => setOfferSort(null)}
-                    activeOpacity={0.8}
-                    hitSlop={{ top: 6, bottom: 6 }}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: offerSort === null }}
-                  >
-                    <AppText weight="semiBold" style={[styles.chipText, offerSort === null && styles.chipTextActive]}>
-                      {t('offers.sort_newest')}
-                    </AppText>
                   </TouchableOpacity>
 
                   <TouchableOpacity
