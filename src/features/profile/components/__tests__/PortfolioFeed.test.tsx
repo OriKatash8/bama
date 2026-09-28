@@ -1,6 +1,6 @@
 import React from 'react';
 import { FlatList, StyleSheet } from 'react-native';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, act, within } from '@testing-library/react-native';
 import { PortfolioFeed, postMediaHeight } from '../PortfolioFeed';
 import { ThemeProvider } from '@core/hooks/useTheme';
 import type { MediaAsset } from '@core/types/media';
@@ -77,7 +77,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 }));
 jest.mock('expo-image', () => {
   const RN = jest.requireActual('react-native');
-  return { Image: (p: Record<string, unknown>) => require('react').createElement(RN.View, { testID: p.testID }) };
+  return { Image: (p: Record<string, unknown>) => require('react').createElement(RN.View, { testID: p.testID, source: p.source }) };
 });
 
 const day = (y: number, m: number, d: number) => ({ seconds: new Date(y, m - 1, d, 12).getTime() / 1000, nanoseconds: 0 });
@@ -163,7 +163,7 @@ describe('the feed', () => {
 
   it('posts are well apart, and the information sits in its own box, in larger type', () => {
     const { getByTestId } = renderFeed();
-    expect(StyleSheet.flatten(getByTestId('feed-post-p1').props.style).marginBottom).toBeGreaterThanOrEqual(32);
+    expect(StyleSheet.flatten(getByTestId('feed-post-p1').props.style).marginBottom).toBeGreaterThanOrEqual(56);
 
     const box = StyleSheet.flatten(getByTestId('feed-info-p1').props.style);
     expect(box.backgroundColor).toBe('#ffffff');
@@ -203,6 +203,44 @@ describe('the feed', () => {
     const { getByLabelText, onClose } = renderFeed();
     fireEvent.press(getByLabelText('close'));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('the owner above each post, like an Instagram profile', () => {
+  const OWNER = { name: 'Dana Cohen', photoURL: 'https://x/dana.jpg' };
+
+  it('every post opens with the owner\'s picture and name', () => {
+    const r = renderFeed({ owner: OWNER });
+    for (const a of ASSETS) {
+      const head = within(r.getByTestId(`feed-owner-${a.id}`));
+      expect(head.getByText('Dana Cohen')).toBeTruthy();
+      expect(r.getByTestId(`feed-avatar-${a.id}`).props.source).toEqual({ uri: 'https://x/dana.jpg' });
+    }
+  });
+
+  it('sits above the media', () => {
+    const r = renderFeed({ owner: OWNER });
+    const post = r.getByTestId('feed-post-p1');
+    const ids = post.findAll((n) => typeof n.props.testID === 'string').map((n) => n.props.testID as string);
+    expect(ids.indexOf('feed-owner-p1')).toBeGreaterThan(-1);
+    expect(ids.indexOf('feed-owner-p1')).toBeLessThan(ids.indexOf('feed-info-p1'));
+  });
+
+  it('without a photo, shows the first letter of the name', () => {
+    const r = renderFeed({ owner: { name: 'Dana Cohen', photoURL: null } });
+    expect(within(r.getByTestId('feed-owner-p1')).getByText('D')).toBeTruthy();
+    expect(r.queryByTestId('feed-avatar-p1')).toBeNull();
+  });
+
+  it('mirrors in Hebrew: picture on the right, name beside it', () => {
+    mockLanguage = 'he';
+    const r = renderFeed({ owner: OWNER });
+    expect(StyleSheet.flatten(r.getByTestId('feed-owner-p1').props.style).flexDirection).toBe('row-reverse');
+  });
+
+  it('no owner given: no header, the post starts with its media as before', () => {
+    const r = renderFeed();
+    expect(r.queryByTestId('feed-owner-p1')).toBeNull();
   });
 });
 

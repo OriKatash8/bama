@@ -306,7 +306,7 @@ export default function PublicProfileScreen() {
         {/* ── Portfolio ── */}
         {portfolio.length > 0 && (
           <View style={styles.portfolioSection}>
-            <PortfolioGrid assets={portfolio} isEditing={false} />
+            <PortfolioGrid assets={portfolio} isEditing={false} owner={{ name: user.displayName, photoURL: user.photoURL ?? null }} />
           </View>
         )}
 

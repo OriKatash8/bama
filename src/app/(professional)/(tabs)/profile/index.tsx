@@ -237,6 +237,7 @@ export default function ProfessionalProfileScreen() {
             onAddVideo={addVideoUrl}
             onRemove={remove}
             onError={(msg) => showToast(msg, 'error')}
+            owner={user ? { name: user.displayName, photoURL: photoUri ?? user.photoURL ?? null } : undefined}
           />
         </View>
       </View>

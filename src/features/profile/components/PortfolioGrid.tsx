@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
-import { PortfolioFeed } from './PortfolioFeed';
+import { PortfolioFeed, type PortfolioOwner } from './PortfolioFeed';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -55,6 +55,8 @@ type PortfolioGridProps = {
   onAddVideo?: (url: string, caption: string | null) => Promise<void>;
   onRemove?: (assetId: string) => Promise<void>;
   onError?: (message: string) => void;
+  /** The profile owner, shown above each post in the full-screen feed. */
+  owner?: PortfolioOwner;
 };
 
 // What the picker handed back, held whole while the author writes its caption —
@@ -62,7 +64,7 @@ type PortfolioGridProps = {
 type PendingMedia = { asset: ImagePicker.ImagePickerAsset; isVideo: boolean };
 
 export function PortfolioGrid({
-  assets, isEditing, onAdd, onAddVideo, onRemove, onError,
+  assets, isEditing, onAdd, onAddVideo, onRemove, onError, owner,
 }: PortfolioGridProps) {
   const user = useAuthStore((s) => s.user);
   const language = useSettingsStore((s) => s.language);
@@ -212,6 +214,7 @@ export function PortfolioGrid({
         initialIndex={viewerIndex ?? 0}
         visible={viewerIndex !== null}
         onClose={() => setViewerIndex(null)}
+        owner={owner}
       />
 
       {/* Caption sheet — the one moment the author can describe this piece. */}

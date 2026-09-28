@@ -75,12 +75,42 @@ function PinchablePhoto({ asset, width, height, onSize, onPinching }: {
   );
 }
 
-/** One post: the media, then its information — the whole caption and the date. */
-function FeedPost({ asset, width, isActive, rtl, onPinching }: {
+/** Whose portfolio this is: shown above every post, like an Instagram profile. */
+export type PortfolioOwner = { name: string; photoURL: string | null };
+
+/** The owner's round picture and name, above the media. Initial when there is no photo. */
+function OwnerHeader({ owner, assetId, rtl }: { owner: PortfolioOwner; assetId: string; rtl: boolean }) {
+  const colors = useTheme();
+  const initial = owner.name.trim().charAt(0).toUpperCase() || '?';
+  return (
+    <View testID={`feed-owner-${assetId}`} style={[styles.owner, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+      {owner.photoURL ? (
+        <Image
+          testID={`feed-avatar-${assetId}`}
+          source={{ uri: owner.photoURL }}
+          style={styles.avatar}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : (
+        <View style={[styles.avatar, styles.avatarFallback]}>
+          <AppText weight="bold" style={styles.avatarInitial}>{initial}</AppText>
+        </View>
+      )}
+      <AppText weight="semiBold" numberOfLines={1} style={[styles.ownerName, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+        {owner.name}
+      </AppText>
+    </View>
+  );
+}
+
+/** One post: the owner, the media, then its information — the whole caption and the date. */
+function FeedPost({ asset, width, isActive, rtl, owner, onPinching }: {
   asset: MediaAsset;
   width: number;
   isActive: boolean;
   rtl: boolean;
+  owner?: PortfolioOwner;
   onPinching: (pinching: boolean) => void;
 }) {
   const colors = useTheme();
@@ -95,6 +125,7 @@ function FeedPost({ asset, width, isActive, rtl, onPinching }: {
   return (
     // Raised while pinched, so the zoomed photo draws over the posts around it.
     <View testID={`feed-post-${asset.id}`} style={[styles.post, zoomed && styles.postZoomed]}>
+      {owner ? <OwnerHeader owner={owner} assetId={asset.id} rtl={rtl} /> : null}
       {asset.type === 'video' ? (
         Platform.OS === 'web'
           ? <WebVideoSlide asset={asset} isActive={isActive} width={width} height={height} onSize={onSize} />
@@ -127,6 +158,8 @@ type Props = {
   initialIndex: number;
   visible: boolean;
   onClose: () => void;
+  /** Shown above each post. Optional: without it a post starts with its media. */
+  owner?: PortfolioOwner;
 };
 
 /**
@@ -137,17 +170,17 @@ type Props = {
  * Portfolio only. Chat media keeps PortfolioViewer, the one-per-page pager: chat
  * items carry no caption, so a feed there would be media with empty info blocks.
  */
-export function PortfolioFeed({ assets, initialIndex, visible, onClose }: Props) {
+export function PortfolioFeed({ assets, initialIndex, visible, onClose, owner }: Props) {
   return (
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       {/* Mounted per opening, so the scroll position and the playing video start
           fresh every time rather than carrying over from the last visit. */}
-      {visible && <FeedBody assets={assets} initialIndex={initialIndex} onClose={onClose} />}
+      {visible && <FeedBody assets={assets} initialIndex={initialIndex} onClose={onClose} owner={owner} />}
     </Modal>
   );
 }
 
-function FeedBody({ assets, initialIndex, onClose }: Omit<Props, 'visible'>) {
+function FeedBody({ assets, initialIndex, onClose, owner }: Omit<Props, 'visible'>) {
   const insets = useModalInsets();
   const { width } = useWindowDimensions();
   const rtl = useSettingsStore((s) => s.language) === 'he';
@@ -182,7 +215,7 @@ function FeedBody({ assets, initialIndex, onClose }: Omit<Props, 'visible'>) {
           data={assets}
           keyExtractor={(a) => a.id}
           renderItem={({ item }) => (
-            <FeedPost asset={item} width={width} isActive={item.id === activeVideoId} rtl={rtl} onPinching={onPinching} />
+            <FeedPost asset={item} width={width} isActive={item.id === activeVideoId} rtl={rtl} owner={owner} onPinching={onPinching} />
           )}
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
@@ -220,7 +253,12 @@ function FeedBody({ assets, initialIndex, onClose }: Omit<Props, 'visible'>) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
-  post: { marginBottom: 36 },
+  post: { marginBottom: 56 },
+  owner: { alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10 },
+  avatar: { width: 34, height: 34, borderRadius: 17, flexShrink: 0 },
+  avatarFallback: { backgroundColor: '#EFECFA', alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { fontSize: 14, color: '#5B3FE0' },
+  ownerName: { flex: 1, fontSize: 15 },
   postZoomed: { zIndex: 10 },
   info: {
     marginHorizontal: 12,

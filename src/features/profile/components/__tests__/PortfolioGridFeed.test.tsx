@@ -47,3 +47,10 @@ it('never uses the one-per-page viewer', () => {
   fireEvent.press(r.getByTestId('portfolio-tile-a'));
   expect(mockViewer).not.toHaveBeenCalled();
 });
+
+it('hands the profile owner to the feed, for the header above each post', () => {
+  const owner = { name: 'Dana Cohen', photoURL: 'https://x/dana.jpg' };
+  const r = render(<PortfolioGrid assets={ASSETS} isEditing={false} owner={owner} />);
+  fireEvent.press(r.getByTestId('portfolio-tile-a'));
+  expect(last(mockFeed).owner).toEqual(owner);
+});
