@@ -58,7 +58,7 @@ import {
 } from 'firebase/firestore';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, Users, UserMinus } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronLeft, ChevronRight, Users, UserMinus } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -1579,7 +1579,9 @@ export function ChatRoomScreen({ chatId }: Props) {
       keyboardVerticalOffset={0}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
+      {/* Back, the chat's picture beside it, then the name — like WhatsApp,
+          mirrored in Hebrew so there the back button sits at the right edge. */}
+      <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
         {/* dismissTo, not push: the list is already underneath us, and pushing
             a second copy on top of it left this room mounted, played the
             forward animation, and held the app header and the tab bar back
@@ -1587,62 +1589,10 @@ export function ChatRoomScreen({ chatId }: Props) {
             back to navigating there for a chat opened cold from a
             notification. */}
         <TouchableOpacity onPress={() => router.dismissTo(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats${chatType === 'community' ? '?tab=communities' : ''}`)} style={styles.headerBack} activeOpacity={0.7}>
-          <Text style={[styles.headerBackText, { color: modeAccent, ...font.regular }]}>‹</Text>
+          {rtl ? <ChevronRight size={30} color={modeAccent} strokeWidth={2.2} /> : <ChevronLeft size={30} color={modeAccent} strokeWidth={2.2} />}
         </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          {chatType === 'group' && chatProjectId ? (
-            <TouchableOpacity
-              style={styles.headerNameTouchable}
-              onPress={() => router.push(`/${chatGroup}/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
-              activeOpacity={0.8}
-            >
-              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
-                {chatName}
-              </AppText>
-              <AppText style={chatStyles.headerHint}>{t('chats.click_for_project_info')}</AppText>
-            </TouchableOpacity>
-          ) : chatType === 'purchase' && purchaseListing ? (
-            <TouchableOpacity
-              style={styles.headerNameTouchable}
-              onPress={() => setShowPurchaseNotice(true)}
-              activeOpacity={0.8}
-            >
-              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
-                {chatName}
-              </AppText>
-              <AppText style={chatStyles.headerHint}>{t('chats.purchase_info_hint')}</AppText>
-            </TouchableOpacity>
-          ) : chatType === 'community' ? (
-            <TouchableOpacity
-              style={styles.headerNameTouchable}
-              onPress={() => router.push(`/${chatGroup}/chat/community-details?chatId=${chatId}`)}
-              activeOpacity={0.8}
-            >
-              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
-                {chatName}
-              </AppText>
-              <AppText style={chatStyles.headerHint}>{t('chats.click_for_community_info')}</AppText>
-            </TouchableOpacity>
-          ) : chatType === 'dm' && dmOtherUserId && dmOtherUserId !== SYSTEM_USER_ID ? (
-            <TouchableOpacity
-              style={styles.headerNameTouchable}
-              onPress={() => pushProfile(dmOtherUserId)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={t('chats.click_for_profile')}
-            >
-              <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
-                {chatName}
-              </AppText>
-              <AppText style={chatStyles.headerHint}>{t('chats.click_for_profile')}</AppText>
-            </TouchableOpacity>
-          ) : (
-            <AppText weight="bold" style={styles.headerName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
-              {chatName}
-            </AppText>
-          )}
-        </View>
-        <View style={[styles.headerRight, { alignItems: 'flex-start', justifyContent: 'center' }]}>
+        {/* The chat's picture, right beside the back button. */}
+        <View style={styles.headerRight}>
           {(() => {
             // For purchase chats, the header avatar is the product image, and
             // tapping it opens the product notice instead of the change-photo sheet.
@@ -1664,6 +1614,60 @@ export function ChatRoomScreen({ chatId }: Props) {
               </TouchableOpacity>
             );
           })()}
+        </View>
+        {/* The name, next to the picture, reading from the start side. */}
+        <View style={[styles.headerCenter, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+          {chatType === 'group' && chatProjectId ? (
+            <TouchableOpacity
+              style={styles.headerNameTouchable}
+              onPress={() => router.push(`/${chatGroup}/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
+              activeOpacity={0.8}
+            >
+              <AppText weight="bold" style={[styles.headerName, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+                {chatName}
+              </AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: rtl ? 'right' : 'left' }]}>{t('chats.click_for_project_info')}</AppText>
+            </TouchableOpacity>
+          ) : chatType === 'purchase' && purchaseListing ? (
+            <TouchableOpacity
+              style={styles.headerNameTouchable}
+              onPress={() => setShowPurchaseNotice(true)}
+              activeOpacity={0.8}
+            >
+              <AppText weight="bold" style={[styles.headerName, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+                {chatName}
+              </AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: rtl ? 'right' : 'left' }]}>{t('chats.purchase_info_hint')}</AppText>
+            </TouchableOpacity>
+          ) : chatType === 'community' ? (
+            <TouchableOpacity
+              style={styles.headerNameTouchable}
+              onPress={() => router.push(`/${chatGroup}/chat/community-details?chatId=${chatId}`)}
+              activeOpacity={0.8}
+            >
+              <AppText weight="bold" style={[styles.headerName, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+                {chatName}
+              </AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: rtl ? 'right' : 'left' }]}>{t('chats.click_for_community_info')}</AppText>
+            </TouchableOpacity>
+          ) : chatType === 'dm' && dmOtherUserId && dmOtherUserId !== SYSTEM_USER_ID ? (
+            <TouchableOpacity
+              style={styles.headerNameTouchable}
+              onPress={() => pushProfile(dmOtherUserId)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t('chats.click_for_profile')}
+            >
+              <AppText weight="bold" style={[styles.headerName, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+                {chatName}
+              </AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: rtl ? 'right' : 'left' }]}>{t('chats.click_for_profile')}</AppText>
+            </TouchableOpacity>
+          ) : (
+            <AppText weight="bold" style={[styles.headerName, { textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              {chatName}
+            </AppText>
+          )}
         </View>
       </View>
 
@@ -2572,19 +2576,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   headerBack: {
-    width: 48,
+    width: 36,
     alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerBackText: {
-    fontSize: 48,
-    lineHeight: 58,
-  },
   headerCenter: {
     flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
   },
   headerNameTouchable: {
     width: '100%',
@@ -2597,7 +2596,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerRight: {
-    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
   },
   channelBar: {
     flexGrow: 0,
