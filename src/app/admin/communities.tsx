@@ -179,7 +179,7 @@ export default function CommunitiesAdmin() {
 
   return (
     <AdminPage title={k.ops('communities')} subtitle={tp('subtitle')} onBack={back}>
-      {/* Every tile carries a footer line: a tile ending right under its number gets clipped. */}
+      {/* Every tile carries a footer line, like the dashboard's. */}
       <StatGrid>
         <StatTile
           testID="tile-requests"

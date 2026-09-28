@@ -245,8 +245,11 @@ const styles = StyleSheet.create({
   row: { gap: 14 },
   tile: { flex: 1, minWidth: 0 },
   tileBody: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 12 },
-  value: { marginTop: 6, lineHeight: 36 },
-  spinner: { height: 36, justifyContent: 'center' },
+  // Heebo's full line box (no lineHeight): a tighter one cuts the digits' tops
+  // on iOS. The box has ~11px of air above the digits; -5 keeps the number
+  // close under its label, and the space below the baseline is unchanged.
+  value: { marginTop: -5 },
+  spinner: { height: 50, justifyContent: 'center' },
   foot: { alignItems: 'center', gap: 8, marginTop: 8 },
   chip: { borderRadius: RADIUS.pill, paddingVertical: 2, paddingHorizontal: 7, flexShrink: 0 },
   caption: { fontSize: 12, flexShrink: 1 },

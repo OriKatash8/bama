@@ -59,8 +59,7 @@ export default function MoneyAdmin() {
         return d.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
       });
 
-  // Every tile carries a footer line: Heebo's line box is taller than the
-  // value's, and a tile ending right under its number gets clipped.
+  // Every tile carries a footer line, like the dashboard's.
   const metrics: { key: string; label: string; value: number; format?: (n: number) => string; caption?: string }[] = [
     { key: 'revenue', label: t('total_revenue'), value: 0, format: shekels },
     { key: 'fees', label: t('platform_fees'), value: 0, format: shekels },
@@ -156,5 +155,5 @@ const styles = StyleSheet.create({
   plot: { paddingHorizontal: SPACE.rowPadH, paddingTop: 10, paddingBottom: 16 },
   note: { alignItems: 'flex-start', gap: 12, padding: SPACE.cardPad },
   noteText: { flex: 1, minWidth: 0, gap: 2 },
-  noteBody: { fontSize: 13, lineHeight: 19 },
+  noteBody: { fontSize: 13, lineHeight: 20 },
 });

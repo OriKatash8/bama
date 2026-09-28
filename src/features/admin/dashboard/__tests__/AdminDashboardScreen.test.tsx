@@ -86,8 +86,7 @@ it('the users tile carries the new registrations of the period', () => {
   expect(tile.getByText(E.sub_daily)).toBeTruthy();
 });
 
-// Heebo's line box is taller than the value's 36pt line: a tile that ends right
-// under its number clips it (courses and communities did, on the second row).
+// Tiles read as the community dashboard's: a footer line under every number.
 it('every tile has a footer line under its number', () => {
   const r = render(<AdminDashboardScreen />);
   for (const id of ['tile-projects', 'tile-courses', 'tile-communities']) {

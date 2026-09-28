@@ -120,7 +120,7 @@ it('renders the requests and communities, with owner names, and the stat tiles',
   expect(val('tile-members')).toBe('3');
 });
 
-// Heebo's line box is taller than the value's line: a tile ending right under its number clips.
+// Tiles read as the dashboard's: a footer line under every number.
 it('every tile has a footer line under its number', async () => {
   const r = await renderPage();
   expect(within(r.getByTestId('tile-communities')).getByText(en.admin_dashboard.all_time)).toBeTruthy();

@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   spinner: { marginTop: 24 },
   errorBody: { padding: SPACE.cardPad, gap: 10 },
   errorHead: { alignItems: 'center', gap: 12, alignSelf: 'stretch' },
-  body: { fontSize: 13, lineHeight: 19, alignSelf: 'stretch' },
+  body: { fontSize: 13, lineHeight: 20, alignSelf: 'stretch' },
   section: { borderTopWidth: 1, paddingVertical: 12, paddingHorizontal: SPACE.rowPadH, gap: 10 },
   sectionHead: { alignItems: 'center', gap: 12 },
   status: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 1, maxWidth: '45%' },

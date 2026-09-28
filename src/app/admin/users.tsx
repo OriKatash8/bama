@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   scrim: { opacity: 0.45 },
   sheet: { width: '100%', maxWidth: 440, borderRadius: RADIUS.card, borderWidth: 1, padding: 20, gap: 10 },
   sheetTitle: { fontSize: 19, letterSpacing: -0.3 },
-  sheetHint: { fontSize: 13, lineHeight: 19 },
+  sheetHint: { fontSize: 13, lineHeight: 20 },
   sheetInput: { borderWidth: 1, borderRadius: 14, padding: 12, fontSize: 14, minHeight: 92, textAlignVertical: 'top' },
   sheetActions: { gap: 8, marginTop: 6, justifyContent: 'flex-end' },
 });

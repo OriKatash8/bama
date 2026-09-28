@@ -23,9 +23,7 @@ export default function AdminDashboardScreen() {
   const open = counts?.openReports ?? null;
   const waiting = (open ?? 0) > 0;
 
-  // Every tile carries a footer line under its number, like the community
-  // dashboard's: Heebo's line box is taller than the 36pt the value gets, and a
-  // tile ending right under the number clipped its bottom.
+  // Every tile carries a footer line under its number, like the community dashboard's.
   const tiles: { key: keyof AdminCounts; label: string; chip?: { text: string; kind: 'good' | 'neutral' }; caption: string }[] = [
     {
       key: 'users',

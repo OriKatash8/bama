@@ -114,6 +114,13 @@ export const HEEBO = {
 } as const;
 export type HeeboWeight = keyof typeof HEEBO;
 
+/**
+ * Heebo's own line height, in em (hhea ascent 2146 + descent 862 over 2048).
+ * Never give Heebo text a smaller `lineHeight`: on iOS the missing height comes
+ * off the top of the glyphs, and digits lose their tops.
+ */
+export const HEEBO_LINE_EM = (2146 + 862) / 2048;
+
 /** Initials avatars: colour picked from the name, so a person keeps theirs. */
 export const AVATAR_COLORS = ['#3f7fd6', '#c9564f', '#2a9d7a', '#8f7bd9', '#d99a2b', '#4f9ac4', '#c26aa0', '#5e8f4a'] as const;
 export const AVATAR_TEXT = '#FFFFFF';
