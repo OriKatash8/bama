@@ -375,6 +375,9 @@ export default function DashboardScreen() {
             {/* Plain Text, not AppText: AppText applies its own font after the
                 style, which would override the ExtraBold face. */}
             <Text
+              numberOfLines={onBoard ? 1 : undefined}
+              adjustsFontSizeToFit={onBoard}
+              minimumFontScale={0.85}
               style={[
                 styles.sectionTitle,
                 { fontFamily: rtl ? 'Heebo-ExtraBold' : font.bold.fontFamily, textAlign: rtl ? 'right' : 'left' },
@@ -403,7 +406,7 @@ export default function DashboardScreen() {
             {showHistory
               ? <LayoutGrid size={14} color="#FFFFFF" strokeWidth={2.3} />
               : <History size={14} color="#FFFFFF" strokeWidth={2.1} />}
-            <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
+            <AppText weight="semiBold" style={[styles.navBtnText, !rtl && styles.navBtnTextEn]} numberOfLines={2}>
               {showHistory ? t('noticeboard.notice_board') : t('history.title')}
             </AppText>
             {!showHistory && historyPendingCount > 0 && (
@@ -428,11 +431,18 @@ export default function DashboardScreen() {
             onPress={() => setView((v) => (v === 'in_progress' ? 'board' : 'in_progress'))}
             activeOpacity={0.8}
             accessibilityRole="button"
+            testID="noticeboard-inprogress-btn"
           >
             {showInProgress
               ? <LayoutGrid size={14} color="#FFFFFF" strokeWidth={2.3} />
               : <Briefcase size={14} color="#FFFFFF" strokeWidth={2.3} />}
-            <AppText weight="semiBold" style={styles.navBtnText} numberOfLines={2}>
+            <AppText
+              weight="semiBold"
+              style={[styles.navBtnText, !rtl && styles.navBtnTextEn]}
+              numberOfLines={showInProgress ? 2 : 1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
               {showInProgress ? t('noticeboard.notice_board') : t('noticeboard.in_progress_toggle')}
             </AppText>
           </TouchableOpacity>
@@ -443,7 +453,7 @@ export default function DashboardScreen() {
               activeOpacity={0.8}
             >
               <SlidersHorizontal size={14} color="#FFFFFF" strokeWidth={2.3} />
-              <AppText weight="semiBold" style={[styles.navBtnText, filterActive && styles.navBtnTextActive]} numberOfLines={2}>
+              <AppText weight="semiBold" style={[styles.navBtnText, !rtl && styles.navBtnTextEn, filterActive && styles.navBtnTextActive]} numberOfLines={2}>
                 {t('noticeboard.filter_short')}
               </AppText>
             </TouchableOpacity>
@@ -788,18 +798,17 @@ const styles = StyleSheet.create({
   // would reflow every time the view changes. A column, so nothing inside needs
   // a direction.
   navBtn: {
-    // Explicit width AND height. English labels differ in line count — "Filter"
-    // and "History" are one line, "In progress" and "Notice board" are two — so
-    // without a fixed height the three buttons were visibly different sizes.
-    // 50 × 44: the smallest that still fits. At 9pt the English "progress" is
-    // 40.6pt against the 41pt left inside padding and border; 44 is the touch
-    // minimum, and a two-line label (14 + 2 + 2×11) fits inside it.
-    width: 50,
+    // Explicit width AND height, so the buttons match. 44 is the touch
+    // minimum, and a two-line label (14 + 2 + 2×11) still fits inside it.
+    // 54 wide with 2 padding: 47pt for the label, which holds the English
+    // "In progress" at 8pt (46.4pt) on one row, while the 171pt "Notice Board"
+    // title and three buttons still fit a 402pt phone's 362pt row.
+    width: 54,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    paddingHorizontal: 3,
+    paddingHorizontal: 2,
     borderRadius: 12,
     borderWidth: 1.5,
     // Transparent over the violet band: a white edge, white outline icon and
@@ -809,6 +818,8 @@ const styles = StyleSheet.create({
   // Applied filter: a solid white edge (the fill stays transparent).
   navBtnActive: { borderColor: '#FFFFFF' },
   navBtnText: { fontSize: 9, lineHeight: 11, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' },
+  // English runs wider than Hebrew: a size smaller keeps "In progress" on one row.
+  navBtnTextEn: { fontSize: 8 },
   navBtnTextActive: { color: '#FFFFFF' },
   // White ring so the badge reads against the gradient behind the button.
   historyBadge: {
