@@ -5,16 +5,18 @@ import { RADIUS, SPACE, TYPE, liftShadow } from '../theme';
 import { gridValues, tickLabel, yAt, type Insets } from '../chartGeometry';
 import { AdminText, Card } from './primitives';
 
-/** A chart card: title + muted sub in the head (these mirror), then the body. */
+/** A chart card: title + muted sub in the head (these mirror), an optional control on the far side, then the body. */
 export function ChartCard({
   title,
   sub,
+  side,
   children,
   style,
   testID,
 }: {
   title: string;
   sub?: string;
+  side?: ReactNode;
   children: ReactNode;
   style?: object;
   testID?: string;
@@ -31,6 +33,12 @@ export function ChartCard({
           <AdminText numberOfLines={1} style={[TYPE.rowMeta, styles.sub, { color: p.text3 }]}>
             {sub}
           </AdminText>
+        ) : null}
+        {side ? (
+          <>
+            <View style={styles.spacer} />
+            <View style={styles.side}>{side}</View>
+          </>
         ) : null}
       </View>
       {children}
@@ -186,6 +194,8 @@ const styles = StyleSheet.create({
   head: { alignItems: 'baseline', gap: 10, paddingTop: 16, paddingHorizontal: SPACE.rowPadH },
   title: { flexShrink: 0 },
   sub: { flexShrink: 1 },
+  spacer: { flex: 1 },
+  side: { alignSelf: 'center', flexShrink: 0 },
   swatch: { width: 10, height: 10, borderRadius: 3 },
   legend: { gap: 14, flexWrap: 'wrap', alignItems: 'center', paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
   legendItem: { alignItems: 'center', gap: 6 },

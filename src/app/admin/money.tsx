@@ -1,27 +1,32 @@
 import { useState } from 'react';
-import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Coins, Percent, Clock, ArrowLeftRight, Info, Ban } from 'lucide-react-native';
-import { useTheme } from '@core/hooks/useTheme';
-import { useAppFont } from '@core/hooks/useAppFont';
-import { useSettingsStore } from '@core/stores/settingsStore';
+import { StyleSheet, View } from 'react-native';
+import { Ban, Info } from 'lucide-react-native';
 import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
 import { useCancellationLog } from '@features/admin/useCancellationLog';
-import en from '@core/i18n/translations/en.json';
-import he from '@core/i18n/translations/he.json';
+import {
+  AdminPage,
+  AdminText,
+  Card,
+  CardHead,
+  ChartCard,
+  Chip,
+  EmptyState,
+  IconTile,
+  Legend,
+  Row,
+  SPACE,
+  Segment,
+  StatGrid,
+  StatTile,
+  TYPE,
+  WhoBlock,
+  useAdminPalette,
+  useScopedT,
+} from '@features/admin/ui';
 
-type Translations = typeof en;
-function makeT(translations: Translations) {
-  return (key: string): string => {
-    const keys = key.split('.');
-    let result: unknown = translations;
-    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
-  };
-}
+type Period = 'daily' | 'weekly';
 
-const HEADER_PURPLE = '#cb6ce6'; // theme accent — solid header fill
+const shekels = (n: number) => `₪${n.toLocaleString('en-US')}`;
 
 /**
  * Money — scaffold for future financial reporting. There is no payments data
@@ -29,27 +34,19 @@ const HEADER_PURPLE = '#cb6ce6'; // theme accent — solid header fill
  * wired up, replace the `value` fields with real queries.
  */
 export default function MoneyAdmin() {
-  const colors = useTheme();
-  const font = useAppFont();
-  const insets = useSafeAreaInsets();
-  const language = useSettingsStore((s) => s.language);
-  // Admin keeps the floating pill: its measured height + the 24pt it floats
-  // above the edge + the content gap.
-  const tabBarClearance = useTabBarClearance() + FLOATING_TAB_BAR_BOTTOM;
-  const rtl = language === 'he';
-  const t = makeT(rtl ? he : en);
-  const rowDir = rtl ? 'row-reverse' : 'row';
-  const textAlign = rtl ? 'right' : 'left';
+  const p = useAdminPalette();
+  const { t, rtl, rowDir, textAlign } = useScopedT('admin_money');
+  const { t: tDash } = useScopedT('admin_dashboard');
 
-  const [period, setPeriod] = useState<'daily' | 'weekly'>('daily');
+  const [period, setPeriod] = useState<Period>('daily');
   const { entries: cancellations } = useCancellationLog();
 
+  const locale = rtl ? 'he-IL' : 'en-US';
   const fmtDate = (ts: number) =>
-    ts ? new Date(ts * 1000).toLocaleDateString(rtl ? 'he-IL' : 'en-US', { day: '2-digit', month: '2-digit' }) : '';
+    ts ? new Date(ts * 1000).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' }) : '';
 
   // Buckets oldest → newest. No data source yet → all zeros (scaffold).
   // Daily = last 7 days (weekday labels); Weekly = last 6 weeks (week-start dates).
-  const locale = rtl ? 'he-IL' : 'en-US';
   const labels = period === 'daily'
     ? Array.from({ length: 7 }, (_, i) => {
         const d = new Date();
@@ -62,166 +59,102 @@ export default function MoneyAdmin() {
         return d.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
       });
 
-  const metrics: { key: string; label: string; value: string; icon: typeof Coins }[] = [
-    { key: 'revenue', label: t('admin_money.total_revenue'), value: '₪0', icon: Coins },
-    { key: 'fees', label: t('admin_money.platform_fees'), value: '₪0', icon: Percent },
-    { key: 'payouts', label: t('admin_money.pending_payouts'), value: '₪0', icon: Clock },
-    { key: 'transactions', label: t('admin_money.transactions'), value: '0', icon: ArrowLeftRight },
+  // Every tile carries a footer line: Heebo's line box is taller than the
+  // value's, and a tile ending right under its number gets clipped.
+  const metrics: { key: string; label: string; value: number; format?: (n: number) => string; caption?: string }[] = [
+    { key: 'revenue', label: t('total_revenue'), value: 0, format: shekels },
+    { key: 'fees', label: t('platform_fees'), value: 0, format: shekels },
+    { key: 'payouts', label: t('pending_payouts'), value: 0, format: shekels, caption: t('pending_now') },
+    { key: 'transactions', label: t('transactions'), value: 0 },
   ];
 
-  // Revenue sources (reused app palette). Marketplace/projects have fee backing
-  // today; courses/subscriptions are future streams → all ₪0 for now.
+  // Revenue sources. Marketplace/projects have fee backing today;
+  // courses/subscriptions are future streams → all ₪0 for now.
   const sources = [
-    { key: 'src_marketplace', color: colors.primary },
-    { key: 'src_projects', color: HEADER_PURPLE },
-    { key: 'src_courses', color: '#1c9d63' },
-    { key: 'src_subscriptions', color: '#ff9800' },
-    { key: 'src_other', color: colors.textMuted },
+    { key: 'src_marketplace', color: p.series1 },
+    { key: 'src_projects', color: p.series2 },
+    { key: 'src_courses', color: p.series3 },
+    { key: 'src_subscriptions', color: p.warn },
+    { key: 'src_other', color: p.text3 },
   ];
   const series = sources.map((s) => ({ color: s.color, data: labels.map(() => 0) }));
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.bg }]}>
-      {/* Header — matches the dashboard identity */}
-      <View style={[styles.header, { backgroundColor: HEADER_PURPLE, paddingTop: insets.top + 14, alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.greeting, { ...font.regular, textAlign }]}>{t('admin_money.greeting')}</Text>
-        <Text style={[styles.headerTitle, { ...font.medium, textAlign }]}>{t('admin_money.title')}</Text>
-      </View>
+    <AdminPage title={t('title')} subtitle={t('greeting')} testID="money-page">
+      <StatGrid>
+        {metrics.map(({ key, label, value, format, caption }) => (
+          <StatTile key={key} testID={`tile-${key}`} label={label} value={value} format={format} caption={caption ?? tDash('all_time')} />
+        ))}
+      </StatGrid>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.heading, { ...font.medium, color: colors.text, textAlign }]}>{t('admin_money.metrics')}</Text>
-        <View style={[styles.grid, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {metrics.map(({ key, label, value, icon: Icon }) => (
-            <View key={key} style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.metricTop, { flexDirection: rowDir }]}>
-                <Icon size={14} color={colors.primary} strokeWidth={2.2} />
-                <Text style={[styles.metricLabel, { ...font.regular, color: colors.textMuted, textAlign }]} numberOfLines={1}>
-                  {label}
-                </Text>
-              </View>
-              <Text style={[styles.metricValue, { ...font.medium, color: colors.text, textAlign }]}>{value}</Text>
-            </View>
-          ))}
+      {/* Money-flow graph — scaffold, currently flat at zero */}
+      <ChartCard
+        testID="money-flow"
+        title={t('flow_heading')}
+        sub={t('by_source')}
+        side={
+          <Segment<Period>
+            options={[
+              { value: 'daily', label: t('daily') },
+              { value: 'weekly', label: t('weekly') },
+            ]}
+            value={period}
+            onChange={setPeriod}
+            label={tDash('period_a11y')}
+            testIDPrefix="period"
+          />
+        }
+      >
+        <Legend items={sources.map((s) => ({ color: s.color, label: `${t(s.key)} ${shekels(0)}` }))} />
+        <View style={styles.plot}>
+          <MoneyFlowChart series={series} labels={labels} gridColor={p.gridLine} labelColor={p.text3} />
         </View>
+      </ChartCard>
 
-        {/* Money-flow graphs — scaffold, currently flat at zero */}
-        <View style={[styles.flowHeader, styles.headingSpaced, { flexDirection: rowDir }]}>
-          <Text style={[styles.heading, { ...font.medium, color: colors.text, textAlign, marginBottom: 0, width: 'auto', flex: 1 }]}>
-            {t('admin_money.flow_heading')}
-          </Text>
-          {/* Daily / Weekly toggle */}
-          <View style={[styles.toggle, { flexDirection: rowDir, backgroundColor: colors.inputBg, borderColor: colors.border }]}>
-            {(['daily', 'weekly'] as const).map((p) => {
-              const active = period === p;
-              return (
-                <TouchableOpacity
-                  key={p}
-                  style={[styles.toggleBtn, active && { backgroundColor: colors.primary }]}
-                  onPress={() => setPeriod(p)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.toggleText, { ...font.medium, color: active ? '#ffffff' : colors.textSec }]}>
-                    {t(`admin_money.${p}`)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+      {/* Cancellation log — projects (live) + purchases (audit) */}
+      <Card testID="cancellations-card">
+        <CardHead
+          title={t('cancellations')}
+          side={cancellations.length > 0 ? <Chip label={String(cancellations.length)} tabular /> : undefined}
+        />
+        {cancellations.length === 0 ? (
+          <EmptyState text={t('no_cancellations')} testID="cancellations-empty" />
+        ) : (
+          cancellations.map((c) => (
+            <Row key={c.id} rowDir={rowDir} testID={`cancellation-${c.id}`}>
+              <IconTile icon={Ban} tone="neutral" />
+              <WhoBlock
+                name={`${t(`type_${c.kind}`)} · ${c.title || '—'}`}
+                meta={`${t('cancelled_by')} ${c.actorName || '—'}`}
+                textAlign={textAlign}
+              />
+              <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
+                {fmtDate(c.ts)}
+              </AdminText>
+            </Row>
+          ))
+        )}
+      </Card>
+
+      {/* Placeholder note — no payments data source yet */}
+      <Card testID="coming-soon">
+        <View style={[styles.note, { flexDirection: rowDir }]}>
+          <IconTile icon={Info} tone="neutral" />
+          <View style={styles.noteText}>
+            <AdminText weight="semiBold" style={[TYPE.cardTitle, { textAlign }]}>
+              {t('coming_soon_title')}
+            </AdminText>
+            <AdminText style={[styles.noteBody, { color: p.text2, textAlign }]}>{t('coming_soon_body')}</AdminText>
           </View>
         </View>
-        <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.chartLabel, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_money.by_source')}</Text>
-          <MoneyFlowChart series={series} labels={labels} gridColor={colors.border} labelColor={colors.textMuted} />
-
-          {/* Legend — names each revenue source */}
-          <View style={[styles.legend, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            {sources.map((s) => (
-              <View key={s.key} style={[styles.legendItem, { flexDirection: rowDir }]}>
-                <View style={[styles.legendDot, { backgroundColor: s.color }]} />
-                <Text style={[styles.legendLabel, { ...font.regular, color: colors.textSec }]} numberOfLines={1}>
-                  {t(`admin_money.${s.key}`)}
-                </Text>
-                <Text style={[styles.legendValue, { ...font.medium, color: colors.text }]}>₪0</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Cancellation log — projects (live) + purchases (audit) */}
-        <Text style={[styles.heading, styles.headingSpaced, { ...font.medium, color: colors.text, textAlign }]}>
-          {t('admin_money.cancellations')}
-        </Text>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {cancellations.length === 0 ? (
-            <Text style={[styles.emptyRow, { ...font.regular, color: colors.textMuted, textAlign }]}>
-              {t('admin_money.no_cancellations')}
-            </Text>
-          ) : (
-            cancellations.map((c, i) => (
-              <View
-                key={c.id}
-                style={[styles.cancelRow, { flexDirection: rowDir }, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}
-              >
-                <Ban size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text style={[styles.cancelText, { ...font.regular, color: colors.textSec, textAlign }]} numberOfLines={1}>
-                  {`${t(`admin_money.type_${c.kind}`)} · ${c.title || '—'} · ${t('admin_money.cancelled_by')} ${c.actorName || '—'}`}
-                </Text>
-                <Text style={[styles.cancelDate, { ...font.regular, color: colors.textMuted }]} numberOfLines={1}>
-                  {fmtDate(c.ts)}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
-
-        {/* Placeholder note — no payments data source yet */}
-        <View style={[styles.note, { flexDirection: rowDir, backgroundColor: colors.card, borderColor: colors.border, marginTop: 22 }]}>
-          <Info size={18} color={colors.textMuted} strokeWidth={2} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.noteTitle, { ...font.medium, color: colors.text, textAlign }]}>{t('admin_money.coming_soon_title')}</Text>
-            <Text style={[styles.noteBody, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_money.coming_soon_body')}</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
+      </Card>
+    </AdminPage>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  header: { paddingBottom: 14, paddingHorizontal: 16, gap: 2 },
-  greeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)', width: '100%' },
-  headerTitle: { fontSize: 17, color: '#ffffff', width: '100%' },
-
-  content: { padding: 16 },
-  heading: { fontSize: 13, width: '100%', marginBottom: 10 },
-  headingSpaced: { marginTop: 22 },
-
-  grid: { flexWrap: 'wrap', gap: 8 },
-  metricCard: { flexGrow: 1, flexBasis: '46%', borderRadius: 12, borderWidth: 1, padding: 11 },
-  metricTop: { alignItems: 'center', gap: 6, marginBottom: 6 },
-  metricLabel: { flex: 1, fontSize: 11 },
-  metricValue: { fontSize: 21 },
-
-  flowHeader: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  toggle: { borderRadius: 9, borderWidth: 1, padding: 2, gap: 2 },
-  toggleBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 7 },
-  toggleText: { fontSize: 12 },
-
-  chartCard: { borderRadius: 12, borderWidth: 1, padding: 12 },
-  chartLabel: { fontSize: 11, marginBottom: 8, width: '100%' },
-  legend: { flexWrap: 'wrap', gap: 10, marginTop: 12 },
-  legendItem: { alignItems: 'center', gap: 5 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11 },
-  legendValue: { fontSize: 11 },
-
-  card: { borderRadius: 12, borderWidth: 1, marginTop: 8, overflow: 'hidden' },
-  cancelRow: { alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 11 },
-  cancelText: { flex: 1, fontSize: 12 },
-  cancelDate: { fontSize: 11 },
-  emptyRow: { fontSize: 13, padding: 14, width: '100%' },
-
-  note: { alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, marginTop: 22 },
-  noteTitle: { fontSize: 13, marginBottom: 2 },
-  noteBody: { fontSize: 12, lineHeight: 17 },
+  plot: { paddingHorizontal: SPACE.rowPadH, paddingTop: 10, paddingBottom: 16 },
+  note: { alignItems: 'flex-start', gap: 12, padding: SPACE.cardPad },
+  noteText: { flex: 1, minWidth: 0, gap: 2 },
+  noteBody: { fontSize: 13, lineHeight: 19 },
 });

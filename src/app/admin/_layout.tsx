@@ -7,6 +7,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import { useIsAdmin } from '@core/hooks/useIsAdmin';
 import { useLogout } from '@features/auth/hooks/useLogout';
 import { confirmDialog } from '@utils/confirmDialog';
+import { cardShadow, useAdminPalette } from '@features/admin/ui';
 import {
   getFloatingTabBarStyle,
   FLOATING_TAB_BAR_ACTIVE_COLOR,
@@ -19,6 +20,7 @@ export default function AdminTabsLayout() {
   const isDark = useUiStore((s) => s.isDark);
   const font = useAppFont();
   const { logout } = useLogout();
+  const p = useAdminPalette();
 
   async function handleLogout() {
     const ok = await confirmDialog('Log out', 'Log out of the admin account?');
@@ -103,29 +105,32 @@ export default function AdminTabsLayout() {
         </Tabs>
       </SafeAreaInsetsContext.Provider>
 
-      {/* Log out — shown on every admin page */}
+      {/* Log out — shown on every admin page; a white pill like the dashboard's cards */}
       <TouchableOpacity
         onPress={handleLogout}
         activeOpacity={0.8}
-        style={{
-          position: 'absolute',
-          top: insets.top + 10,
-          left: 16,
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: 'rgba(0,74,173,0.92)',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          elevation: 6,
-          shadowColor: '#000',
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-          shadowOffset: { width: 0, height: 2 },
-        }}
+        accessibilityRole="button"
+        accessibilityLabel="Log out"
+        testID="admin-logout"
+        style={[
+          {
+            position: 'absolute',
+            top: insets.top + 11,
+            left: 16,
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            borderWidth: 1,
+            backgroundColor: p.surface,
+            borderColor: p.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+          },
+          cardShadow(p),
+        ]}
       >
-        <LogOut size={20} color="#fff" strokeWidth={2} />
+        <LogOut size={18} color={p.text2} strokeWidth={2.2} />
       </TouchableOpacity>
     </View>
   );

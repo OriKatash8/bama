@@ -1,36 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, Modal,
+  View, StyleSheet, Modal, Pressable,
   TextInput, Switch, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
   serverTimestamp, Timestamp, query, orderBy, getCountFromServer,
 } from 'firebase/firestore';
-import { LinearGradient } from 'expo-linear-gradient';
-import { X, Plus, Pencil, Trash2, Video, ChevronLeft, Eye } from 'lucide-react-native';
+import { X, Pencil, Trash2, Video, Eye, BookOpen, GraduationCap } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
-import { useTheme } from '@core/hooks/useTheme';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { useUiStore } from '@core/stores/uiStore';
-import { useSettingsStore } from '@core/stores/settingsStore';
-import en from '@core/i18n/translations/en.json';
-import he from '@core/i18n/translations/he.json';
-
-type Translations = typeof en;
-
-function makeT(translations: Translations) {
-  return (key: string): string => {
-    const keys = key.split('.');
-    let result: unknown = translations;
-    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
-  };
-}
+import {
+  AdminPage, AdminText, Card, CardHead, Chip, CountBadge, EmptyState, IconTile, PillButton,
+  StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
+ HEEBO } from '@features/admin/ui';
 
 type Course = {
   id: string;
@@ -77,22 +63,23 @@ const EMPTY_FORM: CourseForm = {
   published: false,
 };
 
+/** The admin's courses: pending submissions first, then every course with edit / delete. */
 export default function CoursesAdmin() {
-  const colors = useTheme();
-  const font = useAppFont();
+  const p = useAdminPalette();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { showToast } = useUiStore();
   const { uploading, processing, uploadVideo } = useVideoUpload();
-  const language = useSettingsStore((s) => s.language);
-  // Admin keeps the floating pill: its measured height + the 24pt it floats
-  // above the edge + the content gap.
-  const tabBarClearance = useTabBarClearance() + FLOATING_TAB_BAR_BOTTOM;
-  const t = makeT(language === 'he' ? he : en);
+  const { t, rowDir, textAlign } = useScopedT('courses');
+  const { t: tOps } = useScopedT('admin_operations');
+  const { t: tDash } = useScopedT('admin_dashboard');
+  const { t: tc } = useScopedT('admin_courses');
 
   const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoaded, setCoursesLoaded] = useState(false);
   const [clicks, setClicks] = useState<Record<string, number>>({});
   const [requests, setRequests] = useState<CourseRequest[]>([]);
+  const [requestsLoaded, setRequestsLoaded] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<CourseForm>(EMPTY_FORM);
@@ -102,6 +89,7 @@ export default function CoursesAdmin() {
     const q = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
       setCourses(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Course)));
+      setCoursesLoaded(true);
     });
   }, []);
 
@@ -128,8 +116,14 @@ export default function CoursesAdmin() {
     const q = query(collection(db, 'courseRequests'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
       setRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() } as CourseRequest)));
+      setRequestsLoaded(true);
     });
   }, []);
+
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/admin/operations');
+  }
 
   function openAdd() {
     setEditId(null);
@@ -152,7 +146,7 @@ export default function CoursesAdmin() {
 
   async function handleSave() {
     if (!form.title.trim()) {
-      showToast('Title is required', 'error');
+      showToast(tc('title_required'), 'error');
       return;
     }
     setSaving(true);
@@ -166,22 +160,22 @@ export default function CoursesAdmin() {
           createdAt: serverTimestamp(),
         });
       }
-      showToast(editId ? 'Course updated' : 'Course created', 'success');
+      showToast(editId ? tc('updated') : tc('created'), 'success');
       setModalVisible(false);
     } catch {
-      showToast('Failed to save course', 'error');
+      showToast(tc('save_failed'), 'error');
     }
     setSaving(false);
   }
 
   async function handleDelete(id: string) {
-    Alert.alert('Delete Course', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tc('delete_title'), tc('delete_body'), [
+      { text: tc('cancel'), style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive',
+        text: tc('delete'), style: 'destructive',
         onPress: async () => {
           await deleteDoc(doc(db, 'courses', id));
-          showToast('Course deleted', 'success');
+          showToast(tc('deleted'), 'success');
         },
       },
     ]);
@@ -216,231 +210,276 @@ export default function CoursesAdmin() {
     await deleteDoc(doc(db, 'courseRequests', id));
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-          <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7}>
-            <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { ...font.bold, color: colors.text, flex: 1, textAlign: 'right' }]}>Courses</Text>
-        </View>
-        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openAdd}>
-          <Plus size={20} color="#fff" />
-          <Text style={[styles.addBtnText, { ...font.semiBold }]}>Add Course</Text>
-        </TouchableOpacity>
-      </View>
+  const inputStyle = [
+    styles.input,
+    webNoOutline,
+    { backgroundColor: p.surface2, borderColor: p.border, color: p.text, fontFamily: HEEBO.regular, textAlign },
+  ];
 
-      <FlatList
-        data={courses}
-        keyExtractor={(c) => c.id}
-        contentContainerStyle={{ padding: 16, paddingTop: 8, paddingBottom: tabBarClearance }}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        ListHeaderComponent={
-          requests.length > 0 ? (
-            <View style={styles.requestsSection}>
-              <Text style={[styles.sectionTitle, { ...font.bold }]}>{t('courses.pending_requests')}</Text>
-              {requests.map((req) => (
-                <View key={req.id} style={styles.requestCard}>
-                  <Text style={[styles.requestTitle, { ...font.bold }]}>{req.title}</Text>
-                  <Text style={[styles.requestMeta, { ...font.regular }]}>{req.category} · ₪{req.price}</Text>
-                  <Text style={[styles.requestMeta, { ...font.regular }]}>{req.instructorName}</Text>
-                  <Text style={[styles.requestLink, { ...font.regular }]} numberOfLines={1}>{req.courseUrl}</Text>
+  return (
+    <AdminPage
+      testID="courses-page"
+      title={tOps('courses')}
+      subtitle={tc('subtitle')}
+      onBack={goBack}
+      side={<PillButton variant="primary" label={tc('add')} onPress={openAdd} testID="add-course" />}
+    >
+      <StatGrid>
+        <StatTile
+          testID="tile-courses"
+          label={tDash('total_courses')}
+          value={coursesLoaded ? courses.length : null}
+          loading={!coursesLoaded}
+          caption={tDash('all_time')}
+        />
+        <StatTile
+          testID="tile-requests"
+          label={t('pending_requests')}
+          value={requestsLoaded ? requests.length : null}
+          loading={!requestsLoaded}
+          ring={requests.length > 0}
+          caption={requests.length > 0 ? tDash('attention') : t('no_requests')}
+        />
+      </StatGrid>
+
+      {requests.length > 0 ? (
+        <Card priority testID="requests-card">
+          <CardHead title={t('pending_requests')} side={<CountBadge n={requests.length} testID="requests-count" />} />
+          {requests.map((req) => (
+            <View key={req.id} testID={`request-${req.id}`} style={[styles.request, { borderTopColor: p.border }]}>
+              <View style={[styles.requestTop, { flexDirection: rowDir }]}>
+                <IconTile icon={GraduationCap} tone="warn" />
+                <View style={styles.requestText}>
+                  <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                    {req.title}
+                  </AdminText>
+                  <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                    {req.category} · ₪{req.price}
+                  </AdminText>
+                  <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                    {req.instructorName}
+                  </AdminText>
+                  <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.accent, textAlign }]}>
+                    {req.courseUrl}
+                  </AdminText>
                   {req.description ? (
-                    <Text style={[styles.requestDesc, { ...font.regular }]} numberOfLines={2}>{req.description}</Text>
+                    <AdminText numberOfLines={2} style={[TYPE.rowMeta, styles.desc, { color: p.text3, textAlign }]}>
+                      {req.description}
+                    </AdminText>
                   ) : null}
-                  <View style={styles.requestActions}>
-                    <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(req)} activeOpacity={0.8}>
-                      <Text style={[styles.approveBtnText, { ...font.bold }]}>{t('courses.approve')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(req.id)} activeOpacity={0.8}>
-                      <Text style={[styles.rejectBtnText, { ...font.semiBold }]}>{t('courses.reject')}</Text>
-                    </TouchableOpacity>
-                  </View>
                 </View>
-              ))}
+              </View>
+              <View style={[styles.actions, { flexDirection: rowDir }]}>
+                <PillButton
+                  variant="primary"
+                  label={t('approve')}
+                  onPress={() => handleApprove(req)}
+                  testID={`approve-${req.id}`}
+                />
+                <PillButton
+                  variant="danger"
+                  label={t('reject')}
+                  onPress={() => handleReject(req.id)}
+                  testID={`reject-${req.id}`}
+                />
+              </View>
             </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { ...font.semiBold, color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.rowSub, { ...font.regular, color: colors.textSec }]}>
-                ₪{item.price} · {item.instructorName}
-              </Text>
-            </View>
-            <View style={styles.clicksChip}>
-              <Eye size={13} color={colors.textMuted} strokeWidth={2} />
-              <Text style={[styles.clicksText, { ...font.semiBold, color: colors.textMuted }]}>{clicks[item.id] ?? 0}</Text>
-            </View>
-            <View style={[styles.badge, { backgroundColor: item.published ? '#16a34a' : '#9ca3af' }]}>
-              <Text style={styles.badgeText}>{item.published ? 'Live' : 'Draft'}</Text>
-            </View>
-            <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
-              <Pencil size={18} color={colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
-              <Trash2 size={18} color="#dc2626" />
-            </TouchableOpacity>
+          ))}
+        </Card>
+      ) : null}
+
+      <Card testID="courses-card">
+        <CardHead
+          title={t('modal_title')}
+          side={coursesLoaded ? <Chip label={String(courses.length)} tabular /> : undefined}
+        />
+        {!coursesLoaded ? (
+          <View style={[styles.loading, { borderTopColor: p.border }]}>
+            <ActivityIndicator color={p.accent} />
           </View>
+        ) : courses.length === 0 ? (
+          <EmptyState text={t('empty')} testID="courses-empty" />
+        ) : (
+          courses.map((item) => (
+            <View
+              key={item.id}
+              testID={`course-${item.id}`}
+              style={[styles.row, { flexDirection: rowDir, borderTopColor: p.border }]}
+            >
+              <IconTile icon={BookOpen} tone={item.published ? 'accent' : 'neutral'} />
+              <WhoBlock name={item.title} meta={`₪${item.price} · ${item.instructorName}`} textAlign={textAlign} />
+              <View style={[styles.clicks, { flexDirection: rowDir }]} testID={`clicks-${item.id}`}>
+                <Eye size={13} color={p.text3} strokeWidth={2} />
+                <AdminText weight="semiBold" tabular style={[TYPE.chip, { color: p.text3 }]}>
+                  {clicks[item.id] ?? 0}
+                </AdminText>
+              </View>
+              <StatusChip good={item.published} label={item.published ? tc('live') : tc('draft')} />
+              <Pressable
+                onPress={() => openEdit(item)}
+                hitSlop={6}
+                accessibilityRole="button"
+                testID={`edit-${item.id}`}
+                style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? p.surface3 : p.surface2 }]}
+              >
+                <Pencil size={16} color={p.accent} strokeWidth={2.2} />
+              </Pressable>
+              <Pressable
+                onPress={() => handleDelete(item.id)}
+                hitSlop={6}
+                accessibilityRole="button"
+                testID={`delete-${item.id}`}
+                style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? p.badBg : p.surface2 }]}
+              >
+                <Trash2 size={16} color={p.bad} strokeWidth={2.2} />
+              </Pressable>
+            </View>
+          ))
         )}
-        ListEmptyComponent={
-          <Text style={[styles.empty, { ...font.regular, color: colors.textMuted }]}>
-            No courses yet
-          </Text>
-        }
-      />
+      </Card>
 
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
-            <TouchableOpacity activeOpacity={1}>
-              <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modal}>
-                <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { ...font.bold }]}>
-                    {editId ? 'Edit Course' : 'New Course'}
-                  </Text>
-                  <TouchableOpacity onPress={() => setModalVisible(false)}>
-                    <X size={22} color="#fff" />
-                  </TouchableOpacity>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+          <View style={styles.overlay}>
+            <Pressable
+              style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: p.toastBg }]}
+              onPress={() => setModalVisible(false)}
+              testID="course-modal-backdrop"
+            />
+            <View style={[styles.modal, { backgroundColor: p.surface, borderColor: p.border }]} testID="course-modal">
+              <View style={[styles.modalHeader, { flexDirection: rowDir }]}>
+                <AdminText weight="bold" accessibilityRole="header" style={[styles.modalTitle, { textAlign }]}>
+                  {editId ? tc('edit_title') : tc('new_title')}
+                </AdminText>
+                <Pressable onPress={() => setModalVisible(false)} hitSlop={10} testID="course-modal-close">
+                  <X size={22} color={p.text2} />
+                </Pressable>
+              </View>
+
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                {([
+                  { key: 'title', placeholder: t('course_title_label'), multiline: false },
+                  { key: 'description', placeholder: t('description_label'), multiline: true },
+                  { key: 'instructorName', placeholder: t('instructor_label'), multiline: false },
+                ] as const).map(({ key, placeholder, multiline }) => (
+                  <TextInput
+                    key={key}
+                    testID={`input-${key}`}
+                    placeholder={placeholder}
+                    placeholderTextColor={p.text3}
+                    value={String(form[key])}
+                    onChangeText={(v) => setForm((f) => ({ ...f, [key]: v }))}
+                    multiline={multiline}
+                    numberOfLines={multiline ? 3 : 1}
+                    style={[inputStyle, { height: multiline ? 80 : 48 }]}
+                  />
+                ))}
+
+                <TextInput
+                  testID="input-price"
+                  placeholder={t('price_label')}
+                  placeholderTextColor={p.text3}
+                  value={form.price === 0 ? '' : String(form.price)}
+                  onChangeText={(v) => setForm((f) => ({ ...f, price: parseFloat(v) || 0 }))}
+                  keyboardType="numeric"
+                  style={[inputStyle, styles.tabular, { height: 48 }]}
+                />
+
+                <Pressable
+                  style={[
+                    styles.uploadBtn,
+                    { flexDirection: rowDir, backgroundColor: p.accentSoft, opacity: uploading || processing ? 0.6 : 1 },
+                  ]}
+                  onPress={handleVideoUpload}
+                  disabled={uploading || processing}
+                  accessibilityRole="button"
+                  testID="upload-video"
+                >
+                  <Video size={18} color={p.accent} />
+                  <AdminText weight="semiBold" style={[TYPE.button, { color: p.accent }]}>
+                    {uploading ? tc('uploading') : processing ? tc('processing') : form.videoUrl ? tc('replace_video') : tc('upload_video')}
+                  </AdminText>
+                </Pressable>
+                {!!form.videoUrl && (
+                  <AdminText numberOfLines={1} style={[styles.videoUrl, { color: p.good, textAlign }]}>
+                    ✓ {form.videoUrl}
+                  </AdminText>
+                )}
+
+                <View style={[styles.toggleRow, { flexDirection: rowDir, borderColor: p.border }]}>
+                  <AdminText weight="medium" style={TYPE.rowName}>{tc('published')}</AdminText>
+                  <Switch
+                    testID="published-switch"
+                    value={form.published}
+                    onValueChange={(v) => setForm((f) => ({ ...f, published: v }))}
+                    trackColor={{ true: p.good, false: p.surface3 }}
+                  />
                 </View>
 
-                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                  {([
-                    { key: 'title', placeholder: 'Title', multiline: false },
-                    { key: 'description', placeholder: 'Description', multiline: true },
-                    { key: 'instructorName', placeholder: 'Instructor name', multiline: false },
-                  ] as const).map(({ key, placeholder, multiline }) => (
-                    <TextInput
-                      key={key}
-                      placeholder={placeholder}
-                      placeholderTextColor="rgba(255,255,255,0.5)"
-                      value={String(form[key])}
-                      onChangeText={(v) => setForm((f) => ({ ...f, [key]: v }))}
-                      multiline={multiline}
-                      numberOfLines={multiline ? 3 : 1}
-                      style={[styles.input, { ...font.regular, height: multiline ? 80 : 48 }]}
-                    />
-                  ))}
-
-                  <TextInput
-                    placeholder="Price (₪)"
-                    placeholderTextColor="rgba(255,255,255,0.5)"
-                    value={form.price === 0 ? '' : String(form.price)}
-                    onChangeText={(v) => setForm((f) => ({ ...f, price: parseFloat(v) || 0 }))}
-                    keyboardType="numeric"
-                    style={[styles.input, { ...font.regular, height: 48 }]}
-                  />
-
-                  <TouchableOpacity
-                    style={[styles.uploadBtn, { opacity: uploading || processing ? 0.6 : 1 }]}
-                    onPress={handleVideoUpload}
-                    disabled={uploading || processing}
-                  >
-                    <Video size={18} color="#fff" />
-                    <Text style={[styles.uploadBtnText, { ...font.semiBold }]}>
-                      {uploading ? 'Uploading…' : processing ? 'Processing…' : form.videoUrl ? 'Replace Video' : 'Upload Video'}
-                    </Text>
-                  </TouchableOpacity>
-                  {!!form.videoUrl && (
-                    <Text style={[styles.videoUrl, { ...font.regular }]} numberOfLines={1}>
-                      ✓ {form.videoUrl}
-                    </Text>
+                <View style={[styles.saveRow, { flexDirection: rowDir }]}>
+                  {saving ? (
+                    <ActivityIndicator color={p.accent} testID="saving" />
+                  ) : (
+                    <PillButton variant="primary" label={tc('save')} onPress={handleSave} disabled={saving} testID="save-course" />
                   )}
-
-                  <View style={styles.toggleRow}>
-                    <Text style={[styles.toggleLabel, { ...font.regular }]}>Published</Text>
-                    <Switch
-                      value={form.published}
-                      onValueChange={(v) => setForm((f) => ({ ...f, published: v }))}
-                      trackColor={{ true: '#16a34a', false: 'rgba(255,255,255,0.2)' }}
-                    />
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.saveBtn, { opacity: saving ? 0.6 : 1 }]}
-                    onPress={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? <ActivityIndicator color="#fff" /> : (
-                      <Text style={[styles.saveBtnText, { ...font.bold }]}>Save</Text>
-                    )}
-                  </TouchableOpacity>
-                </ScrollView>
-              </LinearGradient>
-            </TouchableOpacity>
-          </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
+    </AdminPage>
+  );
+}
+
+/** Live / Draft: green when published, neutral grey when not. */
+function StatusChip({ good, label }: { good: boolean; label: string }) {
+  const p = useAdminPalette();
+  return (
+    <View style={[styles.status, { backgroundColor: good ? p.goodBg : p.surface3 }]}>
+      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.chip, { color: good ? p.good : p.text2 }]}>
+        {label}
+      </AdminText>
     </View>
   );
 }
 
+/** The field's border is the focus affordance; the browser's outline would sit inside it. */
+const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 60, paddingBottom: 12,
-  },
-  title: { fontSize: 26, fontWeight: '700' },
-  addBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-  },
-  addBtnText: { color: '#fff', fontSize: 14 },
+  flex: { flex: 1 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    borderRadius: 14, borderWidth: 1, padding: 14,
+    alignItems: 'center', gap: 10,
+    paddingVertical: SPACE.rowPadV, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1,
   },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  rowSub: { fontSize: 13, marginTop: 2 },
-  clicksChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  clicksText: { fontSize: 12 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  iconBtn: { padding: 6 },
-  empty: { textAlign: 'center', marginTop: 40, fontSize: 15 },
-  overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  modal: { width: 340, maxHeight: 600, borderRadius: 24, padding: 24 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  clicks: { alignItems: 'center', gap: 3, flexShrink: 0 },
+  status: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
+  iconBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  loading: { paddingVertical: 26, borderTopWidth: 1, alignItems: 'center' },
+  request: { paddingVertical: 12, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1, gap: 10 },
+  requestTop: { alignItems: 'flex-start', gap: 12 },
+  requestText: { flex: 1, minWidth: 0, gap: 1 },
+  desc: { marginTop: 3 },
+  actions: { gap: 7 },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACE.gutter },
+  scrim: { opacity: 0.45 },
+  modal: { width: '100%', maxWidth: 420, maxHeight: 600, borderRadius: RADIUS.card, borderWidth: 1, padding: 20 },
+  modalHeader: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 10 },
+  modalTitle: { fontSize: 20, letterSpacing: -0.3, flex: 1 },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
-    color: '#fff', marginBottom: 12, textAlignVertical: 'top',
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
+    fontSize: 14, marginBottom: 12, textAlignVertical: 'top',
   },
+  tabular: { fontVariant: ['tabular-nums'] },
   uploadBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10,
+    alignItems: 'center', gap: 8, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8,
   },
-  uploadBtnText: { color: '#fff', fontSize: 14 },
-  videoUrl: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginBottom: 12 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  toggleLabel: { color: '#fff', fontSize: 15 },
-  saveBtn: { backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnText: { color: '#004aad', fontSize: 16, fontWeight: '700' },
-  requestsSection: { marginBottom: 24 },
-  sectionTitle: { fontSize: 17, color: '#004aad', marginBottom: 12 },
-  requestCard: {
-    backgroundColor: '#fff8e1',
-    borderWidth: 1,
-    borderColor: '#f59e0b',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
+  videoUrl: { fontSize: 11, marginBottom: 12 },
+  toggleRow: {
+    alignItems: 'center', justifyContent: 'space-between',
+    borderTopWidth: 1, paddingTop: 12, marginTop: 4, marginBottom: 16,
   },
-  requestTitle: { fontSize: 15, color: '#1a1a2e', marginBottom: 2 },
-  requestMeta: { fontSize: 12, color: '#555', marginBottom: 1 },
-  requestLink: { fontSize: 11, color: '#004aad', marginBottom: 4 },
-  requestDesc: { fontSize: 12, color: '#555', marginBottom: 8 },
-  requestActions: { flexDirection: 'row', gap: 8 },
-  approveBtn: { backgroundColor: '#004aad', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
-  approveBtnText: { color: '#fff', fontSize: 13 },
-  rejectBtn: { borderWidth: 1, borderColor: '#ef4444', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
-  rejectBtnText: { color: '#ef4444', fontSize: 13 },
+  saveRow: { justifyContent: 'flex-end', alignItems: 'center', minHeight: 32 },
 });

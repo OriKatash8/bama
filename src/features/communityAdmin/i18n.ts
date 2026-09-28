@@ -18,10 +18,15 @@ function makeT(translations: Translations): AdminT {
 
 /** `t` scoped to `community_admin.*`, plus the direction helpers every row needs. */
 export function useAdminT() {
+  return useScopedT('community_admin');
+}
+
+/** `t` scoped to any translations block (`admin_dashboard`, …), plus the direction helpers. */
+export function useScopedT(prefix: string) {
   const language = useSettingsStore((s) => s.language);
   const rtl = language === 'he';
   const base = makeT(rtl ? he : en);
-  const t: AdminT = (key, vars) => base(`community_admin.${key}`, vars);
+  const t: AdminT = (key, vars) => base(`${prefix}.${key}`, vars);
   return {
     t,
     rtl,

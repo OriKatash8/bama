@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type TextStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type TextStyle } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { useAdminPalette, useAdminT, ago } from '../i18n';
 import { MOTION, RADIUS, TYPE } from '../theme';
@@ -113,7 +113,12 @@ function DeltaChip({ text, kind }: { text: string; kind: Delta['kind'] }) {
   );
 }
 
-function StatTile({
+/**
+ * One tile: uppercase label, big count-up value, then an optional delta chip +
+ * caption and sparkline. `value: null` is a number that failed to load ("—");
+ * `loading` holds a spinner in the value's place.
+ */
+export function StatTile({
   label,
   value,
   format,
@@ -121,15 +126,17 @@ function StatTile({
   caption,
   spark,
   ring,
+  loading,
   testID,
 }: {
   label: string;
-  value: number;
+  value: number | null;
   format?: (n: number) => string;
-  chip: { text: string; kind: Delta['kind'] };
+  chip?: { text: string; kind: Delta['kind'] };
   caption?: string;
-  spark: { values: number[]; color: string; fill?: boolean; replayKey: unknown };
+  spark?: { values: number[]; color: string; fill?: boolean; replayKey: unknown };
   ring?: boolean;
+  loading?: boolean;
   testID: string;
 }) {
   const p = useAdminPalette();
@@ -140,16 +147,28 @@ function StatTile({
         <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.statLabel, { color: p.text3, textAlign }]}>
           {label}
         </AdminText>
-        <CountUp value={value} format={format} style={[TYPE.statValue, styles.value, { textAlign }]} testID={`${testID}-value`} />
-        <View style={[styles.foot, { flexDirection: rowDir }]}>
-          <DeltaChip {...chip} />
-          {caption ? (
-            <AdminText numberOfLines={1} style={[styles.caption, { color: p.text2 }]}>
-              {caption}
-            </AdminText>
-          ) : null}
-        </View>
-        <Sparkline {...spark} testID={`${testID}-spark`} />
+        {loading ? (
+          <View style={[styles.value, styles.spinner, { alignItems: textAlign === 'right' ? 'flex-end' : 'flex-start' }]}>
+            <ActivityIndicator size="small" color={p.text3} testID={`${testID}-loading`} />
+          </View>
+        ) : value === null ? (
+          <AdminText weight="bold" style={[TYPE.statValue, styles.value, { color: p.text3, textAlign }]} testID={`${testID}-value`}>
+            —
+          </AdminText>
+        ) : (
+          <CountUp value={value} format={format} style={[TYPE.statValue, styles.value, { textAlign }]} testID={`${testID}-value`} />
+        )}
+        {chip || caption ? (
+          <View style={[styles.foot, { flexDirection: rowDir }]}>
+            {chip ? <DeltaChip {...chip} /> : null}
+            {caption ? (
+              <AdminText numberOfLines={1} style={[styles.caption, { color: p.text2 }]}>
+                {caption}
+              </AdminText>
+            ) : null}
+          </View>
+        ) : null}
+        {spark ? <Sparkline {...spark} testID={`${testID}-spark`} /> : null}
       </View>
     </Card>
   );
@@ -227,6 +246,7 @@ const styles = StyleSheet.create({
   tile: { flex: 1, minWidth: 0 },
   tileBody: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 12 },
   value: { marginTop: 6, lineHeight: 36 },
+  spinner: { height: 36, justifyContent: 'center' },
   foot: { alignItems: 'center', gap: 8, marginTop: 8 },
   chip: { borderRadius: RADIUS.pill, paddingVertical: 2, paddingHorizontal: 7, flexShrink: 0 },
   caption: { fontSize: 12, flexShrink: 1 },

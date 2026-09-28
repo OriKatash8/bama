@@ -12,6 +12,15 @@ import en from '@core/i18n/translations/en.json';
  */
 
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+// The page is built on the admin kit (AdminPage): its header, segment and tiles need these.
+jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: ({ children }: { children: React.ReactNode }) => children,
+}));
+jest.mock('@core/navigation/floatingTabBar', () => ({ useTabBarClearance: () => 80, FLOATING_TAB_BAR_BOTTOM: 24 }));
+jest.mock('@core/stores/authStore', () => ({
+  useAuthStore: (s: (x: { user: { displayName: string } }) => unknown) => s({ user: { displayName: 'Dana Admin' } }),
+}));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 jest.mock('@core/firebase/functions', () => ({ callFunction: () => jest.fn() }));
 jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: jest.fn() }) }));

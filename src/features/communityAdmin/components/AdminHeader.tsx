@@ -110,27 +110,53 @@ export function TitleBlock({ range, onRange }: { range: RangeDays; onRange: (r: 
 const RANGES: RangeDays[] = [7, 30, 90];
 
 export function RangeSegment({ value, onChange }: { value: RangeDays; onChange: (r: RangeDays) => void }) {
+  const { t } = useAdminT();
+  return (
+    <Segment
+      options={RANGES.map((r) => ({ value: r, label: t('range_days', { n: r }) }))}
+      value={value}
+      onChange={onChange}
+      label={t('range_a11y')}
+      testIDPrefix="range"
+    />
+  );
+}
+
+/** Pill segmented control: the selected option sits on the surface with a small shadow. Mirrors in Hebrew. */
+export function Segment<T extends string | number>({
+  options,
+  value,
+  onChange,
+  label,
+  testIDPrefix,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  label: string;
+  testIDPrefix: string;
+}) {
   const p = useAdminPalette();
-  const { t, rowDir } = useAdminT();
+  const { rowDir } = useAdminT();
   return (
     <View
       accessibilityRole="radiogroup"
-      accessibilityLabel={t('range_a11y')}
+      accessibilityLabel={label}
       style={[styles.seg, { flexDirection: rowDir, backgroundColor: p.surface3, borderColor: p.border }]}
     >
-      {RANGES.map((r) => {
-        const on = r === value;
+      {options.map((o) => {
+        const on = o.value === value;
         return (
           <Pressable
-            key={r}
-            testID={`range-${r}`}
-            onPress={() => onChange(r)}
+            key={String(o.value)}
+            testID={`${testIDPrefix}-${o.value}`}
+            onPress={() => onChange(o.value)}
             accessibilityRole="radio"
             accessibilityState={{ selected: on, checked: on }}
             style={[styles.segBtn, on && [{ backgroundColor: p.surface }, segmentShadow(p)]]}
           >
             <AdminText weight="medium" tabular style={[TYPE.button, { color: on ? p.text : p.text2 }]}>
-              {t('range_days', { n: r })}
+              {o.label}
             </AdminText>
           </Pressable>
         );

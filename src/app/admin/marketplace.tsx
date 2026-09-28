@@ -1,27 +1,26 @@
 import { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Image, Alert,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { ChevronLeft, Trash2 } from 'lucide-react-native';
+import { ShoppingBag, Trash2 } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
-import { useTheme } from '@core/hooks/useTheme';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
-import { Screen } from '@components/layout/Screen';
 import { deleteListing } from '@features/marketplace/services/marketplaceService';
 import type { MarketplaceListing, ListingStatus } from '@features/marketplace/types';
+import {
+  AdminPage, AdminText, Card, CardHead, CountBadge, EmptyState, IconTile, Row, Segment,
+  RADIUS, TYPE, useAdminPalette, useScopedT,
+} from '@features/admin/ui';
 
 type FilterTab = 'all' | ListingStatus;
 const FILTER_TABS: FilterTab[] = ['all', 'available', 'negotiating', 'reserved', 'sold'];
 
-const STATUS_COLORS: Record<ListingStatus, string> = {
-  available: '#4caf50',
-  negotiating: '#ff9800',
-  reserved: '#2196f3',
-  sold: '#8890b0',
+/** Status labels, from `admin_marketplace` (the user-facing "For sale" would mislabel rentals). */
+const STATUS_KEY: Record<ListingStatus, string> = {
+  available: 'status_available',
+  negotiating: 'status_negotiating',
+  reserved: 'status_reserved',
+  sold: 'status_sold',
 };
 
 function fmtDate(seconds?: number): string {
@@ -30,11 +29,30 @@ function fmtDate(seconds?: number): string {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
+/** available → good, negotiating → warn, reserved → accent, sold → neutral. */
+function StatusChip({ status, label }: { status: ListingStatus; label: string }) {
+  const p = useAdminPalette();
+  const [bg, fg] = {
+    available: [p.goodBg, p.good],
+    negotiating: [p.warnBg, p.warn],
+    reserved: [p.accentSoft, p.accent],
+    sold: [p.surface3, p.text2],
+  }[status];
+  return (
+    <View style={[styles.chip, { backgroundColor: bg }]}>
+      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.chip, { color: fg }]}>
+        {label}
+      </AdminText>
+    </View>
+  );
+}
+
 export default function MarketplaceAdmin() {
-  const colors = useTheme();
-  const font = useAppFont();
+  const p = useAdminPalette();
   const router = useRouter();
   const { showToast } = useUiStore();
+  const { t, rowDir, textAlign } = useScopedT('marketplace');
+  const { t: tAdm } = useScopedT('admin_marketplace');
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,119 +67,116 @@ export default function MarketplaceAdmin() {
     });
   }, []);
 
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/admin/operations');
+  }
+
   function confirmDelete(listing: MarketplaceListing) {
-    Alert.alert('Delete listing', `Remove “${listing.productName}”? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('delete_confirm_title'), `“${listing.productName}”\n${t('delete_confirm_body')}`, [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('delete_listing'),
         style: 'destructive',
         onPress: async () => {
-          setDeleting((p) => ({ ...p, [listing.id]: true }));
+          setDeleting((prev) => ({ ...prev, [listing.id]: true }));
           try {
             await deleteListing(listing.id, listing.imageUrl);
-            showToast('Listing deleted', 'success');
+            showToast(t('listing_deleted'), 'success');
           } catch {
-            showToast('Failed to delete listing', 'error');
+            showToast(t('failed_delete'), 'error');
           } finally {
-            setDeleting((p) => ({ ...p, [listing.id]: false }));
+            setDeleting((prev) => ({ ...prev, [listing.id]: false }));
           }
         },
       },
     ]);
   }
 
-  const filtered = filter === 'all' ? listings : listings.filter((l) => (l.status ?? 'available') === filter);
+  const statusOf = (l: MarketplaceListing) => (l.status ?? 'available') as ListingStatus;
+  const countOf = (tab: FilterTab) => (tab === 'all' ? listings.length : listings.filter((l) => statusOf(l) === tab).length);
+  const filtered = filter === 'all' ? listings : listings.filter((l) => statusOf(l) === filter);
+  const tabLabel = (tab: FilterTab) => (tab === 'all' ? tAdm('filter_all') : tAdm(STATUS_KEY[tab]));
 
   return (
-    <Screen scrollable={false}>
-      <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Header with back */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/admin/operations')} hitSlop={8} activeOpacity={0.7} style={styles.back}>
-            <ChevronLeft size={26} color={colors.text} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { ...font.bold, color: colors.text, flex: 1, textAlign: 'right' }]}>Marketplace</Text>
-        </View>
-
-        {/* Filter tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
-          {FILTER_TABS.map((tab) => {
-            const count = tab === 'all' ? listings.length : listings.filter((l) => (l.status ?? 'available') === tab).length;
-            const active = filter === tab;
-            return (
-              <TouchableOpacity key={tab} style={[styles.tab, active && styles.tabActive]} onPress={() => setFilter(tab)} activeOpacity={0.7}>
-                <Text style={[styles.tabText, { ...font.semiBold, color: active ? '#fff' : colors.textMuted }]}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)} ({count})
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {loading ? (
-          <ActivityIndicator size="large" color="#004aad" style={{ marginTop: 40 }} />
-        ) : filtered.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={[styles.emptyText, { ...font.regular, color: colors.textMuted }]}>No listings.</Text>
-          </View>
-        ) : (
-          filtered.map((listing) => {
-            const status = (listing.status ?? 'available') as ListingStatus;
-            return (
-              <View key={listing.id} style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                {listing.imageUrl ? (
-                  <Image source={{ uri: listing.imageUrl }} style={styles.thumb} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.thumb, styles.thumbEmpty, { borderColor: colors.border }]} />
-                )}
-                <View style={styles.info}>
-                  <Text style={[styles.name, { ...font.bold, color: colors.text }]} numberOfLines={1}>{listing.productName}</Text>
-                  <Text style={[styles.meta, { ...font.regular, color: colors.textSec }]} numberOfLines={1}>
-                    {listing.type === 'rental' ? 'Rental' : 'For sale'} · ₪{listing.price?.toLocaleString?.() ?? listing.price}
-                  </Text>
-                  <Text style={[styles.meta, { ...font.regular, color: colors.textMuted }]} numberOfLines={1}>
-                    {listing.posterName} · {listing.location} · {fmtDate(listing.createdAt?.seconds)}
-                  </Text>
-                  <View style={[styles.badge, { backgroundColor: STATUS_COLORS[status] + '22' }]}>
-                    <Text style={[styles.badgeText, { ...font.semiBold, color: STATUS_COLORS[status] }]}>{status}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => confirmDelete(listing)}
-                  disabled={!!deleting[listing.id]}
-                  activeOpacity={0.7}
-                >
-                  {deleting[listing.id] ? <ActivityIndicator size="small" color="#ef4444" /> : <Trash2 size={18} color="#ef4444" strokeWidth={2} />}
-                </TouchableOpacity>
-              </View>
-            );
-          })
-        )}
+    <AdminPage title={tAdm('title')} subtitle={tAdm('subtitle')} onBack={goBack} testID="marketplace-page">
+      {/* Filter: a pill segmented control with counts; scrolls sideways on narrow phones. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterRow, { flexDirection: rowDir }]}>
+        <Segment<FilterTab>
+          options={FILTER_TABS.map((tab) => ({ value: tab, label: `${tabLabel(tab)} (${countOf(tab)})` }))}
+          value={filter}
+          onChange={setFilter}
+          label={tAdm('title')}
+          testIDPrefix="filter"
+        />
       </ScrollView>
-    </Screen>
+
+      {loading ? (
+        <ActivityIndicator size="large" color={p.accent} style={styles.spinner} testID="marketplace-loading" />
+      ) : (
+        <Card testID="listings-card">
+          <CardHead title={tabLabel(filter)} side={<CountBadge n={filtered.length} testID="listings-count" />} />
+          {filtered.length === 0 ? (
+            <EmptyState text={t('no_listings')} testID="listings-empty" />
+          ) : (
+            filtered.map((listing) => {
+              const status = statusOf(listing);
+              const busy = !!deleting[listing.id];
+              const price = listing.price?.toLocaleString?.() ?? listing.price;
+              return (
+                <Row key={listing.id} rowDir={rowDir} testID={`listing-${listing.id}`}>
+                  {listing.imageUrl ? (
+                    <Image source={{ uri: listing.imageUrl }} style={[styles.thumb, { backgroundColor: p.surface3 }]} resizeMode="cover" />
+                  ) : (
+                    <IconTile icon={ShoppingBag} tone="neutral" />
+                  )}
+                  <View style={styles.info}>
+                    <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                      {listing.productName}
+                    </AdminText>
+                    <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                      {`${listing.type === 'rental' ? t('rental') : t('for_sale')} · ₪${price}`}
+                    </AdminText>
+                    <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                      {`${listing.posterName} · ${listing.location} · ${fmtDate(listing.createdAt?.seconds)}`}
+                    </AdminText>
+                    <View style={[styles.chipRow, { flexDirection: rowDir }]}>
+                      <StatusChip status={status} label={tAdm(STATUS_KEY[status])} />
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => confirmDelete(listing)}
+                    disabled={busy}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t('delete_listing')} ${listing.productName}`}
+                    testID={`delete-${listing.id}`}
+                    style={({ pressed }) => [styles.deleteBtn, { backgroundColor: pressed ? p.bad : p.badBg }]}
+                  >
+                    {({ pressed }) =>
+                      busy ? (
+                        <ActivityIndicator size="small" color={p.bad} testID={`deleting-${listing.id}`} />
+                      ) : (
+                        <Trash2 size={16} color={pressed ? p.onAccent : p.bad} strokeWidth={2.2} />
+                      )
+                    }
+                  </Pressable>
+                </Row>
+              );
+            })
+          )}
+        </Card>
+      )}
+    </AdminPage>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { padding: 16, paddingBottom: 100 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
-  back: { padding: 2 },
-  title: { fontSize: 28 },
-  tabRow: { gap: 8, marginBottom: 16 },
-  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(0,74,173,0.08)' },
-  tabActive: { backgroundColor: '#004aad' },
-  tabText: { fontSize: 13 },
-  empty: { alignItems: 'center', marginTop: 40 },
-  emptyText: { fontSize: 15 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 12 },
-  thumb: { width: 64, height: 64, borderRadius: 10 },
-  thumbEmpty: { borderWidth: 1 },
-  info: { flex: 1, gap: 3 },
-  name: { fontSize: 15 },
-  meta: { fontSize: 12 },
-  badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, marginTop: 2 },
-  badgeText: { fontSize: 11, textTransform: 'capitalize' },
-  deleteBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  filterRow: { flexGrow: 1 },
+  spinner: { marginTop: 40 },
+  thumb: { width: 44, height: 44, borderRadius: RADIUS.card / 2, flexShrink: 0 },
+  info: { flex: 1, minWidth: 0, gap: 2 },
+  chipRow: { marginTop: 3 },
+  chip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
+  deleteBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 });

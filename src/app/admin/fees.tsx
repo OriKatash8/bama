@@ -1,34 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { AlertTriangle, Receipt } from 'lucide-react-native';
 import { callFunction } from '@core/firebase/functions';
-import { useTheme } from '@core/hooks/useTheme';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
-import { useSettingsStore } from '@core/stores/settingsStore';
 import { confirmDialog } from '@utils/confirmDialog';
-import en from '@core/i18n/translations/en.json';
-import he from '@core/i18n/translations/he.json';
-
-type Translations = typeof en;
-function makeT(translations: Translations) {
-  return (key: string, vars?: Record<string, string | number>): string => {
-    const keys = key.split('.');
-    let result: unknown = translations;
-    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    if (typeof result !== 'string') return key;
-    if (!vars) return result;
-    return result.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
-  };
-}
-
-const HEADER_PURPLE = '#cb6ce6';
-const BLOCKED_RED = '#d32f2f';
-const OK_GREEN = '#4caf50';
+import {
+  AdminPage, AdminText, Card, CardHead, EmptyState, IconTile, InitialsAvatar, PillButton, Segment,
+  StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
+} from '@features/admin/ui';
 
 type ArrearsProject = {
   projectId: string; title: string; owed: number; demandSentAt: number | null;
@@ -88,16 +68,13 @@ function formatDate(ms: number | null, rtl: boolean): string {
  * the server applies another.
  */
 export default function AdminFeesScreen() {
-  const colors = useTheme();
-  const font = useAppFont();
+  const p = useAdminPalette();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const showToast = useUiStore((s) => s.showToast);
-  const language = useSettingsStore((s) => s.language);
-  const t = makeT(language === 'he' ? he : en);
-  const rtl = language === 'he';
-  const rowDir = rtl ? 'row-reverse' : ('row' as const);
-  const textAlign = rtl ? ('right' as const) : ('left' as const);
+  const { t, rtl, rowDir, textAlign } = useScopedT('admin_fees');
+  const { t: tCommon } = useScopedT('common');
+  const { t: tDash } = useScopedT('admin_dashboard');
+  const { t: tCa } = useScopedT('community_admin');
 
   const [tab, setTab] = useState<Tab>('arrears');
   const [arrears, setArrears] = useState<ArrearsRow[]>([]);
@@ -115,24 +92,37 @@ export default function AdminFeesScreen() {
    */
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
 
+  /** Both lists in one round; `state` starts as 'loading', so the first run needs no reset. */
+  const fetchAll = useCallback(
+    () => Promise.all([listArrears({}), listFlagged({})]).then(
+      ([a, f]) => {
+        setArrears(a.rows);
+        setGraceDays(a.graceDays);
+        setFlagged(f.rows);
+        setState('ok');
+      },
+      (e: unknown) => {
+        // The lists are NOT cleared to [] here. Doing that was the bug: it rendered
+        // the empty-state copy, so a denied or failed call read as "no arrears".
+        // The screen goes to 'error' instead and says so until a retry succeeds.
+        console.error('[admin/fees] load failed:', e);
+        setState('error');
+      },
+    ),
+    [],
+  );
+
   const load = useCallback(async () => {
     setState('loading');
-    try {
-      const [a, f] = await Promise.all([listArrears({}), listFlagged({})]);
-      setArrears(a.rows);
-      setGraceDays(a.graceDays);
-      setFlagged(f.rows);
-      setState('ok');
-    } catch (e) {
-      // The lists are NOT cleared to [] here. Doing that was the bug: it rendered
-      // the empty-state copy, so a denied or failed call read as "no arrears".
-      // The screen goes to 'error' instead and says so until a retry succeeds.
-      console.error('[admin/fees] load failed:', e);
-      setState('error');
-    }
-  }, []);
+    await fetchAll();
+  }, [fetchAll]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void fetchAll(); }, [fetchAll]);
+
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/admin/operations');
+  }
 
   /** `confirmDialog`, not Alert.alert — the latter no-ops on web, where admin runs. */
   async function act(
@@ -142,8 +132,8 @@ export default function AdminFeesScreen() {
     done: string,
   ) {
     if (busy[key]) return;
-    const ok = await confirmDialog(t('admin_fees.title'), prompt, {
-      confirm: t('common.confirm'), cancel: t('common.cancel'),
+    const ok = await confirmDialog(t('title'), prompt, {
+      confirm: tCommon('confirm'), cancel: tCommon('cancel'),
     });
     if (!ok) return;
     setBusy((b) => ({ ...b, [key]: true }));
@@ -152,266 +142,245 @@ export default function AdminFeesScreen() {
       showToast(done, 'success');
       await load();
     } catch (e) {
-      showToast((e as { message?: string })?.message ?? t('admin_fees.action_failed'), 'error');
+      showToast((e as { message?: string })?.message ?? t('action_failed'), 'error');
     } finally {
       setBusy((b) => ({ ...b, [key]: false }));
     }
   }
 
   const TABS: Tab[] = ['arrears', 'flagged'];
+  // '—' rather than '(0)' while the data is unknown: a zero here makes the same
+  // false claim the empty list did.
+  const countOf = (tb: Tab) =>
+    state === 'ok' ? String(tb === 'arrears' ? arrears.length : flagged.length) : t('count_unknown');
+  const totalOwed = arrears.reduce((sum, r) => sum + r.totalOwed, 0);
+  const known = state === 'ok';
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, {
-        backgroundColor: HEADER_PURPLE,
-        paddingTop: insets.top + 14,
-        alignItems: rtl ? 'flex-end' : 'flex-start',
-      }]}>
-        <TouchableOpacity
-          style={[styles.back, { flexDirection: rowDir }]}
-          onPress={() => router.push('/admin/operations')}
-          activeOpacity={0.7}
-          hitSlop={10}
-        >
-          {rtl
-            ? <ChevronRight size={18} color="#ffffff" strokeWidth={2} />
-            : <ChevronLeft size={18} color="#ffffff" strokeWidth={2} />}
-          <Text style={[styles.greeting, { ...font.regular }]}>{t('admin_fees.greeting')}</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { ...font.medium, textAlign }]}>
-          {t('admin_fees.title')}
-        </Text>
-      </View>
+    <AdminPage
+      testID="fees-page"
+      title={t('title')}
+      subtitle={t('subtitle')}
+      onBack={goBack}
+      side={
+        <Segment<Tab>
+          options={TABS.map((tb) => ({ value: tb, label: `${t(`tab_${tb}`)} (${countOf(tb)})` }))}
+          value={tab}
+          onChange={setTab}
+          label={t('title')}
+          testIDPrefix="tab"
+        />
+      }
+    >
+      <StatGrid>
+        <StatTile
+          testID="tile-arrears"
+          label={t('tab_arrears')}
+          value={known ? arrears.length : null}
+          loading={state === 'loading'}
+          caption={known ? t('total_owed', { amount: totalOwed.toLocaleString() }) : t('count_unknown')}
+        />
+        <StatTile
+          testID="tile-flagged"
+          label={t('tab_flagged')}
+          value={known ? flagged.length : null}
+          loading={state === 'loading'}
+          ring={known && flagged.length > 0}
+          caption={!known ? t('count_unknown') : flagged.length > 0 ? tDash('attention') : tCa('all_clear')}
+        />
+      </StatGrid>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.filters, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {TABS.map((tb) => {
-            // '—' rather than '(0)' while the data is unknown: a zero here makes
-            // the same false claim the empty list did.
-            const count = state === 'ok'
-              ? String(tb === 'arrears' ? arrears.length : flagged.length)
-              : t('admin_fees.count_unknown');
-            const active = tab === tb;
-            return (
-              <TouchableOpacity
-                key={tb}
-                style={[styles.pill, { backgroundColor: active ? colors.primary : colors.inputBg }]}
-                onPress={() => setTab(tb)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.pillText, {
-                  ...font.medium, color: active ? '#ffffff' : colors.textSec,
-                }]}>
-                  {t(`admin_fees.tab_${tb}`)} ({count})
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {state === 'loading' ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
-        ) : state === 'error' ? (
-          <View style={[styles.card, { borderColor: BLOCKED_RED, backgroundColor: colors.card }]}>
-            <Text style={[styles.name, { ...font.bold, color: BLOCKED_RED, textAlign }]}>
-              {t('admin_fees.load_failed_title')}
-            </Text>
-            <Text style={[styles.meta, { ...font.regular, color: colors.text, textAlign }]}>
-              {t('admin_fees.load_failed_body')}
-            </Text>
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 6 }]}
-              onPress={() => void load()}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.actionText, { ...font.medium, color: '#ffffff' }]}>
-                {t('admin_fees.retry')}
-              </Text>
-            </TouchableOpacity>
+      {state === 'loading' ? (
+        <ActivityIndicator size="large" color={p.accent} style={styles.spinner} testID="fees-loading" />
+      ) : state === 'error' ? (
+        <Card priority testID="fees-error">
+          <View style={[styles.errorBody, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+            <View style={[styles.errorHead, { flexDirection: rowDir }]}>
+              <IconTile icon={AlertTriangle} tone="bad" />
+              <AdminText weight="bold" style={[TYPE.priorityTitle, styles.grow, { color: p.bad, textAlign }]}>
+                {t('load_failed_title')}
+              </AdminText>
+            </View>
+            <AdminText style={[styles.body, { color: p.text2, textAlign }]}>
+              {t('load_failed_body')}
+            </AdminText>
+            <PillButton variant="primary" label={t('retry')} onPress={() => void load()} testID="fees-retry" />
           </View>
-        ) : tab === 'arrears' ? (
-          arrears.length === 0 ? (
-            <Text style={[styles.empty, { ...font.regular, color: colors.textMuted }]}>
-              {t('admin_fees.empty_arrears')}
-            </Text>
+        </Card>
+      ) : tab === 'arrears' ? (
+        <Card testID="arrears-card">
+          <CardHead
+            title={t('tab_arrears')}
+            sub={arrears.length > 0 ? t('grace_note', { days: graceDays }) : undefined}
+          />
+          {arrears.length === 0 ? (
+            <EmptyState text={t('empty_arrears')} testID="arrears-empty" />
           ) : (
-            <>
-              <Text style={[styles.note, { ...font.regular, color: colors.textMuted, textAlign }]}>
-                {t('admin_fees.grace_note', { days: graceDays })}
-              </Text>
-              {arrears.map((row) => (
+            arrears.map((row) => {
+              const name = row.displayName || row.professionalId;
+              return (
                 <View
                   key={row.professionalId}
-                  style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}
+                  testID={`arrears-${row.professionalId}`}
+                  style={[styles.section, { borderTopColor: p.border }]}
                 >
-                  <View style={[styles.cardHead, { flexDirection: rowDir }]}>
-                    <Text
-                      style={[styles.name, { ...font.bold, color: colors.text, textAlign }]}
-                      numberOfLines={1}
-                    >
-                      {row.displayName || row.professionalId}
-                    </Text>
-                    <View style={[styles.badge, {
-                      backgroundColor: (row.blocked ? BLOCKED_RED : OK_GREEN) + '22',
-                    }]}>
-                      <Text style={[styles.badgeText, {
-                        ...font.semiBold, color: row.blocked ? BLOCKED_RED : OK_GREEN,
-                      }]}>
-                        {t(row.blocked ? 'admin_fees.blocked' : 'admin_fees.not_blocked')}
-                      </Text>
-                    </View>
+                  <View style={[styles.sectionHead, { flexDirection: rowDir }]} testID={`arrears-head-${row.professionalId}`}>
+                    <InitialsAvatar name={name} />
+                    <WhoBlock
+                      name={name}
+                      meta={t('oldest', { date: formatDate(row.oldestUnpaidAt, rtl) })}
+                      textAlign={textAlign}
+                    />
+                    <StatusChip
+                      tone={row.blocked ? 'bad' : 'good'}
+                      label={t(row.blocked ? 'blocked' : 'not_blocked')}
+                    />
                   </View>
 
-                  <Text style={[styles.total, { ...font.bold, color: colors.text, textAlign }]}>
-                    {t('admin_fees.total_owed', { amount: row.totalOwed.toLocaleString() })}
-                  </Text>
-                  <Text style={[styles.meta, { ...font.regular, color: colors.textMuted, textAlign }]}>
-                    {t('admin_fees.oldest', { date: formatDate(row.oldestUnpaidAt, rtl) })}
-                  </Text>
-                  <Text style={[styles.meta, { ...font.regular, color: colors.textMuted, textAlign }]}>
-                    {row.demandSentAt
-                      ? t('admin_fees.demand_sent', { date: formatDate(row.demandSentAt, rtl) })
-                      : t('admin_fees.demand_none')}
-                  </Text>
+                  <View style={styles.facts}>
+                    <AdminText weight="bold" tabular style={[styles.total, { textAlign }]}>
+                      {t('total_owed', { amount: row.totalOwed.toLocaleString() })}
+                    </AdminText>
+                    <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                      {row.demandSentAt
+                        ? t('demand_sent', { date: formatDate(row.demandSentAt, rtl) })
+                        : t('demand_none')}
+                    </AdminText>
+                  </View>
 
                   {/* Per project, because a demand and a settlement are both
                       recorded against ONE fee record, never against a person. */}
-                  {row.projects.map((p) => {
-                    const key = `${p.projectId}:${row.professionalId}`;
+                  {row.projects.map((pr) => {
+                    const key = `${pr.projectId}:${row.professionalId}`;
                     const isBusy = busy[key] === true;
                     return (
-                      <View key={key} style={[styles.projRow, { borderColor: colors.border }]}>
-                        <Text
-                          style={[styles.projTitle, { ...font.semiBold, color: colors.text, textAlign }]}
+                      <View
+                        key={key}
+                        testID={`project-${key}`}
+                        style={[styles.projRow, { flexDirection: rowDir, backgroundColor: p.surface2 }]}
+                      >
+                        <IconTile icon={Receipt} tone="neutral" />
+                        <AdminText
+                          weight="semiBold"
+                          tabular
                           numberOfLines={1}
+                          style={[TYPE.rowName, styles.grow, { textAlign }]}
                         >
-                          {p.title || p.projectId} · ₪{p.owed.toLocaleString()}
-                        </Text>
+                          {pr.title || pr.projectId} · ₪{pr.owed.toLocaleString()}
+                        </AdminText>
                         <View style={[styles.actions, { flexDirection: rowDir }]}>
-                          {!p.demandSentAt && (
-                            <TouchableOpacity
-                              style={[styles.actionBtn, { backgroundColor: colors.inputBg }]}
+                          {isBusy ? <ActivityIndicator size="small" color={p.accent} testID={`busy-${key}`} /> : null}
+                          {!pr.demandSentAt && (
+                            <PillButton
+                              label={t('mark_demand')}
                               disabled={isBusy}
-                              activeOpacity={0.8}
+                              testID={`demand-${key}`}
                               onPress={() => act(
                                 key,
-                                t('admin_fees.confirm_demand'),
+                                t('confirm_demand'),
                                 () => markDemandSent({
-                                  projectId: p.projectId, professionalId: row.professionalId,
+                                  projectId: pr.projectId, professionalId: row.professionalId,
                                 }),
-                                t('admin_fees.demand_done'),
+                                t('demand_done'),
                               )}
-                            >
-                              {isBusy
-                                ? <ActivityIndicator size="small" color={colors.primary} />
-                                : <Text style={[styles.actionText, { ...font.medium, color: colors.text }]}>
-                                    {t('admin_fees.mark_demand')}
-                                  </Text>}
-                            </TouchableOpacity>
+                            />
                           )}
-                          <TouchableOpacity
-                            style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+                          <PillButton
+                            variant="primary"
+                            label={t('mark_paid')}
                             disabled={isBusy}
-                            activeOpacity={0.8}
+                            testID={`paid-${key}`}
                             onPress={() => act(
                               key,
-                              t('admin_fees.confirm_paid'),
+                              t('confirm_paid'),
                               () => markFeePaid({
-                                projectId: p.projectId, professionalId: row.professionalId,
+                                projectId: pr.projectId, professionalId: row.professionalId,
                               }),
-                              t('admin_fees.paid_done'),
+                              t('paid_done'),
                             )}
-                          >
-                            {isBusy
-                              ? <ActivityIndicator size="small" color="#ffffff" />
-                              : <Text style={[styles.actionText, { ...font.medium, color: '#ffffff' }]}>
-                                  {t('admin_fees.mark_paid')}
-                                </Text>}
-                          </TouchableOpacity>
+                          />
                         </View>
                       </View>
                     );
                   })}
                 </View>
-              ))}
-            </>
-          )
-        ) : flagged.length === 0 ? (
-          <Text style={[styles.empty, { ...font.regular, color: colors.textMuted }]}>
-            {t('admin_fees.empty_flagged')}
-          </Text>
-        ) : (
-          flagged.map((row) => (
-            <View
-              key={row.projectId}
-              style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}
-            >
-              <Text
-                style={[styles.name, { ...font.bold, color: colors.text, textAlign }]}
-                numberOfLines={1}
+              );
+            })
+          )}
+        </Card>
+      ) : (
+        <Card testID="flagged-card">
+          <CardHead title={t('tab_flagged')} />
+          {flagged.length === 0 ? (
+            <EmptyState text={t('empty_flagged')} testID="flagged-empty" />
+          ) : (
+            flagged.map((row) => (
+              <View
+                key={row.projectId}
+                testID={`flagged-${row.projectId}`}
+                style={[styles.flagRow, { flexDirection: rowDir, borderTopColor: p.border }]}
               >
-                {row.title || row.projectId}
-              </Text>
-              <Text style={[styles.reason, { ...font.semiBold, color: BLOCKED_RED, textAlign }]}>
-                {row.reason
-                  ? t(`admin_fees.reason_${row.reason}`)
-                  : row.reason}
-              </Text>
-              <Text style={[styles.meta, { ...font.regular, color: colors.textMuted, textAlign }]}>
-                {t('admin_fees.flagged_at', { date: formatDate(row.flaggedAt, rtl) })}
-              </Text>
-              {!!row.proName && (
-                <Text style={[styles.meta, { ...font.regular, color: colors.textMuted, textAlign }]}>
-                  {t('admin_fees.pro_label', { name: row.proName })}
-                </Text>
-              )}
-              <Text style={[styles.meta, { ...font.regular, color: colors.textMuted, textAlign }]}>
-                {t('admin_fees.client_label', { name: row.clientName })}
-              </Text>
-              {!!row.note && (
-                <Text style={[styles.note, { ...font.regular, color: colors.text, textAlign }]}>
-                  {row.note}
-                </Text>
-              )}
-            </View>
-          ))
-        )}
-      </ScrollView>
+                <IconTile icon={AlertTriangle} tone="warn" />
+                <View style={styles.grow}>
+                  <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                    {row.title || row.projectId}
+                  </AdminText>
+                  <AdminText weight="semiBold" style={[TYPE.rowMeta, styles.reason, { color: p.bad, textAlign }]}>
+                    {row.reason ? t(`reason_${row.reason}`) : row.reason}
+                  </AdminText>
+                  <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                    {t('flagged_at', { date: formatDate(row.flaggedAt, rtl) })}
+                  </AdminText>
+                  {!!row.proName && (
+                    <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                      {t('pro_label', { name: row.proName })}
+                    </AdminText>
+                  )}
+                  <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                    {t('client_label', { name: row.clientName })}
+                  </AdminText>
+                  {!!row.note && (
+                    <View style={[styles.note, { backgroundColor: p.surface2 }]}>
+                      <AdminText style={[styles.body, { color: p.text2, textAlign }]}>{row.note}</AdminText>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+        </Card>
+      )}
+    </AdminPage>
+  );
+}
+
+/** Blocked / not blocked: the palette's red or green on its tint. */
+function StatusChip({ tone, label }: { tone: 'bad' | 'good'; label: string }) {
+  const p = useAdminPalette();
+  const [bg, fg] = tone === 'bad' ? [p.badBg, p.bad] : [p.goodBg, p.good];
+  return (
+    <View style={[styles.status, { backgroundColor: bg }]}>
+      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.chip, { color: fg }]}>
+        {label}
+      </AdminText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  header: { paddingBottom: 14, paddingHorizontal: 16, gap: 2 },
-  back: { alignItems: 'center', gap: 4 },
-  greeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
-  headerTitle: { fontSize: 17, color: '#ffffff', width: '100%' },
-
-  content: { padding: 16, paddingBottom: 100 },
-
-  filters: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  pill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
-  pillText: { fontSize: 13 },
-
-  empty: { fontSize: 15, marginTop: 40, width: '100%', textAlign: 'center' },
-  note: { fontSize: 12, lineHeight: 18, marginBottom: 12, width: '100%' },
-
-  card: { borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 12, gap: 6 },
-  cardHead: { justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  name: { flex: 1, fontSize: 15 },
-  badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12 },
-  badgeText: { fontSize: 12 },
-  total: { fontSize: 15, width: '100%' },
-  meta: { fontSize: 12, width: '100%' },
-  reason: { fontSize: 13, width: '100%' },
-
-  projRow: { borderTopWidth: 1, paddingTop: 10, marginTop: 4, gap: 8 },
-  projTitle: { fontSize: 13, width: '100%' },
-  actions: { gap: 8 },
-  actionBtn: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 9, borderRadius: 10,
-  },
-  actionText: { fontSize: 13 },
+  grow: { flex: 1, minWidth: 0 },
+  spinner: { marginTop: 24 },
+  errorBody: { padding: SPACE.cardPad, gap: 10 },
+  errorHead: { alignItems: 'center', gap: 12, alignSelf: 'stretch' },
+  body: { fontSize: 13, lineHeight: 19, alignSelf: 'stretch' },
+  section: { borderTopWidth: 1, paddingVertical: 12, paddingHorizontal: SPACE.rowPadH, gap: 10 },
+  sectionHead: { alignItems: 'center', gap: 12 },
+  status: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 1, maxWidth: '45%' },
+  facts: { gap: 2 },
+  total: { fontSize: 15, letterSpacing: -0.15 },
+  projRow: { alignItems: 'center', gap: 10, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 10, flexWrap: 'wrap' },
+  actions: { gap: 7, alignItems: 'center', flexShrink: 0 },
+  flagRow: { alignItems: 'flex-start', gap: 12, paddingVertical: SPACE.rowPadV, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1 },
+  reason: { marginTop: 1, marginBottom: 2 },
+  note: { borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, marginTop: 6 },
 });

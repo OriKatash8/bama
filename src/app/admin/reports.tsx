@@ -1,33 +1,18 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, StyleSheet, ScrollView, Pressable,
   ActivityIndicator, Image, Modal, TextInput,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   collection, onSnapshot, updateDoc, doc, getDoc, query, orderBy, Timestamp,
 } from 'firebase/firestore';
-import { ShieldAlert, ShieldBan } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
 import { callFunction } from '@core/firebase/functions';
-import { useTheme } from '@core/hooks/useTheme';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
-import { useSettingsStore } from '@core/stores/settingsStore';
-import en from '@core/i18n/translations/en.json';
-import he from '@core/i18n/translations/he.json';
-
-type Translations = typeof en;
-function makeT(translations: Translations) {
-  return (key: string): string => {
-    const keys = key.split('.');
-    let result: unknown = translations;
-    for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
-  };
-}
-
-const HEADER_PURPLE = '#cb6ce6'; // theme accent — solid header fill
+import {
+  AdminPage, AdminText, Card, CardHead, EmptyState, PillButton, Segment,
+  RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
+} from '@features/admin/ui';
 
 type ModAction = 'warn' | 'suspend';
 const moderateUser = callFunction<
@@ -54,28 +39,33 @@ type Report = {
 type FilterTab = 'all' | 'pending' | 'reviewed' | 'resolved';
 const FILTER_TABS: FilterTab[] = ['all', 'pending', 'reviewed', 'resolved'];
 
-const STATUS_COLORS: Record<Report['status'], string> = {
-  pending: '#ff9800',
-  reviewed: '#2196f3',
-  resolved: '#4caf50',
-};
-
 function formatDate(ts: Timestamp | null): string {
   if (!ts) return '—';
   const d = ts.toDate();
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
+/** The report's status as a tinted pill: pending → warn, reviewed → accent, resolved → good. */
+function StatusChip({ status, label }: { status: Report['status']; label: string }) {
+  const p = useAdminPalette();
+  const [bg, fg] = {
+    pending: [p.warnBg, p.warn],
+    reviewed: [p.accentSoft, p.accent],
+    resolved: [p.goodBg, p.good],
+  }[status];
+  return (
+    <View style={[styles.chip, { backgroundColor: bg }]} testID="report-status">
+      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.chip, { color: fg }]}>
+        {label}
+      </AdminText>
+    </View>
+  );
+}
+
 export default function ReportsAdmin() {
-  const colors = useTheme();
-  const font = useAppFont();
-  const insets = useSafeAreaInsets();
+  const p = useAdminPalette();
   const { showToast } = useUiStore();
-  const language = useSettingsStore((s) => s.language);
-  const rtl = language === 'he';
-  const t = makeT(rtl ? he : en);
-  const rowDir = rtl ? 'row-reverse' : 'row';
-  const textAlign = rtl ? 'right' : 'left';
+  const { t, rowDir, textAlign } = useScopedT('admin_reports');
 
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,19 +115,19 @@ export default function ReportsAdmin() {
 
   function reportedName(r: Report): string {
     if (r.type === 'community_deletion') {
-      return `${t('admin_reports.community_deletion')} · ${r.communityName || r.communityId || '—'}`;
+      return `${t('community_deletion')} · ${r.communityName || r.communityId || '—'}`;
     }
     if (r.reportedUserName && r.reportedUserName !== r.reportedUserId) return r.reportedUserName;
-    return resolvedNames[r.reportedUserId] || r.reportedUserName || t('admin_reports.unknown_user');
+    return resolvedNames[r.reportedUserId] || r.reportedUserName || t('unknown_user');
   }
 
   async function updateStatus(id: string, status: Report['status']) {
     setUpdating((prev) => ({ ...prev, [id]: true }));
     try {
       await updateDoc(doc(db, 'reports', id), { status });
-      showToast(t(status === 'reviewed' ? 'admin_reports.marked_reviewed' : 'admin_reports.marked_resolved'), 'success');
+      showToast(t(status === 'reviewed' ? 'marked_reviewed' : 'marked_resolved'), 'success');
     } catch {
-      showToast(t('admin_reports.update_failed'), 'error');
+      showToast(t('update_failed'), 'error');
     } finally {
       setUpdating((prev) => ({ ...prev, [id]: false }));
     }
@@ -146,223 +136,193 @@ export default function ReportsAdmin() {
   async function submitModeration() {
     if (!modTarget) return;
     const reason = modReason.trim();
-    if (!reason) { showToast(t('admin_reports.reason_required'), 'error'); return; }
+    if (!reason) { showToast(t('reason_required'), 'error'); return; }
     setModBusy(true);
     try {
       await moderateUser({ targetUid: modTarget.report.reportedUserId, action: modTarget.action, reason, reportId: modTarget.report.id });
       await updateDoc(doc(db, 'reports', modTarget.report.id), { status: 'resolved' }).catch(() => {});
-      showToast(t(modTarget.action === 'suspend' ? 'admin_reports.suspended_toast' : 'admin_reports.warned_toast'), 'success');
+      showToast(t(modTarget.action === 'suspend' ? 'suspended_toast' : 'warned_toast'), 'success');
       setModTarget(null);
       setModReason('');
     } catch (e) {
-      showToast((e as { message?: string })?.message ?? t('admin_reports.action_failed'), 'error');
+      showToast((e as { message?: string })?.message ?? t('action_failed'), 'error');
     } finally {
       setModBusy(false);
     }
   }
 
   const filtered = filter === 'all' ? reports : reports.filter((r) => r.status === filter);
+  const countOf = (tab: FilterTab) => (tab === 'all' ? reports.length : reports.filter((r) => r.status === tab).length);
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.bg }]}>
-      {/* Header — flat solid purple */}
-      <View style={[styles.header, { backgroundColor: HEADER_PURPLE, paddingTop: insets.top + 14, alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.greeting, { ...font.regular, textAlign }]}>{t('admin_reports.greeting')}</Text>
-        <Text style={[styles.headerTitle, { ...font.medium, textAlign }]}>{t('admin_reports.title')}</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Filter pills */}
-        <View style={[styles.filters, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {FILTER_TABS.map((tab) => {
-            const count = tab === 'all' ? reports.length : reports.filter((r) => r.status === tab).length;
-            const active = filter === tab;
-            return (
-              <TouchableOpacity
-                key={tab}
-                style={[styles.pill, { backgroundColor: active ? colors.primary : colors.inputBg }]}
-                onPress={() => setFilter(tab)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.pillText, { ...font.medium, color: active ? '#ffffff' : colors.textSec }]}>
-                  {t(`admin_reports.filter_${tab}`)} ({count})
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+    <>
+      <AdminPage title={t('title')} subtitle={t('greeting')} testID="reports-page">
+        {/* Filter: a pill segmented control, each option with its count. Scrolls sideways on narrow phones. */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.filterRow, { flexDirection: rowDir }]}
+        >
+          <Segment<FilterTab>
+            options={FILTER_TABS.map((tab) => ({ value: tab, label: `${t(`filter_${tab}`)} (${countOf(tab)})` }))}
+            value={filter}
+            onChange={setFilter}
+            label={t('title')}
+            testIDPrefix="filter"
+          />
+        </ScrollView>
 
         {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={p.accent} style={styles.spinner} testID="reports-loading" />
         ) : filtered.length === 0 ? (
-          <Text style={[styles.empty, { ...font.regular, color: colors.textMuted, textAlign }]}>{t('admin_reports.empty')}</Text>
+          <Card testID="reports-empty">
+            <EmptyState text={t('empty')} />
+          </Card>
         ) : (
-          filtered.map((report) => (
-            <View key={report.id} style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              {/* Header: reported user + status */}
-              <View style={[styles.cardHead, { flexDirection: rowDir }]}>
-                <Text style={[styles.reportedName, { ...font.bold, color: colors.text, textAlign }]} numberOfLines={1}>
-                  {reportedName(report)}
-                </Text>
-                <View style={[styles.badge, { backgroundColor: STATUS_COLORS[report.status] + '22' }]}>
-                  <Text style={[styles.badgeText, { ...font.semiBold, color: STATUS_COLORS[report.status] }]}>
-                    {t(`admin_reports.status_${report.status}`)}
-                  </Text>
+          filtered.map((report) => {
+            const busy = !!updating[report.id];
+            return (
+              <Card key={report.id} testID={`report-${report.id}`}>
+                {/* Head: reported user (or the community) over reporter · date, status on the far side. */}
+                <CardHead
+                  title={reportedName(report)}
+                  sub={`${resolvedNames[report.reporterId] || '—'} · ${formatDate(report.createdAt)}`}
+                  side={<StatusChip status={report.status} label={t(`status_${report.status}`)} />}
+                />
+
+                <View style={[styles.body, { borderTopColor: p.border }]}>
+                  <AdminText style={[styles.reason, { color: p.text2, textAlign }]}>{report.reason}</AdminText>
+
+                  {(report.evidenceURLs?.length ?? 0) > 0 && (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={[styles.thumbs, { flexDirection: rowDir }]}
+                    >
+                      {report.evidenceURLs.map((url, i) => (
+                        <Image key={i} source={{ uri: url }} style={[styles.thumb, { backgroundColor: p.surface3 }]} resizeMode="cover" />
+                      ))}
+                    </ScrollView>
+                  )}
+
+                  <View style={[styles.actions, { flexDirection: rowDir }]}>
+                    {/* Moderate the reported user. A deletion request has no user to act on. */}
+                    {report.type !== 'community_deletion' && (
+                      <>
+                        <PillButton
+                          label={t('warn')}
+                          testID={`warn-${report.id}`}
+                          onPress={() => { setModTarget({ report, action: 'warn' }); setModReason(''); }}
+                        />
+                        <PillButton
+                          label={t('suspend')}
+                          variant="danger"
+                          testID={`suspend-${report.id}`}
+                          onPress={() => { setModTarget({ report, action: 'suspend' }); setModReason(''); }}
+                        />
+                      </>
+                    )}
+                    <View style={styles.spacer} />
+                    {busy ? <ActivityIndicator size="small" color={p.accent} testID={`updating-${report.id}`} /> : null}
+                    {report.status !== 'reviewed' && (
+                      <PillButton
+                        label={t('mark_reviewed')}
+                        testID={`review-${report.id}`}
+                        disabled={busy}
+                        onPress={() => updateStatus(report.id, 'reviewed')}
+                      />
+                    )}
+                    {report.status !== 'resolved' && (
+                      <PillButton
+                        label={t('resolve')}
+                        variant="primary"
+                        testID={`resolve-${report.id}`}
+                        disabled={busy}
+                        onPress={() => updateStatus(report.id, 'resolved')}
+                      />
+                    )}
+                  </View>
                 </View>
-              </View>
-
-              {/* Reporter + date */}
-              <Text style={[styles.metaLine, { ...font.regular, color: colors.textMuted, textAlign }]} numberOfLines={1}>
-                {`${resolvedNames[report.reporterId] || '—'} · ${formatDate(report.createdAt)}`}
-              </Text>
-
-              {/* Reason */}
-              <Text style={[styles.reasonText, { ...font.regular, color: colors.textSec, textAlign }]}>
-                {report.reason}
-              </Text>
-
-              {/* Evidence */}
-              {(report.evidenceURLs?.length ?? 0) > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbScroll}>
-                  {report.evidenceURLs.map((url, i) => (
-                    <Image key={i} source={{ uri: url }} style={styles.thumb} resizeMode="cover" />
-                  ))}
-                </ScrollView>
-              )}
-
-              {/* Moderate the reported user. A deletion request has no user to act on. */}
-              {report.type !== 'community_deletion' && (
-              <View style={[styles.actions, { flexDirection: rowDir }]}>
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.modBtn, { flexDirection: rowDir, borderColor: '#ff9800' }]}
-                  onPress={() => { setModTarget({ report, action: 'warn' }); setModReason(''); }}
-                  activeOpacity={0.7}
-                >
-                  <ShieldAlert size={15} color="#ff9800" strokeWidth={2.2} />
-                  <Text style={[styles.actionText, { ...font.semiBold, color: '#ff9800' }]}>{t('admin_reports.warn')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.modBtn, { flexDirection: rowDir, borderColor: '#e53935' }]}
-                  onPress={() => { setModTarget({ report, action: 'suspend' }); setModReason(''); }}
-                  activeOpacity={0.7}
-                >
-                  <ShieldBan size={15} color="#e53935" strokeWidth={2.2} />
-                  <Text style={[styles.actionText, { ...font.semiBold, color: '#e53935' }]}>{t('admin_reports.suspend')}</Text>
-                </TouchableOpacity>
-              </View>
-              )}
-
-              {/* Report status */}
-              <View style={[styles.actions, { flexDirection: rowDir }]}>
-                {report.status !== 'reviewed' && (
-                  <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#2196f322' }]}
-                    onPress={() => updateStatus(report.id, 'reviewed')}
-                    disabled={!!updating[report.id]}
-                    activeOpacity={0.7}
-                  >
-                    {updating[report.id] ? <ActivityIndicator size="small" color="#2196f3" /> : (
-                      <Text style={[styles.actionText, { ...font.semiBold, color: '#2196f3' }]}>{t('admin_reports.mark_reviewed')}</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-                {report.status !== 'resolved' && (
-                  <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#4caf5022' }]}
-                    onPress={() => updateStatus(report.id, 'resolved')}
-                    disabled={!!updating[report.id]}
-                    activeOpacity={0.7}
-                  >
-                    {updating[report.id] ? <ActivityIndicator size="small" color="#4caf50" /> : (
-                      <Text style={[styles.actionText, { ...font.semiBold, color: '#4caf50' }]}>{t('admin_reports.resolve')}</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          ))
+              </Card>
+            );
+          })
         )}
-      </ScrollView>
+      </AdminPage>
 
       {/* Warn / Suspend reason modal */}
       <Modal visible={!!modTarget} transparent animationType="fade" onRequestClose={() => setModTarget(null)}>
         <View style={styles.overlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModTarget(null)} />
-          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { ...font.bold, color: colors.text, textAlign }]}>
-              {modTarget?.action === 'suspend' ? t('admin_reports.suspend_user') : t('admin_reports.warn_user')}
-              {modTarget ? ` · ${reportedName(modTarget.report)}` : ''}
-            </Text>
-            <Text style={[styles.modalHint, { ...font.regular, color: colors.textMuted, textAlign }]}>
-              {t('admin_reports.reason_hint')}
-            </Text>
-            <TextInput
-              style={[styles.reasonInput, { ...font.regular, color: colors.text, borderColor: colors.border, backgroundColor: colors.bg, textAlign }]}
-              value={modReason}
-              onChangeText={setModReason}
-              placeholder={t('admin_reports.reason_placeholder')}
-              placeholderTextColor={colors.placeholder}
-              multiline
-            />
-            <View style={[styles.modalActions, { flexDirection: rowDir }]}>
-              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.inputBg }]} onPress={() => setModTarget(null)} activeOpacity={0.8}>
-                <Text style={[styles.modalBtnText, { ...font.semiBold, color: colors.textSec }]}>{t('admin_reports.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: modTarget?.action === 'suspend' ? '#e53935' : '#ff9800' }]}
-                onPress={submitModeration}
-                disabled={modBusy}
-                activeOpacity={0.85}
-              >
-                {modBusy ? <ActivityIndicator size="small" color="#fff" /> : (
-                  <Text style={[styles.modalBtnText, { ...font.semiBold, color: '#fff' }]}>
-                    {modTarget?.action === 'suspend' ? t('admin_reports.suspend') : t('admin_reports.warn')}
-                  </Text>
+          <Pressable
+            style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: p.shadow }]}
+            onPress={() => setModTarget(null)}
+            accessibilityRole="button"
+            accessibilityLabel={t('cancel')}
+          />
+          <Card style={styles.modalCard} testID="mod-modal">
+            <View style={styles.modalBody}>
+              <AdminText weight="bold" style={[styles.modalTitle, { textAlign }]}>
+                {modTarget?.action === 'suspend' ? t('suspend_user') : t('warn_user')}
+                {modTarget ? ` · ${reportedName(modTarget.report)}` : ''}
+              </AdminText>
+              <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{t('reason_hint')}</AdminText>
+              <TextInput
+                style={[
+                  styles.reasonInput,
+                  { color: p.text, borderColor: p.border, backgroundColor: p.surface2, textAlign },
+                ]}
+                value={modReason}
+                onChangeText={setModReason}
+                placeholder={t('reason_placeholder')}
+                placeholderTextColor={p.text3}
+                multiline
+                testID="mod-reason"
+              />
+              <View style={[styles.modalActions, { flexDirection: rowDir }]}>
+                <View style={styles.spacer} />
+                <PillButton label={t('cancel')} onPress={() => setModTarget(null)} testID="mod-cancel" />
+                {modBusy ? (
+                  <ActivityIndicator size="small" color={p.accent} testID="mod-busy" />
+                ) : (
+                  <PillButton
+                    label={modTarget?.action === 'suspend' ? t('suspend') : t('warn')}
+                    variant={modTarget?.action === 'suspend' ? 'danger' : 'primary'}
+                    onPress={submitModeration}
+                    testID="mod-submit"
+                  />
                 )}
-              </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </Card>
         </View>
       </Modal>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  header: { paddingBottom: 14, paddingHorizontal: 16, gap: 2 },
-  greeting: { fontSize: 11, color: 'rgba(255,255,255,0.7)', width: '100%' },
-  headerTitle: { fontSize: 17, color: '#ffffff', width: '100%' },
+  filterRow: { flexGrow: 1 },
+  spinner: { marginTop: 40 },
+  chip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
+  body: { borderTopWidth: 1, paddingVertical: 14, paddingHorizontal: SPACE.rowPadH, gap: 12 },
+  reason: { fontSize: 14, lineHeight: 21 },
+  thumbs: { gap: 8 },
+  thumb: { width: 72, height: 72, borderRadius: 12 },
+  actions: { alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  spacer: { flexGrow: 1 },
 
-  content: { padding: 16, paddingBottom: 100 },
-
-  filters: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  pill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
-  pillText: { fontSize: 13 },
-
-  empty: { fontSize: 15, marginTop: 40, width: '100%', textAlign: 'center' },
-
-  card: { borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 12, gap: 8 },
-  cardHead: { justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  reportedName: { flex: 1, fontSize: 15 },
-  badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12 },
-  badgeText: { fontSize: 12 },
-  metaLine: { fontSize: 12 },
-  reasonText: { fontSize: 14, lineHeight: 20 },
-  thumbScroll: { marginTop: 2 },
-  thumb: { width: 72, height: 72, borderRadius: 8, marginRight: 8 },
-
-  actions: { gap: 8, marginTop: 2 },
-  actionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 9, borderRadius: 10 },
-  modBtn: { borderWidth: 1.5, backgroundColor: 'transparent' },
-  actionText: { fontSize: 13 },
-
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalCard: { width: '100%', maxWidth: 420, borderRadius: 18, padding: 18, gap: 10 },
-  modalTitle: { fontSize: 17 },
-  modalHint: { fontSize: 13 },
-  reasonInput: { borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 14, minHeight: 84, textAlignVertical: 'top' },
-  modalActions: { gap: 8, marginTop: 4 },
-  modalBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10 },
-  modalBtnText: { fontSize: 14 },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  scrim: { opacity: 0.45 },
+  modalCard: { width: '100%', maxWidth: 420 },
+  modalBody: { padding: SPACE.cardPad + 1, gap: 10 },
+  modalTitle: { fontSize: 17, letterSpacing: -0.2 },
+  reasonInput: {
+    fontFamily: 'Heebo-Regular',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    fontSize: 14,
+    minHeight: 84,
+    textAlignVertical: 'top',
+  },
+  modalActions: { alignItems: 'center', gap: 8, marginTop: 4 },
 });
