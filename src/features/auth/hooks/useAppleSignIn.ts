@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
-import { OAuthProvider, signInWithCredential } from 'firebase/auth';
+import { OAuthProvider, getAdditionalUserInfo, signInWithCredential } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 import { auth } from '@core/firebase/config';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 import { syncUser } from '@features/auth/utils/syncUser';
-import { TERMS_VERSION } from '@core/constants/legal';
+import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 
 type AppleSignInState = {
-  signInWithApple: (termsAcceptedAt: number) => Promise<void>;
+  signInWithApple: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
 };
@@ -23,7 +23,7 @@ export function useAppleSignIn(): AppleSignInState {
   const { showToast } = useUiStore();
   const router = useRouter();
 
-  async function signInWithApple(termsAcceptedAt: number) {
+  async function signInWithApple() {
     setIsLoading(true);
     setError(null);
     try {
@@ -64,12 +64,22 @@ export function useAppleSignIn(): AppleSignInState {
       const familyName = appleCredential.fullName?.familyName ?? '';
       const displayName = [givenName, familyName].filter(Boolean).join(' ');
 
-      await syncUser(result.user.uid, {
+      const info = {
         email: appleCredential.email ?? result.user.email ?? '',
         displayName,
         photoURL: null,
-      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION, ageConfirmedAt: termsAcceptedAt });
+      };
 
+      // A NEW account consents first: nothing is written for it until both
+      // boxes on the consent screen are checked (and it is removed if they
+      // decline). Consent is never recorded on anyone's behalf.
+      if (getAdditionalUserInfo(result)?.isNewUser) {
+        usePendingSignupStore.getState().setPending({ uid: result.user.uid, ...info });
+        router.replace('/(auth)/consent' as never);
+        return;
+      }
+
+      await syncUser(result.user.uid, info, setUser);
       router.replace('/(auth)/mode-select');
     } catch (e: any) {
       console.log('[AppleSignIn] full error:', JSON.stringify(e));

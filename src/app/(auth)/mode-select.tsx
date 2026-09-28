@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { Settings } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { ModePicker } from '@features/auth/components/ModePicker';
 import { useIsAdmin } from '@core/hooks/useIsAdmin';
 import { auth } from '@core/firebase/config';
+import { useAuthStore } from '@core/stores/authStore';
+import { needsConsent } from '@features/auth/utils/needsConsent';
 
 export default function ModeSelectScreen() {
   const { isAdmin, loading } = useIsAdmin();
@@ -22,6 +24,10 @@ export default function ModeSelectScreen() {
   }, []);
 
   console.log('[ModeSelect] isAdmin:', isAdmin, 'loading:', loading, 'will render button:', isAdmin && !loading);
+  // A signed-in user reaches this screen straight from sign-in, outside the
+  // group layouts' gate: consent (the gate's first rung) is checked here too.
+  const mustConsent = useAuthStore((st) => needsConsent(st.user));
+  if (mustConsent) return <Redirect href={'/(auth)/consent' as never} />;
 
   return (
     <Screen scrollable={false}>

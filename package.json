@@ -74,5 +74,12 @@
     "lint": "expo lint",
     "test": "jest"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "autolinking": {
+      "exclude": [
+        "@react-native-google-signin/google-signin"
+      ]
+    }
+  }
 }

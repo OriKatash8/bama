@@ -47,12 +47,6 @@
         }
       ],
       "expo-video",
-      [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r"
-        }
-      ],
       "expo-apple-authentication",
       [
         "expo-audio",

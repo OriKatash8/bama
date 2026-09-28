@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Platform } from 'react-native';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import {
   GoogleAuthProvider,
+  getAdditionalUserInfo,
   signInWithCredential,
   signInWithPopup,
+  type UserCredential,
 } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 import { auth, googleProvider } from '@core/firebase/config';
@@ -12,7 +13,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 import { syncUser } from '@features/auth/utils/syncUser';
-import { TERMS_VERSION } from '@core/constants/legal';
+import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 
 const IOS_CLIENT_ID =
   '165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r.apps.googleusercontent.com';
@@ -21,12 +22,26 @@ const IOS_CLIENT_ID =
 const WEB_CLIENT_ID =
   '165833515213-ne79l7lafiupu1gdvsubh6pjl7eogr7p.apps.googleusercontent.com';
 
-if (Platform.OS !== 'web') {
-  GoogleSignin.configure({ iosClientId: IOS_CLIENT_ID, webClientId: WEB_CLIENT_ID });
+type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin');
+let googleSigninModule: GoogleSigninModule | null = null;
+
+/**
+ * The native module, loaded and configured on first use rather than at import.
+ * With GOOGLE_SIGNIN_ENABLED off, its native code is not linked into the build
+ * (react-native.config.js), and importing it at module load would crash the
+ * app at launch just because this file is imported.
+ */
+function googleSignin(): GoogleSigninModule {
+  if (!googleSigninModule) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    googleSigninModule = require('@react-native-google-signin/google-signin') as GoogleSigninModule;
+    googleSigninModule.GoogleSignin.configure({ iosClientId: IOS_CLIENT_ID, webClientId: WEB_CLIENT_ID });
+  }
+  return googleSigninModule;
 }
 
 type GoogleSignInState = {
-  signInWithGoogle: (termsAcceptedAt: number) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
 };
@@ -38,29 +53,46 @@ export function useGoogleSignIn(): GoogleSignInState {
   const { showToast } = useUiStore();
   const router = useRouter();
 
-  async function signInWithGoogle(termsAcceptedAt: number) {
+  /**
+   * A NEW account goes to the consent screen with nothing written; consent is
+   * recorded there, only once both boxes are checked. An existing account
+   * signs in as before, and its consent is never touched here.
+   */
+  async function finish(
+    result: UserCredential,
+    info: { email: string; displayName: string; photoURL: string | null },
+  ) {
+    if (getAdditionalUserInfo(result)?.isNewUser) {
+      usePendingSignupStore.getState().setPending({ uid: result.user.uid, ...info });
+      router.replace('/(auth)/consent' as never);
+      return;
+    }
+    await syncUser(result.user.uid, info, setUser);
+    router.replace('/(auth)/mode-select');
+  }
+
+  async function signInWithGoogle() {
     setIsLoading(true);
     setError(null);
     try {
       if (Platform.OS === 'web') {
-        await signInWithWeb(termsAcceptedAt);
+        await signInWithWeb();
       } else {
-        await signInWithNative(termsAcceptedAt);
+        await signInWithNative();
       }
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function signInWithWeb(termsAcceptedAt: number) {
+  async function signInWithWeb() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      await syncUser(result.user.uid, {
+      await finish(result, {
         email: result.user.email ?? '',
         displayName: result.user.displayName ?? '',
         photoURL: result.user.photoURL,
-      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION, ageConfirmedAt: termsAcceptedAt });
-      router.replace('/(auth)/mode-select');
+      });
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? '';
       if (
@@ -80,7 +112,8 @@ export function useGoogleSignIn(): GoogleSignInState {
     }
   }
 
-  async function signInWithNative(termsAcceptedAt: number) {
+  async function signInWithNative() {
+    const { GoogleSignin, statusCodes } = googleSignin();
     try {
       await GoogleSignin.hasPlayServices();
       const signInResult = await GoogleSignin.signIn();
@@ -95,12 +128,11 @@ export function useGoogleSignIn(): GoogleSignInState {
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
 
-      await syncUser(result.user.uid, {
+      await finish(result, {
         email: result.user.email || googleUser?.email || '',
         displayName: result.user.displayName || googleName,
         photoURL: result.user.photoURL || googleUser?.photo || null,
-      }, setUser, { acceptedAt: termsAcceptedAt, version: TERMS_VERSION, ageConfirmedAt: termsAcceptedAt });
-      router.replace('/(auth)/mode-select');
+      });
     } catch (error: any) {
       console.log('[GoogleSignIn] full error:', JSON.stringify(error));
       console.log('[GoogleSignIn] error code:', error.code);

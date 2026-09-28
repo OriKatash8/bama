@@ -7,6 +7,7 @@ export * from './moderation';
 export * from './moderation/lookup';
 export * from './system';
 export * from './account/deletion';
+export * from './account/discardSignup';
 
 // Pricing & project lifecycle (slice 1)
 export * from './lifecycle/hire';

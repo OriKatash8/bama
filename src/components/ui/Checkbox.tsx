@@ -6,12 +6,16 @@ type Props = {
   checked: boolean;
   onChange: (value: boolean) => void;
   label?: ReactNode;
+  /** Hebrew: the box on the right, the label reading toward it. */
+  rtl?: boolean;
+  testID?: string;
 };
 
-export function Checkbox({ checked, onChange, label }: Props) {
+export function Checkbox({ checked, onChange, label, rtl, testID }: Props) {
   return (
     <TouchableOpacity
-      style={styles.row}
+      testID={testID}
+      style={[styles.row, rtl && styles.rowRtl]}
       onPress={() => onChange(!checked)}
       activeOpacity={0.7}
       accessibilityRole="checkbox"
@@ -31,6 +35,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
   },
+  rowRtl: { flexDirection: 'row-reverse' },
   box: {
     width: 20,
     height: 20,

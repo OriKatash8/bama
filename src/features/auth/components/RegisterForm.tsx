@@ -14,6 +14,7 @@ import { useRegister } from '@features/auth/hooks/useRegister';
 import { useUiStore } from '@core/stores/uiStore';
 import { validatePassword } from '@features/auth/utils/validatePassword';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { GOOGLE_SIGNIN_ENABLED } from '@core/constants/auth';
 import { AppleSignInButton } from './AppleSignInButton';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
@@ -60,6 +61,9 @@ export function RegisterForm() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  // Apple renders on iOS only (AppleSignInButton returns null elsewhere).
+  const showApple = Platform.OS === 'ios';
+  const hasSocial = GOOGLE_SIGNIN_ENABLED || showApple;
   const font = useAppFont();
   const textAlign = rtl ? 'right' : 'left' as const;
 
@@ -86,28 +90,16 @@ export function RegisterForm() {
     await register(fullName, email, password, { acceptedAt: now, version: TERMS_VERSION, ageConfirmedAt: now }, normalizePhone(phone) as string);
   }
 
-  function handleBeforeSocialSignIn(): boolean {
-    if (!termsAccepted) {
-      showToast(t('auth.err_terms_required'), 'error');
-      return false;
-    }
-    if (!ageConfirmed) {
-      showToast(t('auth.err_age_required'), 'error');
-      return false;
-    }
-    return true;
-  }
-
   const termsLabel = (
     <AppText weight="regular" style={[styles.termsText, { color: colors.text }]}>
-      {t('auth.terms_agree_prefix')}{' '}
+      {t('auth.terms_agree_prefix')}
       <Text
         style={[styles.termsLink, { color: '#004aad' }]}
         onPress={() => void Linking.openURL(TERMS_URL)}
       >
         {t('auth.terms_of_service')}
       </Text>
-      {' '}{t('auth.terms_and')}{' '}
+      {t('auth.terms_and')}
       <Text
         style={[styles.termsLink, { color: '#004aad' }]}
         onPress={() => void Linking.openURL(PRIVACY_URL)}
@@ -208,6 +200,7 @@ export function RegisterForm() {
             checked={termsAccepted}
             onChange={setTermsAccepted}
             label={termsLabel}
+            rtl={rtl}
           />
           {fieldErrors.terms ? (
             <AppText weight="regular" style={styles.termsError}>{fieldErrors.terms}</AppText>
@@ -218,6 +211,7 @@ export function RegisterForm() {
           <Checkbox
             checked={ageConfirmed}
             onChange={setAgeConfirmed}
+            rtl={rtl}
             label={
               <AppText weight="regular" style={[styles.termsText, { color: colors.text }]}>
                 {t('auth.age_confirm')}
@@ -249,18 +243,23 @@ export function RegisterForm() {
           </TouchableOpacity>
         </View>
 
-        {/* "or" divider */}
-        <View style={[styles.orDivider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <View style={styles.dividerLine} />
-          <AppText weight="regular" style={styles.dividerText}>{t('auth.or')}</AppText>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Social buttons row — gated by terms checkbox */}
-        <View style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <GoogleSignInButton style={{ flex: 1 }} showDivider={false} onBeforeSignIn={handleBeforeSocialSignIn} />
-          <AppleSignInButton style={{ flex: 1 }} onBeforeSignIn={handleBeforeSocialSignIn} />
-        </View>
+        {/* "or" divider and the social row — only when a social button will
+            actually show (Apple on iOS; Google while GOOGLE_SIGNIN_ENABLED), so
+            there is never a lone divider over an empty row. A NEW account made
+            here goes to the consent screen before anything is written. */}
+        {hasSocial && (
+          <>
+            <View testID="social-divider" style={[styles.orDivider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={styles.dividerLine} />
+              <AppText weight="regular" style={styles.dividerText}>{t('auth.or')}</AppText>
+              <View style={styles.dividerLine} />
+            </View>
+            <View testID="social-row" style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              {GOOGLE_SIGNIN_ENABLED && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />}
+              {showApple && <AppleSignInButton style={{ flex: 1 }} />}
+            </View>
+          </>
+        )}
       </View>
     </View>
   );

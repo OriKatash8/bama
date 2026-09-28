@@ -9,6 +9,7 @@ import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useLogin } from '@features/auth/hooks/useLogin';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { GOOGLE_SIGNIN_ENABLED } from '@core/constants/auth';
 import { AppleSignInButton } from './AppleSignInButton';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
@@ -41,6 +42,9 @@ export function LoginForm() {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  // Apple renders on iOS only (AppleSignInButton returns null elsewhere).
+  const showApple = Platform.OS === 'ios';
+  const hasSocial = GOOGLE_SIGNIN_ENABLED || showApple;
   const textAlign = rtl ? 'right' : 'left' as const;
 
   function validate(): boolean {
@@ -110,18 +114,23 @@ export function LoginForm() {
           </TouchableOpacity>
         </View>
 
-        {/* "or" divider */}
-        <View style={[styles.orDivider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <View style={styles.dividerLine} />
-          <AppText weight="regular" style={styles.dividerText}>{t('auth.or')}</AppText>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Social buttons row */}
-        <View style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />
-          <AppleSignInButton style={{ flex: 1 }} />
-        </View>
+        {/* "or" divider and the social row — only when a social button will
+            actually show (Apple on iOS; Google while GOOGLE_SIGNIN_ENABLED), so
+            there is never a lone divider over an empty row. A NEW account made
+            here goes to the consent screen before anything is written. */}
+        {hasSocial && (
+          <>
+            <View testID="social-divider" style={[styles.orDivider, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={styles.dividerLine} />
+              <AppText weight="regular" style={styles.dividerText}>{t('auth.or')}</AppText>
+              <View style={styles.dividerLine} />
+            </View>
+            <View testID="social-row" style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              {GOOGLE_SIGNIN_ENABLED && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />}
+              {showApple && <AppleSignInButton style={{ flex: 1 }} />}
+            </View>
+          </>
+        )}
       </View>
     </View>
   );

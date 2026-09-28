@@ -49,7 +49,7 @@ export function GoogleSignInButton({ style, showDivider = true, onBeforeSignIn }
         style={[styles.button, isLoading && styles.buttonDisabled]}
         onPress={() => {
           if (onBeforeSignIn && !onBeforeSignIn()) return;
-          void signInWithGoogle(Date.now());
+          void signInWithGoogle();
         }}
         disabled={isLoading}
         activeOpacity={0.8}

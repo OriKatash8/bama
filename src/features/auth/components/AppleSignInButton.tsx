@@ -13,7 +13,7 @@ function AppleButton({ style, onBeforeSignIn }: { style?: import('react-native')
       style={[styles.button, isLoading && styles.buttonDisabled, style]}
       onPress={() => {
         if (onBeforeSignIn && !onBeforeSignIn()) return;
-        void signInWithApple(Date.now());
+        void signInWithApple();
       }}
       disabled={isLoading}
       activeOpacity={0.8}
