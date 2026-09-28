@@ -5,6 +5,8 @@ import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
 import { getFunctions } from 'firebase/functions';
+import i18n from '@core/i18n';
+import { firebaseLanguageCode } from './languageCode';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -43,6 +45,14 @@ function createAuth(): Auth {
 void (require('./appCheck') as typeof import('./appCheck')).initAppCheck(app);
 
 export const auth = createAuth();
+// Firebase's own emails (verification, password reset) in the app's language:
+// set now, then kept in step with i18next, which LanguageSync keeps in step
+// with the in-app language switch.
+auth.languageCode = firebaseLanguageCode(i18n.language);
+i18n.on('languageChanged', (lng) => {
+  auth.languageCode = firebaseLanguageCode(lng);
+});
+export { firebaseLanguageCode };
 export const googleProvider = new GoogleAuthProvider();
 export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 export const storage = getStorage(app);

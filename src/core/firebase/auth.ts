@@ -8,7 +8,7 @@ import {
   sendEmailVerification,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { auth } from './config';
+import { auth, firebaseLanguageCode } from './config';
 import i18n from '@core/i18n';
 
 export async function signUp(email: string, password: string): Promise<FirebaseUser> {
@@ -38,7 +38,7 @@ export function onAuthChange(callback: (user: FirebaseUser | null) => void): () 
  * send can never fail the sign-up itself — the verify screen resends.
  */
 export async function sendVerificationEmail(user: FirebaseUser): Promise<void> {
-  auth.languageCode = i18n.language || 'he';
+  auth.languageCode = firebaseLanguageCode(i18n.language);
   await sendEmailVerification(user);
 }
 
