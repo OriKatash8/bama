@@ -1,7 +1,7 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
 import { Home, Flag, LogOut, UserCog, Wallet, Boxes } from 'lucide-react-native';
-import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useIsAdmin } from '@core/hooks/useIsAdmin';
@@ -31,79 +31,78 @@ export default function AdminTabsLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0 }}>
-        <Tabs
-          screenOptions={{
-            headerShown: false,
-            tabBarShowLabel: true,
-            tabBarStyle: getFloatingTabBarStyle(isDark),
-            tabBarActiveTintColor: FLOATING_TAB_BAR_ACTIVE_COLOR,
-            tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
-            tabBarLabelStyle: { fontSize: 11, ...font.regular },
+      {/* Pages get the real insets: each draws its own header below the status bar. */}
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: true,
+          tabBarStyle: getFloatingTabBarStyle(isDark),
+          tabBarActiveTintColor: FLOATING_TAB_BAR_ACTIVE_COLOR,
+          tabBarInactiveTintColor: isDark ? FLOATING_TAB_BAR_INACTIVE_COLOR.dark : FLOATING_TAB_BAR_INACTIVE_COLOR.light,
+          tabBarLabelStyle: { fontSize: 11, ...font.regular },
+        }}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Dashboard',
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <Home size={24} color={color} strokeWidth={2.5} />
+              </View>
+            ),
           }}
-        >
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Dashboard',
-              tabBarIcon: ({ color, focused }) => (
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <Home size={24} color={color} strokeWidth={2.5} />
-                </View>
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="money"
-            options={{
-              title: 'Money',
-              tabBarIcon: ({ color, focused }) => (
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <Wallet size={24} color={color} strokeWidth={2.5} />
-                </View>
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="operations"
-            options={{
-              title: 'Operations',
-              tabBarIcon: ({ color, focused }) => (
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <Boxes size={24} color={color} strokeWidth={2.5} />
-                </View>
-              ),
-            }}
-          />
-          {/* Reached from the Operations hub — hidden from the tab bar. */}
-          <Tabs.Screen name="courses" options={{ href: null }} />
-          <Tabs.Screen name="communities" options={{ href: null }} />
-          <Tabs.Screen name="marketplace" options={{ href: null }} />
-        <Tabs.Screen name="fees" options={{ href: null }} />
-          <Tabs.Screen
-            name="reports"
-            options={{
-              title: 'Reports',
-              tabBarIcon: ({ color, focused }) => (
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <Flag size={24} color={color} strokeWidth={2.5} />
-                </View>
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="users"
-            options={{
-              title: 'Users',
-              tabBarIcon: ({ color, focused }) => (
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <UserCog size={24} color={color} strokeWidth={2.5} />
-                </View>
-              ),
-            }}
-          />
-        </Tabs>
-      </SafeAreaInsetsContext.Provider>
+        />
+        <Tabs.Screen
+          name="money"
+          options={{
+            title: 'Money',
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <Wallet size={24} color={color} strokeWidth={2.5} />
+              </View>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="operations"
+          options={{
+            title: 'Operations',
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <Boxes size={24} color={color} strokeWidth={2.5} />
+              </View>
+            ),
+          }}
+        />
+        {/* Reached from the Operations hub — hidden from the tab bar. */}
+        <Tabs.Screen name="courses" options={{ href: null }} />
+        <Tabs.Screen name="communities" options={{ href: null }} />
+        <Tabs.Screen name="marketplace" options={{ href: null }} />
+      <Tabs.Screen name="fees" options={{ href: null }} />
+        <Tabs.Screen
+          name="reports"
+          options={{
+            title: 'Reports',
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <Flag size={24} color={color} strokeWidth={2.5} />
+              </View>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="users"
+          options={{
+            title: 'Users',
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <UserCog size={24} color={color} strokeWidth={2.5} />
+              </View>
+            ),
+          }}
+        />
+      </Tabs>
 
       {/* Log out — shown on every admin page; a white pill like the dashboard's cards */}
       <TouchableOpacity
