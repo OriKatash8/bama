@@ -14,22 +14,24 @@ it('mounts above the message list, so it stays pinned while messages scroll', ()
   const list = SRC.indexOf('<View style={{ flex: 1, zIndex: 0 }}>');
   expect(mount).toBeGreaterThan(-1);
   expect(mount).toBeLessThan(list);
-  expect(SRC.indexOf('<CandidateProCard')).toBeLessThan(list);
 });
 
-it('client gets the card, anyone else on the project gets the chip — by project role, not mode', () => {
-  expect(SRC).toMatch(/projectClientId === currentUserId\s*\?\s*\(?\s*<CandidateReviewCard[\s\S]{0,240}?clientId=\{currentUserId\}/);
-  expect(SRC).toMatch(/:\s*<CandidateProCard[^>]*proId=\{currentUserId\}/);
+it('only the client gets a review card — by project role, not mode; a professional gets none', () => {
+  expect(SRC).toMatch(/projectClientId === currentUserId && \(\s*<CandidateReviewCard[\s\S]{0,240}?clientId=\{currentUserId\}/);
+  // The professional's "Is this project right for you?" card is not mounted
+  // (CandidateProCard stays in the codebase, unused, to bring back later).
+  expect(SRC).not.toMatch(/<CandidateProCard/);
   expect(SRC).not.toMatch(/CandidateStatusChip/);
 });
 
 it('only on open project group chats', () => {
-  expect(SRC).toMatch(/chatType === 'group' && !!chatProjectId && !!projectClientId && !isReadOnly && !chatArchived && \(/);
+  expect(SRC).toMatch(/chatType === 'group' && !!chatProjectId && !!projectClientId && !isReadOnly && !chatArchived && projectClientId === currentUserId && \(/);
 });
 
-it('follows the project live, so the chip leaves when the project activates', () => {
+it('follows the project live, so the card and the completed state keep up without a reload', () => {
   expect(SRC).toMatch(/return onSnapshot\(\s*doc\(db, 'projects', chatProjectId\)/);
-  expect(SRC).toMatch(/setProjectStatus\(data\?\.status\)/);
+  expect(SRC).toMatch(/setProjectCompleted\(data\?\.status === 'completed'\)/);
+  expect(SRC).toMatch(/setProjectClientId\(data\?\.clientId\)/);
 });
 
 it('renders the crew message as its own pill', () => {

@@ -79,7 +79,6 @@ import { formatMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
-import { CandidateProCard } from '../components/candidates/CandidateProCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
@@ -639,7 +638,6 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Who owns this project. The fee entry point keys off this, not activeMode —
   // mode picks the tab, it does not decide your role on a given project.
   const [projectClientId, setProjectClientId] = useState<string | undefined>(undefined);
-  const [projectStatus, setProjectStatus] = useState<string | undefined>(undefined);
   // True while the review card is a carousel the client can swipe through.
   const [cardSwipeable, setCardSwipeable] = useState(false);
 
@@ -1155,8 +1153,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   // constrained to the project window (today → project end).
   useEffect(() => {
     if (!chatProjectId) { setProjectDeadline(undefined); setProjectCompleted(false); return; }
-    // LIVE, not a one-time read: the candidate review card and the status chip
-    // follow the project's status, and a project going 'in_progress' (or
+    // LIVE, not a one-time read: the client's candidate review card and the
+    // completed state follow the project, and a project going 'in_progress' (or
     // completing) while the chat is open has to reach them without a reload.
     return onSnapshot(
       doc(db, 'projects', chatProjectId),
@@ -1168,13 +1166,11 @@ export function ChatRoomScreen({ chatId }: Props) {
         const dl = data?.deadline;
         setProjectDeadline(dl && dl !== 'flexible' ? dl : undefined);
         setProjectCompleted(data?.status === 'completed');
-        setProjectStatus(data?.status);
         setProjectClientId(data?.clientId);
       },
       () => {
         setProjectDeadline(undefined);
         setProjectCompleted(false);
-        setProjectStatus(undefined);
         setProjectClientId(undefined);
       },
     );
@@ -1639,20 +1635,18 @@ export function ChatRoomScreen({ chatId }: Props) {
       )}
 
       {/* Candidate review — pinned header chrome, above the message list so it
-          does not scroll. Role decides which side renders, never the mode: the
-          client decides, a professional sees where he stands. Both hide
-          themselves when there is nothing to show. */}
-      {chatType === 'group' && !!chatProjectId && !!projectClientId && !isReadOnly && !chatArchived && (
-        projectClientId === currentUserId
-          ? (
-            <CandidateReviewCard
-              projectId={chatProjectId}
-              chatId={chatId}
-              clientId={currentUserId}
-              onSwipeableChange={setCardSwipeable}
-            />
-          )
-          : <CandidateProCard projectId={chatProjectId} chatId={chatId} proId={currentUserId} projectStatus={projectStatus} />
+          does not scroll. The CLIENT's side only, by project role, never the
+          mode: the client decides. A professional gets no card here — the
+          "Is this project right for you?" card (CandidateProCard) was removed
+          from the chat; the component is kept, unmounted, to bring back.
+          It hides itself when there is nothing to show. */}
+      {chatType === 'group' && !!chatProjectId && !!projectClientId && !isReadOnly && !chatArchived && projectClientId === currentUserId && (
+        <CandidateReviewCard
+          projectId={chatProjectId}
+          chatId={chatId}
+          clientId={currentUserId}
+          onSwipeableChange={setCardSwipeable}
+        />
       )}
 
       {/* Product notice opened by tapping the purchase-chat title */}
