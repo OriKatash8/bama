@@ -12,6 +12,11 @@ import en from '@core/i18n/translations/en.json';
  */
 
 jest.mock('expo-image', () => ({ Image: 'Image' }));
+jest.mock('react-native-reanimated', () => require('../../../../testing/reanimatedMock').reanimatedMock());
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: ({ children }: { children: React.ReactNode }) => children,
+}));
+jest.mock('@core/haptics', () => ({ tapFeedback: jest.fn(), commitFeedback: jest.fn() }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));
