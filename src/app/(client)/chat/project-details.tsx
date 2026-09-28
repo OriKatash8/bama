@@ -1156,7 +1156,10 @@ export default function ProjectDetailsScreen() {
       <ScrollView ref={scrollRef} style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
-        <View style={[styles.header, { marginHorizontal: -16, marginTop: -16 }]}>
+        {/* Mirrors with the language, like the chat header: back at the right
+            edge in Hebrew, the left in English. The title stays centred — the
+            empty headerRight on the far side balances the button. */}
+        <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row', marginHorizontal: -16, marginTop: -16 }]}>
           {/* Pops to the chat room underneath — there because every link opens
               this page in the viewer's own stack (chatGroupOf). It used to PUSH a
               client copy of the room, which stacked a second one and left the
@@ -1171,7 +1174,7 @@ export default function ProjectDetailsScreen() {
             style={styles.headerBack}
             activeOpacity={0.7}
           >
-            <AppText weight="regular" style={[styles.headerBackText, { color: modeAccent }]}>{'‹'}</AppText>
+            {rtl ? <ChevronRight size={28} color={modeAccent} strokeWidth={2.2} /> : <ChevronLeft size={28} color={modeAccent} strokeWidth={2.2} />}
           </TouchableOpacity>
           <View style={styles.headerCenter} pointerEvents="none">
             <AppText weight="semiBold" style={styles.headerLabel}>
@@ -2768,7 +2771,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   headerBack: { width: 40, alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
-  headerBackText: { fontSize: 36, lineHeight: 44 },
   headerRight: { width: 40 },
   headerCenter: { flex: 1, alignItems: 'center', gap: 4 },
   headerLabel: {
