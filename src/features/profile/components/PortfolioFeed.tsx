@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import { FlatList, Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ViewToken } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView, TouchableOpacity } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -14,28 +13,28 @@ import { formatShortDay, isoDayFromSeconds } from '@utils/formatters';
 import type { MediaAsset } from '@core/types/media';
 import { NativeVideoSlide, WebVideoSlide, useModalInsets } from './mediaViewerParts';
 
-/** Instagram's range: nothing taller than 4:5, nothing wider than 1.91:1. */
-const MIN_ASPECT = 4 / 5;
-const MAX_ASPECT = 1.91;
 /**
- * Videos may be as tall as 9:16. Held to 4:5, a phone-shot vertical video was
- * letterboxed to about 70% of the width; at its own shape it fills the width.
- * Still `contain`, so nothing is cropped or stretched.
+ * Photos and videos alike: as tall as 9:16, as wide as 1.91:1. Held to 4:5, a
+ * phone-shot vertical photo or video was letterboxed to about 70% of the width;
+ * at its own shape it fills the width edge to edge. Still `contain`, so nothing
+ * is cropped or stretched.
  */
-const MIN_VIDEO_ASPECT = 9 / 16;
+const MIN_ASPECT = 9 / 16;
+const MAX_ASPECT = 1.91;
 const TOP_BAR_HEIGHT = 56;
 /** 60% of a post on screen: the one being looked at, not one scrolling past. */
 const VIEWABILITY = { itemVisiblePercentThreshold: 60 };
 
 /**
- * How tall a post's media is at this width. The media's own shape (width /
- * height), clamped to Instagram's range so one very tall photo cannot fill
- * several screens — a video may go taller, to 9:16. Square until the shape is
- * known — the media reports it on load.
+ * How tall a post's media is at this width: the media's own shape (width /
+ * height), clamped to 9:16 – 1.91:1 so one very tall item cannot fill several
+ * screens. The same range for a photo and a video, so a vertical photo fills
+ * the width exactly as a vertical video does. Square until the shape is known —
+ * the media reports it on load. `_type` is kept for callers; both types share
+ * one range now.
  */
-export function postMediaHeight(width: number, aspect: number | null, type: MediaAsset['type'] = 'image'): number {
-  const min = type === 'video' ? MIN_VIDEO_ASPECT : MIN_ASPECT;
-  const a = aspect ? Math.min(MAX_ASPECT, Math.max(min, aspect)) : 1;
+export function postMediaHeight(width: number, aspect: number | null, _type: MediaAsset['type'] = 'image'): number {
+  const a = aspect ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, aspect)) : 1;
   return width / a;
 }
 
@@ -151,7 +150,6 @@ export function PortfolioFeed({ assets, initialIndex, visible, onClose }: Props)
 function FeedBody({ assets, initialIndex, onClose }: Omit<Props, 'visible'>) {
   const insets = useModalInsets();
   const { width } = useWindowDimensions();
-  const colors = useTheme();
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const listRef = useRef<FlatList<MediaAsset>>(null);
   const openedRef = useRef(false);
@@ -177,7 +175,7 @@ function FeedBody({ assets, initialIndex, onClose }: Omit<Props, 'visible'>) {
   const onPinching = useCallback((p: boolean) => setScrollEnabled(!p), []);
 
   return (
-    <LinearGradient colors={colors.bgGradient} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.root}>
+    <View testID="portfolio-feed-root" style={styles.root}>
       <GestureHandlerRootView style={StyleSheet.absoluteFill}>
         <FlatList
           ref={listRef}
@@ -216,12 +214,12 @@ function FeedBody({ assets, initialIndex, onClose }: Omit<Props, 'visible'>) {
           </TouchableOpacity>
         </View>
       </GestureHandlerRootView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
   post: { marginBottom: 36 },
   postZoomed: { zIndex: 10 },
   info: {

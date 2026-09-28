@@ -115,16 +115,17 @@ describe('postMediaHeight', () => {
     expect(postMediaHeight(400, 1)).toBe(400);
     expect(postMediaHeight(400, 4 / 3)).toBe(300);
   });
-  it('clamps a very tall item to 4:5 and a very wide one to 1.91:1', () => {
-    expect(postMediaHeight(400, 9 / 16)).toBe(500);
+  it('clamps a very tall item to 9:16 and a very wide one to 1.91:1', () => {
+    expect(postMediaHeight(400, 1 / 3)).toBeCloseTo(400 * 16 / 9);
     expect(postMediaHeight(400, 3)).toBeCloseTo(400 / 1.91);
   });
-  it('a vertical VIDEO keeps its full 9:16 shape, so it fills the width', () => {
-    expect(postMediaHeight(400, 9 / 16, 'video')).toBeCloseTo(400 * 16 / 9);
-    // A photo of the same shape is still held to 4:5.
-    expect(postMediaHeight(400, 9 / 16, 'image')).toBe(500);
-    // Nothing taller than 9:16 even for a video.
-    expect(postMediaHeight(400, 1 / 3, 'video')).toBeCloseTo(400 * 16 / 9);
+  it('a vertical PHOTO fills the width edge to edge, exactly like a video of the same shape', () => {
+    for (const aspect of [9 / 16, 2 / 3, 3 / 4, 4 / 5]) {
+      expect(postMediaHeight(400, aspect, 'image')).toBeCloseTo(400 / aspect);
+      expect(postMediaHeight(400, aspect, 'image')).toBeCloseTo(postMediaHeight(400, aspect, 'video'));
+    }
+    // Nothing taller than 9:16, for either.
+    expect(postMediaHeight(400, 1 / 3, 'image')).toBeCloseTo(postMediaHeight(400, 1 / 3, 'video'));
   });
 
   it('is square while the shape is unknown', () => {
@@ -133,6 +134,11 @@ describe('postMediaHeight', () => {
 });
 
 describe('the feed', () => {
+  it('sits on a white background', () => {
+    const r = renderFeed();
+    expect(StyleSheet.flatten(r.getByTestId('portfolio-feed-root').props.style).backgroundColor).toBe('#FFFFFF');
+  });
+
   it('is a free scroll, not a pager, with every item as a post in order', () => {
     const { list, getAllByTestId } = renderFeed();
     expect(list.props.pagingEnabled).toBeFalsy();
