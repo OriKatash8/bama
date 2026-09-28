@@ -49,6 +49,18 @@
       "expo-video",
       "expo-apple-authentication",
       [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "GoogleUtilities/Environment", "modular_headers": true },
+              { "name": "GoogleUtilities/UserDefaults", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true }
+            ]
+          }
+        }
+      ],
+      [
         "expo-audio",
         {
           "microphonePermission": "BAMA uses the microphone to record voice messages in chats."
