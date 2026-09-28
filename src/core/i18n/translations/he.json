@@ -173,6 +173,8 @@
     "add_meeting": "הוסף פגישה",
     "record_cancel": "ביטול",
     "record_send": "שלח",
+    "unread_banner_one": "הודעה חדשה אחת",
+    "unread_banner": "{{count}} הודעות חדשות",
     "purchase_completed": "העסקה הושלמה · הצ'אט נסגר לצפייה בלבד",
     "purchase_cancelled": "העסקה בוטלה · הצ'אט נסגר",
     "project_cancelled": "הפרויקט בוטל · הצ'אט לקריאה בלבד",

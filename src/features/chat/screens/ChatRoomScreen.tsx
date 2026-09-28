@@ -5,6 +5,7 @@ import { ReplyQuote } from '../components/ReplyQuote';
 import { SwipeableMessageRow } from '../components/SwipeableMessageRow';
 import { buildReplyTo, type ReplyTo } from '../utils/replyTo';
 import { bubbleSide } from '../utils/bubbleSide';
+import { firstUnreadMessageId } from '../utils/firstUnread';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
@@ -369,7 +370,13 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
   );
 }
 
-type ListItem = Message | { type: 'date-separator'; id: string; label: string };
+type ListItem =
+  | Message
+  | { type: 'date-separator'; id: string; label: string }
+  | { type: 'unread-separator'; id: string; label: string };
+
+/** The "N new messages" divider's list id — also the open-on pin's target. */
+const UNREAD_BANNER_ID = 'unread-banner';
 
 /**
  * A message's text, with its mentions marked.
@@ -428,6 +435,18 @@ function MessageBody({ msg, rtl, names, color, accent, font, onPressMention }: {
         ),
       )}
     </Text>
+  );
+}
+
+/**
+ * "N new messages", above the first message the reader has not seen — like
+ * WhatsApp's. It stays while they are in the chat and goes once they answer.
+ */
+function UnreadSeparator({ label }: { label: string }) {
+  return (
+    <View style={styles.unreadSepRow} testID="unread-separator">
+      <AppText weight="semiBold" style={styles.unreadSepLabel}>{label}</AppText>
+    </View>
   );
 }
 
@@ -580,6 +599,14 @@ export function ChatRoomScreen({ chatId }: Props) {
   const currentUserId = auth.currentUser?.uid ?? '';
 
   const [messages, setMessages] = useState<Message[]>([]);
+  /**
+   * The unread count this chat was opened with, and — once the messages are in
+   * — the first of them. Drives where the chat opens and the "N new messages"
+   * divider. Read BEFORE the count is cleared (see "Clear unread count").
+   */
+  const [unreadBanner, setUnreadBanner] = useState<{ chatId: string; count: number; firstId: string | null } | null>(null);
+  /** The latest messages, for the unread read that lands after them. */
+  const messagesRef = useRef<Message[]>([]);
 
   const listItems = useMemo((): ListItem[] => {
     const result: ListItem[] = [];
@@ -593,10 +620,22 @@ export function ChatRoomScreen({ chatId }: Props) {
         result.push({ type: 'date-separator', id: `sep-${dateStr}`, label: formatMessageDate(ts, language) });
         lastDateStr = dateStr;
       }
+      if (unreadBanner?.chatId === chatId && unreadBanner.firstId === msg.id) {
+        // A local translator: `t` is rebuilt every render, and as a dependency
+        // it would rebuild this list — and re-render every row — each time.
+        const tl = makeT(language === 'he' ? he : en);
+        result.push({
+          type: 'unread-separator',
+          id: UNREAD_BANNER_ID,
+          label: unreadBanner.count === 1
+            ? tl('chats.unread_banner_one')
+            : tl('chats.unread_banner', { count: String(unreadBanner.count) }),
+        });
+      }
       result.push(msg);
     }
     return result;
-  }, [messages, language]);
+  }, [messages, language, unreadBanner, chatId]);
 
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
@@ -959,19 +998,41 @@ export function ChatRoomScreen({ chatId }: Props) {
     return unsub;
   }, [chatId]);
 
-  // Clear unread count
+  // Clear unread count — after reading it: the count at open decides where the
+  // chat opens and what the "N new messages" divider says. Cleared first, it
+  // would always read 0. Communities count across all their channels, so no
+  // one channel's messages can be placed against it: they get no divider.
   useEffect(() => {
     if (!currentUserId) return;
-    updateDoc(doc(db, 'chats', chatId), {
-      [`unreadCount.${currentUserId}`]: 0,
-    }).catch(() => {});
+    let cancelled = false;
+    (async () => {
+      const snap = await getDoc(doc(db, 'chats', chatId)).catch(() => null);
+      const data = snap?.exists() ? (snap.data() as { type?: string; unreadCount?: Record<string, number> }) : undefined;
+      const count = data && data.type !== 'community' ? data.unreadCount?.[currentUserId] ?? 0 : 0;
+      // The messages may already be in: place the divider now if so (else the
+      // message listener places it when they land — whichever comes second).
+      if (!cancelled && count > 0) {
+        setUnreadBanner({ chatId, count, firstId: firstUnreadMessageId(messagesRef.current, currentUserId, count) });
+      }
+      await updateDoc(doc(db, 'chats', chatId), {
+        [`unreadCount.${currentUserId}`]: 0,
+      });
+    })().catch(() => {});
+    return () => { cancelled = true; };
   }, [chatId, currentUserId]);
 
-  // Non-community messages listener
+  // Non-community messages listener. Also places the "N new messages" divider
+  // on the first snapshot that can — once, so later arrivals do not move it.
   useEffect(() => {
     if (chatType === null || chatType === 'community') return;
-    return listenToMessages(chatId, setMessages);
-  }, [chatId, chatType]);
+    return listenToMessages(chatId, (msgs) => {
+      messagesRef.current = msgs;
+      setMessages(msgs);
+      setUnreadBanner((prev) => (prev && prev.chatId === chatId && !prev.firstId
+        ? { ...prev, firstId: firstUnreadMessageId(msgs, currentUserId, prev.count) }
+        : prev));
+    });
+  }, [chatId, chatType, currentUserId]);
 
   // Community: listen to channels subcollection; ensure General + Market exist.
   useEffect(() => {
@@ -1120,6 +1181,21 @@ export function ChatRoomScreen({ chatId }: Props) {
     isAtBottomRef.current = false;
     applyPin();
   }, [chatId, mentionChannelId, pendingMentions, applyPin]);
+
+  // Open on the first unread message, the divider just above it. After the
+  // open-at-bottom effect, so it wins; a pending @mention jump (above) wins
+  // over it. Once per chat, through the sticky pin, which holds while rows
+  // remeasure and lets go when the reader drags.
+  const unreadPinnedRef = useRef('');
+  useEffect(() => {
+    if (!unreadBanner?.firstId || unreadBanner.chatId !== chatId) return;
+    if (unreadPinnedRef.current === chatId) return;
+    if (jumpedRef.current.startsWith(`${chatId}|`)) return;
+    unreadPinnedRef.current = chatId;
+    pinTargetRef.current = { kind: 'message', id: UNREAD_BANNER_ID };
+    isAtBottomRef.current = false;
+    applyPin();
+  }, [unreadBanner, chatId, applyPin]);
 
   // Back from community search with a result tapped: switch to its channel and
   // jump to it once loaded. After the two effects above, so the channel switch's
@@ -1285,6 +1361,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   async function handleSend() {
     const text = inputText.trim();
     if (!text || !currentUserId) return;
+    // Answering means the new messages were read: the divider goes.
+    setUnreadBanner(null);
     // Derived from what is actually being sent, not from what was picked:
     // backspace deletes one character rather than the whole token, so a
     // half-deleted "@Dana Coh" must drop the push along with the highlight.
@@ -1689,6 +1767,9 @@ export function ChatRoomScreen({ chatId }: Props) {
           renderItem={({ item }) => {
             if ('type' in item && item.type === 'date-separator') {
               return <DateSeparator label={(item as { label: string }).label} />;
+            }
+            if ('type' in item && item.type === 'unread-separator') {
+              return <UnreadSeparator label={(item as { label: string }).label} />;
             }
             const msg = item as Message;
             // A project's closing message: the team's contact list. Also
@@ -2773,6 +2854,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 10,
   },
+  // A full-width band, so it reads as a place in the conversation, not a date.
+  unreadSepRow: {
+    alignItems: 'center',
+    marginVertical: 10,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(0,74,173,0.08)',
+  },
+  unreadSepLabel: { fontSize: 12.5, color: '#004aad' },
   dateSepLabel: {
     fontSize: 12,
     color: 'rgba(0,0,0,0.45)',

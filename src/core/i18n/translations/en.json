@@ -173,6 +173,8 @@
     "add_meeting": "Add Meeting",
     "record_cancel": "Cancel",
     "record_send": "Send",
+    "unread_banner_one": "1 new message",
+    "unread_banner": "{{count}} new messages",
     "purchase_completed": "Transaction completed · Chat is read-only",
     "purchase_cancelled": "Purchase cancelled · Chat closed",
     "project_cancelled": "This project was cancelled · chat is read-only",
