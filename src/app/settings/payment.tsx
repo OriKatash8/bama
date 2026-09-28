@@ -177,7 +177,7 @@ export default function BalanceScreen() {
               it would say the opposite of what the row below is for. */}
           {total > 0 ? (
             <View style={styles.card}>
-              <AppText weight="regular" style={[styles.amountLabel, { color: colors.textMuted }]}>
+              <AppText weight="regular" style={[styles.amountLabel, { color: '#000000' }]}>
                 {t('balance.total_label')}
               </AppText>
               <AppText weight="bold" style={[styles.amount, { color: accent }]}>
@@ -277,7 +277,6 @@ const CARD_SHADOW = {
   elevation: 3,
 } as const;
 const CARD_BORDER = 'rgba(30,79,163,0.07)';
-const HEADING_BLUE = '#1e4fa3';
 /** Green marks affirmative STATE on this screen. There is no action to colour. */
 const SETTLED_GREEN = '#2d6a2d';
 const DISPUTED_AMBER = '#8a6100';
@@ -286,7 +285,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16 },
   linePending: { fontSize: 12, marginTop: 2 },
   backRow: { alignItems: 'center', gap: 6, paddingVertical: 12 },
-  title: { fontSize: 18, color: HEADING_BLUE },
+  title: { fontSize: 18, color: '#000000' },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
