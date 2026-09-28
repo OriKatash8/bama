@@ -583,7 +583,9 @@
     "delete_title": "מחיקת קורס",
     "delete_body": "בטוח?",
     "delete": "מחיקה",
-    "cancel": "ביטול"
+    "cancel": "ביטול",
+    "url_hint": "הכפתור ״{{button}}״ פותח את הקישור הזה",
+    "url_invalid": "יש להזין כתובת אתר, למשל https://site.com/course"
   },
   "admin_operations": {
     "greeting": "תוכן ומרקטפלייס",

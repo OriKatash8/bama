@@ -583,7 +583,9 @@
     "delete_title": "Delete Course",
     "delete_body": "Are you sure?",
     "delete": "Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "url_hint": "The “{{button}}” button opens this link",
+    "url_invalid": "Enter a web address, like https://site.com/course"
   },
   "admin_operations": {
     "greeting": "Content & marketplace",

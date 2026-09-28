@@ -10,6 +10,7 @@ import {
 import { X, Pencil, Trash2, Video, Eye, BookOpen, GraduationCap } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
+import { normalizeCourseUrl } from '@features/courses/courseUrl';
 import { useAuthStore } from '@core/stores/authStore';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { useUiStore } from '@core/stores/uiStore';
@@ -60,6 +61,7 @@ const EMPTY_FORM: CourseForm = {
   price: 0,
   instructorName: '',
   videoUrl: '',
+  courseUrl: '',
   published: false,
 };
 
@@ -139,6 +141,7 @@ export default function CoursesAdmin() {
       price: course.price,
       instructorName: course.instructorName,
       videoUrl: course.videoUrl,
+      courseUrl: course.courseUrl ?? '',
       published: course.published,
     });
     setModalVisible(true);
@@ -149,13 +152,19 @@ export default function CoursesAdmin() {
       showToast(tc('title_required'), 'error');
       return;
     }
+    const courseUrl = normalizeCourseUrl(form.courseUrl ?? '');
+    if (courseUrl === null) {
+      showToast(tc('url_invalid'), 'error');
+      return;
+    }
     setSaving(true);
     try {
       if (editId) {
-        await updateDoc(doc(db, 'courses', editId), { ...form, price: Number(form.price) });
+        await updateDoc(doc(db, 'courses', editId), { ...form, courseUrl, price: Number(form.price) });
       } else {
         await addDoc(collection(db, 'courses'), {
           ...form,
+          courseUrl,
           price: Number(form.price),
           createdAt: serverTimestamp(),
         });
@@ -385,6 +394,23 @@ export default function CoursesAdmin() {
                   style={[inputStyle, styles.tabular, { height: 48 }]}
                 />
 
+                {/* Where the course card's "Visit course" button goes. */}
+                <TextInput
+                  testID="input-courseUrl"
+                  placeholder={t('course_link')}
+                  placeholderTextColor={p.text3}
+                  value={form.courseUrl ?? ''}
+                  onChangeText={(v) => setForm((f) => ({ ...f, courseUrl: v }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  textContentType="URL"
+                  style={[inputStyle, { height: 48, marginBottom: 4 }]}
+                />
+                <AdminText style={[styles.urlHint, { color: p.text3, textAlign }]}>
+                  {tc('url_hint', { button: t('visit_course') })}
+                </AdminText>
+
                 <Pressable
                   style={[
                     styles.uploadBtn,
@@ -477,6 +503,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8,
   },
   videoUrl: { fontSize: 11, marginBottom: 12 },
+  urlHint: { fontSize: 12, marginBottom: 12, paddingHorizontal: 4 },
   toggleRow: {
     alignItems: 'center', justifyContent: 'space-between',
     borderTopWidth: 1, paddingTop: 12, marginTop: 4, marginBottom: 16,

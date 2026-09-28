@@ -158,7 +158,7 @@ it('Add Course opens the form and saving creates the course', async () => {
   fireEvent.changeText(r.getByPlaceholderText(en.courses.price_label), '120');
   await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
   expect(addDoc).toHaveBeenCalledWith({ path: 'courses' }, {
-    title: 'New One', description: '', price: 120, instructorName: '', videoUrl: '', published: false,
+    title: 'New One', description: '', price: 120, instructorName: '', videoUrl: '', courseUrl: '', published: false,
     createdAt: 'TS',
   });
   expect(mockToast).toHaveBeenCalledWith('Course created', 'success');
@@ -180,9 +180,38 @@ it('editing a course updates that document', async () => {
   fireEvent(r.getByTestId('published-switch'), 'valueChange', false);
   await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
   expect(updateDoc).toHaveBeenCalledWith({ path: 'courses/c1' }, {
-    title: 'Lighting 102', description: 'Basics', price: 250, instructorName: 'Rona', videoUrl: '', published: false,
+    title: 'Lighting 102', description: 'Basics', price: 250, instructorName: 'Rona', videoUrl: '', courseUrl: '', published: false,
   });
   expect(mockToast).toHaveBeenCalledWith('Course updated', 'success');
+});
+
+it('the form takes the link the course button opens, and saves it', async () => {
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('add-course'));
+  fireEvent.changeText(r.getByPlaceholderText(en.courses.course_title_label), 'New One');
+  fireEvent.changeText(r.getByTestId('input-courseUrl'), ' gaffer.school/course ');
+  await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
+  expect(addDoc).toHaveBeenCalledWith({ path: 'courses' }, expect.objectContaining({ courseUrl: 'https://gaffer.school/course' }));
+});
+
+it('a link that is not a web address is refused without writing', async () => {
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('add-course'));
+  fireEvent.changeText(r.getByPlaceholderText(en.courses.course_title_label), 'New One');
+  fireEvent.changeText(r.getByTestId('input-courseUrl'), 'not a link');
+  await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
+  expect(addDoc).not.toHaveBeenCalled();
+  expect(mockToast).toHaveBeenCalledWith(en.admin_courses.url_invalid, 'error');
+});
+
+it("editing shows the course's link and saves the new one", async () => {
+  mockData.courses = [{ id: 'c1', data: { ...COURSE, courseUrl: 'https://old.school/c' } }];
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('edit-c1'));
+  expect(r.getByTestId('input-courseUrl').props.value).toBe('https://old.school/c');
+  fireEvent.changeText(r.getByTestId('input-courseUrl'), 'https://new.school/c');
+  await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
+  expect(updateDoc).toHaveBeenCalledWith({ path: 'courses/c1' }, expect.objectContaining({ courseUrl: 'https://new.school/c' }));
 });
 
 it('delete asks first, then deletes the course', async () => {
