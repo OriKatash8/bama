@@ -60,11 +60,11 @@ async function fill(r: ReturnType<typeof render>, { name }: { name: boolean }) {
   fireEvent.changeText(r.getByPlaceholderText(en.builder.tell_us_placeholder), 'A launch film.');
 
   // Deadline, through the stub calendar.
-  await act(async () => { fireEvent.press(r.getByText(en.builder.placeholder_deadline)); });
+  await act(async () => { fireEvent.press(r.getByTestId('tile-deadline')); });
   await act(async () => { fireEvent.press(r.getByTestId('pick-date')); });
 
   // Location, through the city picker.
-  await act(async () => { fireEvent.press(r.getByText(en.builder.placeholder_location)); });
+  await act(async () => { fireEvent.press(r.getByTestId('tile-location')); });
   await act(async () => { fireEvent.press(r.getByText('Tel Aviv')); });
 
   // One crew slot.

@@ -8,3 +8,4 @@ export { CrewBasket } from './CrewBasket';
 export { ProjectRequestCard } from './ProjectRequestCard';
 export { ProjectDetailsForm } from './ProjectDetailsForm';
 export { RolePickerModal } from './RolePickerModal';
+export { DateLocationTile, DateLocationHeader, DateLocationHelpSheet, DL_TILE_GAP } from './DateLocationTiles';

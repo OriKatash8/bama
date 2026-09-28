@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act, fireEvent } from '@testing-library/react-native';
+import { render, act, fireEvent, within } from '@testing-library/react-native';
 import type { ReactTestInstance } from 'react-test-renderer';
 import { DirectProjectSheet } from '../DirectProjectSheet';
 import en from '@core/i18n/translations/en.json';
@@ -65,13 +65,13 @@ it('lays the three tiles out in one row: execution, deadline, location', async (
   expect(ids).toEqual(['tile-exec', 'tile-deadline', 'tile-location']);
 });
 
-it('writes a picked date dd/mm/yyyy, not as the stored ISO string', async () => {
+it('writes a picked date the way the home builder does, not as the stored ISO string', async () => {
   const r = await open();
 
   await act(async () => { fireEvent.press(r.getByTestId('tile-deadline')); });
   await act(async () => { fireEvent.press(r.getByTestId('pick-date')); });
 
-  expect(r.getByText('15/01/2099')).toBeTruthy();
+  expect(within(r.getByTestId('tile-deadline')).getByText('Jan 15, 2099')).toBeTruthy();
   expect(r.queryByText('2099-01-15')).toBeNull();
 });
 
@@ -89,11 +89,37 @@ it('shows the clear ✕ only once a tile holds a value, and clears it', async ()
   await act(async () => { fireEvent.press(r.getByTestId('clear-location'), { stopPropagation: () => {} }); });
 
   expect(r.queryByTestId('clear-location')).toBeNull();
-  expect(r.getByText(en.builder.placeholder_location)).toBeTruthy();
+  expect(within(r.getByTestId('tile-location')).getByText(en.builder.choose)).toBeTruthy();
 });
 
-it('marks only the execution tile optional — this sheet requires a location', async () => {
+it('tags only the start date Optional — this sheet requires a location', async () => {
   const r = await open();
 
-  expect(r.getAllByText(en.builder.optional_note)).toHaveLength(1);
+  expect(r.getAllByText(en.builder.optional_tag)).toHaveLength(1);
+  expect(within(r.getByTestId('tile-exec')).getByText(en.builder.optional_tag)).toBeTruthy();
+  expect(r.queryByText(en.builder.optional_note)).toBeNull();
+});
+
+it('names each tile and asks to choose, like the home builder', async () => {
+  const r = await open();
+
+  for (const [id, label] of [['tile-exec', en.builder.start_date], ['tile-deadline', en.builder.end_date], ['tile-location', en.builder.location]]) {
+    const tile = within(r.getByTestId(id));
+    expect(tile.getByText(label)).toBeTruthy();
+    expect(tile.getByText(en.builder.choose)).toBeTruthy();
+  }
+  // The old placeholders are gone.
+  expect(r.queryByText(en.builder.placeholder_date)).toBeNull();
+  expect(r.queryByText(en.builder.placeholder_deadline)).toBeNull();
+  expect(r.queryByText(en.builder.placeholder_location)).toBeNull();
+});
+
+it('has the home builder\'s title and one "?" that opens the three help texts', async () => {
+  const r = await open();
+
+  expect(r.getByText(en.builder.dates_location_title)).toBeTruthy();
+  await act(async () => { fireEvent.press(r.getByTestId('dl-help')); });
+  expect(r.getByText(en.builder.help_execution)).toBeTruthy();
+  expect(r.getByText(en.builder.help_deadline)).toBeTruthy();
+  expect(r.getByText(en.builder.help_location)).toBeTruthy();
 });

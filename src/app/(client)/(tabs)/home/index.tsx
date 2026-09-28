@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable, useWindowDimensions,
+  ActivityIndicator, Modal, TouchableWithoutFeedback, useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,6 @@ import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
 import { GradientBand } from '@components/ui/GradientBand';
-import { BottomSheet } from '@components/ui/BottomSheet';
 import { PressableScale } from '@components/ui/PressableScale';
 import { TypingPlaceholder } from '@components/ui/TypingPlaceholder';
 import Animated, {
@@ -22,11 +21,12 @@ import Animated, {
 import { commitFeedback, warnFeedback } from '@core/haptics';
 import { useCrewBuilder } from '@features/crew/hooks';
 import { MiniCalendar } from '@features/crew/components';
+import { DateLocationTile, DateLocationHeader, DateLocationHelpSheet } from '@features/crew/components/DateLocationTiles';
 import { useTheme } from '@core/hooks/useTheme';
 import { ROLE_BY_ID, getSpecializations, labelOf } from '@features/crew/data/categories';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { getDocument } from '@core/firebase/firestore';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, X, MapPin, Lock, Info, Plus, Minus } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, X, MapPin, Lock, Info, Plus, Minus } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -421,76 +421,17 @@ export default function HomeScreen() {
     });
   }, [slots, roleAnswers]);
 
-  /**
-   * One of step 1's three date/location tiles. The icon sits at the start
-   * corner, and at the other one either the "Optional" tag (empty) or the clear
-   * ✕ (filled); underneath, the field name and "Choose" or the value. The whole
-   * tile opens its picker.
-   *
-   * The filled border is 2 and the empty one 1, so the padding gives back the
-   * difference and the tile never changes size when it fills.
-   */
+  /** One of step 1's three date/location tiles — the shared DateLocationTile. */
   function renderDlTile(o: {
     field: 'exec' | 'deadline' | 'location';
     label: string;
     value: string;
     optional: boolean;
     error?: string;
-    icon: (color: string, tileBg: string) => ReactNode;
     onPress: () => void;
     onClear: () => void;
   }) {
-    const filled = o.value !== '';
-    const rowDir = rtl ? 'row-reverse' : 'row';
-    const align = rtl ? 'right' : 'left';
-    const tileBg = filled ? WIZARD.accent : WIZARD.tileBg;
-    return (
-      <View style={{ flex: 1 }}>
-        <PressableScale
-          testID={`tile-${o.field}`}
-          style={[styles.dlTile, filled && styles.dlTileOn, o.error ? styles.dlTileError : null]}
-          onPress={o.onPress}
-          activeScale={0.96}
-          accessibilityRole="button"
-          accessibilityLabel={`${o.label}, ${filled ? o.value : t('builder.not_selected_a11y')}`}
-        >
-          <View style={[styles.dlTopRow, { flexDirection: rowDir }]}>
-            <View style={[styles.dlIconTile, { backgroundColor: tileBg }]}>
-              {o.icon(filled ? '#FFFFFF' : WIZARD.accent, tileBg)}
-            </View>
-            {filled ? (
-              <PressableScale
-                testID={`clear-${o.field}`}
-                style={styles.dlClear}
-                onPress={(e) => { e.stopPropagation?.(); o.onClear(); }}
-                hitSlop={10}
-                activeScale={0.85}
-                haptic="commit"
-                accessibilityRole="button"
-                accessibilityLabel={t('builder.clear_field_a11y', { field: o.label })}
-              >
-                <X size={14} color={WIZARD.accent} strokeWidth={2.5} />
-              </PressableScale>
-            ) : o.optional ? (
-              <View style={styles.dlTag}>
-                <Text style={styles.dlTagText} numberOfLines={1}>{t('builder.optional_tag')}</Text>
-              </View>
-            ) : null}
-          </View>
-          <View style={styles.dlBottom}>
-            <Text style={[styles.dlLabel, { textAlign: align }]} numberOfLines={1}>{o.label}</Text>
-            <Text
-              style={[filled ? styles.dlValue : styles.dlChoose, { textAlign: align }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {filled ? o.value : t('builder.choose')}
-            </Text>
-          </View>
-        </PressableScale>
-        {o.error ? <Text style={[styles.error, { textAlign: 'center' }]}>{o.error}</Text> : null}
-      </View>
-    );
+    return <DateLocationTile {...o} t={t} rtl={rtl} />;
   }
 
   if (isLoadingProject) {
@@ -600,18 +541,7 @@ export default function HomeScreen() {
               {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
               {/* Dates and location: one header, one "?" for all three. */}
-              <View style={[styles.dlHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <Text style={styles.dlTitle}>{t('builder.dates_location_title')}</Text>
-                <Pressable
-                  onPress={() => setDlHelpOpen(true)}
-                  style={styles.dlHelpBtn}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.help')}
-                >
-                  <Text style={styles.dlHelpQ}>?</Text>
-                </Pressable>
-              </View>
+              <DateLocationHeader t={t} rtl={rtl} onHelp={() => setDlHelpOpen(true)} style={styles.dlHeader} />
 
               <View
                 style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: DL_TILE_GAP, alignItems: 'flex-start', marginTop: 10 }}
@@ -622,7 +552,6 @@ export default function HomeScreen() {
                   label: t('builder.start_date'),
                   value: exec ? formatShortDay(exec, language === 'he' ? 'he' : 'en') : '',
                   optional: true,
-                  icon: (color) => <CalendarDays size={18} color={color} strokeWidth={1.8} />,
                   onPress: () => setCalOpen('exec'),
                   onClear: () => setExec(''),
                 })}
@@ -635,17 +564,6 @@ export default function HomeScreen() {
                   // Required: step 1 does not advance without it.
                   optional: false,
                   error: errors.deadline,
-                  // Calendar with a small clock at its bottom-right: a deadline.
-                  // The clock's fill punches it out of the calendar's lines, so it
-                  // takes the icon tile's colour.
-                  icon: (color, tileBg) => (
-                    <View style={styles.deadlineIcon}>
-                      <CalendarDays size={18} color={color} strokeWidth={1.8} />
-                      <View style={[styles.deadlineClock, { backgroundColor: tileBg }]}>
-                        <Clock size={9} color={color} strokeWidth={2.4} />
-                      </View>
-                    </View>
-                  ),
                   onPress: () => setCalOpen('deadline'),
                   onClear: () => setDeadline(''),
                 })}
@@ -657,7 +575,6 @@ export default function HomeScreen() {
                   value: location ? (location.split(',')[0].trim() || location) : '',
                   optional: true,
                   error: errors.location,
-                  icon: (color) => <MapPin size={18} color={color} strokeWidth={1.8} />,
                   onPress: () => { setLocationSearch(''); setLocationModalOpen(true); },
                   onClear: () => setLocation(''),
                 })}
@@ -1090,19 +1007,7 @@ export default function HomeScreen() {
       </Modal>
 
       {/* The dates & location help: the three fields' texts, one after another. */}
-      <BottomSheet visible={dlHelpOpen} onClose={() => setDlHelpOpen(false)}>
-        <Text style={[styles.dlHelpSheetTitle, { textAlign: rtl ? 'right' : 'left' }]}>{t('builder.dates_location_title')}</Text>
-        {([
-          ['start_date', 'help_execution'],
-          ['end_date', 'help_deadline'],
-          ['location', 'help_location'],
-        ] as const).map(([name, help]) => (
-          <View key={name} style={styles.dlHelpSection}>
-            <Text style={[styles.dlHelpName, { textAlign: rtl ? 'right' : 'left' }]}>{t(`builder.${name}`)}</Text>
-            <Text style={[styles.dlHelpText, { textAlign: rtl ? 'right' : 'left' }]}>{t(`builder.${help}`)}</Text>
-          </View>
-        ))}
-      </BottomSheet>
+      <DateLocationHelpSheet t={t} rtl={rtl} visible={dlHelpOpen} onClose={() => setDlHelpOpen(false)} />
 
       {calOpen !== null && (
         <MiniCalendar
@@ -1478,70 +1383,6 @@ function createStyles(
     dateCol: { flex: 1 },
     // ── Step 1: dates & location ──
     dlHeader: { alignItems: 'center', gap: 8, marginTop: FIELD_GAP },
-    dlTitle: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: WIZARD.text },
-    dlHelpBtn: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: WIZARD.tagBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    dlHelpQ: { fontSize: 12, fontWeight: '700', fontFamily: ffBold, color: WIZARD.textSec },
-    /** Empty: 1pt border + 8 padding. The filled and error states are 2 + 7, so
-     *  the tile is the same size in every state. */
-    dlTile: {
-      height: 116,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: WIZARD.rowBorder,
-      backgroundColor: WIZARD.emptyBg,
-      padding: 8,
-      justifyContent: 'space-between',
-    },
-    dlTileOn: { borderWidth: 2, borderColor: WIZARD.accent, backgroundColor: WIZARD.rowSelectedBg, padding: 7 },
-    dlTileError: { borderWidth: 2, borderColor: '#fc8181', padding: 7 },
-    dlTopRow: { justifyContent: 'space-between', alignItems: 'flex-start' },
-    dlIconTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    /** Shrinks rather than overflows on the narrowest phones. */
-    dlTag: {
-      height: 20,
-      borderRadius: 10,
-      paddingHorizontal: 5,
-      backgroundColor: WIZARD.tagBg,
-      justifyContent: 'center',
-      flexShrink: 1,
-    },
-    dlTagText: { fontSize: 10.5, fontWeight: '500', fontFamily: ffMedium, color: WIZARD.tagText },
-    dlClear: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#FFFFFF',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    dlBottom: { gap: 2 },
-    dlLabel: { fontSize: 12.5, fontWeight: '600', fontFamily: ffSemiBold, color: WIZARD.textSec },
-    dlChoose: { fontSize: 14, fontWeight: '500', fontFamily: ffMedium, color: WIZARD.placeholder },
-    dlValue: { fontSize: 15, fontWeight: '700', fontFamily: ffBold, color: WIZARD.text },
-    deadlineIcon: { width: 18, height: 18 },
-    // Sits on the calendar's corner; its fill (set inline to the icon tile's
-    // colour) punches it out of the calendar's lines.
-    deadlineClock: {
-      position: 'absolute',
-      right: -4,
-      bottom: -3,
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    dlHelpSheetTitle: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: WIZARD.text },
-    dlHelpSection: { gap: 4 },
-    dlHelpName: { fontSize: 14, fontWeight: '600', fontFamily: ffSemiBold, color: WIZARD.text },
-    dlHelpText: { fontSize: 14, lineHeight: 20, fontFamily: ff, color: WIZARD.textSec },
     // Summary modal
     summaryCard: { width: '100%', maxHeight: '90%', borderRadius: 24, overflow: 'hidden' },
     summaryGradient: { flex: 1, borderRadius: 24 },

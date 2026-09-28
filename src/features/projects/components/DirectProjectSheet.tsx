@@ -1,15 +1,15 @@
 import { useMemo, useState, useEffect } from 'react';
-import { formatIsoDay, rtlSafe } from '@utils/formatters';
+import { formatShortDay, rtlSafe } from '@utils/formatters';
 import {
   Modal, View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
   StyleSheet, ActivityIndicator, TouchableWithoutFeedback,
 } from 'react-native';
-import { CalendarDays, Clock, MapPin, X } from 'lucide-react-native';
+import { MapPin, X } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { MiniCalendar } from '@features/crew/components';
-import { PressableScale } from '@components/ui/PressableScale';
+import { DateLocationHeader, DateLocationHelpSheet, DateLocationTile, DL_TILE_GAP } from '@features/crew/components/DateLocationTiles';
 import { addDocument, getDocument } from '@core/firebase/firestore';
 import {
   ROLE_TO_LEGACY_CATEGORY, categoryLabel, getSpecializations, labelOf, capabilityOf,
@@ -27,25 +27,18 @@ const TEXT = '#000000';
 const MUTED_LABEL = 'rgba(15,15,31,0.4)';
 const PLACEHOLDER = 'rgba(15,15,31,0.4)';
 const HAIRLINE = 'rgba(109,40,217,0.15)';
-// The exec/deadline/location squares are lifted wholesale from the home
-// builder, tokens included, so the two forms ask for these three the same way.
-// KEEP IN SYNC with (client)/(tabs)/home/index.tsx.
-const INK_2 = '#6B6880';
-const FIELD_FILL = '#F6F5FA';
-const FIELD_BORDER = '#EAE8F0';
-const TILE_PLACEHOLDER = '#9C99AD';
-const TILE_SEL_BORDER = '#8B5CF6';
-const TILE_SEL_FILL = '#F3EEFE';
-const TILE_GAP = 9;
+// The dates & location fields come from DateLocationTiles, shared with the
+// home builder — one design, no copy to keep in sync.
 
 type Translations = typeof en;
 
 function makeT(translations: Translations) {
-  return (key: string): string => {
+  return (key: string, vars?: Record<string, string>): string => {
     const keys = key.split('.');
     let result: unknown = translations;
     for (const k of keys) result = (result as Record<string, unknown>)?.[k];
-    return typeof result === 'string' ? result : key;
+    if (typeof result !== 'string') return key;
+    return vars ? result.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '') : result;
   };
 }
 
@@ -110,6 +103,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
   const [location, setLocation] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [calOpen, setCalOpen] = useState<'exec' | 'deadline' | null>(null);
+  const [dlHelpOpen, setDlHelpOpen] = useState(false);
 
   /** 'flexible' lives in the same field as a real date; nothing may treat that
    *  sentinel as one — not the ordering rules, not the exec picker's upper bound.
@@ -308,102 +302,47 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
             />
             {errors.description ? <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left' }]}>{errors.description}</Text> : null}
 
-            {/* Execution / deadline / location, as one row of squares — the
-                same three tiles as the home builder's "Build Your Project" step
-                (home/index.tsx). Icon over value, dd/mm/yyyy dates, violet once
-                picked, a corner ✕ to clear. KEEP IN SYNC with that screen. */}
+            {/* Dates and location — the home builder's step 1 design, shared
+                (DateLocationTiles): one title, one "?" for all three, and the same
+                tiles. Unlike the home builder, this sheet requires a location, so
+                only the start date wears the Optional tag. */}
+            <DateLocationHeader t={t} rtl={rtl} onHelp={() => setDlHelpOpen(true)} style={styles.dlHeader} />
             <View style={[styles.tileRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {/* Execution */}
-              <View style={styles.tileCol}>
-                <PressableScale
-                  style={[styles.dateSquare, exec ? styles.dateSquareSel : null, errors.exec ? styles.dateSquareErr : null]}
-                  onPress={() => setCalOpen('exec')}
-                  activeScale={0.96}
-                  testID="tile-exec"
-                >
-                  {exec ? (
-                    <PressableScale
-                      style={styles.dateSquareClear}
-                      onPress={(e) => { e.stopPropagation?.(); setExec(''); }}
-                      hitSlop={8}
-                      activeScale={0.85}
-                      haptic="commit"
-                      testID="clear-exec"
-                    >
-                      <X size={12} color="#fff" strokeWidth={2.5} />
-                    </PressableScale>
-                  ) : null}
-                  <CalendarDays size={19} color={exec ? VIOLET : INK_2} strokeWidth={1.8} />
-                  <Text style={[exec ? styles.dateSquareValue : styles.dateSquarePlaceholder, font.regular]} numberOfLines={2}>
-                    {exec ? formatIsoDay(exec) : t('builder.placeholder_date')}
-                  </Text>
-                  {/* Only the execution date is optional here — unlike the home
-                      builder, this sheet requires a location. */}
-                  {!exec && <Text style={[styles.optionalTag, font.regular]}>{t('builder.optional_note')}</Text>}
-                </PressableScale>
-                {errors.exec ? <Text style={[styles.error, styles.tileError]}>{errors.exec}</Text> : null}
-              </View>
-
-              {/* Deadline — a calendar wearing a small clock. */}
-              <View style={styles.tileCol}>
-                <PressableScale
-                  style={[styles.dateSquare, deadline ? styles.dateSquareSel : null, errors.deadline ? styles.dateSquareErr : null]}
-                  onPress={() => setCalOpen('deadline')}
-                  activeScale={0.96}
-                  testID="tile-deadline"
-                >
-                  {deadline ? (
-                    <PressableScale
-                      style={styles.dateSquareClear}
-                      onPress={(e) => { e.stopPropagation?.(); setDeadline(''); }}
-                      hitSlop={8}
-                      activeScale={0.85}
-                      haptic="commit"
-                      testID="clear-deadline"
-                    >
-                      <X size={12} color="#fff" strokeWidth={2.5} />
-                    </PressableScale>
-                  ) : null}
-                  <View style={styles.deadlineIcon}>
-                    <CalendarDays size={19} color={deadline ? VIOLET : INK_2} strokeWidth={1.8} />
-                    <View style={[styles.deadlineClock, deadline ? styles.deadlineClockSel : null]}>
-                      <Clock size={9} color={deadline ? VIOLET : INK_2} strokeWidth={2.4} />
-                    </View>
-                  </View>
-                  <Text style={[deadline ? styles.dateSquareValue : styles.dateSquarePlaceholder, font.regular]} numberOfLines={2}>
-                    {deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatIsoDay(deadline) : t('builder.placeholder_deadline'))}
-                  </Text>
-                </PressableScale>
-                {errors.deadline ? <Text style={[styles.error, styles.tileError]}>{errors.deadline}</Text> : null}
-              </View>
-
-              {/* Location */}
-              <View style={styles.tileCol}>
-                <PressableScale
-                  style={[styles.dateSquare, location ? styles.dateSquareSel : null, errors.location ? styles.dateSquareErr : null]}
-                  onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
-                  activeScale={0.96}
-                  testID="tile-location"
-                >
-                  {location ? (
-                    <PressableScale
-                      style={styles.dateSquareClear}
-                      onPress={(e) => { e.stopPropagation?.(); setLocation(''); }}
-                      hitSlop={8}
-                      activeScale={0.85}
-                      haptic="commit"
-                      testID="clear-location"
-                    >
-                      <X size={12} color="#fff" strokeWidth={2.5} />
-                    </PressableScale>
-                  ) : null}
-                  <MapPin size={19} color={location ? VIOLET : INK_2} strokeWidth={1.8} />
-                  <Text style={[location ? styles.dateSquareValue : styles.dateSquarePlaceholder, font.regular]} numberOfLines={2}>
-                    {location || t('builder.placeholder_location')}
-                  </Text>
-                </PressableScale>
-                {errors.location ? <Text style={[styles.error, styles.tileError]}>{errors.location}</Text> : null}
-              </View>
+              <DateLocationTile
+                field="exec"
+                label={t('builder.start_date')}
+                value={exec ? formatShortDay(exec, rtl ? 'he' : 'en') : ''}
+                optional
+                error={errors.exec}
+                onPress={() => setCalOpen('exec')}
+                onClear={() => setExec('')}
+                t={t}
+                rtl={rtl}
+              />
+              <DateLocationTile
+                field="deadline"
+                label={t('builder.end_date')}
+                value={deadline === 'flexible' ? t('builder.flexible') : (deadline ? formatShortDay(deadline, rtl ? 'he' : 'en') : '')}
+                optional={false}
+                error={errors.deadline}
+                onPress={() => setCalOpen('deadline')}
+                onClear={() => setDeadline('')}
+                t={t}
+                rtl={rtl}
+              />
+              <DateLocationTile
+                field="location"
+                label={t('builder.location')}
+                // A city from the list is already short; typed text may be a full
+                // address, so the tile shows its first part — as the home does.
+                value={location ? (location.split(',')[0].trim() || location) : ''}
+                optional={false}
+                error={errors.location}
+                onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
+                onClear={() => setLocation('')}
+                t={t}
+                rtl={rtl}
+              />
             </View>
 
             {/* Skills */}
@@ -553,6 +492,9 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* The dates & location help: the three fields' texts, one after another. */}
+      <DateLocationHelpSheet t={t} rtl={rtl} visible={dlHelpOpen} onClose={() => setDlHelpOpen(false)} />
+
       {calOpen !== null && (
         <MiniCalendar
           value={calOpen === 'exec' ? exec : (deadline === 'flexible' ? '' : deadline)}
@@ -642,73 +584,8 @@ const styles = StyleSheet.create({
   },
   multiline: { height: 96, textAlignVertical: 'top' },
   error: { fontSize: 12, color: '#fc8181', marginTop: 4 },
-  tileRow: { gap: TILE_GAP, alignItems: 'flex-start', marginTop: 16 },
-  tileCol: { flex: 1, alignItems: 'center' },
-  tileError: { textAlign: 'center' },
-  dateSquare: {
-    backgroundColor: FIELD_FILL,
-    borderWidth: 1,
-    borderColor: FIELD_BORDER,
-    borderRadius: 16,
-    width: '100%',
-    // 100, not 84: the execution square carries an extra "(optional)" line, and
-    // the other two must stay the same height beside it.
-    minHeight: 100,
-    // Centred. The "(optional)" line is positioned over the top of the square
-    // rather than stacked in the column, so the icon and text centre
-    // identically in all three squares and sit on the same line.
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 11,
-  },
-  dateSquareSel: { borderWidth: 1.5, borderColor: TILE_SEL_BORDER, backgroundColor: TILE_SEL_FILL },
-  dateSquareErr: { borderWidth: 1.5, borderColor: '#fc8181' },
-  // Both RESERVE two lines (32 = 2 x lineHeight 16) whether or not they use the
-  // second. The stack is centred, so its height decides where the icon sits: on
-  // a phone one label wraps and its neighbour does not, and the taller tile
-  // pushed its icon up, leaving the three icons on three different lines.
-  // KEEP IN SYNC with (client)/(tabs)/home/index.tsx.
-  dateSquarePlaceholder: { fontSize: 12.5, lineHeight: 16, minHeight: 32, fontWeight: '400', color: TILE_PLACEHOLDER, textAlign: 'center' },
-  dateSquareValue: { fontSize: 12.5, lineHeight: 16, minHeight: 32, fontWeight: '500', color: VIOLET, textAlign: 'center' },
-  optionalTag: {
-    position: 'absolute',
-    top: 7,
-    left: 0,
-    right: 0,
-    fontSize: 11,
-    lineHeight: 14,
-    color: TILE_PLACEHOLDER,
-    textAlign: 'center',
-  },
-  dateSquareClear: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: VIOLET,
-    borderRadius: 10,
-    width: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deadlineIcon: { width: 19, height: 19 },
-  // Sits on the calendar's corner; the fill punches it out of the calendar's
-  // lines so the two don't blur together.
-  deadlineClock: {
-    position: 'absolute',
-    right: -4,
-    bottom: -3,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: FIELD_FILL,
-  },
-  /** Matches dateSquareSel's fill once a deadline is picked. */
-  deadlineClockSel: { backgroundColor: TILE_SEL_FILL },
+  dlHeader: { marginTop: 16 },
+  tileRow: { gap: DL_TILE_GAP, alignItems: 'flex-start', marginTop: 10 },
   skillsGrid: { gap: 4, marginTop: 4 },
   skillGroupLabel: { fontSize: 12, color: '#8890b0', marginTop: 10, marginBottom: 2 },
   skillRow: {

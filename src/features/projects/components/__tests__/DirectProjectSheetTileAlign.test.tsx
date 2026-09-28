@@ -61,28 +61,11 @@ function labelBox(tile: ReactTestInstance) {
   return boxes;
 }
 
-it('reserves the same label height in all three tiles, so the icons line up', async () => {
+it('all three tiles are the same fixed height, so their icons and labels line up', async () => {
   const r = await openSheet();
 
   const heights = ['tile-exec', 'tile-deadline', 'tile-location']
-    .map((id) => labelBox(r.getByTestId(id)))
-    .map((boxes) => {
-      expect(boxes).toHaveLength(1);
-      return boxes[0].minHeight;
-    });
-
+    .map((id) => StyleSheet.flatten(r.getByTestId(id).props.style).height);
   expect(new Set(heights).size).toBe(1);
-  // Zero would mean "whatever the text needs", which is the bug: a wrapped
-  // label would then be taller than an unwrapped one.
   expect(heights[0]).toBeGreaterThan(0);
-});
-
-it('reserves exactly the two lines the label is capped at', async () => {
-  const r = await openSheet();
-
-  const [box] = labelBox(r.getByTestId('tile-location'));
-  expect(box.numberOfLines).toBe(2);
-  // Reserving fewer lines than the cap allows would let a wrapped label grow
-  // past the reservation and reintroduce the mismatch.
-  expect(box.minHeight).toBe(box.lineHeight * box.numberOfLines!);
 });
