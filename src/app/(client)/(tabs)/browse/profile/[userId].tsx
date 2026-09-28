@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import { BlockUserSheet } from '@features/blocking/components/BlockUserSheet';
+import { MAX_EVIDENCE, ReportSheet } from '@features/moderation/components/ReportSheet';
 import { useBlockStore } from '@core/stores/blockStore';
-import {
-  View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator,
-  Modal, TextInput, ScrollView, Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, ChevronRight, Flag, X, Ban } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Flag, Ban } from 'lucide-react-native';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Screen } from '@components/layout/Screen';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -49,7 +46,6 @@ function makeT(translations: Translations) {
   };
 }
 
-const MAX_EVIDENCE = 3;
 const PAGE_BG = '#FAFAFC';
 /** The report flag and the soft violet it sits on — the deep/pale violet pair
  *  the builder's picked date squares already use. */
@@ -160,7 +156,7 @@ export default function PublicProfileScreen() {
       // including permission denials — which is how a broken evidence upload
       // read as a validation error. Log the real one.
       console.error('[report] submit failed — code:', e?.code, 'message:', e?.message, e);
-      Alert.alert('Error', t('report.min_chars'));
+      Alert.alert(t('report.failed_title'), t('report.failed'));
     } finally {
       setReportSubmitting(false);
     }
@@ -172,12 +168,6 @@ export default function PublicProfileScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#6D28D9" />
         </View>
-        <BlockUserSheet
-          visible={blockVisible}
-          onClose={() => setBlockVisible(false)}
-          targetUserId={userId as string}
-          targetName={user?.displayName ?? ''}
-        />
       </Screen>
     );
   }
@@ -245,7 +235,6 @@ export default function PublicProfileScreen() {
   }
 
   const roleSkills = profile.roleSkills ?? [];
-  const canSubmit = reportReason.trim().length >= 20;
 
   return (
     <Screen scrollable style={[styles.screenContent, { paddingBottom: tabBarClearance }]} backgroundColor={PAGE_BG}>
@@ -350,93 +339,28 @@ export default function PublicProfileScreen() {
         }}
       />
 
-      {/* ── Report Modal ── */}
-      <Modal visible={reportVisible} transparent animationType="slide" onRequestClose={closeReport}>
-        <View style={styles.modalOverlay}>
-          <LinearGradient colors={['#4C1D95', '#6D28D9']} style={styles.modalSheet}>
-            {/* Header */}
-            <View style={[styles.modalHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <Text style={[styles.modalTitle, { ...font.bold }]}>
-                {t('report.title')}
-              </Text>
-              <TouchableOpacity onPress={closeReport} hitSlop={8} activeOpacity={0.7}>
-                <X size={22} color="#fff" strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
+      {/* Block's sheet belongs with the loaded profile, where the Block button is.
+          It once sat in the loading branch only, so Block did nothing here. */}
+      <BlockUserSheet
+        visible={blockVisible}
+        onClose={() => setBlockVisible(false)}
+        targetUserId={userId as string}
+        targetName={user?.displayName ?? ''}
+      />
 
-            {/* Reporting name */}
-            <Text style={[styles.modalSubtitle, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-              {t('report.reporting', { name: user.displayName })}
-            </Text>
-
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {/* Reason label */}
-              <Text style={[styles.modalLabel, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]}>
-                {t('report.reason_label')}
-              </Text>
-
-              {/* Reason input */}
-              <TextInput
-                style={[styles.reasonInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                multiline
-                value={reportReason}
-                onChangeText={setReportReason}
-                placeholder={t('report.reason_placeholder')}
-                placeholderTextColor="rgba(255,255,255,0.45)"
-                returnKeyType="default"
-              />
-
-              {/* Char hint */}
-              {reportReason.length > 0 && reportReason.length < 20 && (
-                <Text style={[styles.charHint, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}>
-                  {t('report.min_chars')}
-                </Text>
-              )}
-
-              {/* Evidence */}
-              <TouchableOpacity
-                style={[styles.evidenceBtn, { flexDirection: rtl ? 'row-reverse' : 'row', opacity: reportEvidence.length >= MAX_EVIDENCE ? 0.4 : 1 }]}
-                onPress={pickEvidence}
-                disabled={reportEvidence.length >= MAX_EVIDENCE}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.evidenceBtnText, { ...font.semiBold }]}>
-                  {t('report.add_evidence')}
-                </Text>
-              </TouchableOpacity>
-
-              {reportEvidence.length > 0 && (
-                <View style={styles.thumbRow}>
-                  {reportEvidence.map((uri, idx) => (
-                    <View key={idx} style={styles.thumbWrap}>
-                      <Image source={{ uri }} style={styles.thumb} resizeMode="cover" />
-                      <TouchableOpacity style={styles.thumbRemove} onPress={() => removeEvidence(idx)} hitSlop={4}>
-                        <X size={12} color="#fff" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </ScrollView>
-
-            {/* Submit */}
-            <TouchableOpacity
-              style={[styles.submitBtn, { opacity: canSubmit && !reportSubmitting ? 1 : 0.45 }]}
-              onPress={submitReport}
-              disabled={!canSubmit || reportSubmitting}
-              activeOpacity={0.8}
-            >
-              {reportSubmitting ? (
-                <ActivityIndicator size="small" color="#6D28D9" />
-              ) : (
-                <Text style={[styles.submitBtnText, { ...font.bold }]}>
-                  {t('report.submit')}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
-      </Modal>
+      {/* ── Report: the same pop-up as in project details ── */}
+      <ReportSheet
+        visible={reportVisible}
+        name={user.displayName}
+        reason={reportReason}
+        onReason={setReportReason}
+        evidence={reportEvidence}
+        onPickEvidence={pickEvidence}
+        onRemoveEvidence={removeEvidence}
+        submitting={reportSubmitting}
+        onSubmit={submitReport}
+        onClose={closeReport}
+      />
     </Screen>
   );
 }
@@ -514,107 +438,4 @@ const styles = StyleSheet.create({
   bottomPad: { height: 40 },
 
   // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-    maxHeight: '90%',
-  },
-  modalHeader: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  modalSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: 20,
-  },
-  modalScroll: { flexGrow: 0 },
-  modalLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  reasonInput: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 12,
-    padding: 12,
-    minHeight: 120,
-    color: '#fff',
-    fontSize: 14,
-    textAlignVertical: 'top',
-    marginBottom: 6,
-  },
-  charHint: {
-    fontSize: 12,
-    color: '#ffb347',
-    marginBottom: 12,
-  },
-  evidenceBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 12,
-    gap: 6,
-  },
-  evidenceBtnText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  thumbRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  thumbWrap: {
-    position: 'relative',
-  },
-  thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 8,
-  },
-  thumbRemove: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#ff4d6d',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitBtn: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  submitBtnText: {
-    color: '#6D28D9',
-    fontSize: 16,
-    fontWeight: '700',
-  },
 });

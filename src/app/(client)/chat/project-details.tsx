@@ -25,6 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { db } from '@core/firebase/config';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import { uploadReportEvidence } from '@core/firebase/storage';
+import { MAX_EVIDENCE, ReportSheet } from '@features/moderation/components/ReportSheet';
 import { auth } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -130,7 +131,6 @@ function formatDueDate(iso: string, prefix: string): string {
 
 type MemberInfo = Pick<User, 'displayName' | 'photoURL'>;
 
-const MAX_EVIDENCE = 3;
 
 /** The tabs layout zeroes the safe-area context for its screens, so the real top
  *  inset comes from the window metrics (same as ChatRoomScreen). On a phone the header
@@ -2497,78 +2497,18 @@ export default function ProjectDetailsScreen() {
         onComplete={handleReviewsComplete}
       />
 
-      <Modal visible={reportVisible} transparent animationType="fade" onRequestClose={closeReport}>
-        {/* Marketplace-filter shell: plain overlay View, absolute-fill dismiss
-            layer BEHIND a centred white card. The card must not be nested inside
-            a touchable — `width: '100%'` would resolve against a content-sized
-            parent and collapse. */}
-        <View style={styles.reportBackdrop}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeReport} />
-          <View style={styles.reportSheet}>
-            <View style={[styles.reportHeader, { flexDirection: rowDirection }]}>
-              <AppText weight="bold" style={[styles.reportTitle, { textAlign: rtl ? 'right' : 'left' }]}>{t('report.title')}</AppText>
-              <TouchableOpacity onPress={closeReport} hitSlop={8} activeOpacity={0.7}>
-                <AppText weight="regular" style={{ color: '#000000', fontSize: 20 }}>✕</AppText>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.reportScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <AppText weight="regular" style={[styles.reportSubtitle, { textAlign: rtl ? 'right' : 'left' }]}>
-              {t('report.reporting', { name: reportedUserName })}
-            </AppText>
-            <AppText weight="semiBold" style={[styles.reportLabel, { textAlign: rtl ? 'right' : 'left' }]}>
-              {t('report.reason_label')}
-            </AppText>
-            <TextInput
-              style={[styles.reportInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-              multiline
-              value={reportReason}
-              onChangeText={setReportReason}
-              placeholder={t('report.reason_placeholder')}
-              placeholderTextColor="#00000066"
-              textAlignVertical="top"
-            />
-            {reportReason.length > 0 && reportReason.length < 20 && (
-              <AppText weight="regular" style={[styles.reportHint, { textAlign: rtl ? 'right' : 'left' }]}>
-                {t('report.min_chars')}
-              </AppText>
-            )}
-
-            {/* Evidence screenshots (optional) */}
-            <TouchableOpacity
-              style={[styles.reportEvidenceBtn, { flexDirection: rowDirection, opacity: reportEvidence.length >= MAX_EVIDENCE ? 0.4 : 1 }]}
-              onPress={pickEvidence}
-              disabled={reportEvidence.length >= MAX_EVIDENCE}
-              activeOpacity={0.7}
-            >
-              <AppText weight="semiBold" style={styles.reportEvidenceBtnText}>{t('report.add_evidence')}</AppText>
-            </TouchableOpacity>
-            {reportEvidence.length > 0 && (
-              <View style={styles.reportThumbRow}>
-                {reportEvidence.map((uri, idx) => (
-                  <View key={idx} style={styles.reportThumbWrap}>
-                    <Image source={{ uri }} style={styles.reportThumb} resizeMode="cover" />
-                    <TouchableOpacity style={styles.reportThumbRemove} onPress={() => removeEvidence(idx)} hitSlop={4} activeOpacity={0.8}>
-                      <AppText weight="bold" style={{ color: '#fff', fontSize: 11 }}>✕</AppText>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            </ScrollView>
-            <TouchableOpacity
-              style={[styles.reportSubmitBtn, { backgroundColor: modeAccent, opacity: reportReason.trim().length >= 20 && !reportSubmitting ? 1 : 0.45 }]}
-              onPress={submitReport}
-              disabled={reportReason.trim().length < 20 || reportSubmitting}
-              activeOpacity={0.8}
-            >
-              {reportSubmitting
-                ? <ActivityIndicator size="small" color="#ffffff" />
-                : <AppText weight="bold" style={styles.reportSubmitText}>{t('report.submit')}</AppText>}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <ReportSheet
+        visible={reportVisible}
+        name={reportedUserName}
+        reason={reportReason}
+        onReason={setReportReason}
+        evidence={reportEvidence}
+        onPickEvidence={pickEvidence}
+        onRemoveEvidence={removeEvidence}
+        submitting={reportSubmitting}
+        onSubmit={submitReport}
+        onClose={closeReport}
+      />
     </LinearGradient>
   );
 }
@@ -3499,51 +3439,4 @@ const styles = StyleSheet.create({
   // ── Report modal ──────────────────────────────────────────────────────────────
   // Matches the marketplace filter popup: white card, radius 24, maxWidth 440,
   // maxHeight 85%, 20/20/24 padding, soft shadow, black title.
-  reportBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  reportSheet: {
-    width: '100%',
-    maxWidth: 440,
-    maxHeight: '85%',
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  /** flexShrink, not flex:1 — the card is auto-height capped at maxHeight. */
-  reportScroll: { flexShrink: 1 },
-  reportHeader: { alignItems: 'center', justifyContent: 'space-between' },
-  reportTitle: { flex: 1, color: '#000000', fontSize: 18 },
-  reportSubtitle: { color: '#000000', fontSize: 14 },
-  reportLabel: { color: '#000000', fontSize: 14 },
-  reportInput: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
-    borderRadius: 10,
-    padding: 12,
-    color: '#000000',
-    height: 120,
-    textAlignVertical: 'top',
-  },
-  reportHint: { color: '#000000', fontSize: 12 },
-  reportSubmitBtn: { borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  reportSubmitText: { color: '#ffffff', fontSize: 15 },
-  reportEvidenceBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,74,173,0.2)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 12, marginBottom: 12, gap: 6 },
-  reportEvidenceBtnText: { color: '#000000', fontSize: 14 },
-  reportThumbRow: { flexDirection: 'row', gap: 10, marginBottom: 16, flexWrap: 'wrap' },
-  reportThumbWrap: { position: 'relative' },
-  reportThumb: { width: 72, height: 72, borderRadius: 8 },
-  reportThumbRemove: { position: 'absolute', top: -6, right: -6, backgroundColor: '#ff4d6d', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
 });

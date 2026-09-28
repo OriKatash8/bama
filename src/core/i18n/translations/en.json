@@ -458,7 +458,9 @@
     "add_evidence": "Add Screenshot (optional)",
     "submit": "Submit Report",
     "success": "Report submitted. We'll review it soon.",
-    "min_chars": "Please describe the issue (min 20 characters)"
+    "min_chars": "Please describe the issue (min 20 characters)",
+    "failed_title": "Report not sent",
+    "failed": "Something went wrong sending your report. Please try again."
   },
   "accessibility": {
     "language_header": "LANGUAGE",
