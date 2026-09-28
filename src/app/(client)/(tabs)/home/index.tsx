@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable,
+  ActivityIndicator, Modal, TouchableWithoutFeedback, Pressable, useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -82,6 +82,10 @@ const WIZARD = {
 } as const;
 /** Gap between rows. */
 const S2_ROW_GAP = 10;
+/** The floating step-2 CTA: its gap above the tab bar, and the room the list
+ *  keeps at its end so the last row can scroll clear of it (56 + gaps). */
+const S2_FLOAT_GAP = 12;
+const S2_FLOAT_SPACE = 80;
 
 /** The step buttons' fill: solid purple (a two-stop gradient of one colour, so
  *  the LinearGradient that clips the corners stays in place). */
@@ -178,10 +182,12 @@ export default function HomeScreen() {
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
 
   const scrollRef = useRef<ScrollView>(null);
-  /** Armed at a swap, disarmed the moment it fires. Entering step 2 wants the
-   *  END of the content, which needs the final height of an 8-tile image grid —
-   *  the one case a timer could never reliably wait for. */
-  const scrollToEndArmed = useRef(false);
+  /** How much of the page's bottom edge the docked tab bar covers, measured in
+   *  window coordinates (the old SafeAreaView may or may not pad the bottom, so
+   *  it is measured rather than assumed). null until the first measure. */
+  const [tabBarOverlap, setTabBarOverlap] = useState<number | null>(null);
+  const pageRef = useRef<View>(null);
+  const { height: windowHeight } = useWindowDimensions();
   /** y of the card, and of each error-bearing field within it. Summed, they give
    *  a scroll offset; onLayout alone is parent-relative and would be short by
    *  the height of everything above the card. */
@@ -308,7 +314,7 @@ export default function HomeScreen() {
    * forever — the builder could not be used past step 1. Nothing about which
    * content is on screen may depend on an animation reporting anything.
    */
-  function goToStep(next: 1 | 2 | 3, opts?: { scrollToEnd?: boolean }) {
+  function goToStep(next: 1 | 2 | 3) {
     // The review screen can ask for the step it is already on — that is what the
     // nonce is for. Nothing to animate, but the scroll reset still applies.
     if (next === step) {
@@ -321,8 +327,9 @@ export default function HomeScreen() {
     const dir = (next > step ? 1 : -1) * (rtl ? -1 : 1);
 
     setStep(next);
-    if (opts?.scrollToEnd) scrollToEndArmed.current = true;
-    else scrollRef.current?.scrollTo({ y: 0, animated: false });
+    // Every step opens at the top. Step 2 used to open at its END, where its
+    // only CTA sat; that CTA floats now, so its first role is where to start.
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
 
     // Reduced motion is about vestibular motion, not about feedback: the step
     // still changes and the scroll still resets, it just never travels.
@@ -366,7 +373,7 @@ export default function HomeScreen() {
     }
 
     commitFeedback();
-    goToStep(2, { scrollToEnd: true });
+    goToStep(2);
   }
 
   // ── Step 2 (roles + quantity) → Step 3 (per-slot subskill) ──
@@ -496,19 +503,20 @@ export default function HomeScreen() {
 
   return (
     <Screen scrollable={false} backgroundColor="#FFFFFF">
+      <View
+        ref={pageRef}
+        style={styles.page}
+        onLayout={() => {
+          pageRef.current?.measureInWindow((_x, y, _w, h) => {
+            setTabBarOverlap(Math.max(0, y + h - (windowHeight - tabBarHeight)));
+          });
+        }}
+      >
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        onContentSizeChange={() => {
-          // Fires when the new step's content has actually been measured — which
-          // is the thing the old setTimeout(…, 50) was guessing at, and got wrong
-          // whenever step 2's image grid was slow.
-          if (!scrollToEndArmed.current) return;
-          scrollToEndArmed.current = false;
-          scrollRef.current?.scrollToEnd({ animated: false });
-        }}
       >
       <Animated.View style={[styles.stepWrap, stepStyle]}>
         {/* ══════════════ STEP 1: Project details ══════════════ */}
@@ -815,7 +823,11 @@ export default function HomeScreen() {
             />
 
               <View style={styles.grow} />
-              {/* ── C. The CTA, stating the total ── */}
+              {/* ── C. The CTA, stating the total. In the page only while no
+                  role is picked (it raises the "pick one" error); from the first
+                  role it floats instead, and this space keeps the last row clear
+                  of it. ── */}
+              {totalCount > 0 ? <View style={{ height: S2_FLOAT_SPACE }} /> : (
               <View style={styles.s2CtaWrap}>
                 <PressableScale
                   // Dimmed at zero, but NOT disabled: pressing it is how the
@@ -838,6 +850,7 @@ export default function HomeScreen() {
                   </Text>
                 </PressableScale>
               </View>
+              )}
             </View>
           </>
         )}
@@ -965,6 +978,31 @@ export default function HomeScreen() {
 
       </Animated.View>
       </ScrollView>
+
+      {/* ── Step 2's CTA floats from the first role picked, just above the tab
+          bar, so the headcount and the way on are always in reach. ── */}
+      {step === 2 && totalCount > 0 && (
+        <View
+          testID="step2-cta-float"
+          pointerEvents="box-none"
+          style={[styles.s2Float, { bottom: (tabBarOverlap ?? tabBarHeight) + S2_FLOAT_GAP }]}
+        >
+          <PressableScale
+            style={[styles.s2Cta, styles.s2CtaFloating]}
+            onPress={handleGoStep3}
+            activeScale={0.98}
+            accessibilityRole="button"
+            testID="step2-cta"
+          >
+            <Text style={styles.s2CtaText}>
+              {totalCount === 1
+                ? t('builder.continue_with_count_one')
+                : t('builder.continue_with_count', { count: totalCount })}
+            </Text>
+          </PressableScale>
+        </View>
+      )}
+      </View>
 
 
 
@@ -1248,6 +1286,15 @@ function createStyles(
     // A different fill, not an opacity: the button is still pressable, and a
     // dimmed one reads as inert.
     s2CtaOff: { backgroundColor: WIZARD.ctaDisabledBg },
+    page: { flex: 1 },
+    s2Float: { position: 'absolute', left: 20, right: 20 },
+    s2CtaFloating: {
+      shadowColor: '#3B19A0',
+      shadowOpacity: 0.28,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 8,
+    },
     s2CtaText: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: '#FFFFFF' },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
     label: { fontSize: 16, lineHeight: 22, fontWeight: '600', fontFamily: ffSemiBold, color: INK, marginTop: FIELD_GAP, marginBottom: SPACE.sm },

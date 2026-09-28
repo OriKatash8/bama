@@ -244,6 +244,24 @@ describe('the CTA', () => {
     expect(flat(r.getByTestId('step2-cta')).backgroundColor).toBe(ACCENT);
   });
 
+  it('sits at the end of the page while no role is picked', () => {
+    const r = atStepTwo();
+    expect(r.queryByTestId('step2-cta-float')).toBeNull();
+    expect(r.getByTestId('step2-cta')).toBeTruthy();
+  });
+
+  it('floats over the page, above the tab bar, from the first role picked', () => {
+    mockQuantities[EDITOR] = 1;
+    const r = atStepTwo();
+    const float = r.getByTestId('step2-cta-float');
+    const s = flat(float);
+    expect(s.position).toBe('absolute');
+    expect(s.bottom).toBeGreaterThan(0);
+    // The one CTA lives in the floating bar, not also at the end of the list.
+    expect(r.getAllByTestId('step2-cta')).toHaveLength(1);
+    expect(float.findAll((n) => n.props.testID === 'step2-cta').length).toBeGreaterThan(0);
+  });
+
   it('says "1 professional", not "1 professionals"', () => {
     mockQuantities[EDITOR] = 1;
     const r = atStepTwo();

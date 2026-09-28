@@ -10,11 +10,9 @@ import en from '@core/i18n/translations/en.json';
  *
  * This screen stays mounted across step changes, so the ScrollView keeps the
  * offset the user left at and a new step opens part-way down. Three
- * setTimeout(…, 50) calls used to paper over that. Two are now done at the swap
- * — the instant between the exit and enter springs, when nothing is on screen —
- * and the third, scrollToEnd into step 2's 8-tile image grid, is a one-shot
- * onContentSizeChange, because that one genuinely needs the final content
- * height and no timer can reliably wait for it.
+ * setTimeout(…, 50) calls used to paper over that. Every step now opens at
+ * the top, reset at the swap — the instant between the exit and enter springs,
+ * when nothing is on screen.
  *
  * scrollTo is imperative, so it is observed by spying on the real ScrollView
  * instance. Standing a mock in its place is not an option: FlatList reaches into
@@ -115,32 +113,28 @@ beforeEach(() => {
 });
 
 describe('entering step 2', () => {
-  it('waits for layout, then lands at the end', () => {
+  // Step 2 used to open at the END of its content, where its only CTA sat.
+  // The CTA floats now, so the list opens at the top, at its first role.
+  it('opens at the top, not at the end', () => {
     const s = renderWithScrollSpy();
     fillStepOne(s.r);
+    s.scrollTo.mockClear();
     fireEvent.press(s.r.getByText(en.builder.next_step));
 
-    // Armed, but deliberately not fired yet — the grid has not been measured.
+    expect(s.scrollTo).toHaveBeenCalledWith({ y: 0, animated: false });
+    settleLayout(s);
     expect(s.scrollToEnd).not.toHaveBeenCalled();
-
-    settleLayout(s);
-    expect(s.scrollToEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('is a ONE-shot — later layout passes do not yank the page back', () => {
+  it('later layout passes do not move the page', () => {
     const s = renderWithScrollSpy();
     fillStepOne(s.r);
     fireEvent.press(s.r.getByText(en.builder.next_step));
-    settleLayout(s);
+    s.scrollTo.mockClear();
     settleLayout(s);
     settleLayout(s);
 
-    expect(s.scrollToEnd).toHaveBeenCalledTimes(1);
-  });
-
-  it('never fires unprompted — an idle layout pass scrolls nothing', () => {
-    const s = renderWithScrollSpy();
-    settleLayout(s);
+    expect(s.scrollTo).not.toHaveBeenCalled();
     expect(s.scrollToEnd).not.toHaveBeenCalled();
   });
 });
@@ -186,6 +180,7 @@ describe('a failed Next takes you to the error', () => {
     s.scrollTo.mockClear();
     fireEvent.press(s.r.getByText(en.builder.next_step));
 
-    expect(s.scrollTo).not.toHaveBeenCalled();
+    // Only step 2's reset to the top — no animated hunt for an error.
+    expect(s.scrollTo.mock.calls).toEqual([[{ y: 0, animated: false }]]);
   });
 });
