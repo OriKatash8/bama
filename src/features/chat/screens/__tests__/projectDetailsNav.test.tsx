@@ -47,7 +47,9 @@ describe('no link hard-codes the client stack', () => {
 
   it('the back arrow pops instead of pushing a copy of the chat', () => {
     expect(DETAILS).not.toMatch(/router\.push\(`\/\(client\)\/chat\/\$\{chatIdParam\}`/);
-    expect(DETAILS).toMatch(/router\.canGoBack\(\)\s*\?\s*router\.back\(\)/);
+    // Pops when it can; replaces itself with the chat only when that chat is
+    // not underneath (projectDetailsBackToChat.test.tsx).
+    expect(DETAILS).toMatch(/else if \(router\.canGoBack\(\)\) router\.back\(\)/);
   });
 });
 

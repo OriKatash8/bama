@@ -18,7 +18,7 @@ import {
 import { confirmDialog } from '@utils/confirmDialog';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { doc, updateDoc, serverTimestamp, addDoc, collection, deleteField } from 'firebase/firestore';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -68,6 +68,7 @@ import {
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { mergeCrewSlots } from '@features/noticeboard/matching';
 import { chatGroupOf } from '@features/chat/utils/chatGroup';
+import { projectDetailsBack } from '@features/chat/utils/projectDetailsBack';
 import { useAuthStore } from '@core/stores/authStore';
 import { useRevealedPhone } from '@features/projects/hooks/useRevealedPhone';
 import { formatPhoneForDisplay } from '@features/auth/utils/phone';
@@ -158,6 +159,7 @@ export default function ProjectDetailsScreen() {
     projectId: string; chatId: string; section?: string;
   }>();
   const router = useRouter();
+  const navigation = useNavigation();
   /** The viewer's own stack: where the chat room this page returns to lives. */
   const chatGroup = chatGroupOf(useAuthStore((s) => s.activeMode));
   const colors = useTheme();
@@ -1163,14 +1165,17 @@ export default function ProjectDetailsScreen() {
           {/* Pops to the chat room underneath — there because every link opens
               this page in the viewer's own stack (chatGroupOf). It used to PUSH a
               client copy of the room, which stacked a second one and left the
-              swipe out of it landing back here. Opened cold (a notification),
-              it replaces itself with the room, or the chat list. */}
+              swipe out of it landing back here. When the room is NOT underneath
+              (a notification, the slot sheet — opened from a tab), a pop landed
+              on that tab, so it replaces itself with the room instead
+              (projectDetailsBack). */}
           <TouchableOpacity
-            onPress={() =>
-              router.canGoBack()
-                ? router.back()
-                : router.replace((chatIdParam ? `/${chatGroup}/chat/${chatIdParam}` : `/${chatGroup}/(tabs)/chats`) as never)
-            }
+            onPress={() => {
+              const toChat = projectDetailsBack(navigation.getState(), chatIdParam, chatGroup);
+              if (toChat) router.replace(toChat as never);
+              else if (router.canGoBack()) router.back();
+              else router.replace(`/${chatGroup}/(tabs)/chats` as never);
+            }}
             style={styles.headerBack}
             activeOpacity={0.7}
           >
