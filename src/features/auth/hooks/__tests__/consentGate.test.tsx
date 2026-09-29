@@ -3,6 +3,7 @@ import { render, renderHook } from '@testing-library/react-native';
 import { useOnboardingGate } from '../useOnboardingGate';
 import Index from '../../../../app/index';
 import { useAuthStore } from '@core/stores/authStore';
+import { useLaunchIntentStore } from '@core/stores/launchIntentStore';
 import { CURRENT_TERMS_VERSION } from '@core/constants/legal';
 
 /**
@@ -23,6 +24,7 @@ const gate = () => renderHook(() => useOnboardingGate()).result.current;
 beforeEach(() => {
   mockNeedsPhone = false;
   mockRedirects.length = 0;
+  useLaunchIntentStore.setState({ checked: true, hasPending: false });
   useAuthStore.setState({ user: null, needsEmailVerification: false, isLoading: false, activeMode: 'client' });
 });
 
@@ -59,6 +61,6 @@ describe('the root', () => {
   it('a user on the current version goes in as before', () => {
     useAuthStore.setState({ user: { id: 'u1', termsVersion: CURRENT_TERMS_VERSION } as never });
     render(<Index />);
-    expect(mockRedirects).toEqual(['/(client)/(tabs)/browse']);
+    expect(mockRedirects).toEqual(['/(client)/(tabs)/home']);
   });
 });

@@ -2,6 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import Index from '../index';
 import { useAuthStore } from '@core/stores/authStore';
+import { useLaunchIntentStore } from '@core/stores/launchIntentStore';
 
 /**
  * The root sends a signed-in, unverified password account to verify its email
@@ -13,7 +14,7 @@ jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => { mockRedirects.push(href); return null; },
 }));
 
-beforeEach(() => { mockRedirects.length = 0; });
+beforeEach(() => { mockRedirects.length = 0; useLaunchIntentStore.setState({ checked: true, hasPending: false }); });
 
 it('unverified password account → verify email, even with no mode chosen yet', () => {
   useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, isLoading: false, activeMode: null, needsEmailVerification: true });

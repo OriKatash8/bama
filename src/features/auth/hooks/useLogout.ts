@@ -5,6 +5,8 @@ import { deleteDocument } from '@core/firebase/firestore';
 import { getCachedPushToken } from '@core/notifications/registerForPushNotifications';
 import { useUiStore } from '@core/stores/uiStore';
 import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { clearLastMode } from '@core/storage/lastMode';
 
 export function useLogout() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +25,10 @@ export function useLogout() {
       if (token) {
         try { await deleteDocument(`pushTokens/${token}`); } catch { /* non-blocking */ }
       }
+      const uid = useAuthStore.getState().user?.id;
       await signOut();
+      // The next sign-in on this device starts at mode-select, not in our mode.
+      if (uid) await clearLastMode(uid);
       // A saved deep link belongs to the person who tapped it; never hand it to
       // whoever signs in next on this device.
       usePendingIntentStore.getState().clearAll();

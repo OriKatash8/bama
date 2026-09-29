@@ -5,6 +5,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useOnboardingGate } from '@features/auth/hooks/useOnboardingGate';
 import { GatePendingScreen, useGatePending } from '@features/auth/components/GatePending';
 import { subscribeToDocument } from '@core/firebase/firestore';
+import { useAdoptGroupMode } from '@features/auth/hooks/useAdoptGroupMode';
 import type { ProfessionalProfile } from '@core/types/user';
 
 export default function ProfessionalLayout() {
@@ -14,6 +15,7 @@ export default function ProfessionalLayout() {
   const proProfileCompleted = useAuthStore((s) => s.proProfileCompleted);
   const setProProfileCompleted = useAuthStore((s) => s.setProProfileCompleted);
   const pathname = usePathname();
+  const modePending = useAdoptGroupMode('professional');
   const gate = useOnboardingGate();
   const gatePending = useGatePending();
 
@@ -35,7 +37,7 @@ export default function ProfessionalLayout() {
   // phone number adds one (useOnboardingGate).
   // Signed in but the email answer has not arrived: neither the app nor a
   // guess — a loading screen until it does.
-  if (gatePending) return <GatePendingScreen />;
+  if (modePending || gatePending) return <GatePendingScreen />;
   if (gate) return <Redirect href={gate as never} />;
 
   // First-time / incomplete pros are locked to the profile screen: any attempt to

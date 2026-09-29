@@ -62,8 +62,22 @@ it('the order: consent → email → setup → mode select → the app', () => {
   expect(s({ user: { id: 'u', termsVersion: '1.0', needsProfileSetup: true }, needsEmailVerification: true })).toBe('/(auth)/verify-email');
   expect(s({ user: { id: 'u', termsVersion: '1.0', needsProfileSetup: true } })).toBe('/(auth)/setup');
   expect(s({})).toBe('/(auth)/mode-select');
-  expect(s({ activeMode: 'client' })).toBe('/(client)/(tabs)/browse');
+  expect(s({ activeMode: 'client' })).toBe('/(client)/(tabs)/home');
   expect(s({ activeMode: 'professional' })).toBe('/(professional)/(tabs)/dashboard');
+});
+
+// A relaunch restores the last mode; the root then sends it to that mode's home.
+// An incomplete pro goes to the forced profile screen; "unknown" (the read timed
+// out or failed) goes to the noticeboard and the pro layout's lock takes over.
+it('a restored mode: client → home, pro → noticeboard, incomplete pro → profile', () => {
+  const u = { id: 'u', termsVersion: '1.0' } as never;
+  const s = (o: object) => nextAuthRoute({ user: u, needsEmailVerification: false, activeMode: null, ...o });
+  expect(s({ activeMode: 'client', proProfileCompleted: false })).toBe('/(client)/(tabs)/home');
+  expect(s({ activeMode: 'professional', proProfileCompleted: true })).toBe('/(professional)/(tabs)/dashboard');
+  expect(s({ activeMode: 'professional', proProfileCompleted: false })).toBe('/(professional)/(tabs)/profile');
+  expect(s({ activeMode: 'professional', proProfileCompleted: null })).toBe('/(professional)/(tabs)/dashboard');
+  // The terms gate still comes first, whatever mode was saved.
+  expect(s({ user: { id: 'u', termsVersion: '0.9' }, activeMode: 'professional', proProfileCompleted: true })).toBe('/(auth)/consent');
 });
 
 it.each([

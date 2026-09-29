@@ -5,6 +5,7 @@ import { render, renderHook } from '@testing-library/react-native';
 import { useOnboardingGate } from '../useOnboardingGate';
 import Index from '../../../../app/index';
 import { useAuthStore } from '@core/stores/authStore';
+import { useLaunchIntentStore } from '@core/stores/launchIntentStore';
 
 /**
  * FIRST-TIME SETUP COMES BEFORE MODE SELECT.
@@ -23,6 +24,7 @@ jest.mock('expo-router', () => ({
 const NEW = { id: 'u1', termsVersion: '1.0', needsProfileSetup: true };
 
 beforeEach(() => {
+  useLaunchIntentStore.setState({ checked: true, hasPending: false });
   mockNeedsPhone = false;
   mockRedirects.length = 0;
   useAuthStore.setState({ user: null, needsEmailVerification: false, isLoading: false, activeMode: null });

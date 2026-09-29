@@ -2,6 +2,8 @@ import { renderHook, act } from '@testing-library/react-native';
 import { useLogout } from '../useLogout';
 import { signOut } from '@core/firebase/auth';
 import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
+import { useAuthStore } from '@core/stores/authStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * A saved deep link belongs to whoever tapped it. On a shared device, logging
@@ -31,4 +33,14 @@ it('forgets any saved deep link and pending join on logout', async () => {
   expect(usePendingIntentStore.getState().resume).toBeNull();
   expect(usePendingIntentStore.getState().afterProfile).toBeNull();
   expect(mockReplace).toHaveBeenCalledWith('/(auth)');
+});
+
+it('forgets this user\'s last mode, so the next sign-in starts at mode-select', async () => {
+  useAuthStore.setState({ user: { id: 'u1' } as never });
+  await AsyncStorage.setItem('bama:lastMode:u1', 'professional');
+  await AsyncStorage.setItem('bama:lastMode:u2', 'client');
+  const { result } = renderHook(() => useLogout());
+  await act(async () => { await result.current.logout(); });
+  expect(await AsyncStorage.getItem('bama:lastMode:u1')).toBeNull();
+  expect(await AsyncStorage.getItem('bama:lastMode:u2')).toBe('client');
 });

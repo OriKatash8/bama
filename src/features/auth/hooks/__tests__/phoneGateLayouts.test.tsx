@@ -11,6 +11,9 @@ import { useAuthStore } from '@core/stores/authStore';
  */
 
 const mockRedirects: string[] = [];
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
 jest.mock('expo-router', () => ({
   Stack: () => null,
   Redirect: ({ href }: { href: string }) => { mockRedirects.push(href); return null; },
@@ -20,7 +23,7 @@ let mockNeedsPhone = false;
 jest.mock('@features/auth/hooks/usePhoneGate', () => ({ usePhoneGate: () => mockNeedsPhone }));
 jest.mock('@core/firebase/firestore', () => ({ subscribeToDocument: jest.fn(() => () => {}) }));
 
-beforeEach(() => { mockRedirects.length = 0; mockNeedsPhone = false; useAuthStore.setState({ needsEmailVerification: null }); });
+beforeEach(() => { mockRedirects.length = 0; mockNeedsPhone = false; useAuthStore.setState({ needsEmailVerification: null, isLoading: false }); });
 
 it('professional: no phone number is asked for ahead of the profile lock', () => {
   useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: 'professional', needsEmailVerification: false, proProfileCompleted: false });

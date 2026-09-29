@@ -3,6 +3,7 @@ import { useSwitchMode } from '../useSwitchMode';
 import { useAuthStore } from '@core/stores/authStore';
 import { getDocument } from '@core/firebase/firestore';
 import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
@@ -23,8 +24,9 @@ const mockUser = {
   createdAt: { seconds: 0, nanoseconds: 0 },
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  await AsyncStorage.clear();
   useAuthStore.setState({ user: mockUser, activeMode: null, isLoading: false });
   usePendingIntentStore.setState({ resume: null, afterProfile: null });
 });
@@ -115,5 +117,33 @@ describe('useSwitchMode — resuming a saved deep link', () => {
     await switchTo('client');
     expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
     expect(mockReplace).not.toHaveBeenCalledWith('/admin');
+  });
+});
+
+/**
+ * The mode is remembered per user, so the next launch reopens in it. Every entry
+ * point (mode-select, the switcher, notifications) goes through switchMode.
+ */
+describe('useSwitchMode — remembering the mode', () => {
+  it.each(['client', 'professional'] as const)('saves %s under the user\'s key', async (mode) => {
+    mockGetDocument.mockResolvedValue({ proProfileCompleted: true });
+    await switchTo(mode);
+    expect(await AsyncStorage.getItem('bama:lastMode:u1')).toBe(mode);
+  });
+
+  it('a later switch overwrites it', async () => {
+    mockGetDocument.mockResolvedValue({ proProfileCompleted: true });
+    await switchTo('professional');
+    await switchTo('client');
+    expect(await AsyncStorage.getItem('bama:lastMode:u1')).toBe('client');
+  });
+
+  it('navigate: false sets and saves the mode but leaves navigation to the caller', async () => {
+    const { result } = renderHook(() => useSwitchMode());
+    await act(async () => { await result.current.switchMode('professional', { navigate: false }); });
+    expect(useAuthStore.getState().activeMode).toBe('professional');
+    expect(await AsyncStorage.getItem('bama:lastMode:u1')).toBe('professional');
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockGetDocument).not.toHaveBeenCalled();
   });
 });

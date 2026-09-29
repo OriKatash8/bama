@@ -12,12 +12,51 @@ import { getDocument, updateDocument, setDocument } from '@core/firebase/firesto
 import { registerIfGranted } from '@core/notifications/registerForPushNotifications';
 import { handleForegroundNotification } from '@core/notifications/foregroundHandler';
 import i18n from '@core/i18n';
-import type { User } from '@core/types/user';
+import { readLastMode, clearLastMode } from '@core/storage/lastMode';
+import type { User, ProfessionalProfile } from '@core/types/user';
 
 type LegacyUserDoc = User & { role?: string };
 
 // Shows every push while the app is open, except messages in the chat on screen.
 Notifications.setNotificationHandler({ handleNotification: handleForegroundNotification });
+
+/** How long a relaunch waits on the pro profile read before giving up (offline). */
+const PROFILE_READ_TIMEOUT_MS = 3000;
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+  });
+}
+
+/**
+ * Reopen in the mode this user was last in. Runs while isLoading is still true,
+ * so the root decides once, with the mode known — no mode-select flash.
+ *
+ * A pro also needs to know whether the profile is complete (the root sends an
+ * incomplete one to the forced profile screen). That read is capped: offline, it
+ * gives up, leaves the lock unknown, and the pro layout's own subscription locks
+ * later if it must. Launch never hangs on it.
+ */
+async function restoreLastMode(uid: string): Promise<void> {
+  const saved = await readLastMode(uid);
+  // Signed out (or switched user) while reading: the saved mode is not theirs.
+  if (!saved || useAuthStore.getState().user?.id !== uid) return;
+  if (saved === 'professional') {
+    try {
+      const profile = await withTimeout(
+        getDocument<ProfessionalProfile>(`users/${uid}/profile/data`),
+        PROFILE_READ_TIMEOUT_MS,
+      );
+      if (useAuthStore.getState().user?.id !== uid) return;
+      useAuthStore.getState().setProProfileCompleted(profile?.proProfileCompleted === true);
+    } catch {
+      if (useAuthStore.getState().user?.id !== uid) return;
+    }
+  }
+  useAuthStore.getState().setActiveMode(saved);
+}
 
 export function useAuth() {
   const { user, activeMode, isLoading, setUser, setLoading, clear } = useAuthStore();
@@ -32,6 +71,10 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
       if (!firebaseUser) {
+        // Every sign-out lands here — logout, account deletion, a declined
+        // consent, a suspension — so the saved mode is forgotten here too.
+        const prevUid = useAuthStore.getState().user?.id;
+        if (prevUid) void clearLastMode(prevUid);
         clear();
         return;
       }
@@ -57,6 +100,7 @@ export function useAuth() {
           // it here keeps a stale value from outliving the backfill.
           const { role: _role, email: _staleEmail, ...cleanUser } = userData as any;
           setUser({ ...cleanUser, email: firebaseUser.email ?? undefined } as User);
+          await restoreLastMode(firebaseUser.uid);
           setLoading(false);
           if (moderation?.status === 'warned') {
             useModerationStore.getState().setNotice({ status: 'warned', reason: moderation.reason });

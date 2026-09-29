@@ -10,6 +10,9 @@ import { useAuthStore } from '@core/stores/authStore';
  */
 
 let mockTokenListener: ((u: unknown) => void) | null = null;
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
 jest.mock('@core/firebase/auth', () => ({
   onAuthChange: () => () => {},
   onTokenChange: (cb: (u: unknown) => void) => { mockTokenListener = cb; return () => {}; },

@@ -5,6 +5,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useOnboardingGate } from '@features/auth/hooks/useOnboardingGate';
 import { GatePendingScreen, useGatePending } from '@features/auth/components/GatePending';
 import { subscribeToDocument } from '@core/firebase/firestore';
+import { useAdoptGroupMode } from '@features/auth/hooks/useAdoptGroupMode';
 import type { User } from '@core/types/user';
 
 export default function ClientLayout() {
@@ -14,6 +15,7 @@ export default function ClientLayout() {
   const clientOnboarded = useAuthStore((s) => s.clientOnboarded);
   const setClientOnboarded = useAuthStore((s) => s.setClientOnboarded);
   const pathname = usePathname();
+  const modePending = useAdoptGroupMode('client');
   // A client who has not finished onboarding gives the phone number THERE
   // (the name-and-picture page asks for it), so the phone rung waits for it.
   const gate = useOnboardingGate({ deferPhone: activeMode === 'client' && clientOnboarded !== true });
@@ -35,7 +37,7 @@ export default function ClientLayout() {
   // phone number adds one (useOnboardingGate).
   // Signed in but the email answer has not arrived: neither the app nor a
   // guess — a loading screen until it does.
-  if (gatePending) return <GatePendingScreen />;
+  if (modePending || gatePending) return <GatePendingScreen />;
   if (gate) return <Redirect href={gate as never} />;
 
   // First-time clients are routed to the onboarding screen until they finish it.

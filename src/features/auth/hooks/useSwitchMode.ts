@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '@core/stores/authStore';
 import { getDocument } from '@core/firebase/firestore';
 import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
+import { writeLastMode } from '@core/storage/lastMode';
 import type { ActiveMode, ProfessionalProfile } from '@core/types/user';
 
 export function useSwitchMode() {
@@ -9,8 +10,13 @@ export function useSwitchMode() {
   const setActiveMode = useAuthStore((s) => s.setActiveMode);
   const userId = useAuthStore((s) => s.user?.id);
 
-  async function switchMode(mode: ActiveMode) {
+  /** `navigate: false` sets (and saves) the mode only; the caller navigates — a
+   *  notification tap goes straight to its target, not via the mode's home. */
+  async function switchMode(mode: ActiveMode, { navigate = true }: { navigate?: boolean } = {}) {
     setActiveMode(mode);
+    // Remembered so the next launch reopens in this mode (see useAuth).
+    if (userId) void writeLastMode(userId, mode);
+    if (!navigate) return;
     // Every sign-in path ends here (sign-in -> mode-select -> switchMode), so this
     // is where a deep link opened while signed out picks back up. The saved href is
     // allowlist-checked and TTL-checked inside takeResume, and wins over the mode's
