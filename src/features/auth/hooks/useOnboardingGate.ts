@@ -22,13 +22,15 @@ import { needsConsent } from '@features/auth/utils/needsConsent';
  * might still need to verify.
  * Both group layouts call this — and nothing else calls the rungs directly.
  */
-export function useOnboardingGate(): string | null {
+export function useOnboardingGate(opts?: { deferPhone?: boolean }): string | null {
   const mustConsent = useAuthStore((s) => needsConsent(s.user));
   const needsEmail = useAuthStore((s) => s.needsEmailVerification) === true;
   // Called unconditionally: it is a hook, and it keeps the phone read live.
   const needsPhone = usePhoneGate();
   if (mustConsent) return '/(auth)/consent';
   if (needsEmail) return '/(auth)/verify-email';
-  if (needsPhone) return '/settings/phone?required=1';
+  // deferPhone: a later step asks for the number itself (the client
+  // onboarding page), so this rung waits until that step is done.
+  if (needsPhone && !opts?.deferPhone) return '/settings/phone?required=1';
   return null;
 }

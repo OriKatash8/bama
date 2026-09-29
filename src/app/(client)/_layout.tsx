@@ -14,7 +14,9 @@ export default function ClientLayout() {
   const clientOnboarded = useAuthStore((s) => s.clientOnboarded);
   const setClientOnboarded = useAuthStore((s) => s.setClientOnboarded);
   const pathname = usePathname();
-  const gate = useOnboardingGate();
+  // A client who has not finished onboarding gives the phone number THERE
+  // (the name-and-picture page asks for it), so the phone rung waits for it.
+  const gate = useOnboardingGate({ deferPhone: activeMode === 'client' && clientOnboarded !== true });
   const gatePending = useGatePending();
 
   // Track the first-time client onboarding flag from the user doc.

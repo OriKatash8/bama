@@ -14,6 +14,9 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { uploadFile } from '@core/firebase/storage';
 import { updateDocument } from '@core/firebase/firestore';
+import { Input } from '@components/ui/Input';
+import { normalizePhone } from '@features/auth/utils/phone';
+import { savePhone } from '@features/auth/services/phoneService';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -33,6 +36,11 @@ export default function ClientOnboardingScreen() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const setClientOnboarded = useAuthStore((s) => s.setClientOnboarded);
+  // No number on file yet (an Apple / Google sign-up never saw the register
+  // form): this page asks for it, instead of a separate phone screen first.
+  // Unknown (null) does not ask — the phone gate catches it after onboarding.
+  const needsPhone = useAuthStore((s) => s.hasPhone) === false;
+  const setHasPhone = useAuthStore((s) => s.setHasPhone);
   const { showToast } = useUiStore();
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
@@ -43,6 +51,8 @@ export default function ClientOnboardingScreen() {
   const [name, setName] = useState(user?.displayName ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState<string | undefined>(undefined);
 
   async function pickPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -54,12 +64,23 @@ export default function ClientOnboardingScreen() {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   }
 
-  const canContinue = name.trim().length > 0 && !saving;
+  const phoneOk = !needsPhone || normalizePhone(phone) !== null;
+  const canContinue = name.trim().length > 0 && phoneOk && !saving;
 
   async function handleContinue() {
     if (!user || !canContinue) return;
+    const e164 = needsPhone ? normalizePhone(phone) : null;
+    if (needsPhone && !e164) {
+      setPhoneError(t('auth.err_phone_invalid'));
+      return;
+    }
     setSaving(true);
     try {
+      // The private contact doc, never the public user doc — as the phone screen does.
+      if (e164) {
+        await savePhone(user.id, e164);
+        setHasPhone(true);
+      }
       let photoURL = user.photoURL;
       if (photoUri) {
         const blob = await fetch(photoUri).then((r) => r.blob());
@@ -106,7 +127,32 @@ export default function ClientOnboardingScreen() {
         {t('client_onboarding.add_photo')}
       </Text>
 
-      <TouchableOpacity onPress={handleContinue} activeOpacity={0.85} disabled={!canContinue} style={{ opacity: canContinue ? 1 : 0.5 }}>
+      {needsPhone && (
+        <View style={styles.phoneField}>
+          <Input
+            placeholder={t('auth.phone')}
+            placeholderTextColor={colors.placeholder}
+            value={phone}
+            onChangeText={(v) => { setPhone(v); if (phoneError) setPhoneError(undefined); }}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            error={phoneError}
+            textAlign={rtl ? 'right' : 'left'}
+            style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign: rtl ? 'right' : 'left' }}
+          />
+        </View>
+      )}
+
+      <TouchableOpacity
+        testID="onboarding-continue"
+        onPress={handleContinue}
+        activeOpacity={0.85}
+        disabled={!canContinue}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !canContinue }}
+        style={{ opacity: canContinue ? 1 : 0.5 }}
+      >
         <LinearGradient
           colors={['#004aad', '#cb6ce6']}
           start={{ x: 0, y: 0 }}
@@ -129,6 +175,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, marginBottom: 2 },
   subtitle: { fontSize: 14, lineHeight: 20, marginBottom: 8, paddingHorizontal: 8 },
   hint: { fontSize: 12, marginTop: 4, marginBottom: 24 },
+  phoneField: { marginBottom: 20 },
   continueBtn: {
     borderRadius: 18,
     paddingVertical: 15,

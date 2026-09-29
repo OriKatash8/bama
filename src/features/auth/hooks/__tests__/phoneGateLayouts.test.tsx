@@ -22,12 +22,26 @@ jest.mock('@core/firebase/firestore', () => ({ subscribeToDocument: jest.fn(() =
 
 beforeEach(() => { mockRedirects.length = 0; mockNeedsPhone = false; useAuthStore.setState({ needsEmailVerification: null }); });
 
+it('professional: no phone number is asked for ahead of the profile lock', () => {
+  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: 'professional', needsEmailVerification: false, proProfileCompleted: false });
+  mockNeedsPhone = true;
+  render(<ProfessionalLayout />);
+  expect(mockRedirects).toEqual(['/settings/phone?required=1']);
+});
+
+it('client not yet onboarded: goes to onboarding, which asks for the number there', () => {
+  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: 'client', needsEmailVerification: false, clientOnboarded: false });
+  mockNeedsPhone = true;
+  render(<ClientLayout />);
+  expect(mockRedirects).toEqual(['/(client)/onboarding']);
+});
+
 describe.each([
   ['client', ClientLayout, { clientOnboarded: false }],
   ['professional', ProfessionalLayout, { proProfileCompleted: false }],
 ] as const)('%s app', (mode, Layout, lockedOnboarding) => {
-  it('sends a user with no phone number to enter one — ahead of onboarding', () => {
-    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: mode, needsEmailVerification: false, ...lockedOnboarding });
+  it('a user with no phone number who is past onboarding is sent to enter one', () => {
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: mode, needsEmailVerification: false, clientOnboarded: true, proProfileCompleted: true });
     mockNeedsPhone = true;
     render(<Layout />);
     expect(mockRedirects).toEqual(['/settings/phone?required=1']);
