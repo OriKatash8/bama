@@ -109,6 +109,12 @@ describe('text and actions', () => {
     expect(r.getByText('שדרגו את הפרופיל')).toBeTruthy();
   });
 
+  it('the line under the title is as dark as the title; the extra note stays soft', () => {
+    const r = render(<AnimatedEmptyState variant="board" {...base} note="שדרגו את הפרופיל" />);
+    expect(StyleSheet.flatten(r.getByText(base.subtitle).props.style).color).toBe('#1A1530');
+    expect(StyleSheet.flatten(r.getByText('שדרגו את הפרופיל').props.style).color).toBe('#5A566C');
+  });
+
   it('title is 26 / 800 in Heebo in Hebrew, Montserrat in English', () => {
     const he = StyleSheet.flatten(render(<AnimatedEmptyState variant="tiles" {...base} />).getByText(base.title).props.style);
     expect([he.fontSize, he.fontWeight, he.fontFamily, he.color]).toEqual([26, '800', 'Heebo-ExtraBold', '#1A1530']);

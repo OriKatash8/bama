@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   bubbleLines: { flex: 1, gap: 7 },
   textBlock: { alignItems: 'center', paddingHorizontal: 24 },
   title: { fontSize: 26, color: INK, textAlign: 'center' },
-  subtitle: { fontSize: 15, lineHeight: 22, color: INK_SOFT, textAlign: 'center', marginTop: 6 },
+  subtitle: { fontSize: 15, lineHeight: 22, color: INK, textAlign: 'center', marginTop: 6 },
   note: { fontSize: 13, lineHeight: 19, color: INK_SOFT, textAlign: 'center', marginTop: 6 },
   ctaShadow: {
     marginTop: 14,
