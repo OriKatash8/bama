@@ -1,4 +1,5 @@
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { AppText } from '@components/ui/AppText';
 
 export const SENDER_AVATAR_SIZE = 28;
@@ -15,7 +16,10 @@ export function SenderAvatar({ photoURL, name, color, onPress }: {
   onPress?: () => void;
 }) {
   const body = photoURL ? (
-    <Image testID="sender-avatar-photo" source={{ uri: photoURL }} style={styles.photo} />
+    // expo-image, cached in memory and on disk like the chat list's pictures:
+    // the same sender's photo repeats down the list, and React Native's Image
+    // fetched and decoded it again for every row.
+    <Image testID="sender-avatar-photo" source={{ uri: photoURL }} style={styles.photo} contentFit="cover" cachePolicy="memory-disk" recyclingKey={photoURL} transition={120} />
   ) : (
     <AppText weight="bold" style={styles.initial}>{name.trim().charAt(0).toUpperCase()}</AppText>
   );

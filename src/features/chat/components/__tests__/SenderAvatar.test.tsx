@@ -11,8 +11,13 @@ import { SenderAvatar } from '../SenderAvatar';
 
 it('shows the photo when there is one', () => {
   const r = render(<SenderAvatar photoURL="https://x/p.jpg" name="Dana" color="#e53935" />);
-  expect(r.getByTestId('sender-avatar-photo').props.source).toEqual({ uri: 'https://x/p.jpg' });
+  expect([r.getByTestId('sender-avatar-photo').props.source].flat()).toEqual([{ uri: 'https://x/p.jpg' }]);
   expect(r.queryByText('D')).toBeNull();
+});
+
+it('caches the photo in memory and on disk, as the chat list does', () => {
+  const r = render(<SenderAvatar photoURL="https://x/p.jpg" name="Dana" color="#e53935" />);
+  expect(r.getByTestId('sender-avatar-photo').props.cachePolicy).toBe('memory-disk');
 });
 
 it('falls back to the initial on the sender\'s colour', () => {
