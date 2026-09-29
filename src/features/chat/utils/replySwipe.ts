@@ -21,9 +21,11 @@ import { CLAIM_PX, startedAtEdge, dragStartX } from './swipeGeometry';
  *
  *  1. The edge strip below, which refuses any drag starting near a screen edge.
  *  2. The chat screen pinning the back gesture to that edge — it sets
- *     `fullScreenGestureEnabled: false` and `gestureResponseDistance: 24`,
- *     because on iOS 26+ the back gesture otherwise spans the WHOLE screen and
- *     no edge exclusion could save the row.
+ *     `fullScreenGestureEnabled: false` and `gestureResponseDistance: 24`
+ *     (EDGE_BACK_SWIPE), because on iOS 26+ the back gesture otherwise spans
+ *     the WHOLE screen and no edge exclusion could save the row. On the room's
+ *     screen AND the outer route holding the chat stack: the room is that
+ *     stack's first screen, so the swipe that leaves it is the outer stack's.
  *
  * 24 < EDGE_PX(32) on purpose: the two zones are disjoint by construction, so
  * neither has to be switched off while the other is live. That is why there is

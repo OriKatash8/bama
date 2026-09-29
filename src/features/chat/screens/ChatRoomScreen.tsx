@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { SYSTEM_USER_ID } from '@core/constants/system';
 import { isolate } from '@utils/formatters';
 import { ReplyQuote } from '../components/ReplyQuote';
@@ -56,7 +56,7 @@ import {
   addDoc, setDoc, serverTimestamp,
   orderBy,
 } from 'firebase/firestore';
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
 import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronLeft, ChevronRight, Users, UserMinus, Search } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
@@ -113,6 +113,15 @@ type T = ReturnType<typeof makeT>;
 
 /** The add sheets' header tile — the same gradient as on project details. */
 const SHEET_TILE_GRADIENT = ['#2563EB', '#6D34DE', '#9A4BF0'] as const;
+
+/**
+ * Back is a swipe from the left edge only — a swipe that starts on a message
+ * replies (replySwipe.ts keeps its drags 32px clear of the edge; this strip is
+ * 24). Set on the room's own screen AND on the outer route that holds the chat
+ * stack: the room is that stack's first screen, so its swipe pops the OUTER
+ * stack, where iOS 26 otherwise makes the swipe span the whole screen.
+ */
+const EDGE_BACK_SWIPE = { fullScreenGestureEnabled: false, gestureResponseDistance: { start: 24 } } as const;
 
 const USER_COLORS = [
   '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab', '#1e88e5',
@@ -682,6 +691,12 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [projectClientId, setProjectClientId] = useState<string | undefined>(undefined);
   // True while the review card is a carousel the client can swipe through.
   const [cardSwipeable, setCardSwipeable] = useState(false);
+  // The outer route (the whole chat stack) is what a back swipe from the room
+  // pops, so the edge-only swipe and the card's switch-off must reach it too.
+  const navigation = useNavigation();
+  useLayoutEffect(() => {
+    navigation.getParent()?.setOptions({ gestureEnabled: !cardSwipeable, ...EDGE_BACK_SWIPE });
+  }, [navigation, cardSwipeable]);
 
   /** The message being replied to, or null. Cleared on send and on cancel —
    *  NOT on blur, so tapping away and coming back keeps the quote. */
@@ -1587,9 +1602,13 @@ export function ChatRoomScreen({ chatId }: Props) {
         exclusion could keep a reply swipe out of its way. Pinned to 24px here
         against the row's EDGE_PX of 32, the two zones are disjoint by
         construction, so neither has to be switched off while the other is live.
+        EDGE_BACK_SWIPE goes on the OUTER route too (the layout effect above):
+        the room is its stack's first screen, so the swipe that leaves it is the
+        outer stack's — with these options only here, it still spanned the
+        screen and a reply swipe popped the chat.
         That is why there is no per-swipe flag: lifting one would re-render this
         screen, and every visible row with it, in the frames the drag needs. */}
-    <Stack.Screen options={{ headerShown: false, gestureEnabled: !cardSwipeable, fullScreenGestureEnabled: false, gestureResponseDistance: { start: 24 } }} />
+    <Stack.Screen options={{ headerShown: false, gestureEnabled: !cardSwipeable, ...EDGE_BACK_SWIPE }} />
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

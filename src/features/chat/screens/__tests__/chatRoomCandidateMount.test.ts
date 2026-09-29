@@ -48,7 +48,8 @@ it("renders 'left the project' and 'chose not to continue' as their own pill", (
 it("stands the screen's own swipe-back down while the review card can be swiped", () => {
   // Same motion, same starting edge (the app lays out LTR), so only one of the
   // two may be live. The screen is the single owner of the option.
-  expect(SRC).toMatch(/<Stack\.Screen options=\{\{ headerShown: false, gestureEnabled: !cardSwipeable, fullScreenGestureEnabled: false, gestureResponseDistance: \{ start: 24 \} \}\} \/>/);
+  // (chatBackSwipeEdgeOnly.test.ts: the same goes on the outer route.)
+  expect(SRC).toMatch(/<Stack\.Screen options=\{\{ headerShown: false, gestureEnabled: !cardSwipeable, \.\.\.EDGE_BACK_SWIPE \}\} \/>/);
   expect(SRC).toMatch(/onSwipeableChange=\{setCardSwipeable\}/);
   const route = readFileSync(join(__dirname, '..', '..', '..', '..', 'app', '(client)', 'chat', '[chatId].tsx'), 'utf8');
   expect(route).not.toMatch(/gestureEnabled/);
