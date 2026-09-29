@@ -72,3 +72,23 @@ it('starts loading, and reads nothing without a chat id', async () => {
   await Promise.resolve();
   expect(mockReads).toEqual([]);
 });
+
+describe('a regular chat (no channels)', () => {
+  beforeEach(() => {
+    mockDocs['chats/d1/messages'] = [
+      { id: 'm1', data: { senderId: 'u1', text: 'send the camera list', timestamp: ts(1) } },
+      { id: 'sys', data: { system: true, senderId: 'u1', text: 'Project started', timestamp: ts(2) } },
+      { id: 'pic', data: { senderId: 'u2', text: '', imageURL: 'https://x/p.jpg', timestamp: ts(3) } },
+    ];
+  });
+
+  it('reads the chat\'s own messages once, with no channel', async () => {
+    const { result } = renderHook(() => useCommunitySearchIndex('d1', 'chat'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    // '' is what the room's activeChannelId holds outside a community, so the
+    // jump lands without switching anything.
+    expect(result.current.messages.map((m) => [m.id, m.channelId, m.channelName])).toEqual([['m1', '', '']]);
+    expect(mockReads).toEqual(['chats/d1/messages']);
+  });
+});

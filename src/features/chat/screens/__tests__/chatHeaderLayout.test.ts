@@ -30,3 +30,30 @@ it('the back arrow points outward in each language, as an icon rather than a tex
 it('the name sits next to the picture, aligned to the start side', () => {
   expect(header).toMatch(/styles\.headerCenter, \{ alignItems: rtl \? 'flex-end' : 'flex-start' \}/);
 });
+
+describe('search, at the far end of the header', () => {
+  it('is the last thing in the row, so it sits left in Hebrew and right in English', () => {
+    const search = header.indexOf('testID="chat-search"');
+    expect(search).toBeGreaterThan(header.indexOf('<View style={[styles.headerCenter'));
+    // Nothing but closing tags between the button and the end of the row.
+    const after = header.slice(header.indexOf('</TouchableOpacity>', search) + '</TouchableOpacity>'.length);
+    expect(after.trim()).toMatch(/^<\/View>\s*$/);
+  });
+
+  it('opens a sheet over the chat, not another page', () => {
+    const btn = header.slice(header.indexOf('testID="chat-search"'), header.indexOf('testID="chat-search"') + 300);
+    expect(btn).toMatch(/onPress=\{\(\) => setSearchOpen\(true\)\}/);
+    expect(SRC).not.toMatch(/chat\/community-search\?chatId=\$\{chatId\}&kind=/);
+    expect(SRC).toMatch(/<ChatSearchSheet[\s\S]*?kind=\{chatType === 'community' \? 'community' : 'chat'\}/);
+  });
+
+  it('a picked result closes the sheet and jumps in the room', () => {
+    expect(SRC).toMatch(/onPick=\{\(j\) => \{ setSearchOpen\(false\); searchJump\(j\); \}\}/);
+  });
+
+  it('is a search icon with a spoken label', () => {
+    const btn = header.slice(header.indexOf('testID="chat-search"') - 300, header.indexOf('testID="chat-search"') + 500);
+    expect(btn).toMatch(/<Search /);
+    expect(btn).toMatch(/accessibilityLabel=\{t\('community_search\.open'\)\}/);
+  });
+});

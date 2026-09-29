@@ -115,3 +115,25 @@ it('back goes back', async () => {
   fireEvent.press(r.getByTestId('search-back'));
   expect(mockBack).toHaveBeenCalled();
 });
+
+it('a regular chat\'s results carry no channel chip', async () => {
+  mockIndex.mockReturnValue(ready([
+    { id: 'd', channelId: '', channelName: '', senderId: 'u1', text: 'the camera is here', timestamp: ts(40) },
+  ]));
+  const r = await renderScreen();
+  await type(r, 'camera');
+
+  expect(r.getByTestId('search-result-d')).toBeTruthy();
+  expect(r.queryByTestId('search-channel-chip')).toBeNull();
+});
+
+it('a community\'s results keep the channel chip', async () => {
+  const r = await renderScreen();
+  await type(r, 'camera');
+  expect(r.getAllByTestId('search-channel-chip')).toHaveLength(2);
+});
+
+it('searches the community, every channel', async () => {
+  await renderScreen();
+  expect(mockIndex).toHaveBeenLastCalledWith('c1', 'community');
+});

@@ -58,7 +58,7 @@ import {
 } from 'firebase/firestore';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronLeft, ChevronRight, Users, UserMinus } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronLeft, ChevronRight, Users, UserMinus, Search } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -79,6 +79,7 @@ import { addMeeting } from '../services/meetingService';
 import { formatMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
+import { ChatSearchSheet } from '../components/ChatSearchSheet';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
@@ -782,6 +783,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [purchaseListing, setPurchaseListing] = useState<MarketplaceListing | null>(null);
   const [showPurchaseNotice, setShowPurchaseNotice] = useState(false);
+  /** The header's search, as a sheet over the room (ChatSearchSheet). */
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Channel state
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -1201,7 +1204,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   // jump to it once loaded. After the two effects above, so the channel switch's
   // "open at the bottom" runs first and the jump wins.
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
-  useSearchJump({ chatId, activeChannelId, messageIds, setActiveChannelId, jumpToMessage });
+  const { jump: searchJump } = useSearchJump({ chatId, activeChannelId, messageIds, setActiveChannelId, jumpToMessage });
 
   // Opening clears this chat's mentions — ONE path for group chats and channels
   // alike, which is why it does not hang off unreadCount (communities have no
@@ -1669,6 +1672,19 @@ export function ChatRoomScreen({ chatId }: Props) {
             </AppText>
           )}
         </View>
+        {/* Search this chat — the far end from back: left in Hebrew, right in
+            English. Opens a sheet over the room, not another page. */}
+        <TouchableOpacity
+          testID="chat-search"
+          onPress={() => setSearchOpen(true)}
+          style={styles.headerSearch}
+          hitSlop={8}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('community_search.open')}
+        >
+          <Search size={22} color={modeAccent} strokeWidth={2.2} />
+        </TouchableOpacity>
       </View>
 
       {/* Channel tab bar (community only) */}
@@ -2226,6 +2242,16 @@ export function ChatRoomScreen({ chatId }: Props) {
       </View>
     </Modal>
 
+    {/* Search, from the header icon. A picked result closes the sheet and the
+        room jumps there — switching channel first in a community. */}
+    <ChatSearchSheet
+      visible={searchOpen}
+      onClose={() => setSearchOpen(false)}
+      chatId={chatId}
+      kind={chatType === 'community' ? 'community' : 'chat'}
+      onPick={(j) => { setSearchOpen(false); searchJump(j); }}
+    />
+
     {/* Chat Photo Modal */}
     <Modal visible={chatPhotoModalOpen} transparent animationType="fade" onRequestClose={() => setChatPhotoModalOpen(false)}>
       <View style={chatStyles.photoModalOverlay}>
@@ -2594,6 +2620,12 @@ const styles = StyleSheet.create({
     color: '#000000',
     textAlign: 'center',
     width: '100%',
+  },
+  headerSearch: {
+    width: 36,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerRight: {
     alignItems: 'center',

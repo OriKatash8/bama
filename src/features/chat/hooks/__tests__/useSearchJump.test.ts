@@ -65,3 +65,32 @@ it('does nothing without a request, or with one for another chat', () => {
   expect(jumpToMessage).not.toHaveBeenCalled();
   expect(useChatJumpStore.getState().pending?.chatId).toBe('other');
 });
+
+it('in a regular chat (channel \'\'), jumps once the message has loaded', () => {
+  useChatJumpStore.getState().request({ chatId: 'c1', channelId: '', messageId: 'd2' });
+  const r = mount({ activeChannelId: '', messageIds: [] });
+  expect(jumpToMessage).not.toHaveBeenCalled();
+
+  r.rerender({ activeChannelId: '', messageIds: ['d1', 'd2'] });
+  expect(jumpToMessage).toHaveBeenCalledWith('d2');
+});
+
+describe('jump() — a result picked on the room itself (the search sheet)', () => {
+  it('switches channel and lands once the message has loaded, with no focus change', () => {
+    const r = mount({ activeChannelId: 'general', messageIds: ['g1'] });
+    act(() => { r.result.current.jump({ chatId: 'c1', channelId: 'market', messageId: 'm9' }); });
+
+    expect(setActiveChannelId).toHaveBeenCalledWith('market');
+    expect(jumpToMessage).not.toHaveBeenCalled();
+
+    r.rerender({ activeChannelId: 'market', messageIds: ['m8', 'm9'] });
+    expect(jumpToMessage).toHaveBeenCalledWith('m9');
+    expect(jumpToMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('in a regular chat, jumps straight away when the message is already loaded', () => {
+    const r = mount({ activeChannelId: '', messageIds: ['d1', 'd2'] });
+    act(() => { r.result.current.jump({ chatId: 'c1', channelId: '', messageId: 'd1' }); });
+    expect(jumpToMessage).toHaveBeenCalledWith('d1');
+  });
+});
