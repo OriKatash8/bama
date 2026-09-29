@@ -2080,7 +2080,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               chat is precisely when the fee is due, and it must stay reachable. */}
           {balanceReachable && chatProjectId && (
             <TouchableOpacity
-              style={chatStyles.payFromChatBtn}
+              style={[chatStyles.payFromChatBtn, { backgroundColor: modeAccent }]}
               onPress={() => router.push(`/settings/payment?projectId=${chatProjectId}` as never)}
               activeOpacity={0.85}
             >
@@ -2925,8 +2925,9 @@ const styles = StyleSheet.create({
 });
 
 const chatStyles = StyleSheet.create({
+  // Colour: the mode accent, set inline — purple for the client, blue for the pro.
   payFromChatBtn: {
-    backgroundColor: '#2d6a2d', borderRadius: 999,
+    borderRadius: 999,
     paddingHorizontal: 22, paddingVertical: 9,
   },
   payFromChatText: { fontSize: 14, color: '#ffffff' },
