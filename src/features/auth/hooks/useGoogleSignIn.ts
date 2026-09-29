@@ -68,7 +68,9 @@ export function useGoogleSignIn(): GoogleSignInState {
     // Both boxes already ticked on the register screen: that IS the consent.
     if (consented) {
       await recordConsent(result.user.uid);
-      await syncUser(result.user.uid, info, setUser);
+      await syncUser(result.user.uid, info, setUser, undefined, {
+      newAccount: getAdditionalUserInfo(result)?.isNewUser === true,
+    });
       router.replace('/(auth)/mode-select');
       return;
     }

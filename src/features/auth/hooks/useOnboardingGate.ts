@@ -1,6 +1,7 @@
 import { useAuthStore } from '@core/stores/authStore';
 import { usePhoneGate } from '@features/auth/hooks/usePhoneGate';
 import { needsConsent } from '@features/auth/utils/needsConsent';
+import { needsProfileSetup } from '@features/auth/utils/needsProfileSetup';
 
 /**
  * THE gate: where a signed-in user must go before the app, or null. One
@@ -11,7 +12,9 @@ import { needsConsent } from '@features/auth/utils/needsConsent';
  *      someone who has not accepted the current Terms and confirmed 18+.
  *   1. email — an unverified PASSWORD account (needsEmailVerification, which
  *      follows the ID token; Google/Apple are exempt) → /(auth)/verify-email
- *   2. phone — no number on file (usePhoneGate) → /settings/phone?required=1
+ *   2. setup — a brand-new account's name / picture / phone page
+ *      (needsProfileSetup) → /(auth)/setup. It asks for the phone itself.
+ *   3. phone — no number on file (usePhoneGate) → /settings/phone?required=1
  *   Further rungs (phone verification, forced pro-profile completion) go here,
  *   in order. The client onboarding and the pro profile lock still live in their
  *   group layouts, after this.
@@ -25,10 +28,12 @@ import { needsConsent } from '@features/auth/utils/needsConsent';
 export function useOnboardingGate(opts?: { deferPhone?: boolean }): string | null {
   const mustConsent = useAuthStore((s) => needsConsent(s.user));
   const needsEmail = useAuthStore((s) => s.needsEmailVerification) === true;
+  const mustSetUp = useAuthStore((s) => needsProfileSetup(s.user));
   // Called unconditionally: it is a hook, and it keeps the phone read live.
   const needsPhone = usePhoneGate();
   if (mustConsent) return '/(auth)/consent';
   if (needsEmail) return '/(auth)/verify-email';
+  if (mustSetUp) return '/(auth)/setup';
   // deferPhone: a later step asks for the number itself (the client
   // onboarding page), so this rung waits until that step is done.
   if (needsPhone && !opts?.deferPhone) return '/settings/phone?required=1';

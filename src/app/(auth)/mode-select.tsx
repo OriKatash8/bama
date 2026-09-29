@@ -8,6 +8,7 @@ import { useIsAdmin } from '@core/hooks/useIsAdmin';
 import { auth } from '@core/firebase/config';
 import { useAuthStore } from '@core/stores/authStore';
 import { needsConsent } from '@features/auth/utils/needsConsent';
+import { needsProfileSetup } from '@features/auth/utils/needsProfileSetup';
 
 export default function ModeSelectScreen() {
   const { isAdmin, loading } = useIsAdmin();
@@ -27,7 +28,10 @@ export default function ModeSelectScreen() {
   // A signed-in user reaches this screen straight from sign-in, outside the
   // group layouts' gate: consent (the gate's first rung) is checked here too.
   const mustConsent = useAuthStore((st) => needsConsent(st.user));
+  // A brand-new account sets up its name / picture / phone first.
+  const mustSetUp = useAuthStore((st) => needsProfileSetup(st.user));
   if (mustConsent) return <Redirect href={'/(auth)/consent' as never} />;
+  if (mustSetUp) return <Redirect href={'/(auth)/setup' as never} />;
 
   return (
     <Screen scrollable={false}>

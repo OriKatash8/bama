@@ -15,17 +15,17 @@ import { updateDocument } from '@core/firebase/firestore';
 
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }));
+jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
+jest.mock('expo-image', () => ({ Image: 'Image' }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock('@core/firebase/storage', () => ({ uploadFile: jest.fn() }));
 jest.mock('@core/firebase/firestore', () => ({ updateDocument: jest.fn(async () => undefined) }));
 jest.mock('@features/auth/services/phoneService', () => ({ savePhone: jest.fn(async () => undefined) }));
-jest.mock('@features/profile/components/ProfileHeader', () => ({ ProfileHeader: () => null }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));
 
-const A = en.auth;
 const O = en.client_onboarding;
 
 beforeEach(() => {
@@ -40,7 +40,7 @@ const continueBtn = (r: ReturnType<typeof render>) => r.getByTestId('onboarding-
 
 it('no number yet: asks for it, and cannot continue without a valid one', async () => {
   const r = render(<ClientOnboardingScreen />);
-  const input = r.getByPlaceholderText(A.phone);
+  const input = r.getByTestId('setup-phone');
   expect(input.props.keyboardType).toBe('phone-pad');
   expect(continueBtn(r).props.accessibilityState.disabled).toBe(true);
 
@@ -52,7 +52,7 @@ it('no number yet: asks for it, and cannot continue without a valid one', async 
 
 it('saves the number with the name, then goes home', async () => {
   const r = render(<ClientOnboardingScreen />);
-  fireEvent.changeText(r.getByPlaceholderText(A.phone), '050-123-4567');
+  fireEvent.changeText(r.getByTestId('setup-phone'), '050-123-4567');
   expect(continueBtn(r).props.accessibilityState.disabled).toBe(false);
   await act(async () => { fireEvent.press(continueBtn(r)); });
 
@@ -65,7 +65,7 @@ it('saves the number with the name, then goes home', async () => {
 it('already has a number (from the register form): not asked again', async () => {
   useAuthStore.setState({ hasPhone: true });
   const r = render(<ClientOnboardingScreen />);
-  expect(r.queryByPlaceholderText(A.phone)).toBeNull();
+  expect(r.queryByTestId('setup-phone')).toBeNull();
   await act(async () => { fireEvent.press(continueBtn(r)); });
   expect(savePhone).not.toHaveBeenCalled();
   expect(updateDocument).toHaveBeenCalled();

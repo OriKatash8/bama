@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { VerifyEmailForm } from '../VerifyEmailForm';
+import { useAuthStore } from '@core/stores/authStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -34,6 +35,12 @@ const ev = en.email_verification;
 beforeEach(() => {
   jest.clearAllMocks();
   mockLang = 'en';
+  // A just-registered account: its next step is the name / picture page.
+  useAuthStore.setState({
+    user: { id: 'u1', termsVersion: '1.0', needsProfileSetup: true } as never,
+    needsEmailVerification: false,
+    activeMode: null,
+  });
   mockHook = { state: 'idle', errorKey: null, cooldown: 0, resend: jest.fn(), checkVerified: jest.fn(async () => false) };
 });
 
@@ -45,17 +52,18 @@ it('shows the address, left-to-right even in Hebrew', () => {
   expect(r.getByText(he.email_verification.title)).toBeTruthy();
 });
 
-it('"check again" goes into the app once verified', async () => {
+// Straight to the next step, never '/': from inside (auth) that is the login screen.
+it('"check again" goes on to the name / picture page once verified', async () => {
   mockHook.checkVerified = jest.fn(async () => true);
   const r = render(<VerifyEmailForm />);
   await act(async () => { fireEvent.press(r.getByText(ev.check_again)); });
-  expect(mockReplace).toHaveBeenCalledWith('/');
+  expect(mockReplace).toHaveBeenCalledWith('/(auth)/setup');
 });
 
-it('a quiet poll that verifies also goes in', () => {
+it('a quiet poll that verifies goes there too', () => {
   mockHook.state = 'verified';
   render(<VerifyEmailForm />);
-  expect(mockReplace).toHaveBeenCalledWith('/');
+  expect(mockReplace).toHaveBeenCalledWith('/(auth)/setup');
 });
 
 it('"not yet" and failures show as inline text', () => {

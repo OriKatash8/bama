@@ -45,6 +45,8 @@ export function useRegister(): RegisterState {
         termsVersion: terms.version,
         ageConfirmed: true,
         ageConfirmedAt: terms.ageConfirmedAt,
+        // After the email is verified: the name / picture page, then mode select.
+        needsProfileSetup: true,
       };
       await setDocument(`users/${firebaseUser.uid}`, userData);
       // Private, in its own owner-only doc: users/{uid} is readable by everyone.

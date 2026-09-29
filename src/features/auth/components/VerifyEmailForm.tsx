@@ -5,9 +5,11 @@ import { useRouter } from 'expo-router';
 import { MailCheck } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { auth } from '@core/firebase/config';
+import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useEmailVerification } from '@features/auth/hooks/useEmailVerification';
 import { useLogout } from '@features/auth/hooks/useLogout';
+import { nextAuthRoute } from '@features/auth/utils/nextAuthRoute';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -31,10 +33,11 @@ const BRAND = '#004aad';
  * The email-verification gate's screen, for a password account that has not
  * verified (useOnboardingGate sends them here). Same card as registration.
  *
- * Once verified — by "check again" or the quiet 5s poll — it goes to `/`, which
- * routes on (mode-select for a new account). The token refresh inside the check
- * has already lifted the gate by then (useAuth → needsEmailVerification), so `/`
- * does not bounce back here.
+ * Once verified — by "check again" or the quiet 5s poll — it goes to the next
+ * step (nextAuthRoute: the name / picture page for a new account). The token
+ * refresh inside the check has already lifted the gate by then (useAuth →
+ * needsEmailVerification), so it does not bounce back here. Never to `/`: from
+ * inside (auth) that is the login screen.
  *
  * Errors and confirmations are inline text: Alert.alert does nothing on web.
  */
@@ -49,11 +52,11 @@ export function VerifyEmailForm() {
   const email = auth.currentUser?.email ?? '';
 
   useEffect(() => {
-    if (state === 'verified') router.replace('/');
+    if (state === 'verified') router.replace(nextAuthRoute(useAuthStore.getState()) as never);
   }, [state, router]);
 
   async function handleCheck() {
-    if (await checkVerified()) router.replace('/');
+    if (await checkVerified()) router.replace(nextAuthRoute(useAuthStore.getState()) as never);
   }
 
   return (

@@ -402,6 +402,7 @@
   "client_onboarding": {
     "title": "Welcome! Set up your profile",
     "subtitle": "Add a profile photo and confirm your name so professionals recognize you.",
+    "setup_subtitle": "Add a profile photo and confirm your name so others recognize you.",
     "name_label": "Your name",
     "name_placeholder": "Enter your name",
     "add_photo": "Tap the picture to add a profile photo",

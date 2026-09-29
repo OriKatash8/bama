@@ -63,6 +63,8 @@ describe('useRegister', () => {
         id: 'u1',
         displayName: 'John Doe',
         photoURL: null,
+        // After verifying the email: the name / picture page, before mode select.
+        needsProfileSetup: true,
       }),
     );
     // NO `email` ON THE USER DOCUMENT. users/{uid} is readable by every signed-in

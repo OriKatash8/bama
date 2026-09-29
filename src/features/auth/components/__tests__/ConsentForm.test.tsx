@@ -65,6 +65,10 @@ it('one box is not enough: nothing is written', async () => {
 });
 
 it('accepting writes all four consent fields, then the new profile, then moves on', async () => {
+  // syncUser is mocked: stand in for the new profile it puts in the store.
+  (syncUser as jest.Mock).mockImplementationOnce(async () => {
+    useAuthStore.setState({ user: { id: 'new-uid', termsVersion: '1.0', needsProfileSetup: true } as never });
+  });
   const r = render(<ConsentForm />);
   fireEvent.press(r.getByTestId('consent-terms'));
   fireEvent.press(r.getByTestId('consent-age'));
@@ -81,9 +85,11 @@ it('accepting writes all four consent fields, then the new profile, then moves o
   expect(typeof data.termsAcceptedAt).toBe('number');
   expect(data.ageConfirmedAt).toBe(data.termsAcceptedAt);
 
-  expect(syncUser).toHaveBeenCalledWith('new-uid', PENDING, expect.any(Function));
+  // A new account: flagged for the name / picture / phone page before mode select.
+  expect(syncUser).toHaveBeenCalledWith('new-uid', PENDING, expect.any(Function), undefined, { newAccount: true });
   expect(usePendingSignupStore.getState().pending).toBeNull();
-  expect(mockReplace).toHaveBeenCalledWith('/');
+  // On to the name / picture page — never '/', which from inside (auth) is login.
+  expect(mockReplace).toHaveBeenCalledWith('/(auth)/setup');
 });
 
 it('an existing user re-accepting keeps their profile and gets the new version', async () => {
@@ -96,7 +102,7 @@ it('an existing user re-accepting keeps their profile and gets the new version',
 
   expect(syncUser).not.toHaveBeenCalled();
   expect(useAuthStore.getState().user?.termsVersion).toBe(CURRENT_TERMS_VERSION);
-  expect(mockReplace).toHaveBeenCalledWith('/');
+  expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
 });
 
 it('declining removes the new account on the server, signs out, and writes no consent', async () => {

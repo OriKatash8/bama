@@ -16,6 +16,7 @@ import { TERMS_URL, PRIVACY_URL } from '@core/constants/legal';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 import { discardUnconsentedSignup, recordConsent } from '@features/auth/utils/consent';
 import { syncUser } from '@features/auth/utils/syncUser';
+import { nextAuthRoute } from '@features/auth/utils/nextAuthRoute';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -65,13 +66,15 @@ export function ConsentForm() {
       const fields = await recordConsent(firebaseUser.uid);
       if (pending && pending.uid === firebaseUser.uid) {
         // The new account's profile, from what the provider told us at sign-in.
-        await syncUser(firebaseUser.uid, pending, setUser);
+        // It then fills in its name / picture / phone before mode select.
+        await syncUser(firebaseUser.uid, pending, setUser, undefined, { newAccount: true });
         usePendingSignupStore.getState().setPending(null);
       } else {
         const current = useAuthStore.getState().user;
         if (current) setUser({ ...current, ...fields });
       }
-      router.replace('/');
+      // The next step directly — never '/', which from inside (auth) is login.
+      router.replace(nextAuthRoute(useAuthStore.getState()) as never);
     } catch (e) {
       console.warn('[consent] could not record consent:', e);
       showToast(t('auth.consent_failed'), 'error');

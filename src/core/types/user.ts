@@ -25,6 +25,10 @@ export type User = {
   /** Set true once the user completes the first-time client onboarding
    *  (profile photo + name). Absent/false ⇒ first-time. */
   clientOnboarded?: boolean;
+  /** True on a brand-new account until it completes the first-time setup page
+   *  (name, picture, phone) that comes before mode select. Absent on accounts
+   *  that existed before this step. See needsProfileSetup. */
+  needsProfileSetup?: boolean;
   /** Current moderation state. Absent ⇒ active/in good standing. Written
    *  ONLY by the moderateUser callable (Admin SDK); clients cannot edit it. */
   moderation?: UserModeration;

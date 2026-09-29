@@ -74,6 +74,8 @@ it('ticked both boxes on the register screen: that consent is recorded, and no s
 
   expect(recordConsent).toHaveBeenCalledWith('apple-uid');
   expect(syncUser).toHaveBeenCalledTimes(1);
+  // A new account: flagged for the name / picture / phone page before mode select.
+  expect((syncUser as jest.Mock).mock.calls[0][4]).toEqual({ newAccount: true });
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
   expect(mockReplace).not.toHaveBeenCalledWith('/(auth)/consent');
   expect(usePendingSignupStore.getState().pending).toBeNull();
@@ -86,4 +88,11 @@ it('boxes not ticked: nothing is recorded, the consent screen asks', async () =>
 
   expect(recordConsent).not.toHaveBeenCalled();
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/consent');
+});
+
+it('ticked boxes but an EXISTING account: not sent through first-time setup', async () => {
+  mockIsNew = false;
+  const { result } = renderHook(() => useAppleSignIn());
+  await act(async () => { await result.current.signInWithApple({ consented: true }); });
+  expect((syncUser as jest.Mock).mock.calls[0][4]).toEqual({ newAccount: false });
 });
