@@ -17,6 +17,7 @@ import { savePhone } from '@features/auth/services/phoneService';
 import type { User } from '@core/types/user';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shrinkAvatar } from '@features/profile/utils/shrinkAvatar';
 
 type Translations = typeof en;
 
@@ -115,7 +116,7 @@ export function ProfileSetupForm({
       }
       let photoURL = user.photoURL;
       if (photoUri) {
-        const blob = await fetch(photoUri).then((r) => r.blob());
+        const blob = await fetch(await shrinkAvatar(photoUri)).then((r) => r.blob());
         photoURL = await uploadFile(`users/${user.id}/avatar/${Date.now()}.jpg`, blob);
       }
       const trimmed = name.trim();

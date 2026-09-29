@@ -10,6 +10,7 @@ import { visibleReviews } from '@features/reviews/utils/rating';
 import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import type { ProfessionalProfile, EquipmentItem } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
+import { shrinkAvatar } from '../utils/shrinkAvatar';
 
 type RoleSkill = { role: string; specializations: string[] };
 
@@ -65,7 +66,7 @@ export function useProfile() {
         console.log('[useProfile] uploading avatar → Storage path:', avatarPath);
         let blob: Blob;
         try {
-          blob = await fetch(photoUri).then((r) => r.blob());
+          blob = await fetch(await shrinkAvatar(photoUri)).then((r) => r.blob());
         } catch (fetchErr: any) {
           console.error('[useProfile] fetch blob failed — code:', fetchErr?.code, 'message:', fetchErr?.message);
           console.error('[useProfile] fetch full error:', fetchErr);

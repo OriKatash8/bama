@@ -29,6 +29,7 @@ import { AppText } from '@components/ui/AppText';
 import { ModeSwitcherSheet } from '@features/auth/components/ModeSwitcherSheet';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shrinkAvatar } from '@features/profile/utils/shrinkAvatar';
 
 type Translations = typeof en;
 
@@ -102,7 +103,7 @@ export function AppHeader() {
 
     setAvatarUploading(true);
     try {
-      const blob = await fetch(result.assets[0].uri).then((r) => r.blob());
+      const blob = await fetch(await shrinkAvatar(result.assets[0].uri)).then((r) => r.blob());
       const path = `users/${user.id}/avatar/${Date.now()}.jpg`;
       const photoURL = await uploadFile(path, blob);
       await updateDocument(`users/${user.id}`, { photoURL });
