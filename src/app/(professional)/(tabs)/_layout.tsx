@@ -9,6 +9,7 @@ import {
   PRO_TAB_ACTIVE,
   TAB_ITEM_STYLE,
 } from '@core/navigation/floatingTabBar';
+import { TAB_SLIDE } from '@core/navigation/tabSlide';
 import { GlassTabBarBackground } from '@core/navigation/GlassTabBarBackground';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -108,6 +109,8 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
         <Tabs
           screenOptions={{
             headerShown: false,
+            // Full-width slide between tabs, like the stack's push/pop.
+            ...TAB_SLIDE,
             tabBarShowLabel: true,
             tabBarStyle: (locked || profileEditing) ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
             // Docked glass bar; it owns the bottom safe-area inset (the provider

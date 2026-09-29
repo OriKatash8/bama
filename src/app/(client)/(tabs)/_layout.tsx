@@ -21,6 +21,7 @@ import {
   CLIENT_TAB_ACTIVE,
   TAB_ITEM_STYLE,
 } from '@core/navigation/floatingTabBar';
+import { TAB_SLIDE } from '@core/navigation/tabSlide';
 import { GlassTabBarBackground } from '@core/navigation/GlassTabBarBackground';
 
 type Translations = typeof en;
@@ -115,6 +116,8 @@ export default function ClientTabsLayout() {
         <Tabs
           screenOptions={{
             headerShown: false,
+            // Full-width slide between tabs, like the stack's push/pop.
+            ...TAB_SLIDE,
             tabBarShowLabel: true,
             tabBarStyle: hideTabBar ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
             // Docked glass bar; it owns the bottom safe-area inset (the provider
