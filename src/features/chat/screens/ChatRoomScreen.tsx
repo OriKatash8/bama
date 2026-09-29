@@ -79,6 +79,7 @@ import { addMeeting } from '../services/meetingService';
 import { formatMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
+import { SenderAvatar } from '../components/SenderAvatar';
 import { ChatSearchSheet } from '../components/ChatSearchSheet';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
@@ -640,6 +641,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [userPhotos, setUserPhotos] = useState<Record<string, string | null>>({});
 
 
   const fetchedIdsRef = useRef<Set<string>>(new Set());
@@ -757,6 +759,18 @@ export function ChatRoomScreen({ chatId }: Props) {
       </TouchableOpacity>
     );
   }, [chatType, pushProfile, t, userNames]);
+  /**
+   * Their picture beside someone else's bubble, on the outer edge (the row
+   * places it). Tappable exactly where their name is: not in project chats.
+   */
+  const senderAvatar = useCallback((senderId: string) => (
+    <SenderAvatar
+      photoURL={userPhotos[senderId]}
+      name={userNames[senderId] ?? ''}
+      color={colorForUser(senderId)}
+      onPress={chatType === 'group' ? undefined : () => pushProfile(senderId)}
+    />
+  ), [chatType, pushProfile, userNames, userPhotos]);
   /** Caret, a logical index. Fed by onSelectionChange; drives @-detection. */
   const [caret, setCaret] = useState(0);
   /**
@@ -1317,13 +1331,13 @@ export function ChatRoomScreen({ chatId }: Props) {
     Promise.all(
       missing.map(async (id) => {
         const snap = await getDoc(doc(db, 'users', id));
-        const name = snap.exists()
-          ? (snap.data() as { displayName: string }).displayName
-          : id;
-        return [id, name] as const;
+        const data = snap.exists() ? (snap.data() as { displayName: string; photoURL?: string }) : null;
+        // The picture beside their bubbles comes from the same read.
+        return { id, name: data ? data.displayName : id, photo: data?.photoURL ?? null };
       })
     ).then((entries) => {
-      setUserNames((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+      setUserNames((prev) => ({ ...prev, ...Object.fromEntries(entries.map((e) => [e.id, e.name])) }));
+      setUserPhotos((prev) => ({ ...prev, ...Object.fromEntries(entries.map((e) => [e.id, e.photo])) }));
     });
   }, [messages]);
 
@@ -1896,6 +1910,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                   highlightId === msg.id ? { backgroundColor: modeTint, borderRadius: 12 } : null,
                 ]}
               >
+                {/* Someone else's picture on the outer edge: before the bubble
+                    in English (left), after it in Hebrew (right). None on yours. */}
+                {!isOwn && !rtl && senderAvatar(msg.senderId)}
                 {msg.videoUrl ? (
                   <View style={[styles.mediaBubble, { backgroundColor: isOwn ? modeAccent : '#ffffff' }]}>
                     {senderLabel(msg.senderId, isOwn, true)}
@@ -1962,6 +1979,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     </Text>
                   </View>
                 )}
+                {!isOwn && rtl && senderAvatar(msg.senderId)}
               </SwipeableMessageRow>
             );
           }}
