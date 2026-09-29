@@ -116,7 +116,7 @@
     "flexible_no_autocomplete": "You chose a flexible date — the project has no end date, so it will not close on its own. Each professional marks when they have finished their part.",
     "end_date_note": "On the end date, the project closes on its own if the professionals have not already marked their parts finished.",
     "end_date_calendar_note": "The project will close on this date (editable)",
-    "tip_details": "The more details you add, the more offers your project is likely to get",
+    "tip_details": "More details = more offers for your project",
     "dates_location_title": "Dates & location",
     "optional_tag": "Optional",
     "choose": "Choose",
