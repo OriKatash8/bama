@@ -9,9 +9,11 @@ import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 import { syncUser } from '@features/auth/utils/syncUser';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
+import { recordConsent } from '@features/auth/utils/consent';
 
 type AppleSignInState = {
-  signInWithApple: () => Promise<void>;
+  /** `consented`: both boxes were ticked where the button was tapped (register). */
+  signInWithApple: (opts?: { consented?: boolean }) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 };
@@ -23,7 +25,7 @@ export function useAppleSignIn(): AppleSignInState {
   const { showToast } = useUiStore();
   const router = useRouter();
 
-  async function signInWithApple() {
+  async function signInWithApple(opts?: { consented?: boolean }) {
     setIsLoading(true);
     setError(null);
     try {
@@ -70,8 +72,18 @@ export function useAppleSignIn(): AppleSignInState {
         photoURL: null,
       };
 
-      // A NEW account consents first: nothing is written for it until both
-      // boxes on the consent screen are checked (and it is removed if they
+      // Both boxes already ticked on the register screen: that IS the consent,
+      // recorded now — asking again on the consent screen made people accept
+      // the terms twice.
+      if (opts?.consented) {
+        await recordConsent(result.user.uid);
+        await syncUser(result.user.uid, info, setUser);
+        router.replace('/(auth)/mode-select');
+        return;
+      }
+
+      // Otherwise a NEW account consents first: nothing is written for it until
+      // both boxes on the consent screen are checked (and it is removed if they
       // decline). Consent is never recorded on anyone's behalf.
       if (getAdditionalUserInfo(result)?.isNewUser) {
         usePendingSignupStore.getState().setPending({ uid: result.user.uid, ...info });

@@ -14,6 +14,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import i18n from '@core/i18n';
 import { syncUser } from '@features/auth/utils/syncUser';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
+import { recordConsent } from '@features/auth/utils/consent';
 
 const IOS_CLIENT_ID =
   '165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r.apps.googleusercontent.com';
@@ -41,7 +42,8 @@ function googleSignin(): GoogleSigninModule {
 }
 
 type GoogleSignInState = {
-  signInWithGoogle: () => Promise<void>;
+  /** `consented`: both boxes were ticked where the button was tapped (register). */
+  signInWithGoogle: (opts?: { consented?: boolean }) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 };
@@ -61,7 +63,15 @@ export function useGoogleSignIn(): GoogleSignInState {
   async function finish(
     result: UserCredential,
     info: { email: string; displayName: string; photoURL: string | null },
+    consented: boolean,
   ) {
+    // Both boxes already ticked on the register screen: that IS the consent.
+    if (consented) {
+      await recordConsent(result.user.uid);
+      await syncUser(result.user.uid, info, setUser);
+      router.replace('/(auth)/mode-select');
+      return;
+    }
     if (getAdditionalUserInfo(result)?.isNewUser) {
       usePendingSignupStore.getState().setPending({ uid: result.user.uid, ...info });
       router.replace('/(auth)/consent' as never);
@@ -71,28 +81,29 @@ export function useGoogleSignIn(): GoogleSignInState {
     router.replace('/(auth)/mode-select');
   }
 
-  async function signInWithGoogle() {
+  async function signInWithGoogle(opts?: { consented?: boolean }) {
     setIsLoading(true);
     setError(null);
+    const consented = opts?.consented === true;
     try {
       if (Platform.OS === 'web') {
-        await signInWithWeb();
+        await signInWithWeb(consented);
       } else {
-        await signInWithNative();
+        await signInWithNative(consented);
       }
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function signInWithWeb() {
+  async function signInWithWeb(consented: boolean) {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await finish(result, {
         email: result.user.email ?? '',
         displayName: result.user.displayName ?? '',
         photoURL: result.user.photoURL,
-      });
+      }, consented);
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? '';
       if (
@@ -112,7 +123,7 @@ export function useGoogleSignIn(): GoogleSignInState {
     }
   }
 
-  async function signInWithNative() {
+  async function signInWithNative(consented: boolean) {
     const { GoogleSignin, statusCodes } = googleSignin();
     try {
       await GoogleSignin.hasPlayServices();
@@ -132,7 +143,7 @@ export function useGoogleSignIn(): GoogleSignInState {
         email: result.user.email || googleUser?.email || '',
         displayName: result.user.displayName || googleName,
         photoURL: result.user.photoURL || googleUser?.photo || null,
-      });
+      }, consented);
     } catch (error: any) {
       console.log('[GoogleSignIn] full error:', JSON.stringify(error));
       console.log('[GoogleSignIn] error code:', error.code);

@@ -255,8 +255,10 @@ export function RegisterForm() {
               <View style={styles.dividerLine} />
             </View>
             <View testID="social-row" style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {GOOGLE_SIGNIN_ENABLED && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />}
-              {showApple && <AppleSignInButton style={{ flex: 1 }} />}
+              {/* Both boxes ticked above: that is the consent, so the consent
+                  screen is not shown again after the provider sheet. */}
+              {GOOGLE_SIGNIN_ENABLED && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} consented={termsAccepted && ageConfirmed} />}
+              {showApple && <AppleSignInButton style={{ flex: 1 }} consented={termsAccepted && ageConfirmed} />}
             </View>
           </>
         )}

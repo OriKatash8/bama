@@ -83,3 +83,18 @@ describe.each([
     expect(r.getByTestId('social-row').children).toHaveLength(2);
   });
 });
+
+describe('the register screen hands its ticked boxes to the social buttons', () => {
+  it('tells the social buttons whether both boxes are ticked', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readFileSync } = require('node:fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { join } = require('node:path');
+    const src: string = readFileSync(join(__dirname, '..', 'RegisterForm.tsx'), 'utf8');
+    expect(src).toMatch(/<AppleSignInButton[^>]*consented=\{termsAccepted && ageConfirmed\}/);
+    expect(src).toMatch(/<GoogleSignInButton[^>]*consented=\{termsAccepted && ageConfirmed\}/);
+    // The login screen has no boxes: nothing to hand over there.
+    const login: string = readFileSync(join(__dirname, '..', 'LoginForm.tsx'), 'utf8');
+    expect(login).not.toMatch(/consented=/);
+  });
+});

@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import { useAppleSignIn } from '../useAppleSignIn';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 import { syncUser } from '@features/auth/utils/syncUser';
+import { recordConsent } from '@features/auth/utils/consent';
 
 /**
  * A NEW account made with a social button sees the consent screen before its
@@ -34,6 +35,7 @@ jest.mock('firebase/auth', () => ({
 }));
 jest.mock('@core/firebase/config', () => ({ auth: {} }));
 jest.mock('@features/auth/utils/syncUser', () => ({ syncUser: jest.fn(async () => undefined) }));
+jest.mock('@features/auth/utils/consent', () => ({ recordConsent: jest.fn(async () => ({ termsVersion: '1.0' })) }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -63,4 +65,25 @@ it('an existing Apple account signs in as before, with no consent written for it
   // Three arguments only: no terms object, so syncUser writes no consent.
   expect((syncUser as jest.Mock).mock.calls[0]).toHaveLength(3);
   expect(usePendingSignupStore.getState().pending).toBeNull();
+});
+
+it('ticked both boxes on the register screen: that consent is recorded, and no second consent screen', async () => {
+  mockIsNew = true;
+  const { result } = renderHook(() => useAppleSignIn());
+  await act(async () => { await result.current.signInWithApple({ consented: true }); });
+
+  expect(recordConsent).toHaveBeenCalledWith('apple-uid');
+  expect(syncUser).toHaveBeenCalledTimes(1);
+  expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
+  expect(mockReplace).not.toHaveBeenCalledWith('/(auth)/consent');
+  expect(usePendingSignupStore.getState().pending).toBeNull();
+});
+
+it('boxes not ticked: nothing is recorded, the consent screen asks', async () => {
+  mockIsNew = true;
+  const { result } = renderHook(() => useAppleSignIn());
+  await act(async () => { await result.current.signInWithApple({ consented: false }); });
+
+  expect(recordConsent).not.toHaveBeenCalled();
+  expect(mockReplace).toHaveBeenCalledWith('/(auth)/consent');
 });

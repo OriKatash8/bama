@@ -5,7 +5,7 @@ const APPLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 814 1000
 import { useAppleSignIn } from '../hooks/useAppleSignIn';
 
 // Inner component holds all hooks — rendered only on iOS, so no conditional hook calls.
-function AppleButton({ style, onBeforeSignIn }: { style?: import('react-native').ViewStyle; onBeforeSignIn?: () => boolean }) {
+function AppleButton({ style, onBeforeSignIn, consented }: { style?: import('react-native').ViewStyle; onBeforeSignIn?: () => boolean; consented?: boolean }) {
   const { signInWithApple, isLoading } = useAppleSignIn();
 
   return (
@@ -13,7 +13,7 @@ function AppleButton({ style, onBeforeSignIn }: { style?: import('react-native')
       style={[styles.button, isLoading && styles.buttonDisabled, style]}
       onPress={() => {
         if (onBeforeSignIn && !onBeforeSignIn()) return;
-        void signInWithApple();
+        void signInWithApple({ consented });
       }}
       disabled={isLoading}
       activeOpacity={0.8}
@@ -32,11 +32,13 @@ type Props = {
   style?: import('react-native').ViewStyle;
   /** Called before sign-in begins. Return false to abort (e.g. terms not accepted). */
   onBeforeSignIn?: () => boolean;
+  /** Both terms boxes are ticked on this screen (register): recorded as the consent, no consent screen. */
+  consented?: boolean;
 };
 
-export function AppleSignInButton({ style, onBeforeSignIn }: Props) {
+export function AppleSignInButton({ style, onBeforeSignIn, consented }: Props) {
   if (Platform.OS !== 'ios') return null;
-  return <AppleButton style={style} onBeforeSignIn={onBeforeSignIn} />;
+  return <AppleButton style={style} onBeforeSignIn={onBeforeSignIn} consented={consented} />;
 }
 
 const styles = StyleSheet.create({
