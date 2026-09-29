@@ -92,11 +92,12 @@ it('shows the clear ✕ only once a tile holds a value, and clears it', async ()
   expect(within(r.getByTestId('tile-location')).getByText(en.builder.choose)).toBeTruthy();
 });
 
-it('tags only the start date Optional — this sheet requires a location', async () => {
+it('tags the start date and the location Optional, not the end date', async () => {
   const r = await open();
 
-  expect(r.getAllByText(en.builder.optional_tag)).toHaveLength(1);
+  expect(r.getAllByText(en.builder.optional_tag)).toHaveLength(2);
   expect(within(r.getByTestId('tile-exec')).getByText(en.builder.optional_tag)).toBeTruthy();
+  expect(within(r.getByTestId('tile-location')).getByText(en.builder.optional_tag)).toBeTruthy();
   expect(r.queryByText(en.builder.optional_note)).toBeNull();
 });
 

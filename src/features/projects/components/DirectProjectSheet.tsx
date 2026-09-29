@@ -210,7 +210,6 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
     if (!title.trim()) next.title = t('builder.error_required');
     if (!description.trim()) next.description = t('builder.error_required');
     if (!deadline) next.deadline = t('builder.error_required');
-    if (!location.trim()) next.location = t('builder.error_required');
     if (buildSlots().length === 0) next.slots = t('builder.error_role');
     // The pickers already prevent this pair; validated anyway so the invariant
     // does not depend solely on the UI that happens to set it.
@@ -304,8 +303,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
 
             {/* Dates and location — the home builder's step 1 design, shared
                 (DateLocationTiles): one title, one "?" for all three, and the same
-                tiles. Unlike the home builder, this sheet requires a location, so
-                only the start date wears the Optional tag. */}
+                tiles. The start date and the location are optional, as on the home. */}
             <DateLocationHeader t={t} rtl={rtl} onHelp={() => setDlHelpOpen(true)} style={styles.dlHeader} />
             <View style={[styles.tileRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <DateLocationTile
@@ -336,8 +334,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                 // A city from the list is already short; typed text may be a full
                 // address, so the tile shows its first part — as the home does.
                 value={location ? (location.split(',')[0].trim() || location) : ''}
-                optional={false}
-                error={errors.location}
+                optional
                 onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
                 onClear={() => setLocation('')}
                 t={t}
