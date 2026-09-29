@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 /**
  * The caption you write with a photo or video sits in the same rounded box as
- * the chat's message field: same shape (styles.input), mode tint fill, mode
+ * the chat's message field: same shape (styles.input), white fill, mode
  * accent border, and the same text direction handling in Hebrew.
  */
 
@@ -17,10 +17,18 @@ const caption = (() => {
   return SRC.slice(start, SRC.indexOf('/>', i));
 })();
 
-it('uses the chat box shape, filled and bordered in the mode colours', () => {
+it('uses the chat box shape: white, bordered in the mode colour', () => {
   expect(caption).toMatch(/style=\{\[styles\.input, \{/);
-  expect(caption).toContain('backgroundColor: modeTint');
+  expect(caption).toContain("backgroundColor: '#ffffff'");
   expect(caption).toContain('borderColor: modeAccent');
+});
+
+it('the message field is white too — no tinted type box anywhere', () => {
+  const i = SRC.indexOf('ref={inputRef}');
+  const field = SRC.slice(SRC.lastIndexOf('<TextInput', i), SRC.indexOf('/>', i));
+  expect(field).toContain("backgroundColor: '#ffffff'");
+  expect(field).toContain('borderColor: modeAccent');
+  expect(SRC).not.toMatch(/styles\.input, \{ backgroundColor: modeTint/);
 });
 
 it('reads right to left in Hebrew, like the message field', () => {

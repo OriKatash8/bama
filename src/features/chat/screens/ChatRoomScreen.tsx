@@ -2195,7 +2195,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                 // because iOS infers the paragraph direction from the first
                 // strong character while the web textarea inherits dir=ltr — the
                 // same Hebrew string laid out differently on the two platforms.
-                style={[styles.input, { backgroundColor: modeTint, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', writingDirection: rtl ? 'rtl' : 'ltr', ...font.regular }]}
+                style={[styles.input, { backgroundColor: '#ffffff', borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', writingDirection: rtl ? 'rtl' : 'ltr', ...font.regular }]}
                 value={inputText}
                 onChangeText={(next) => {
                   setInputText(next);
@@ -2345,10 +2345,10 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
         <View style={[previewStyles.bottomBar, { paddingBottom: BOTTOM_INSET + 12 }]}>
           {/* The same rounded box as the chat's message field: its shape, the
-              mode tint and accent border, and its Hebrew text direction. */}
+              white fill and accent border, and its Hebrew text direction. */}
           <TextInput
             testID="media-caption-input"
-            style={[styles.input, { backgroundColor: modeTint, borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', writingDirection: rtl ? 'rtl' : 'ltr', ...font.regular }]}
+            style={[styles.input, { backgroundColor: '#ffffff', borderColor: modeAccent, color: colors.text, textAlign: rtl ? 'right' : 'left', writingDirection: rtl ? 'rtl' : 'ltr', ...font.regular }]}
             value={pendingCaption}
             onChangeText={setPendingCaption}
             placeholder={t('chats.caption_placeholder')}
