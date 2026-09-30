@@ -68,6 +68,7 @@ import {
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { mergeCrewSlots } from '@features/noticeboard/matching';
 import { chatGroupOf } from '@features/chat/utils/chatGroup';
+import { CityPickerModal } from '@features/marketplace/components/CityPickerModal';
 import { projectDetailsBack } from '@features/chat/utils/projectDetailsBack';
 import { useAuthStore } from '@core/stores/authStore';
 import { useRevealedPhone } from '@features/projects/hooks/useRevealedPhone';
@@ -208,6 +209,8 @@ export default function ProjectDetailsScreen() {
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
   const [detailMeeting, setDetailMeeting] = useState<Meeting | null>(null);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
+  const [showExecPicker, setShowExecPicker] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   const [missionIndex, setMissionIndex] = useState(0);
   const [meetingIndex, setMeetingIndex] = useState(0);
@@ -253,6 +256,32 @@ export default function ProjectDetailsScreen() {
     } catch (err) {
       console.error('[ProjectDetails] edit deadline failed:', err);
       showToast(t('project_details.edit_deadline_error'), 'error');
+    }
+  }
+
+  // The start date: from today, and not past the end date when there is one —
+  // the same order the builder enforces (error_deadline_order).
+  const execMaxDate = projectEndDate;
+
+  async function handleEditExec(iso: string) {
+    setShowExecPicker(false);
+    try {
+      await updateDoc(doc(db, 'projects', projectId), { exec: iso });
+      setProject((prev) => (prev ? { ...prev, exec: iso } : prev));
+    } catch (err) {
+      console.error('[ProjectDetails] edit exec failed:', err);
+      showToast(t('project_details.edit_deadline_error'), 'error');
+    }
+  }
+
+  async function handleEditLocation(city: string) {
+    setShowLocationPicker(false);
+    try {
+      await updateDoc(doc(db, 'projects', projectId), { location: city });
+      setProject((prev) => (prev ? { ...prev, location: city } : prev));
+    } catch (err) {
+      console.error('[ProjectDetails] edit location failed:', err);
+      showToast(t('project_details.edit_location_error'), 'error');
     }
   }
 
@@ -1224,11 +1253,24 @@ export default function ProjectDetailsScreen() {
 
         {/* Three meta cards side-by-side */}
         <View style={[styles.metaCardsRow, { flexDirection: rowDirection }]}>
-          <View style={styles.metaCard}>
+          {/* All three cards are the client's to edit — start date, end date,
+              location — each with the pencil. The professional reads them. */}
+          <TouchableOpacity
+            testID="meta-exec"
+            style={styles.metaCard}
+            activeOpacity={isProjectClient ? 0.7 : 1}
+            onPress={isProjectClient ? () => setShowExecPicker(true) : undefined}
+            disabled={!isProjectClient}
+          >
             <Clapperboard size={16} color={modeAccent} strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.execution')}</AppText>
             <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.exec ? formatShortDate(project.exec) : t('project_details.tbd')}</AppText>
-          </View>
+            {isProjectClient && (
+              <View testID="edit-exec-badge" style={styles.editDeadlineBadge}>
+                <Pencil size={10} color={modeAccent} strokeWidth={2} />
+              </View>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.metaCard}
             activeOpacity={isProjectClient ? 0.7 : 1}
@@ -1246,11 +1288,22 @@ export default function ProjectDetailsScreen() {
               </View>
             )}
           </TouchableOpacity>
-          <View style={styles.metaCard}>
+          <TouchableOpacity
+            testID="meta-location"
+            style={styles.metaCard}
+            activeOpacity={isProjectClient ? 0.7 : 1}
+            onPress={isProjectClient ? () => setShowLocationPicker(true) : undefined}
+            disabled={!isProjectClient}
+          >
             <MapPin size={16} color={modeAccent} strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.location')}</AppText>
             <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.location}</AppText>
-          </View>
+            {isProjectClient && (
+              <View testID="edit-location-badge" style={styles.editDeadlineBadge}>
+                <Pencil size={10} color={modeAccent} strokeWidth={2} />
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* WHAT THAT DATE DOES, in the same words the builder used when it was
@@ -2141,6 +2194,25 @@ export default function ProjectDetailsScreen() {
           />
         )}
       </BottomSheet>
+
+      {/* Edit the start date (client only): today → the end date. */}
+      {showExecPicker && (
+        <MiniCalendar
+          value={project.exec ?? ''}
+          onSelect={handleEditExec}
+          onClose={() => setShowExecPicker(false)}
+          minDate={todayISO}
+          maxDate={execMaxDate}
+        />
+      )}
+
+      {/* Edit the location (client only): the builder's city list, or typed. */}
+      <CityPickerModal
+        visible={showLocationPicker}
+        value={project.location ?? ''}
+        onSelect={handleEditLocation}
+        onClose={() => setShowLocationPicker(false)}
+      />
 
       {/* Edit project deadline (client only) */}
       {showDeadlinePicker && (
