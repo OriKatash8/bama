@@ -84,6 +84,8 @@ import { ChatSearchSheet } from '../components/ChatSearchSheet';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
 import { EndDateBanner } from '../components/EndDateBanner';
 import { ChatImage } from '../components/ChatImage';
+import { ChatVideo } from '../components/ChatVideo';
+import { MEDIA_BUBBLE_WIDTH } from '../utils/mediaRatio';
 import { endDateNotice } from '../utils/endDateNotice';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
@@ -1977,7 +1979,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     {senderLabel(msg.senderId, isOwn, true)}
                     {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.videoUrl!, type: 'video' })} activeOpacity={0.9}>
-                      <VideoPlayer uri={msg.videoUrl} style={styles.mediaMessage} thumbnailOnly />
+                      <ChatVideo uri={msg.videoUrl} />
                     </TouchableOpacity>
                     {!!msg.text && (
                       <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, paddingHorizontal: 10, paddingTop: 6, textAlign: rtl ? 'right' : 'left' }]}>
@@ -2939,14 +2941,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mediaBubble: {
-    width: '75%',
+    width: MEDIA_BUBBLE_WIDTH,
     borderRadius: 18,
-    overflow: 'hidden',
-  },
-  mediaMessage: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    minHeight: 0,
     overflow: 'hidden',
   },
   mediaSendingRow: {

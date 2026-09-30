@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Play } from 'lucide-react-native';
 import type { ViewStyle } from 'react-native';
@@ -7,11 +7,17 @@ type Props = {
   uri: string;
   style?: ViewStyle;
   thumbnailOnly?: boolean;
+  /** Called with the video's frame size once it is known (e.g. to size a chat bubble). */
+  onVideoSize?: (size: { width: number; height: number }) => void;
 };
+
+function reportSize(size: { width: number; height: number } | undefined, cb: Props['onVideoSize']) {
+  if (cb && size && size.width > 0 && size.height > 0) cb({ width: size.width, height: size.height });
+}
 
 // ── Web: plain HTML5 video element ────────────────────────────────────────────
 
-function WebVideoPlayer({ uri, style, thumbnailOnly }: Props) {
+function WebVideoPlayer({ uri, style, thumbnailOnly, onVideoSize }: Props) {
   return (
     <View style={[styles.container, style]}>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -20,7 +26,8 @@ function WebVideoPlayer({ uri, style, thumbnailOnly }: Props) {
         controls={!thumbnailOnly}
         playsInline
         preload={thumbnailOnly ? 'metadata' : 'auto'}
-        style={{ width: '100%', height: '100%', display: 'block', backgroundColor: '#000' }}
+        onLoadedMetadata={(e) => reportSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight }, onVideoSize)}
+        style={{ width: '100%', height: '100%', display: 'block', backgroundColor: '#000', objectFit: thumbnailOnly ? 'cover' : 'contain' }}
       />
     </View>
   );
@@ -28,7 +35,7 @@ function WebVideoPlayer({ uri, style, thumbnailOnly }: Props) {
 
 // ── Native: expo-video with play-button overlay ───────────────────────────────
 
-function NativeVideoPlayer({ uri, style, thumbnailOnly }: Props) {
+function NativeVideoPlayer({ uri, style, thumbnailOnly, onVideoSize }: Props) {
   // Import lazily so web bundles never pull in expo-video
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { VideoView, useVideoPlayer } = require('expo-video') as typeof import('expo-video');
@@ -38,13 +45,23 @@ function NativeVideoPlayer({ uri, style, thumbnailOnly }: Props) {
     p.loop = false;
   });
 
+  useEffect(() => {
+    if (!onVideoSize) return;
+    reportSize(player.videoTrack?.size, onVideoSize);
+    const sub = player.addListener('videoTrackChange', ({ videoTrack }) => reportSize(videoTrack?.size, onVideoSize));
+    return () => sub.remove();
+    // onVideoSize is a fresh closure each render; the player is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player]);
+
   return (
     <View style={[styles.container, style]}>
       <VideoView
         player={player}
         style={StyleSheet.absoluteFill}
         nativeControls={!thumbnailOnly && started}
-        contentFit="contain"
+        // A thumbnail fills its box, cropped like a photo; the full player shows it all.
+        contentFit={thumbnailOnly ? 'cover' : 'contain'}
       />
       {!thumbnailOnly && !started && (
         <TouchableOpacity style={styles.overlay} onPress={() => { player.play(); setStarted(true); }} activeOpacity={0.8}>
