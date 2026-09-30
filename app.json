@@ -53,9 +53,18 @@
         {
           "ios": {
             "extraPods": [
-              { "name": "GoogleUtilities/Environment", "modular_headers": true },
-              { "name": "GoogleUtilities/UserDefaults", "modular_headers": true },
-              { "name": "RecaptchaInterop", "modular_headers": true }
+              {
+                "name": "GoogleUtilities/Environment",
+                "modular_headers": true
+              },
+              {
+                "name": "GoogleUtilities/UserDefaults",
+                "modular_headers": true
+              },
+              {
+                "name": "RecaptchaInterop",
+                "modular_headers": true
+              }
             ]
           }
         }
@@ -89,7 +98,9 @@
           }
         }
       ],
-      "@react-native-firebase/app-check"
+      "@react-native-firebase/app-check",
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
