@@ -1,7 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, requireAuth, feesCol } from './helpers';
-
-const BATCH_LIMIT = 400; // Firestore's hard limit is 500 — leave headroom.
+import { deleteInChunks } from './offerCleanup';
 
 /**
  * Delete a project and everything that hangs off it, server-side.
@@ -59,11 +58,7 @@ export const deleteProject = onCall(async (request) => {
   if (project.chatId) refs.push(db.doc(`chats/${project.chatId as string}`));
   refs.push(projRef); // the project itself goes last
 
-  for (let i = 0; i < refs.length; i += BATCH_LIMIT) {
-    const batch = db.batch();
-    refs.slice(i, i + BATCH_LIMIT).forEach((r) => batch.delete(r));
-    await batch.commit();
-  }
+  await deleteInChunks(refs);
 
   return {
     ok: true,

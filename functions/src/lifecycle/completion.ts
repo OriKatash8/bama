@@ -9,6 +9,7 @@ import { readConfig } from './config';
 import { applyDerivedProjectState } from './derive';
 import { releaseEngagement } from './removal';
 import { warnIfCompletedUnderReview } from './review';
+import { deletePendingOffers } from './offerCleanup';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -404,6 +405,10 @@ export const cancelProject = onCall(async (request) => {
     });
   }
   await batch.commit();
+  // "Delete project" is this cancel: offers nobody accepted go with it, for the
+  // client and the pros who sent them. After the commit, so a cleanup failure
+  // never leaves the project un-cancelled.
+  await deletePendingOffers(projectId);
   await applyDerivedProjectState(projectId);
   return { ok: true, refundReviewPending: refundPros };
 });

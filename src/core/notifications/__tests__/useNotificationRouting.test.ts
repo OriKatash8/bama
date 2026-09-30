@@ -28,8 +28,12 @@ const mockGetLast = Notifications.getLastNotificationResponse as jest.Mock;
 const tap = (id: string, data: object) => ({ notification: { request: { identifier: id, content: { data } } } });
 const signedIn = { user: { id: 'u1', termsVersion: '1.0' } as never, isLoading: false, needsEmailVerification: false };
 
+/** Routing awaits a mode switch and a storage write before it navigates, so
+ *  give it a few ticks — one was not always enough under a full, loaded run. */
 async function flush() {
-  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  for (let i = 0; i < 5; i++) {
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  }
 }
 
 beforeEach(async () => {

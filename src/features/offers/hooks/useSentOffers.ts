@@ -19,6 +19,8 @@ export function useSentOffers() {
   const [priceOffers, setPriceOffers] = useState<PriceOffer[]>([]);
   const [bundleOffers, setBundleOffers] = useState<BundleOffer[]>([]);
   const [titles, setTitles] = useState<Record<string, string | null>>({});
+  /** Projects found deleted: cancelled (the client's "delete") or no longer there. */
+  const [gone, setGone] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef<Set<string>>(new Set());
 
@@ -43,26 +45,37 @@ export function useSentOffers() {
       if (fetchedRef.current.has(pid)) return;
       fetchedRef.current.add(pid);
       getDocument<ProjectRequest>(`projects/${pid}`)
-        .then((p) => setTitles((prev) => ({ ...prev, [pid]: p?.title ?? null })))
+        .then((p) => {
+          setTitles((prev) => ({ ...prev, [pid]: p?.title ?? null }));
+          setGone((prev) => ({ ...prev, [pid]: !p || p.status === 'cancelled' }));
+        })
         .catch(() => setTitles((prev) => ({ ...prev, [pid]: null })));
     });
   }, [priceOffers, bundleOffers]);
 
+  // A pending offer on a deleted project is gone — the server removes it; this
+  // also hides any left from before that. Accepted and other decided offers stay
+  // as history.
+  const live = <T extends { status: string; projectId: string }>(o: T) => !(o.status === 'pending' && gone[o.projectId]);
+
   const offers = useMemo<SentOfferEntry[]>(() => {
     // Individual offers that belong to a bundle are represented by the bundle entry.
     const priceEntries: SentOfferEntry[] = priceOffers
-      .filter((o) => !o.bundleId)
+      .filter((o) => !o.bundleId && live(o))
       .map((o) => ({ kind: 'price', id: o.id, data: o, projectTitle: titles[o.projectId] ?? null, ts: secondsOf(o.createdAt) }));
     const bundleEntries: SentOfferEntry[] = bundleOffers
+      .filter(live)
       .map((o) => ({ kind: 'bundle', id: o.id, data: o, projectTitle: titles[o.projectId] ?? null, ts: secondsOf(o.createdAt) }));
     return [...priceEntries, ...bundleEntries].sort((a, b) => b.ts - a.ts);
-  }, [priceOffers, bundleOffers, titles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceOffers, bundleOffers, titles, gone]);
 
   const pendingCount = useMemo(
     () =>
-      priceOffers.filter((o) => o.status === 'pending' && !o.bundleId).length +
-      bundleOffers.filter((o) => o.status === 'pending').length,
-    [priceOffers, bundleOffers],
+      priceOffers.filter((o) => o.status === 'pending' && !o.bundleId && live(o)).length +
+      bundleOffers.filter((o) => o.status === 'pending' && live(o)).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [priceOffers, bundleOffers, gone],
   );
 
   return { offers, pendingCount, loading };

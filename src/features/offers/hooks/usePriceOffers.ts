@@ -20,11 +20,13 @@ export function usePriceOffers() {
     queryDocuments<ProjectRequest>('projects', where('clientId', '==', user.id))
       .then((projects) => {
         if (cancelled) return;
-        if (projects.length === 0) {
+        // A deleted project is a cancelled one; its offers are gone (the server
+        // removes them), so leftovers from before that never show either.
+        const ids = projects.filter((p) => p.status !== 'cancelled').map((p) => p.id);
+        if (ids.length === 0) {
           setIsLoading(false);
           return;
         }
-        const ids = projects.map((p) => p.id);
         // Chunked: an `in` list longer than the rules' 20-get budget is denied
         // outright, which used to blank this page for any client with more than
         // ~20 projects. See subscribeToCollectionIn.
