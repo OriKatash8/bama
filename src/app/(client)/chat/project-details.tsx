@@ -2950,7 +2950,8 @@ const styles = StyleSheet.create({
   },
   addPillText: { fontSize: 13, color: '#FFFFFF' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#000000' },
-  emptyNote: { fontSize: 14, fontStyle: 'italic', color: '#000000', textAlign: 'center' },
+  // Not italic: Heebo has no italic face (see pendingRequestNote).
+  emptyNote: { fontSize: 14, color: '#000000', textAlign: 'center' },
 
   // ── Member cards ──────────────────────────────────────────────────────────────
   memberCard: {
