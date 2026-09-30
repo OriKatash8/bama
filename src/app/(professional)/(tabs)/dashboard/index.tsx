@@ -23,6 +23,7 @@ import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import { useFeeArrears } from '@features/pricing/hooks/useFeeArrears';
 import { FeeArrearsSheet } from '@features/pricing/components/FeeArrearsSheet';
 import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
+import { slotGuardBlocks } from '@features/pricing/utils/slots';
 import { listenToMyFees } from '@features/pricing/services/feesService';
 import { visibleNotices, type NoticeSort } from '@features/noticeboard/visibleNotices';
 import { offeredCategoriesByProject, hasUnofferedMatchingSlot } from '@features/noticeboard/unoffered';
@@ -141,8 +142,6 @@ export default function DashboardScreen() {
   // sale. A slot frees when the project completes or is cancelled, and a slot
   // held by a CONTESTED engagement frees when BAMA resolves it — which is a
   // third case the professional cannot act on, named as such in the sheet.
-  const slotsBlocked = slotUsage?.atCap === true;
-
   /**
    * Open a notice, unless something stops this professional taking new work.
    * Returns true when blocked.
@@ -161,7 +160,8 @@ export default function DashboardScreen() {
       setArrearsOpen(true);
       return true;
     }
-    if (!slotsBlocked) return false;
+    // A project he is already on takes another role without a new slot.
+    if (!slotGuardBlocks(slotUsage, request.id)) return false;
     setBlockedFor(request);
     return true;
   }
