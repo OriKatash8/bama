@@ -15,7 +15,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "BAMA uses the microphone to record voice messages in chats.",
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "EXDevMenuShowFloatingActionButton": false
       },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
