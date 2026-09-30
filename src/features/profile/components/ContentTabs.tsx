@@ -13,6 +13,8 @@ import {
 } from '@features/profile/equipment';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
+import { containsPhoneNumber } from '@utils/contactFilter';
+import { EQUIPMENT_MAX } from '@features/profile/utils/profileContact';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
@@ -46,6 +48,8 @@ type ContentTabsProps = {
   roleSkills?: RoleSkill[];
   isEditing: boolean;
   onEquipmentChange?: (items: EquipmentItem[]) => void;
+  /** Items that carry a phone number (Terms §6.8) — outlined, with the error under the list. */
+  badEquipmentIndexes?: number[];
   onRoleSkillsChange?: (next: RoleSkill[]) => void;
   /** Own-profile only: invoked by the empty-state "add equipment" action to
    *  enter edit mode. Omitted on read-only (browse) profiles. */
@@ -64,6 +68,7 @@ export function ContentTabs({
   roleSkills,
   isEditing,
   onEquipmentChange,
+  badEquipmentIndexes = [],
   onRoleSkillsChange,
   onRequestEdit,
   initialSection,
@@ -162,9 +167,16 @@ export function ContentTabs({
   const equipmentItems = normalizeEquipment(equipment);
   const [newEquipmentCat, setNewEquipmentCat] = useState<string>('camera');
 
+  // Why the last add was refused; cleared as soon as the text changes. The
+  // typed text is kept, never cleared or silently stripped.
+  const [addError, setAddError] = useState<string | null>(null);
+
   function addEquipment() {
     const trimmed = newEquipment.trim();
     if (!trimmed || !onEquipmentChange) return;
+    if (containsPhoneNumber(trimmed)) { setAddError(t('profile.error_no_phone')); return; }
+    if (equipmentItems.length >= EQUIPMENT_MAX) { setAddError(t('profile.error_equipment_limit')); return; }
+    setAddError(null);
     onEquipmentChange([...equipmentItems, { name: trimmed, category: newEquipmentCat }]);
     setNewEquipment('');
   }
@@ -258,7 +270,11 @@ export function ContentTabs({
                     {(isEditing || openSections.has(`eq:${group.category}`)) && (
                       <View style={[styles.chipsWrap, !isEditing && styles.sectionBody, { flexDirection: rowDir, justifyContent: 'flex-start' }]}>
                         {group.entries.map(({ item, index }) => (
-                          <View key={`eq-${index}`} style={[styles.chip, styles.eqChip, { flexDirection: rowDir }]}>
+                          <View
+                            key={`eq-${index}`}
+                            testID={badEquipmentIndexes.includes(index) ? `equipment-chip-${index}-error` : undefined}
+                            style={[styles.chip, styles.eqChip, { flexDirection: rowDir }, badEquipmentIndexes.includes(index) && styles.chipError]}
+                          >
                             <AppText weight="semiBold" numberOfLines={1} style={styles.chipText}>
                               {item.name}
                             </AppText>
@@ -278,6 +294,11 @@ export function ContentTabs({
                     )}
                   </View>
                 ))}
+                {isEditing && badEquipmentIndexes.length > 0 && (
+                  <Text style={[styles.errorText, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                    {t('profile.error_no_phone')}
+                  </Text>
+                )}
               </View>
             )}
 
@@ -291,13 +312,16 @@ export function ContentTabs({
                     ref={equipInputRef}
                     style={[styles.addInput, { textAlign: rtl ? 'right' : 'left' }]}
                     value={newEquipment}
-                    onChangeText={setNewEquipment}
+                    onChangeText={(v) => { setNewEquipment(v); setAddError(null); }}
                     placeholder={t('profile_sections.add_item')}
                     placeholderTextColor="#9C99AD"
                     onSubmitEditing={addEquipment}
                     returnKeyType="done"
                   />
                 </View>
+                {!!addError && (
+                  <Text style={[styles.errorText, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{addError}</Text>
+                )}
                 {/* Category picker — the chosen category is applied to the next added item. */}
                 <AppText weight="semiBold" style={[styles.subLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                   {t('profile_sections.eq_pick_category')}
@@ -482,6 +506,10 @@ const styles = StyleSheet.create({
   sectionBody: { paddingBottom: 12 },
   sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#EFEDF5' },
   eqChip: { alignItems: 'center', gap: 5, maxWidth: '100%' },
+  // An item that carries a phone number (Terms §6.8).
+  chipError: { borderWidth: 1.5, borderColor: '#DC2626' },
+  // lineHeight ≥ 1.47× fontSize: Heebo clips glyph tops below that on iOS.
+  errorText: { fontSize: 13, lineHeight: 20, color: '#DC2626' },
   eqEmptyWrap: { gap: 8 },
   eqAddLinkBtn: { minHeight: 44, justifyContent: 'center' },
   eqAddLink: { fontSize: 13 },

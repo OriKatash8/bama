@@ -15,7 +15,7 @@
 
 // ── Normalization ────────────────────────────────────────────────────────────
 
-const ZERO_WIDTH = /[​-‏⁠﻿]/g;
+const ZERO_WIDTH = /[\u200B-\u200F\u2060\uFEFF]/g;
 // Each block's zero; the nine digits after it follow in order.
 const DIGIT_ZEROS = [0xff10 /* fullwidth */, 0x0660 /* Arabic-Indic */, 0x06f0 /* Eastern Arabic-Indic */];
 

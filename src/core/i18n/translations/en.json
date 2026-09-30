@@ -415,6 +415,8 @@
     "save_failed": "Could not save your profile. Please try again."
   },
   "profile": {
+    "error_no_phone": "Phone numbers can't be published on your profile. Contact details are shared once you're hired on a project.",
+    "error_equipment_limit": "You can list up to 30 items of equipment.",
     "title": "Profile",
     "cancel": "Cancel",
     "save": "Save",

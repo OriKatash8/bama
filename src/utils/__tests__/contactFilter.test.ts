@@ -52,7 +52,7 @@ it('also catches the other international and service forms', () => {
 
 it('sees through Arabic-Indic digits and zero-width characters', () => {
   expect(containsPhoneNumber('٠٥٢١٢٣٤٥٦٧')).toBe(true);
-  expect(containsPhoneNumber('05​2-123‍4567')).toBe(true);
+  expect(containsPhoneNumber('05\u200B2-123\u200D4567')).toBe(true);
 });
 
 it('returns the number as written, for highlighting', () => {

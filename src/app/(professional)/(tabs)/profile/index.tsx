@@ -13,6 +13,7 @@ import { ProfileHeader } from '@features/profile/components/ProfileHeader';
 import { BioSection } from '@features/profile/components/BioSection';
 import { ContentTabs, type RoleSkill } from '@features/profile/components/ContentTabs';
 import { normalizeEquipment } from '@features/profile/equipment';
+import { profileContactErrors, ProfileContactError } from '@features/profile/utils/profileContact';
 import type { EquipmentItem } from '@core/types/user';
 import { PortfolioGrid } from '@features/profile/components/PortfolioGrid';
 import { useProfile } from '@features/profile/hooks/useProfile';
@@ -63,6 +64,9 @@ export default function ProfessionalProfileScreen() {
   const [bio, setBio] = useState('');
   const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
+  // A phone number in the bio / these equipment items blocks the save (Terms §6.8).
+  const [bioError, setBioError] = useState(false);
+  const [badEquipment, setBadEquipment] = useState<number[]>([]);
 
   const initialised = useRef(false);
   const handleSaveRef = useRef<() => void>(() => {});
@@ -131,13 +135,23 @@ export default function ProfessionalProfileScreen() {
   handleCancelRef.current = handleCancel;
 
   async function handleSave() {
+    // No contact details before hire: block the save and say why, inline, next
+    // to the field. The typed text stays as it is.
+    const contact = profileContactErrors({ bio, equipment });
+    setBioError(contact.bio);
+    setBadEquipment(contact.equipmentIndexes);
+    if (contact.any) {
+      return;
+    }
     try {
       await save({ name, photoUri, roleSkills, bio, equipment, priceList });
       setIsEditing(false);
       setPhotoUri(null);
       showToast(t('profile.saved'), 'success');
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : t('profile.failed_save');
+      const msg = e instanceof ProfileContactError
+        ? t('profile.error_no_phone')
+        : e instanceof Error ? e.message : t('profile.failed_save');
       showToast(msg, 'error');
     }
   }
@@ -151,6 +165,8 @@ export default function ProfessionalProfileScreen() {
       setPriceList(profile.priceList ?? []);
     }
     setPhotoUri(null);
+    setBioError(false);
+    setBadEquipment([]);
     setIsEditing(false);
   }
 
@@ -209,7 +225,12 @@ export default function ProfessionalProfileScreen() {
           </AppText>
         )}
 
-        <BioSection bio={bio} isEditing={isEditing} onChange={setBio} />
+        <BioSection
+          bio={bio}
+          isEditing={isEditing}
+          onChange={(v) => { setBio(v); setBioError(false); }}
+          error={bioError ? t('profile.error_no_phone') : undefined}
+        />
         {/* The pro's own profile always opens on Skills. A first-time pro is
             sent straight here and held until they add a role, and Skills is
             where a role is added — but it is the tab that matters on a return
@@ -220,7 +241,8 @@ export default function ProfessionalProfileScreen() {
           reviews={reviews}
           roleSkills={roleSkills}
           isEditing={isEditing}
-          onEquipmentChange={setEquipment}
+          onEquipmentChange={(next) => { setEquipment(next); setBadEquipment([]); }}
+          badEquipmentIndexes={badEquipment}
           onRoleSkillsChange={setRoleSkills}
           onRequestEdit={() => setIsEditing(true)}
           initialSection="skills"

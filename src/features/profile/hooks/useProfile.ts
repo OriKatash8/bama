@@ -11,6 +11,7 @@ import { fetchPublishedReviews } from '@features/reviews/services/reviewsService
 import type { ProfessionalProfile, EquipmentItem } from '@core/types/user';
 import type { PriceEntry, Review } from '@core/types/project';
 import { shrinkAvatar } from '../utils/shrinkAvatar';
+import { profileContactErrors, ProfileContactError } from '../utils/profileContact';
 
 type RoleSkill = { role: string; specializations: string[] };
 
@@ -60,6 +61,9 @@ export function useProfile() {
     setError(null);
     setIsSaving(true);
     try {
+      // No contact details before hire (Terms §6.8). The screen checks first and
+      // shows inline errors; this is the backstop for any other caller.
+      if (profileContactErrors({ bio, equipment }).any) throw new ProfileContactError();
       let photoURL = user.photoURL;
       if (photoUri && photoUri !== user.photoURL) {
         const avatarPath = `avatars/${user.id}`;

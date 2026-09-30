@@ -20,9 +20,11 @@ type BioSectionProps = {
   bio: string;
   isEditing: boolean;
   onChange?: (v: string) => void;
+  /** Shown under the box in edit mode (e.g. a phone number in the bio). */
+  error?: string;
 };
 
-export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
+export function BioSection({ bio, isEditing, onChange, error }: BioSectionProps) {
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -48,16 +50,21 @@ export function BioSection({ bio, isEditing, onChange }: BioSectionProps) {
         {t('profile_sections.about')}
       </AppText>
       <TextInput
-        style={[styles.input, { backgroundColor: '#FFFFFF', borderColor: '#EFEDF5', color: '#000000', textAlign: rtl ? 'right' : 'left' }]}
+        style={[styles.input, { backgroundColor: '#FFFFFF', borderColor: error ? ERROR_RED : '#EFEDF5', color: '#000000', textAlign: rtl ? 'right' : 'left' }]}
         value={bio}
         onChangeText={onChange}
         multiline
         placeholder={t('profile_sections.bio_placeholder')}
         placeholderTextColor="#9C99AD"
       />
+      {!!error && (
+        <Text style={[styles.error, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>{error}</Text>
+      )}
     </View>
   );
 }
+
+const ERROR_RED = '#DC2626';
 
 const styles = StyleSheet.create({
   card: {
@@ -82,6 +89,8 @@ const styles = StyleSheet.create({
   textBio: { color: '#000000' },
   // 13 × 1.55 ≈ 20.
   textEmpty: { fontSize: 13, lineHeight: 20, color: '#000000' },
+  // lineHeight ≥ 1.47× fontSize: Heebo clips glyph tops below that on iOS.
+  error: { fontSize: 13, lineHeight: 20, color: ERROR_RED },
   input: {
     fontSize: 14,
     lineHeight: 22,
