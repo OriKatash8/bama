@@ -22,6 +22,9 @@ import he from '@core/i18n/translations/he.json';
 import { ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
 import { formatIsoDay } from '@utils/formatters';
 
+/** How long publishing waits for the few-matching-pros check before skipping it. */
+const SCARCITY_SCAN_TIMEOUT_MS = 2000;
+
 type Translations = typeof en;
 
 function makeT(translations: Translations) {
@@ -131,14 +134,22 @@ export default function SummaryScreen() {
     const specialized = slots.filter((s) => s.requiredCapability);
     if (specialized.length > 0) {
       try {
-        const users = await queryDocuments<{ id: string }>('users');
-        const profiles = await Promise.all(
-          users.map((u) =>
-            getDocument<{ roleSkills?: RoleSkillEntry[] }>(
-              `users/${u.id}/profile/data`,
+        // The scan reads every user's profile, so it can be slow. It must not
+        // hold the publish up: past SCARCITY_SCAN_TIMEOUT_MS we skip the warning.
+        const scan = queryDocuments<{ id: string }>('users').then((users) =>
+          Promise.all(
+            users.map((u) =>
+              getDocument<{ roleSkills?: RoleSkillEntry[] }>(
+                `users/${u.id}/profile/data`,
+              ),
             ),
           ),
         );
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const timeout = new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('scarcity scan timed out')), SCARCITY_SCAN_TIMEOUT_MS);
+        });
+        const profiles = await Promise.race([scan, timeout]).finally(() => clearTimeout(timer));
         const proRoleSkills = profiles
           .filter((p): p is NonNullable<typeof p> => !!p)
           .map((p) => p.roleSkills ?? []);
@@ -160,7 +171,7 @@ export default function SummaryScreen() {
           if (!ok) { setIsSubmitting(false); return; }
         }
       } catch {
-        // A scan failure must not block posting.
+        // A scan failure (or timeout) must not block posting.
       }
     }
 
@@ -185,17 +196,17 @@ export default function SummaryScreen() {
       setIsSubmitting(false);
       return;
     }
-    // Firestore write succeeded — navigate outside the try so navigation errors don't look like write failures
+    // Firestore write succeeded — navigate outside the try so navigation errors don't look like write failures.
+    // dismissTo pops this page off the Home stack; navigate would leave it on
+    // top, and Home would reopen on the review page.
+    resetSlots();
+    notifyProjectSubmitted(); // clear the Home builder form (+ drop edit context)
+    router.dismissTo('/(client)/(tabs)/home' as never);
     if (isEditMode) {
-      resetSlots();
-      notifyProjectSubmitted(); // clear the Home builder form + drop edit context
       showToast(t('builder.project_updated'), 'success');
-      router.navigate('/(client)/(tabs)/home' as never);
     } else {
-      resetSlots();
-      notifyProjectSubmitted(); // tell the Home builder to clear its form
       showToast(t('builder.submitted'), 'success');
-      router.navigate('/(client)/(tabs)/chats' as never);
+      router.navigate('/(client)/(tabs)/projects' as never);
     }
   }
 
