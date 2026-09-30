@@ -18,6 +18,6 @@ it('validates before saving and returns without saving on a phone', () => {
 
 it('passes the errors to the bio and the equipment list', () => {
   const bio = SRC.slice(SRC.indexOf('<BioSection'), SRC.indexOf('/>', SRC.indexOf('<BioSection')));
-  expect(bio).toMatch(/error=\{bioError \? t\('profile\.error_no_phone'\) : undefined\}/);
+  expect(bio).toMatch(/error=\{bioError \? t\('profile\.error_no_contact'\) : undefined\}/);
   expect(SRC).toMatch(/badEquipmentIndexes=\{badEquipment\}/);
 });

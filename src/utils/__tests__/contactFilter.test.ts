@@ -1,9 +1,12 @@
-import { containsPhoneNumber, findPhoneNumbers, RULES_PHONE_PATTERN } from '../contactFilter';
+import {
+  containsPhoneNumber, findPhoneNumbers, RULES_PHONE_PATTERN,
+  containsEmail, findEmails, containsContactDetails, RULES_CONTACT_PATTERN,
+} from '../contactFilter';
 
 /**
  * No contact details before hire (Terms §6.8): public profile text may not carry
- * a phone number. The same pattern is enforced by firestore.rules (hasNoPhone);
- * contactRulesSync.test.ts pins the rules copy.
+ * a phone number or an email address. The same pattern is enforced by
+ * firestore.rules (hasContact); contactRulesSync.test.ts pins the rules copy.
  */
 
 const SHOULD_MATCH = [
@@ -86,6 +89,60 @@ describe('the rules copy (RE2, ASCII only)', () => {
   });
 
   it.each(SHOULD_NOT_MATCH)('rules pattern leaves %s alone', (t) => {
+    expect(asRe2.test(t)).toBe(false);
+  });
+});
+
+// ── Email addresses ──────────────────────────────────────────────────────────
+
+const EMAIL_MATCH = [
+  'roi@gmail.com',
+  'כתבו לי: roi.cohen+work@walla.co.il',
+  'Contact: Roi_Cohen@my-studio.photo',
+  'ROI@GMAIL.COM',
+  'ｒｏｉ＠ｇｍａｉｌ．ｃｏｍ', // fullwidth
+];
+
+const EMAIL_NO_MATCH = [
+  'עקבו אחרי @roi.films',
+  'Sony 24-70mm f/2.8',
+  'roi@',
+  '@gmail.com',
+  'roi@localhost',
+  'מחיר 1,500 ש"ח @ יום',
+];
+
+describe.each(EMAIL_MATCH)('flags the email in %s', (text) => {
+  it('containsEmail', () => expect(containsEmail(text)).toBe(true));
+  it('containsContactDetails', () => expect(containsContactDetails(text)).toBe(true));
+});
+
+describe.each(EMAIL_NO_MATCH)('leaves %s alone', (text) => {
+  it('containsEmail', () => expect(containsEmail(text)).toBe(false));
+});
+
+it('findEmails returns the address', () => {
+  expect(findEmails('mail me at roi@gmail.com today')).toEqual(['roi@gmail.com']);
+});
+
+it('containsContactDetails covers phones too, and not clean text', () => {
+  expect(containsContactDetails('052-123-4567')).toBe(true);
+  expect(containsContactDetails('A7S III + 3 סוללות')).toBe(false);
+});
+
+describe('the combined rules copy (phone OR email)', () => {
+  const asRe2 = new RegExp(
+    `^${RULES_CONTACT_PATTERN.replace(/^\(\?s\)/, '').replace(/\[\[:space:\]/g, '[\\s')}$`,
+    's',
+  );
+  it('has no backslashes and matches whole strings', () => {
+    expect(RULES_CONTACT_PATTERN).not.toContain('\\');
+    expect(RULES_CONTACT_PATTERN.startsWith('(?s).*')).toBe(true);
+  });
+  it.each([...SHOULD_MATCH.filter((t) => /^[\x00-\x7F֐-׿\s]*$/.test(t)), ...EMAIL_MATCH.slice(0, 4)])('flags %s', (t) => {
+    expect(asRe2.test(t)).toBe(true);
+  });
+  it.each([...SHOULD_NOT_MATCH, ...EMAIL_NO_MATCH])('leaves %s alone', (t) => {
     expect(asRe2.test(t)).toBe(false);
   });
 });

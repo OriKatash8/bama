@@ -3,27 +3,34 @@
  * (Terms §6.8). Contact details are exchanged in the project chat after hire and
  * revealed at completion; a phone number in a public profile skips all of that.
  *
- * Phone numbers only, for now. Email / social-handle detection belongs here too,
- * as separate exported checks (containsEmail, containsSocialHandle), so each can
- * be switched on per field.
+ * Phone numbers and email addresses, each its own exported check, plus
+ * containsContactDetails for both. Social-handle detection belongs here too, as
+ * another separate check, when it is wanted.
  *
- * MIRROR: firestore.rules `hasNoPhone` carries RULES_PHONE_PATTERN verbatim —
- * KEEP IN SYNC. contactFilter.test.ts fails if the rules copy drifts. The rules
- * copy is ASCII-only (rules cannot normalize Unicode digits); this side
- * normalizes first, so it also catches fullwidth / Arabic-Indic digits.
+ * MIRROR: firestore.rules `hasContact` carries RULES_CONTACT_PATTERN verbatim —
+ * KEEP IN SYNC. contactRulesSync.test.ts fails if the rules copy drifts. The
+ * rules copy is ASCII-only (rules cannot normalize Unicode); this side
+ * normalizes first, so it also catches fullwidth / Arabic-Indic digits and
+ * fullwidth letters and @.
  */
 
 // ── Normalization ────────────────────────────────────────────────────────────
 
 const ZERO_WIDTH = /[\u200B-\u200F\u2060\uFEFF]/g;
 // Each block's zero; the nine digits after it follow in order.
-const DIGIT_ZEROS = [0xff10 /* fullwidth */, 0x0660 /* Arabic-Indic */, 0x06f0 /* Eastern Arabic-Indic */];
+const DIGIT_ZEROS = [0x0660 /* Arabic-Indic */, 0x06f0 /* Eastern Arabic-Indic */];
+// Fullwidth ASCII (！ … ～, incl. fullwidth digits, letters, ＠ and ．) sits at
+// a fixed offset from ASCII.
+const FULLWIDTH_FIRST = 0xff01;
+const FULLWIDTH_LAST = 0xff5e;
+const FULLWIDTH_OFFSET = 0xff01 - 0x21;
 
-/** Unicode digit variants → ASCII, zero-width characters removed. */
+/** Unicode digit variants and fullwidth ASCII → ASCII, zero-width characters removed. */
 export function normalizeForContactScan(text: string): string {
   let out = '';
   for (const ch of text.replace(ZERO_WIDTH, '')) {
     const code = ch.codePointAt(0)!;
+    if (code >= FULLWIDTH_FIRST && code <= FULLWIDTH_LAST) { out += String.fromCharCode(code - FULLWIDTH_OFFSET); continue; }
     const zero = DIGIT_ZEROS.find((z) => code >= z && code <= z + 9);
     out += zero === undefined ? ch : String(code - zero);
   }
@@ -71,3 +78,38 @@ export function findPhoneNumbers(text: string): string[] {
 export function containsPhoneNumber(text: string): boolean {
   return findPhoneNumbers(text).length > 0;
 }
+
+// ── Email addresses ──────────────────────────────────────────────────────────
+//
+// local@domain.tld — the domain needs at least one dot and a 2+ letter TLD, so
+// a handle (@roi.films has no local part), a bare "@", or "roi@localhost" is not
+// an address. Spelled-out forms ("roi at gmail dot com") are not caught.
+
+const EMAIL_CORE = '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)*[.][A-Za-z]{2,}';
+const EMAIL_RE = new RegExp(EMAIL_CORE, 'g');
+
+/** Every email address in `text`, as it appears after normalization. */
+export function findEmails(text: string): string[] {
+  if (!text) return [];
+  return [...normalizeForContactScan(text).matchAll(EMAIL_RE)].map((m) => m[0]);
+}
+
+export function containsEmail(text: string): boolean {
+  return findEmails(text).length > 0;
+}
+
+// ── Both ─────────────────────────────────────────────────────────────────────
+
+/** A phone number or an email address. */
+export function containsContactDetails(text: string): boolean {
+  return containsPhoneNumber(text) || containsEmail(text);
+}
+
+/**
+ * For firestore.rules: `s.matches(RULES_CONTACT_PATTERN)` is true when `s`
+ * contains a phone number or an email address. One pattern, not two, so each
+ * checked field or equipment item costs one matches() against the rules'
+ * 1000-expression budget.
+ */
+export const RULES_CONTACT_PATTERN =
+  `(?s).*((^|[^0-9])${phoneCore(RULES_SEP)}([^0-9]|$)|${EMAIL_CORE}).*`;

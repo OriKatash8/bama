@@ -64,7 +64,7 @@ export default function ProfessionalProfileScreen() {
   const [bio, setBio] = useState('');
   const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
   const [priceList, setPriceList] = useState<PriceEntry[]>([]);
-  // A phone number in the bio / these equipment items blocks the save (Terms §6.8).
+  // A phone number or email in the bio / these equipment items blocks the save (Terms §6.8).
   const [bioError, setBioError] = useState(false);
   const [badEquipment, setBadEquipment] = useState<number[]>([]);
 
@@ -150,7 +150,7 @@ export default function ProfessionalProfileScreen() {
       showToast(t('profile.saved'), 'success');
     } catch (e: unknown) {
       const msg = e instanceof ProfileContactError
-        ? t('profile.error_no_phone')
+        ? t('profile.error_no_contact')
         : e instanceof Error ? e.message : t('profile.failed_save');
       showToast(msg, 'error');
     }
@@ -229,7 +229,7 @@ export default function ProfessionalProfileScreen() {
           bio={bio}
           isEditing={isEditing}
           onChange={(v) => { setBio(v); setBioError(false); }}
-          error={bioError ? t('profile.error_no_phone') : undefined}
+          error={bioError ? t('profile.error_no_contact') : undefined}
         />
         {/* The pro's own profile always opens on Skills. A first-time pro is
             sent straight here and held until they add a role, and Skills is

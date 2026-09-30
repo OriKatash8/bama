@@ -9,17 +9,17 @@ jest.mock('@core/stores/settingsStore', () => ({
 }));
 
 it('shows the error under the bio and keeps the typed text', () => {
-  const r = render(<BioSection bio="call 054-7654321" isEditing error={en.profile.error_no_phone} />);
-  expect(r.getByText(en.profile.error_no_phone)).toBeTruthy();
+  const r = render(<BioSection bio="call 054-7654321" isEditing error={en.profile.error_no_contact} />);
+  expect(r.getByText(en.profile.error_no_contact)).toBeTruthy();
   expect(r.getByDisplayValue('call 054-7654321')).toBeTruthy();
 });
 
 it('shows no error when there is none', () => {
   const r = render(<BioSection bio="hello" isEditing />);
-  expect(r.queryByText(en.profile.error_no_phone)).toBeNull();
+  expect(r.queryByText(en.profile.error_no_contact)).toBeNull();
 });
 
-it('uses the exact wording, in both languages', () => {
-  expect(he.profile.error_no_phone).toBe('אסור לפרסם מספר טלפון בפרופיל. פרטי קשר מוחלפים אחרי שמתחילים לעבוד יחד בפרויקט.');
-  expect(en.profile.error_no_phone).toBe("Phone numbers can't be published on your profile. Contact details are shared once you're hired on a project.");
+it('names both phone numbers and email addresses, in both languages', () => {
+  expect(he.profile.error_no_contact).toBe('אסור לפרסם מספר טלפון או כתובת מייל בפרופיל. פרטי קשר מוחלפים אחרי שמתחילים לעבוד יחד בפרויקט.');
+  expect(en.profile.error_no_contact).toBe("Phone numbers and email addresses can't be published on your profile. Contact details are shared once you're hired on a project.");
 });

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Probe for the no-phone-numbers rule on users/{uid}/profile/data (Terms §6.8).
+ * Probe for the no-contact-details rule (phone numbers, email addresses) on
+ * users/{uid}/profile/data (Terms §6.8).
  *
  * Runs against the Firestore EMULATOR with whatever firestore.rules currently
  * says. Nothing here touches production.
@@ -103,6 +104,8 @@ await attempt('app', '6b. worst case: bio + 15 equipment changed together', 'ct-
   bio: 'צלם וידאו עם ניסיון, Sony 24-70mm f/2.8, מחיר ₪1,500 ליום',
   equipment: items(15, (i) => `Sony 24-70mm f/2.8 lens number ${i} with a long description`),
 });
+await attempt('app', '6e. an @handle and "@" are not emails', 'ct-pro', true, CLEAN,
+  { ...CLEAN, bio: 'עקבו אחרי @roi.films, 1,500 ש"ח @ יום' });
 await attempt('app', '6d. priceList emptied', 'ct-pro', true, CLEAN, { ...CLEAN, priceList: [] });
 
 // ── Direct SDK writes, skipping the app's check ─────────────────────────────
@@ -119,6 +122,11 @@ await attempt('bypass', '14. phone in the LAST checked position (#15)', 'ct-pro'
 await attempt('bypass', '15. 16 equipment items (over the cap)', 'ct-pro', false, CLEAN, { ...CLEAN, equipment: items(16) });
 await attempt('bypass', '15b. priceList changed to new clean text (no editor exists)', 'ct-pro', false, CLEAN,
   { ...CLEAN, priceList: [{ service: 'עריכה', price: 500 }] });
+await attempt('bypass', '12b. bio with an email address', 'ct-pro', false, CLEAN, { ...CLEAN, bio: 'mail me: roi.cohen@gmail.com' });
+await attempt('bypass', '12c. equipment item with an email address', 'ct-pro', false, CLEAN,
+  { ...CLEAN, equipment: [{ name: 'FX3', category: 'camera' }, { name: 'roi@walla.co.il', category: 'other' }] });
+await attempt('bypass', '12d. email in the LAST checked position (#15)', 'ct-pro', false, CLEAN,
+  { ...CLEAN, equipment: items(15, (i) => (i === 14 ? 'roi@gmail.com' : `item ${i}`)) });
 await attempt('bypass', '16. priceList service with a phone', 'ct-pro', false, CLEAN,
   { ...CLEAN, priceList: [{ service: 'call 054-7654321', price: 100 }] });
 await attempt('bypass', '17. a new field (headline) carrying the number', 'ct-pro', false, CLEAN, { headline: '052-123-4567' });

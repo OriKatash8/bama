@@ -1,16 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { RULES_PHONE_PATTERN } from '../contactFilter';
+import { RULES_CONTACT_PATTERN } from '../contactFilter';
 import { EQUIPMENT_MAX } from '@features/profile/utils/profileContact';
 
 /**
- * firestore.rules enforces the same phone pattern and equipment cap as the app.
+ * firestore.rules enforces the same contact pattern (phone or email) and equipment cap as the app.
  * The rules copy is a literal; this fails if it drifts from contactFilter.ts.
  */
 const RULES = readFileSync(join(__dirname, '..', '..', '..', 'firestore.rules'), 'utf8');
 
-it('hasPhone carries exactly RULES_PHONE_PATTERN', () => {
-  expect(RULES).toContain(`s.matches('${RULES_PHONE_PATTERN}')`);
+it('hasContact carries exactly RULES_CONTACT_PATTERN (phone or email)', () => {
+  expect(RULES).toContain(`s.matches('${RULES_CONTACT_PATTERN}')`);
+  expect(RULES).not.toMatch(/function hasPhone\(/);
 });
 
 it('equipment is capped at EQUIPMENT_MAX, and every position up to it is checked', () => {

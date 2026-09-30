@@ -27,6 +27,12 @@ it('marks exactly the equipment items that carry a phone', () => {
   expect(r.any).toBe(true);
 });
 
+it('flags an email address in the bio or an item', () => {
+  const r = profileContactErrors({ bio: 'mail: roi@gmail.com', equipment: ['FX3', { name: 'roi@walla.co.il', category: 'other' }] });
+  expect(r.bio).toBe(true);
+  expect(r.equipmentIndexes).toEqual([1]);
+});
+
 it('caps equipment at 15 items (the rules check each position by hand)', () => {
   expect(EQUIPMENT_MAX).toBe(15);
 });

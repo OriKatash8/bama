@@ -13,7 +13,7 @@ import {
 } from '@features/profile/equipment';
 import { ReviewsList } from './ReviewsList';
 import { AppText } from '@components/ui/AppText';
-import { containsPhoneNumber } from '@utils/contactFilter';
+import { containsContactDetails } from '@utils/contactFilter';
 import { EQUIPMENT_MAX } from '@features/profile/utils/profileContact';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -48,7 +48,7 @@ type ContentTabsProps = {
   roleSkills?: RoleSkill[];
   isEditing: boolean;
   onEquipmentChange?: (items: EquipmentItem[]) => void;
-  /** Items that carry a phone number (Terms §6.8) — outlined, with the error under the list. */
+  /** Items that carry a phone or email (Terms §6.8) — outlined, with the error under the list. */
   badEquipmentIndexes?: number[];
   onRoleSkillsChange?: (next: RoleSkill[]) => void;
   /** Own-profile only: invoked by the empty-state "add equipment" action to
@@ -174,7 +174,7 @@ export function ContentTabs({
   function addEquipment() {
     const trimmed = newEquipment.trim();
     if (!trimmed || !onEquipmentChange) return;
-    if (containsPhoneNumber(trimmed)) { setAddError(t('profile.error_no_phone')); return; }
+    if (containsContactDetails(trimmed)) { setAddError(t('profile.error_no_contact')); return; }
     if (equipmentItems.length >= EQUIPMENT_MAX) { setAddError(t('profile.error_equipment_limit')); return; }
     setAddError(null);
     onEquipmentChange([...equipmentItems, { name: trimmed, category: newEquipmentCat }]);
@@ -296,7 +296,7 @@ export function ContentTabs({
                 ))}
                 {isEditing && badEquipmentIndexes.length > 0 && (
                   <Text style={[styles.errorText, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-                    {t('profile.error_no_phone')}
+                    {t('profile.error_no_contact')}
                   </Text>
                 )}
               </View>
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   sectionBody: { paddingBottom: 12 },
   sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#EFEDF5' },
   eqChip: { alignItems: 'center', gap: 5, maxWidth: '100%' },
-  // An item that carries a phone number (Terms §6.8).
+  // An item that carries a phone number or email address (Terms §6.8).
   chipError: { borderWidth: 1.5, borderColor: '#DC2626' },
   // lineHeight ≥ 1.47× fontSize: Heebo clips glyph tops below that on iOS.
   errorText: { fontSize: 13, lineHeight: 20, color: '#DC2626' },

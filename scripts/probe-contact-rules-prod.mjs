@@ -78,6 +78,8 @@ try {
   check('2. bio with 052-123-4567 (direct SDK write) is denied', r.startsWith('denied'), r);
   r = await write({ ...CLEAN, equipment: [{ name: '052-123-4567', category: 'other' }] });
   check('3. equipment with a phone (direct SDK write) is denied', r.startsWith('denied'), r);
+  r = await write({ ...CLEAN, bio: 'mail me: roi.cohen@gmail.com' });
+  check('3b. bio with an email address (direct SDK write) is denied', r.startsWith('denied'), r);
   r = await write({ availability: 'busy' });
   check('4. availability alone on a clean profile', r === 'allowed', r);
 } finally {
