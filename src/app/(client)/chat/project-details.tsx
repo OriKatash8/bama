@@ -2406,7 +2406,9 @@ export default function ProjectDetailsScreen() {
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={[styles.modalSheet, { backgroundColor: colors.card, maxHeight: '85%' }]}>
+          {/* White with black text in both modes; only the send button takes the
+              mode's colour (purple for a client, blue for a pro). */}
+          <View testID="price-request-sheet" style={[styles.modalSheet, { backgroundColor: '#FFFFFF', maxHeight: '85%' }]}>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <Text style={[styles.modalTitle, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.bold }]}>
               {t('project_details.request_payment_update')}
@@ -2415,7 +2417,7 @@ export default function ProjectDetailsScreen() {
             {selectedPrice && (
               <>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+                  <Text style={[styles.requestModalLabel, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                     {t('project_details.professional')}
                   </Text>
                   <Text style={[styles.requestModalValue, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
@@ -2423,7 +2425,7 @@ export default function ProjectDetailsScreen() {
                   </Text>
                 </View>
                 <View style={styles.requestModalInfoRow}>
-                  <Text style={[styles.requestModalLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+                  <Text style={[styles.requestModalLabel, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
                     {t('project_details.current_amount')}
                   </Text>
                   <Text style={[styles.requestModalValue, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
@@ -2433,40 +2435,41 @@ export default function ProjectDetailsScreen() {
               </>
             )}
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.proposed_amount')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.sheetInput, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={proposedAmount}
               onChangeText={setProposedAmount}
               placeholder={t('project_details.enter_amount')}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#8B8898"
               keyboardType="decimal-pad"
             />
 
-            <Text style={[styles.missionInputLabel, { color: '#00000099', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+            <Text style={[styles.missionInputLabel, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
               {t('project_details.note_optional')}
             </Text>
             <TextInput
-              style={[styles.missionInput, { backgroundColor: colors.inputBg, borderColor: colors.border, color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
+              style={[styles.sheetInput, styles.sheetInputMultiline, { color: '#000000', textAlign: rtl ? 'right' : 'left', ...font.regular }]}
               value={requestNote}
               onChangeText={setRequestNote}
               placeholder={t('project_details.reason_placeholder')}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#8B8898"
               multiline
               numberOfLines={2}
             />
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: colors.border }]}
+                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: '#E5E3EC', backgroundColor: '#FFFFFF' }]}
                 onPress={() => setShowPaymentRequestModal(false)}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.modalBtnCancelText, { color: '#000000', ...font.semiBold }]}>{t('project_details.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="price-request-send"
                 style={[
                   styles.modalBtn,
                   styles.modalBtnConfirm,
