@@ -82,6 +82,8 @@ import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner'
 import { SenderAvatar } from '../components/SenderAvatar';
 import { ChatSearchSheet } from '../components/ChatSearchSheet';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
+import { EndDateBanner } from '../components/EndDateBanner';
+import { endDateNotice } from '../utils/endDateNotice';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
@@ -686,6 +688,13 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatArchiveReason, setChatArchiveReason] = useState<'completed' | 'cancelled' | 'superseded' | null>(null);
   const [chatProjectId, setChatProjectId] = useState<string | undefined>(undefined);
   const [projectDeadline, setProjectDeadline] = useState<string | undefined>(undefined);
+  // For the "closes 2 days after the end date" banner (endDateNotice).
+  const [projectEndDate, setProjectEndDate] = useState<Date | undefined>(undefined);
+  const [projectStatus, setProjectStatus] = useState<string | undefined>(undefined);
+  const [projectHasHires, setProjectHasHires] = useState(false);
+  const [endDateBannerDismissed, setEndDateBannerDismissed] = useState(false);
+  // The banner is day-grained: re-read the clock when the room regains focus.
+  const [noticeNow, setNoticeNow] = useState(() => new Date());
   // Who owns this project. The fee entry point keys off this, not activeMode —
   // mode picks the tab, it does not decide your role on a given project.
   const [projectClientId, setProjectClientId] = useState<string | undefined>(undefined);
@@ -1124,6 +1133,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   // While this room is on screen, pushes for it are not shown (see
   // foregroundHandler). Focus, not mount: a screen pushed on top of the room
   // (project details, a profile) means the user is no longer reading it.
+  useFocusEffect(useCallback(() => { setNoticeNow(new Date()); }, []));
+
   useFocusEffect(
     useCallback(() => {
       useActiveChatStore.getState().setActive(chatId, chatType === 'community' ? activeChannelId || null : null);
@@ -1260,7 +1271,11 @@ export function ChatRoomScreen({ chatId }: Props) {
   // Load the linked project's end date so mission/meeting dates can be
   // constrained to the project window (today → project end).
   useEffect(() => {
-    if (!chatProjectId) { setProjectDeadline(undefined); setProjectCompleted(false); return; }
+    if (!chatProjectId) {
+      setProjectDeadline(undefined); setProjectCompleted(false);
+      setProjectEndDate(undefined); setProjectStatus(undefined); setProjectHasHires(false);
+      return;
+    }
     // LIVE, not a one-time read: the client's candidate review card and the
     // completed state follow the project, and a project going 'in_progress' (or
     // completing) while the chat is open has to reach them without a reload.
@@ -1269,17 +1284,26 @@ export function ChatRoomScreen({ chatId }: Props) {
       (snap) => {
         // Same document as before — clientId and status cost nothing extra.
         const data = snap.exists()
-          ? (snap.data() as { deadline?: string; status?: string; clientId?: string })
+          ? (snap.data() as {
+              deadline?: string; status?: string; clientId?: string;
+              endDate?: { toDate: () => Date }; slotHolders?: string[];
+            })
           : undefined;
         const dl = data?.deadline;
         setProjectDeadline(dl && dl !== 'flexible' ? dl : undefined);
         setProjectCompleted(data?.status === 'completed');
         setProjectClientId(data?.clientId);
+        setProjectEndDate(data?.endDate?.toDate());
+        setProjectStatus(data?.status);
+        setProjectHasHires((data?.slotHolders?.length ?? 0) > 0);
       },
       () => {
         setProjectDeadline(undefined);
         setProjectCompleted(false);
         setProjectClientId(undefined);
+        setProjectEndDate(undefined);
+        setProjectStatus(undefined);
+        setProjectHasHires(false);
       },
     );
   }, [chatProjectId]);
@@ -1305,6 +1329,9 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // One switch for "this conversation is closed to new messages".
   const isReadOnly = chatReadOnly || projectCompleted;
+  const endNotice = endDateNotice({
+    endDate: projectEndDate, status: projectStatus, hasHires: projectHasHires, now: noticeNow,
+  });
   // Independent of isReadOnly by design: an early payment on an ACTIVE project
   // frees the slot while the chat stays open, and a completed chat is read-only
   // whether or not anything is owed.
@@ -1777,6 +1804,18 @@ export function ChatRoomScreen({ chatId }: Props) {
           chatId={chatId}
           clientId={currentUserId}
           onSwipeableChange={setCardSwipeable}
+        />
+      )}
+
+      {/* Near the end date: the project closes 2 days after it, and the client
+          can still move it. Everyone in the chat sees it; only the client gets
+          the edit shortcut. Hidden once the chat is read-only (closed). */}
+      {chatType === 'group' && !!chatProjectId && !isReadOnly && !chatArchived && !endDateBannerDismissed && endNotice.show && (
+        <EndDateBanner
+          closesOn={endNotice.closesOn!}
+          isClient={projectClientId === currentUserId}
+          onEdit={() => router.push(`/${chatGroup}/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
+          onDismiss={() => setEndDateBannerDismissed(true)}
         />
       )}
 

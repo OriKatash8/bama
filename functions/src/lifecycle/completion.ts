@@ -10,6 +10,7 @@ import { applyDerivedProjectState } from './derive';
 import { releaseEngagement } from './removal';
 import { warnIfCompletedUnderReview } from './review';
 import { deletePendingOffers } from './offerCleanup';
+import { addChatCloseWrites } from './chatClose';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -255,30 +256,9 @@ export async function confirmCompletionInternal(
     } as Update);
   }
 
-  // The group chat becomes read-only once the work is done — the same flag the
-  // BAMA System DMs use, so the message-create rule already enforces it.
-  // Read-only tracks COMPLETION only, never payment: a pro settling early does
-  // not close the chat, and an unpaid completed chat still closes.
-  if (project.chatId) {
-    // The closing notice, in the SAME write that closes the chat. readOnly gates
-    // the message-create RULE and the Admin SDK is not subject to it, so ordering
-    // is not a concern — but both land together or neither does. Without this the
-    // chat simply stopped, with nothing saying why.
-    const text = '🏁 הפרויקט הושלם';
-    batch.set(db.collection(`chats/${project.chatId as string}/messages`).doc(), {
-      senderId: 'system', system: true, text,
-      timestamp: FieldValue.serverTimestamp(), readBy: [],
-    });
-    // ONE update on the chat document, not two — a batch applies writes to the
-    // same document in order, but expressing it as a single write removes the
-    // question entirely.
-    batch.update(db.doc(`chats/${project.chatId as string}`), {
-      readOnly: true,
-      readOnlyReason: 'completed',
-      readOnlyAt: FieldValue.serverTimestamp(),
-      lastMessage: { text, senderId: 'system', timestamp: FieldValue.serverTimestamp() },
-    });
-  }
+  // The group chat becomes read-only once the work is done, in this same batch
+  // (addChatCloseWrites; the end-date auto-close uses it too).
+  if (project.chatId) addChatCloseWrites(batch, project.chatId as string);
   await batch.commit();
 
   // C6: observation only. Never blocks or changes a completion.

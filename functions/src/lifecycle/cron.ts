@@ -2,9 +2,8 @@ import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db, FieldValue, daysAgo, notify, feesCol , type FeeDoc } from './helpers';
 import { remindersDueFor, applyDerivedProjectState } from './derive';
-import { completeEngagementInternal } from './completion';
+import { autoCloseCutoff, autoCloseEngagement } from './autoClose';
 import { chargeEngagementFee } from './charge';
-import { readConfig } from './config';
 import {
   AUTO_CONFIRM_DAYS, COMPLETION_REMINDER_DAYS, END_DATE_PROMPT_GRACE_DAYS,
   ARCHIVE_UNCONFIRMED_DAYS, REVIEW_FORCE_PUBLISH_DAYS, TIMEZONE,
@@ -157,8 +156,8 @@ export const lifecycleCron = onSchedule(
 
     // 4b) END-DATE REMINDERS to the CLIENT, 2 days and 1 day out. This is the
     //     only completion-adjacent thing the client is asked to do now: not to
-    //     confirm, only to move the date if it is wrong. Once it passes, the
-    //     engagements auto-complete without them.
+    //     confirm, only to move the date if it is wrong. AUTO_CLOSE_GRACE_DAYS
+    //     after it passes, the engagements auto-complete without them.
     //
     //     Guarded per project by endDateRemindedDays, not per engagement — the
     //     date is a property of the project and the recipient is one person.
@@ -195,26 +194,22 @@ export const lifecycleCron = onSchedule(
     //    completionDueAt lives on the engagement — the project has no single
     //    deadline once each engagement carries its own.
     //
+    //    Due AUTO_CLOSE_GRACE_DAYS (2) after the end date, not on it: a project
+    //    ending on the 5th closes on the 7th's run. When that finishes the
+    //    project, autoCloseEngagement also closes its chat.
+    //
     //    An engagement with NO completionDueAt is never selected, which is every
     //    engagement on a project with no endDate, including all of the ones that
     //    predate this. Absent means "waits for the professional", forever.
     await paginate(
       db.collectionGroup('fees')
         .where('engagementStatus', '==', 'hired')
-        .where('completionDueAt', '<', admin.firestore.Timestamp.now())
+        .where('completionDueAt', '<', autoCloseCutoff())
         .orderBy('completionDueAt'),
       async (doc) => {
         const projectId = doc.ref.parent.parent?.id;
         if (!projectId) return;
-        const res = await completeEngagementInternal(projectId, doc.id, 'auto');
-        if (!res.completed) return;
-        const { chargeWindowDays } = await readConfig();
-        await notify({
-          userId: doc.id,
-          title: 'BAMA',
-          message: `הפרויקט הסתיים. עמלת הפלטפורמה תיגבה בעוד ${chargeWindowDays} ימים — אם העבודה לא בוצעה, סמנו זאת עכשיו.`,
-          data: { type: 'engagement_completed', projectId },
-        });
+        await autoCloseEngagement(projectId, doc.id);
       },
     );
 

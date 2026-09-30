@@ -60,6 +60,8 @@ export const AUTO_CONFIRM_DAYS = 7;
 export const COMPLETION_REMINDER_DAYS = [3, 6];
 /** Days before endDate the client is nudged to move it if it is wrong. */
 export const END_DATE_REMINDER_DAYS = [2, 1];
+/** Days after endDate a project with hired pros auto-closes. Mirrored in src/core/constants/pricing.ts. */
+export const AUTO_CLOSE_GRACE_DAYS = 2;
 export const END_DATE_PROMPT_GRACE_DAYS = 3;
 export const ARCHIVE_UNCONFIRMED_DAYS = 45;
 export const REVIEW_FORCE_PUBLISH_DAYS = 60;

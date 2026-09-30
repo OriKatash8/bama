@@ -54,6 +54,7 @@ export const COMPLETION_REMINDER_DAYS = [3, 6]; // reminders before auto-confirm
 export const END_DATE_PROMPT_GRACE_DAYS = 3;   // days after expected end date → "did it finish?" prompt
 export const ARCHIVE_UNCONFIRMED_DAYS = 45;    // nobody responds → archive unconfirmed (no fee, slot frees)
 export const REVIEW_FORCE_PUBLISH_DAYS = 60;   // held review publishes even if never paid
+export const AUTO_CLOSE_GRACE_DAYS = 2;        // days after the end date a project with hires auto-closes (mirrors functions/src/pricing.ts)
 
 /** Fallback project length used to derive expectedEndDate when the deadline
  *  can't be parsed into a date. No inline defaults elsewhere. */
