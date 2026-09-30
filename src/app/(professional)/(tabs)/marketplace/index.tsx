@@ -152,6 +152,8 @@ type FilterTag = { key: string; label: string; onRemove: () => void };
 
 export default function MarketplaceScreen() {
   const [activeTab, setActiveTab]               = useState<MarketplaceListingType>('secondhand');
+  // New rentals are paused for now — no + on the rental tab.
+  const canPost = activeTab !== 'rental';
   const [searchQuery, setSearchQuery]           = useState('');
   /** Visual only: the search field's focus border. */
   const [searchFocused, setSearchFocused]       = useState(false);
@@ -398,16 +400,18 @@ export default function MarketplaceScreen() {
       </ScrollView>
 
       {/* FAB — fixed above tab bar, outside the ScrollView */}
-      <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
-        <LinearGradient
-          colors={[BLUE, BLUE]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fabFill}
-        >
-          <Plus size={24} color="#FFFFFF" strokeWidth={2.4} />
-        </LinearGradient>
-      </TouchableOpacity>
+      {canPost && (
+        <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
+          <LinearGradient
+            colors={[BLUE, BLUE]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabFill}
+          >
+            <Plus size={24} color="#FFFFFF" strokeWidth={2.4} />
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
 
       {/* Filter modal */}
       <Modal
