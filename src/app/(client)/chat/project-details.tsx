@@ -3483,7 +3483,8 @@ const styles = StyleSheet.create({
   pendingRequestCardIncoming: { borderColor: 'rgba(30,79,163,0.28)' },
   pendingRequestText: { fontSize: 14, lineHeight: 20, color: '#000000' },
   pendingRequestBold: { fontWeight: '700' },
-  pendingRequestNote: { fontSize: 13, fontStyle: 'italic', color: '#000000' },
+  // Not italic: Heebo has no italic face, so iOS drew italic text in the system font.
+  pendingRequestNote: { fontSize: 13, color: '#000000' },
   pendingRequestActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
   pendingActionBtn: {
     flex: 1,
