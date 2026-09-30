@@ -138,7 +138,7 @@ export default function ClientTabsLayout() {
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
-                    <Home size={20} color={color} strokeWidth={2.5} />
+                    <Home size={20} color={color} strokeWidth={1.5} />
                   </View>
                 </View>
               ),
@@ -151,7 +151,7 @@ export default function ClientTabsLayout() {
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
-                    <Search size={20} color={color} strokeWidth={2.5} />
+                    <Search size={20} color={color} strokeWidth={1.5} />
                   </View>
                 </View>
               ),
@@ -166,7 +166,7 @@ export default function ClientTabsLayout() {
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
-                    <MessageCircle size={20} color={color} strokeWidth={2.5} />
+                    <MessageCircle size={20} color={color} strokeWidth={1.5} />
                   </View>
                 </View>
               ),
@@ -183,7 +183,7 @@ export default function ClientTabsLayout() {
               tabBarIcon: ({ color, focused }) => (
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
-                    <FolderKanban size={20} color={color} strokeWidth={2.5} />
+                    <FolderKanban size={20} color={color} strokeWidth={1.5} />
                   </View>
                 </View>
               ),
