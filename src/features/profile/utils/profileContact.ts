@@ -3,10 +3,12 @@ import type { EquipmentItem } from '@core/types/user';
 
 /**
  * Equipment is capped: firestore.rules checks each list position by hand (rules
- * cannot loop), so the rule and the app agree on a maximum.
+ * cannot loop), and one request may evaluate at most 1000 expressions — a
+ * clean list of 25 was already denied on the emulator. 15 leaves room for the
+ * bio and priceList checks in the same save.
  * MIRROR of EQUIPMENT_MAX in firestore.rules (equipmentOk) — KEEP IN SYNC.
  */
-export const EQUIPMENT_MAX = 30;
+export const EQUIPMENT_MAX = 15;
 
 /**
  * Which public profile fields carry a phone number (Terms §6.8 — no contact

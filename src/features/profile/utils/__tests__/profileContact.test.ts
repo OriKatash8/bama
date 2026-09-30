@@ -27,6 +27,6 @@ it('marks exactly the equipment items that carry a phone', () => {
   expect(r.any).toBe(true);
 });
 
-it('caps equipment at 30 items (the rules check each position by hand)', () => {
-  expect(EQUIPMENT_MAX).toBe(30);
+it('caps equipment at 15 items (the rules check each position by hand)', () => {
+  expect(EQUIPMENT_MAX).toBe(15);
 });

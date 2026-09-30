@@ -42,8 +42,8 @@ it('the error clears once the text changes', () => {
   expect(r.queryByText(en.profile.error_no_phone)).toBeNull();
 });
 
-it('stops at 30 items', () => {
-  const full = Array.from({ length: 30 }, (_, i) => ({ name: `item ${i}`, category: 'other' }));
+it('stops at 15 items', () => {
+  const full = Array.from({ length: 15 }, (_, i) => ({ name: `item ${i}`, category: 'other' }));
   const r = render(<ContentTabs {...props} equipment={full} />);
   typeAndAdd(r, 'one more');
   expect(onEquipmentChange).not.toHaveBeenCalled();

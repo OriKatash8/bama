@@ -24,6 +24,66 @@ service cloud.firestore {
       );
     }
 
+    // ─── No contact details before hire (Terms §6.8) ────────────────
+    // A phone number may not be published in public profile text: contact
+    // details are exchanged in the project chat after hire.
+    //
+    // MIRROR of RULES_PHONE_PATTERN in src/utils/contactFilter.ts — KEEP IN SYNC.
+    // Built there from the same parts as the app's detector;
+    // contactRulesSync.test.ts fails if this copy drifts. ASCII digits only:
+    // rules cannot normalize fullwidth / Arabic-Indic digits (the app does).
+    function hasPhone(s) {
+      return s is string && s.matches('(?s).*(^|[^0-9])((00|[+])?[[:space:].()/-]*972[[:space:].()/-]*(0[[:space:].()/-]*)?(5([[:space:].()/-]*[0-9]){8}|7([[:space:].()/-]*[0-9]){8}|[23489]([[:space:].()/-]*[0-9]){7})|0[[:space:].()/-]*(5([[:space:].()/-]*[0-9]){8}|7([[:space:].()/-]*[0-9]){8}|[23489]([[:space:].()/-]*[0-9]){7})|1[[:space:].()/-]*(7[[:space:].()/-]*0[[:space:].()/-]*0|8[[:space:].()/-]*0[[:space:].()/-]*0|5[[:space:].()/-]*9[[:space:].()/-]*9)([[:space:].()/-]*[0-9]){6})([^0-9]|$).*');
+    }
+
+    // An equipment entry: a legacy bare string, or { name, category }.
+    function textItemOk(item) {
+      return (item is string && !hasPhone(item))
+        || (item is map && !hasPhone(item.get('name', '')));
+    }
+
+    // Rules cannot loop, so each position is checked by hand, up to a cap —
+    // and a request may evaluate at most 1000 expressions, which 20+ checked
+    // items (plus bio and priceList in the same save) run into.
+    // MIRROR of EQUIPMENT_MAX in src/features/profile/utils/profileContact.ts
+    // — KEEP IN SYNC (15).
+    function equipmentOk(l) {
+      return l is list && l.size() <= 15
+        && (l.size() <= 0 || textItemOk(l[0]))
+        && (l.size() <= 1 || textItemOk(l[1]))
+        && (l.size() <= 2 || textItemOk(l[2]))
+        && (l.size() <= 3 || textItemOk(l[3]))
+        && (l.size() <= 4 || textItemOk(l[4]))
+        && (l.size() <= 5 || textItemOk(l[5]))
+        && (l.size() <= 6 || textItemOk(l[6]))
+        && (l.size() <= 7 || textItemOk(l[7]))
+        && (l.size() <= 8 || textItemOk(l[8]))
+        && (l.size() <= 9 || textItemOk(l[9]))
+        && (l.size() <= 10 || textItemOk(l[10]))
+        && (l.size() <= 11 || textItemOk(l[11]))
+        && (l.size() <= 12 || textItemOk(l[12]))
+        && (l.size() <= 13 || textItemOk(l[13]))
+        && (l.size() <= 14 || textItemOk(l[14]));
+    }
+
+
+    // A profile write may only touch the fields the app writes, and a text
+    // field is checked only when it CHANGES. The app's save rewrites bio,
+    // equipment and priceList every time, and a merge is judged on the whole
+    // resulting document — checking unchanged fields would lock a pro whose
+    // old bio carries a number out of saving even their availability.
+    function profileWriteOk() {
+      let changed = request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys();
+      return changed.hasOnly(['roleSkills', 'bio', 'equipment', 'priceList', 'proProfileCompleted', 'availability'])
+        && (!changed.hasAny(['bio']) || !hasPhone(request.resource.data.bio))
+        && (!changed.hasAny(['equipment']) || equipmentOk(request.resource.data.equipment))
+        // priceList has no editor in the app (PriceList.tsx is not mounted), so
+        // it may only be re-sent unchanged or emptied — a pro cannot write new
+        // text into it at all. Checking its items too would push a full save
+        // past the 1000-expression limit. Revisit if the editor comes back.
+        && (!changed.hasAny(['priceList']) || request.resource.data.priceList == []);
+    }
+
     // Fetches members[] of the parent chat document (for subcollection guards)
     function chatMembers(chatId) {
       return get(/databases/$(database)/documents/chats/$(chatId)).data.members;
@@ -394,7 +454,8 @@ service cloud.firestore {
 
       match /profile/data {
         allow read: if isAuth();
-        allow write: if isOwner(userId) && verified();
+        allow create, update: if isOwner(userId) && verified() && profileWriteOk();
+        allow delete: if isOwner(userId) && verified();
       }
 
       // The user's phone number. PRIVATE: users/{uid} is readable by every
