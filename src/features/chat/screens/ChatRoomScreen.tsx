@@ -83,6 +83,7 @@ import { SenderAvatar } from '../components/SenderAvatar';
 import { ChatSearchSheet } from '../components/ChatSearchSheet';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
 import { EndDateBanner } from '../components/EndDateBanner';
+import { ChatImage } from '../components/ChatImage';
 import { endDateNotice } from '../utils/endDateNotice';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { ListingCard } from '@features/marketplace/components/ListingCard';
@@ -1992,7 +1993,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     {senderLabel(msg.senderId, isOwn, true)}
                     {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.imageURL!, type: 'image' })} activeOpacity={0.9}>
-                      <Image source={{ uri: msg.imageURL }} style={styles.mediaMessage} resizeMode="cover" />
+                      <ChatImage uri={msg.imageURL} />
                     </TouchableOpacity>
                     {!!msg.text && (
                       <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, paddingHorizontal: 10, paddingTop: 6, textAlign: rtl ? 'right' : 'left' }]}>
