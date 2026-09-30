@@ -240,11 +240,10 @@ export default function PublicProfileScreen() {
     <Screen scrollable style={[styles.screenContent, { paddingBottom: tabBarClearance }]} backgroundColor={PAGE_BG}>
       {/* Identity, on the violet band */}
       <GradientBand style={styles.band}>
-        {/* ── Title row: report at the leading edge, back at the trailing one.
-            In Hebrew the row mirrors, so report sits right and back sits left.
-            The chevron points OUTWARD, away from the band's content and toward
-            the edge the button sits on — right in English, left in Hebrew. ── */}
-        <View testID="profile-title-row" style={[styles.titleRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        {/* ── Title row: report and block on the left, back on the right, in
+            BOTH languages — Hebrew does not mirror it (asked for). The chevron
+            points OUTWARD, toward the right edge the button sits on. ── */}
+        <View testID="profile-title-row" style={styles.titleRow}>
           <TouchableOpacity
             onPress={() => setReportVisible(true)}
             style={styles.reportBtn}
@@ -277,9 +276,7 @@ export default function PublicProfileScreen() {
             accessibilityRole="button"
             testID="profile-back"
           >
-            {rtl
-              ? <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
-              : <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />}
+            <ChevronRight size={24} color="#FFFFFF" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -402,7 +399,7 @@ const styles = StyleSheet.create({
 
   // gap: room between the report and block buttons; the flex spacer before
   // back absorbs it, so nothing else in the row moves.
-  titleRow: { alignItems: 'center', alignSelf: 'stretch', gap: 10 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 10 },
   backBtn: { paddingHorizontal: 4 },
   // A soft violet tile under the flag, the same fill the builder's picked date
   // squares use, with the flag itself in the deep violet of that pair. Pale

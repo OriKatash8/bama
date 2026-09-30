@@ -11,9 +11,9 @@ import { getDocument } from '@core/firebase/firestore';
  *
  * They used to sit the other way round, with the back chevron pointing the way
  * you travel. Now that back sits at the trailing edge the chevron points
- * OUTWARD instead — toward its own edge, away from the band's content — so in
- * English it points right and in Hebrew it points left. Language is what turns
- * it, and nothing else.
+ * OUTWARD instead — toward its own edge, away from the band's content. The row
+ * does NOT mirror in Hebrew (asked for): report and block sit left, back sits
+ * right with its chevron pointing right, in both languages.
  */
 
 const SOFT_VIOLET = '#F3EEFE';
@@ -111,13 +111,15 @@ it('points the back chevron outward, toward the edge it sits on', async () => {
   expect(back.findAllByType(ChevronLeft)).toHaveLength(0);
 });
 
-it('turns the chevron the other way in Hebrew, where back sits on the left', async () => {
+it('does not mirror in Hebrew: report and block stay left, back stays right', async () => {
   mockLanguage = 'he';
   const r = await openProfile();
 
+  const row = StyleSheet.flatten(r.getByTestId('profile-title-row').props.style);
+  expect(row.flexDirection).toBe('row');
   const back = r.getByTestId('profile-back');
-  expect(back.findAllByType(ChevronLeft)).toHaveLength(1);
-  expect(back.findAllByType(ChevronRight)).toHaveLength(0);
+  expect(back.findAllByType(ChevronRight)).toHaveLength(1);
+  expect(back.findAllByType(ChevronLeft)).toHaveLength(0);
 });
 
 it('leaves room between the report and block buttons', async () => {
