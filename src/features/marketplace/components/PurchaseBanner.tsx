@@ -361,10 +361,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sellerRow: {},
+  // Not italic: Heebo has no italic face, so iOS drew italic text in the system font.
   waitingText: {
     fontSize: 13,
     color: '#004aad99',
-    fontStyle: 'italic',
   },
   disabledBtn: { opacity: 0.5 },
   dismissBtn: { padding: 4, marginLeft: 4 },
