@@ -18,7 +18,7 @@ function fixture() {
   writeFileSync(join(src, 'terms.en.md'), '# Terms of Use\n\nHello.');
   writeFileSync(join(src, 'privacy.en.md'), '# Privacy Policy\n\nPrivate.');
   const stat = mkdtempSync(join(tmpdir(), 'legal-static-'));
-  for (const f of ['logo-light.webp', 'logo-dark.png', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png']) writeFileSync(join(stat, f), 'x');
+  for (const f of ['logo.webp', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png']) writeFileSync(join(stat, f), 'x');
   const out = join(mkdtempSync(join(tmpdir(), 'legal-out-')), 'public');
   build(src, out, stat);
   const read = (f) => readFileSync(join(out, f), 'utf8');
@@ -68,14 +68,14 @@ test('tables are wrapped so they scroll horizontally', () => {
 });
 
 test('static files (logo, favicons) are copied next to the pages', () => {
-  for (const f of ['logo-light.webp', 'logo-dark.png', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png']) {
+  for (const f of ['logo.webp', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png']) {
     assert.ok(read.exists(f), f);
   }
 });
 
-const LOGO = /<a class="home" href="\/"><picture class="logo[^"]*">\s*<source srcset="\/logo-dark\.png" media="\(prefers-color-scheme: dark\)">\s*<img src="\/logo-light\.webp" alt="BAMA" width="\d+" height="(\d+)">\s*<\/picture><\/a>/;
+const LOGO = /<a class="home[^"]*" href="\/"><img class="logo[^"]*" src="\/logo\.webp" alt="BAMA" width="\d+" height="(\d+)"><\/a>/;
 
-test('every page header starts with the logo, linking home, light/dark by color scheme, next to the title', () => {
+test('every page header starts with the one gradient logo, linking home, next to the title', () => {
   for (const f of ['terms.html', 'privacy.html', 'en/terms.html', 'en/privacy.html']) {
     const header = read(f).match(/<header>[\s\S]*?<\/header>/)[0];
     const m = header.match(LOGO);
@@ -83,7 +83,7 @@ test('every page header starts with the logo, linking home, light/dark by color 
     assert.equal(m[1], '36');
     assert.ok(header.indexOf('class="home"') < header.indexOf('hreflang'), `${f}: logo before the language link`);
   }
-  assert.match(read('terms.html'), /<\/picture><\/a><span>תקנון ותנאי שימוש<\/span>/);
+  assert.match(read('terms.html'), /<\/a><span>תקנון ותנאי שימוש<\/span>/);
 });
 
 test('the index shows the logo large above the links', () => {
@@ -92,6 +92,13 @@ test('the index shows the logo large above the links', () => {
   assert.ok(m);
   assert.equal(m[1], '88');
   assert.ok(html.indexOf('logo-index') < html.indexOf('class="pages"'));
+});
+
+test('one logo for both color schemes: no dark-mode swap', () => {
+  for (const f of ['terms.html', 'en/terms.html', 'index.html']) {
+    const html = read(f);
+    assert.doesNotMatch(html, /<picture|<source|logo-dark/);
+  }
 });
 
 test('every page has the favicon and apple-touch-icon', () => {
