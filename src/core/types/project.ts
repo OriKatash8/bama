@@ -455,7 +455,11 @@ export type Meeting = {
   description?: string;
   date: string;
   time: string;
+  /** Length in minutes. Absent on older meetings ⇒ DEFAULT_MEETING_MINUTES. */
+  durationMinutes?: number;
   location: string;
+  /** A video-call or other web link, separate from the (physical) location. */
+  link?: string;
   invitedIds: string[];
   createdBy: string;
   createdAt: Timestamp;

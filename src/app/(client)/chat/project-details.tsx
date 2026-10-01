@@ -52,6 +52,9 @@ import {
   deleteMission,
 } from '@features/chat/services/missionService';
 import { listenToMeetings, addMeeting, deleteMeeting } from '@features/chat/services/meetingService';
+import { addMeetingToCalendar, canAddToCalendar } from '@features/chat/utils/addMeetingToCalendar';
+import { meetingToEvent, DEFAULT_MEETING_MINUTES } from '@features/chat/utils/meetingCalendar';
+import { isValidUrl } from '@utils/validators';
 import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/components';
 import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
@@ -77,7 +80,7 @@ import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
-import { Calendar, CalendarDays, Check, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
+import { Calendar, CalendarDays, CalendarPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, Link as LinkIcon, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -203,6 +206,9 @@ export default function ProjectDetailsScreen() {
   const [newMeetingDate, setNewMeetingDate] = useState('');
   const [newMeetingTime, setNewMeetingTime] = useState('');
   const [newMeetingLocation, setNewMeetingLocation] = useState('');
+  const [newMeetingDuration, setNewMeetingDuration] = useState(DEFAULT_MEETING_MINUTES);
+  const [newMeetingLink, setNewMeetingLink] = useState('');
+  const [meetingLinkError, setMeetingLinkError] = useState(false);
   const [newMeetingInvitedIds, setNewMeetingInvitedIds] = useState<string[]>([]);
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
   const [showMeetingTimePicker, setShowMeetingTimePicker] = useState(false);
@@ -876,6 +882,13 @@ export default function ProjectDetailsScreen() {
     return 'normal';
   }
 
+  /** "10:00–11:30": the start and the end the duration gives (an hour when unset). */
+  function meetingTimeRange(m: Meeting): string {
+    const { end } = meetingToEvent(m);
+    const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${m.time}–${hhmm(end)}`;
+  }
+
   function formatMeetingDateTime(date: string, time: string): string {
     const d = new Date(`${date}T${time}`);
     return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`;
@@ -903,6 +916,13 @@ export default function ProjectDetailsScreen() {
     ) return;
     const currentUserId = auth.currentUser?.uid;
     if (!currentUserId) return;
+    // The link is optional, but when given it must be a full web address, so
+    // it opens from the meeting and lands in the calendar event as-is.
+    const link = newMeetingLink.trim();
+    if (link && (!/^https?:\/\//i.test(link) || !isValidUrl(link))) {
+      setMeetingLinkError(true);
+      return;
+    }
     setIsAddingMeeting(true);
     try {
       await addMeeting(projectId, currentUserId, {
@@ -912,7 +932,9 @@ export default function ProjectDetailsScreen() {
         // Optional, but always written: the meetings listener orders by `time`,
         // and Firestore leaves out any document missing an orderBy field.
         time: newMeetingTime.trim(),
+        durationMinutes: newMeetingDuration,
         location: newMeetingLocation.trim(),
+        ...(link ? { link } : {}),
         invitedIds: newMeetingInvitedIds,
       });
       setNewMeetingTitle('');
@@ -920,6 +942,9 @@ export default function ProjectDetailsScreen() {
       setNewMeetingDate('');
       setNewMeetingTime('');
       setNewMeetingLocation('');
+      setNewMeetingDuration(DEFAULT_MEETING_MINUTES);
+      setNewMeetingLink('');
+      setMeetingLinkError(false);
       setNewMeetingInvitedIds([]);
       setShowAddMeeting(false);
     } catch {
@@ -2113,6 +2138,32 @@ export default function ProjectDetailsScreen() {
 
           <View>
             <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+              {t('project_details.meeting_duration')}
+            </Text>
+            <View style={[styles.durationRow, { flexDirection: rowDirection }]}>
+              {MEETING_DURATIONS.map((min) => {
+                const selected = newMeetingDuration === min;
+                return (
+                  <TouchableOpacity
+                    key={min}
+                    testID={`meeting-duration-${min}`}
+                    style={[styles.durationChip, selected && { borderColor: modeAccent, backgroundColor: modeTint }]}
+                    onPress={() => setNewMeetingDuration(min)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.durationChipText, { ...(selected ? font.semiBold : font.regular) }]}>
+                      {t('project_details.meeting_minutes', { n: String(min) })}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
               {t('project_details.meeting_location_optional')}
             </Text>
             <TextInput
@@ -2122,6 +2173,27 @@ export default function ProjectDetailsScreen() {
               placeholder={t('project_details.meeting_location_placeholder')}
               placeholderTextColor="#9C99AD"
             />
+          </View>
+
+          <View>
+            <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+              {t('project_details.meeting_link_optional')}
+            </Text>
+            <TextInput
+              style={[styles.sheetInput, { textAlign: 'left', ...font.regular }, meetingLinkError && { borderColor: '#DC2626' }]}
+              value={newMeetingLink}
+              onChangeText={(v) => { setNewMeetingLink(v); setMeetingLinkError(false); }}
+              placeholder={t('project_details.meeting_link_placeholder')}
+              placeholderTextColor="#9C99AD"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+            {meetingLinkError && (
+              <Text style={[styles.fieldError, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                {t('project_details.meeting_link_invalid')}
+              </Text>
+            )}
           </View>
 
           <View>
@@ -2354,7 +2426,7 @@ export default function ProjectDetailsScreen() {
                   CalendarDays,
                   t('project_details.meeting_date'),
                   detailMeeting.time
-                    ? `${formatDueDate(detailMeeting.date, '')} · ${detailMeeting.time}`
+                    ? `${formatDueDate(detailMeeting.date, '')} · ${meetingTimeRange(detailMeeting)}`
                     : formatDueDate(detailMeeting.date, ''),
                   true,
                 )}
@@ -2364,9 +2436,41 @@ export default function ProjectDetailsScreen() {
                     {renderSheetRow(MapPin, t('project_details.meeting_location'), detailMeeting.location)}
                   </>
                 )}
+                {!!detailMeeting.link && (
+                  <>
+                    <View style={styles.sheetRowDivider} />
+                    {renderSheetRow(
+                      LinkIcon,
+                      t('project_details.meeting_link'),
+                      <Text
+                        style={[styles.sheetRowValue, styles.meetingLink, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}
+                        onPress={() => void Linking.openURL(detailMeeting.link!)}
+                        accessibilityRole="link"
+                      >
+                        {detailMeeting.link}
+                      </Text>,
+                    )}
+                  </>
+                )}
                 <View style={styles.sheetRowDivider} />
                 {renderSheetRow(Users, t('project_details.meeting_invitees'), renderPeopleChips(detailMeeting.invitedIds))}
               </View>
+
+              {/* The phone's own pre-filled "new event" sheet (an .ics file on
+                  web); hidden on a build that predates the calendar module. */}
+              {canAddToCalendar() && (
+                <TouchableOpacity
+                  style={[styles.addToCalendarBtn, { borderColor: modeAccent, flexDirection: rowDirection }]}
+                  onPress={() => void addMeetingToCalendar(detailMeeting).catch((e) => console.warn('[calendar]', e))}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                >
+                  <CalendarPlus size={18} color={modeAccent} strokeWidth={2} />
+                  <Text style={[styles.addToCalendarText, { color: modeAccent, ...font.semiBold }]}>
+                    {t('project_details.add_to_calendar')}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
 
             <TouchableOpacity style={styles.sheetDismissBtn} onPress={() => setDetailMeeting(null)} activeOpacity={0.8}>
@@ -2827,6 +2931,9 @@ const CARD_SHADOW = {
   shadowOffset: { width: 0, height: 3 },
   elevation: 3,
 };
+
+/** Meeting length choices, in minutes. The default is DEFAULT_MEETING_MINUTES. */
+const MEETING_DURATIONS = [30, 60, 90, 120];
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -3302,6 +3409,20 @@ const styles = StyleSheet.create({
   sheetPickValue: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1A1626' },
   sheetPickPlaceholder: { flex: 1, fontSize: 14, color: '#8B8898' },
   sheetPickClear: { fontSize: 13, color: '#8B8898', paddingHorizontal: 4 },
+  durationRow: { gap: 8, flexWrap: 'wrap' },
+  durationChip: {
+    borderWidth: 1, borderColor: '#DDD7EC', borderRadius: 999,
+    paddingHorizontal: 14, paddingVertical: 7, backgroundColor: '#FFFFFF',
+  },
+  // lineHeight ≥ 1.47× fontSize: Heebo clips glyph tops below that on iOS.
+  durationChipText: { fontSize: 13, lineHeight: 20, color: '#000000' },
+  fieldError: { fontSize: 13, lineHeight: 20, color: '#DC2626', marginTop: 4 },
+  meetingLink: { textDecorationLine: 'underline' },
+  addToCalendarBtn: {
+    alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: 1.5, borderRadius: 14, paddingVertical: 12, marginTop: 14,
+  },
+  addToCalendarText: { fontSize: 15, lineHeight: 22 },
   /** One selectable member. */
   sheetPersonRow: {
     alignItems: 'center',

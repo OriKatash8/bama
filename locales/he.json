@@ -1,5 +1,7 @@
 {
   "NSPhotoLibraryUsageDescription": "BAMA צריכה גישה לתמונות שלך כדי שתוכלו לבחור תמונות וסרטונים לפרופיל, לתיק העבודות, לצ׳אטים ולמודעות בשוק.",
   "NSCameraUsageDescription": "BAMA צריכה גישה למצלמה כדי שתוכלו לצלם תמונה ולשלוח אותה בצ׳אט.",
-  "NSMicrophoneUsageDescription": "BAMA צריכה גישה למיקרופון כדי להקליט הודעות קוליות בצ׳אטים."
+  "NSMicrophoneUsageDescription": "BAMA צריכה גישה למיקרופון כדי להקליט הודעות קוליות בצ׳אטים.",
+  "NSCalendarsUsageDescription": "BAMA מוסיפה פגישות של פרויקט ליומן שלך כשביקשת זאת.",
+  "NSCalendarsWriteOnlyAccessUsageDescription": "BAMA מוסיפה פגישות של פרויקט ליומן שלך כשביקשת זאת."
 }

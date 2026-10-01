@@ -11,7 +11,9 @@ function docToMeeting(d: QueryDocumentSnapshot<DocumentData>): Meeting {
     description: data.description as string | undefined,
     date: data.date as string,
     time: data.time as string,
+    durationMinutes: typeof data.durationMinutes === 'number' ? data.durationMinutes : undefined,
     location: data.location as string,
+    link: typeof data.link === 'string' && data.link ? data.link : undefined,
     invitedIds: (data.invitedIds ?? []) as string[],
     createdBy: data.createdBy as string,
     createdAt: data.createdAt,
@@ -60,12 +62,17 @@ export async function deleteMeeting(projectId: string, meetingId: string): Promi
 export async function addMeeting(
   projectId: string,
   createdBy: string,
-  data: { title: string; description?: string; date: string; time: string; location: string; invitedIds: string[] },
+  data: {
+    title: string; description?: string; date: string; time: string; durationMinutes?: number;
+    location: string; link?: string; invitedIds: string[];
+  },
 ): Promise<void> {
-  const { description, ...rest } = data;
+  const { description, link, durationMinutes, ...rest } = data;
   await addDoc(collection(db, 'projects', projectId, 'meetings'), {
     ...rest,
     ...(description !== undefined ? { description } : {}),
+    ...(durationMinutes !== undefined ? { durationMinutes } : {}),
+    ...(link ? { link } : {}),
     projectId,
     createdBy,
     createdAt: serverTimestamp(),
