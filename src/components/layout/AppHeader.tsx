@@ -5,6 +5,7 @@ import {
   Animated,
   Linking,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -187,229 +188,238 @@ export function AppHeader() {
             </TouchableOpacity>
           </View>
 
-          {/* User info — tappable avatar */}
-          <View style={[styles.userSection, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8} style={styles.avatarWrap}>
-              <View style={[styles.avatar, { backgroundColor: accent }]}>
-                {user?.photoURL ? (
-                  <Image source={{ uri: user.photoURL }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" />
-                ) : (
-                  <User size={24} color="#fff" strokeWidth={1.5} />
-                )}
-                {avatarUploading && (
-                  <View style={styles.avatarOverlay}>
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  </View>
-                )}
-              </View>
-              {/* Camera badge */}
-              <View style={[styles.cameraBadge, { backgroundColor: accent }]}>
-                <Camera size={10} color="#fff" strokeWidth={2} />
-              </View>
-            </TouchableOpacity>
-            <AppText
-              weight="bold"
-              style={[styles.userName, { color: colors.text }]}
-              numberOfLines={1}
-            >
-              {user?.displayName ?? ''}
-            </AppText>
-            <Text
-              style={[styles.userEmail, { color: colors.textMuted, ...font.regular }]}
-              numberOfLines={1}
-            >
-              {user?.email ?? ''}
-            </Text>
-          </View>
-
-          {/* Menu items */}
-          <View style={styles.menuList}>
-            {/* Language */}
-            <View style={[styles.menuRow, { borderBottomColor: colors.border }]}>
-              <Globe size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.language')}
+          {/* Everything under the close bar scrolls: on a short screen the rows
+              at the bottom (log out, contact us) were cut off. */}
+          <ScrollView
+            testID="settings-scroll"
+            style={styles.panelScroll}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* User info — tappable avatar */}
+            <View style={[styles.userSection, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8} style={styles.avatarWrap}>
+                <View style={[styles.avatar, { backgroundColor: accent }]}>
+                  {user?.photoURL ? (
+                    <Image source={{ uri: user.photoURL }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" />
+                  ) : (
+                    <User size={24} color="#fff" strokeWidth={1.5} />
+                  )}
+                  {avatarUploading && (
+                    <View style={styles.avatarOverlay}>
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    </View>
+                  )}
+                </View>
+                {/* Camera badge */}
+                <View style={[styles.cameraBadge, { backgroundColor: accent }]}>
+                  <Camera size={10} color="#fff" strokeWidth={2} />
+                </View>
+              </TouchableOpacity>
+              <AppText
+                weight="bold"
+                style={[styles.userName, { color: colors.text }]}
+                numberOfLines={1}
+              >
+                {user?.displayName ?? ''}
               </AppText>
-              <View style={[styles.langToggle, { borderColor: colors.border }]}>
-                {(['he', 'en'] as Lang[]).map((lang) => {
-                  const active = language === lang;
-                  return (
-                    <TouchableOpacity
-                      key={lang}
-                      style={[styles.langBtn, active && { backgroundColor: accent }]}
-                      onPress={() => setLanguage(lang)}
-                      activeOpacity={0.8}
-                    >
-                      <AppText weight="semiBold" style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted }]}>
-                        {lang === 'he' ? 'עב' : 'EN'}
-                      </AppText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <Text
+                style={[styles.userEmail, { color: colors.textMuted, ...font.regular }]}
+                numberOfLines={1}
+              >
+                {user?.email ?? ''}
+              </Text>
             </View>
 
-            {/* Notifications */}
-            <TouchableOpacity
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => { setSettingsVisible(false); router.push('/settings/notifications'); }}
-              activeOpacity={0.7}
-            >
-              <Bell size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.notifications')}
-              </AppText>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-            </TouchableOpacity>
+            {/* Menu items */}
+            <View style={styles.menuList}>
+              {/* Language */}
+              <View style={[styles.menuRow, { borderBottomColor: colors.border }]}>
+                <Globe size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.language')}
+                </AppText>
+                <View style={[styles.langToggle, { borderColor: colors.border }]}>
+                  {(['he', 'en'] as Lang[]).map((lang) => {
+                    const active = language === lang;
+                    return (
+                      <TouchableOpacity
+                        key={lang}
+                        style={[styles.langBtn, active && { backgroundColor: accent }]}
+                        onPress={() => setLanguage(lang)}
+                        activeOpacity={0.8}
+                      >
+                        <AppText weight="semiBold" style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted }]}>
+                          {lang === 'he' ? 'עב' : 'EN'}
+                        </AppText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
 
-
-            {/* Phone number — both modes. Private; the gate asks for it once, this
-                is where it is changed. */}
-            <TouchableOpacity
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => { setSettingsVisible(false); router.push('/settings/phone' as never); }}
-              activeOpacity={0.7}
-            >
-              <Phone size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.phone')}
-              </AppText>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-            </TouchableOpacity>
-
-            {/* Pricing — professionals only. A client is never charged a
-                commission, so the row would answer a question they do not have.
-                This is the standing route to the fee terms, so a pro can read the
-                rate before their first job. */}
-            {!modeIsClient && (
+              {/* Notifications */}
               <TouchableOpacity
                 style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => { setSettingsVisible(false); router.push('/settings/pricing'); }}
+                onPress={() => { setSettingsVisible(false); router.push('/settings/notifications'); }}
                 activeOpacity={0.7}
               >
-                <Percent size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <Bell size={18} color={colors.textMuted} strokeWidth={1.5} />
                 <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.pricing')}
+                  {t('settings.notifications')}
                 </AppText>
                 <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
               </TouchableOpacity>
-            )}
 
-            {/* BAMA balance — professionals only, for the same reason as Pricing.
-                The one standing door to the balance screen: every project's
-                commission, whatever state its engagement is in. */}
-            {!modeIsClient && (
+
+              {/* Phone number — both modes. Private; the gate asks for it once, this
+                  is where it is changed. */}
               <TouchableOpacity
                 style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => { setSettingsVisible(false); router.push('/settings/payment'); }}
+                onPress={() => { setSettingsVisible(false); router.push('/settings/phone' as never); }}
                 activeOpacity={0.7}
               >
-                <Wallet size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <Phone size={18} color={colors.textMuted} strokeWidth={1.5} />
                 <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('balance.title')}
+                  {t('settings.phone')}
                 </AppText>
                 <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
               </TouchableOpacity>
-            )}
 
-            {/* Information */}
-            <TouchableOpacity
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => Alert.alert(t('settings.information'), 'Coming soon')}
-              activeOpacity={0.7}
-            >
-              <Info size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.information')}
-              </AppText>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-            </TouchableOpacity>
+              {/* Pricing — professionals only. A client is never charged a
+                  commission, so the row would answer a question they do not have.
+                  This is the standing route to the fee terms, so a pro can read the
+                  rate before their first job. */}
+              {!modeIsClient && (
+                <TouchableOpacity
+                  style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                  onPress={() => { setSettingsVisible(false); router.push('/settings/pricing'); }}
+                  activeOpacity={0.7}
+                >
+                  <Percent size={18} color={colors.textMuted} strokeWidth={1.5} />
+                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                    {t('settings.pricing')}
+                  </AppText>
+                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+                </TouchableOpacity>
+              )}
 
-            {/* Privacy policy — Apple requires it reachable inside the app. */}
-            <TouchableOpacity
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => void Linking.openURL(legalUrl('privacy', language))}
-              activeOpacity={0.7}
-            >
-              <Shield size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.privacy')}
-              </AppText>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-            </TouchableOpacity>
+              {/* BAMA balance — professionals only, for the same reason as Pricing.
+                  The one standing door to the balance screen: every project's
+                  commission, whatever state its engagement is in. */}
+              {!modeIsClient && (
+                <TouchableOpacity
+                  style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                  onPress={() => { setSettingsVisible(false); router.push('/settings/payment'); }}
+                  activeOpacity={0.7}
+                >
+                  <Wallet size={18} color={colors.textMuted} strokeWidth={1.5} />
+                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                    {t('balance.title')}
+                  </AppText>
+                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+                </TouchableOpacity>
+              )}
 
-            {/* Terms & conditions */}
-            <TouchableOpacity
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => void Linking.openURL(legalUrl('terms', language))}
-              activeOpacity={0.7}
-            >
-              <FileText size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.terms')}
-              </AppText>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-            </TouchableOpacity>
+              {/* Information */}
+              <TouchableOpacity
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => Alert.alert(t('settings.information'), 'Coming soon')}
+                activeOpacity={0.7}
+              >
+                <Info size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.information')}
+                </AppText>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+              </TouchableOpacity>
 
-            {/* Cancellation & refund policy */}
-            <TouchableOpacity
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => void Linking.openURL(legalUrl('refunds', language))}
-              activeOpacity={0.7}
-            >
-              <Receipt size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.refunds')}
-              </AppText>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-            </TouchableOpacity>
-          </View>
+              {/* Privacy policy — Apple requires it reachable inside the app. */}
+              <TouchableOpacity
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => void Linking.openURL(legalUrl('privacy', language))}
+                activeOpacity={0.7}
+              >
+                <Shield size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.privacy')}
+                </AppText>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+              </TouchableOpacity>
 
-          {/* Delete account. Apple 5.1.1(v) requires this to exist IN THE APP for
-              any app that creates accounts, and reviewers look for it. Sits with
-              logout rather than among the settings rows, and routes to a screen
-              that explains the consequences — the row itself deletes nothing. */}
-          <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.logoutRow}
-              onPress={() => { setSettingsVisible(false); router.push('/settings/delete-account' as never); }}
-              activeOpacity={0.7}
-            >
-              <Trash2 size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.textMuted }]}>
-                {t('settings.delete_account')}
-              </AppText>
-            </TouchableOpacity>
-          </View>
+              {/* Terms & conditions */}
+              <TouchableOpacity
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => void Linking.openURL(legalUrl('terms', language))}
+                activeOpacity={0.7}
+              >
+                <FileText size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.terms')}
+                </AppText>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+              </TouchableOpacity>
 
-          {/* Logout */}
-          <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.logoutRow}
-              onPress={() => { setSettingsVisible(false); logout(); }}
-              activeOpacity={0.7}
-            >
-              <LogOut size={18} color="#ff4d6d" strokeWidth={1.5} />
-              <AppText weight="semiBold" style={styles.logoutText}>
-                {t('settings.logout')}
-              </AppText>
-            </TouchableOpacity>
-          </View>
+              {/* Cancellation & refund policy */}
+              <TouchableOpacity
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => void Linking.openURL(legalUrl('refunds', language))}
+                activeOpacity={0.7}
+              >
+                <Receipt size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.refunds')}
+                </AppText>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+              </TouchableOpacity>
+            </View>
 
-          {/* Contact us — both modes: BAMA's email and WhatsApp. Under log out,
-              in its own section like delete account. */}
-          <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.logoutRow}
-              onPress={() => { setSettingsVisible(false); router.push('/settings/contact' as never); }}
-              activeOpacity={0.7}
-            >
-              <MessageCircle size={18} color={colors.textMuted} strokeWidth={1.5} />
-              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                {t('settings.contact_us')}
-              </AppText>
-            </TouchableOpacity>
-          </View>
+            {/* Delete account. Apple 5.1.1(v) requires this to exist IN THE APP for
+                any app that creates accounts, and reviewers look for it. Sits with
+                logout rather than among the settings rows, and routes to a screen
+                that explains the consequences — the row itself deletes nothing. */}
+            <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.logoutRow}
+                onPress={() => { setSettingsVisible(false); router.push('/settings/delete-account' as never); }}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.textMuted }]}>
+                  {t('settings.delete_account')}
+                </AppText>
+              </TouchableOpacity>
+            </View>
+
+            {/* Logout */}
+            <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.logoutRow}
+                onPress={() => { setSettingsVisible(false); logout(); }}
+                activeOpacity={0.7}
+              >
+                <LogOut size={18} color="#ff4d6d" strokeWidth={1.5} />
+                <AppText weight="semiBold" style={styles.logoutText}>
+                  {t('settings.logout')}
+                </AppText>
+              </TouchableOpacity>
+            </View>
+
+            {/* Contact us — both modes: BAMA's email and WhatsApp. Under log out,
+                in its own section like delete account. */}
+            <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.logoutRow}
+                onPress={() => { setSettingsVisible(false); router.push('/settings/contact' as never); }}
+                activeOpacity={0.7}
+              >
+                <MessageCircle size={18} color={colors.textMuted} strokeWidth={1.5} />
+                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                  {t('settings.contact_us')}
+                </AppText>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </Animated.View>
       </Modal>
     </>
@@ -472,6 +482,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   closeBtn: { padding: 4 },
+  panelScroll: { flex: 1 },
 
   userSection: {
     alignItems: 'center',

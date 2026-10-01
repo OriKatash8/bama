@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, within } from '@testing-library/react-native';
 import { AppHeader } from '../AppHeader';
 import en from '@core/i18n/translations/en.json';
 
@@ -72,4 +72,13 @@ it('"contact us" sits under the log-out button', () => {
   const text = JSON.stringify(r.toJSON());
   expect(text.indexOf(en.settings.logout)).toBeGreaterThan(-1);
   expect(text.indexOf(en.settings.contact_us)).toBeGreaterThan(text.indexOf(en.settings.logout));
+});
+
+it('the menu scrolls: every row, down to "contact us", is inside the scroll view', () => {
+  mockMode.activeMode = 'professional';
+  const r = openSettings();
+  const scroll = within(r.getByTestId('settings-scroll'));
+  for (const label of [en.settings.notifications, en.settings.logout, en.settings.contact_us]) {
+    expect(scroll.getByText(label)).toBeTruthy();
+  }
 });
