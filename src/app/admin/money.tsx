@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { Ban, Info } from 'lucide-react-native';
+import { Ban, ChevronLeft, ChevronRight, Info } from 'lucide-react-native';
 import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
 import { useCancellationLog } from '@features/admin/useCancellationLog';
 import { periodBuckets, type Period } from '@features/admin/periodBuckets';
@@ -37,10 +38,12 @@ export default function MoneyAdmin() {
   const { t, rtl, rowDir, textAlign } = useScopedT('admin_money');
   const { t: tDash } = useScopedT('admin_dashboard');
 
+  const router = useRouter();
   const [period, setPeriod] = useState<Period>('daily');
   const { entries: cancellations } = useCancellationLog();
 
   const locale = rtl ? 'he-IL' : 'en-US';
+  const Chevron = rtl ? ChevronLeft : ChevronRight;
   const fmtDate = (ts: number) =>
     ts ? new Date(ts * 1000).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' }) : '';
 
@@ -110,19 +113,30 @@ export default function MoneyAdmin() {
         {cancellations.length === 0 ? (
           <EmptyState text={t('no_cancellations')} testID="cancellations-empty" />
         ) : (
-          cancellations.map((c) => (
-            <Row key={c.id} rowDir={rowDir} testID={`cancellation-${c.id}`}>
-              <IconTile icon={Ban} tone="neutral" />
-              <WhoBlock
-                name={`${t(`type_${c.kind}`)} · ${c.title || '—'}`}
-                meta={`${t('cancelled_by')} ${c.actorName || '—'}`}
-                textAlign={textAlign}
-              />
-              <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
-                {fmtDate(c.ts)}
-              </AdminText>
-            </Row>
-          ))
+          cancellations.map((c) => {
+            // A cancelled project opens its chat, to see why it was cancelled.
+            const chatId = c.kind === 'project' ? c.chatId : null;
+            return (
+              <Row
+                key={c.id}
+                rowDir={rowDir}
+                testID={`cancellation-${c.id}`}
+                onPress={chatId ? () => router.push(`/admin/project-chat?chatId=${chatId}&projectId=${c.projectId}` as never) : undefined}
+                accessibilityLabel={chatId ? `${t(`type_${c.kind}`)} · ${c.title || '—'}` : undefined}
+              >
+                <IconTile icon={Ban} tone="neutral" />
+                <WhoBlock
+                  name={`${t(`type_${c.kind}`)} · ${c.title || '—'}`}
+                  meta={`${t('cancelled_by')} ${c.actorName || '—'}`}
+                  textAlign={textAlign}
+                />
+                <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
+                  {fmtDate(c.ts)}
+                </AdminText>
+                {chatId ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
+              </Row>
+            );
+          })
         )}
       </Card>
 

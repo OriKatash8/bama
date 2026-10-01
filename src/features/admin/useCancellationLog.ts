@@ -23,6 +23,9 @@ export type CancellationEntry = {
   title: string;
   actorName: string | null;
   ts: number;
+  /** A cancelled project's id and chat, so the admin can open the conversation. */
+  projectId?: string;
+  chatId?: string | null;
 };
 
 /** createdAt/cancelledAt may be a Firestore Timestamp or a legacy manual object. */
@@ -71,6 +74,8 @@ export function useCancellationLog() {
       title: p.title ?? '',
       actorName: names[p.clientId] ?? null,
       ts: secondsOf(p.cancelledAt),
+      projectId: p.id,
+      chatId: p.chatId ?? null,
     }));
     const purch: CancellationEntry[] = purchases.map((c) => ({
       id: `pur-${c.id}`,

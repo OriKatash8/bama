@@ -13,7 +13,8 @@ jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 20, bottom: 0 }) }));
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock('@core/navigation/floatingTabBar', () => ({ useTabBarClearance: () => 80, FLOATING_TAB_BAR_BOTTOM: 24 }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
@@ -28,8 +29,9 @@ const H = he.admin_money;
 const log = useCancellationLog as jest.Mock;
 
 const ENTRIES = [
-  { id: 'c1', kind: 'project', title: 'Kitchen remodel', actorName: 'Avi', ts: 1_700_000_000 },
+  { id: 'c1', kind: 'project', title: 'Kitchen remodel', actorName: 'Avi', ts: 1_700_000_000, projectId: 'p1', chatId: 'chat1' },
   { id: 'c2', kind: 'purchase', title: '', actorName: null, ts: 0 },
+  { id: 'c3', kind: 'project', title: 'No chat', actorName: null, ts: 0, projectId: 'p3', chatId: null },
 ];
 
 beforeEach(() => {
@@ -97,7 +99,20 @@ it('lists each cancellation with its kind, title and who cancelled it', () => {
   const second = within(r.getByTestId('cancellation-c2'));
   expect(second.getByText(`${E.type_purchase} · —`)).toBeTruthy();
   expect(second.getByText(`${E.cancelled_by} —`)).toBeTruthy();
-  expect(within(r.getByTestId('cancellations-card')).getByText('2')).toBeTruthy();
+  expect(within(r.getByTestId('cancellations-card')).getByText('3')).toBeTruthy();
+});
+
+it("tapping a cancelled project opens its chat; rows without a chat aren't buttons", () => {
+  log.mockReturnValue({ entries: ENTRIES });
+  const r = render(<MoneyAdmin />);
+  expect(r.getByTestId('cancellation-c1').props.accessibilityRole).toBe('button');
+  fireEvent.press(r.getByTestId('cancellation-c1'));
+  expect(mockPush).toHaveBeenCalledWith('/admin/project-chat?chatId=chat1&projectId=p1');
+  for (const id of ['cancellation-c2', 'cancellation-c3']) {
+    expect(r.getByTestId(id).props.accessibilityRole).toBeUndefined();
+    fireEvent.press(r.getByTestId(id));
+  }
+  expect(mockPush).toHaveBeenCalledTimes(1);
 });
 
 it('keeps the coming-soon note', () => {
