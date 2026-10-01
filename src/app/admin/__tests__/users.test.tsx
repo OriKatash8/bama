@@ -103,11 +103,6 @@ describe('the page', () => {
     expect(mockRouter.replace).toHaveBeenCalledWith('/admin');
   });
 
-  it('has no search box any more', async () => {
-    const r = await renderPage();
-    expect(r.queryByTestId('user-search')).toBeNull();
-  });
-
   it('mirrors in Hebrew: title aligns right, rows run right to left', async () => {
     mockLang = 'he';
     const r = await renderPage();
@@ -132,6 +127,33 @@ describe('the list', () => {
     expect(within(r.getByTestId('user-row-u3')).getByText(E.unnamed)).toBeTruthy();
     expect(list.queryByText(E.status_warned)).toBeNull();
     expect(r.getByTestId('users-count')).toBeTruthy();
+  });
+
+  it('searches by name or email as you type', async () => {
+    const r = await renderPage();
+    fireEvent.changeText(r.getByTestId('users-search'), 'NOA');
+    expect(r.getByTestId('user-row-u1')).toBeTruthy();
+    expect(r.queryByTestId('user-row-u2')).toBeNull();
+    fireEvent.changeText(r.getByTestId('users-search'), 'avi@');
+    expect(r.getByTestId('user-row-u2')).toBeTruthy();
+    expect(r.queryByTestId('user-row-u1')).toBeNull();
+    // A user with no name is found by email.
+    fireEvent.changeText(r.getByTestId('users-search'), 'nameless');
+    expect(r.getByTestId('user-row-u3')).toBeTruthy();
+    fireEvent.changeText(r.getByTestId('users-search'), 'zzz');
+    expect(r.getByText(E.no_match)).toBeTruthy();
+    fireEvent.changeText(r.getByTestId('users-search'), '  ');
+    expect(r.getByTestId('user-row-u1')).toBeTruthy();
+    expect(r.getByTestId('user-row-u2')).toBeTruthy();
+  });
+
+  it('keeps the search when coming back from a user', async () => {
+    const r = await renderPage();
+    fireEvent.changeText(r.getByTestId('users-search'), 'noa');
+    await openUser(r);
+    fireEvent.press(r.getByTestId('back-to-list'));
+    expect(r.getByTestId('users-search').props.value).toBe('noa');
+    expect(r.queryByTestId('user-row-u2')).toBeNull();
   });
 
   it('says so when there are no users', async () => {

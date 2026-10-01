@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
+import { Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
 import { where } from 'firebase/firestore';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { callFunction } from '@core/firebase/functions';
@@ -57,7 +57,7 @@ function fmtDate(seconds?: number): string {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-/** The sheet's input: the browser's outline would sit inside its own border. */
+/** Inputs: the browser's focus outline would sit inside their own border. */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 /**
@@ -73,6 +73,14 @@ export default function UsersAdmin() {
 
   const [users, setUsers] = useState<ListedUser[]>([]);
   const [listState, setListState] = useState<'loading' | 'ready' | 'error'>('loading');
+  // Kept while a user is open, so "back to all users" returns to the same search.
+  const [term, setTerm] = useState('');
+  const shown = useMemo(() => {
+    const q = term.trim().toLocaleLowerCase();
+    if (!q) return users;
+    return users.filter((u) =>
+      u.displayName.toLocaleLowerCase().includes(q) || (u.email ?? '').toLocaleLowerCase().includes(q));
+  }, [users, term]);
   const [opening, setOpening] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [history, setHistory] = useState<AdminAction[]>([]);
@@ -186,6 +194,22 @@ export default function UsersAdmin() {
               title={t('all_users')}
               side={listState === 'ready' ? <View testID="users-count"><Chip label={String(users.length)} tabular /></View> : undefined}
             />
+            <View style={[styles.searchBar, { flexDirection: rowDir }]}>
+              <View style={[styles.search, { flexDirection: rowDir, backgroundColor: p.surface2, borderColor: p.border }]}>
+                <Search size={15} color={p.text3} strokeWidth={2.4} />
+                <TextInput
+                  style={[styles.searchInput, webNoOutline, { color: p.text, fontFamily: HEEBO.regular, textAlign }]}
+                  value={term}
+                  onChangeText={setTerm}
+                  placeholder={t('search_placeholder')}
+                  placeholderTextColor={p.text3}
+                  accessibilityLabel={t('search_placeholder')}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  testID="users-search"
+                />
+              </View>
+            </View>
             {listState === 'loading' ? (
               <View style={styles.listBusy}>
                 <ActivityIndicator size="small" color={p.accent} testID="users-loading" />
@@ -197,8 +221,10 @@ export default function UsersAdmin() {
               </View>
             ) : users.length === 0 ? (
               <EmptyState text={t('no_users')} testID="users-empty" />
+            ) : shown.length === 0 ? (
+              <EmptyState text={t('no_match')} testID="users-no-match" />
             ) : (
-              users.map((u) => {
+              shown.map((u) => {
                 const label = u.displayName || t('unnamed');
                 return (
                   <Row
@@ -427,6 +453,18 @@ function SheetBody({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   listBusy: { paddingVertical: 20, alignItems: 'center' },
+  searchBar: { alignItems: 'center', gap: 10, paddingHorizontal: SPACE.rowPadH, paddingBottom: 10 },
+  search: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  searchInput: { flex: 1, fontSize: 14, padding: 0 },
   listError: { padding: SPACE.rowPadH, gap: 10 },
   who: { alignItems: 'center', gap: 12, paddingTop: 16, paddingHorizontal: SPACE.rowPadH },
   joined: { fontSize: 12, paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
