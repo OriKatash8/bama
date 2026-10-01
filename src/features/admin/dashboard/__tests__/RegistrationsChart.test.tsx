@@ -64,3 +64,30 @@ it('names the period it shows', () => {
   expect(renderChart().getByText(E.sub_daily)).toBeTruthy();
   expect(renderChart({ period: 'weekly' }).getByText(E.sub_weekly)).toBeTruthy();
 });
+
+// 24 hourly bars: a phone-wide plot prints a few x labels, a web-wide one prints all.
+describe('x labels follow the plot width', () => {
+  const HOURS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+  const ones = HOURS.map(() => 1);
+  const at = (width: number) => {
+    const r = render(
+      <RegistrationsChart labels={HOURS} total={ones} client={ones} pro={ones} view="total" onView={jest.fn()} period="daily" loading={false} />,
+    );
+    fireEvent(r.getByTestId('reg-plot'), 'layout', { nativeEvent: { layout: { width, height: 236 } } });
+    const printed = r.getAllByTestId('x-label').map((n) => n.props.children).filter(Boolean);
+    return { r, printed };
+  };
+
+  it('phone: thinned, newest kept, value labels only over labelled bars', () => {
+    const { r, printed } = at(340);
+    expect(printed.length).toBeLessThan(10);
+    expect(printed).toContain('23:00');
+    // Each value label ("1") sits over a labelled bar — no more of them than x labels.
+    expect(r.getAllByText('1').length).toBeLessThanOrEqual(printed.length);
+  });
+
+  it('web: every hour labelled', () => {
+    const { printed } = at(1100);
+    expect(printed).toHaveLength(24);
+  });
+});

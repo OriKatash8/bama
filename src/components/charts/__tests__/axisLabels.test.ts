@@ -1,4 +1,4 @@
-import { axisLabels } from '../axisLabels';
+import { axisLabels, axisLabelsFit } from '../axisLabels';
 
 const L = (n: number) => Array.from({ length: n }, (_, i) => `L${i}`);
 
@@ -15,4 +15,10 @@ it('thins a crowded axis to at most max labels, always keeping the newest', () =
     expect(out.filter(Boolean).length).toBeLessThanOrEqual(8);
     expect(out.filter(Boolean).length).toBeGreaterThan(1);
   }
+});
+
+it('fits labels to the width: few on a phone, many on web, never fewer than two', () => {
+  expect(axisLabelsFit(320)).toBe(7);
+  expect(axisLabelsFit(1100)).toBeGreaterThanOrEqual(24);
+  expect(axisLabelsFit(0)).toBe(2);
 });

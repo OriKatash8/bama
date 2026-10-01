@@ -15,7 +15,7 @@ import { stepAt, useTimeline } from '@features/communityAdmin/motion';
 import { AdminText } from '@features/communityAdmin/components/primitives';
 import { Segment } from '@features/communityAdmin/components/AdminHeader';
 import { ChartCard, EmptyPlot, Legend, Ltr, Tooltip, XLabel, YLabels } from '@features/communityAdmin/components/ChartParts';
-import { axisLabels } from '@components/charts/axisLabels';
+import { axisLabels, axisLabelsFit } from '@components/charts/axisLabels';
 import { groupedBars, regNiceMax } from '../geometry';
 
 export type RegView = 'total' | 'by_mode';
@@ -67,6 +67,11 @@ export function RegistrationsChart({
   const pair = groupedBars(n, w, I);
   const timelineMs = Math.max(MOTION.barGrow, LABEL_FADE_DELAY + LABEL_FADE) + MOTION.barStagger * Math.max(0, n - 1);
   const elapsed = useTimeline(timelineMs, `${period}:${view}`);
+  // As many x labels as the plot's width holds (a phone shows fewer than web).
+  const xLabels = axisLabels(labels, axisLabelsFit(w - I.left - I.right));
+  const thinned = xLabels.some((l) => l === '');
+  // Value labels sit over the labelled bars, so they never crowd on a phone.
+  const showsValue = (i: number) => (thinned ? xLabels[i] !== '' : showsValueLabel(i, n));
   const shownActive = active !== null && active < n && !empty && !loading ? active : null;
 
   const grow = (v: number, i: number) => (base - yAt(v, niceMax, H, I)) * stepAt(elapsed, i * MOTION.barStagger, MOTION.barGrow);
@@ -195,7 +200,7 @@ export function RegistrationsChart({
                   {!empty &&
                     !byMode &&
                     total.map((v, i) =>
-                      showsValueLabel(i, n) ? (
+                      showsValue(i) ? (
                         <AdminText
                           key={`v${i}`}
                           weight="semiBold"
@@ -214,7 +219,7 @@ export function RegistrationsChart({
                         </AdminText>
                       ) : null,
                     )}
-                  {axisLabels(labels).map((l, i) => (
+                  {xLabels.map((l, i) => (
                     <XLabel key={`x${i}`} x={single.centerX(i)} height={H} text={l} />
                   ))}
                   {empty ? (

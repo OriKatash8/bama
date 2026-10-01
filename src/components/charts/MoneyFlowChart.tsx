@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import Svg, { Path, Line, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { AppText } from '@components/ui/AppText';
-import { axisLabels } from './axisLabels';
+import { axisLabels, axisLabelsFit } from './axisLabels';
 
 type Series = { color: string; data: number[] };
 
@@ -112,7 +112,7 @@ export function MoneyFlowChart({
 
       {/* x-axis labels (RN text — correct font + RTL, no SVG text quirks) */}
       <View style={styles.labels}>
-        {axisLabels(labels).map((l, i) => (
+        {axisLabels(labels, axisLabelsFit(w)).map((l, i) => (
           <AppText key={i} weight="regular" numberOfLines={1} style={[styles.label, { color: labelColor }]}>
             {l}
           </AppText>

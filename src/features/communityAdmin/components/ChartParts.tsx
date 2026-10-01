@@ -25,25 +25,30 @@ export function ChartCard({
   const { rowDir } = useAdminT();
   return (
     <Card style={style} testID={testID}>
-      <View style={[styles.head, { flexDirection: rowDir }]}>
-        <AdminText weight="semiBold" accessibilityRole="header" numberOfLines={1} style={[TYPE.cardTitle, styles.title]}>
-          {title}
-        </AdminText>
-        {sub ? (
-          <AdminText numberOfLines={1} style={[TYPE.rowMeta, styles.sub, { color: p.text3 }]}>
-            {sub}
+      {/* Title + sub, then the control at the far end. When they don't fit on one
+          line (a phone) the control wraps to its own line, still at the far end,
+          and the sub wraps under the title instead of being cut. */}
+      <View style={[styles.head, { flexDirection: rowDir }]} testID="chart-head">
+        <View style={[styles.headText, { flexDirection: rowDir }]}>
+          <AdminText weight="semiBold" accessibilityRole="header" numberOfLines={1} style={[TYPE.cardTitle, styles.title]}>
+            {title}
           </AdminText>
-        ) : null}
-        {side ? (
-          <>
-            <View style={styles.spacer} />
-            <View style={styles.side}>{side}</View>
-          </>
-        ) : null}
+          {sub ? (
+            <AdminText numberOfLines={1} style={[TYPE.rowMeta, styles.sub, { color: p.text3 }]}>
+              {sub}
+            </AdminText>
+          ) : null}
+        </View>
+        {side ? <View style={[styles.side, farEnd(rowDir)]} testID="chart-side">{side}</View> : null}
       </View>
       {children}
     </Card>
   );
+}
+
+/** Pushes an item to the row's far end, also when it has wrapped onto a line of its own. */
+export function farEnd(rowDir: 'row' | 'row-reverse') {
+  return rowDir === 'row' ? { marginLeft: 'auto' as const } : { marginRight: 'auto' as const };
 }
 
 export function Swatch({ color }: { color: string }) {
@@ -191,11 +196,11 @@ export function Tooltip({
 }
 
 const styles = StyleSheet.create({
-  head: { alignItems: 'baseline', gap: 10, paddingTop: 16, paddingHorizontal: SPACE.rowPadH },
+  head: { alignItems: 'center', flexWrap: 'wrap', gap: 10, paddingTop: 16, paddingHorizontal: SPACE.rowPadH },
+  headText: { flexGrow: 1, flexShrink: 1, flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 2 },
   title: { flexShrink: 0 },
   sub: { flexShrink: 1 },
-  spacer: { flex: 1 },
-  side: { alignSelf: 'center', flexShrink: 0 },
+  side: { flexShrink: 0 },
   swatch: { width: 10, height: 10, borderRadius: 3 },
   legend: { gap: 14, flexWrap: 'wrap', alignItems: 'center', paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
   legendItem: { alignItems: 'center', gap: 6 },

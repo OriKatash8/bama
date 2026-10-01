@@ -154,3 +154,10 @@ it('"total users" opens the Users page, "total projects" the Projects page; the 
   expect(r.queryByTestId('tile-courses-press')).toBeNull();
   expect(r.queryByTestId('tile-communities-press')).toBeNull();
 });
+
+// On a phone the period control wraps under the title; it keeps to the far side, as on web.
+it('keeps the period control on the far side in both languages', () => {
+  expect(StyleSheet.flatten(render(<AdminDashboardScreen />).getByTestId('title-side').props.style).marginLeft).toBe('auto');
+  mockLang = 'he';
+  expect(StyleSheet.flatten(render(<AdminDashboardScreen />).getByTestId('title-side').props.style).marginRight).toBe('auto');
+});

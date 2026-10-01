@@ -8,6 +8,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useAdminPalette, useScopedT } from '@features/communityAdmin/i18n';
 import { AVATAR_TEXT, BRAND_GRADIENT, RADIUS, SPACE, TYPE } from '@features/communityAdmin/theme';
 import { AdminText, WhoBlock } from '@features/communityAdmin/components/primitives';
+import { farEnd } from '@features/communityAdmin/components/ChartParts';
 import { CONTENT_MAX } from '@features/communityAdmin/components/AdminHeader';
 
 /**
@@ -73,7 +74,8 @@ export function AdminTitle({ title, subtitle, side }: { title: string; subtitle?
         </AdminText>
         {subtitle ? <AdminText style={[styles.subtitle, { color: p.text2, textAlign }]}>{subtitle}</AdminText> : null}
       </View>
-      {side}
+      {/* On a phone the control wraps under the title; it stays on the far side, as on web. */}
+      {side ? <View style={farEnd(rowDir)} testID="title-side">{side}</View> : null}
     </View>
   );
 }
