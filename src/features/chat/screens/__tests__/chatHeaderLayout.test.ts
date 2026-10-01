@@ -5,12 +5,15 @@ import { join } from 'node:path';
  * THE CHAT HEADER READS LIKE WHATSAPP IN EACH LANGUAGE.
  * Back, then the chat's picture right beside it, then the name — mirrored in
  * Hebrew, so there the back button sits at the right edge next to the picture.
+ * A COMMUNITY is mirrored in English too (asked for): back and its picture on
+ * the right, search on the left — the same as in Hebrew.
  */
 const SRC = readFileSync(join(__dirname, '..', 'ChatRoomScreen.tsx'), 'utf8');
 const header = SRC.slice(SRC.indexOf('{/* Header */}'), SRC.indexOf('{/* Channel tab bar (community only) */}'));
 
-it('mirrors with the language', () => {
-  expect(header).toMatch(/style=\{\[styles\.header, \{ flexDirection: rtl \? 'row-reverse' : 'row'/);
+it('mirrors in Hebrew, and in a community in either language', () => {
+  expect(SRC).toMatch(/const headerFlip = rtl \|\| chatType === 'community';/);
+  expect(header).toMatch(/style=\{\[styles\.header, \{ flexDirection: headerFlip \? 'row-reverse' : 'row'/);
 });
 
 it('back comes first, then the picture, then the name', () => {
@@ -23,16 +26,17 @@ it('back comes first, then the picture, then the name', () => {
 });
 
 it('the back arrow points outward in each language, as an icon rather than a text glyph', () => {
-  expect(header).toMatch(/rtl \? <ChevronRight[^>]*\/> : <ChevronLeft[^>]*\/>/);
+  expect(header).toMatch(/headerFlip \? <ChevronRight[^>]*\/> : <ChevronLeft[^>]*\/>/);
   expect(header).not.toMatch(/>‹</);
 });
 
-it('the name sits next to the picture, aligned to the start side', () => {
-  expect(header).toMatch(/styles\.headerCenter, \{ alignItems: rtl \? 'flex-end' : 'flex-start' \}/);
+it('the name sits next to the picture', () => {
+  expect(header).toMatch(/styles\.headerCenter, \{ alignItems: headerFlip \? 'flex-end' : 'flex-start' \}/);
+  expect(header).not.toMatch(/styles\.headerName, \{ textAlign: rtl \?/);
 });
 
 describe('search, at the far end of the header', () => {
-  it('is the last thing in the row, so it sits left in Hebrew and right in English', () => {
+  it('is the last thing in the row, so it sits left when mirrored and right otherwise', () => {
     const search = header.indexOf('testID="chat-search"');
     expect(search).toBeGreaterThan(header.indexOf('<View style={[styles.headerCenter'));
     // Nothing but closing tags between the button and the end of the row.
