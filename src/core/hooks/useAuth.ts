@@ -88,7 +88,7 @@ export function useAuth() {
           // the (appealable) reason; a warned user is let in but sees a notice.
           const moderation = userData.moderation;
           if (moderation?.status === 'suspended') {
-            useModerationStore.getState().setNotice({ status: 'suspended', reason: moderation.reason });
+            useModerationStore.getState().setNotice({ status: 'suspended', reason: moderation.reason, actionId: moderation.actionId });
             await signOut();
             return;
           }
@@ -102,8 +102,11 @@ export function useAuth() {
           setUser({ ...cleanUser, email: firebaseUser.email ?? undefined } as User);
           await restoreLastMode(firebaseUser.uid);
           setLoading(false);
-          if (moderation?.status === 'warned') {
-            useModerationStore.getState().setNotice({ status: 'warned', reason: moderation.reason });
+          // A warning shows once: not again after the user acknowledged THIS
+          // warning (its actionId is saved as moderationAckId). A new warning
+          // has a new actionId, so it shows once more.
+          if (moderation?.status === 'warned' && userData.moderationAckId !== moderation.actionId) {
+            useModerationStore.getState().setNotice({ status: 'warned', reason: moderation.reason, actionId: moderation.actionId });
           }
 
           // Fire-and-forget: claim this device's push token for the current

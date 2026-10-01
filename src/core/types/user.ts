@@ -32,6 +32,10 @@ export type User = {
   /** Current moderation state. Absent ⇒ active/in good standing. Written
    *  ONLY by the moderateUser callable (Admin SDK); clients cannot edit it. */
   moderation?: UserModeration;
+  /** The `moderation.actionId` of the last warning the user acknowledged. A
+   *  warning is shown on sign-in only while this differs, so it shows once
+   *  (on any device) and a new warning shows once more. Written by the user. */
+  moderationAckId?: string;
   /** Unix ms timestamp of when the user accepted the terms. Null until accepted. */
   termsAcceptedAt?: number | null;
   /** Version string of the terms accepted, e.g. '1.0'. */

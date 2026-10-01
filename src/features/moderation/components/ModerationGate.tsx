@@ -20,15 +20,16 @@ function makeT(translations: Translations) {
 /**
  * Full-screen notice shown to a warned or suspended user. Rendered at the app
  * root (survives sign-out). A suspended user has already been signed out; a
- * warned user acknowledges and continues. Dismiss is local — the notice
- * reappears on next launch until an admin clears the state.
+ * warned user acknowledges and continues — and that warning is not shown again
+ * (useModerationStore.acknowledge saves it as seen). Closing it any other way
+ * (Android back) does not count as seen, so it shows on the next sign-in.
  */
 export function ModerationGate() {
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);
   const rtl = language === 'he';
   const t = makeT(rtl ? he : en);
-  const { notice, clearNotice } = useModerationStore();
+  const { notice, clearNotice, acknowledge } = useModerationStore();
 
   if (!notice) return null;
 
@@ -65,7 +66,7 @@ export function ModerationGate() {
             </AppText>
           )}
 
-          <TouchableOpacity style={[styles.btn, { backgroundColor: accent }]} onPress={clearNotice} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: accent }]} onPress={() => void acknowledge()} activeOpacity={0.85}>
             <AppText weight="semiBold" style={styles.btnText}>
               {t(suspended ? 'moderation.dismiss' : 'moderation.acknowledge')}
             </AppText>
