@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -30,6 +31,7 @@ import { ModeSwitcherSheet } from '@features/auth/components/ModeSwitcherSheet';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { shrinkAvatar } from '@features/profile/utils/shrinkAvatar';
+import { legalUrl } from '@core/constants/legal';
 
 type Translations = typeof en;
 
@@ -323,10 +325,10 @@ export function AppHeader() {
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>
 
-            {/* Privacy */}
+            {/* Privacy policy — Apple requires it reachable inside the app. */}
             <TouchableOpacity
               style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => Alert.alert(t('settings.privacy'), 'Coming soon')}
+              onPress={() => void Linking.openURL(legalUrl('privacy', language))}
               activeOpacity={0.7}
             >
               <Shield size={18} color={colors.textMuted} strokeWidth={1.5} />
@@ -339,7 +341,7 @@ export function AppHeader() {
             {/* Terms & conditions */}
             <TouchableOpacity
               style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => Alert.alert(t('settings.terms'), 'Coming soon')}
+              onPress={() => void Linking.openURL(legalUrl('terms', language))}
               activeOpacity={0.7}
             >
               <FileText size={18} color={colors.textMuted} strokeWidth={1.5} />

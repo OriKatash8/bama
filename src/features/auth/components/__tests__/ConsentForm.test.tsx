@@ -1,4 +1,5 @@
 import React from 'react';
+import { Linking } from 'react-native';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import { setDoc } from 'firebase/firestore';
 import { deleteUser } from 'firebase/auth';
@@ -144,4 +145,18 @@ it('in Hebrew the boxes sit on the right', () => {
   const flat = (id: string) => [r.getByTestId(id).props.style].flat(3).reduce((a, s) => ({ ...a, ...s }), {});
   expect(flat('consent-terms').flexDirection).toBe('row-reverse');
   expect(flat('consent-age').flexDirection).toBe('row-reverse');
+});
+
+it.each([
+  ['he', 'https://bama-af0a0.web.app/terms', 'https://bama-af0a0.web.app/privacy'],
+  ['en', 'https://bama-af0a0.web.app/en/terms', 'https://bama-af0a0.web.app/en/privacy'],
+])('in %s the document links open the published pages in that language', (lang, terms, privacy) => {
+  mockLang = lang;
+  const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  const r = render(<ConsentForm />);
+  fireEvent.press(r.getByTestId('consent-terms-link'));
+  expect(openURL).toHaveBeenLastCalledWith(terms);
+  fireEvent.press(r.getByTestId('consent-privacy-link'));
+  expect(openURL).toHaveBeenLastCalledWith(privacy);
+  openURL.mockRestore();
 });

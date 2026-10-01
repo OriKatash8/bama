@@ -6,8 +6,18 @@
 export const CURRENT_TERMS_VERSION = '1.0';
 /** The name older code imports; always the current version. */
 export const TERMS_VERSION = CURRENT_TERMS_VERSION;
-export const TERMS_URL = 'https://example.com/terms';
-export const PRIVACY_URL = 'https://example.com/privacy';
+
+/** The published legal pages (Firebase Hosting, default site). The Terms quote these exact URLs. */
+export const TERMS_URL_HE = 'https://bama-af0a0.web.app/terms';
+export const TERMS_URL_EN = 'https://bama-af0a0.web.app/en/terms';
+export const PRIVACY_URL_HE = 'https://bama-af0a0.web.app/privacy';
+export const PRIVACY_URL_EN = 'https://bama-af0a0.web.app/en/privacy';
+
+/** The Terms or Privacy page in the app's language; anything but Hebrew gets English, as i18n falls back. */
+export function legalUrl(doc: 'terms' | 'privacy', language: string | null | undefined): string {
+  if (doc === 'terms') return language === 'he' ? TERMS_URL_HE : TERMS_URL_EN;
+  return language === 'he' ? PRIVACY_URL_HE : PRIVACY_URL_EN;
+}
 
 /** "1.10" > "1.9": dotted versions compared number by number; missing parts count as 0. */
 export function compareTermsVersions(a: string, b: string): number {

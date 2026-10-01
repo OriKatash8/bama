@@ -64,6 +64,7 @@
     "eslint-config-expo": "~57.0.2",
     "jest": "^29.7.0",
     "jest-expo": "~57.0.5",
+    "marked": "^18.0.14",
     "playwright": "^1.61.0",
     "typescript": "~6.0.3"
   },
@@ -73,7 +74,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "legal:build": "node scripts/build-legal-site.mjs",
+    "legal:deploy": "npm run legal:build && firebase deploy --only hosting"
   },
   "private": true,
   "expo": {

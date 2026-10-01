@@ -21,7 +21,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { isValidEmail, isNonEmpty } from '@utils/validators';
-import { TERMS_VERSION, TERMS_URL, PRIVACY_URL } from '@core/constants/legal';
+import { TERMS_VERSION, legalUrl } from '@core/constants/legal';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -95,14 +95,14 @@ export function RegisterForm() {
       {t('auth.terms_agree_prefix')}
       <Text
         style={[styles.termsLink, { color: '#004aad' }]}
-        onPress={() => void Linking.openURL(TERMS_URL)}
+        onPress={() => void Linking.openURL(legalUrl('terms', language))}
       >
         {t('auth.terms_of_service')}
       </Text>
       {t('auth.terms_and')}
       <Text
         style={[styles.termsLink, { color: '#004aad' }]}
-        onPress={() => void Linking.openURL(PRIVACY_URL)}
+        onPress={() => void Linking.openURL(legalUrl('privacy', language))}
       >
         {t('auth.privacy_policy')}
       </Text>

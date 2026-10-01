@@ -64,3 +64,7 @@ cors.json
 *.ipa
 *.apk
 *.aab
+
+# Legal site build output (npm run legal:build)
+legal-site/public/
+.firebase/

@@ -12,7 +12,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useTheme } from '@core/hooks/useTheme';
-import { TERMS_URL, PRIVACY_URL } from '@core/constants/legal';
+import { legalUrl } from '@core/constants/legal';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 import { discardUnconsentedSignup, recordConsent } from '@features/auth/utils/consent';
 import { syncUser } from '@features/auth/utils/syncUser';
@@ -110,11 +110,11 @@ export function ConsentForm() {
   const termsLabel = (
     <AppText weight="regular" style={[styles.checkText, { color: colors.text, textAlign }]}>
       {t('auth.terms_agree_prefix')}
-      <Text style={styles.link} onPress={() => void Linking.openURL(TERMS_URL)} testID="consent-terms-link">
+      <Text style={styles.link} onPress={() => void Linking.openURL(legalUrl('terms', language))} testID="consent-terms-link">
         {t('auth.terms_of_service')}
       </Text>
       {t('auth.terms_and')}
-      <Text style={styles.link} onPress={() => void Linking.openURL(PRIVACY_URL)} testID="consent-privacy-link">
+      <Text style={styles.link} onPress={() => void Linking.openURL(legalUrl('privacy', language))} testID="consent-privacy-link">
         {t('auth.privacy_policy')}
       </Text>
     </AppText>
