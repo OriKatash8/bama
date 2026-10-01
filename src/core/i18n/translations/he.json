@@ -565,7 +565,11 @@
     "status_available": "זמין",
     "status_negotiating": "בדיון",
     "status_reserved": "שמור",
-    "status_sold": "נמכר"
+    "status_sold": "נמכר",
+    "rentals": "BAMA Rental",
+    "rentals_sub": "רק מנהל יכול להוסיף השכרות",
+    "add_rental": "הוספת השכרה",
+    "no_rentals": "אין עדיין השכרות"
   },
   "admin_communities": {
     "subtitle": "בקשות לקהילות, בעלים וחברים",

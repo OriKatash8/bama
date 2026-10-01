@@ -37,6 +37,11 @@ jest.mock('@core/stores/authStore', () => ({
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
 jest.mock('@features/marketplace/services/marketplaceService', () => ({ deleteListing: jest.fn(() => Promise.resolve()) }));
+// The app's own add-listing popup; its form has its own tests. Here: what the page opens it with.
+const mockSheet = jest.fn();
+jest.mock('@features/marketplace/components/PostListingSheet', () => ({
+  PostListingSheet: (props: Record<string, unknown>) => { mockSheet(props); return null; },
+}));
 jest.mock('firebase/firestore', () => ({
   collection: jest.fn(), query: jest.fn(), orderBy: jest.fn(), onSnapshot: jest.fn(),
 }));
@@ -85,19 +90,51 @@ it('lists every listing with its type, price, poster and status', () => {
   expect(row.getByText(AM.status_reserved)).toBeTruthy();
   // A listing without a status counts as available.
   expect(within(r.getByTestId('listing-l3')).getByText(AM.status_available)).toBeTruthy();
-  expect(within(r.getByTestId('listings-count')).getByText('3')).toBeTruthy();
+  expect(within(r.getByTestId('listings-count')).getByText('2')).toBeTruthy();
 });
 
-it('filters by status, with counts', () => {
+it('rentals have their own section; the 2nd-hand card holds the rest', () => {
   const r = render(<MarketplaceAdmin />);
-  expect(r.getByText(`${AM.filter_all} (3)`)).toBeTruthy();
+  const rentals = within(r.getByTestId('rentals-card'));
+  expect(rentals.getByText(AM.rentals)).toBeTruthy();
+  expect(rentals.getByTestId('listing-l2')).toBeTruthy();
+  expect(rentals.queryByTestId('listing-l1')).toBeNull();
+  expect(within(r.getByTestId('rentals-count')).getByText('1')).toBeTruthy();
+  const market = within(r.getByTestId('listings-card'));
+  expect(market.getByTestId('listing-l1')).toBeTruthy();
+  expect(market.queryByTestId('listing-l2')).toBeNull();
+});
+
+it('"Add a rental" opens the app\'s add-listing popup, locked to Rental', () => {
+  const r = render(<MarketplaceAdmin />);
+  expect(mockSheet).toHaveBeenLastCalledWith(expect.objectContaining({ visible: false }));
+  fireEvent.press(r.getByTestId('add-rental'));
+  expect(mockSheet).toHaveBeenLastCalledWith(expect.objectContaining({ visible: true, initialType: 'rental', lockedType: true }));
+  act(() => { (mockSheet.mock.calls.at(-1)![0] as { onClose: () => void }).onClose(); });
+  expect(mockSheet).toHaveBeenLastCalledWith(expect.objectContaining({ visible: false }));
+});
+
+it('says so when there are no rentals yet', () => {
+  (onSnapshot as jest.Mock).mockImplementation((_q, next: (s: unknown) => void) => {
+    next({ docs: listings.filter((l) => l.type !== 'rental').map(({ id, ...d }) => ({ id, data: () => d })) });
+    return () => {};
+  });
+  const r = render(<MarketplaceAdmin />);
+  expect(within(r.getByTestId('rentals-card')).getByText(AM.no_rentals)).toBeTruthy();
+});
+
+it('filters the 2nd-hand listings by status, with counts', () => {
+  const r = render(<MarketplaceAdmin />);
+  expect(r.getByText(`${AM.filter_all} (2)`)).toBeTruthy();
   expect(r.getByText(`${AM.status_available} (2)`)).toBeTruthy();
+  expect(r.getByText(`${AM.status_reserved} (0)`)).toBeTruthy();
   fireEvent.press(r.getByTestId('filter-reserved'));
   expect(r.getByTestId('filter-reserved').props.accessibilityState.selected).toBe(true);
-  expect(r.queryByTestId('listing-l1')).toBeNull();
-  expect(r.getByTestId('listing-l2')).toBeTruthy();
-  fireEvent.press(r.getByTestId('filter-sold'));
-  expect(r.getByText(M.no_listings)).toBeTruthy();
+  const market = within(r.getByTestId('listings-card'));
+  expect(market.queryByTestId('listing-l1')).toBeNull();
+  expect(market.getByText(M.no_listings)).toBeTruthy();
+  // The rental section is not filtered.
+  expect(within(r.getByTestId('rentals-card')).getByTestId('listing-l2')).toBeTruthy();
 });
 
 it('deletes a listing only after the confirm', async () => {

@@ -6,9 +6,10 @@ import { ShoppingBag, Trash2 } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
 import { useUiStore } from '@core/stores/uiStore';
 import { deleteListing } from '@features/marketplace/services/marketplaceService';
+import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
 import type { MarketplaceListing, ListingStatus } from '@features/marketplace/types';
 import {
-  AdminPage, AdminText, Card, CardHead, CountBadge, EmptyState, IconTile, Row, Segment,
+  AdminPage, AdminText, Card, CardHead, CountBadge, EmptyState, IconTile, PillButton, Row, Segment,
   RADIUS, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
 
@@ -58,6 +59,7 @@ export default function MarketplaceAdmin() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>('all');
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
+  const [addRentalOpen, setAddRentalOpen] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'marketplace_listings'), orderBy('createdAt', 'desc'));
@@ -93,86 +95,122 @@ export default function MarketplaceAdmin() {
     ]);
   }
 
+  // Rentals have their own section (only the admin adds them); the status
+  // filter and the second card are the 2nd-hand market.
+  const rentals = listings.filter((l) => l.type === 'rental');
+  const market = listings.filter((l) => l.type !== 'rental');
   const statusOf = (l: MarketplaceListing) => (l.status ?? 'available') as ListingStatus;
-  const countOf = (tab: FilterTab) => (tab === 'all' ? listings.length : listings.filter((l) => statusOf(l) === tab).length);
-  const filtered = filter === 'all' ? listings : listings.filter((l) => statusOf(l) === filter);
+  const countOf = (tab: FilterTab) => (tab === 'all' ? market.length : market.filter((l) => statusOf(l) === tab).length);
+  const filtered = filter === 'all' ? market : market.filter((l) => statusOf(l) === filter);
   const tabLabel = (tab: FilterTab) => (tab === 'all' ? tAdm('filter_all') : tAdm(STATUS_KEY[tab]));
+
+  function renderRow(listing: MarketplaceListing) {
+    const status = statusOf(listing);
+    const busy = !!deleting[listing.id];
+    const price = listing.price?.toLocaleString?.() ?? listing.price;
+    return (
+      <Row key={listing.id} rowDir={rowDir} testID={`listing-${listing.id}`}>
+        {listing.imageUrl ? (
+          <Image source={{ uri: listing.imageUrl }} style={[styles.thumb, { backgroundColor: p.surface3 }]} resizeMode="cover" />
+        ) : (
+          <IconTile icon={ShoppingBag} tone="neutral" />
+        )}
+        <View style={styles.info}>
+          <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+            {listing.productName}
+          </AdminText>
+          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+            {`${listing.type === 'rental' ? t('rental') : t('for_sale')} · ₪${price}`}
+          </AdminText>
+          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+            {`${listing.posterName} · ${listing.location} · ${fmtDate(listing.createdAt?.seconds)}`}
+          </AdminText>
+          <View style={[styles.chipRow, { flexDirection: rowDir }]}>
+            <StatusChip status={status} label={tAdm(STATUS_KEY[status])} />
+          </View>
+        </View>
+        <Pressable
+          onPress={() => confirmDelete(listing)}
+          disabled={busy}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('delete_listing')} ${listing.productName}`}
+          testID={`delete-${listing.id}`}
+          style={({ pressed }) => [styles.deleteBtn, { backgroundColor: pressed ? p.bad : p.badBg }]}
+        >
+          {({ pressed }) =>
+            busy ? (
+              <ActivityIndicator size="small" color={p.bad} testID={`deleting-${listing.id}`} />
+            ) : (
+              <Trash2 size={16} color={pressed ? p.onAccent : p.bad} strokeWidth={2.2} />
+            )
+          }
+        </Pressable>
+      </Row>
+    );
+  }
 
   return (
     <AdminPage title={tAdm('title')} subtitle={tAdm('subtitle')} onBack={goBack} testID="marketplace-page">
-      {/* Filter: a pill segmented control with counts; scrolls sideways on narrow phones. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterRow, { flexDirection: rowDir }]}>
-        <Segment<FilterTab>
-          options={FILTER_TABS.map((tab) => ({ value: tab, label: `${tabLabel(tab)} (${countOf(tab)})` }))}
-          value={filter}
-          onChange={setFilter}
-          label={tAdm('title')}
-          testIDPrefix="filter"
-        />
-      </ScrollView>
-
       {loading ? (
         <ActivityIndicator size="large" color={p.accent} style={styles.spinner} testID="marketplace-loading" />
       ) : (
-        <Card testID="listings-card">
-          <CardHead title={tabLabel(filter)} side={<CountBadge n={filtered.length} testID="listings-count" />} />
-          {filtered.length === 0 ? (
-            <EmptyState text={t('no_listings')} testID="listings-empty" />
-          ) : (
-            filtered.map((listing) => {
-              const status = statusOf(listing);
-              const busy = !!deleting[listing.id];
-              const price = listing.price?.toLocaleString?.() ?? listing.price;
-              return (
-                <Row key={listing.id} rowDir={rowDir} testID={`listing-${listing.id}`}>
-                  {listing.imageUrl ? (
-                    <Image source={{ uri: listing.imageUrl }} style={[styles.thumb, { backgroundColor: p.surface3 }]} resizeMode="cover" />
-                  ) : (
-                    <IconTile icon={ShoppingBag} tone="neutral" />
-                  )}
-                  <View style={styles.info}>
-                    <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
-                      {listing.productName}
-                    </AdminText>
-                    <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
-                      {`${listing.type === 'rental' ? t('rental') : t('for_sale')} · ₪${price}`}
-                    </AdminText>
-                    <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
-                      {`${listing.posterName} · ${listing.location} · ${fmtDate(listing.createdAt?.seconds)}`}
-                    </AdminText>
-                    <View style={[styles.chipRow, { flexDirection: rowDir }]}>
-                      <StatusChip status={status} label={tAdm(STATUS_KEY[status])} />
-                    </View>
-                  </View>
-                  <Pressable
-                    onPress={() => confirmDelete(listing)}
-                    disabled={busy}
-                    hitSlop={6}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t('delete_listing')} ${listing.productName}`}
-                    testID={`delete-${listing.id}`}
-                    style={({ pressed }) => [styles.deleteBtn, { backgroundColor: pressed ? p.bad : p.badBg }]}
-                  >
-                    {({ pressed }) =>
-                      busy ? (
-                        <ActivityIndicator size="small" color={p.bad} testID={`deleting-${listing.id}`} />
-                      ) : (
-                        <Trash2 size={16} color={pressed ? p.onAccent : p.bad} strokeWidth={2.2} />
-                      )
-                    }
-                  </Pressable>
-                </Row>
-              );
-            })
-          )}
-        </Card>
+        <>
+          {/* BAMA Rental: only the admin adds to it. */}
+          <Card testID="rentals-card">
+            <CardHead
+              title={tAdm('rentals')}
+              sub={tAdm('rentals_sub')}
+              side={
+                <View style={[styles.headSide, { flexDirection: rowDir }]}>
+                  <CountBadge n={rentals.length} testID="rentals-count" />
+                  <PillButton variant="primary" label={tAdm('add_rental')} onPress={() => setAddRentalOpen(true)} testID="add-rental" />
+                </View>
+              }
+            />
+            {rentals.length === 0 ? (
+              <EmptyState text={tAdm('no_rentals')} testID="rentals-empty" />
+            ) : (
+              rentals.map(renderRow)
+            )}
+          </Card>
+
+          {/* 2nd-hand status filter: a pill segmented control with counts; scrolls sideways on narrow phones. */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterRow, { flexDirection: rowDir }]}>
+            <Segment<FilterTab>
+              options={FILTER_TABS.map((tab) => ({ value: tab, label: `${tabLabel(tab)} (${countOf(tab)})` }))}
+              value={filter}
+              onChange={setFilter}
+              label={tAdm('title')}
+              testIDPrefix="filter"
+            />
+          </ScrollView>
+
+          <Card testID="listings-card">
+            <CardHead title={tabLabel(filter)} sub={t('second_hand')} side={<CountBadge n={filtered.length} testID="listings-count" />} />
+            {filtered.length === 0 ? (
+              <EmptyState text={t('no_listings')} testID="listings-empty" />
+            ) : (
+              filtered.map(renderRow)
+            )}
+          </Card>
+        </>
       )}
+
+      {/* The app's own "add a listing" popup, locked to Rental. */}
+      <PostListingSheet
+        visible={addRentalOpen}
+        initialType="rental"
+        lockedType
+        onClose={() => setAddRentalOpen(false)}
+      />
     </AdminPage>
   );
 }
 
 const styles = StyleSheet.create({
   filterRow: { flexGrow: 1 },
+  headSide: { alignItems: 'center', gap: 8 },
   spinner: { marginTop: 40 },
   thumb: { width: 44, height: 44, borderRadius: RADIUS.card / 2, flexShrink: 0 },
   info: { flex: 1, minWidth: 0, gap: 2 },

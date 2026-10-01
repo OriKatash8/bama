@@ -565,7 +565,11 @@
     "status_available": "Available",
     "status_negotiating": "In discussion",
     "status_reserved": "Reserved",
-    "status_sold": "Sold"
+    "status_sold": "Sold",
+    "rentals": "BAMA Rental",
+    "rentals_sub": "Only the admin adds rentals",
+    "add_rental": "Add a rental",
+    "no_rentals": "No rentals yet"
   },
   "admin_communities": {
     "subtitle": "Community requests, owners and members",

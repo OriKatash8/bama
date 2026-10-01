@@ -1032,11 +1032,24 @@ service cloud.firestore {
       ]);
     }
 
+    /**
+     * Update side of "BAMA Rental is stocked by the admin only" (create checks it
+     * inline): nobody else may turn a listing into a rental. A rental that
+     * already exists keeps its normal flow (reserve, hand over, cancel).
+     */
+    function rentalByAdminOnly() {
+      return request.resource.data.get('type', '') != 'rental'
+        || resource.data.get('type', '') == 'rental'
+        || isAdmin();
+    }
+
     match /marketplace_listings/{listingId} {
       allow read: if isAuth();
-      allow create: if isAuth() && verified() && request.resource.data.posterId == request.auth.uid;
+      allow create: if isAuth() && verified() && request.resource.data.posterId == request.auth.uid
+        && (request.resource.data.get('type', '') != 'rental' || isAdmin());
       allow update: if isAuth() && verified()
         && listingIdentityStable()
+        && rentalByAdminOnly()
         && listingStatusTransitionAllowed()
         && (
           // Seller: edit their own listing, markHandedOver, accept, cancel. May set
