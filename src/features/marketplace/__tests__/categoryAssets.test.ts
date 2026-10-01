@@ -82,3 +82,24 @@ it('decodes a known icon to the counts an independent decoder reports', () => {
   // Centre of the card: the blue camera body.
   expect(px[200 * 400 + 200]).toEqual({ r: 12, g: 76, b: 176, a: 255 });
 });
+
+describe('unselected icons: the blue glyph alone, no near-white square', () => {
+  const { MARKET_CATEGORIES } = jest.requireActual('@features/marketplace/data/categories');
+  const CUT_OUT: Record<string, string> = {
+    camera: 'camera', lens: '101', audio: 'audio', lighting: 'teuraicon', drone: 'drone', accessories: 'studio',
+  };
+
+  it('the row (and the empty state\'s cards) use the cut-out of each icon', () => {
+    for (const c of MARKET_CATEGORIES) {
+      expect(c.icon).toBe(require(path.join(ICON_DIR, `market-${CUT_OUT[c.id]}.png`)));
+    }
+  });
+
+  it('transparent where the square was, so the sheet or card colour shows through', () => {
+    for (const f of Object.values(CUT_OUT)) {
+      const px = readRgba(path.join(ICON_DIR, `market-${f}.png`));
+      // 400px wide; just inside the old square's top-left corner (it spanned 94–306).
+      expect(px[110 * 400 + 110].a).toBe(0);
+    }
+  });
+});

@@ -4,6 +4,10 @@
  * the real width, `top` is relative to the illustration panel and does not.
  */
 
+import type { MarketCategoryId } from '@features/marketplace/data/categories';
+
+export type { MarketCategoryId };
+
 export const REFERENCE_WIDTH = 390;
 
 /** Real RoleDef ids (src/features/crew/data/categories.ts). */
@@ -34,6 +38,25 @@ export const BUBBLE_LAYOUT: Placement[] = [
   { left: -18, top: 290, rotate: -4 },
   { left: 214, top: 312, rotate: 5 },
 ];
+
+/** The first five categories of the marketplace's category row. */
+export const DEFAULT_MARKET_CATEGORIES: MarketCategoryId[] = ['camera', 'lens', 'audio', 'lighting', 'drone'];
+
+/** Listing cards, back to front: audio last, so it draws in front, in the centre. */
+export const LISTING_LAYOUT: (Placement & { category: MarketCategoryId })[] = [
+  { category: 'camera', left: 262, top: 4, rotate: -6 },
+  { category: 'lens', left: -16, top: 16, rotate: 6 },
+  { category: 'lighting', left: 238, top: 118, rotate: 4 },
+  { category: 'drone', left: 8, top: 124, rotate: -4 },
+  { category: 'audio', left: 128, top: 58, rotate: -2 },
+];
+
+/**
+ * The listings illustration's height. It sits under the marketplace's search
+ * and category row, so it is shorter than the others; its tops are used as
+ * they are, not scaled against ILLUSTRATION_HEIGHT.
+ */
+export const LISTINGS_ILLUSTRATION_HEIGHT = 250;
 
 export function scaleLeft(left: number, width: number): number {
   return (left * width) / REFERENCE_WIDTH;

@@ -46,8 +46,8 @@ jest.mock('expo-linear-gradient', () => {
   const RN = jest.requireActual('react-native');
   // A View carrying the gradient's colours and testID, so a test can read them.
   return {
-    LinearGradient: ({ children, colors, testID }: { children?: React.ReactNode; colors: string[]; testID?: string }) =>
-      require('react').createElement(RN.View, { testID, colors }, children),
+    LinearGradient: ({ children, colors, testID, style }: { children?: React.ReactNode; colors: string[]; testID?: string; style?: unknown }) =>
+      require('react').createElement(RN.View, { testID, colors, style }, children),
   };
 });
 let mockAccent = '#6D28D9';
@@ -433,5 +433,93 @@ describe('the main button and link follow the mode', () => {
     const colors = r.getByTestId('empty-cta-fill').props.colors as string[];
     expect(colors[colors.length - 1]).toBe('#6D28D9');
     expect(flat(r.getByText('or browse')).color).toBe('#6D28D9');
+  });
+});
+
+describe("'listings' (the marketplace)", () => {
+  const flat = (n: { props: Record<string, unknown> }) => StyleSheet.flatten(n.props.style as never) as Record<string, unknown>;
+  const { MARKET_CATEGORIES } = jest.requireActual('@features/marketplace/data/categories');
+  const windowWidth = () => {
+    let w = 0;
+    const Probe = () => { w = useWindowDimensions().width; return null; };
+    render(<Probe />);
+    return w;
+  };
+  const iconOf = (id: string) => MARKET_CATEGORIES.find((c: { id: string }) => c.id === id).icon;
+
+  it('five listing cards, back to front, audio in front', () => {
+    const r = render(<AnimatedEmptyState variant="listings" {...base} />);
+    const ids = r.getAllByTestId(/^empty-card-/, H).map((c) => c.props.testID);
+    expect(ids).toEqual(['empty-card-camera', 'empty-card-lens', 'empty-card-lighting', 'empty-card-drone', 'empty-card-audio']);
+    expect(r.queryAllByTestId(/^role-card-/, H)).toHaveLength(0);
+  });
+
+  it('only the categories asked for', () => {
+    const r = render(<AnimatedEmptyState variant="listings" {...base} categories={['audio', 'lens']} />);
+    expect(r.getAllByTestId(/^empty-card-/, H).map((c) => c.props.testID)).toEqual(['empty-card-lens', 'empty-card-audio']);
+  });
+
+  it('each card shows its category\'s blue glyph with no square behind it, untinted', () => {
+    const r = render(<AnimatedEmptyState variant="listings" {...base} />);
+    const icons = r.getAllByTestId('listing-icon', H);
+    expect(icons).toHaveLength(5);
+    expect(icons[4].props.source).toBe(iconOf('audio'));
+    expect(icons.every((i) => i.props.tintColor === undefined)).toBe(true);
+    // Same size as before: the 400px image at 84pt.
+    expect(flat(icons[0]).width).toBe(84);
+  });
+
+  it('the card: 112×122 glass, radius 18, padding 8; a 60-tall image area in the panel grey, with a mode-coloured outline', () => {
+    mockAccent = '#1D4ED8';
+    const r = render(<AnimatedEmptyState variant="listings" {...base} />);
+    const card = flat(r.getAllByTestId('listing-card', H)[0]);
+    expect([card.width, card.height, card.borderRadius, card.padding, card.gap]).toEqual([112, 122, 18, 8, 8]);
+    expect(card.backgroundColor).toBe('rgba(255,255,255,0.62)');
+    expect(card.borderColor).toBe('rgba(59,110,235,0.55)');
+    const area = flat(r.getAllByTestId('listing-image', H)[0]);
+    expect([area.height, area.borderRadius, area.borderWidth, area.backgroundColor, area.borderColor])
+      .toEqual([60, 12, 1, '#F4F2FB', 'rgba(59,110,235,0.55)']);
+  });
+
+  it('each card has a ₪ pill', () => {
+    const r = render(<AnimatedEmptyState variant="listings" {...base} />);
+    expect(r.queryAllByText('₪', H)).toHaveLength(5);
+  });
+
+  it('a 250pt illustration; tops are not stretched, lefts scale with the window', () => {
+    const w = windowWidth();
+    const r = render(<AnimatedEmptyState variant="listings" {...base} />);
+    expect(flat(r.getByTestId('empty-illustration', H)).height).toBe(250);
+    const audio = flat(r.getByTestId('empty-card-audio', H));
+    expect(audio.top).toBe(58);
+    expect(audio.left).toBeCloseTo(scaleLeft(128, w));
+  });
+
+  it('text: title 24 / 800, subtitle 15 in #5A566C, CTA 240×52 with a 16pt label', () => {
+    const r = render(<AnimatedEmptyState variant="listings" {...base} primaryCta={{ label: 'פרסמו ציוד', onPress: () => {} }} />);
+    expect(flat(r.getByText(base.title)).fontSize).toBe(24);
+    expect(flat(r.getByText(base.title)).fontWeight).toBe('800');
+    const sub = flat(r.getByText(base.subtitle));
+    expect([sub.fontSize, sub.color]).toEqual([15, '#5A566C']);
+    const fill = flat(r.getByTestId('empty-cta-fill'));
+    expect([fill.width, fill.height]).toEqual([240, 52]);
+    expect(flat(r.getByText('פרסמו ציוד')).fontSize).toBe(16);
+  });
+
+  it('other variants keep their 26pt title and 260×56 CTA', () => {
+    const r = render(<AnimatedEmptyState variant="tiles" {...base} primaryCta={{ label: 'x', onPress: () => {} }} />);
+    expect(flat(r.getByText(base.title)).fontSize).toBe(26);
+    expect(flat(r.getByTestId('empty-cta-fill')).width).toBe(260);
+  });
+
+  it('bottomInset pads the panel so the text clears the tab bar (default: none)', () => {
+    expect(flat(render(<AnimatedEmptyState variant="listings" {...base} bottomInset={100} />).getByTestId('empty-panel')).paddingBottom).toBe(128);
+    expect(flat(render(<AnimatedEmptyState variant="tiles" {...base} />).getByTestId('empty-panel')).paddingBottom).toBe(28);
+  });
+
+  it('floats like the other cards and stops under reduced motion', () => {
+    mockReduced = true;
+    render(<AnimatedEmptyState variant="listings" {...base} />);
+    expect(mockWithRepeat).not.toHaveBeenCalled();
   });
 });

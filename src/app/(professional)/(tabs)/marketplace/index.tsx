@@ -13,7 +13,8 @@ import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceT
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
-import { CategoryTile, type MarketplaceCategory } from '@features/marketplace/components/CategoryTile';
+import { CategoryTile } from '@features/marketplace/components/CategoryTile';
+import { MARKET_CATEGORIES } from '@features/marketplace/data/categories';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument } from '@core/firebase/firestore';
@@ -23,7 +24,8 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
-import { brandLabel } from '@features/marketplace/utils';
+import { brandLabel, emptyCase } from '@features/marketplace/utils';
+import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 
 type Translations = typeof en;
@@ -45,46 +47,7 @@ function makeT(translations: Translations) {
   };
 }
 
-const CATEGORIES: MarketplaceCategory[] = [
-  {
-    id: 'camera',
-    labelKey: 'category_camera',
-    icon: require('../../../../../assets/images/categories/camera.png'),
-    // A copy tiled in the sheet's own grey: the original is the client project
-    // builder's icon too, and stays as it is.
-    selectedIcon: require('../../../../../assets/images/categories/photographer-sheet.png'),
-  },
-  {
-    id: 'lens',
-    labelKey: 'category_lens',
-    icon: require('../../../../../assets/images/categories/101.png'),
-    selectedIcon: require('../../../../../assets/images/categories/10.png'),
-  },
-  {
-    id: 'audio',
-    labelKey: 'category_audio',
-    icon: require('../../../../../assets/images/categories/audio.png'),
-    selectedIcon: require('../../../../../assets/images/categories/12.png'),
-  },
-  {
-    id: 'lighting',
-    labelKey: 'category_light',
-    icon: require('../../../../../assets/images/categories/teuraicon.png'),
-    selectedIcon: require('../../../../../assets/images/categories/lighting.png'),
-  },
-  {
-    id: 'drone',
-    labelKey: 'category_drone',
-    icon: require('../../../../../assets/images/categories/drone.png'),
-    selectedIcon: require('../../../../../assets/images/categories/11.png'),
-  },
-  {
-    id: 'accessories',
-    labelKey: 'category_accessories',
-    icon: require('../../../../../assets/images/categories/studio.png'),
-    selectedIcon: require('../../../../../assets/images/categories/14.png'),
-  },
-];
+const CATEGORIES = MARKET_CATEGORIES;
 
 const BRANDS_BY_CATEGORY: Record<string, string[]> = {
   all:         ['Sony', 'Canon', 'Nikon', 'DJI', 'Godox', 'Sennheiser', 'Manfrotto', 'Other'],
@@ -177,6 +140,9 @@ export default function MarketplaceScreen() {
     return result;
   }, [listings, searchQuery, selectedCategory, filterBrands, filterCondition, priceSort]);
 
+  // Which empty state, if any: nothing listed on this tab, or nothing matching.
+  const empty = emptyCase({ tab: activeTab, isLoading, total: listings.length, shown: filtered.length });
+
   const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterCondition;
 
   const activeFilterTags: FilterTag[] = [
@@ -224,6 +190,13 @@ export default function MarketplaceScreen() {
     setFilterModalVisible(false);
   }
 
+  /** The empty state's "clear": search text, category and every filter. */
+  function clearSearchAndFilters() {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    clearFilters();
+  }
+
   function toggleDraftBrand(brand: string) {
     setDraftBrands((prev) =>
       prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
@@ -240,8 +213,9 @@ export default function MarketplaceScreen() {
     <Screen scrollable={false} style={styles.screen} backgroundColor={PAGE_BG}>
       <ScrollView
         style={styles.flex}
-        // Clears the bar and the + button above it.
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + FAB_SIZE + TAB_BAR_CONTENT_GAP * 2 }]}
+        // Clears the bar and the + button above it. The empty state pads itself
+        // instead, so its colour runs under the bar.
+        contentContainerStyle={[styles.scrollContent, empty ? null : { paddingBottom: tabBarHeight + FAB_SIZE + TAB_BAR_CONTENT_GAP * 2 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -255,7 +229,7 @@ export default function MarketplaceScreen() {
           </AppText>
         </GradientBand>
 
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, empty && styles.sheetEmpty]}>
         {/* Search + filter button at its end — the same pair as the courses tab. */}
         <View style={[styles.searchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
           <View style={[styles.searchWrap, styles.searchWrapFlex, searchFocused && styles.searchWrapFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -336,10 +310,27 @@ export default function MarketplaceScreen() {
           <View style={styles.center}>
             <ActivityIndicator size="large" color={BLUE} />
           </View>
-        ) : filtered.length === 0 ? (
-          <View style={styles.center}>
-            <AppText weight="semiBold" style={[styles.emptyText, { color: TEXT }]}>{t('marketplace.no_listings')}</AppText>
-          </View>
+        ) : empty ? (
+          <AnimatedEmptyState
+            // Cancels the sheet's paddingHorizontal: the empty state spans the screen.
+            bleed={20}
+            // The sheet takes the panel's colour while empty, so no corners of its own.
+            radius={0}
+            bottomInset={tabBarHeight + TAB_BAR_CONTENT_GAP}
+            variant="listings"
+            title={t(empty === 'filtered' ? 'marketplace.empty_filtered_title' : empty === 'rental' ? 'marketplace.empty_rental_title' : 'marketplace.empty_market_title')}
+            subtitle={t(empty === 'filtered' ? 'marketplace.empty_filtered_desc' : empty === 'rental' ? 'marketplace.empty_rental_desc' : 'marketplace.empty_market_desc')}
+            primaryCta={empty === 'filtered'
+              ? { label: t('marketplace.empty_filtered_cta'), onPress: clearSearchAndFilters }
+              // New rentals are paused: nothing to post on the rental tab.
+              : empty === 'rental'
+                ? undefined
+                : {
+                  label: t('marketplace.empty_market_cta'),
+                  icon: <Plus size={20} color="#FFFFFF" strokeWidth={2.4} />,
+                  onPress: () => setPostSheetVisible(true),
+                }}
+          />
         ) : (
           <View style={styles.list}>
             {gridRows.map((pair, i) => (
@@ -355,18 +346,23 @@ export default function MarketplaceScreen() {
         </View>
       </ScrollView>
 
-      {/* FAB — fixed above tab bar, outside the ScrollView */}
-      {canPost && (
-        <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
-          <LinearGradient
-            colors={[BLUE, BLUE]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fabFill}
-          >
-            <Plus size={24} color="#FFFFFF" strokeWidth={2.4} />
-          </LinearGradient>
-        </TouchableOpacity>
+      {/* FAB — fixed above tab bar, outside the ScrollView. Hidden while the
+          empty state shows: its own button does the same. */}
+      {!empty && (
+        <>
+          {canPost && (
+            <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setPostSheetVisible(true)} activeOpacity={0.85}>
+              <LinearGradient
+                colors={[BLUE, BLUE]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.fabFill}
+              >
+                <Plus size={24} color="#FFFFFF" strokeWidth={2.4} />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+        </>
       )}
 
       {/* Filter modal */}
@@ -504,8 +500,9 @@ export default function MarketplaceScreen() {
 const styles = StyleSheet.create({
   screen: { gap: 0 },
   flex: { flex: 1 },
-  // paddingBottom is set inline: the bar's height + the + button + gaps.
-  scrollContent: {},
+  // Grows so the sheet reaches the bottom. paddingBottom is set inline: the
+  // bar's height + the + button + gaps.
+  scrollContent: { flexGrow: 1 },
 
   band: { paddingTop: 18, paddingHorizontal: 20, paddingBottom: 38 },
   /** Overlaps the band's bottom edge; zIndex so it paints over the gradient. */
@@ -524,6 +521,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -6 },
     elevation: 6,
   },
+  /** The empty state's panel colour, so sheet and panel read as one. */
+  sheetEmpty: { backgroundColor: '#F4F2FB' },
 
   // The gradient lives on an inner, clipped fill so the shadow on this outer
   // view isn't cut by overflow:hidden.
@@ -643,7 +642,6 @@ const styles = StyleSheet.create({
   halfItem: { flex: 1 },
   list: { gap: 11 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 60 },
-  emptyText: { fontSize: 17, fontWeight: '600' },
 
   filterOverlay: {
     flex: 1,

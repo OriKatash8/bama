@@ -16,12 +16,14 @@ import { ROLES, labelOf } from '@features/crew/data/categories';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
+import { MARKET_CATEGORIES } from '@features/marketplace/data/categories';
 import {
-  BUBBLE_LAYOUT, DEFAULT_ROLES, ILLUSTRATION_HEIGHT, TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, illustrationHeightFor,
-  scaleLeft, scaleTop, type Placement, type RoleId,
+  BUBBLE_LAYOUT, DEFAULT_MARKET_CATEGORIES, DEFAULT_ROLES, ILLUSTRATION_HEIGHT, LISTING_LAYOUT, LISTINGS_ILLUSTRATION_HEIGHT,
+  TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, illustrationHeightFor,
+  scaleLeft, scaleTop, type MarketCategoryId, type Placement, type RoleId,
 } from './emptyStateLayout';
 
-export type EmptyStateVariant = 'tiles' | 'bubbles' | 'board';
+export type EmptyStateVariant = 'tiles' | 'bubbles' | 'board' | 'listings';
 
 type Props = {
   variant: EmptyStateVariant;
@@ -33,6 +35,8 @@ type Props = {
   secondaryLink?: { label: string; onPress: () => void };
   /** For 'tiles' and 'board': real role ids; label and glyph come from ROLES / ROLE_GLYPHS. */
   roles?: RoleId[];
+  /** For 'listings': marketplace category ids; icons come from MARKET_CATEGORIES. */
+  categories?: MarketCategoryId[];
   /**
    * The parent's horizontal padding, cancelled for this component only so the
    * panel reaches the screen edges (every screen mounts it inside a sheet with
@@ -59,6 +63,12 @@ type Props = {
    * `bottomInset` (the tab bar). Never below 300pt of illustration.
    */
   fitToScreen?: { bottomInset: number };
+  /**
+   * Extra room under the text block (the floating tab bar's height), inside the
+   * panel: the text can scroll clear of the bar, and the panel's colour runs
+   * under it.
+   */
+  bottomInset?: number;
 };
 
 // ── Palette (the spec's; the app's brand gradients differ, so these are local) ──
@@ -128,8 +138,8 @@ function extraBold(rtl: boolean) {
  * animation completion callback (they never fire on web in Reanimated 4).
  */
 export function AnimatedEmptyState({
-  variant, title, subtitle, note, primaryCta, secondaryLink, roles = DEFAULT_ROLES, bleed = 0, bleedTop = 0, radius = 32,
-  singleLineTitle = false, fitToScreen,
+  variant, title, subtitle, note, primaryCta, secondaryLink, roles = DEFAULT_ROLES, categories = DEFAULT_MARKET_CATEGORIES,
+  bleed = 0, bleedTop = 0, radius = 32, singleLineTitle = false, fitToScreen, bottomInset = 0,
 }: Props) {
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
@@ -154,12 +164,16 @@ export function AnimatedEmptyState({
 
   // The illustration's height: full, or — with fitToScreen — just enough room
   // above the text so nothing needs scrolling.
-  const h = fitToScreen
+  const listings = variant === 'listings';
+  const h = listings
+    ? LISTINGS_ILLUSTRATION_HEIGHT
+    : fitToScreen
     ? illustrationHeightFor({ windowHeight, panelTop, textHeight, bottomInset: fitToScreen.bottomInset })
     : ILLUSTRATION_HEIGHT;
 
   // Tile / board cards follow the role list, in the specced back-to-front order.
   const tiles = TILE_LAYOUT.filter((t) => roles.includes(t.role));
+  const listingCards = LISTING_LAYOUT.filter((c) => categories.includes(c.category));
 
   return (
     <View
@@ -169,6 +183,7 @@ export function AnimatedEmptyState({
       style={[
         styles.panel,
         { marginHorizontal: -bleed, marginTop: -bleedTop, borderTopLeftRadius: radius, borderTopRightRadius: radius, minHeight: fillMin },
+        bottomInset ? { paddingBottom: styles.panel.paddingBottom + bottomInset } : null,
       ]}
     >
       {/* Decoration only: no touches, invisible to screen readers. */}
@@ -183,7 +198,14 @@ export function AnimatedEmptyState({
         <Glow color="rgba(150,95,235,0.34)" size={260} left={scaleLeft(85, width)} top={scaleTop(175, h)} loopMs={8000} reduced={reduced} />
         <Glow color="rgba(215,110,215,0.30)" size={240} left={width - 240 + scaleLeft(70, width)} top={-10} loopMs={9000} reduced={reduced} />
 
-        {variant === 'bubbles'
+        {listings
+          // Tops as specced (the illustration is its own 250pt, not the 420 the others scale from).
+          ? listingCards.map((c, i) => (
+            <Floating key={c.category} index={i} placement={c} width={width} reduced={reduced} testID={`empty-card-${c.category}`}>
+              <ListingCard category={c.category} tone={tone} rtl={rtl} />
+            </Floating>
+          ))
+          : variant === 'bubbles'
           ? BUBBLE_LAYOUT.map((p, i) => (
             <Floating key={i} index={i} placement={{ ...p, top: scaleTop(p.top, h) }} width={width} reduced={reduced} testID={`empty-card-${i}`}>
               <BubbleCard rtl={rtl} tone={tone} />
@@ -220,16 +242,16 @@ export function AnimatedEmptyState({
             {title}
           </Text>
         ) : (
-          <Text style={[styles.title, extraBold(rtl)]}>{title}</Text>
+          <Text style={[styles.title, extraBold(rtl), listings && styles.titleListings]}>{title}</Text>
         )}
-        <Text style={[styles.subtitle, font.regular]}>{subtitle}</Text>
+        <Text style={[styles.subtitle, font.regular, listings && styles.subtitleListings]}>{subtitle}</Text>
         {note ? <Text style={[styles.note, font.regular]}>{note}</Text> : null}
         {primaryCta && (
           <View style={[styles.ctaShadow, { shadowColor: tone.ctaShadow }]}>
             <TouchableOpacity testID="empty-cta" onPress={primaryCta.onPress} activeOpacity={0.88} accessibilityRole="button" style={styles.ctaTouch}>
-              <LinearGradient testID="empty-cta-fill" colors={tone.cta} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.cta}>
+              <LinearGradient testID="empty-cta-fill" colors={tone.cta} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[styles.cta, listings && styles.ctaListings]}>
                 {primaryCta.icon}
-                <Text style={[styles.ctaText, font.bold]}>{primaryCta.label}</Text>
+                <Text style={[styles.ctaText, font.bold, listings && styles.ctaTextListings]}>{primaryCta.label}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -383,6 +405,35 @@ function RoleCard({ id, label, glyph, price, rtl, tone }: {
   );
 }
 
+/** The 400px glyph image drawn at 84pt: the glyph about 30pt across. */
+const LISTING_ICON_SIZE = 84;
+
+/**
+ * A marketplace listing: the category's blue glyph (the row's own icon) on an
+ * image area in the panel's own grey; then a title line, a ₪ pill and a price line.
+ */
+function ListingCard({ category, tone, rtl }: { category: MarketCategoryId; tone: Tone; rtl: boolean }) {
+  const icon = MARKET_CATEGORIES.find((c) => c.id === category)?.icon;
+  return (
+    <View testID="listing-card" style={[styles.card, styles.listingCard, { borderColor: tone.border }]}>
+      <View testID="listing-image" style={[styles.listingImage, { borderColor: tone.border }]}>
+        {icon !== undefined && (
+          <Image testID="listing-icon" source={icon} style={styles.listingIcon} contentFit="contain" />
+        )}
+      </View>
+      <View style={{ alignItems: rtl ? 'flex-end' : 'flex-start' }}>
+        <Skeleton width="80%" strong height={5} />
+      </View>
+      <View style={[styles.priceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+        <View style={{ flex: 1 }}><Skeleton width="100%" strong={false} height={5} /></View>
+        <View style={[styles.pricePill, styles.listingPill, { backgroundColor: tone.pillBg }]}>
+          <Text style={[styles.priceText, { color: tone.pillText }]}>₪</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function BubbleCard({ rtl, tone }: { rtl: boolean; tone: Tone }) {
   return (
     <View testID="bubble-card" style={[styles.card, styles.bubble, { flexDirection: rtl ? 'row-reverse' : 'row', borderColor: tone.border }]}>
@@ -447,11 +498,23 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
+  listingCard: {
+    width: 112, height: 122, borderRadius: 18, padding: 8, gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.62)', shadowColor: '#5A46C8', shadowOpacity: 0.14,
+  },
+  listingImage: {
+    height: 60, borderRadius: 12, borderWidth: 1, backgroundColor: PANEL_BG,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  listingIcon: { width: LISTING_ICON_SIZE, height: LISTING_ICON_SIZE },
+  listingPill: { paddingHorizontal: 8 },
   bubble: { width: 188, height: 62, borderRadius: 24, paddingHorizontal: 12, gap: 12, alignItems: 'center' },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   bubbleLines: { flex: 1, gap: 7 },
   textBlock: { alignItems: 'center', paddingHorizontal: 24 },
   title: { fontSize: 26, color: INK, textAlign: 'center' },
+  titleListings: { fontSize: 24 },
+  subtitleListings: { color: INK_SOFT },
   subtitle: { fontSize: 15, lineHeight: 22, color: INK, textAlign: 'center', marginTop: 6 },
   note: { fontSize: 13, lineHeight: 19, color: INK_SOFT, textAlign: 'center', marginTop: 6 },
   ctaShadow: {
@@ -465,5 +528,7 @@ const styles = StyleSheet.create({
   ctaTouch: { borderRadius: 28, overflow: 'hidden' },
   cta: { width: 260, height: 56, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   ctaText: { color: '#FFFFFF', fontSize: 17 },
+  ctaListings: { width: 240, height: 52, borderRadius: 26 },
+  ctaTextListings: { fontSize: 16 },
   link: { marginTop: 6, fontSize: 15, textDecorationLine: 'underline', textAlign: 'center' },
 });

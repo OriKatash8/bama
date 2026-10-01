@@ -1,4 +1,4 @@
-import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom, fitTitleSize, illustrationHeightFor, scaleTop, ILLUSTRATION_HEIGHT } from '../emptyStateLayout';
+import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom, fitTitleSize, illustrationHeightFor, scaleTop, ILLUSTRATION_HEIGHT, LISTING_LAYOUT, DEFAULT_MARKET_CATEGORIES, LISTINGS_ILLUSTRATION_HEIGHT } from '../emptyStateLayout';
 import { ROLES } from '@features/crew/data/categories';
 import { ROLE_GLYPHS } from '@features/crew/data/roleTiles';
 
@@ -112,4 +112,25 @@ it('the editor card never covers the sound card — tilted, floating or squeezed
   const sound = reach(TILE_LAYOUT.find((t) => t.role === 'sound')!);
   // Side by side horizontally: squeezing only moves cards vertically, so this holds at any height.
   expect(editor.x1).toBeLessThanOrEqual(sound.x0);
+});
+
+describe('listing cards (the marketplace)', () => {
+  it('five cards back to front, audio last so it draws in front, at the specced spots', () => {
+    expect(LISTING_LAYOUT).toEqual([
+      { category: 'camera', left: 262, top: 4, rotate: -6 },
+      { category: 'lens', left: -16, top: 16, rotate: 6 },
+      { category: 'lighting', left: 238, top: 118, rotate: 4 },
+      { category: 'drone', left: 8, top: 124, rotate: -4 },
+      { category: 'audio', left: 128, top: 58, rotate: -2 },
+    ]);
+  });
+
+  it('defaults to the first five categories of the row', () => {
+    expect(DEFAULT_MARKET_CATEGORIES).toEqual(['camera', 'lens', 'audio', 'lighting', 'drone']);
+  });
+
+  it('a 250pt illustration that every card (122 tall) fits inside', () => {
+    expect(LISTINGS_ILLUSTRATION_HEIGHT).toBe(250);
+    for (const c of LISTING_LAYOUT) expect(c.top + 122).toBeLessThanOrEqual(LISTINGS_ILLUSTRATION_HEIGHT);
+  });
 });
