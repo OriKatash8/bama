@@ -13,9 +13,9 @@ import he from '@core/i18n/translations/he.json';
  * toggle is visible and says what is actually true, and the header title sits
  * beside a back chevron.
  *
- * Back is on the LEFT in both languages, pointing left — the same side as the
- * chat room's back arrow it returns to. It pops to that room: it used to PUSH
- * a second copy, so an edge-swipe out of the room landed back on details.
+ * Back is on the RIGHT in both languages (asked for), pointing right — outward,
+ * toward the edge it sits on. It pops to the chat room: it used to PUSH a
+ * second copy, so an edge-swipe out of the room landed back on details.
  */
 
 let mockLanguage: 'he' | 'en' = 'he';
@@ -209,13 +209,15 @@ describe('bio', () => {
 });
 
 describe('header', () => {
-  it.each(['he', 'en'] as const)('in %s back is on the left, pointing left, and the title is centred', async (lang) => {
+  it.each(['he', 'en'] as const)('in %s back is on the right, pointing right, and the title is centred', async (lang) => {
     mockLanguage = lang;
     const r = await renderScreen();
     const dict = lang === 'he' ? he : en;
-    expect(flat(r.getByTestId('details-header')).flexDirection).toBe('row');
-    expect(r.UNSAFE_queryAllByType(ChevronLeft)).toHaveLength(1);
-    expect(r.UNSAFE_queryAllByType(ChevronRight)).toHaveLength(0);
+    // The back button is the header's first child; row-reverse puts it on the right.
+    expect(flat(r.getByTestId('details-header')).flexDirection).toBe('row-reverse');
+    const back = r.getByTestId('details-back');
+    expect(back.findAllByType(ChevronRight)).toHaveLength(1);
+    expect(r.UNSAFE_queryAllByType(ChevronLeft)).toHaveLength(0);
     const title = flat(r.getByText(dict.community_details.header));
     expect(title.textAlign).toBe('center');
     expect(title.fontSize).toBeGreaterThanOrEqual(19);

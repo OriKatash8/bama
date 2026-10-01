@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronLeft, ChevronUp, LayoutDashboard, LogOut, Search, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Search, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -219,7 +219,7 @@ export default function CommunityDetailsScreen() {
         {/* Header — scrolls with content; negative margins cancel contentContainerStyle padding */}
         <View
           testID="details-header"
-          style={[styles.header, { flexDirection: 'row', marginHorizontal: -16, marginTop: -16 }]}
+          style={[styles.header, { flexDirection: 'row-reverse', marginHorizontal: -16, marginTop: -16 }]}
         >
           {/* Pops to the chat room underneath — which is there because the room
               opens this page in the viewer's own stack (chatGroupOf). It used to
@@ -237,9 +237,9 @@ export default function CommunityDetailsScreen() {
             activeOpacity={0.7}
             accessibilityRole="button"
           >
-            {/* On the left, pointing left, in both languages: the same side as the
-                chat room's back arrow, which is where this returns to. */}
-            <ChevronLeft size={28} color={colors.primary} strokeWidth={2.2} />
+            {/* On the right in both languages (asked for; the header is
+                row-reverse), pointing right — outward, toward its own edge. */}
+            <ChevronRight size={28} color={colors.primary} strokeWidth={2.2} />
           </TouchableOpacity>
           <AppText
             weight="semiBold"
