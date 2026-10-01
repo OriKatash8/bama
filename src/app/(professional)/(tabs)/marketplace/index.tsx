@@ -2,11 +2,9 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Platform, Animated, Modal,
+  StyleSheet, ActivityIndicator, Platform, Modal,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
-import { Image } from 'expo-image';
-
 import { SlidersHorizontal, X, Search, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@components/layout/Screen';
@@ -15,6 +13,7 @@ import { MarketplaceToggle } from '@features/marketplace/components/MarketplaceT
 import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { ListingDetailModal } from '@features/marketplace/components/ListingDetailModal';
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
+import { CategoryTile, type MarketplaceCategory } from '@features/marketplace/components/CategoryTile';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument } from '@core/firebase/firestore';
@@ -46,14 +45,7 @@ function makeT(translations: Translations) {
   };
 }
 
-type Category = {
-  id: string;
-  labelKey: string;
-  icon: number;
-  selectedIcon?: number;
-};
-
-const CATEGORIES: Category[] = [
+const CATEGORIES: MarketplaceCategory[] = [
   {
     id: 'camera',
     labelKey: 'category_camera',
@@ -104,42 +96,6 @@ const BRANDS_BY_CATEGORY: Record<string, string[]> = {
   studio:      ['Manfrotto', 'Gitzo', 'DJI', 'Zhiyun', 'SmallHD', 'Atomos', 'Matthews', 'Sachtler', 'Other'],
   accessories: ['Sony', 'Canon', 'Nikon', 'DJI', 'Godox', 'Sennheiser', 'Manfrotto', 'Other'],
 };
-
-type CategoryTileProps = {
-  cat: Category;
-  label: string;
-  isActive: boolean;
-  onPress: () => void;
-  inactiveLabelColor: string;
-};
-
-function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor }: CategoryTileProps) {
-  const anim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.spring(anim, {
-      toValue: isActive ? 1 : 0,
-      useNativeDriver: true,
-      damping: 15,
-      stiffness: 200,
-      mass: 1,
-    }).start();
-  }, [isActive, anim]);
-
-  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.33] });
-  const iconSource = isActive && cat.selectedIcon ? cat.selectedIcon : cat.icon;
-
-  return (
-    <TouchableOpacity style={styles.catItem} onPress={onPress} activeOpacity={0.75}>
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Image source={iconSource} style={styles.tileIcon} contentFit="contain" cachePolicy="memory-disk" />
-      </Animated.View>
-      <AppText weight={isActive ? 'semiBold' : 'medium'} style={[styles.catLabel, isActive ? styles.catLabelActive : { color: inactiveLabelColor }]}>
-        {label}
-      </AppText>
-    </TouchableOpacity>
-  );
-}
 
 const CONDITIONS: { value: ProductCondition }[] = [
   { value: 'new' },
@@ -632,17 +588,6 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 0,
   },
-  catItem: {
-    width: 82,
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  tileIcon: { width: 72, height: 72 },
-  // The visible gap is not `gap` — that was already 2. It is transparent padding
-  // baked into the 72×72 contentFit="contain" icons, so the label is pulled up
-  // into it rather than the spacing being reduced. Icon hit area is unchanged.
-  catLabel: { fontSize: 11, fontWeight: '500', marginTop: -10 },
-  catLabelActive: { fontWeight: '600', color: TEXT },
 
   filterBarRow: {
     flexDirection: 'row',
