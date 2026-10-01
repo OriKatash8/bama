@@ -18,7 +18,7 @@ const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronRight, FileText, Globe, Info, LogOut, MessageCircle, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
+import { Bell, Camera, ChevronDown, ChevronRight, FileText, Globe, Info, LogOut, MessageCircle, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -70,6 +70,8 @@ export function AppHeader() {
 
   const [modeSheetVisible, setModeSheetVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  // "Information" in the settings menu: closed until tapped.
+  const [infoOpen, setInfoOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(280)).current;
@@ -321,57 +323,43 @@ export function AppHeader() {
                 </TouchableOpacity>
               )}
 
-              {/* Information */}
+              {/* Information — opens in place to the three policies: privacy
+                  (Apple requires it reachable inside the app), terms, and
+                  cancellation & refunds. Each opens in the app's language. */}
               <TouchableOpacity
                 style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => Alert.alert(t('settings.information'), 'Coming soon')}
+                onPress={() => setInfoOpen((o) => !o)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: infoOpen }}
               >
                 <Info size={18} color={colors.textMuted} strokeWidth={1.5} />
                 <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                   {t('settings.information')}
                 </AppText>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+                {infoOpen
+                  ? <ChevronDown size={16} color={colors.textMuted} strokeWidth={1.5} />
+                  : <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />}
               </TouchableOpacity>
 
-              {/* Privacy policy — Apple requires it reachable inside the app. */}
-              <TouchableOpacity
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => void Linking.openURL(legalUrl('privacy', language))}
-                activeOpacity={0.7}
-              >
-                <Shield size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.privacy')}
-                </AppText>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-              </TouchableOpacity>
-
-              {/* Terms & conditions */}
-              <TouchableOpacity
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => void Linking.openURL(legalUrl('terms', language))}
-                activeOpacity={0.7}
-              >
-                <FileText size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.terms')}
-                </AppText>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-              </TouchableOpacity>
-
-              {/* Cancellation & refund policy */}
-              <TouchableOpacity
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => void Linking.openURL(legalUrl('refunds', language))}
-                activeOpacity={0.7}
-              >
-                <Receipt size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.refunds')}
-                </AppText>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-              </TouchableOpacity>
+              {infoOpen && ([
+                { key: 'privacy', Icon: Shield, label: t('settings.privacy') },
+                { key: 'terms', Icon: FileText, label: t('settings.terms') },
+                { key: 'refunds', Icon: Receipt, label: t('settings.refunds') },
+              ] as const).map(({ key, Icon, label }) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.menuRow, styles.subMenuRow, { borderBottomColor: colors.border }]}
+                  onPress={() => void Linking.openURL(legalUrl(key, language))}
+                  activeOpacity={0.7}
+                >
+                  <Icon size={16} color={colors.textMuted} strokeWidth={1.5} />
+                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                    {label}
+                  </AppText>
+                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+                </TouchableOpacity>
+              ))}
             </View>
 
             {/* Delete account. Apple 5.1.1(v) requires this to exist IN THE APP for
@@ -529,6 +517,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   menuLabel: { flex: 1, fontSize: 14 },
+  // A policy row inside "Information": indented under it.
+  subMenuRow: { paddingStart: 26, paddingVertical: 12 },
 
   langToggle: {
     flexDirection: 'row',
