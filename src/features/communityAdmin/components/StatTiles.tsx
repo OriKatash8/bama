@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type TextStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type TextStyle } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { useAdminPalette, useAdminT, ago } from '../i18n';
 import { MOTION, RADIUS, TYPE } from '../theme';
@@ -128,6 +128,7 @@ export function StatTile({
   ring,
   loading,
   testID,
+  onPress,
 }: {
   label: string;
   value: number | null;
@@ -138,10 +139,12 @@ export function StatTile({
   ring?: boolean;
   loading?: boolean;
   testID: string;
+  /** Makes the whole tile a button (e.g. "total users" opens the Users page). */
+  onPress?: () => void;
 }) {
   const p = useAdminPalette();
   const { rowDir, textAlign } = useAdminT();
-  return (
+  const tile = (
     <Card ring={ring} style={styles.tile} testID={testID}>
       <View style={styles.tileBody}>
         <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.statLabel, { color: p.text3, textAlign }]}>
@@ -171,6 +174,18 @@ export function StatTile({
         {spark ? <Sparkline {...spark} testID={`${testID}-spark`} /> : null}
       </View>
     </Card>
+  );
+  if (!onPress) return tile;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.tilePress, pressed && { opacity: 0.7 }]}
+      testID={`${testID}-press`}
+    >
+      {tile}
+    </Pressable>
   );
 }
 
@@ -244,6 +259,8 @@ const styles = StyleSheet.create({
   grid: { gap: 14 },
   row: { gap: 14 },
   tile: { flex: 1, minWidth: 0 },
+  // A tappable tile takes the tile's place in the grid.
+  tilePress: { flex: 1, minWidth: 0 },
   tileBody: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 12 },
   // Heebo's full line box (no lineHeight): a tighter one cuts the digits' tops
   // on iOS. The box has ~11px of air above the digits; -5 keeps the number

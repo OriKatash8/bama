@@ -191,13 +191,29 @@ export function CountBadge({ n, testID }: { n: number; testID?: string }) {
  * on hover. The text block (`flex: 1, minWidth: 0`) must be the only flexible
  * child; everything beside it is fixed width, or the buttons get clipped.
  */
-export function Row({ children, rowDir, testID }: { children: ReactNode; rowDir: 'row' | 'row-reverse'; testID?: string }) {
+export function Row({
+  children,
+  rowDir,
+  testID,
+  onPress,
+  accessibilityLabel,
+}: {
+  children: ReactNode;
+  rowDir: 'row' | 'row-reverse';
+  testID?: string;
+  /** Makes the whole row a button (e.g. open this user). */
+  onPress?: () => void;
+  accessibilityLabel?: string;
+}) {
   const p = useAdminPalette();
   const [hovered, setHovered] = useState(false);
   return (
     <Pressable
       testID={testID}
-      accessible={false}
+      accessible={!!onPress}
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={accessibilityLabel}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={[

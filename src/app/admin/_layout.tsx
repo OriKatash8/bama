@@ -1,6 +1,6 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
-import { Home, Flag, LogOut, UserCog, Wallet, Boxes } from 'lucide-react-native';
+import { Home, Flag, LogOut, Wallet, Boxes } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -91,17 +91,8 @@ export default function AdminTabsLayout() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="users"
-          options={{
-            title: 'Users',
-            tabBarIcon: ({ color, focused }) => (
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: focused ? 'rgba(255,255,255,0.35)' : 'transparent', borderWidth: focused ? 1.5 : 0, borderColor: focused ? 'rgba(255,255,255,0.6)' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                <UserCog size={24} color={color} strokeWidth={2.5} />
-              </View>
-            ),
-          }}
-        />
+        {/* Users opens from the dashboard's "total users" tile, not the tab bar. */}
+        <Tabs.Screen name="users" options={{ href: null }} />
       </Tabs>
 
       {/* Log out — shown on every admin page; a white pill like the dashboard's cards */}

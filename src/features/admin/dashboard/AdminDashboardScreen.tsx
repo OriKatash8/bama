@@ -24,10 +24,15 @@ export default function AdminDashboardScreen() {
   const waiting = (open ?? 0) > 0;
 
   // Every tile carries a footer line under its number, like the community dashboard's.
-  const tiles: { key: keyof AdminCounts; label: string; chip?: { text: string; kind: 'good' | 'neutral' }; caption: string }[] = [
+  const tiles: {
+    key: keyof AdminCounts; label: string; chip?: { text: string; kind: 'good' | 'neutral' }; caption: string;
+    onPress?: () => void;
+  }[] = [
     {
       key: 'users',
       label: t('total_users'),
+      // The way to the Users page — it is not a tab.
+      onPress: () => router.push('/admin/users'),
       chip: reg.loading ? undefined : { text: signed(newInPeriod), kind: newInPeriod > 0 ? 'good' : 'neutral' },
       caption: t(`sub_${period}`),
     },
@@ -68,7 +73,7 @@ export default function AdminDashboardScreen() {
       </Card>
 
       <StatGrid>
-        {tiles.map(({ key, label, chip, caption }) => (
+        {tiles.map(({ key, label, chip, caption, onPress }) => (
           <StatTile
             key={key}
             testID={`tile-${key}`}
@@ -77,6 +82,7 @@ export default function AdminDashboardScreen() {
             loading={counts === null}
             chip={chip}
             caption={caption}
+            onPress={onPress}
           />
         ))}
       </StatGrid>

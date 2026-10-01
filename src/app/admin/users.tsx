@@ -1,11 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
 import { where } from 'firebase/firestore';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { callFunction } from '@core/firebase/functions';
 import { useUiStore } from '@core/stores/uiStore';
-import { rtlSafe } from '@utils/formatters';
 import { HEEBO } from '@features/admin/ui';
 import {
   AdminPage,
@@ -33,12 +33,13 @@ type ModerateArgs = { targetUid: string; action: AdminActionType; reason?: strin
 type ModerateResult = { success: boolean; actionId: string };
 const moderateUser = callFunction<ModerateArgs, ModerateResult>('moderateUser');
 /**
- * Email lookup moved server-side. `users/{uid}` no longer carries an `email`
- * field — it was readable by every signed-in user, which made the whole user
- * base's addresses enumerable for the sake of this one query. Auth holds the
- * authoritative email; adminFindUser asks it with the Admin SDK.
+ * Every account, name + email. `users/{uid}` carries no `email` field — it was
+ * readable by every signed-in user, which made the whole user base's addresses
+ * enumerable. Auth holds the authoritative email; adminListUsers reads it with
+ * the Admin SDK (functions/src/moderation/lookup.ts).
  */
-const adminFindUser = callFunction<{ term: string }, { uid: string; email: string | null; disabled: boolean }>('adminFindUser');
+type ListedUser = { uid: string; displayName: string; email: string | null; disabled: boolean; createdAt: number | null };
+const adminListUsers = callFunction<Record<string, never>, { users: ListedUser[]; truncated: boolean }>('adminListUsers');
 const sendSystemMessage = callFunction<{ targetUid: string; text: string }, { chatId: string }>('sendSystemMessage');
 
 type Status = 'active' | 'warned' | 'suspended';
@@ -56,22 +57,24 @@ function fmtDate(seconds?: number): string {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-/** The pill is the focus affordance; the browser's input outline would sit inside it. */
+/** The sheet's input: the browser's outline would sit inside its own border. */
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 /**
- * Find one user by exact email or name, see their moderation state and history,
- * and warn / suspend / message them — in the admin dashboard's design.
+ * Every user, by name and email; tap one to see their moderation state and
+ * history and to warn / suspend / message them — in the admin dashboard's
+ * design. Opened from the dashboard's "total users" tile; not a tab.
  */
 export default function UsersAdmin() {
   const p = useAdminPalette();
   const { t, rtl, rowDir, textAlign } = useScopedT('admin_users');
   const { showToast } = useUiStore();
+  const router = useRouter();
 
-  const [term, setTerm] = useState('');
-  const [searching, setSearching] = useState(false);
+  const [users, setUsers] = useState<ListedUser[]>([]);
+  const [listState, setListState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [opening, setOpening] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [notFound, setNotFound] = useState(false);
   const [history, setHistory] = useState<AdminAction[]>([]);
 
   const [pending, setPending] = useState<AdminActionType | null>(null);
@@ -90,33 +93,43 @@ export default function UsersAdmin() {
     setHistory(items);
   }
 
-  async function search() {
-    const value = term.trim();
-    if (!value) return;
-    setSearching(true);
-    setNotFound(false);
+  const loadList = useCallback(async () => {
+    setListState('loading');
+    try {
+      const res = await adminListUsers({});
+      setUsers(res.users);
+      setListState('ready');
+    } catch {
+      setListState('error');
+    }
+  }, []);
+
+  useEffect(() => { void loadList(); }, [loadList]);
+
+  /** Open one user: their document by uid, plus their action history. */
+  async function openUser(listed: ListedUser) {
+    setOpening(listed.uid);
+    try {
+      const doc = await getDocument<User>(`users/${listed.uid}`);
+      if (!doc) { showToast(t('open_failed'), 'error'); return; }
+      // `email` is not on the document — it rides along from Auth via the list.
+      setUser({ ...doc, email: listed.email ?? undefined });
+      await loadHistory(listed.uid);
+    } catch {
+      showToast(t('open_failed'), 'error');
+    } finally {
+      setOpening(null);
+    }
+  }
+
+  function backToList() {
     setUser(null);
     setHistory([]);
-    try {
-      // The callable resolves BOTH an email (via Auth) and a display name (via
-      // Firestore) and hands back a uid; the document is then read by id.
-      const found = await adminFindUser({ term: value });
-      const doc = await getDocument<User>(`users/${found.uid}`);
-      if (!doc) {
-        setNotFound(true);
-      } else {
-        // `email` is not on the document any more — it rides along from Auth so
-        // the screen can still show it.
-        setUser({ ...doc, email: found.email ?? undefined });
-        await loadHistory(found.uid);
-      }
-    } catch (e) {
-      // not-found is the ordinary "no such user", not a failure to search.
-      if ((e as { code?: string })?.code === 'functions/not-found') setNotFound(true);
-      else showToast(t('search_failed'), 'error');
-    } finally {
-      setSearching(false);
-    }
+  }
+
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/admin' as never);
   }
 
   async function run(action: AdminActionType, withReason?: string) {
@@ -166,39 +179,50 @@ export default function UsersAdmin() {
 
   return (
     <View style={styles.flex}>
-      <AdminPage title={t('title')} subtitle={t('greeting')}>
-        {/* Search: MembersCard's pill input + a primary Search button. */}
-        <Card testID="user-search-card">
-          <View style={[styles.searchBar, { flexDirection: rowDir }]}>
-            <View style={[styles.search, { flexDirection: rowDir, backgroundColor: p.surface2, borderColor: p.border }]}>
-              <Search size={15} color={p.text3} strokeWidth={2.4} />
-              <TextInput
-                style={[styles.searchInput, webNoOutline, { color: p.text, fontFamily: HEEBO.regular, textAlign }]}
-                value={term}
-                onChangeText={setTerm}
-                placeholder={rtlSafe(t('search_placeholder'), rtl)}
-                placeholderTextColor={p.text3}
-                accessibilityLabel={t('search_placeholder')}
-                autoCapitalize="none"
-                autoCorrect={false}
-                onSubmitEditing={search}
-                returnKeyType="search"
-                testID="user-search"
-              />
-            </View>
-            {searching ? (
-              <View style={styles.searchBusy}>
-                <ActivityIndicator size="small" color={p.accent} testID="user-searching" />
+      <AdminPage title={t('title')} subtitle={t('greeting')} onBack={goBack}>
+        {!user && (
+          <Card testID="users-list">
+            <CardHead
+              title={t('all_users')}
+              side={listState === 'ready' ? <View testID="users-count"><Chip label={String(users.length)} tabular /></View> : undefined}
+            />
+            {listState === 'loading' ? (
+              <View style={styles.listBusy}>
+                <ActivityIndicator size="small" color={p.accent} testID="users-loading" />
               </View>
+            ) : listState === 'error' ? (
+              <View style={[styles.listError, { alignItems: rtl ? 'flex-end' : 'flex-start' }]}>
+                <AdminText style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>{t('list_failed')}</AdminText>
+                <PillButton variant="primary" label={t('retry')} onPress={() => void loadList()} testID="users-retry" />
+              </View>
+            ) : users.length === 0 ? (
+              <EmptyState text={t('no_users')} testID="users-empty" />
             ) : (
-              <PillButton variant="primary" label={t('search')} onPress={search} testID="user-search-go" />
+              users.map((u) => {
+                const label = u.displayName || t('unnamed');
+                return (
+                  <Row
+                    key={u.uid}
+                    rowDir={rowDir}
+                    testID={`user-row-${u.uid}`}
+                    onPress={() => void openUser(u)}
+                    accessibilityLabel={`${label}, ${u.email ?? ''}`}
+                  >
+                    <InitialsAvatar name={u.displayName || u.email || '?'} />
+                    <WhoBlock name={label} meta={u.email ?? '—'} textAlign={textAlign} />
+                    {opening === u.uid && <ActivityIndicator size="small" color={p.accent} />}
+                  </Row>
+                );
+              })
             )}
-          </View>
-          {notFound && <EmptyState text={t('not_found')} testID="user-not-found" />}
-        </Card>
+          </Card>
+        )}
 
         {user && (
           <>
+            <View style={{ flexDirection: rowDir }}>
+              <PillButton label={t('back_to_list')} onPress={backToList} testID="back-to-list" />
+            </View>
             {/* Who they are, their standing, and what can be done. */}
             <Card testID="user-card">
               <View style={[styles.who, { flexDirection: rowDir }]}>
@@ -402,19 +426,8 @@ function SheetBody({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  searchBar: { alignItems: 'center', gap: 10, padding: SPACE.rowPadH - 4, paddingHorizontal: SPACE.rowPadH },
-  search: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  searchInput: { flex: 1, fontSize: 14, padding: 0 },
-  searchBusy: { paddingHorizontal: 20, paddingVertical: 6 },
+  listBusy: { paddingVertical: 20, alignItems: 'center' },
+  listError: { padding: SPACE.rowPadH, gap: 10 },
   who: { alignItems: 'center', gap: 12, paddingTop: 16, paddingHorizontal: SPACE.rowPadH },
   joined: { fontSize: 12, paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
   statusPill: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 10, flexShrink: 0 },

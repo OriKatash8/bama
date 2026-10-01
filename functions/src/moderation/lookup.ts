@@ -51,3 +51,45 @@ export const adminFindUser = onCall(async (request) => {
   const rec = await admin.auth().getUser(uid).catch(() => null);
   return { uid, email: rec?.email ?? null, disabled: rec?.disabled ?? false };
 });
+
+/** Most accounts one call returns; above this `truncated` is true. */
+const LIST_USERS_MAX = 5000;
+/** Firestore getAll() batch size. */
+const GET_ALL_CHUNK = 300;
+
+/**
+ * Every account, for the admin Users page: a plain list of names and emails to
+ * pick from, instead of searching. Like adminFindUser, the email comes from
+ * Firebase Auth (the user document has none — see above); the name from the
+ * user document, where it is public anyway. Admins only.
+ */
+export const adminListUsers = onCall(async (request) => {
+  requireAuth(request.auth?.uid);
+  requireAdmin(request.auth?.token);
+
+  const records: admin.auth.UserRecord[] = [];
+  let pageToken: string | undefined;
+  do {
+    const page = await admin.auth().listUsers(1000, pageToken);
+    records.push(...page.users);
+    pageToken = page.pageToken;
+  } while (pageToken && records.length < LIST_USERS_MAX);
+
+  const names = new Map<string, string>();
+  for (let i = 0; i < records.length; i += GET_ALL_CHUNK) {
+    const refs = records.slice(i, i + GET_ALL_CHUNK).map((r) => db.doc(`users/${r.uid}`));
+    const snaps = await db.getAll(...refs);
+    for (const s of snaps) names.set(s.id, (s.data()?.displayName as string | undefined) ?? '');
+  }
+
+  const users = records.map((r) => ({
+    uid: r.uid,
+    displayName: names.get(r.uid) ?? '',
+    email: r.email ?? null,
+    disabled: r.disabled,
+    createdAt: Date.parse(r.metadata.creationTime) || null,
+  }));
+  users.sort((a, b) => (a.displayName || a.email || '').localeCompare(b.displayName || b.email || ''));
+
+  return { users, truncated: !!pageToken };
+});
