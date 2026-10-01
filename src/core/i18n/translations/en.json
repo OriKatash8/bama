@@ -354,8 +354,7 @@
     "fee_line_min": "Brokerage fee · ₪{{amount}} (minimum fee)",
     "edit_deadline_error": "Could not update the date. Please try again.",
     "edit_location_error": "Could not update the location. Please try again.",
-    "close_now_body": "You don’t have to do this. Each professional closes their own part when they finish, and on {{date}} anything still open closes by itself. This just does it now, for everyone.",
-    "close_now_body_flexible": "You don’t have to do this. Each professional closes their own part when they finish. This project has no end date, so nothing closes by itself — use this when the work is over.",
+    "close_now_body": "This will finish the project. Next, you’ll review the crew’s work, and the chat will become read-only.",
     "phone": "Phone"
   },
   "chats_page": {

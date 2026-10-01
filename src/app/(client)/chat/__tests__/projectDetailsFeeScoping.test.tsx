@@ -4,6 +4,7 @@ import ProjectDetailsScreen from '../project-details';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import en from '@core/i18n/translations/en.json';
+import he from '@core/i18n/translations/he.json';
 
 /**
  * §6, AT THE SCREEN. A client must never learn what a professional owes BAMA —
@@ -375,22 +376,21 @@ describe('the client accelerator does not read as an approval', () => {
     expect(queryByText(en.project_details.mark_complete)).toBeNull();
   });
 
-  it('states plainly that it is optional, and what happens otherwise', () => {
+  it('says what closing does: the project finishes, the client reviews the crew, the chat turns read-only', () => {
     // Asserted on the strings rather than by opening the modal, which needs the
-    // fee calculation to resolve: the invariant is the WORDING, and it is the
-    // thing a future copy pass could quietly undo.
-    expect(en.project_details.close_now_body).toMatch(/don’t have to/i);
-    expect(en.project_details.close_now_body).toContain('{{date}}');
-    // The flexible case is a different sentence, not the same one with a blank:
-    // with no end date nothing closes by itself, so promising a date would be a
-    // promise the project cannot keep.
-    expect(en.project_details.close_now_body_flexible).not.toContain('{{date}}');
-    expect(en.project_details.close_now_body_flexible).toMatch(/no end date/i);
-    // And neither may mention a fee — the client is never told a professional
-    // owes BAMA money (§6).
-    for (const copy of [en.project_details.close_now_body, en.project_details.close_now_body_flexible]) {
-      expect(copy).not.toMatch(/fee|commission|₪/i);
-    }
+    // fee calculation to resolve: the invariant is the WORDING.
+    const copy = en.project_details.close_now_body;
+    expect(copy).toMatch(/finish/i);
+    expect(copy).toMatch(/review/i);
+    expect(copy).toMatch(/read-only/i);
+    // One sentence for every project now, with or without an end date.
+    expect(copy).not.toContain('{{date}}');
+    expect((en.project_details as Record<string, string>).close_now_body_flexible).toBeUndefined();
+    expect(he.project_details.close_now_body).toBeTruthy();
+    // It may not mention a fee — the client is never told a professional owes
+    // BAMA money (§6).
+    expect(copy).not.toMatch(/fee|commission|₪/i);
+    expect(he.project_details.close_now_body).not.toMatch(/עמלה|₪/);
   });
 });
 
