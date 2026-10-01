@@ -1,23 +1,27 @@
 import { useState, useEffect } from 'react';
 import {
   View, StyleSheet, Modal, Pressable,
-  TextInput, Switch, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
+  Switch, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import {
-  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
+  collection, onSnapshot, addDoc, updateDoc, deleteDoc, deleteField, doc,
   serverTimestamp, Timestamp, query, orderBy, getCountFromServer,
 } from 'firebase/firestore';
 import { X, Pencil, Trash2, Video, Eye, BookOpen, GraduationCap } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { normalizeCourseUrl } from '@features/courses/courseUrl';
+import {
+  CourseFormFields, EMPTY_COURSE_DRAFT, courseDraftComplete, uploadCourseCover,
+  type CourseDraft, type CourseLevel,
+} from '@features/courses/components/CourseFormFields';
 import { useAuthStore } from '@core/stores/authStore';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { useUiStore } from '@core/stores/uiStore';
 import {
   AdminPage, AdminText, Card, CardHead, Chip, CountBadge, EmptyState, IconTile, PillButton,
   StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
- HEEBO } from '@features/admin/ui';
+} from '@features/admin/ui';
 
 type Course = {
   id: string;
@@ -36,7 +40,8 @@ type Course = {
   level?: string;
 };
 
-type CourseForm = Omit<Course, 'id' | 'createdAt'>;
+/** The popup's values: the same fields as the pro's "Add your course", plus the admin's video and Published. */
+type CourseForm = { draft: CourseDraft; videoUrl: string; published: boolean };
 
 type CourseRequest = {
   id: string;
@@ -55,15 +60,10 @@ type CourseRequest = {
   level?: string;
 };
 
-const EMPTY_FORM: CourseForm = {
-  title: '',
-  description: '',
-  price: 0,
-  instructorName: '',
-  videoUrl: '',
-  courseUrl: '',
-  published: false,
-};
+const EMPTY_FORM: CourseForm = { draft: EMPTY_COURSE_DRAFT, videoUrl: '', published: false };
+
+/** A stored number back into its field: blank when unset. */
+const asField = (n?: number) => (n ? String(n) : '');
 
 /** The admin's courses: pending submissions first, then every course with edit / delete. */
 export default function CoursesAdmin() {
@@ -136,38 +136,61 @@ export default function CoursesAdmin() {
   function openEdit(course: Course) {
     setEditId(course.id);
     setForm({
-      title: course.title,
-      description: course.description,
-      price: course.price,
-      instructorName: course.instructorName,
-      videoUrl: course.videoUrl,
-      courseUrl: course.courseUrl ?? '',
+      draft: {
+        title: course.title ?? '',
+        category: course.category ?? '',
+        courseUrl: course.courseUrl ?? '',
+        instructorName: course.instructorName ?? '',
+        price: asField(course.price),
+        description: course.description ?? '',
+        coverUri: course.coverImageUrl ?? null,
+        durationHours: asField(course.durationHours),
+        lessonsCount: asField(course.lessonsCount),
+        level: (course.level ?? '') as CourseLevel,
+      },
+      videoUrl: course.videoUrl ?? '',
       published: course.published,
     });
     setModalVisible(true);
   }
 
   async function handleSave() {
-    if (!form.title.trim()) {
-      showToast(tc('title_required'), 'error');
+    const d = form.draft;
+    if (!courseDraftComplete(d)) {
+      showToast(tc('required_missing'), 'error');
       return;
     }
-    const courseUrl = normalizeCourseUrl(form.courseUrl ?? '');
+    const courseUrl = normalizeCourseUrl(d.courseUrl);
     if (courseUrl === null) {
       showToast(tc('url_invalid'), 'error');
       return;
     }
     setSaving(true);
     try {
+      const coverImageUrl = d.coverUri ? await uploadCourseCover(d.coverUri) : '';
+      const base = {
+        title: d.title.trim(),
+        category: d.category,
+        courseUrl,
+        instructorName: d.instructorName.trim(),
+        price: Number(d.price) || 0,
+        description: d.description.trim(),
+        videoUrl: form.videoUrl,
+        published: form.published,
+      };
+      // Optional fields: written when set; on an edit, a field emptied is removed.
+      const optional = {
+        coverImageUrl,
+        durationHours: d.durationHours.trim() ? Number(d.durationHours) : '',
+        lessonsCount: d.lessonsCount.trim() ? Number(d.lessonsCount) : '',
+        level: d.level,
+      };
       if (editId) {
-        await updateDoc(doc(db, 'courses', editId), { ...form, courseUrl, price: Number(form.price) });
+        const fields = Object.fromEntries(Object.entries(optional).map(([k, v]) => [k, v === '' ? deleteField() : v]));
+        await updateDoc(doc(db, 'courses', editId), { ...base, ...fields });
       } else {
-        await addDoc(collection(db, 'courses'), {
-          ...form,
-          courseUrl,
-          price: Number(form.price),
-          createdAt: serverTimestamp(),
-        });
+        const fields = Object.fromEntries(Object.entries(optional).filter(([, v]) => v !== ''));
+        await addDoc(collection(db, 'courses'), { ...base, ...fields, createdAt: serverTimestamp() });
       }
       showToast(editId ? tc('updated') : tc('created'), 'success');
       setModalVisible(false);
@@ -218,12 +241,6 @@ export default function CoursesAdmin() {
   async function handleReject(id: string) {
     await deleteDoc(doc(db, 'courseRequests', id));
   }
-
-  const inputStyle = [
-    styles.input,
-    webNoOutline,
-    { backgroundColor: p.surface2, borderColor: p.border, color: p.text, fontFamily: HEEBO.regular, textAlign },
-  ];
 
   return (
     <AdminPage
@@ -366,50 +383,11 @@ export default function CoursesAdmin() {
               </View>
 
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                {([
-                  { key: 'title', placeholder: t('course_title_label'), multiline: false },
-                  { key: 'description', placeholder: t('description_label'), multiline: true },
-                  { key: 'instructorName', placeholder: t('instructor_label'), multiline: false },
-                ] as const).map(({ key, placeholder, multiline }) => (
-                  <TextInput
-                    key={key}
-                    testID={`input-${key}`}
-                    placeholder={placeholder}
-                    placeholderTextColor={p.text3}
-                    value={String(form[key])}
-                    onChangeText={(v) => setForm((f) => ({ ...f, [key]: v }))}
-                    multiline={multiline}
-                    numberOfLines={multiline ? 3 : 1}
-                    style={[inputStyle, { height: multiline ? 80 : 48 }]}
-                  />
-                ))}
-
-                <TextInput
-                  testID="input-price"
-                  placeholder={t('price_label')}
-                  placeholderTextColor={p.text3}
-                  value={form.price === 0 ? '' : String(form.price)}
-                  onChangeText={(v) => setForm((f) => ({ ...f, price: parseFloat(v) || 0 }))}
-                  keyboardType="numeric"
-                  style={[inputStyle, styles.tabular, { height: 48 }]}
+                {/* The same fields as the pro's "Add your course" popup. */}
+                <CourseFormFields
+                  value={form.draft}
+                  onChange={(patch) => setForm((f) => ({ ...f, draft: { ...f.draft, ...patch } }))}
                 />
-
-                {/* Where the course card's "Visit course" button goes. */}
-                <TextInput
-                  testID="input-courseUrl"
-                  placeholder={t('course_link')}
-                  placeholderTextColor={p.text3}
-                  value={form.courseUrl ?? ''}
-                  onChangeText={(v) => setForm((f) => ({ ...f, courseUrl: v }))}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
-                  textContentType="URL"
-                  style={[inputStyle, { height: 48, marginBottom: 4 }]}
-                />
-                <AdminText style={[styles.urlHint, { color: p.text3, textAlign }]}>
-                  {tc('url_hint', { button: t('visit_course') })}
-                </AdminText>
 
                 <Pressable
                   style={[
@@ -470,9 +448,6 @@ function StatusChip({ good, label }: { good: boolean; label: string }) {
   );
 }
 
-/** The field's border is the focus affordance; the browser's outline would sit inside it. */
-const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: {
@@ -493,17 +468,11 @@ const styles = StyleSheet.create({
   modal: { width: '100%', maxWidth: 420, maxHeight: 600, borderRadius: RADIUS.card, borderWidth: 1, padding: 20 },
   modalHeader: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 10 },
   modalTitle: { fontSize: 20, letterSpacing: -0.3, flex: 1 },
-  input: {
-    borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
-    fontSize: 14, marginBottom: 12, textAlignVertical: 'top',
-  },
-  tabular: { fontVariant: ['tabular-nums'] },
   uploadBtn: {
     alignItems: 'center', gap: 8, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8,
+    paddingHorizontal: 14, paddingVertical: 12, marginTop: 20, marginBottom: 8,
   },
   videoUrl: { fontSize: 11, marginBottom: 12 },
-  urlHint: { fontSize: 12, marginBottom: 12, paddingHorizontal: 4 },
   toggleRow: {
     alignItems: 'center', justifyContent: 'space-between',
     borderTopWidth: 1, paddingTop: 12, marginTop: 4, marginBottom: 16,

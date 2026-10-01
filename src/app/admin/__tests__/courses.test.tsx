@@ -41,6 +41,9 @@ jest.mock('@core/hooks/useVideoUpload', () => ({
   useVideoUpload: () => ({ uploading: false, processing: false, uploadVideo: jest.fn() }),
 }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
+jest.mock('expo-image', () => ({ Image: 'Image' }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
+jest.mock('@core/firebase/storage', () => ({ uploadFile: jest.fn() }));
 
 const mockData: Record<string, { id: string; data: Record<string, unknown> }[]> = {};
 jest.mock('firebase/firestore', () => ({
@@ -56,14 +59,24 @@ jest.mock('firebase/firestore', () => ({
   addDoc: jest.fn(() => Promise.resolve({ id: 'new' })),
   updateDoc: jest.fn(() => Promise.resolve()),
   deleteDoc: jest.fn(() => Promise.resolve()),
+  deleteField: jest.fn(() => 'DELETE'),
   serverTimestamp: jest.fn(() => 'TS'),
   Timestamp: class {},
 }));
 
 const COURSE = {
   title: 'Lighting 101', description: 'Basics', price: 250, instructorName: 'Rona',
-  videoUrl: '', published: true, createdAt: null,
+  videoUrl: '', published: true, createdAt: null, category: 'Editor', courseUrl: 'https://old.school/c',
 };
+
+/** Fills the four fields marked * — the same ones the pro's "Add your course" asks for. */
+function fillRequired(r: ReturnType<typeof render>) {
+  fireEvent.changeText(r.getByTestId('input-title'), 'New One');
+  fireEvent.press(r.getByTestId('input-category'));
+  fireEvent.press(r.getByText('Videographer'));
+  fireEvent.changeText(r.getByTestId('input-courseUrl'), 'https://gaffer.school/course');
+  fireEvent.changeText(r.getByTestId('input-instructorName'), 'Avi');
+}
 const REQUEST = {
   title: 'Gaffer Pro', category: 'Lighting', courseUrl: 'https://x.test/c', instructorName: 'Avi',
   price: 400, description: 'Advanced rigging', submittedBy: 'u1', submittedByName: 'Avi', createdAt: null,
@@ -151,44 +164,53 @@ it('rejecting a request deletes it', async () => {
   expect(addDoc).not.toHaveBeenCalled();
 });
 
-it('Add Course opens the form and saving creates the course', async () => {
+it('the add popup has the same fields, labels and marks as the pro "Add your course"', async () => {
   const r = await renderPage();
   fireEvent.press(r.getByTestId('add-course'));
-  fireEvent.changeText(r.getByPlaceholderText(en.courses.course_title_label), 'New One');
-  fireEvent.changeText(r.getByPlaceholderText(en.courses.price_label), '120');
+  const C = en.courses;
+  for (const label of [
+    `${C.course_title_label} *`, `${C.course_category} *`, `${C.course_link} *`, `${C.instructor_label} *`,
+    C.price_label, C.description_label, C.cover_image_label, C.duration_label, C.lessons_label,
+    `${C.level_label} ${en.builder.optional_note}`,
+  ]) {
+    expect(r.getByText(label)).toBeTruthy();
+  }
+  for (const level of [C.level_beginner, C.level_intermediate, C.level_advanced]) expect(r.getByText(level)).toBeTruthy();
+  // The admin keeps its own video upload and Published switch under them.
+  expect(r.getByTestId('upload-video')).toBeTruthy();
+  expect(r.getByTestId('published-switch')).toBeTruthy();
+});
+
+it('Add Course saves every field the form asks for', async () => {
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('add-course'));
+  fillRequired(r);
+  fireEvent.changeText(r.getByTestId('input-price'), '120');
+  fireEvent.changeText(r.getByTestId('input-durationHours'), '6');
+  fireEvent.changeText(r.getByTestId('input-lessonsCount'), '12');
+  fireEvent.press(r.getByTestId('level-beginner'));
   await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
   expect(addDoc).toHaveBeenCalledWith({ path: 'courses' }, {
-    title: 'New One', description: '', price: 120, instructorName: '', videoUrl: '', courseUrl: '', published: false,
-    createdAt: 'TS',
+    title: 'New One', category: 'Video Photographer', courseUrl: 'https://gaffer.school/course', instructorName: 'Avi',
+    price: 120, description: '', videoUrl: '', published: false,
+    durationHours: 6, lessonsCount: 12, level: 'beginner', createdAt: 'TS',
   });
   expect(mockToast).toHaveBeenCalledWith('Course created', 'success');
 });
 
-it('an empty title is refused without writing', async () => {
+it('a missing field marked * is refused without writing', async () => {
   const r = await renderPage();
   fireEvent.press(r.getByTestId('add-course'));
+  fireEvent.changeText(r.getByTestId('input-title'), 'New One');
   await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
   expect(addDoc).not.toHaveBeenCalled();
-  expect(mockToast).toHaveBeenCalledWith('Title is required', 'error');
+  expect(mockToast).toHaveBeenCalledWith(en.admin_courses.required_missing, 'error');
 });
 
-it('editing a course updates that document', async () => {
-  const r = await renderPage();
-  fireEvent.press(r.getByTestId('edit-c1'));
-  expect(r.getByDisplayValue('Lighting 101')).toBeTruthy();
-  fireEvent.changeText(r.getByDisplayValue('Lighting 101'), 'Lighting 102');
-  fireEvent(r.getByTestId('published-switch'), 'valueChange', false);
-  await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
-  expect(updateDoc).toHaveBeenCalledWith({ path: 'courses/c1' }, {
-    title: 'Lighting 102', description: 'Basics', price: 250, instructorName: 'Rona', videoUrl: '', courseUrl: '', published: false,
-  });
-  expect(mockToast).toHaveBeenCalledWith('Course updated', 'success');
-});
-
-it('the form takes the link the course button opens, and saves it', async () => {
+it('a link without the scheme is completed to https', async () => {
   const r = await renderPage();
   fireEvent.press(r.getByTestId('add-course'));
-  fireEvent.changeText(r.getByPlaceholderText(en.courses.course_title_label), 'New One');
+  fillRequired(r);
   fireEvent.changeText(r.getByTestId('input-courseUrl'), ' gaffer.school/course ');
   await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
   expect(addDoc).toHaveBeenCalledWith({ path: 'courses' }, expect.objectContaining({ courseUrl: 'https://gaffer.school/course' }));
@@ -197,21 +219,33 @@ it('the form takes the link the course button opens, and saves it', async () => 
 it('a link that is not a web address is refused without writing', async () => {
   const r = await renderPage();
   fireEvent.press(r.getByTestId('add-course'));
-  fireEvent.changeText(r.getByPlaceholderText(en.courses.course_title_label), 'New One');
+  fillRequired(r);
   fireEvent.changeText(r.getByTestId('input-courseUrl'), 'not a link');
   await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
   expect(addDoc).not.toHaveBeenCalled();
   expect(mockToast).toHaveBeenCalledWith(en.admin_courses.url_invalid, 'error');
 });
 
-it("editing shows the course's link and saves the new one", async () => {
-  mockData.courses = [{ id: 'c1', data: { ...COURSE, courseUrl: 'https://old.school/c' } }];
+it("editing fills the form with the course's values and updates that document", async () => {
+  mockData.courses = [{ id: 'c1', data: { ...COURSE, coverImageUrl: 'https://img/c.jpg', durationHours: 4, level: 'advanced' } }];
   const r = await renderPage();
   fireEvent.press(r.getByTestId('edit-c1'));
+  expect(r.getByTestId('input-title').props.value).toBe('Lighting 101');
+  expect(r.getByText('Editor')).toBeTruthy();
   expect(r.getByTestId('input-courseUrl').props.value).toBe('https://old.school/c');
-  fireEvent.changeText(r.getByTestId('input-courseUrl'), 'https://new.school/c');
+  expect(r.getByTestId('input-price').props.value).toBe('250');
+  expect(r.getByTestId('input-durationHours').props.value).toBe('4');
+  fireEvent.changeText(r.getByTestId('input-title'), 'Lighting 102');
+  fireEvent.changeText(r.getByTestId('input-durationHours'), '');
+  fireEvent(r.getByTestId('published-switch'), 'valueChange', false);
   await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
-  expect(updateDoc).toHaveBeenCalledWith({ path: 'courses/c1' }, expect.objectContaining({ courseUrl: 'https://new.school/c' }));
+  // An emptied optional field is removed; the saved cover is kept as is.
+  expect(updateDoc).toHaveBeenCalledWith({ path: 'courses/c1' }, {
+    title: 'Lighting 102', category: 'Editor', courseUrl: 'https://old.school/c', instructorName: 'Rona',
+    price: 250, description: 'Basics', videoUrl: '', published: false,
+    coverImageUrl: 'https://img/c.jpg', durationHours: 'DELETE', lessonsCount: 'DELETE', level: 'advanced',
+  });
+  expect(mockToast).toHaveBeenCalledWith('Course updated', 'success');
 });
 
 it('delete asks first, then deletes the course', async () => {

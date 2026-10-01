@@ -4,16 +4,14 @@ import {
   ScrollView, ActivityIndicator, StyleSheet,
 } from 'react-native';
 import { X } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
-import { uploadFile } from '@core/firebase/storage';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
-import { rtlSafe } from '@utils/formatters';
 import { useAuthStore } from '@core/stores/authStore';
-import { ROLE_CATEGORIES, categoryLabel } from '@features/crew/data/categories';
+import {
+  CourseFormFields, EMPTY_COURSE_DRAFT, courseDraftComplete, uploadCourseCover, type CourseDraft,
+} from './CourseFormFields';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -27,8 +25,6 @@ function makeT(translations: Translations) {
   };
 }
 
-const CATEGORIES = ROLE_CATEGORIES;
-
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -41,54 +37,21 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const user = useAuthStore((s) => s.user);
-  /** Prose reads from the side the language starts on. Applied to every label,
-   *  the title and the category list — the inputs and rows already flipped, but
-   *  the text inside them did not, so the Hebrew form hugged the wrong edge. */
   const align = { textAlign: rtl ? 'right' : 'left' } as const;
 
-  /** A field label. `required` appends the marker on the READING side: the app
-   *  lays out LTR, so a trailing "*" after Hebrew falls to the LTR end and
-   *  lands in front of the words. rtlSafe anchors it. `optional` says so in
-   *  words, for a field that is easy to mistake for required. */
-  const fieldLabel = (key: string, required = false, optional = false) => (
-    <Text style={[styles.label, { ...font.semiBold }, align]}>
-      {rtlSafe(required ? `${t(key)} *` : optional ? `${t(key)} ${t('builder.optional_note')}` : t(key), rtl)}
-    </Text>
-  );
-
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [courseUrl, setCourseUrl] = useState('');
-  const [instructorName, setInstructorName] = useState('');
-  const [price, setPrice] = useState('');
-  const [description, setDescription] = useState('');
+  const [draft, setDraft] = useState<CourseDraft>(EMPTY_COURSE_DRAFT);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [coverImageUri, setCoverImageUri] = useState<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [durationHours, setDurationHours] = useState('');
-  const [lessonsCount, setLessonsCount] = useState('');
-  const [level, setLevel] = useState('');
-
-  async function handlePickCover() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'] as const,
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
-    });
-    if (!result.canceled) setCoverImageUri(result.assets[0].uri);
-  }
 
   async function handleSubmit() {
-    if (!title.trim() || !category || !courseUrl.trim() || !instructorName.trim()) return;
+    if (!courseDraftComplete(draft)) return;
+    const { title, category, courseUrl, instructorName, price, description, coverUri, durationHours, lessonsCount, level } = draft;
     setIsSubmitting(true);
     try {
       let coverImageUrl: string | undefined;
-      if (coverImageUri) {
+      if (coverUri) {
         setIsUploadingCover(true);
-        const blob = await fetch(coverImageUri).then((r) => r.blob());
-        coverImageUrl = await uploadFile(`course-images/${Date.now()}.jpg`, blob);
+        coverImageUrl = await uploadCourseCover(coverUri);
         setIsUploadingCover(false);
       }
       await addDoc(collection(db, 'courseRequests'), {
@@ -106,9 +69,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
         ...(lessonsCount.trim() ? { lessonsCount: Number(lessonsCount) } : {}),
         ...(level ? { level } : {}),
       });
-      setTitle(''); setCategory(''); setCourseUrl('');
-      setInstructorName(''); setPrice(''); setDescription('');
-      setCoverImageUri(null); setDurationHours(''); setLessonsCount(''); setLevel('');
+      setDraft(EMPTY_COURSE_DRAFT);
       onSubmitted();
     } finally {
       setIsSubmitting(false);
@@ -116,7 +77,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
     }
   }
 
-  const canSubmit = title.trim() && category && courseUrl.trim() && instructorName.trim() && !isSubmitting;
+  const canSubmit = courseDraftComplete(draft) && !isSubmitting;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -136,146 +97,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.form} style={styles.formScroll}>
-              {/* Title */}
-              {fieldLabel('courses.course_title_label', true)}
-              <TextInput
-                style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-                value={title}
-                onChangeText={setTitle}
-                placeholder={t('courses.course_title_label')}
-                placeholderTextColor={PLACEHOLDER}
-              />
-
-              {/* Category */}
-              {fieldLabel('courses.course_category', true)}
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-                activeOpacity={0.8}
-              >
-                <Text style={[{ color: category ? TEXT : PLACEHOLDER, ...font.regular }, align]}>
-                  {/* The localised name. `category` itself stays the raw
-                      ROLE_CATEGORIES key — it is what the document is saved
-                      under — so echoing it put an English word in the middle
-                      of a Hebrew form. */}
-                  {category ? categoryLabel(category, rtl ? 'he' : 'en') : t('courses.select_category')}
-                </Text>
-              </TouchableOpacity>
-              {showCategoryPicker && (
-                <View style={styles.picker}>
-                  {CATEGORIES.map((cat) => (
-                    <TouchableOpacity
-                      key={cat}
-                      style={styles.pickerItem}
-                      onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.pickerItemText, { ...font.regular }, align]}>{categoryLabel(cat, rtl ? 'he' : 'en')}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Link */}
-              {fieldLabel('courses.course_link', true)}
-              <TextInput
-                style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-                value={courseUrl}
-                onChangeText={setCourseUrl}
-                placeholder="https://..."
-                placeholderTextColor={PLACEHOLDER}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
-
-              {/* Instructor */}
-              {fieldLabel('courses.instructor_label', true)}
-              <TextInput
-                style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-                value={instructorName}
-                onChangeText={setInstructorName}
-                placeholder={t('courses.instructor_label')}
-                placeholderTextColor={PLACEHOLDER}
-              />
-
-              {/* Price */}
-              {fieldLabel('courses.price_label')}
-              <TextInput
-                style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-                value={price}
-                onChangeText={setPrice}
-                placeholder="0"
-                placeholderTextColor={PLACEHOLDER}
-                keyboardType="numeric"
-              />
-
-              {/* Description */}
-              {fieldLabel('courses.description_label')}
-              <TextInput
-                style={[styles.input, styles.inputMulti, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-                value={description}
-                onChangeText={setDescription}
-                placeholder={t('courses.description_label')}
-                placeholderTextColor={PLACEHOLDER}
-                multiline
-                numberOfLines={3}
-              />
-
-              {/* Cover image */}
-              {fieldLabel('courses.cover_image_label')}
-              <TouchableOpacity style={styles.coverPickerBtn} onPress={handlePickCover} activeOpacity={0.8}>
-                {coverImageUri ? (
-                  <Image source={{ uri: coverImageUri }} style={styles.coverPreview} contentFit="cover" />
-                ) : (
-                  <Text style={[styles.coverPickerText, { ...font.regular }]}>{t('courses.add_cover_image')}</Text>
-                )}
-              </TouchableOpacity>
-
-              {/* Duration + lessons */}
-              <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  {fieldLabel('courses.duration_label')}
-                  <TextInput
-                    style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-                    value={durationHours}
-                    onChangeText={setDurationHours}
-                    placeholder="0"
-                    placeholderTextColor={PLACEHOLDER}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  {fieldLabel('courses.lessons_label')}
-                  <TextInput
-                    style={[styles.input, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-                    value={lessonsCount}
-                    onChangeText={setLessonsCount}
-                    placeholder="0"
-                    placeholderTextColor={PLACEHOLDER}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
-              {/* Level */}
-              {fieldLabel('courses.level_label', false, true)}
-              <View style={[styles.levelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                {(['beginner', 'intermediate', 'advanced'] as const).map((key) => {
-                  const active = level === key;
-                  return (
-                    <TouchableOpacity
-                      key={key}
-                      style={[styles.levelBtn, active && styles.levelBtnActive]}
-                      onPress={() => setLevel(active ? '' : key)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.levelBtnText, { ...font.semiBold }, active && styles.levelBtnTextActive]}>
-                        {t(`courses.level_${key}`)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <CourseFormFields value={draft} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
 
               {/* Submit */}
               <TouchableOpacity
@@ -296,10 +118,8 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
   );
 }
 
-// Black text throughout; placeholders a muted grey so they don't read as values.
-// The blue stays on buttons and the chosen difficulty (white text on it).
+// Black text; the fields' own look lives in CourseFormFields.
 const TEXT = '#000000';
-const PLACEHOLDER = '#9C99AD';
 
 const styles = StyleSheet.create({
   overlay: {
@@ -330,28 +150,6 @@ const styles = StyleSheet.create({
   // flex:1 child has no basis to grow from and collapses to nothing — which left
   // the modal showing only its header. Same as the marketplace filter's scroll.
   formScroll: { flexShrink: 1 },
-  label: { fontSize: 13, color: TEXT, marginBottom: 4, marginTop: 12 },
-  input: {
-    backgroundColor: '#ffffff',
-    borderColor: 'rgba(0,74,173,0.15)',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: TEXT,
-    fontSize: 14,
-  },
-  inputMulti: { height: 80, textAlignVertical: 'top' },
-  picker: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.15)',
-    borderRadius: 10,
-    marginTop: 4,
-    overflow: 'hidden',
-  },
-  pickerItem: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(0,74,173,0.1)' },
-  pickerItemText: { color: TEXT, fontSize: 14 },
   submitBtn: {
     backgroundColor: '#004aad',
     borderRadius: 12,
@@ -361,31 +159,4 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.5 },
   submitBtnText: { color: '#ffffff', fontSize: 15, textAlign: 'center' },
-  coverPickerBtn: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,74,173,0.3)',
-    borderStyle: 'dashed',
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  coverPreview: { width: '100%', height: '100%' },
-  coverPickerText: { color: TEXT, fontSize: 13, textAlign: 'center' },
-  levelRow: { gap: 8 },
-  levelBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,74,173,0.3)',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-  },
-  levelBtnActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  levelBtnText: { fontSize: 12, color: TEXT, textAlign: 'center' },
-  levelBtnTextActive: { color: '#fff' },
 });

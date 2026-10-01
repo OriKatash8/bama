@@ -597,6 +597,7 @@
     "published": "מפורסם",
     "save": "שמירה",
     "title_required": "חובה להזין שם",
+    "required_missing": "יש למלא את כל השדות המסומנים ב-*",
     "updated": "הקורס עודכן",
     "created": "הקורס נוצר",
     "save_failed": "שמירת הקורס נכשלה",

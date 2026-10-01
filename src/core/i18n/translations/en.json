@@ -597,6 +597,7 @@
     "published": "Published",
     "save": "Save",
     "title_required": "Title is required",
+    "required_missing": "Fill in every field marked *",
     "updated": "Course updated",
     "created": "Course created",
     "save_failed": "Failed to save course",
