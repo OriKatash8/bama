@@ -507,7 +507,10 @@ service cloud.firestore {
     match /chats/{chatId} {
       allow read: if isAuth() && (
         request.auth.uid in resource.data.members ||
-        resource.data.type == 'community'  // all authed users can see community metadata for discovery
+        resource.data.type == 'community' ||  // all authed users can see community metadata for discovery
+        // Admins read PROJECT group chats (admin/project-chat). Read only: never
+        // DMs or purchase chats, and nothing here lets an admin write to one.
+        (isAdmin() && resource.data.type == 'group')
       );
       /**
        * Neither party may open a DM with someone who has blocked them, in either
@@ -644,7 +647,11 @@ service cloud.firestore {
 
       // direct messages
       match /messages/{messageId} {
-        allow read: if isAuth() && request.auth.uid in chatMembers(chatId);
+        allow read: if isAuth() && (
+          request.auth.uid in chatMembers(chatId)
+          // Admins read a PROJECT group chat's messages, read-only (see above).
+          || (isAdmin() && get(/databases/$(database)/documents/chats/$(chatId)).data.type == 'group')
+        );
         // messageCreateOk covers membership AND read-only (BAMA System DMs);
         // the Admin SDK bypasses all of it. `mentionsEveryone` belongs to
         // community channels alone, so it is denied outright here.

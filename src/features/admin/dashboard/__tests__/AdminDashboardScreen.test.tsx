@@ -139,9 +139,12 @@ it('clears the floating tab bar at the bottom and the log-out button at the top'
   expect(pad.paddingLeft).toBeGreaterThanOrEqual(16 + 40);
 });
 
-it('"total users" opens the Users page; the other tiles are not buttons', () => {
+it('"total users" opens the Users page, "total projects" the Projects page; the rest are not buttons', () => {
   const r = render(<AdminDashboardScreen />);
   fireEvent.press(r.getByTestId('tile-users-press'));
   expect(mockPush).toHaveBeenCalledWith('/admin/users');
-  expect(r.queryByTestId('tile-projects-press')).toBeNull();
+  fireEvent.press(r.getByTestId('tile-projects-press'));
+  expect(mockPush).toHaveBeenCalledWith('/admin/projects');
+  expect(r.queryByTestId('tile-courses-press')).toBeNull();
+  expect(r.queryByTestId('tile-communities-press')).toBeNull();
 });

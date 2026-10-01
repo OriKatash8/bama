@@ -91,8 +91,11 @@ export default function AdminTabsLayout() {
             ),
           }}
         />
-        {/* Users opens from the dashboard's "total users" tile, not the tab bar. */}
+        {/* Users and Projects open from the dashboard's tiles, not the tab bar;
+            a project's chat opens from Projects. */}
         <Tabs.Screen name="users" options={{ href: null }} />
+        <Tabs.Screen name="projects" options={{ href: null }} />
+        <Tabs.Screen name="project-chat" options={{ href: null }} />
       </Tabs>
 
       {/* Log out — shown on every admin page; a white pill like the dashboard's cards */}

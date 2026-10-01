@@ -36,7 +36,8 @@ export default function AdminDashboardScreen() {
       chip: reg.loading ? undefined : { text: signed(newInPeriod), kind: newInPeriod > 0 ? 'good' : 'neutral' },
       caption: t(`sub_${period}`),
     },
-    { key: 'projects', label: t('total_projects'), caption: t('all_time') },
+    // The way to the Projects page (and from there, each project's chat).
+    { key: 'projects', label: t('total_projects'), caption: t('all_time'), onPress: () => router.push('/admin/projects') },
     { key: 'courses', label: t('total_courses'), caption: t('all_time') },
     { key: 'communities', label: t('total_communities'), caption: t('all_time') },
   ];
