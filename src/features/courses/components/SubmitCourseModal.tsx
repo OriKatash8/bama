@@ -48,10 +48,11 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
 
   /** A field label. `required` appends the marker on the READING side: the app
    *  lays out LTR, so a trailing "*" after Hebrew falls to the LTR end and
-   *  lands in front of the words. rtlSafe anchors it. */
-  const fieldLabel = (key: string, required = false) => (
+   *  lands in front of the words. rtlSafe anchors it. `optional` says so in
+   *  words, for a field that is easy to mistake for required. */
+  const fieldLabel = (key: string, required = false, optional = false) => (
     <Text style={[styles.label, { ...font.semiBold }, align]}>
-      {rtlSafe(required ? `${t(key)} *` : t(key), rtl)}
+      {rtlSafe(required ? `${t(key)} *` : optional ? `${t(key)} ${t('builder.optional_note')}` : t(key), rtl)}
     </Text>
   );
 
@@ -130,7 +131,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
             <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <Text style={[styles.headerTitle, { ...font.bold }, align]}>{t('courses.add_your_course')}</Text>
               <TouchableOpacity onPress={onClose} hitSlop={12} activeOpacity={0.7}>
-                <X size={20} color="#004aad" />
+                <X size={20} color={TEXT} />
               </TouchableOpacity>
             </View>
 
@@ -142,7 +143,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={title}
                 onChangeText={setTitle}
                 placeholder={t('courses.course_title_label')}
-                placeholderTextColor="rgba(0,74,173,0.4)"
+                placeholderTextColor={PLACEHOLDER}
               />
 
               {/* Category */}
@@ -152,7 +153,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 onPress={() => setShowCategoryPicker(!showCategoryPicker)}
                 activeOpacity={0.8}
               >
-                <Text style={[{ color: category ? '#004aad' : 'rgba(0,74,173,0.4)', ...font.regular }, align]}>
+                <Text style={[{ color: category ? TEXT : PLACEHOLDER, ...font.regular }, align]}>
                   {/* The localised name. `category` itself stays the raw
                       ROLE_CATEGORIES key — it is what the document is saved
                       under — so echoing it put an English word in the middle
@@ -182,7 +183,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={courseUrl}
                 onChangeText={setCourseUrl}
                 placeholder="https://..."
-                placeholderTextColor="rgba(0,74,173,0.4)"
+                placeholderTextColor={PLACEHOLDER}
                 autoCapitalize="none"
                 keyboardType="url"
               />
@@ -194,7 +195,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={instructorName}
                 onChangeText={setInstructorName}
                 placeholder={t('courses.instructor_label')}
-                placeholderTextColor="rgba(0,74,173,0.4)"
+                placeholderTextColor={PLACEHOLDER}
               />
 
               {/* Price */}
@@ -204,7 +205,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={price}
                 onChangeText={setPrice}
                 placeholder="0"
-                placeholderTextColor="rgba(0,74,173,0.4)"
+                placeholderTextColor={PLACEHOLDER}
                 keyboardType="numeric"
               />
 
@@ -215,7 +216,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                 value={description}
                 onChangeText={setDescription}
                 placeholder={t('courses.description_label')}
-                placeholderTextColor="rgba(0,74,173,0.4)"
+                placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={3}
               />
@@ -239,7 +240,7 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                     value={durationHours}
                     onChangeText={setDurationHours}
                     placeholder="0"
-                    placeholderTextColor="rgba(0,74,173,0.4)"
+                    placeholderTextColor={PLACEHOLDER}
                     keyboardType="numeric"
                   />
                 </View>
@@ -250,14 +251,14 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
                     value={lessonsCount}
                     onChangeText={setLessonsCount}
                     placeholder="0"
-                    placeholderTextColor="rgba(0,74,173,0.4)"
+                    placeholderTextColor={PLACEHOLDER}
                     keyboardType="numeric"
                   />
                 </View>
               </View>
 
               {/* Level */}
-              {fieldLabel('courses.level_label')}
+              {fieldLabel('courses.level_label', false, true)}
               <View style={[styles.levelRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                 {(['beginner', 'intermediate', 'advanced'] as const).map((key) => {
                   const active = level === key;
@@ -295,6 +296,11 @@ export function SubmitCourseModal({ visible, onClose, onSubmitted }: Props) {
   );
 }
 
+// Black text throughout; placeholders a muted grey so they don't read as values.
+// The blue stays on buttons and the chosen difficulty (white text on it).
+const TEXT = '#000000';
+const PLACEHOLDER = '#9C99AD';
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -318,13 +324,13 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  headerTitle: { fontSize: 18, color: '#004aad', flex: 1 },
+  headerTitle: { fontSize: 18, color: TEXT, flex: 1 },
   form: { gap: 4, paddingBottom: 16 },
   // flexShrink, NOT flex:1. The card is auto-height capped at maxHeight, so a
   // flex:1 child has no basis to grow from and collapses to nothing — which left
   // the modal showing only its header. Same as the marketplace filter's scroll.
   formScroll: { flexShrink: 1 },
-  label: { fontSize: 13, color: 'rgba(0,74,173,0.8)', marginBottom: 4, marginTop: 12 },
+  label: { fontSize: 13, color: TEXT, marginBottom: 4, marginTop: 12 },
   input: {
     backgroundColor: '#ffffff',
     borderColor: 'rgba(0,74,173,0.15)',
@@ -332,7 +338,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#004aad',
+    color: TEXT,
     fontSize: 14,
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
@@ -345,7 +351,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pickerItem: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(0,74,173,0.1)' },
-  pickerItemText: { color: '#004aad', fontSize: 14 },
+  pickerItemText: { color: TEXT, fontSize: 14 },
   submitBtn: {
     backgroundColor: '#004aad',
     borderRadius: 12,
@@ -368,7 +374,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   coverPreview: { width: '100%', height: '100%' },
-  coverPickerText: { color: 'rgba(0,74,173,0.5)', fontSize: 13, textAlign: 'center' },
+  coverPickerText: { color: TEXT, fontSize: 13, textAlign: 'center' },
   levelRow: { gap: 8 },
   levelBtn: {
     flex: 1,
@@ -380,6 +386,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   levelBtnActive: { backgroundColor: '#004aad', borderColor: '#004aad' },
-  levelBtnText: { fontSize: 12, color: '#004aad', textAlign: 'center' },
+  levelBtnText: { fontSize: 12, color: TEXT, textAlign: 'center' },
   levelBtnTextActive: { color: '#fff' },
 });
