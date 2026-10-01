@@ -17,7 +17,7 @@ const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronRight, FileText, Globe, Info, LogOut, Percent, Phone, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, FileText, Globe, Info, LogOut, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -347,6 +347,19 @@ export function AppHeader() {
               <FileText size={18} color={colors.textMuted} strokeWidth={1.5} />
               <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
                 {t('settings.terms')}
+              </AppText>
+              <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+            </TouchableOpacity>
+
+            {/* Cancellation & refund policy */}
+            <TouchableOpacity
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => void Linking.openURL(legalUrl('refunds', language))}
+              activeOpacity={0.7}
+            >
+              <Receipt size={18} color={colors.textMuted} strokeWidth={1.5} />
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                {t('settings.refunds')}
               </AppText>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
             </TouchableOpacity>

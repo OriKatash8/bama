@@ -17,6 +17,8 @@ function fixture() {
   writeFileSync(join(src, 'privacy.he.md'), '# מדיניות פרטיות\n\nפרטיות.');
   writeFileSync(join(src, 'terms.en.md'), '# Terms of Use\n\nHello.');
   writeFileSync(join(src, 'privacy.en.md'), '# Privacy Policy\n\nPrivate.');
+  writeFileSync(join(src, 'refunds.he.md'), '# מדיניות ביטולים והחזרים\n\nהחזרים.');
+  writeFileSync(join(src, 'refunds.en.md'), '# Cancellation and Refund Policy\n\nRefunds.');
   const stat = mkdtempSync(join(tmpdir(), 'legal-static-'));
   for (const f of ['logo.webp', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png']) writeFileSync(join(stat, f), 'x');
   const out = join(mkdtempSync(join(tmpdir(), 'legal-out-')), 'public');
@@ -28,9 +30,9 @@ function fixture() {
 
 const read = fixture();
 
-test('writes the four pages at their fixed paths, plus an index linking all four', () => {
+test('writes the six pages at their fixed paths, plus an index linking all six', () => {
   const index = read('index.html');
-  for (const p of ['/terms', '/privacy', '/en/terms', '/en/privacy']) assert.match(index, new RegExp(`href="${p}"`));
+  for (const p of ['/terms', '/privacy', '/refunds', '/en/terms', '/en/privacy', '/en/refunds']) assert.match(index, new RegExp(`href="${p}"`));
 });
 
 test('Hebrew pages are rtl Hebrew with Hebrew text, not entities', () => {
@@ -40,11 +42,14 @@ test('Hebrew pages are rtl Hebrew with Hebrew text, not entities', () => {
   assert.match(html, /שלום <strong>עולם<\/strong>/);
   assert.doesNotMatch(html, /&#x5[0-9a-f]{2};|&#1[45]\d\d;/i);
   assert.match(read('privacy.html'), /<html lang="he" dir="rtl">/);
+  assert.match(read('refunds.html'), /<html lang="he" dir="rtl">/);
+  assert.match(read('refunds.html'), /<h1[^>]*>מדיניות ביטולים והחזרים<\/h1>/);
 });
 
 test('English pages are ltr', () => {
   assert.match(read('en/terms.html'), /<html lang="en" dir="ltr">/);
   assert.match(read('en/privacy.html'), /<html lang="en" dir="ltr">/);
+  assert.match(read('en/refunds.html'), /<html lang="en" dir="ltr">/);
 });
 
 test('each page links to the same document in the other language', () => {
@@ -52,10 +57,12 @@ test('each page links to the same document in the other language', () => {
   assert.match(read('en/terms.html'), /href="\/terms"/);
   assert.match(read('privacy.html'), /href="\/en\/privacy"/);
   assert.match(read('en/privacy.html'), /href="\/privacy"/);
+  assert.match(read('refunds.html'), /href="\/en\/refunds"/);
+  assert.match(read('en/refunds.html'), /href="\/refunds"/);
 });
 
 test('has a title, a description, and no script', () => {
-  for (const f of ['terms.html', 'privacy.html', 'en/terms.html', 'en/privacy.html', 'index.html']) {
+  for (const f of ['terms.html', 'privacy.html', 'refunds.html', 'en/terms.html', 'en/privacy.html', 'en/refunds.html', 'index.html']) {
     const html = read(f);
     assert.match(html, /<title>[^<]+<\/title>/);
     assert.match(html, /<meta name="description" content="[^"]+">/);
@@ -76,7 +83,7 @@ test('static files (logo, favicons) are copied next to the pages', () => {
 const LOGO = /<a class="home[^"]*" href="\/"><img class="logo[^"]*" src="\/logo\.webp" alt="BAMA" width="\d+" height="(\d+)"><\/a>/;
 
 test('every page header starts with the one gradient logo, linking home, next to the title', () => {
-  for (const f of ['terms.html', 'privacy.html', 'en/terms.html', 'en/privacy.html']) {
+  for (const f of ['terms.html', 'privacy.html', 'refunds.html', 'en/terms.html', 'en/privacy.html', 'en/refunds.html']) {
     const header = read(f).match(/<header>[\s\S]*?<\/header>/)[0];
     const m = header.match(LOGO);
     assert.ok(m, f);
@@ -102,7 +109,7 @@ test('one logo for both color schemes: no dark-mode swap', () => {
 });
 
 test('every page has the favicon and apple-touch-icon', () => {
-  for (const f of ['terms.html', 'privacy.html', 'en/terms.html', 'en/privacy.html', 'index.html']) {
+  for (const f of ['terms.html', 'privacy.html', 'refunds.html', 'en/terms.html', 'en/privacy.html', 'en/refunds.html', 'index.html']) {
     const html = read(f);
     assert.match(html, /<link rel="icon" href="\/favicon\.ico" sizes="any">/);
     assert.match(html, /<link rel="icon" href="\/favicon-32\.png" type="image\/png" sizes="32x32">/);

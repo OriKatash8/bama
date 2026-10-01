@@ -12,11 +12,18 @@ export const TERMS_URL_HE = 'https://bama-af0a0.web.app/terms';
 export const TERMS_URL_EN = 'https://bama-af0a0.web.app/en/terms';
 export const PRIVACY_URL_HE = 'https://bama-af0a0.web.app/privacy';
 export const PRIVACY_URL_EN = 'https://bama-af0a0.web.app/en/privacy';
+export const REFUNDS_URL_HE = 'https://bama-af0a0.web.app/refunds';
+export const REFUNDS_URL_EN = 'https://bama-af0a0.web.app/en/refunds';
 
-/** The Terms or Privacy page in the app's language; anything but Hebrew gets English, as i18n falls back. */
-export function legalUrl(doc: 'terms' | 'privacy', language: string | null | undefined): string {
-  if (doc === 'terms') return language === 'he' ? TERMS_URL_HE : TERMS_URL_EN;
-  return language === 'he' ? PRIVACY_URL_HE : PRIVACY_URL_EN;
+const LEGAL_URLS = {
+  terms: { he: TERMS_URL_HE, en: TERMS_URL_EN },
+  privacy: { he: PRIVACY_URL_HE, en: PRIVACY_URL_EN },
+  refunds: { he: REFUNDS_URL_HE, en: REFUNDS_URL_EN },
+} as const;
+
+/** A legal page in the app's language; anything but Hebrew gets English, as i18n falls back. */
+export function legalUrl(doc: keyof typeof LEGAL_URLS, language: string | null | undefined): string {
+  return language === 'he' ? LEGAL_URLS[doc].he : LEGAL_URLS[doc].en;
 }
 
 /** "1.10" > "1.9": dotted versions compared number by number; missing parts count as 0. */

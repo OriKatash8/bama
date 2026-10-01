@@ -6,8 +6,8 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
 /**
- * The Terms and the Privacy Policy open from the settings menu, in the app's
- * language. Apple requires the privacy policy to be reachable inside the app.
+ * The Terms, the Privacy Policy and the Cancellation & Refund Policy open from
+ * the settings menu, in the app's language. Apple requires the privacy policy to be reachable inside the app.
  */
 
 const mockLang = { language: 'en' as 'en' | 'he' };
@@ -41,7 +41,7 @@ function openSettings() {
   return r;
 }
 
-it('in English the rows read Terms of Use / Privacy Policy and open the English pages', () => {
+it('in English the rows read Terms of Use / Privacy Policy / Cancellation & Refund Policy and open the English pages', () => {
   mockLang.language = 'en';
   const r = openSettings();
   fireEvent.press(r.getByText(en.settings.terms));
@@ -50,9 +50,11 @@ it('in English the rows read Terms of Use / Privacy Policy and open the English 
   expect(openURL).toHaveBeenLastCalledWith('https://bama-af0a0.web.app/en/privacy');
   expect(en.settings.terms).toBe('Terms of Use');
   expect(en.settings.privacy).toBe('Privacy Policy');
+  fireEvent.press(r.getByText('Cancellation & Refund Policy'));
+  expect(openURL).toHaveBeenLastCalledWith('https://bama-af0a0.web.app/en/refunds');
 });
 
-it('in Hebrew the rows read תקנון / מדיניות פרטיות and open the Hebrew pages', () => {
+it('in Hebrew the rows read תקנון / מדיניות פרטיות / מדיניות ביטולים והחזרים and open the Hebrew pages', () => {
   mockLang.language = 'he';
   const r = openSettings();
   fireEvent.press(r.getByText('תקנון'));
@@ -60,4 +62,6 @@ it('in Hebrew the rows read תקנון / מדיניות פרטיות and open th
   fireEvent.press(r.getByText('מדיניות פרטיות'));
   expect(openURL).toHaveBeenLastCalledWith('https://bama-af0a0.web.app/privacy');
   expect(he.settings.terms).toBe('תקנון');
+  fireEvent.press(r.getByText('מדיניות ביטולים והחזרים'));
+  expect(openURL).toHaveBeenLastCalledWith('https://bama-af0a0.web.app/refunds');
 });

@@ -3,9 +3,9 @@
 // Turns the four legal documents in legal-site/src/*.md into static pages for
 // Firebase Hosting (default site, bama-af0a0). The Terms quote these URLs, so the
 // output paths are fixed:
-//   /terms, /privacy           Hebrew   (terms.html, privacy.html)
-//   /en/terms, /en/privacy     English  (en/terms.html, en/privacy.html)
-// plus index.html linking to all four. Fully static: no JavaScript, no cookies,
+//   /terms, /privacy, /refunds            Hebrew   (terms.html, privacy.html, refunds.html)
+//   /en/terms, /en/privacy, /en/refunds   English  (en/*.html)
+// plus index.html linking to all six. Fully static: no JavaScript, no cookies,
 // no analytics. legal-site/public/ is build output and is not committed.
 //
 // legal-site/static/ (logo, favicon, apple-touch-icon) is copied as is. The logo is
@@ -28,19 +28,23 @@ function logo(height, cls) {
 export const PAGES = [
   { doc: 'terms', lang: 'he', src: 'terms.he.md', out: 'terms.html', path: '/terms' },
   { doc: 'privacy', lang: 'he', src: 'privacy.he.md', out: 'privacy.html', path: '/privacy' },
+  { doc: 'refunds', lang: 'he', src: 'refunds.he.md', out: 'refunds.html', path: '/refunds' },
   { doc: 'terms', lang: 'en', src: 'terms.en.md', out: 'en/terms.html', path: '/en/terms' },
   { doc: 'privacy', lang: 'en', src: 'privacy.en.md', out: 'en/privacy.html', path: '/en/privacy' },
+  { doc: 'refunds', lang: 'en', src: 'refunds.en.md', out: 'en/refunds.html', path: '/en/refunds' },
 ];
 
 const COPY = {
   he: {
     terms: { title: 'תקנון ותנאי שימוש', description: 'תקנון ותנאי השימוש של BAMA.' },
     privacy: { title: 'מדיניות פרטיות', description: 'מדיניות הפרטיות של BAMA: איזה מידע נאסף, למה ומה הזכויות שלך.' },
+    refunds: { title: 'מדיניות ביטולים והחזרים', description: 'מדיניות הביטולים וההחזרים של BAMA.' },
     other: 'English',
   },
   en: {
     terms: { title: 'Terms of Use', description: 'BAMA Terms of Use.' },
     privacy: { title: 'Privacy Policy', description: 'BAMA Privacy Policy: what data is collected, why, and your rights.' },
+    refunds: { title: 'Cancellation & Refund Policy', description: 'BAMA Cancellation and Refund Policy.' },
     other: 'עברית',
   },
 };
@@ -144,7 +148,7 @@ ${PAGES.map(item).join('\n')}
   return shell({
     lang: 'he',
     title: 'BAMA — מסמכים משפטיים · Legal',
-    description: 'התקנון ומדיניות הפרטיות של BAMA, בעברית ובאנגלית. BAMA Terms of Use and Privacy Policy.',
+    description: 'התקנון, מדיניות הפרטיות ומדיניות הביטולים וההחזרים של BAMA, בעברית ובאנגלית. BAMA Terms of Use, Privacy Policy and Cancellation & Refund Policy.',
     header: '',
     body,
   });
