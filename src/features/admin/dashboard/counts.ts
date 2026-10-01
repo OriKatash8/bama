@@ -5,8 +5,6 @@ import { db } from '@core/firebase/config';
 export type AdminCounts = {
   users: number | null;
   projects: number | null;
-  courses: number | null;
-  communities: number | null;
   openReports: number | null;
 };
 
@@ -27,15 +25,12 @@ export function useAdminCounts(): AdminCounts | null {
   useEffect(() => {
     let active = true;
     (async () => {
-      // Communities live in `chats` with type == 'community' (no `communities` collection).
-      const [users, projects, courses, communities, openReports] = await Promise.all([
+      const [users, projects, openReports] = await Promise.all([
         countOf(collection(db, 'users')),
         countOf(collection(db, 'projects')),
-        countOf(collection(db, 'courses')),
-        countOf(query(collection(db, 'chats'), where('type', '==', 'community'))),
         countOf(query(collection(db, 'reports'), where('status', '==', 'pending'))),
       ]);
-      if (active) setCounts({ users, projects, courses, communities, openReports });
+      if (active) setCounts({ users, projects, openReports });
     })();
     return () => {
       active = false;

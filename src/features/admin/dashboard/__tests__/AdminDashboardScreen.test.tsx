@@ -36,7 +36,7 @@ const H = he.admin_dashboard;
 const counts = useAdminCounts as jest.Mock;
 const reg = useRegistrationStats as jest.Mock;
 
-const COUNTS = { users: 1234, projects: 56, courses: 7, communities: 8, openReports: 3 };
+const COUNTS = { users: 1234, projects: 56, openReports: 3 };
 const REG = {
   labels: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
   total: [1, 0, 3, 2, 0, 4, 5],
@@ -56,12 +56,12 @@ afterEach(() => jest.useRealTimers());
 
 const valueOf = (r: ReturnType<typeof render>, id: string) => r.getByTestId(`${id}-value`).props.accessibilityLabel ?? r.getByTestId(`${id}-value`).props.children;
 
-it('shows the four platform totals as stat tiles', () => {
+it('shows the users and projects totals as stat tiles, and no courses or communities', () => {
   const r = render(<AdminDashboardScreen />);
   expect(valueOf(r, 'tile-users')).toBe('1,234');
   expect(valueOf(r, 'tile-projects')).toBe('56');
-  expect(valueOf(r, 'tile-courses')).toBe('7');
-  expect(valueOf(r, 'tile-communities')).toBe('8');
+  expect(r.queryByTestId('tile-courses')).toBeNull();
+  expect(r.queryByTestId('tile-communities')).toBeNull();
   expect(within(r.getByTestId('tile-users')).getByText(E.total_users)).toBeTruthy();
 });
 
@@ -89,7 +89,7 @@ it('the users tile carries the new registrations of the period', () => {
 // Tiles read as the community dashboard's: a footer line under every number.
 it('every tile has a footer line under its number', () => {
   const r = render(<AdminDashboardScreen />);
-  for (const id of ['tile-projects', 'tile-courses', 'tile-communities']) {
+  for (const id of ['tile-projects']) {
     expect(within(r.getByTestId(id)).getByText(E.all_time)).toBeTruthy();
   }
 });
@@ -109,6 +109,12 @@ it('switches the period for the chart and the users tile', () => {
   fireEvent.press(r.getByTestId('period-weekly'));
   expect(reg).toHaveBeenLastCalledWith('weekly', false);
   expect(r.getByTestId('period-weekly').props.accessibilityState.selected).toBe(true);
+  fireEvent.press(r.getByTestId('period-monthly'));
+  expect(reg).toHaveBeenLastCalledWith('monthly', false);
+  expect(within(r.getByTestId('tile-users')).getByText(E.sub_monthly)).toBeTruthy();
+  fireEvent.press(r.getByTestId('period-yearly'));
+  expect(reg).toHaveBeenLastCalledWith('yearly', false);
+  expect(within(r.getByTestId('tile-users')).getByText(E.sub_yearly)).toBeTruthy();
 });
 
 it('switches the chart between total and by mode', () => {

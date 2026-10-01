@@ -15,16 +15,17 @@ import { stepAt, useTimeline } from '@features/communityAdmin/motion';
 import { AdminText } from '@features/communityAdmin/components/primitives';
 import { Segment } from '@features/communityAdmin/components/AdminHeader';
 import { ChartCard, EmptyPlot, Legend, Ltr, Tooltip, XLabel, YLabels } from '@features/communityAdmin/components/ChartParts';
+import { axisLabels } from '@components/charts/axisLabels';
 import { groupedBars, regNiceMax } from '../geometry';
 
 export type RegView = 'total' | 'by_mode';
-export type RegPeriod = 'daily' | 'weekly';
+export type RegPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 const LABEL_FADE_DELAY = 500;
 const LABEL_FADE = 400;
 
 /**
- * New registrations per day or week, oldest on the left, in the community
+ * New registrations per hour, day or month, oldest on the left, in the community
  * dashboard's bar style: bars grow from the baseline with a stagger and
  * replay when the period or view changes; the whole band is the hover/tap
  * target. "By mode" puts a client bar and a pro bar side by side.
@@ -213,7 +214,7 @@ export function RegistrationsChart({
                         </AdminText>
                       ) : null,
                     )}
-                  {labels.map((l, i) => (
+                  {axisLabels(labels).map((l, i) => (
                     <XLabel key={`x${i}`} x={single.centerX(i)} height={H} text={l} />
                   ))}
                   {empty ? (

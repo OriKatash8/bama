@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Ban, Info } from 'lucide-react-native';
 import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
 import { useCancellationLog } from '@features/admin/useCancellationLog';
+import { periodBuckets, type Period } from '@features/admin/periodBuckets';
 import {
   AdminPage,
   AdminText,
@@ -24,8 +25,6 @@ import {
   useScopedT,
 } from '@features/admin/ui';
 
-type Period = 'daily' | 'weekly';
-
 const shekels = (n: number) => `₪${n.toLocaleString('en-US')}`;
 
 /**
@@ -45,19 +44,9 @@ export default function MoneyAdmin() {
   const fmtDate = (ts: number) =>
     ts ? new Date(ts * 1000).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' }) : '';
 
-  // Buckets oldest → newest. No data source yet → all zeros (scaffold).
-  // Daily = last 7 days (weekday labels); Weekly = last 6 weeks (week-start dates).
-  const labels = period === 'daily'
-    ? Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return d.toLocaleDateString(locale, { weekday: 'short' });
-      })
-    : Array.from({ length: 6 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (5 - i) * 7);
-        return d.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
-      });
+  // Buckets oldest → newest, the same scales as the dashboard's registrations
+  // chart. No data source yet → all zeros (scaffold).
+  const { labels } = periodBuckets(period, new Date(), locale);
 
   // Every tile carries a footer line, like the dashboard's.
   const metrics: { key: string; label: string; value: number; format?: (n: number) => string; caption?: string }[] = [
@@ -96,6 +85,8 @@ export default function MoneyAdmin() {
             options={[
               { value: 'daily', label: t('daily') },
               { value: 'weekly', label: t('weekly') },
+              { value: 'monthly', label: t('monthly') },
+              { value: 'yearly', label: t('yearly') },
             ]}
             value={period}
             onChange={setPeriod}

@@ -64,7 +64,7 @@ it('shows the four placeholder figures as stat tiles, each with a footer line', 
   expect(within(r.getByTestId('tile-payouts')).getByText(E.pending_now)).toBeTruthy();
 });
 
-it('the flow chart names every source and switches between daily and weekly', () => {
+it('the flow chart names every source and switches between daily, weekly, monthly and yearly', () => {
   const r = render(<MoneyAdmin />);
   const chart = within(r.getByTestId('money-flow'));
   expect(chart.getByText(E.flow_heading)).toBeTruthy();
@@ -75,6 +75,11 @@ it('the flow chart names every source and switches between daily and weekly', ()
   fireEvent.press(r.getByTestId('period-weekly'));
   expect(r.getByTestId('period-weekly').props.accessibilityState.selected).toBe(true);
   expect(r.getByTestId('period-daily').props.accessibilityState.selected).toBe(false);
+  fireEvent.press(r.getByTestId('period-monthly'));
+  expect(r.getByTestId('period-monthly').props.accessibilityState.selected).toBe(true);
+  fireEvent.press(r.getByTestId('period-yearly'));
+  expect(r.getByTestId('period-yearly').props.accessibilityState.selected).toBe(true);
+  expect(r.getByText(new Date().toLocaleDateString('en-US', { month: 'short' }))).toBeTruthy();
 });
 
 it('says so when there are no cancellations', () => {
