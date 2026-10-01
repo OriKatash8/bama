@@ -1241,6 +1241,7 @@
     "empty_arrears": "No outstanding balances.",
     "empty_flagged": "Nothing waiting for review.",
     "total_owed": "Total owed: ₪{{amount}}",
+    "open_fees": "{{n}} open fees",
     "oldest": "Oldest debt: {{date}}",
     "demand_sent": "Demand sent: {{date}}",
     "demand_none": "No payment demand sent",

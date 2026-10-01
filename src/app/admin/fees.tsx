@@ -218,11 +218,20 @@ export default function AdminFeesScreen() {
           ) : (
             arrears.map((row) => {
               const name = row.displayName || row.professionalId;
+              // Repeat debtors stand out: 2+ fees with money still owed.
+              const openFees = row.projects.filter((pr) => pr.owed > 0).length;
+              const manyOpen = openFees >= MANY_OPEN_FEES;
               return (
                 <View
                   key={row.professionalId}
                   testID={`arrears-${row.professionalId}`}
-                  style={[styles.section, { borderTopColor: p.border }]}
+                  style={[
+                    styles.section,
+                    { borderTopColor: p.border },
+                    // The red edge on the reading-start side: right in Hebrew (the app
+                    // lays out LTR, so `borderStart` would always be the left).
+                    manyOpen && { backgroundColor: p.badBg, ...(rtl ? { borderRightWidth: 4, borderRightColor: p.bad } : { borderLeftWidth: 4, borderLeftColor: p.bad }) },
+                  ]}
                 >
                   <View style={[styles.sectionHead, { flexDirection: rowDir }]} testID={`arrears-head-${row.professionalId}`}>
                     <InitialsAvatar name={name} />
@@ -236,6 +245,11 @@ export default function AdminFeesScreen() {
                       label={t(row.blocked ? 'blocked' : 'not_blocked')}
                     />
                   </View>
+                  {manyOpen && (
+                    <View style={{ flexDirection: rowDir }}>
+                      <StatusChip tone="bad" label={t('open_fees', { n: openFees })} />
+                    </View>
+                  )}
 
                   <View style={styles.facts}>
                     <AdminText weight="bold" tabular style={[styles.total, { textAlign }]}>
@@ -353,6 +367,9 @@ export default function AdminFeesScreen() {
     </AdminPage>
   );
 }
+
+/** A professional with this many unpaid fees (or more) is marked red. */
+const MANY_OPEN_FEES = 2;
 
 /** Blocked / not blocked: the palette's red or green on its tint. */
 function StatusChip({ tone, label }: { tone: 'bad' | 'good'; label: string }) {

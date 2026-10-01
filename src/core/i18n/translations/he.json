@@ -1241,6 +1241,7 @@
     "empty_arrears": "אין יתרות פתוחות.",
     "empty_flagged": "אין פניות שממתינות לבדיקה.",
     "total_owed": "סה״כ חוב: ₪{{amount}}",
+    "open_fees": "{{n}} עמלות פתוחות",
     "oldest": "החוב הישן ביותר: {{date}}",
     "demand_sent": "דרישת תשלום נשלחה: {{date}}",
     "demand_none": "לא נשלחה דרישת תשלום",
