@@ -5,3 +5,6 @@
  * that carries none.
  */
 export const BAMA_CONTACT_EMAIL = 'bama.app.hk@gmail.com';
+
+/** BAMA's WhatsApp number (E.164). Shown on the "contact us" settings page. */
+export const BAMA_WHATSAPP_NUMBER = '+972529710467';

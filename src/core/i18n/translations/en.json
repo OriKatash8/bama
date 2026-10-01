@@ -1043,7 +1043,14 @@
     "softask_allow": "Turn on notifications",
     "softask_not_now": "Not now"
   },
+  "contact": {
+    "title": "Contact us",
+    "reply_note": "Have a question or need help? Write to us — we'll get back to you as fast as we can.",
+    "email_label": "Email",
+    "whatsapp_label": "WhatsApp"
+  },
   "settings": {
+    "contact_us": "Contact us",
     "language": "Language",
     "appearance": "Appearance",
     "information": "Information",

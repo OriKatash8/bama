@@ -17,7 +17,7 @@ const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronRight, FileText, Globe, Info, LogOut, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, FileText, Globe, Info, LogOut, MessageCircle, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -392,6 +392,21 @@ export function AppHeader() {
               <LogOut size={18} color="#ff4d6d" strokeWidth={1.5} />
               <AppText weight="semiBold" style={styles.logoutText}>
                 {t('settings.logout')}
+              </AppText>
+            </TouchableOpacity>
+          </View>
+
+          {/* Contact us — both modes: BAMA's email and WhatsApp. Under log out,
+              in its own section like delete account. */}
+          <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
+            <TouchableOpacity
+              style={styles.logoutRow}
+              onPress={() => { setSettingsVisible(false); router.push('/settings/contact' as never); }}
+              activeOpacity={0.7}
+            >
+              <MessageCircle size={18} color={colors.textMuted} strokeWidth={1.5} />
+              <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
+                {t('settings.contact_us')}
               </AppText>
             </TouchableOpacity>
           </View>

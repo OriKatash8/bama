@@ -58,3 +58,18 @@ it.each(['client', 'professional'] as const)('in %s mode the menu has a phone nu
   fireEvent.press(r.getByText(en.settings.phone));
   expect(mockPush).toHaveBeenCalledWith('/settings/phone');
 });
+
+it.each(['client', 'professional'] as const)('in %s mode the menu has a "contact us" row', (mode) => {
+  mockMode.activeMode = mode;
+  const r = openSettings();
+  fireEvent.press(r.getByText(en.settings.contact_us));
+  expect(mockPush).toHaveBeenCalledWith('/settings/contact');
+});
+
+it('"contact us" sits under the log-out button', () => {
+  mockMode.activeMode = 'client';
+  const r = openSettings();
+  const text = JSON.stringify(r.toJSON());
+  expect(text.indexOf(en.settings.logout)).toBeGreaterThan(-1);
+  expect(text.indexOf(en.settings.contact_us)).toBeGreaterThan(text.indexOf(en.settings.logout));
+});

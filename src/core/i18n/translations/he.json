@@ -1043,7 +1043,14 @@
     "softask_allow": "הפעלת התראות",
     "softask_not_now": "לא עכשיו"
   },
+  "contact": {
+    "title": "צרו קשר",
+    "reply_note": "יש לכם שאלה או צריכים עזרה? כתבו לנו — נחזור אליכם בהקדם האפשרי.",
+    "email_label": "מייל",
+    "whatsapp_label": "וואטסאפ"
+  },
   "settings": {
+    "contact_us": "צרו קשר",
     "language": "שפה",
     "appearance": "מראה",
     "information": "מידע",
