@@ -144,7 +144,7 @@ export const onNewCommunityMessage = functions.firestore
     // "My communities". The client writes channel messages inline and never
     // touched the parent doc, so until this the count stayed 0 for ever. Never
     // throws: a failed count must not cost anyone their notification.
-    const unread = communityUnreadUpdate(members, message.senderId);
+    const unread = communityUnreadUpdate(members, message.senderId, channelId);
     if (Object.keys(unread).length > 0) {
       await chatDoc.ref.update(unread).catch((e) => console.warn('[onNewCommunityMessage] unread count failed', e));
     }

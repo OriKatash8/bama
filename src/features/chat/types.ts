@@ -95,6 +95,9 @@ export interface Chat {
   lastMessage?: LastMessage | null;
   createdAt?: Timestamp;
   unreadCount?: Record<string, number>;
+  /** Communities only: uid → channelId → unread in that channel. Written by
+   *  onNewCommunityMessage; each reader zeroes their own entry. */
+  channelUnread?: Record<string, Record<string, number>>;
   category?: string;
   purchaseListingId?: string;
   buyerName?: string;

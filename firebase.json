@@ -16,7 +16,7 @@
     "trailingSlash": false,
     "headers": [
       {
-        "regex": "^/(?:[^.]*|.*\\.html)$",
+        "regex": "^/(?:[^.]*|.*[.]html)$",
         "headers": [{ "key": "Cache-Control", "value": "max-age=300" }]
       }
     ]

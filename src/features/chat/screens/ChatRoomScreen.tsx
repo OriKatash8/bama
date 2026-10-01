@@ -6,6 +6,7 @@ import { SwipeableMessageRow } from '../components/SwipeableMessageRow';
 import { buildReplyTo, type ReplyTo } from '../utils/replyTo';
 import { bubbleSide } from '../utils/bubbleSide';
 import { firstUnreadMessageId } from '../utils/firstUnread';
+import { openingChannelId } from '../utils/openingChannel';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
@@ -272,8 +273,6 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
   const trackWidthRef = useRef(0);
   const seekPctRef = useRef(0);
   const totalDurationRef = useRef(audioDuration);
-  const rtlRef = useRef(rtl);
-  rtlRef.current = rtl;
   const playerRef = useRef(player);
   playerRef.current = player;
 
@@ -302,6 +301,8 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
   }, [status.didJustFinish]);
 
   // ── PanResponder (created once; reads from refs to avoid stale closures) ──
+  // The bar runs left to right in BOTH languages (see the timeline below), so
+  // the position under the finger is the position in the message — no mirroring.
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -310,8 +311,7 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
       onPanResponderGrant: (e) => {
         const w = trackWidthRef.current;
         if (!w) return;
-        const raw = e.nativeEvent.locationX / w;
-        const pct = Math.max(0, Math.min(1, rtlRef.current ? 1 - raw : raw));
+        const pct = Math.max(0, Math.min(1, e.nativeEvent.locationX / w));
         seekPctRef.current = pct;
         setIsDragging(true);
         setSeekPct(pct);
@@ -319,8 +319,7 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
       onPanResponderMove: (e) => {
         const w = trackWidthRef.current;
         if (!w) return;
-        const raw = e.nativeEvent.locationX / w;
-        const pct = Math.max(0, Math.min(1, rtlRef.current ? 1 - raw : raw));
+        const pct = Math.max(0, Math.min(1, e.nativeEvent.locationX / w));
         seekPctRef.current = pct;
         setSeekPct(pct);
       },
@@ -362,26 +361,31 @@ function VoiceMessageBubble({ messageId, audioUrl, audioDuration, isOwn, playing
           : <Play size={18} color={isOwn ? '#ffffff' : '#004aad'} strokeWidth={1.5} />}
       </TouchableOpacity>
 
-      {/* Elapsed */}
-      <AppText weight="semiBold" style={[chatStyles.audioTimeText, { color: accent }]}>
-        {formatRecordingTime(Math.floor(displayElapsed))}
-      </AppText>
+      {/* Elapsed → bar → total, left to right in both languages: time runs
+          that way on a player even in Hebrew, and mirroring only the labels
+          left the fill growing against the finger. Only the play button
+          follows the reading direction. */}
+      <View testID="audio-timeline" style={chatStyles.audioTimeline}>
+        <AppText weight="semiBold" style={[chatStyles.audioTimeText, { color: accent }]}>
+          {formatRecordingTime(Math.floor(displayElapsed))}
+        </AppText>
 
-      {/* Progress track */}
-      <View
-        style={chatStyles.audioTrackOuter}
-        onLayout={(e) => { trackWidthRef.current = e.nativeEvent.layout.width; }}
-        {...panResponder.panHandlers}
-      >
-        <View style={{ flex: filledFlex, height: 3, backgroundColor: accent, borderRadius: 1.5 }} />
-        <View style={[chatStyles.audioHandleDot, { backgroundColor: accent }]} />
-        <View style={{ flex: unfilledFlex, height: 3, backgroundColor: trackBg, borderRadius: 1.5 }} />
+        {/* Progress track */}
+        <View
+          style={chatStyles.audioTrackOuter}
+          onLayout={(e) => { trackWidthRef.current = e.nativeEvent.layout.width; }}
+          {...panResponder.panHandlers}
+        >
+          <View style={{ flex: filledFlex, height: 3, backgroundColor: accent, borderRadius: 1.5 }} />
+          <View style={[chatStyles.audioHandleDot, { backgroundColor: accent }]} />
+          <View style={{ flex: unfilledFlex, height: 3, backgroundColor: trackBg, borderRadius: 1.5 }} />
+        </View>
+
+        {/* Total duration */}
+        <AppText weight="semiBold" style={[chatStyles.audioTimeText, { color: accent }]}>
+          {formatRecordingTime(Math.floor(totalSec))}
+        </AppText>
       </View>
-
-      {/* Total duration */}
-      <AppText weight="semiBold" style={[chatStyles.audioTimeText, { color: accent }]}>
-        {formatRecordingTime(Math.floor(totalSec))}
-      </AppText>
     </View>
   );
 }
@@ -619,10 +623,22 @@ export function ChatRoomScreen({ chatId }: Props) {
    * The unread count this chat was opened with, and — once the messages are in
    * — the first of them. Drives where the chat opens and the "N new messages"
    * divider. Read BEFORE the count is cleared (see "Clear unread count").
+   * In a community it belongs to ONE channel (`channelId`); elsewhere null.
    */
-  const [unreadBanner, setUnreadBanner] = useState<{ chatId: string; count: number; firstId: string | null } | null>(null);
+  const [unreadBanner, setUnreadBanner] = useState<
+    { chatId: string; channelId: string | null; count: number; firstId: string | null } | null
+  >(null);
   /** The latest messages, for the unread read that lands after them. */
   const messagesRef = useRef<Message[]>([]);
+  /** Which community channel `messagesRef` holds ('' outside communities). */
+  const messagesChannelRef = useRef('');
+  /**
+   * A community's per-channel unread counts for me, as they were when I opened
+   * it (null until read). What picks the opening channel and places each
+   * channel's divider; `channelUnreadUsedRef` marks the channels already shown.
+   */
+  const [channelUnreadAtOpen, setChannelUnreadAtOpen] = useState<Record<string, number> | null>(null);
+  const channelUnreadUsedRef = useRef(new Set<string>());
 
   const listItems = useMemo((): ListItem[] => {
     const result: ListItem[] = [];
@@ -1044,19 +1060,26 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // Clear unread count — after reading it: the count at open decides where the
   // chat opens and what the "N new messages" divider says. Cleared first, it
-  // would always read 0. Communities count across all their channels, so no
-  // one channel's messages can be placed against it: they get no divider.
+  // would always read 0. A community's count spans all its channels, so its
+  // divider comes from the per-channel counts instead (captured here, used
+  // and cleared channel by channel — see "Community unread" below).
   useEffect(() => {
     if (!currentUserId) return;
     let cancelled = false;
     (async () => {
       const snap = await getDoc(doc(db, 'chats', chatId)).catch(() => null);
-      const data = snap?.exists() ? (snap.data() as { type?: string; unreadCount?: Record<string, number> }) : undefined;
+      const data = snap?.exists()
+        ? (snap.data() as Pick<Chat, 'type' | 'unreadCount' | 'channelUnread'>)
+        : undefined;
+      if (!cancelled && data?.type === 'community') {
+        channelUnreadUsedRef.current = new Set();
+        setChannelUnreadAtOpen({ ...(data.channelUnread?.[currentUserId] ?? {}) });
+      }
       const count = data && data.type !== 'community' ? data.unreadCount?.[currentUserId] ?? 0 : 0;
       // The messages may already be in: place the divider now if so (else the
       // message listener places it when they land — whichever comes second).
       if (!cancelled && count > 0) {
-        setUnreadBanner({ chatId, count, firstId: firstUnreadMessageId(messagesRef.current, currentUserId, count) });
+        setUnreadBanner({ chatId, channelId: null, count, firstId: firstUnreadMessageId(messagesRef.current, currentUserId, count) });
       }
       await updateDoc(doc(db, 'chats', chatId), {
         [`unreadCount.${currentUserId}`]: 0,
@@ -1071,6 +1094,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     if (chatType === null || chatType === 'community') return;
     return listenToMessages(chatId, (msgs) => {
       messagesRef.current = msgs;
+      messagesChannelRef.current = '';
       setMessages(msgs);
       setUnreadBanner((prev) => (prev && prev.chatId === chatId && !prev.firstId
         ? { ...prev, firstId: firstUnreadMessageId(msgs, currentUserId, prev.count) }
@@ -1235,9 +1259,10 @@ export function ChatRoomScreen({ chatId }: Props) {
   const unreadPinnedRef = useRef('');
   useEffect(() => {
     if (!unreadBanner?.firstId || unreadBanner.chatId !== chatId) return;
-    if (unreadPinnedRef.current === chatId) return;
-    if (jumpedRef.current.startsWith(`${chatId}|`)) return;
-    unreadPinnedRef.current = chatId;
+    const key = `${chatId}|${unreadBanner.channelId ?? ''}`;
+    if (unreadPinnedRef.current === key) return;
+    if (jumpedRef.current === key) return;
+    unreadPinnedRef.current = key;
     pinTargetRef.current = { kind: 'message', id: UNREAD_BANNER_ID };
     isAtBottomRef.current = false;
     applyPin();
@@ -1250,8 +1275,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   const { jump: searchJump } = useSearchJump({ chatId, activeChannelId, messageIds, setActiveChannelId, jumpToMessage });
 
   // Opening clears this chat's mentions — ONE path for group chats and channels
-  // alike, which is why it does not hang off unreadCount (communities have no
-  // unread state at all). Declared AFTER the jump so the jump reads the entry
+  // alike, which is why it does not hang off unreadCount (a community's count
+  // is not per channel). Declared AFTER the jump so the jump reads the entry
   // before it goes; `clear` no-ops when nothing matches, so this cannot loop
   // against its own snapshot.
   useEffect(() => {
@@ -1267,9 +1292,57 @@ export function ChatRoomScreen({ chatId }: Props) {
       orderBy('timestamp', 'asc'),
     );
     return onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map((d) => channelDocToMessage(d.id, d.data())));
+      const msgs = snap.docs.map((d) => channelDocToMessage(d.id, d.data()));
+      messagesRef.current = msgs;
+      messagesChannelRef.current = activeChannelId;
+      setMessages(msgs);
+      // Place this channel's divider on the first snapshot that can, as the
+      // non-community listener does.
+      setUnreadBanner((prev) => (prev && prev.chatId === chatId && prev.channelId === activeChannelId && !prev.firstId
+        ? { ...prev, firstId: firstUnreadMessageId(msgs, currentUserId, prev.count) }
+        : prev));
     });
-  }, [chatId, chatType, activeChannelId]);
+  }, [chatId, chatType, activeChannelId, currentUserId]);
+
+  // Community unread, 1/3 — open on the channel with something new: General
+  // when it has unread messages or nothing does, else the first such channel.
+  // Once per community, and only once both the counts and the strip are in.
+  const openingChannelPickedRef = useRef('');
+  useEffect(() => {
+    if (chatType !== 'community' || !channelUnreadAtOpen || !activeChannelId || channels.length === 0) return;
+    if (openingChannelPickedRef.current === chatId) return;
+    openingChannelPickedRef.current = chatId;
+    const pick = openingChannelId(channels.map((c) => c.id), activeChannelId, channelUnreadAtOpen);
+    if (pick !== activeChannelId) setActiveChannelId(pick);
+  }, [chatId, chatType, channelUnreadAtOpen, activeChannelId, channels]);
+
+  // Community unread, 2/3 — entering a channel with unread messages shows its
+  // "N new messages" divider (once: the count is used up), then clears my count
+  // for it. The open-on-unread pin above does the scrolling.
+  useEffect(() => {
+    if (chatType !== 'community' || !channelUnreadAtOpen || !activeChannelId || !currentUserId) return;
+    if (channelUnreadUsedRef.current.has(activeChannelId)) return;
+    channelUnreadUsedRef.current.add(activeChannelId);
+    const count = channelUnreadAtOpen[activeChannelId] ?? 0;
+    if (count <= 0) return;
+    const loaded = messagesChannelRef.current === activeChannelId ? messagesRef.current : [];
+    setUnreadBanner({
+      chatId,
+      channelId: activeChannelId,
+      count,
+      firstId: loaded.length ? firstUnreadMessageId(loaded, currentUserId, count) : null,
+    });
+    updateDoc(doc(db, 'chats', chatId), { [`channelUnread.${currentUserId}.${activeChannelId}`]: 0 }).catch(() => {});
+  }, [chatId, chatType, channelUnreadAtOpen, activeChannelId, currentUserId]);
+
+  // Community unread, 3/3 — leaving a channel clears my count for it too, so
+  // messages that arrived while I was reading it are not "new" next time.
+  useEffect(() => {
+    if (chatType !== 'community' || !activeChannelId || !currentUserId) return;
+    return () => {
+      updateDoc(doc(db, 'chats', chatId), { [`channelUnread.${currentUserId}.${activeChannelId}`]: 0 }).catch(() => {});
+    };
+  }, [chatId, chatType, activeChannelId, currentUserId]);
 
   // Load the linked project's end date so mission/meeting dates can be
   // constrained to the project window (today → project end).
@@ -3139,6 +3212,12 @@ const chatStyles = StyleSheet.create({
     width: 34, height: 34, borderRadius: 17,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center', justifyContent: 'center',
+  },
+  audioTimeline: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   audioDurationText: { fontSize: 13, fontWeight: '600', minWidth: 32 },
   audioTrackOuter: {

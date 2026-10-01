@@ -577,7 +577,7 @@ service cloud.firestore {
       // parties (PurchaseBanner -> acceptDeal / cancelPurchase / confirmReceived).
       function chatMemberFields() {
         return [
-          'lastMessage', 'lastMessageAt', 'unreadCount', 'hiddenFor',
+          'lastMessage', 'lastMessageAt', 'unreadCount', 'channelUnread', 'hiddenFor',
           'sellerAgreed', 'buyerAgreed',
           'archived', 'archiveReason', 'archivedAt'
         ];
