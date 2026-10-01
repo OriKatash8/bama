@@ -66,14 +66,6 @@ it.each(['client', 'professional'] as const)('in %s mode the menu has a "contact
   expect(mockPush).toHaveBeenCalledWith('/settings/contact');
 });
 
-it('"contact us" sits under the log-out button', () => {
-  mockMode.activeMode = 'client';
-  const r = openSettings();
-  const text = JSON.stringify(r.toJSON());
-  expect(text.indexOf(en.settings.logout)).toBeGreaterThan(-1);
-  expect(text.indexOf(en.settings.contact_us)).toBeGreaterThan(text.indexOf(en.settings.logout));
-});
-
 it('the menu scrolls: every row, down to "contact us", is inside the scroll view', () => {
   mockMode.activeMode = 'professional';
   const r = openSettings();

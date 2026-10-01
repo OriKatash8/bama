@@ -1050,6 +1050,11 @@
     "whatsapp_label": "וואטסאפ"
   },
   "settings": {
+    "edit_profile": "עריכת פרופיל",
+    "section_preferences": "העדפות",
+    "section_account": "חשבון ותשלומים",
+    "section_help": "עזרה ומידע",
+    "version": "גרסה",
     "contact_us": "צרו קשר",
     "language": "שפה",
     "appearance": "מראה",

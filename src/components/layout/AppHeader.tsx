@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Children, Fragment, isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +18,7 @@ const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronDown, ChevronRight, FileText, Globe, Info, LogOut, MessageCircle, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
+import { Bell, Camera, ChevronDown, ChevronLeft, ChevronRight, FileText, Globe, Info, LogOut, MessageCircle, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -33,6 +33,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { shrinkAvatar } from '@features/profile/utils/shrinkAvatar';
 import { legalUrl } from '@core/constants/legal';
+import Constants from 'expo-constants';
 
 type Translations = typeof en;
 
@@ -67,6 +68,12 @@ export function AppHeader() {
   const router = useRouter();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  // The app forces LTR globally (src/app/_layout.tsx), so the drawer flips itself
+  // for Hebrew the way every screen does: rows reverse, text aligns to the start,
+  // and the chevron points forward — left in Hebrew, right in English.
+  const rowDir = rtl ? 'row-reverse' : ('row' as const);
+  const align = rtl ? ('right' as const) : ('left' as const);
+  const Forward = rtl ? ChevronLeft : ChevronRight;
 
   const [modeSheetVisible, setModeSheetVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
@@ -93,6 +100,53 @@ export function AppHeader() {
   const modeIsClient = activeMode === 'client';
   // The settings panel's buttons (and the mode badge) follow the mode.
   const { accent } = useModeAccent();
+  const cardBg = isDark ? colors.card : '#FFFFFF';
+  const appVersion = Constants.expoConfig?.version ?? '';
+
+  /** Close the drawer, then open a settings screen. */
+  function go(path: string) {
+    setSettingsVisible(false);
+    router.push(path as never);
+  }
+
+  /** A navigation row: icon at the start, label, chevron at the end. */
+  function menuRow(id: string, Icon: typeof Bell, label: string, onPress: () => void) {
+    return (
+      <TouchableOpacity
+        key={id}
+        testID={`settings-row-${id}`}
+        style={[styles.menuRow, { flexDirection: rowDir }]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Icon size={18} color={colors.textMuted} strokeWidth={1.5} />
+        <AppText weight="regular" style={[styles.menuLabel, { color: colors.text, textAlign: align }]}>
+          {label}
+        </AppText>
+        <Forward size={16} color={colors.textMuted} strokeWidth={1.5} />
+      </TouchableOpacity>
+    );
+  }
+
+  /** A small gray section title over a rounded card; rows inside are divided by hairlines. */
+  function sectionTitle(title: string, id: string, rows: ReactNode) {
+    const items = flattenRows(rows);
+    return (
+      <View testID={`settings-card-${id}`} style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted, textAlign: align, ...font.semiBold }]}>
+          {title}
+        </Text>
+        <View style={[styles.card, { backgroundColor: cardBg }]}>
+          {items.map((row, i) => (
+            <Fragment key={i}>
+              {i > 0 && <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />}
+              {row}
+            </Fragment>
+          ))}
+        </View>
+      </View>
+    );
+  }
   const modeBadgeColor = accent;
   const modeBadgeLabel = modeIsClient ? t('header.client_mode') : t('header.pro_mode');
 
@@ -198,14 +252,17 @@ export function AppHeader() {
             contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
             showsVerticalScrollIndicator={false}
           >
-            {/* User info — tappable avatar */}
-            <View style={[styles.userSection, { borderBottomColor: colors.border }]}>
+            {/* Profile — one compact row: the avatar (tap = change photo, camera
+                badge), name and email. A professional also gets "edit profile",
+                to the profile editor; a client has no profile screen, so for
+                them the row is static, with no chevron. */}
+            <View style={[styles.profileRow, { flexDirection: rowDir }]}>
               <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8} style={styles.avatarWrap}>
-                <View style={[styles.avatar, { backgroundColor: accent }]}>
+                <View testID="settings-avatar" style={[styles.avatar, { backgroundColor: accent }]}>
                   {user?.photoURL ? (
                     <Image source={{ uri: user.photoURL }} style={styles.avatarImg} contentFit="cover" cachePolicy="memory-disk" />
                   ) : (
-                    <User size={24} color="#fff" strokeWidth={1.5} />
+                    <User size={22} color="#fff" strokeWidth={1.5} />
                   )}
                   {avatarUploading && (
                     <View style={styles.avatarOverlay}>
@@ -213,199 +270,161 @@ export function AppHeader() {
                     </View>
                   )}
                 </View>
-                {/* Camera badge */}
-                <View style={[styles.cameraBadge, { backgroundColor: accent }]}>
+                <View testID="settings-camera-badge" style={[styles.cameraBadge, rtl ? { left: 0 } : { right: 0 }, { backgroundColor: accent }]}>
                   <Camera size={10} color="#fff" strokeWidth={2} />
                 </View>
               </TouchableOpacity>
-              <AppText
-                weight="bold"
-                style={[styles.userName, { color: colors.text }]}
-                numberOfLines={1}
-              >
-                {user?.displayName ?? ''}
-              </AppText>
-              <Text
-                style={[styles.userEmail, { color: colors.textMuted, ...font.regular }]}
-                numberOfLines={1}
-              >
-                {user?.email ?? ''}
-              </Text>
-            </View>
-
-            {/* Menu items */}
-            <View style={styles.menuList}>
-              {/* Language */}
-              <View style={[styles.menuRow, { borderBottomColor: colors.border }]}>
-                <Globe size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.language')}
-                </AppText>
-                <View style={[styles.langToggle, { borderColor: colors.border }]}>
-                  {(['he', 'en'] as Lang[]).map((lang) => {
-                    const active = language === lang;
-                    return (
-                      <TouchableOpacity
-                        key={lang}
-                        style={[styles.langBtn, active && { backgroundColor: accent }]}
-                        onPress={() => setLanguage(lang)}
-                        activeOpacity={0.8}
-                      >
-                        <AppText weight="semiBold" style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted }]}>
-                          {lang === 'he' ? 'עב' : 'EN'}
-                        </AppText>
-                      </TouchableOpacity>
-                    );
-                  })}
+              {modeIsClient ? (
+                <View style={styles.profileText}>
+                  <AppText weight="bold" style={[styles.userName, { color: colors.text, textAlign: align }]} numberOfLines={1}>
+                    {user?.displayName ?? ''}
+                  </AppText>
+                  <Text style={[styles.userEmail, { color: colors.textMuted, textAlign: align, ...font.regular }]} numberOfLines={1}>
+                    {user?.email ?? ''}
+                  </Text>
                 </View>
-              </View>
-
-              {/* Notifications */}
-              <TouchableOpacity
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => { setSettingsVisible(false); router.push('/settings/notifications'); }}
-                activeOpacity={0.7}
-              >
-                <Bell size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.notifications')}
-                </AppText>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-              </TouchableOpacity>
-
-
-              {/* Phone number — both modes. Private; the gate asks for it once, this
-                  is where it is changed. */}
-              <TouchableOpacity
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => { setSettingsVisible(false); router.push('/settings/phone' as never); }}
-                activeOpacity={0.7}
-              >
-                <Phone size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.phone')}
-                </AppText>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-              </TouchableOpacity>
-
-              {/* Pricing — professionals only. A client is never charged a
-                  commission, so the row would answer a question they do not have.
-                  This is the standing route to the fee terms, so a pro can read the
-                  rate before their first job. */}
-              {!modeIsClient && (
+              ) : (
                 <TouchableOpacity
-                  style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                  onPress={() => { setSettingsVisible(false); router.push('/settings/pricing'); }}
+                  style={[styles.profileText, styles.profileLinkArea, { flexDirection: rowDir }]}
+                  onPress={() => { setSettingsVisible(false); router.push('/(professional)/(tabs)/profile?edit=1'); }}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
                 >
-                  <Percent size={18} color={colors.textMuted} strokeWidth={1.5} />
-                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                    {t('settings.pricing')}
-                  </AppText>
-                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
+                  <View style={styles.profileTextCol}>
+                    <AppText weight="bold" style={[styles.userName, { color: colors.text, textAlign: align }]} numberOfLines={1}>
+                      {user?.displayName ?? ''}
+                    </AppText>
+                    <Text style={[styles.userEmail, { color: colors.textMuted, textAlign: align, ...font.regular }]} numberOfLines={1}>
+                      {user?.email ?? ''}
+                    </Text>
+                    <AppText weight="semiBold" style={[styles.editProfile, { color: accent, textAlign: align }]}>
+                      {t('settings.edit_profile')}
+                    </AppText>
+                  </View>
+                  <View testID="settings-profile-chevron">
+                    <Forward size={16} color={colors.textMuted} strokeWidth={1.5} />
+                  </View>
                 </TouchableOpacity>
               )}
-
-              {/* BAMA balance — professionals only, for the same reason as Pricing.
-                  The one standing door to the balance screen: every project's
-                  commission, whatever state its engagement is in. */}
-              {!modeIsClient && (
-                <TouchableOpacity
-                  style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                  onPress={() => { setSettingsVisible(false); router.push('/settings/payment'); }}
-                  activeOpacity={0.7}
-                >
-                  <Wallet size={18} color={colors.textMuted} strokeWidth={1.5} />
-                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                    {t('balance.title')}
-                  </AppText>
-                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-                </TouchableOpacity>
-              )}
-
-              {/* Information — opens in place to the three policies: privacy
-                  (Apple requires it reachable inside the app), terms, and
-                  cancellation & refunds. Each opens in the app's language. */}
-              <TouchableOpacity
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => setInfoOpen((o) => !o)}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: infoOpen }}
-              >
-                <Info size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.information')}
-                </AppText>
-                {infoOpen
-                  ? <ChevronDown size={16} color={colors.textMuted} strokeWidth={1.5} />
-                  : <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />}
-              </TouchableOpacity>
-
-              {infoOpen && ([
-                { key: 'privacy', Icon: Shield, label: t('settings.privacy') },
-                { key: 'terms', Icon: FileText, label: t('settings.terms') },
-                { key: 'refunds', Icon: Receipt, label: t('settings.refunds') },
-              ] as const).map(({ key, Icon, label }) => (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.menuRow, styles.subMenuRow, { borderBottomColor: colors.border }]}
-                  onPress={() => void Linking.openURL(legalUrl(key, language))}
-                  activeOpacity={0.7}
-                >
-                  <Icon size={16} color={colors.textMuted} strokeWidth={1.5} />
-                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                    {label}
-                  </AppText>
-                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.5} />
-                </TouchableOpacity>
-              ))}
             </View>
 
-            {/* Delete account. Apple 5.1.1(v) requires this to exist IN THE APP for
-                any app that creates accounts, and reviewers look for it. Sits with
-                logout rather than among the settings rows, and routes to a screen
-                that explains the consequences — the row itself deletes nothing. */}
-            <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.logoutRow}
-                onPress={() => { setSettingsVisible(false); router.push('/settings/delete-account' as never); }}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.textMuted }]}>
-                  {t('settings.delete_account')}
-                </AppText>
-              </TouchableOpacity>
-            </View>
+            {/* ── Preferences ── */}
+            {sectionTitle(t('settings.section_preferences'), 'preferences', (
+              <>
+                {/* Language: the עב/EN toggle stays at the end of the row. */}
+                <View testID="settings-row-language" style={[styles.menuRow, { flexDirection: rowDir }]}>
+                  <Globe size={18} color={colors.textMuted} strokeWidth={1.5} />
+                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text, textAlign: align }]}>
+                    {t('settings.language')}
+                  </AppText>
+                  <View style={[styles.langToggle, { borderColor: colors.border }]}>
+                    {(['he', 'en'] as Lang[]).map((lang) => {
+                      const active = language === lang;
+                      return (
+                        <TouchableOpacity
+                          key={lang}
+                          style={[styles.langBtn, active && { backgroundColor: accent }]}
+                          onPress={() => setLanguage(lang)}
+                          activeOpacity={0.8}
+                        >
+                          <AppText weight="semiBold" style={[styles.langBtnText, { color: active ? '#fff' : colors.textMuted }]}>
+                            {lang === 'he' ? 'עב' : 'EN'}
+                          </AppText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+                {menuRow('notifications', Bell, t('settings.notifications'), () => go('/settings/notifications'))}
+              </>
+            ))}
 
-            {/* Logout */}
-            <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
+            {/* ── Account & billing ── Pricing and the balance are for
+                professionals only: a client is never charged a commission. */}
+            {sectionTitle(t('settings.section_account'), 'account', (
+              <>
+                {/* Phone number — both modes. Private; the gate asks for it once,
+                    this is where it is changed. */}
+                {menuRow('phone', Phone, t('settings.phone'), () => go('/settings/phone'))}
+                {!modeIsClient && menuRow('pricing', Percent, t('settings.pricing'), () => go('/settings/pricing'))}
+                {!modeIsClient && menuRow('balance', Wallet, t('balance.title'), () => go('/settings/payment'))}
+              </>
+            ))}
+
+            {/* ── Help & info ── */}
+            {sectionTitle(t('settings.section_help'), 'help', (
+              <>
+                {menuRow('contact', MessageCircle, t('settings.contact_us'), () => go('/settings/contact'))}
+                {/* Information — opens in place to the three policies: privacy
+                    (Apple requires it reachable inside the app), terms, and
+                    cancellation & refunds. Each opens in the app's language. */}
+                <TouchableOpacity
+                  testID="settings-row-information"
+                  style={[styles.menuRow, { flexDirection: rowDir }]}
+                  onPress={() => setInfoOpen((o) => !o)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: infoOpen }}
+                >
+                  <Info size={18} color={colors.textMuted} strokeWidth={1.5} />
+                  <AppText weight="regular" style={[styles.menuLabel, { color: colors.text, textAlign: align }]}>
+                    {t('settings.information')}
+                  </AppText>
+                  {infoOpen
+                    ? <ChevronDown size={16} color={colors.textMuted} strokeWidth={1.5} />
+                    : <Forward size={16} color={colors.textMuted} strokeWidth={1.5} />}
+                </TouchableOpacity>
+                {infoOpen && ([
+                  { key: 'privacy', Icon: Shield, label: t('settings.privacy') },
+                  { key: 'terms', Icon: FileText, label: t('settings.terms') },
+                  { key: 'refunds', Icon: Receipt, label: t('settings.refunds') },
+                ] as const).map(({ key, Icon, label }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.menuRow, styles.subMenuRow, rtl ? { paddingEnd: 26 } : { paddingStart: 26 }, { flexDirection: rowDir, borderTopColor: colors.border }]}
+                    onPress={() => void Linking.openURL(legalUrl(key, language))}
+                    activeOpacity={0.7}
+                  >
+                    <Icon size={16} color={colors.textMuted} strokeWidth={1.5} />
+                    <AppText weight="regular" style={[styles.menuLabel, { color: colors.text, textAlign: align }]}>
+                      {label}
+                    </AppText>
+                    <Forward size={16} color={colors.textMuted} strokeWidth={1.5} />
+                  </TouchableOpacity>
+                ))}
+              </>
+            ))}
+
+            {/* Log out — its own card, red. */}
+            <View testID="settings-logout-card" style={[styles.card, { backgroundColor: cardBg }]}>
               <TouchableOpacity
-                style={styles.logoutRow}
+                style={[styles.menuRow, { flexDirection: rowDir }]}
                 onPress={() => { setSettingsVisible(false); logout(); }}
                 activeOpacity={0.7}
               >
-                <LogOut size={18} color="#ff4d6d" strokeWidth={1.5} />
-                <AppText weight="semiBold" style={styles.logoutText}>
+                <LogOut size={18} color={DANGER} strokeWidth={1.5} />
+                <AppText weight="semiBold" style={[styles.menuLabel, styles.logoutText, { textAlign: align }]}>
                   {t('settings.logout')}
                 </AppText>
               </TouchableOpacity>
             </View>
 
-            {/* Contact us — both modes: BAMA's email and WhatsApp. Under log out,
-                in its own section like delete account. */}
-            <View style={[styles.logoutSection, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.logoutRow}
-                onPress={() => { setSettingsVisible(false); router.push('/settings/contact' as never); }}
-                activeOpacity={0.7}
+            {/* Footer: the app version, and delete account as a small link. Apple
+                5.1.1(v) requires delete account to exist IN THE APP; the link only
+                opens the screen that explains the consequences and confirms —
+                it deletes nothing itself. */}
+            <View testID="settings-footer" style={[styles.footer, { flexDirection: rowDir }]}>
+              <Text style={[styles.footerText, { color: colors.textMuted, ...font.regular }]}>
+                {`${t('settings.version')} ${appVersion}`}
+              </Text>
+              <Text style={[styles.footerText, { color: colors.textMuted, ...font.regular }]}>·</Text>
+              <Text
+                style={[styles.footerText, styles.footerLink, { color: colors.textMuted, ...font.regular }]}
+                onPress={() => go('/settings/delete-account')}
+                accessibilityRole="link"
               >
-                <MessageCircle size={18} color={colors.textMuted} strokeWidth={1.5} />
-                <AppText weight="regular" style={[styles.menuLabel, { color: colors.text }]}>
-                  {t('settings.contact_us')}
-                </AppText>
-              </TouchableOpacity>
+                {t('settings.delete_account')}
+              </Text>
             </View>
           </ScrollView>
         </Animated.View>
@@ -413,6 +432,15 @@ export function AppHeader() {
     </>
   );
 }
+
+/** The rows of a card, with fragments opened up and nothing (false/null) dropped. */
+function flattenRows(node: ReactNode): ReactNode[] {
+  return Children.toArray(node).flatMap((c) =>
+    isValidElement<{ children?: ReactNode }>(c) && c.type === Fragment ? flattenRows(c.props.children) : [c],
+  );
+}
+
+const DANGER = '#ff4d6d';
 
 const styles = StyleSheet.create({
   header: {
@@ -472,23 +500,20 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 4 },
   panelScroll: { flex: 1 },
 
-  userSection: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  avatarWrap: { position: 'relative', marginBottom: 4 },
+  profileRow: { alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  profileText: { flex: 1 },
+  profileLinkArea: { alignItems: 'center', gap: 8 },
+  profileTextCol: { flex: 1 },
+  avatarWrap: { position: 'relative' },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  avatarImg: { width: 64, height: 64 },
+  avatarImg: { width: 52, height: 52 },
   avatarOverlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -498,27 +523,30 @@ const styles = StyleSheet.create({
   cameraBadge: {
     position: 'absolute',
     bottom: 0,
-    right: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  userName: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
-  userEmail: { fontSize: 12, textAlign: 'center' },
+  // lineHeight ≥ 1.47× fontSize throughout: Heebo clips glyph tops below that on iOS.
+  userName: { fontSize: 15, lineHeight: 22 },
+  userEmail: { fontSize: 12, lineHeight: 18 },
+  editProfile: { fontSize: 13, lineHeight: 20, marginTop: 2 },
 
-  menuList: { flex: 1, paddingHorizontal: 16, paddingTop: 4 },
+  section: { paddingHorizontal: 12, marginTop: 14 },
+  sectionTitle: { fontSize: 12, lineHeight: 18, paddingHorizontal: 6, marginBottom: 6 },
+  card: { borderRadius: 14, overflow: 'hidden', marginHorizontal: 0 },
+  rowDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
   menuRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
   },
-  menuLabel: { flex: 1, fontSize: 14 },
-  // A policy row inside "Information": indented under it.
-  subMenuRow: { paddingStart: 26, paddingVertical: 12 },
+  menuLabel: { flex: 1, fontSize: 14, lineHeight: 21 },
+  // A policy row inside "Information": indented under it (start side set inline).
+  subMenuRow: { paddingVertical: 11 },
 
   langToggle: {
     flexDirection: 'row',
@@ -537,17 +565,9 @@ const styles = StyleSheet.create({
   },
   langBtnText: { fontSize: 12 },
 
-  logoutSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    paddingTop: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  logoutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 14,
-  },
-  logoutText: { fontSize: 14, color: '#ff4d6d' },
+  logoutText: { color: DANGER },
+
+  footer: { justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 18, paddingHorizontal: 16 },
+  footerText: { fontSize: 12, lineHeight: 18 },
+  footerLink: { textDecorationLine: 'underline' },
 });

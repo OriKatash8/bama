@@ -1050,6 +1050,11 @@
     "whatsapp_label": "WhatsApp"
   },
   "settings": {
+    "edit_profile": "Edit profile",
+    "section_preferences": "Preferences",
+    "section_account": "Account & billing",
+    "section_help": "Help & info",
+    "version": "Version",
     "contact_us": "Contact us",
     "language": "Language",
     "appearance": "Appearance",
