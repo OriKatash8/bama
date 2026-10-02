@@ -269,3 +269,89 @@ Condition 6: NOT MERGED
 Not every check passed. Branch feat/fee-overdue-block is unmerged and unpushed.
 Note: production functions AND rules now run this branch's code. main does not
 contain it.
+
+
+FOCUSED PROBE — cause analysis (02:44–02:48 UTC, 05:44 Israel time)
+===================================================================
+
+1. Timeline of the first run (probe1790908193020), from Cloud Run request logs
+------------------------------------------------------------------------------
+The first run logged no per-step timestamps, so the client-side times below are
+bounded by logged events.
+
+  02:29:59.4     Admin write of the overdue fee. The trigger request was received
+                 at 02:29:59.483.
+  02:30:01.36    onFeeWrittenRecomputeBlock FINISHES (200, 1.876 s, cold start).
+                 The probe's own Admin SDK poll then saw
+                 blockedFrom == overdueAt (check 1 PASS).
+  02:30:05.200   hireProfessional (switch-off phase) starts; it takes 7.112 s
+                 and ends at 02:30:12.31.
+  02:30:11.551   The trigger runs again for the hire's new fee doc (200, 0.129 s,
+                 done by 11.68).
+  ~02:30:12.4    Switch flipped ON. The first price offer was ALLOWED
+  –13.9          somewhere in this window: after the hire returned and before
+                 the next write's denial arrived at 13.999.
+  02:30:13.999   The bundle offer's denial arrives.
+  02:30:14.268   The application's denial arrives.
+  02:30:14.3     The pro's read of their own feeBlocks was DENIED in this window
+  –14.8          (between the application denial and the denial of the feeBlocks
+                 write at 14.800).
+
+The feeBlocks doc existed about 11 s before the first offer, and the only later
+trigger run had finished about 1 s earlier. Trigger lag does not explain F1.
+
+2. Focused run (probe1790909161344): switch ON for 16.4 s, 12 attempts, ALL correct
+-----------------------------------------------------------------------------------
+Before every client attempt, the Admin SDK read the server state:
+feeBlocks.blockedFrom was set and switch = true every time.
+
+  client     what it is                                          attempts at        result
+  ---------  --------------------------------------------------  -----------------  -----------------------------------
+  switch     signed in as client; switched to pro after the      +1.2 s, +15.8 s    offer DENY, read ALLOW (both times)
+             flip with the original signOut / signIn /
+             getIdToken(true) sequence
+  warm       pro, signed in and warmed up (a read and a write)   +2.0 s … +15.2 s   all DENY / ALLOW
+             11 s before the flip                                (8 delays)
+  fresh1000  new SDK instance, signed in after the flip          +4.6 s             DENY / ALLOW
+  fresh8000  new SDK instance, signed in after the flip          +9.3 s             DENY / ALLOW
+
+  A  trigger lag:      EXCLUDED. The doc was present before each attempt, and in
+                       the first run too.
+  C  config lag:       EXCLUDED from +1.2 s onwards. Earlier, the first run's
+                       phase 4 was also denied immediately after a flip.
+  B  stale credentials: NOT reproduced with warm, fresh or client→pro instances.
+                       Not replicated: the first run's exact instance history,
+                       where ONE instance was pro (with writes), then client, then
+                       pro again.
+
+3. F2: why would a pro's read of their own feeBlocks be denied?
+--------------------------------------------------------------
+  match /feeBlocks/{userId} {
+    allow read: if isOwner(userId);   // isOwner(uid) = request.auth != null && request.auth.uid == uid
+    allow write: if false;
+  }
+
+- The rule never references `resource`, so it behaves identically whether or
+  not the doc exists.
+- Production confirms this: for a freshly signed-in pro the read is ALLOWED with
+  the doc missing, with blockedFrom null, and with blockedFrom in the past.
+- The ONLY way it can deny is a request that does not reach the server as that
+  pro (unauthenticated, or another user's token). F2 is therefore a client-side
+  credential mismatch on that request, not a rules behaviour.
+- The app never reads feeBlocks (the client mirror reads the fee docs), so F2 has
+  no product impact either way.
+
+4. Status of the cause
+----------------------
+- F1 is NOT reproduced and NOT determined.
+- Both anomalies sit in the same ~1 s after the same SDK instance went
+  pro → client → pro.
+- F2 can only be a client-credential effect. F1 cannot be fully explained by
+  stale credentials: a stale PRO token is still the pro, and the allow decision
+  is made server-side.
+- The probe data that could settle it is gone: teardown deleted the allowed
+  offer before anyone looked at it.
+- The authoritative gate held in every run: hireProfessional refused the blocked
+  pro ('fee-overdue'), so an offer that slips through still cannot become a hire.
+
+No product code changed. Not merged.
