@@ -12,11 +12,37 @@ tell me.
 Hard-reload the web tab (Cmd+Shift+R) before you start. A tab that has been
 open for a while can be running an older build.
 
+THE THREE OVERDUE PUSH NOTIFICATIONS (current wording, shown with ₪120)
+------------------------------------------------------------------------
+Copied from functions/src/lifecycle/feeOverdue.ts (NOTICE_TEXT). Hebrew is what
+is sent today; the English versions exist in code but the server does not yet
+know a user's language.
+
+1) Fee is now due — sent when the 4-day contest window closes
+
+   עמלת התיווך בסך ₪120 לתשלום. יש להסדיר אותה כדי להמשיך לקבל פרויקטים חדשים.
+
+   EN: Your ₪120 brokerage fee is now due. Settle it to keep receiving new projects.
+
+2) One day before the block
+
+   תזכורת: עמלה בסך ₪120 טרם שולמה. מחר לא ניתן יהיה לשלוח הצעות או להתקבל לפרויקטים חדשים עד להסדרתה.
+
+   EN: Reminder: a ₪120 fee is still unpaid. From tomorrow you won't be able to send offers or be hired for new projects until it's settled.
+
+3) The block has started
+
+   עמלה בסך ₪120 באיחור. שליחת הצעות וקבלה לפרויקטים חדשים מושהות עד להסדרתה. הפרויקטים הקיימים שלך ממשיכים כרגיל.
+
+   EN: A ₪120 fee is overdue. Sending offers and being hired for new projects are paused until it's settled. Your current projects continue as normal.
+
+
 Accounts:
   CLIENT = a client account
   PRO    = a professional account
   ADMIN  = your admin account (role: admin)
-Use the Part B test logins for section 4. Sections 1–3 can use any accounts
+Use the Part B test logins for section 4. They are in
+~/dev/bama-app/.env.test-logins.local (gitignored, never committed). Sections 1–3 can use any accounts
 you normally test with.
 
 
