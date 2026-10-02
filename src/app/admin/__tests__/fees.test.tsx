@@ -136,7 +136,7 @@ it('tiles and tabs show the counts, each tile with a footer line', async () => {
 it('the flagged tab lists projects needing review', async () => {
   const r = await renderPage();
   fireEvent.press(r.getByTestId('tab-flagged'));
-  const row = within(r.getByTestId('flagged-fp1'));
+  const row = within(r.getByTestId('flagged-fp1:pro-2'));
   expect(row.getByText('Music video')).toBeTruthy();
   expect(row.getByText(E.reason_fee_disputed)).toBeTruthy();
   expect(row.getByText('Professional: Yael')).toBeTruthy();
@@ -259,4 +259,28 @@ describe('resolving a contested engagement', () => {
     await act(async () => { fireEvent.press(r.getByTestId(`resolve-cancelled-${KEY}`)); });
     expect(fns.resolveFeeDispute).not.toHaveBeenCalled();
   });
+});
+
+it('two professionals disputing one project are two rows, each with its own pro, reason and date', async () => {
+  fns.adminListFlaggedProjects.mockResolvedValue({
+    rows: [
+      { projectId: 'fp9', title: 'Wedding', status: 'open', reason: 'didnt_happen', proId: 'pa', proName: 'Avi',
+        clientName: 'Noa', flaggedAt: Date.UTC(2026, 9, 2, 12), note: '',
+        disputes: [{ proId: 'pa', proName: 'Avi', reason: 'didnt_happen', baseAmount: 1000, feeDueIfCompleted: 30 }] },
+      { projectId: 'fp9', title: 'Wedding', status: 'open', reason: 'fee_disputed', proId: 'pb', proName: 'Bat',
+        clientName: 'Noa', flaggedAt: Date.UTC(2026, 9, 1, 12), note: '',
+        disputes: [{ proId: 'pb', proName: 'Bat', reason: 'fee_disputed', baseAmount: 2000, feeDueIfCompleted: 60 }] },
+    ],
+  });
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('tab-flagged'));
+  const a = within(r.getByTestId('flagged-fp9:pa'));
+  const b = within(r.getByTestId('flagged-fp9:pb'));
+  expect(a.getByText('Professional: Avi')).toBeTruthy();
+  expect(a.getAllByText(E.reason_didnt_happen).length).toBeGreaterThan(0);
+  expect(a.getByText('Flagged: 02/10/2026')).toBeTruthy();
+  expect(b.getByText('Professional: Bat')).toBeTruthy();
+  expect(b.getAllByText(E.reason_fee_disputed).length).toBeGreaterThan(0);
+  expect(b.getByText('Flagged: 01/10/2026')).toBeTruthy();
+  expect(a.queryByText('Professional: Bat')).toBeNull();
 });

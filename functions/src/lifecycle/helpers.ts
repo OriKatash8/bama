@@ -120,6 +120,8 @@ export type FeeDoc = {
   createdAt?: admin.firestore.Timestamp;
   feePaidAt?: admin.firestore.Timestamp;
   disputedAt?: admin.firestore.Timestamp;
+  /** The professional's own note when contesting (contestEngagement / disputeFeeByPro). */
+  disputeReason?: string;
   /** When an admin recorded that the payment demand went out. Set ONLY by
    *  markDemandSent, never by a client, and never automatically.
    *

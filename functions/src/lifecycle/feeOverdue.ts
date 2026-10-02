@@ -138,12 +138,12 @@ const NOTICE_TEXT: Record<NoticeKind, Record<Lang, (amount: number) => string>> 
     en: (a) => `Your ₪${a} brokerage fee is now due. Settle it to keep receiving new projects.`,
   },
   fee_overdue_soon: {
-    he: (a) => `תזכורת: עמלה בסך ₪${a} טרם שולמה. מחר לא ניתן יהיה לשלוח הצעות או להתקבל לפרויקטים חדשים עד להסדרתה.`,
-    en: (a) => `Reminder: a ₪${a} fee is still unpaid. From tomorrow you won't be able to send offers or be hired for new projects until it's settled.`,
+    he: (a) => `תזכורת: עמלת התיווך בסך ₪${a} טרם שולמה. מחר לא ניתן יהיה לשלוח הצעות או להתקבל לפרויקטים חדשים עד להסדרתה.`,
+    en: (a) => `Reminder: your ₪${a} brokerage fee is still unpaid. From tomorrow you won't be able to send offers or be hired for new projects until it's settled.`,
   },
   fee_overdue: {
-    he: (a) => `עמלה בסך ₪${a} באיחור. שליחת הצעות וקבלה לפרויקטים חדשים מושהות עד להסדרתה. הפרויקטים הקיימים שלך ממשיכים כרגיל.`,
-    en: (a) => `A ₪${a} fee is overdue. Sending offers and being hired for new projects are paused until it's settled. Your current projects continue as normal.`,
+    he: (a) => `עמלת התיווך בסך ₪${a} באיחור. שליחת הצעות וקבלה לפרויקטים חדשים מושהות עד להסדרתה. הפרויקטים הקיימים שלך ממשיכים כרגיל.`,
+    en: (a) => `Your ₪${a} brokerage fee is overdue. Sending offers and being hired for new projects are paused until it's settled. Your current projects continue as normal.`,
   },
 };
 

@@ -174,6 +174,73 @@ export function disputeRowOf(proId: string, fee: FeeDoc): DisputeRow {
   };
 }
 
+type FlaggedRow = {
+  projectId: string;
+  title: string;
+  status: string;
+  clientId: string;
+  reason: string;
+  proId: string | null;
+  flaggedAt: number | null;
+  note: string;
+  disputes: DisputeRow[];
+};
+
+/**
+ * The admin's "Needs review" rows for ONE flagged project. Pure.
+ *
+ * ONE ROW PER FLAGGED ENGAGEMENT, each built from that professional's own fee
+ * doc: reason, professional, date and note. The project's own `adminReview` is
+ * not the source, because nothing writes it — contestEngagement and the cron's
+ * unanswered-completion branch flag the ENGAGEMENT, and derive.ts copies only
+ * `adminReviewPending` up to the project. Reading the project left every header
+ * blank, and with two professionals disputing one project it could only ever
+ * have named one of them.
+ *
+ * Flagged = `adminReviewPending` on the fee, or `engagementStatus: 'disputed'`.
+ * Only a disputed engagement carries a dispute card (resolveFeeDispute refuses
+ * anything else); other flags, such as an unanswered completion or a dispute
+ * whose project was cancelled, still get a row so the admin can see why the
+ * project is listed.
+ *
+ * A project flagged with no flagged engagement behind it keeps a single row from
+ * the project fields, as before, so it never silently disappears.
+ */
+export function flaggedRowsFor(
+  projectId: string,
+  project: Record<string, unknown>,
+  fees: { id: string; data: FeeDoc }[],
+): FlaggedRow[] {
+  const base = {
+    projectId,
+    title: (project.title as string) ?? '',
+    status: (project.status as string) ?? '',
+    clientId: (project.clientId as string) ?? '',
+  };
+  const flagged = fees.filter((f) => f.data.adminReviewPending === true || f.data.engagementStatus === 'disputed');
+  if (flagged.length === 0) {
+    const review = (project.adminReview ?? {}) as {
+      reason?: string; proId?: string | null; at?: unknown; note?: string;
+    };
+    return [{
+      ...base,
+      reason: review.reason ?? '',
+      proId: review.proId ?? null,
+      flaggedAt: millis(review.at),
+      note: review.note ?? '',
+      disputes: [],
+    }];
+  }
+  return flagged.map(({ id, data }) => ({
+    ...base,
+    reason: data.adminReview?.reason ?? '',
+    proId: id,
+    flaggedAt: millis(data.adminReview?.at) ?? millis(data.disputedAt),
+    note: data.adminReview?.note ?? data.disputeReason ?? '',
+    disputes: data.engagementStatus === 'disputed' ? [disputeRowOf(id, data)] : [],
+  }));
+}
+
 export const adminListFlaggedProjects = onCall(async (request) => {
   requireAuth(request.auth?.uid);
   requireAdmin(request.auth?.token);
@@ -184,37 +251,17 @@ export const adminListFlaggedProjects = onCall(async (request) => {
     .limit(SCAN_LIMIT)
     .get();
 
-  const rows = snap.docs.map((d) => {
-    const p = d.data();
-    const review = (p.adminReview ?? {}) as {
-      reason?: string; proId?: string | null; at?: unknown; note?: string;
-    };
-    return {
-      projectId: d.id,
-      title: (p.title as string) ?? '',
-      status: (p.status as string) ?? '',
-      clientId: (p.clientId as string) ?? '',
-      reason: review.reason ?? '',
-      proId: review.proId ?? null,
-      flaggedAt: millis(review.at),
-      note: review.note ?? '',
-    };
-  });
-
-  // The contested engagements on each flagged project — what resolveFeeDispute
-  // acts on. Per engagement, because the project's own adminReview names at
-  // most one professional and a project can carry several disputes.
-  const disputesByProject = new Map<string, DisputeRow[]>();
-  await Promise.all(rows.map(async (r) => {
-    const fees = await feesCol(r.projectId).where('engagementStatus', '==', 'disputed').get();
-    disputesByProject.set(r.projectId, fees.docs.map((d) => disputeRowOf(d.id, d.data() as FeeDoc)));
-  }));
+  // Every fee doc of each flagged project, filtered in memory by flaggedRowsFor:
+  // a project has a handful, and no query shape here needs an index.
+  const rows = (await Promise.all(snap.docs.map(async (d) => {
+    const fees = await feesCol(d.id).get();
+    return flaggedRowsFor(d.id, d.data(), fees.docs.map((f) => ({ id: f.id, data: f.data() as FeeDoc })));
+  }))).flat();
 
   const ids = new Set<string>();
   for (const r of rows) {
     if (r.proId) ids.add(r.proId);
     if (r.clientId) ids.add(r.clientId);
-    for (const d of disputesByProject.get(r.projectId) ?? []) ids.add(d.proId);
   }
   const users = await Promise.all([...ids].map((id) => db.doc(`users/${id}`).get()));
   const nameOf = new Map(users.map((u) => [u.id, (u.data()?.displayName as string) ?? '']));
@@ -227,9 +274,7 @@ export const adminListFlaggedProjects = onCall(async (request) => {
       ...r,
       proName: r.proId ? nameOf.get(r.proId) ?? '' : '',
       clientName: nameOf.get(r.clientId) ?? '',
-      disputes: (disputesByProject.get(r.projectId) ?? []).map((d) => ({
-        ...d, proName: nameOf.get(d.proId) ?? '',
-      })),
+      disputes: r.disputes.map((d) => ({ ...d, proName: nameOf.get(d.proId) ?? '' })),
     })),
   };
 });

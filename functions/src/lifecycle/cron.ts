@@ -234,7 +234,7 @@ export const lifecycleCron = onSchedule(
           await notify({
             userId: doc.id,
             title: 'BAMA',
-            message: 'לא הצלחנו לגבות את עמלת הפלטפורמה. יש להסדיר את אמצעי התשלום.',
+            message: 'לא הצלחנו לגבות את עמלת התיווך. יש להסדיר את אמצעי התשלום.',
             data: { type: 'charge_failed', projectId },
           });
         }

@@ -273,7 +273,7 @@ export async function confirmCompletionInternal(
     await notify({
       userId: proId,
       title: 'BAMA',
-      message: owed ? `הפרויקט הושלם — עמלת פלטפורמה ₪${owed}` : 'הפרויקט הושלם',
+      message: owed ? `הפרויקט הושלם — עמלת תיווך ₪${owed}` : 'הפרויקט הושלם',
       data: { type: 'system', chatId: (project.chatId as string) ?? '' },
     });
   }

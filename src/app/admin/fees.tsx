@@ -350,10 +350,13 @@ export default function AdminFeesScreen() {
           {flagged.length === 0 ? (
             <EmptyState text={t('empty_flagged')} testID="flagged-empty" />
           ) : (
+            // One row per flagged ENGAGEMENT (adminListFlaggedProjects), so two
+            // professionals disputing one project are two rows: the key and test
+            // id carry the professional too.
             flagged.map((row) => (
               <View
-                key={row.projectId}
-                testID={`flagged-${row.projectId}`}
+                key={`${row.projectId}:${row.proId ?? ''}`}
+                testID={row.proId ? `flagged-${row.projectId}:${row.proId}` : `flagged-${row.projectId}`}
                 style={[styles.flagRow, { flexDirection: rowDir, borderTopColor: p.border }]}
               >
                 <IconTile icon={AlertTriangle} tone="warn" />

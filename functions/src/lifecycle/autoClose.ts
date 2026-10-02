@@ -29,7 +29,7 @@ export async function autoCloseEngagement(projectId: string, proId: string): Pro
   await notify({
     userId: proId,
     title: 'BAMA',
-    message: `הפרויקט הסתיים. עמלת הפלטפורמה תיגבה בעוד ${chargeWindowDays} ימים — אם העבודה לא בוצעה, סמנו זאת עכשיו.`,
+    message: `הפרויקט הסתיים. עמלת התיווך תיגבה בעוד ${chargeWindowDays} ימים — אם העבודה לא בוצעה, סמנו זאת עכשיו.`,
     data: { type: 'engagement_completed', projectId },
   });
 
