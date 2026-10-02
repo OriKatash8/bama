@@ -491,11 +491,12 @@ service cloud.firestore {
       // The user's phone number. PRIVATE: users/{uid} is readable by every
       // signed-in user, so it cannot live there. Only the owner reads or writes
       // it; the other side of a project gets it from the getContactPhone callable
-      // (Admin SDK), and only once the professional's part has ended.
+      // (Admin SDK), and only once the professional's part has ended. An admin
+      // reads it too: the admin Users page shows each user's number.
       // One doc, `contact`, holding only an E.164 number (normalizePhone on the
       // client) and when it was set.
       match /private/{docId} {
-        allow read: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId)
           && docId == 'contact'
           && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])

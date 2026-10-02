@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
+import { Phone, Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
 import { where } from 'firebase/firestore';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
 import { callFunction } from '@core/firebase/functions';
 import { useUiStore } from '@core/stores/uiStore';
+import { formatPhoneForDisplay } from '@features/auth/utils/phone';
 import { HEEBO } from '@features/admin/ui';
 import {
   AdminPage,
@@ -84,6 +85,8 @@ export default function UsersAdmin() {
   const [opening, setOpening] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [history, setHistory] = useState<AdminAction[]>([]);
+  /** The open user's phone (users/{uid}/private/contact — admin-readable); null when they have none. */
+  const [phone, setPhone] = useState<string | null>(null);
 
   const [pending, setPending] = useState<AdminActionType | null>(null);
   const [reasonModal, setReasonModal] = useState<null | 'warn' | 'suspend'>(null);
@@ -121,6 +124,9 @@ export default function UsersAdmin() {
       const doc = await getDocument<User>(`users/${listed.uid}`);
       if (!doc) { showToast(t('open_failed'), 'error'); return; }
       // `email` is not on the document — it rides along from Auth via the list.
+      // The phone is private (users/{uid}/private/contact); a failed read shows as none.
+      const contact = await getDocument<{ phone?: string }>(`users/${listed.uid}/private/contact`).catch(() => null);
+      setPhone(typeof contact?.phone === 'string' && contact.phone ? contact.phone : null);
       setUser({ ...doc, email: listed.email ?? undefined });
       await loadHistory(listed.uid);
     } catch {
@@ -132,6 +138,7 @@ export default function UsersAdmin() {
 
   function backToList() {
     setUser(null);
+    setPhone(null);
     setHistory([]);
   }
 
@@ -256,6 +263,25 @@ export default function UsersAdmin() {
                 <WhoBlock name={name} meta={user.email ?? ''} textAlign={textAlign} />
                 <StatusPill tone={STATUS_TONE[status]} label={t(`status_${status}`)} />
               </View>
+              {/* Their phone number: tap to call. */}
+              <Pressable
+                testID="user-phone"
+                disabled={!phone}
+                onPress={() => phone && void Linking.openURL(`tel:${phone}`)}
+                accessibilityRole={phone ? 'link' : undefined}
+                accessibilityLabel={phone ? `${t('phone')} ${formatPhoneForDisplay(phone)}` : t('no_phone')}
+                style={[styles.phoneRow, { flexDirection: rowDir, alignSelf: rtl ? 'flex-end' : 'flex-start' }]}
+              >
+                <Phone size={14} color={phone ? p.accent : p.text3} strokeWidth={2.2} />
+                <AdminText
+                  weight={phone ? 'semiBold' : 'regular'}
+                  tabular
+                  selectable
+                  style={[TYPE.rowMeta, { color: phone ? p.accent : p.text3, textAlign }]}
+                >
+                  {phone ? formatPhoneForDisplay(phone) : t('no_phone')}
+                </AdminText>
+              </Pressable>
               <AdminText style={[styles.joined, { color: p.text3, textAlign }]}>
                 {`${t('joined')} ${fmtDate(user.createdAt?.seconds)}`}
               </AdminText>
@@ -467,6 +493,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, padding: 0 },
   listError: { padding: SPACE.rowPadH, gap: 10 },
   who: { alignItems: 'center', gap: 12, paddingTop: 16, paddingHorizontal: SPACE.rowPadH },
+  phoneRow: { alignItems: 'center', gap: 6, paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
   joined: { fontSize: 12, paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
   statusPill: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 10, flexShrink: 0 },
   reasonBox: { borderRadius: 14, padding: 12, marginTop: 12, marginHorizontal: SPACE.rowPadH, gap: 4 },

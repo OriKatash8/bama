@@ -249,3 +249,43 @@ describe('a user', () => {
     expect(mockToast).toHaveBeenCalledWith(E.msg_sent, 'success');
   });
 });
+
+describe("the user's phone number", () => {
+  const byPath = (contact: unknown) => (path: string) =>
+    path.endsWith('/private/contact') ? (contact instanceof Error ? Promise.reject(contact) : Promise.resolve(contact)) : Promise.resolve(USER);
+
+  it('reads it from their private contact doc and shows it the local way; tapping calls', async () => {
+    getDoc.mockImplementation(byPath({ phone: '+972541234567' }));
+    const open = jest.spyOn(require('react-native').Linking, 'openURL').mockResolvedValue(true);
+    const r = await renderPage();
+    await openUser(r);
+    expect(getDoc).toHaveBeenCalledWith('users/u1/private/contact');
+    const row = r.getByTestId('user-phone');
+    expect(within(row).getByText('054-123-4567')).toBeTruthy();
+    fireEvent.press(row);
+    expect(open).toHaveBeenCalledWith('tel:+972541234567');
+    open.mockRestore();
+  });
+
+  it('says so when they have none, or it cannot be read', async () => {
+    for (const contact of [null, {}, new Error('denied')]) {
+      getDoc.mockImplementation(byPath(contact));
+      const r = await renderPage();
+      await openUser(r);
+      expect(within(r.getByTestId('user-phone')).getByText(E.no_phone)).toBeTruthy();
+      r.unmount();
+    }
+  });
+
+  it("does not carry one user's number over to the next", async () => {
+    getDoc.mockImplementation(byPath({ phone: '+972541234567' }));
+    const r = await renderPage();
+    await openUser(r);
+    expect(r.getByText('054-123-4567')).toBeTruthy();
+    fireEvent.press(r.getByTestId('back-to-list'));
+    getDoc.mockImplementation(byPath(null));
+    await openUser(r, 'u2');
+    expect(r.queryByText('054-123-4567')).toBeNull();
+    expect(within(r.getByTestId('user-phone')).getByText(E.no_phone)).toBeTruthy();
+  });
+});

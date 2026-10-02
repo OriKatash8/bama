@@ -648,6 +648,8 @@
   },
   "admin_users": {
     "all_users": "All users",
+    "phone": "Phone",
+    "no_phone": "No phone number",
     "search_placeholder": "Search by name or email",
     "no_match": "No user matches that search.",
     "no_users": "No users yet.",
