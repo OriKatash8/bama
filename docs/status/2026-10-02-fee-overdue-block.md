@@ -355,3 +355,87 @@ feeBlocks.blockedFrom was set and switch = true every time.
   pro ('fee-overdue'), so an offer that slips through still cannot become a hire.
 
 No product code changed. Not merged.
+
+
+THIRD RUN (single-instance replay) and CLOSE-OUT — 03:16–03:30 UTC (06:16 Israel time)
+=====================================================================================
+
+Merged first, as decided: main = origin/main = 61123b2 (fast-forward from
+5423f15), pushed. The switch stayed off.
+
+Pre-run answers, from the code (Firestore has no data-access audit logs, so the
+logs cannot show what a write contained):
+  - The trigger run that finished at 02:30:11.68 was for the switch-off hire's NEW
+    fee doc on P_OFF. recomputeFeeBlock computes the earliest effective time over
+    the pro's fees: P_DEBT's unchanged overdueAt, plus P_OFF with no overdueAt.
+    That equals the stored blockedFrom, so it returns WITHOUT WRITING — neither
+    null nor a new date.
+  - The trigger is not switch-dependent. recomputeFeeBlock and
+    onFeeWrittenRecomputeBlock never call readConfig; only the rules and the hire
+    gate read the switch. A run started while the switch was off cannot clear the
+    block.
+  - The hire did not touch the overdue fee. commitHire writes only
+    projects/{P_OFF}/fees/{pro}, which was a new doc. The overdueAt-clearing
+    branch runs only for an existing PAID fee on the hired project.
+  → None of these explains F1, so the third run went ahead.
+
+Replay (probe1790910996430): one SDK instance, the first run's exact sequence
+including the switch-off hire; Admin reads before and after every step.
+  - Switch ON for 7.5 s. Switch commit time 03:28:54.871Z. All 7 switch-ON steps
+    came out as intended:
+      +1.6 s  offer        DENY
+      +2.3 s  bundle       DENY
+      +3.1 s  application  DENY
+      +3.8 s  edit         ALLOW
+      +4.4 s  read         ALLOW
+      +6.9 s  offer        DENY
+      +7.3 s  read         ALLOW
+  - Before and after each step the Admin SDK saw feeBlocks.blockedFrom set
+    (doc updateTime unchanged since 03:16:42) and switch=true.
+  → F1 was NOT reproduced. No offer was allowed while ON, so there was none to
+    inspect.
+
+A different client-SDK anomaly appeared in the same pattern, while the switch was
+OFF:
+  - The FIRST write after as(pro) (signOut → signIn → getIdToken(true)) on this
+    instance hung for 12 min (sent 03:16:45, returned 03:28:42) and then reported
+    ERR already-exists.
+  - The server had in fact CREATED it at 03:16:45.440Z. Inspected before cleanup:
+      priceOffers/ftj6NmKhOLXjoUjTecNy  createTime 03:16:45.440Z
+      The later hire accepted it.
+  - So the client SDK lost the acknowledgement and re-sent the same write 12 min
+    later. In this single-instance user-switching pattern, the client SDK reported
+    a result that did not match the server's real decision. That is the same class
+    of mismatch as F1 (a reported ALLOW) and F2 (a read evaluated without the
+    pro's credentials).
+  - It does not prove F1's mechanism.
+
+Proof after the replay (sweep):
+  - feeOverdueBlockEnabled = false
+  - pro and client: auth/user-not-found, no users doc, no feeBlocks doc,
+    0 notifications
+  - 0 projects, offers, bundles, applications and chats left (1 chat found and
+    deleted)
+  - 0 debt fees left; 0 feeBlocks docs in production
+
+
+KNOWN OPEN ITEM — accepted as a probe artifact (stop rule)
+----------------------------------------------------------
+F1 is closed as a probe artifact. In probe1790908193020, the first price offer
+after the switch flipped ON was reported ALLOWED.
+  - Not reproduced in 2 further production runs (19 switch-ON attempts, all
+    correct).
+  - Trigger lag and config propagation were excluded directly.
+  - The only anomalies observed all sit in the client SDK after a signOut /
+    signIn / token-refresh on ONE instance: F2, and the replay's lost write
+    acknowledgement.
+  - The authoritative gate held in every run: hireProfessional refused the
+    blocked pro with 'fee-overdue'.
+  - If it ever recurs: the rule decision is server-side. Check the offer's
+    createTime against the switch commit time, and keep the doc.
+
+Possible real-world relevance (not a rules issue, no change made): the replay
+shows that on one device, a write made right after sign-out → sign-in can show
+as hung or failed (already-exists) although it succeeded.
+
+The production flips are finished; the switch is off.
