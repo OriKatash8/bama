@@ -166,6 +166,14 @@ describe('a community', () => {
     expect(closeColor()).toBe('#1D4ED8');
   });
 
+  it('a video cell shows ONE play icon: the grid\'s own badge, with the player\'s turned off', () => {
+    mockUseChatMedia.mockReturnValue([item(1, 'video')]);
+    const r = render(<ChatMediaSection chatId="c1" />);
+    fireEvent.press(r.getByTestId('media-header'));
+    expect(mockVideo.mock.calls[mockVideo.mock.calls.length - 1][0].playIcon).toBe(false);
+    expect(r.getByTestId('media-grid-item-m1-play')).toBeTruthy();
+  });
+
   it('a project chat does not listen to channels', () => {
     mockUseChatMedia.mockReturnValue([item(1)]);
     render(<ChatMediaSection chatId="c1" />);

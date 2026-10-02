@@ -7,6 +7,8 @@ type Props = {
   uri: string;
   style?: ViewStyle;
   thumbnailOnly?: boolean;
+  /** The thumbnail's own play icon (native). Off when the caller draws its own (the media grid). */
+  playIcon?: boolean;
   /** Called with the video's frame size once it is known (e.g. to size a chat bubble). */
   onVideoSize?: (size: { width: number; height: number }) => void;
 };
@@ -35,7 +37,7 @@ function WebVideoPlayer({ uri, style, thumbnailOnly, onVideoSize }: Props) {
 
 // ── Native: expo-video with play-button overlay ───────────────────────────────
 
-function NativeVideoPlayer({ uri, style, thumbnailOnly, onVideoSize }: Props) {
+function NativeVideoPlayer({ uri, style, thumbnailOnly, playIcon = true, onVideoSize }: Props) {
   // Import lazily so web bundles never pull in expo-video
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { VideoView, useVideoPlayer } = require('expo-video') as typeof import('expo-video');
@@ -54,11 +56,22 @@ function NativeVideoPlayer({ uri, style, thumbnailOnly, onVideoSize }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player]);
 
+  // iOS draws a crossed-out play icon in a video view that can't load its
+  // video. A thumbnail keeps the view hidden until the video is ready, so
+  // until then — and on an error — it is a plain black box.
+  const [ready, setReady] = useState(player.status === 'readyToPlay');
+  useEffect(() => {
+    if (!thumbnailOnly) return;
+    setReady(player.status === 'readyToPlay');
+    const sub = player.addListener('statusChange', ({ status }) => setReady(status === 'readyToPlay'));
+    return () => sub.remove();
+  }, [player, thumbnailOnly]);
+
   return (
     <View style={[styles.container, style]}>
       <VideoView
         player={player}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, thumbnailOnly ? { opacity: ready ? 1 : 0 } : null]}
         nativeControls={!thumbnailOnly && started}
         // A thumbnail fills its box, cropped like a photo; the full player shows it all.
         contentFit={thumbnailOnly ? 'cover' : 'contain'}
@@ -70,7 +83,7 @@ function NativeVideoPlayer({ uri, style, thumbnailOnly, onVideoSize }: Props) {
           </View>
         </TouchableOpacity>
       )}
-      {thumbnailOnly && (
+      {thumbnailOnly && playIcon && (
         <View style={styles.overlay} pointerEvents="none">
           <View style={styles.playBtn}>
             <Play size={28} color="#fff" fill="#fff" />

@@ -31,7 +31,8 @@ function Thumb({ asset, size, testID }: { asset: MediaAsset; size: number; testI
       {asset.type === 'video' ? (
         // Overrides the player's own 180pt minimum, 16:9 ratio and corners: they
         // made video cells taller than photo cells, so mixed rows came out uneven.
-        <VideoPlayer uri={asset.url} style={{ width: size, height: size, minHeight: 0, aspectRatio: 1, borderRadius: 0 }} thumbnailOnly />
+        // Its play icon is off: the badge below is the cell's one play icon.
+        <VideoPlayer uri={asset.url} style={{ width: size, height: size, minHeight: 0, aspectRatio: 1, borderRadius: 0 }} thumbnailOnly playIcon={false} />
       ) : (
         <Image source={{ uri: asset.url }} style={{ width: size, height: size }} contentFit="cover" cachePolicy="memory-disk" />
       )}
