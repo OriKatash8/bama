@@ -76,6 +76,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
+    "check:bundle": "node scripts/check-dev-bundle.mjs",
     "legal:build": "node scripts/build-legal-site.mjs",
     "legal:deploy": "npm run legal:build && firebase deploy --only hosting"
   },
