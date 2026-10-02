@@ -182,3 +182,90 @@ NEXT
   3. Merge feat/fee-overdue-block → main (not done; your call)
   4. Turning the switch on for real is a console edit of
      config/pricing.feeOverdueBlockEnabled = true (boolean). Not done.
+
+
+RESULTS — rules deploy + production probe (2026-10-02, 02:25–02:36 UTC)
+=======================================================================
+
+Condition 1: a missing config doc or a missing field counts as OFF
+------------------------------------------------------------------
+The emulator rules probe now has 31/31 rows, including the new row
+"config/pricing present, field ABSENT" (production's state before the probe).
+All three creates are allowed in that state.
+
+Condition 2: rules deploy and smoke test
+----------------------------------------
+- firebase deploy --only firestore:rules released at 02:29:14Z.
+- The drift check reports firestore.rules as matching.
+- The compiler warned at 42:14, which is pre-existing and not in this change.
+- scripts/probe-fee-overdue-smoke-prod.mjs ran with the switch absent. A normal
+  pro was ALLOWED to create a priceOffer, a bundleOffer and a
+  projectApplication. Teardown asserted 0 docs left and 0 accounts leaked.
+- No rollback was needed.
+
+Condition 3: production probe (STAMP probe1790908193020)
+--------------------------------------------------------
+The probe ran to completion and its own teardown passed.
+
+Result: 39 PASS, 2 FAIL. Both failures are in phase 3, right after the switch
+was turned ON and the probe signed in as the pro.
+
+  FAIL  pro sends a price offer — want DENY, got ALLOW (the FIRST create after
+        the flip)
+  FAIL  pro reads own feeBlocks — want ALLOW, got DENY
+
+Everything else in that phase behaved as intended. Within 0.3 s:
+  - the same pro's bundle offer and application were DENIED;
+  - edits to an existing offer were allowed;
+  - the fee, overdueAt, feeBlocks and switch writes were denied;
+  - pro2 offered normally;
+  - the client could not read feeBlocks;
+  - hire of the blocked pro → 'fee-overdue';
+  - hire of pro2 → ok.
+
+All later phases passed:
+  - kill switch off → allowed on the next request; on → denied;
+  - markFeePaid cleared feeBlocks before it returned;
+  - offer and hire both worked right after payment;
+  - all resolveFeeDispute checks passed, including ₪30 restored, the clock
+    restarted at now+7d, and ₪100 → ₪6 minimum.
+
+Diagnosis so far:
+  - In production, a fresh pro's own read of feeBlocks is ALLOWED, for a missing
+    doc, blockedFrom null and a past blockedFrom. So the read rule is correct.
+  - The exact sequence (client → flip → sign in as pro + token refresh → offer →
+    bundle → edit → read) was replayed on the emulator. Every step came out
+    correct, including the first offer DENIED and the read ALLOWED.
+  - The trigger logs for the window show no errors.
+  - So both anomalies are specific to production, and both sit in the first
+    ~1 s after a user switch plus a switch flip. Not yet determined:
+    - whether it is client-SDK credential timing after the switch;
+    - or a short lag before a rules get() sees a just-written config doc.
+  - Determining it requires flipping the production switch again, which goes
+    beyond the single probe run that was approved.
+
+Condition 4: proof, from scripts/probe-fee-overdue-sweep-prod.mjs
+-----------------------------------------------------------------
+  OK  config/pricing.feeOverdueBlockEnabled = false
+  OK  admin  EcfweZVnLvWCmRo47TG11h27VyK2  auth/user-not-found  users doc=false  feeBlocks=false  notifications=0
+  OK  pro    Xmvo7bFwhFhL9KW20btM1MfRyVF3  auth/user-not-found  users doc=false  feeBlocks=false  notifications=0
+  OK  pro2   v83VcGYgFTfiLVt7EjfIEWUt0S42  auth/user-not-found  users doc=false  feeBlocks=false  notifications=0
+  OK  client QvPiAkHcJFhYPhwcD8J6y3aIyc42  auth/user-not-found  users doc=false  feeBlocks=false  notifications=0
+  OK  projects with id prefix probe1790908193020: 0
+  OK  priceOffers / bundleOffers / projectApplications for the run: 0 / 0 / 0
+  OK  chats for the run: 0
+  CLEAN
+
+The smoke run's own teardown separately asserted 0 docs left and 0 accounts
+leaked.
+
+Condition 5
+-----------
+The 7 flagged functions and the drift allowlist were not touched. The drift
+check after the rules deploy lists exactly those 7 and nothing else.
+
+Condition 6: NOT MERGED
+-----------------------
+Not every check passed. Branch feat/fee-overdue-block is unmerged and unpushed.
+Note: production functions AND rules now run this branch's code. main does not
+contain it.

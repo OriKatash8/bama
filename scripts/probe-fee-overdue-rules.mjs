@@ -112,6 +112,11 @@ await allThree('switch ON, blockedFrom null (paid / recomputed)', 'ALLOW');
 await setBlock(undefined);
 await allThree('switch ON, no feeBlocks doc (never blocked)', 'ALLOW');
 
+// config/pricing present but WITHOUT the field — production's state today.
+await adminDb.doc('config/pricing').set({ feePercent: 3, maxOpenProjects: 2 }); await setBlock(PAST);
+await allThree('config present, switch field ABSENT', 'ALLOW');
+await setSwitch(true);
+
 // A missing config doc must not error every offer into a deny.
 await adminDb.doc('config/pricing').delete(); await setBlock(PAST);
 await allThree('config/pricing missing', 'ALLOW');

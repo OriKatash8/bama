@@ -24,9 +24,14 @@
  * carries `overdueAt` until the switch has been on for a completion, so while it
  * is on here no real professional can be blocked.
  *
- *   node scripts/probe-fee-overdue-prod.mjs
+ *   node scripts/probe-fee-overdue-prod.mjs [--run-file <path>]
+ *
+ * --run-file records { stamp, uids } as they are created, so
+ * scripts/probe-fee-overdue-sweep-prod.mjs can restore the switch and clean up
+ * even if this process dies. Teardown also runs on SIGINT/SIGTERM and on an
+ * uncaught error, not only in `finally`.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp,
@@ -68,6 +73,13 @@ const src = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 }
 
 const STAMP = `probe${Date.now()}`;
+const runFileArg = process.argv.indexOf('--run-file');
+const RUN_FILE = runFileArg > -1 ? process.argv[runFileArg + 1] : null;
+const recordRun = () => {
+  if (!RUN_FILE) return;
+  writeFileSync(RUN_FILE, JSON.stringify({ stamp: STAMP, uids: Object.fromEntries(Object.entries(accounts).map(([t, a]) => [t, a.uid])) }, null, 2));
+};
+console.log(`STAMP=${STAMP}`);
 const app = initializeApp(cfg, STAMP);
 const db = getFirestore(app), auth = getAuth(app);
 const fns = getFunctions(app);
@@ -110,6 +122,7 @@ async function mk(tag, claims) {
   const email = `${STAMP}.${tag}@bama-invalid.test`;
   const c = await createUserWithEmailAndPassword(auth, email, PW);
   accounts[tag] = { uid: c.user.uid, email };
+  recordRun();
   if (claims) await adminAuth.setCustomUserClaims(c.user.uid, claims);
   await signOut(auth);
   return c.user.uid;
@@ -140,12 +153,89 @@ if (original === true) {
   console.error('ABORT: feeOverdueBlockEnabled is already ON in production. Not touching a live switch.');
   process.exit(1);
 }
-console.log(`kill switch before the probe: ${JSON.stringify(original ?? null)} (restored at the end)\n`);
+console.log(`kill switch before the probe: ${JSON.stringify(original ?? null)} (restored to false at the end)\n`);
+recordRun();
 const setSwitch = async (on) => { await configRef.set({ feeOverdueBlockEnabled: on }, { merge: true }); };
 /** hireProfessional caches config/pricing for 60s per instance. */
 const CONFIG_CACHE_MS = 65_000;
 
 const made = { projects: [], chats: new Set() };
+
+let tornDown = false;
+/** Restore the switch, then remove everything. Runs once, from `finally` or a signal. */
+async function teardown() {
+  if (tornDown) return;
+  tornDown = true;
+  console.log('\nTeardown:');
+  // The switch FIRST — the one change that touches everyone.
+  try {
+    await configRef.set({ feeOverdueBlockEnabled: false }, { merge: true });
+    const now = (await configRef.get()).get('feeOverdueBlockEnabled');
+    check('kill switch restored to false', now === false, JSON.stringify(now));
+  } catch (e) { console.error('  SWITCH RESTORE FAILED — set config/pricing.feeOverdueBlockEnabled by hand', e); failures++; }
+
+  const uids = Object.values(accounts).map((a) => a.uid);
+  for (const tag of Object.keys(accounts)) {
+    try { await as(tag); await deleteUser(auth.currentUser); }
+    catch (e) { console.error('  account delete failed', tag, e?.code ?? e); failures++; }
+  }
+  await signOut(auth).catch(() => {});
+
+  for (const pid of made.projects) {
+    const chatId = (await adminDb.doc(`projects/${pid}`).get()).get('chatId');
+    if (chatId) made.chats.add(chatId);
+  }
+  for (const col of ['priceOffers', 'bundleOffers', 'projectApplications']) {
+    for (const pid of made.projects) {
+      for (const d of (await adminDb.collection(col).where('projectId', '==', pid).get()).docs) await d.ref.delete();
+    }
+  }
+  for (const id of made.chats) await adminDb.recursiveDelete(adminDb.doc(`chats/${id}`));
+  for (const pid of made.projects) await adminDb.recursiveDelete(adminDb.doc(`projects/${pid}`));
+  // The fee-delete triggers recompute feeBlocks once more, and the hire triggers
+  // write notifications asynchronously; let both land, then sweep.
+  await sleep(15_000);
+  for (const uid of uids) {
+    for (const n of (await adminDb.collection('notifications').where('userId', '==', uid).get()).docs) await n.ref.delete();
+    await adminDb.doc(`feeBlocks/${uid}`).delete();
+    await adminDb.recursiveDelete(adminDb.doc(`users/${uid}`));
+  }
+
+  // ASSERT the teardown.
+  let left = 0;
+  for (const pid of made.projects) {
+    if ((await adminDb.doc(`projects/${pid}`).get()).exists) left++;
+    for (const col of ['priceOffers', 'bundleOffers', 'projectApplications']) {
+      left += (await adminDb.collection(col).where('projectId', '==', pid).get()).size;
+    }
+  }
+  for (const id of made.chats) if ((await adminDb.doc(`chats/${id}`).get()).exists) left++;
+  let leaked = 0;
+  for (const uid of uids) {
+    try { await adminAuth.getUser(uid); leaked++; } catch { /* gone */ }
+    if ((await adminDb.doc(`users/${uid}`).get()).exists) leaked++;
+    if ((await adminDb.doc(`feeBlocks/${uid}`).get()).exists) leaked++;
+    leaked += (await adminDb.collection('notifications').where('userId', '==', uid).get()).size;
+  }
+  check('probe docs removed', left === 0, `${left} left`);
+  check('probe accounts, user docs, feeBlocks and notifications removed', leaked === 0, `${leaked} leaked`);
+}
+for (const sig of ['SIGINT', 'SIGTERM']) {
+  process.on(sig, async () => {
+    console.error(`\n${sig} — tearing down before exit`);
+    failures++;
+    await teardown().catch((e) => console.error('teardown failed', e));
+    process.exit(1);
+  });
+}
+process.on('uncaughtException', async (e) => {
+  console.error('\nuncaught:', e);
+  failures++;
+  await teardown().catch((err) => console.error('teardown failed', err));
+  process.exit(1);
+});
+
+
 const proj = async (id, data) => { made.projects.push(id); await adminDb.doc(`projects/${id}`).set(data); };
 
 try {
@@ -320,59 +410,7 @@ try {
   console.error('\nprobe threw:', e);
   failures++;
 } finally {
-  console.log('\nTeardown:');
-  // The switch FIRST — the one change that touches everyone.
-  try {
-    await configRef.set({ feeOverdueBlockEnabled: original === undefined ? false : original }, { merge: true });
-    const now = (await configRef.get()).get('feeOverdueBlockEnabled');
-    check(`kill switch restored to ${JSON.stringify(original ?? false)}`, now === (original ?? false), JSON.stringify(now));
-  } catch (e) { console.error('  SWITCH RESTORE FAILED — set config/pricing.feeOverdueBlockEnabled by hand', e); failures++; }
-
-  const uids = Object.values(accounts).map((a) => a.uid);
-  for (const tag of Object.keys(accounts)) {
-    try { await as(tag); await deleteUser(auth.currentUser); }
-    catch (e) { console.error('  account delete failed', tag, e?.code ?? e); failures++; }
-  }
-  await signOut(auth).catch(() => {});
-
-  for (const pid of made.projects) {
-    const chatId = (await adminDb.doc(`projects/${pid}`).get()).get('chatId');
-    if (chatId) made.chats.add(chatId);
-  }
-  for (const col of ['priceOffers', 'bundleOffers', 'projectApplications']) {
-    for (const pid of made.projects) {
-      for (const d of (await adminDb.collection(col).where('projectId', '==', pid).get()).docs) await d.ref.delete();
-    }
-  }
-  for (const id of made.chats) await adminDb.recursiveDelete(adminDb.doc(`chats/${id}`));
-  for (const pid of made.projects) await adminDb.recursiveDelete(adminDb.doc(`projects/${pid}`));
-  // The fee-delete triggers recompute feeBlocks once more, and the hire triggers
-  // write notifications asynchronously; let both land, then sweep.
-  await sleep(15_000);
-  for (const uid of uids) {
-    for (const n of (await adminDb.collection('notifications').where('userId', '==', uid).get()).docs) await n.ref.delete();
-    await adminDb.doc(`feeBlocks/${uid}`).delete();
-    await adminDb.recursiveDelete(adminDb.doc(`users/${uid}`));
-  }
-
-  // ASSERT the teardown.
-  let left = 0;
-  for (const pid of made.projects) {
-    if ((await adminDb.doc(`projects/${pid}`).get()).exists) left++;
-    for (const col of ['priceOffers', 'bundleOffers', 'projectApplications']) {
-      left += (await adminDb.collection(col).where('projectId', '==', pid).get()).size;
-    }
-  }
-  for (const id of made.chats) if ((await adminDb.doc(`chats/${id}`).get()).exists) left++;
-  let leaked = 0;
-  for (const uid of uids) {
-    try { await adminAuth.getUser(uid); leaked++; } catch { /* gone */ }
-    if ((await adminDb.doc(`users/${uid}`).get()).exists) leaked++;
-    if ((await adminDb.doc(`feeBlocks/${uid}`).get()).exists) leaked++;
-    leaked += (await adminDb.collection('notifications').where('userId', '==', uid).get()).size;
-  }
-  check('probe docs removed', left === 0, `${left} left`);
-  check('probe accounts, user docs, feeBlocks and notifications removed', leaked === 0, `${leaked} leaked`);
+  await teardown();
 }
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`);
 process.exit(failures === 0 ? 0 : 1);
