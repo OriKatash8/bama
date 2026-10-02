@@ -7,7 +7,6 @@
   "app/(professional)/(tabs)/chats/index.tsx": "✕",
   "app/(professional)/(tabs)/dashboard/index.tsx": "✕",
   "app/(professional)/(tabs)/marketplace/index.tsx": "✕",
-  "app/admin/courses.tsx": "✓",
   "components/layout/Header.tsx": "←",
   "features/auth/components/ModePicker.tsx": "✦",
   "features/chat/components/CommunityDiscoveryTab.tsx": "✕",

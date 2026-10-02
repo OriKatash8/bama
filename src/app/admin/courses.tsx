@@ -7,7 +7,7 @@ import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, deleteField, doc,
   serverTimestamp, Timestamp, query, orderBy, getCountFromServer,
 } from 'firebase/firestore';
-import { X, Pencil, Trash2, Video, Eye, BookOpen, GraduationCap } from 'lucide-react-native';
+import { X, Pencil, Trash2, Eye, BookOpen, GraduationCap } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { normalizeCourseUrl } from '@features/courses/courseUrl';
@@ -15,8 +15,6 @@ import {
   CourseFormFields, EMPTY_COURSE_DRAFT, courseDraftComplete, uploadCourseCover,
   type CourseDraft, type CourseLevel,
 } from '@features/courses/components/CourseFormFields';
-import { useAuthStore } from '@core/stores/authStore';
-import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { useUiStore } from '@core/stores/uiStore';
 import { confirmDialog } from '@utils/confirmDialog';
 import {
@@ -41,7 +39,9 @@ type Course = {
   level?: string;
 };
 
-/** The popup's values: the same fields as the pro's "Add your course", plus the admin's video and Published. */
+/** The popup's values: the same fields as the pro's "Add your course", plus Published.
+ *  `videoUrl` is no longer edited here (the upload was removed) — an existing
+ *  course keeps its video untouched when saved. */
 type CourseForm = { draft: CourseDraft; videoUrl: string; published: boolean };
 
 type CourseRequest = {
@@ -70,9 +70,7 @@ const asField = (n?: number) => (n ? String(n) : '');
 export default function CoursesAdmin() {
   const p = useAdminPalette();
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
   const { showToast } = useUiStore();
-  const { uploading, processing, uploadVideo } = useVideoUpload();
   const { t, rowDir, textAlign } = useScopedT('courses');
   const { t: tOps } = useScopedT('admin_operations');
   const { t: tDash } = useScopedT('admin_dashboard');
@@ -211,12 +209,6 @@ export default function CoursesAdmin() {
     } catch {
       showToast(tc('delete_failed'), 'error');
     }
-  }
-
-  async function handleVideoUpload() {
-    if (!user) return;
-    const url = await uploadVideo('courses', user.id);
-    if (url) setForm((f) => ({ ...f, videoUrl: url }));
   }
 
   async function handleApprove(req: CourseRequest) {
@@ -389,27 +381,6 @@ export default function CoursesAdmin() {
                   onChange={(patch) => setForm((f) => ({ ...f, draft: { ...f.draft, ...patch } }))}
                 />
 
-                <Pressable
-                  style={[
-                    styles.uploadBtn,
-                    { flexDirection: rowDir, backgroundColor: p.accentSoft, opacity: uploading || processing ? 0.6 : 1 },
-                  ]}
-                  onPress={handleVideoUpload}
-                  disabled={uploading || processing}
-                  accessibilityRole="button"
-                  testID="upload-video"
-                >
-                  <Video size={18} color={p.accent} />
-                  <AdminText weight="semiBold" style={[TYPE.button, { color: p.accent }]}>
-                    {uploading ? tc('uploading') : processing ? tc('processing') : form.videoUrl ? tc('replace_video') : tc('upload_video')}
-                  </AdminText>
-                </Pressable>
-                {!!form.videoUrl && (
-                  <AdminText numberOfLines={1} style={[styles.videoUrl, { color: p.good, textAlign }]}>
-                    ✓ {form.videoUrl}
-                  </AdminText>
-                )}
-
                 <View style={[styles.toggleRow, { flexDirection: rowDir, borderColor: p.border }]}>
                   <AdminText weight="medium" style={TYPE.rowName}>{tc('published')}</AdminText>
                   <Switch
@@ -468,14 +439,10 @@ const styles = StyleSheet.create({
   modal: { width: '100%', maxWidth: 420, maxHeight: 600, borderRadius: RADIUS.card, borderWidth: 1, padding: 20 },
   modalHeader: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 10 },
   modalTitle: { fontSize: 20, letterSpacing: -0.3, flex: 1 },
-  uploadBtn: {
-    alignItems: 'center', gap: 8, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12, marginTop: 20, marginBottom: 8,
-  },
-  videoUrl: { fontSize: 11, marginBottom: 12 },
   toggleRow: {
     alignItems: 'center', justifyContent: 'space-between',
-    borderTopWidth: 1, paddingTop: 12, marginTop: 4, marginBottom: 16,
+    // The form's last field (Level) sits right above: room before the divider.
+    borderTopWidth: 1, paddingTop: 12, marginTop: 20, marginBottom: 16,
   },
   saveRow: { justifyContent: 'flex-end', alignItems: 'center', minHeight: 32 },
 });

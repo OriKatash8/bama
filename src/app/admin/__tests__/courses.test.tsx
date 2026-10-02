@@ -37,9 +37,6 @@ jest.mock('@core/stores/uiStore', () => ({
   useUiStore: (s?: (x: { showToast: jest.Mock }) => unknown) =>
     (s ? s({ showToast: mockToast }) : { showToast: mockToast }),
 }));
-jest.mock('@core/hooks/useVideoUpload', () => ({
-  useVideoUpload: () => ({ uploading: false, processing: false, uploadVideo: jest.fn() }),
-}));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
@@ -176,8 +173,10 @@ it('the add popup has the same fields, labels and marks as the pro "Add your cou
     expect(r.getByText(label)).toBeTruthy();
   }
   for (const level of [C.level_beginner, C.level_intermediate, C.level_advanced]) expect(r.getByText(level)).toBeTruthy();
-  // The admin keeps its own video upload and Published switch under them.
-  expect(r.getByTestId('upload-video')).toBeTruthy();
+  // The admin keeps its own Published switch under them.
+  // No video upload in this popup; the admin's own extra is the Published switch.
+  expect(r.queryByTestId('upload-video')).toBeNull();
+  expect(r.queryByText(en.admin_courses.upload_video)).toBeNull();
   expect(r.getByTestId('published-switch')).toBeTruthy();
 });
 
@@ -266,4 +265,13 @@ it('back returns to the previous page, or to Operations when there is none', asy
   mockCanGoBack = false;
   fireEvent.press(r.getByTestId('admin-back'));
   expect(mockReplace).toHaveBeenCalledWith('/admin/operations');
+});
+
+it('editing a course that has a video keeps it — the popup no longer touches it', async () => {
+  mockData.courses = [{ id: 'c1', data: { ...COURSE, videoUrl: 'https://v/c1.mp4' } }];
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('edit-c1'));
+  expect(r.queryByTestId('upload-video')).toBeNull();
+  await act(async () => { fireEvent.press(r.getByTestId('save-course')); });
+  expect(updateDoc).toHaveBeenCalledWith({ path: 'courses/c1' }, expect.objectContaining({ videoUrl: 'https://v/c1.mp4' }));
 });
