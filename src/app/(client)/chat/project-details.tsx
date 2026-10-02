@@ -1365,7 +1365,7 @@ export default function ProjectDetailsScreen() {
 
         {/* Media — every photo and video sent in the project's chat (WhatsApp-style).
             Hidden when there's none, or when the viewer can't read the chat. */}
-        <ChatMediaSection chatId={project.chatId ?? chatIdParam} />
+        <ChatMediaSection chatId={project.chatId ?? chatIdParam} titleColor="#000000" />
 
         {/* Pending payment-update requests — ABOVE the team, so a request
             waiting on someone is the first thing seen rather than something
