@@ -4,19 +4,24 @@ import {
   ActivityIndicator, Image, Modal, TextInput,
 } from 'react-native';
 import {
-  collection, onSnapshot, updateDoc, doc, getDoc, query, orderBy, Timestamp,
+  collection, onSnapshot, updateDoc, deleteDoc, doc, getDoc, query, orderBy, where, Timestamp,
 } from 'firebase/firestore';
+import { Trash2 } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
 import { callFunction } from '@core/firebase/functions';
 import { useUiStore } from '@core/stores/uiStore';
+import { confirmDialog } from '@utils/confirmDialog';
+import type { UserModeration } from '@core/types/user';
 import {
-  AdminPage, AdminText, Card, CardHead, EmptyState, PillButton, Segment,
+  AdminPage, AdminText, Card, CardHead, EmptyState, InitialsAvatar, PillButton, Row, Segment, WhoBlock,
   RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
 
 type ModAction = 'warn' | 'suspend';
+/** Lifting a warning or a suspension, from the warned & suspended tab. */
+type LiftAction = 'clear_warning' | 'unsuspend';
 const moderateUser = callFunction<
-  { targetUid: string; action: ModAction; reason: string; reportId?: string },
+  { targetUid: string; action: ModAction | LiftAction; reason: string; reportId?: string },
   { success: boolean; actionId: string }
 >('moderateUser');
 
@@ -36,8 +41,12 @@ type Report = {
   createdAt: Timestamp | null;
 };
 
-type FilterTab = 'all' | 'pending' | 'reviewed' | 'resolved';
-const FILTER_TABS: FilterTab[] = ['all', 'pending', 'reviewed', 'resolved'];
+/** The report states, plus 'users': everyone currently warned or suspended. */
+type FilterTab = 'all' | 'pending' | 'reviewed' | 'resolved' | 'users';
+const FILTER_TABS: FilterTab[] = ['all', 'pending', 'reviewed', 'resolved', 'users'];
+
+/** A user under a warning or a suspension right now (users/{uid}.moderation). */
+type ModeratedUser = { id: string; displayName?: string; moderation: UserModeration };
 
 function formatDate(ts: Timestamp | null): string {
   if (!ts) return '—';
@@ -62,6 +71,18 @@ function StatusChip({ status, label }: { status: Report['status']; label: string
   );
 }
 
+/** Warned (amber) / Suspended (red), like the Users page. */
+function ModChip({ suspended, label }: { suspended: boolean; label: string }) {
+  const p = useAdminPalette();
+  return (
+    <View style={[styles.chip, { backgroundColor: suspended ? p.badBg : p.warnBg }]}>
+      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.chip, { color: suspended ? p.bad : p.warn }]}>
+        {label}
+      </AdminText>
+    </View>
+  );
+}
+
 export default function ReportsAdmin() {
   const p = useAdminPalette();
   const { showToast } = useUiStore();
@@ -75,12 +96,40 @@ export default function ReportsAdmin() {
   const [modTarget, setModTarget] = useState<{ report: Report; action: ModAction } | null>(null);
   const [modReason, setModReason] = useState('');
   const [modBusy, setModBusy] = useState(false);
+  /** Report id → the actions an admin took from it (adminActions, by reportId). */
+  const [actionsByReport, setActionsByReport] = useState<Record<string, ModAction[]>>({});
+  const [moderated, setModerated] = useState<ModeratedUser[]>([]);
+  const [lifting, setLifting] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
       setReports(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Report)));
       setLoading(false);
+    });
+  }, []);
+
+  // What was done from each report: the append-only evidence log moderateUser
+  // writes (with the report's id). It also covers reports acted on before the
+  // report itself was reliably marked resolved.
+  useEffect(() => {
+    return onSnapshot(collection(db, 'adminActions'), (snap) => {
+      const by: Record<string, ModAction[]> = {};
+      snap.docs.forEach((d) => {
+        const a = d.data() as { reportId?: string; action?: string };
+        if (!a.reportId || (a.action !== 'warn' && a.action !== 'suspend')) return;
+        const list = (by[a.reportId] ??= []);
+        if (!list.includes(a.action)) list.push(a.action);
+      });
+      setActionsByReport(by);
+    });
+  }, []);
+
+  // Everyone warned or suspended right now.
+  useEffect(() => {
+    const q = query(collection(db, 'users'), where('moderation.status', 'in', ['warned', 'suspended']));
+    return onSnapshot(q, (snap) => {
+      setModerated(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ModeratedUser)));
     });
   }, []);
 
@@ -140,6 +189,7 @@ export default function ReportsAdmin() {
     setModBusy(true);
     try {
       await moderateUser({ targetUid: modTarget.report.reportedUserId, action: modTarget.action, reason, reportId: modTarget.report.id });
+      // Acted on → Done. (Were this write to fail, the evidence log still files it under Done.)
       await updateDoc(doc(db, 'reports', modTarget.report.id), { status: 'resolved' }).catch(() => {});
       showToast(t(modTarget.action === 'suspend' ? 'suspended_toast' : 'warned_toast'), 'success');
       setModTarget(null);
@@ -151,8 +201,50 @@ export default function ReportsAdmin() {
     }
   }
 
-  const filtered = filter === 'all' ? reports : reports.filter((r) => r.status === filter);
-  const countOf = (tab: FilterTab) => (tab === 'all' ? reports.length : reports.filter((r) => r.status === tab).length);
+  /** A report an admin acted on (warned / suspended from it) is Done, whatever its stored status. */
+  const statusOf = (r: Report): Report['status'] => ((actionsByReport[r.id]?.length ?? 0) > 0 ? 'resolved' : r.status);
+  const filtered = filter === 'all' ? reports : reports.filter((r) => statusOf(r) === filter);
+  const countOf = (tab: FilterTab) =>
+    tab === 'users' ? moderated.length
+      : tab === 'all' ? reports.length
+        : reports.filter((r) => statusOf(r) === tab).length;
+
+  /** Deletes a Done report that is no longer relevant, after a confirm. The
+   *  moderation record (adminActions) stays. */
+  async function removeReport(report: Report) {
+    if (updating[report.id]) return;
+    const ok = await confirmDialog(t('delete_report'), t('delete_report_confirm', { name: reportedName(report) }), {
+      confirm: t('delete_report'), cancel: t('cancel'),
+    });
+    if (!ok) return;
+    setUpdating((prev) => ({ ...prev, [report.id]: true }));
+    try {
+      await deleteDoc(doc(db, 'reports', report.id));
+      showToast(t('report_deleted'), 'success');
+    } catch {
+      showToast(t('delete_report_failed'), 'error');
+    } finally {
+      setUpdating((prev) => ({ ...prev, [report.id]: false }));
+    }
+  }
+
+  /** Lift a warning / suspension, after a confirm. */
+  async function lift(u: ModeratedUser) {
+    const action: LiftAction = u.moderation.status === 'suspended' ? 'unsuspend' : 'clear_warning';
+    if (lifting[u.id]) return;
+    const name = u.displayName || t('unknown_user');
+    const ok = await confirmDialog(t(action), t(`${action}_confirm`, { name }), { confirm: t(action), cancel: t('cancel') });
+    if (!ok) return;
+    setLifting((b) => ({ ...b, [u.id]: true }));
+    try {
+      await moderateUser({ targetUid: u.id, action, reason: '' });
+      showToast(t(`${action}_toast`), 'success');
+    } catch (e) {
+      showToast((e as { message?: string })?.message ?? t('action_failed'), 'error');
+    } finally {
+      setLifting((b) => ({ ...b, [u.id]: false }));
+    }
+  }
 
   return (
     <>
@@ -172,7 +264,40 @@ export default function ReportsAdmin() {
           />
         </ScrollView>
 
-        {loading ? (
+        {filter === 'users' ? (
+          // Everyone warned or suspended right now, with the way to lift it.
+          <Card testID="moderated-card">
+            <CardHead title={t('moderated_title')} sub={t('moderated_sub')} />
+            {moderated.length === 0 ? (
+              <EmptyState text={t('moderated_empty')} testID="moderated-empty" />
+            ) : (
+              moderated.map((u) => {
+                const suspended = u.moderation.status === 'suspended';
+                const at = u.moderation.at as unknown as Timestamp | null;
+                return (
+                  <Row key={u.id} rowDir={rowDir} testID={`moderated-${u.id}`}>
+                    <InitialsAvatar name={u.displayName || '?'} size={34} />
+                    <WhoBlock
+                      name={u.displayName || t('unknown_user')}
+                      meta={`${u.moderation.reason} · ${u.moderation.actorName} · ${formatDate(at)}`}
+                      textAlign={textAlign}
+                    />
+                    <ModChip suspended={suspended} label={t(suspended ? 'status_suspended' : 'status_warned')} />
+                    {lifting[u.id] ? (
+                      <ActivityIndicator size="small" color={p.accent} testID={`lifting-${u.id}`} />
+                    ) : (
+                      <PillButton
+                        label={t(suspended ? 'unsuspend' : 'clear_warning')}
+                        onPress={() => void lift(u)}
+                        testID={`lift-${u.id}`}
+                      />
+                    )}
+                  </Row>
+                );
+              })
+            )}
+          </Card>
+        ) : loading ? (
           <ActivityIndicator size="large" color={p.accent} style={styles.spinner} testID="reports-loading" />
         ) : filtered.length === 0 ? (
           <Card testID="reports-empty">
@@ -181,13 +306,15 @@ export default function ReportsAdmin() {
         ) : (
           filtered.map((report) => {
             const busy = !!updating[report.id];
+            const status = statusOf(report);
+            const taken = actionsByReport[report.id] ?? [];
             return (
               <Card key={report.id} testID={`report-${report.id}`}>
                 {/* Head: reported user (or the community) over reporter · date, status on the far side. */}
                 <CardHead
                   title={reportedName(report)}
                   sub={`${resolvedNames[report.reporterId] || '—'} · ${formatDate(report.createdAt)}`}
-                  side={<StatusChip status={report.status} label={t(`status_${report.status}`)} />}
+                  side={<StatusChip status={statusOf(report)} label={t(`status_${statusOf(report)}`)} />}
                 />
 
                 <View style={[styles.body, { borderTopColor: p.border }]}>
@@ -205,26 +332,38 @@ export default function ReportsAdmin() {
                     </ScrollView>
                   )}
 
+                  {/* What was already done from this report. */}
+                  {taken.length > 0 && (
+                    <AdminText weight="semiBold" style={[TYPE.rowMeta, { color: p.text2, textAlign }]} testID={`taken-${report.id}`}>
+                      {`${t('action_taken')}: ${taken.map((a) => t(a === 'suspend' ? 'taken_suspend' : 'taken_warn')).join(' · ')}`}
+                    </AdminText>
+                  )}
+
                   <View style={[styles.actions, { flexDirection: rowDir }]}>
-                    {/* Moderate the reported user. A deletion request has no user to act on. */}
+                    {/* Moderate the reported user — each action once per report. A
+                        deletion request has no user to act on. */}
                     {report.type !== 'community_deletion' && (
                       <>
-                        <PillButton
-                          label={t('warn')}
-                          testID={`warn-${report.id}`}
-                          onPress={() => { setModTarget({ report, action: 'warn' }); setModReason(''); }}
-                        />
-                        <PillButton
-                          label={t('suspend')}
-                          variant="danger"
-                          testID={`suspend-${report.id}`}
-                          onPress={() => { setModTarget({ report, action: 'suspend' }); setModReason(''); }}
-                        />
+                        {!taken.includes('warn') && (
+                          <PillButton
+                            label={t('warn')}
+                            testID={`warn-${report.id}`}
+                            onPress={() => { setModTarget({ report, action: 'warn' }); setModReason(''); }}
+                          />
+                        )}
+                        {!taken.includes('suspend') && (
+                          <PillButton
+                            label={t('suspend')}
+                            variant="danger"
+                            testID={`suspend-${report.id}`}
+                            onPress={() => { setModTarget({ report, action: 'suspend' }); setModReason(''); }}
+                          />
+                        )}
                       </>
                     )}
                     <View style={styles.spacer} />
                     {busy ? <ActivityIndicator size="small" color={p.accent} testID={`updating-${report.id}`} /> : null}
-                    {report.status !== 'reviewed' && (
+                    {status !== 'reviewed' && status !== 'resolved' && (
                       <PillButton
                         label={t('mark_reviewed')}
                         testID={`review-${report.id}`}
@@ -232,7 +371,20 @@ export default function ReportsAdmin() {
                         onPress={() => updateStatus(report.id, 'reviewed')}
                       />
                     )}
-                    {report.status !== 'resolved' && (
+                    {/* Done: a bin, to delete a report that is no longer relevant. */}
+                    {status === 'resolved' && !busy && (
+                      <Pressable
+                        onPress={() => void removeReport(report)}
+                        hitSlop={6}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('delete_report')} · ${reportedName(report)}`}
+                        testID={`delete-report-${report.id}`}
+                        style={({ pressed }) => [styles.trashBtn, { backgroundColor: pressed ? p.bad : p.badBg }]}
+                      >
+                        {({ pressed }) => <Trash2 size={16} color={pressed ? p.onAccent : p.bad} strokeWidth={2.2} />}
+                      </Pressable>
+                    )}
+                    {status !== 'resolved' && (
                       <PillButton
                         label={t('resolve')}
                         variant="primary"
@@ -300,6 +452,7 @@ export default function ReportsAdmin() {
 }
 
 const styles = StyleSheet.create({
+  trashBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   filterRow: { flexGrow: 1 },
   spinner: { marginTop: 40 },
   chip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },

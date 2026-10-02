@@ -1176,7 +1176,9 @@ service cloud.firestore {
         resource.data.reporterId == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['evidenceURLs'])
       );
-      allow delete: if false;
+      // The admin removes a report that is no longer relevant (from the Done tab).
+      // What was done about it stays in adminActions, which is never deleted.
+      allow delete: if isAdmin();
     }
 
     // ─── adminActions ───────────────────────────────────────────────

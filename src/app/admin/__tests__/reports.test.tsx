@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { act, fireEvent, render, within } from '@testing-library/react-native';
-import { onSnapshot, updateDoc } from 'firebase/firestore';
+import { deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import ReportsAdmin from '../reports';
@@ -31,8 +31,11 @@ jest.mock('@core/firebase/config', () => ({ db: {} }));
 jest.mock('@core/firebase/functions', () => ({ callFunction: () => (...a: unknown[]) => mockModerate(...(a as [])) }));
 jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
 jest.mock('firebase/firestore', () => ({
-  collection: jest.fn(), query: jest.fn(), orderBy: jest.fn(), onSnapshot: jest.fn(),
-  updateDoc: jest.fn(() => Promise.resolve()), doc: jest.fn((_db, col, id) => `${col}/${id}`),
+  // Refs carry their collection name, so onSnapshot can answer per collection.
+  collection: jest.fn((_db, name: string) => name), query: jest.fn((c: string) => c), orderBy: jest.fn(), where: jest.fn(),
+  onSnapshot: jest.fn(),
+  updateDoc: jest.fn(() => Promise.resolve()), deleteDoc: jest.fn(() => Promise.resolve()),
+  doc: jest.fn((_db, col, id) => `${col}/${id}`),
   getDoc: jest.fn(() => Promise.resolve({ data: () => ({ displayName: 'Rita Reporter' }) })),
   Timestamp: class {},
 }));
@@ -46,13 +49,20 @@ const docs = [
   { id: 'r3', data: { reporterId: 'u3', reportedUserId: 'bad-3', reportedUserName: 'Old Case', reason: 'Old', evidenceURLs: [], status: 'resolved', createdAt: null } },
 ];
 
+/** What each collection returns: reports, the admin action log, moderated users. */
+let mockCollections: Record<string, { id: string; data: Record<string, unknown> }[]> = {};
+function serve() {
+  (onSnapshot as jest.Mock).mockImplementation((q: string, next: (s: unknown) => void) => {
+    next({ docs: (mockCollections[q] ?? []).map((d) => ({ id: d.id, data: () => d.data })) });
+    return () => {};
+  });
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockLang = 'en';
-  (onSnapshot as jest.Mock).mockImplementation((_q, next: (s: unknown) => void) => {
-    next({ docs: docs.map((d) => ({ id: d.id, data: () => d.data })) });
-    return () => {};
-  });
+  mockCollections = { reports: docs, adminActions: [], users: [] };
+  serve();
 });
 
 async function renderPage() {
@@ -87,10 +97,7 @@ it('filters by status with counts, starting on pending', async () => {
 });
 
 it('shows the empty state when there are no reports', async () => {
-  (onSnapshot as jest.Mock).mockImplementation((_q, next: (s: unknown) => void) => {
-    next({ docs: [] });
-    return () => {};
-  });
+  mockCollections.reports = [];
   const r = await renderPage();
   expect(r.getByText(E.empty)).toBeTruthy();
 });
@@ -135,4 +142,124 @@ it('mirrors in Hebrew: title and reason align right, the header runs right to le
   expect(r.getByText(H.warn)).toBeTruthy();
   const reason = StyleSheet.flatten(r.getByText('Spam').props.style);
   expect(reason.textAlign).toBe('right');
+});
+
+describe('a report acted on is Done, and its action is not offered again', () => {
+  it('a warning taken from a pending report files it under Done, with the warn button gone', async () => {
+    // r1 is still stored as pending (e.g. the resolve write failed back then).
+    mockCollections.adminActions = [{ id: 'a1', data: { action: 'warn', reportId: 'r1', targetUserId: 'bad-1' } }];
+    const r = await renderPage();
+    expect(r.getByText(`${E.filter_pending} (0)`)).toBeTruthy();
+    expect(r.getByText(`${E.filter_resolved} (2)`)).toBeTruthy();
+    fireEvent.press(r.getByTestId('filter-resolved'));
+    const card = within(r.getByTestId('report-r1'));
+    expect(card.getByText(E.status_resolved)).toBeTruthy();
+    expect(card.getByText(`${E.action_taken}: ${E.taken_warn}`)).toBeTruthy();
+    expect(card.queryByTestId('warn-r1')).toBeNull();
+    // Suspending is still possible after a warning.
+    expect(card.getByTestId('suspend-r1')).toBeTruthy();
+    expect(card.queryByTestId('resolve-r1')).toBeNull();
+  });
+
+  it('after a suspension neither is offered again', async () => {
+    mockCollections.adminActions = [
+      { id: 'a1', data: { action: 'warn', reportId: 'r1' } },
+      { id: 'a2', data: { action: 'suspend', reportId: 'r1' } },
+      { id: 'a3', data: { action: 'unsuspend' } }, // not from a report: ignored
+    ];
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-resolved'));
+    const card = within(r.getByTestId('report-r1'));
+    expect(card.queryByTestId('warn-r1')).toBeNull();
+    expect(card.queryByTestId('suspend-r1')).toBeNull();
+    expect(card.getByText(`${E.action_taken}: ${E.taken_warn} · ${E.taken_suspend}`)).toBeTruthy();
+  });
+
+  it('"Resolved" now reads "Done"', () => {
+    expect(E.filter_resolved).toBe('Done');
+    expect(E.status_resolved).toBe('Done');
+  });
+});
+
+describe('the warned & suspended tab', () => {
+  const USERS = [
+    { id: 'bad-1', data: { displayName: 'Bad Actor', moderation: { status: 'suspended', reason: 'Spam', actorName: 'Dana', actionId: 'x', actorId: 'adm', at: null } } },
+    { id: 'bad-2', data: { displayName: 'Rude One', moderation: { status: 'warned', reason: 'Rude', actorName: 'Dana', actionId: 'y', actorId: 'adm', at: null } } },
+  ];
+
+  it('lists everyone warned or suspended, with the count on the tab', async () => {
+    mockCollections.users = USERS;
+    const r = await renderPage();
+    expect(r.getByText(`${E.filter_users} (2)`)).toBeTruthy();
+    fireEvent.press(r.getByTestId('filter-users'));
+    expect(r.queryByTestId('report-r1')).toBeNull();
+    const a = within(r.getByTestId('moderated-bad-1'));
+    expect(a.getByText('Bad Actor')).toBeTruthy();
+    expect(a.getByText(E.status_suspended)).toBeTruthy();
+    expect(a.getByText(E.unsuspend)).toBeTruthy();
+    const b = within(r.getByTestId('moderated-bad-2'));
+    expect(b.getByText(E.status_warned)).toBeTruthy();
+    expect(b.getByText(E.clear_warning)).toBeTruthy();
+  });
+
+  it('lifts a suspension / a warning after a confirm', async () => {
+    mockCollections.users = USERS;
+    const alert = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(
+      (...a: unknown[]) => (a[2] as { onPress?: () => void }[])[1].onPress?.(),
+    );
+    mockModerate.mockResolvedValue({ success: true, actionId: 'z' });
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-users'));
+    await act(async () => { fireEvent.press(r.getByTestId('lift-bad-1')); });
+    expect(mockModerate).toHaveBeenCalledWith({ targetUid: 'bad-1', action: 'unsuspend', reason: '' });
+    expect(mockToast).toHaveBeenCalledWith(E.unsuspend_toast, 'success');
+    await act(async () => { fireEvent.press(r.getByTestId('lift-bad-2')); });
+    expect(mockModerate).toHaveBeenCalledWith({ targetUid: 'bad-2', action: 'clear_warning', reason: '' });
+    alert.mockRestore();
+  });
+
+  it('says so when no one is warned or suspended', async () => {
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-users'));
+    expect(r.getByText(E.moderated_empty)).toBeTruthy();
+  });
+});
+
+describe('deleting a report that is no longer relevant (Done tab)', () => {
+  const confirm = (yes: boolean) => jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(
+    (...a: unknown[]) => (a[2] as { onPress?: () => void }[])[yes ? 1 : 0].onPress?.(),
+  );
+
+  it('only Done reports have the bin', async () => {
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-all'));
+    expect(r.queryByTestId('delete-report-r1')).toBeNull(); // pending
+    expect(r.queryByTestId('delete-report-r2')).toBeNull(); // reviewed
+    expect(r.getByTestId('delete-report-r3')).toBeTruthy();  // done
+  });
+
+  it('asks first, then deletes it', async () => {
+    const alert = confirm(true);
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-resolved'));
+    await act(async () => { fireEvent.press(r.getByTestId('delete-report-r3')); });
+    expect(alert.mock.calls[0][1]).toBe(E.delete_report_confirm.replace('{{name}}', 'Old Case'));
+    expect(deleteDoc).toHaveBeenCalledWith('reports/r3');
+    expect(mockToast).toHaveBeenCalledWith(E.report_deleted, 'success');
+    alert.mockRestore();
+  });
+
+  it('keeps it when the confirm is cancelled, and says so if the delete fails', async () => {
+    let alert = confirm(false);
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-resolved'));
+    await act(async () => { fireEvent.press(r.getByTestId('delete-report-r3')); });
+    expect(deleteDoc).not.toHaveBeenCalled();
+    alert.mockRestore();
+    alert = confirm(true);
+    (deleteDoc as jest.Mock).mockRejectedValueOnce(new Error('permission-denied'));
+    await act(async () => { fireEvent.press(r.getByTestId('delete-report-r3')); });
+    expect(mockToast).toHaveBeenCalledWith(E.delete_report_failed, 'error');
+    alert.mockRestore();
+  });
 });

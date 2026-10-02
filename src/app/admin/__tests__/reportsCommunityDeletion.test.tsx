@@ -28,7 +28,7 @@ jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));
 jest.mock('firebase/firestore', () => ({
-  collection: jest.fn(), query: jest.fn(), orderBy: jest.fn(), onSnapshot: jest.fn(),
+  collection: jest.fn(), query: jest.fn(), orderBy: jest.fn(), where: jest.fn(), onSnapshot: jest.fn(),
   updateDoc: jest.fn(), doc: jest.fn(),
   getDoc: jest.fn(() => Promise.resolve({ data: () => ({ displayName: 'Olive Owner' }) })),
   Timestamp: class {},
