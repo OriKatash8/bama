@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
+import { X } from 'lucide-react-native';
 import { ChatMediaSection } from '../ChatMediaSection';
 import { useChatMedia } from '../../hooks/useChatMedia';
 import { useCommunityMedia } from '../../hooks/useCommunityMedia';
@@ -19,8 +20,11 @@ jest.mock('../../hooks/useCommunityMedia', () => ({ useCommunityMedia: jest.fn((
 jest.mock('@features/profile/components/PortfolioViewer', () => ({
   PortfolioViewer: (props: Record<string, unknown>) => { mockViewer(props); return null; },
 }));
-jest.mock('@components/ui/VideoPlayer', () => ({ VideoPlayer: () => null }));
+const mockVideo = jest.fn();
+jest.mock('@components/ui/VideoPlayer', () => ({ VideoPlayer: (props: Record<string, unknown>) => { mockVideo(props); return null; } }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
+let mockAccent = '#6D28D9';
+jest.mock('@core/navigation/floatingTabBar', () => ({ useModeAccent: () => ({ accent: mockAccent, tint: '#fff' }) }));
 let mockLang: 'he' | 'en' = 'en';
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
@@ -124,6 +128,42 @@ describe('a community', () => {
     const title = (r: ReturnType<typeof render>) => StyleSheet.flatten(r.getByText(en.project_details.media).props.style);
     expect(title(render(<ChatMediaSection chatId="c1" />)).color).toBe('#004aad');
     expect(title(render(<ChatMediaSection chatId="c1" titleColor="#0f0f1f" />)).color).toBe('#0f0f1f');
+  });
+
+  it('the grid\'s title takes the same colour as the row; blue without one', () => {
+    mockUseChatMedia.mockReturnValue([item(1)]);
+    const gridTitle = (r: ReturnType<typeof render>) => {
+      fireEvent.press(r.getByTestId('media-header'));
+      return StyleSheet.flatten(r.getByTestId('media-grid-title').props.style);
+    };
+    expect(gridTitle(render(<ChatMediaSection chatId="c1" />)).color).toBe('#004aad');
+    expect(gridTitle(render(<ChatMediaSection chatId="c1" titleColor="#000000" />)).color).toBe('#000000');
+  });
+
+  it('every grid cell is the same square: a video drops the player\'s own 180pt minimum, 16:9 ratio and corners', () => {
+    // The player's defaults made video cells taller than photo cells, so rows of
+    // mixed media came out uneven.
+    mockUseChatMedia.mockReturnValue([item(1), item(2, 'video'), item(3)]);
+    const r = render(<ChatMediaSection chatId="c1" />);
+    fireEvent.press(r.getByTestId('media-header'));
+    const video = StyleSheet.flatten(mockVideo.mock.calls[mockVideo.mock.calls.length - 1][0].style);
+    const photo = StyleSheet.flatten(r.UNSAFE_getAllByType('Image' as never)[0].props.style);
+    expect([video.width, video.height]).toEqual([photo.width, photo.height]);
+    expect(video.width).toBe(video.height);
+    expect([video.minHeight, video.aspectRatio, video.borderRadius]).toEqual([0, 1, 0]);
+  });
+
+  it('the grid\'s close (X) takes the mode colour: purple for a client, blue for a pro', () => {
+    mockUseChatMedia.mockReturnValue([item(1)]);
+    const closeColor = () => {
+      const r = render(<ChatMediaSection chatId="c1" />);
+      fireEvent.press(r.getByTestId('media-header'));
+      return r.UNSAFE_getByType(X).props.color;
+    };
+    mockAccent = '#6D28D9';
+    expect(closeColor()).toBe('#6D28D9');
+    mockAccent = '#1D4ED8';
+    expect(closeColor()).toBe('#1D4ED8');
   });
 
   it('a project chat does not listen to channels', () => {

@@ -6,6 +6,7 @@ import { AppText } from '@components/ui/AppText';
 import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useModeAccent } from '@core/navigation/floatingTabBar';
 import type { MediaAsset } from '@core/types/media';
 import { useChatMedia } from '../hooks/useChatMedia';
 import { useCommunityMedia } from '../hooks/useCommunityMedia';
@@ -26,9 +27,11 @@ const GRID_GAP = 2;
 
 function Thumb({ asset, size, testID }: { asset: MediaAsset; size: number; testID: string }) {
   return (
-    <View style={{ width: size, height: size }}>
+    <View style={{ width: size, height: size, overflow: 'hidden' }}>
       {asset.type === 'video' ? (
-        <VideoPlayer uri={asset.url} style={{ width: size, height: size }} thumbnailOnly />
+        // Overrides the player's own 180pt minimum, 16:9 ratio and corners: they
+        // made video cells taller than photo cells, so mixed rows came out uneven.
+        <VideoPlayer uri={asset.url} style={{ width: size, height: size, minHeight: 0, aspectRatio: 1, borderRadius: 0 }} thumbnailOnly />
       ) : (
         <Image source={{ uri: asset.url }} style={{ width: size, height: size }} contentFit="cover" cachePolicy="memory-disk" />
       )}
@@ -54,10 +57,12 @@ function Thumb({ asset, size, testID }: { asset: MediaAsset; size: number; testI
 export function ChatMediaSection({ chatId, community = false, titleColor }: {
   chatId: string | undefined;
   community?: boolean;
-  /** The card title's colour. Project details keeps the default blue. */
+  /** The title's colour, on the row and on the grid it opens. Default blue. */
   titleColor?: string;
 }) {
   const language = useSettingsStore((s) => s.language);
+  // The close button follows the mode: purple for a client, blue for a pro.
+  const { accent: modeAccent } = useModeAccent();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const chatMedia = useChatMedia(community ? undefined : chatId);
@@ -99,7 +104,7 @@ export function ChatMediaSection({ chatId, community = false, titleColor }: {
         <View style={styles.gridScreen} testID="media-grid">
           <View style={[styles.gridHeader, { flexDirection: rowDir }]}>
             {/* Centred on the whole line; the close button sits at the end. */}
-            <AppText weight="bold" style={styles.gridTitle} testID="media-grid-title" pointerEvents="none">
+            <AppText weight="bold" style={[styles.gridTitle, titleColor ? { color: titleColor } : null]} testID="media-grid-title" pointerEvents="none">
               {`${t('project_details.media')} · ${media.length}`}
             </AppText>
             <TouchableOpacity
@@ -108,7 +113,7 @@ export function ChatMediaSection({ chatId, community = false, titleColor }: {
               accessibilityRole="button"
               accessibilityLabel={t('project_details.media_close')}
             >
-              <X size={24} color="#004aad" />
+              <X size={24} color={modeAccent} />
             </TouchableOpacity>
           </View>
           <FlatList
