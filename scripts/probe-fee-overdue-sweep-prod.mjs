@@ -12,15 +12,40 @@
  *      leftover.
  *
  *   node scripts/probe-fee-overdue-sweep-prod.mjs --stamp probe1759370000000
+ *   node scripts/probe-fee-overdue-sweep-prod.mjs --logins ~/bama-test-logins.txt
+ *
+ * --logins reads TEST_STAMP and the TEST_*_UID lines from a manual-test logins
+ * file. That file must live OUTSIDE the project: a stray .env-style file in the
+ * project root is picked up by Metro's dev bundler and breaks the app (it did,
+ * 2026-10-02). A path inside the project is refused.
  */
+import { readFileSync } from 'node:fs';
+import { resolve, relative, isAbsolute } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldPath } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
 const i = process.argv.indexOf('--stamp');
-const STAMP = i > -1 ? process.argv[i + 1] : '';
+let STAMP = i > -1 ? process.argv[i + 1] : '';
+const fromLogins = {};
+const li = process.argv.indexOf('--logins');
+if (li > -1) {
+  const file = resolve(process.argv[li + 1].replace(/^~(?=\/)/, process.env.HOME));
+  const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
+  const rel = relative(projectRoot, file);
+  if (!rel.startsWith('..') && !isAbsolute(rel)) {
+    console.error(`ERROR: ${file} is inside the project. Keep the logins file outside it (e.g. ~/bama-test-logins.txt).`);
+    process.exit(1);
+  }
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    const m = line.match(/^\s*(TEST_[A-Z_]+)\s*=\s*(.*)\s*$/);
+    if (m) fromLogins[m[1]] = m[2];
+  }
+  STAMP ||= fromLogins.TEST_STAMP ?? '';
+}
 if (!/^(probe|smoke)\d{13}$/.test(STAMP)) {
-  console.error('ERROR: --stamp probe<13 digits> (or smoke<13 digits>) is required.');
+  console.error('ERROR: --stamp probe<13 digits> (or smoke<13 digits>), or --logins <file outside the project>, is required.');
   process.exit(1);
 }
 const app = initializeApp({ projectId: 'bama-af0a0' });
@@ -40,6 +65,8 @@ for (const tag of TAGS) {
 // Uids may also be known from a run file even if the auth accounts are gone.
 const extra = process.argv.indexOf('--uids');
 if (extra > -1) for (const [tag, uid] of Object.entries(JSON.parse(process.argv[extra + 1]))) uids[tag] ??= uid;
+if (fromLogins.TEST_CLIENT_UID) uids.client ??= fromLogins.TEST_CLIENT_UID;
+if (fromLogins.TEST_PRO_UID) uids.pro ??= fromLogins.TEST_PRO_UID;
 const uidList = [...new Set(Object.values(uids))];
 
 const projectsByPrefix = () => db.collection('projects')
