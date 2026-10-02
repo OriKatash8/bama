@@ -6,6 +6,7 @@ const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { MarketplaceListing } from '../types';
 import { PERIOD_SUFFIX_KEY, periodOf } from '../utils/rentalPrice';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { localizeLocation } from '@core/constants/israelLocations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -101,8 +102,8 @@ export function ListingCard({ listing, onPress }: Props) {
           >
             {/* A rental belongs to an outside store: show the store, never who posted it. */}
             {(isRental
-              ? [listing.location, listing.storeName]
-              : [listing.location, `${t('marketplace.by')} ${listing.posterName}`]
+              ? [localizeLocation(listing.location, language), listing.storeName]
+              : [localizeLocation(listing.location, language), `${t('marketplace.by')} ${listing.posterName}`]
             ).filter(Boolean).join(' · ')}
           </AppText>
         </View>

@@ -8,7 +8,7 @@ import { X, MapPin } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
+import { findLocation, sameLocation, searchLocations } from '@core/constants/israelLocations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -41,15 +41,10 @@ export function CityPickerModal({ visible, value, onSelect, onClose }: Props) {
 
   const [search, setSearch] = useState('');
 
-  const list = language === 'he' ? ISRAEL_LOCATIONS_HE : ISRAEL_LOCATIONS_EN;
-  const cities = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((c) => c.toLowerCase().includes(q));
-  }, [search, list]);
-  const showAdd =
-    search.trim().length > 0 &&
-    !cities.some((c) => c.toLowerCase() === search.trim().toLowerCase());
+  // One list in both languages: rows show the current language, and the search
+  // matches either ("Haifa" finds חיפה), so a listed place is never added twice.
+  const cities = useMemo(() => searchLocations(search, language), [search, language]);
+  const showAdd = search.trim().length > 0 && !findLocation(search);
 
   function pick(city: string) {
     onSelect(city);
@@ -110,7 +105,7 @@ export function CityPickerModal({ visible, value, onSelect, onClose }: Props) {
                     accessibilityRole="button"
                   >
                     <MapPin size={14} color="#004aad" strokeWidth={1.8} />
-                    <Text style={[styles.rowText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }, item === value && styles.rowTextSelected]}>
+                    <Text style={[styles.rowText, { ...font.regular, textAlign: rtl ? 'right' : 'left' }, sameLocation(item, value) && styles.rowTextSelected]}>
                       {item}
                     </Text>
                   </TouchableOpacity>

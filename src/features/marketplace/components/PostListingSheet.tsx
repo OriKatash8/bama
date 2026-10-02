@@ -13,6 +13,7 @@ import { useCreateListing } from '../hooks/useCreateListing';
 import { useUpdateListing } from '../hooks/useUpdateListing';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { localizeLocation } from '@core/constants/israelLocations';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -500,7 +501,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                 style={[styles.locationTriggerText, { textAlign: rtl ? 'right' : 'left', color: location ? '#1a1a2e' : 'rgba(0,0,0,0.3)' }]}
                 numberOfLines={1}
               >
-                {location || t('marketplace.location_city')}
+                {localizeLocation(location, language) || t('marketplace.location_city')}
               </SheetText>
               {location.length > 0 && (
                 <TouchableOpacity onPress={() => setLocation('')} hitSlop={8} activeOpacity={0.7}>

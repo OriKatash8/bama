@@ -11,6 +11,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { localizeLocation } from '@core/constants/israelLocations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { startNegotiation, shareListingToCommunities, deleteListing } from '../services/marketplaceService';
@@ -284,7 +285,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                     contentFit="contain" cachePolicy="memory-disk"
                   />
                   <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>
-                    {listing.location}
+                    {localizeLocation(listing.location, language)}
                   </AppText>
                 </View>
               </View>

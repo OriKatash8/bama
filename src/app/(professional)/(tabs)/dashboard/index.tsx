@@ -34,6 +34,7 @@ import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { localizeLocation } from '@core/constants/israelLocations';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { where } from '@core/firebase/firestore';
@@ -508,7 +509,7 @@ export default function DashboardScreen() {
                     <View style={styles.projectStatSquare}>
                       <MapPin size={14} color={BLUE} strokeWidth={1.5} />
                       <AppText weight="regular" style={styles.projectStatLabel}>{t('chats_page.stat_location')}</AppText>
-                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{project.location || '—'}</AppText>
+                      <AppText weight="bold" style={styles.projectStatValue} numberOfLines={1}>{localizeLocation(project.location, language) || '—'}</AppText>
                     </View>
                     <View style={styles.projectStatSquare}>
                       <CalendarDays size={14} color={BLUE} strokeWidth={1.5} />

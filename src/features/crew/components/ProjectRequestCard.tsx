@@ -17,6 +17,7 @@ import type { ProjectRequest } from '@core/types/project';
 import { useProjectTeam } from '@features/offers/hooks/useProjectTeam';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { localizeLocation } from '@core/constants/israelLocations';
 import { cancelProject } from '@features/crew/services/projectCancellation';
 import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
@@ -184,7 +185,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
             {t('chats_page.stat_location')}
           </AppText>
           <AppText weight="bold" style={styles.statValue} numberOfLines={1}>
-            {request.location || '—'}
+            {localizeLocation(request.location, language) || '—'}
           </AppText>
         </View>
 

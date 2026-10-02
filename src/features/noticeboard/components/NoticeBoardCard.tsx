@@ -15,7 +15,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { categoryLabel } from '@features/crew/data/categories';
 import { capabilityLabel } from '@features/noticeboard/matching';
-import { translateCity } from '@core/utils/cityTranslations';
+import { localizeLocation } from '@core/constants/israelLocations';
 
 type Translations = typeof en;
 
@@ -107,7 +107,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
     const hasDesc = !!(request.description?.trim());
     const hasExec = !!(request.exec?.trim());
     const hasDeadline = !!(request.deadline?.trim());
-    const locationText = translateCity(request.location, rtl);
+    const locationText = localizeLocation(request.location, language);
     const hasLocation = !!(locationText?.trim());
     const hasMetaRow = hasExec || hasDeadline || hasLocation;
 
@@ -356,8 +356,8 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
           <Text style={[styles.title, { ...font.forText(request.title, 'bold'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>{request.title}</Text>
           <View style={[styles.locationRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <MapPin size={13} color={textColor} strokeWidth={1.5} />
-            <Text style={[styles.location, { ...font.forText(translateCity(request.location, rtl), 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
-              {translateCity(request.location, rtl)}
+            <Text style={[styles.location, { ...font.forText(localizeLocation(request.location, language), 'regular'), color: textColor, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1}>
+              {localizeLocation(request.location, language)}
             </Text>
           </View>
           {!!(request.exec) && (

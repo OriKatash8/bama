@@ -1,5 +1,6 @@
 import { getVacantSlots, roleIdForCategory } from '@features/noticeboard/matching';
 import type { ProjectRequest } from '@core/types/project';
+import { localizeLocation } from '@core/constants/israelLocations';
 
 /** The board's ordering, and — for `direct_only` — what it leaves out. */
 export type NoticeSort = 'newest' | 'oldest' | 'direct_only';
@@ -33,7 +34,9 @@ export function visibleNotices(
     out = out.filter((r) =>
       (r.title ?? '').toLowerCase().includes(q) ||
       (r.description ?? '').toLowerCase().includes(q) ||
-      (r.location ?? '').toLowerCase().includes(q),
+      // A listed place matches in either language — the card shows it translated.
+      [r.location ?? '', localizeLocation(r.location, 'he'), localizeLocation(r.location, 'en')]
+        .some((l) => l.toLowerCase().includes(q)),
     );
   }
 

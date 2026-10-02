@@ -29,6 +29,7 @@ import { MAX_EVIDENCE, ReportSheet } from '@features/moderation/components/Repor
 import { auth } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { localizeLocation } from '@core/constants/israelLocations';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
@@ -1322,7 +1323,7 @@ export default function ProjectDetailsScreen() {
           >
             <MapPin size={16} color={modeAccent} strokeWidth={1.5} />
             <AppText weight="semiBold" style={styles.metaCardLabel}>{t('project_details.location')}</AppText>
-            <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{project.location}</AppText>
+            <AppText weight="bold" style={styles.metaCardValue} numberOfLines={2}>{localizeLocation(project.location, language)}</AppText>
             {isProjectClient && (
               <View testID="edit-location-badge" style={styles.editDeadlineBadge}>
                 <Pencil size={10} color={modeAccent} strokeWidth={2} />

@@ -15,6 +15,7 @@ import { CATEGORIES } from '@features/crew/data/roleTiles';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { localizeLocation } from '@core/constants/israelLocations';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react-native';
 import en from '@core/i18n/translations/en.json';
@@ -337,7 +338,7 @@ export default function SummaryScreen() {
                 t('builder.deadline'),
                 deadline === 'flexible' ? t('builder.flexible') : formatIsoDay(deadline),
               ),
-              renderField(t('builder.location'), location),
+              renderField(t('builder.location'), localizeLocation(location, language)),
             ])}
           </View>
 

@@ -34,7 +34,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest, FilledSlot } from '@core/types/project';
 import { questionsForCategory, questionLabel, CATEGORY_QUESTION_MAP } from '@features/projects/constants/roleQuestions';
-import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
+import { findLocation, localizeLocation, searchLocations } from '@core/constants/israelLocations';
 import { formatShortDay, rtlSafe } from '@utils/formatters';
 import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
 import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
@@ -270,15 +270,14 @@ export default function HomeScreen() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }, []);
 
-  const locationList = language === 'he' ? ISRAEL_LOCATIONS_HE : ISRAEL_LOCATIONS_EN;
-  const locations = useMemo(() => {
-    const q = locationSearch.trim().toLowerCase();
-    if (!q) return locationList;
-    return locationList.filter((c) => c.toLowerCase().includes(q));
-  }, [locationSearch, locationList]);
+  // One list in both languages: rows show the current language, and the search
+  // matches either ("Haifa" finds חיפה), so a listed place is never added twice.
+  const locations = useMemo(
+    () => searchLocations(locationSearch, language),
+    [locationSearch, language],
+  );
 
-  const showLocationAdd = locationSearch.trim().length > 0 &&
-    !locations.some((c) => c.toLowerCase() === locationSearch.trim().toLowerCase());
+  const showLocationAdd = locationSearch.trim().length > 0 && !findLocation(locationSearch);
 
   useEffect(() => {
     if (!projectId) return;
@@ -572,7 +571,7 @@ export default function HomeScreen() {
                   label: t('builder.location'),
                   // A city from the list is already short; typed text may be a
                   // full address, so the tile shows its first part.
-                  value: location ? (location.split(',')[0].trim() || location) : '',
+                  value: location ? localizeLocation(location.split(',')[0].trim() || location, language) : '',
                   optional: true,
                   error: errors.location,
                   onPress: () => { setLocationSearch(''); setLocationModalOpen(true); },

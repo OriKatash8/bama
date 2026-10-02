@@ -16,7 +16,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { categoryLabel } from '@features/crew/data/categories';
 import { capabilityLabel, professionalMatchesSlot, type RoleSkillEntry } from '@features/noticeboard/matching';
 import { isOfferedSlot } from '@features/noticeboard/unoffered';
-import { translateCity } from '@core/utils/cityTranslations';
+import { localizeLocation } from '@core/constants/israelLocations';
 import { formatIsoDay } from '@utils/formatters';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -324,7 +324,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
                       style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
                       resizeMode="contain"
                     />
-                    <AppText weight="regular" style={[styles.metaValue, { textAlign: align }]} numberOfLines={1}>{translateCity(request.location, rtl)}</AppText>
+                    <AppText weight="regular" style={[styles.metaValue, { textAlign: align }]} numberOfLines={1}>{localizeLocation(request.location, language)}</AppText>
                   </View>
                 </View>
               </View>

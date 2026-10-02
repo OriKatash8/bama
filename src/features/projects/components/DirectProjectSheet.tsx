@@ -14,7 +14,7 @@ import { addDocument, getDocument } from '@core/firebase/firestore';
 import {
   ROLE_TO_LEGACY_CATEGORY, categoryLabel, getSpecializations, labelOf, capabilityOf,
 } from '@features/crew/data/categories';
-import { ISRAEL_LOCATIONS_HE, ISRAEL_LOCATIONS_EN } from '@core/constants/israelLocations';
+import { findLocation, localizeLocation, searchLocations } from '@core/constants/israelLocations';
 import type { CrewRequestSlot } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -116,14 +116,10 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
   // Same list, same "+ Add" escape hatch for anything not in it.
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
-  const locationList = rtl ? ISRAEL_LOCATIONS_HE : ISRAEL_LOCATIONS_EN;
-  const locations = useMemo(() => {
-    const q = locationSearch.trim().toLowerCase();
-    if (!q) return locationList;
-    return locationList.filter((c) => c.toLowerCase().includes(q));
-  }, [locationSearch, locationList]);
-  const showLocationAdd = locationSearch.trim().length > 0 &&
-    !locations.some((c) => c.toLowerCase() === locationSearch.trim().toLowerCase());
+  // Rows in the current language; the search matches either language.
+  const lang = rtl ? 'he' : 'en';
+  const locations = useMemo(() => searchLocations(locationSearch, lang), [locationSearch, lang]);
+  const showLocationAdd = locationSearch.trim().length > 0 && !findLocation(locationSearch);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -333,7 +329,7 @@ export function DirectProjectSheet({ visible, professionalId, professionalName, 
                 label={t('builder.location')}
                 // A city from the list is already short; typed text may be a full
                 // address, so the tile shows its first part — as the home does.
-                value={location ? (location.split(',')[0].trim() || location) : ''}
+                value={location ? localizeLocation(location.split(',')[0].trim() || location, lang) : ''}
                 optional
                 onPress={() => { setLocationSearch(''); setLocationModalOpen(true); }}
                 onClear={() => setLocation('')}
