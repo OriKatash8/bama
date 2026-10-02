@@ -89,6 +89,8 @@ export default function ProjectsPage() {
   const fetchedProjectIds = useRef<Set<string>>(new Set());
   const userId = useAuthStore((s) => s.user?.id);
   const [segment, setSegment] = useState<Segment>('projects');
+  /** Whether the empty state shown fits the screen (it reports once measured). */
+  const [emptyFits, setEmptyFits] = useState(true);
 
   // Pop the newly-selected segment, as the chats tabs and MarketplaceToggle do.
   const segScales = useRef({
@@ -322,6 +324,12 @@ export default function ProjectsPage() {
     if (segment === 'offers' && userId && newestMs > 0) markSeen(userId, newestMs);
   }, [segment, userId, newestMs, markSeen]);
 
+  const tabEmpty = segment === 'projects'
+    ? !requestsLoading && activeRequests.length === 0
+    : !(offersLoading || bundlesLoading) && combinedOffers.length === 0;
+  // Locked only when the empty state fits the screen (a short phone still scrolls to its button).
+  const locked = tabEmpty && emptyFits;
+
   return (
     <Screen scrollable={false} backgroundColor={PAGE_BG}>
       <ScrollView
@@ -329,6 +337,9 @@ export default function ProjectsPage() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        // An empty tab ends the page (the empty state fits the screen): locked.
+        scrollEnabled={!locked}
+        bounces={!locked}
       >
         {/* The band holds only the segmented control — the tabs are the title.
             The row direction flips so the first segment sits on the leading edge. */}
@@ -405,6 +416,7 @@ export default function ProjectsPage() {
                     // the illustration giving up height above it if needed.
                     singleLineTitle
                     fitToScreen={{ bottomInset: tabBarClearance }}
+                    onFitsChange={setEmptyFits}
                     title={t('chats_page.empty_projects_title')}
                     subtitle={t('chats_page.empty_projects_desc')}
                     primaryCta={{
@@ -521,6 +533,7 @@ export default function ProjectsPage() {
                     // the illustration giving up height above it if needed.
                     singleLineTitle
                     fitToScreen={{ bottomInset: tabBarClearance }}
+                    onFitsChange={setEmptyFits}
                     title={t('chats_page.empty_offers_title')}
                     subtitle={t('chats_page.empty_offers_desc')}
                     primaryCta={{

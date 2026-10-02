@@ -1,4 +1,4 @@
-import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom, fitTitleSize, illustrationHeightFor, scaleTop, ILLUSTRATION_HEIGHT, LISTING_LAYOUT, DEFAULT_MARKET_CATEGORIES, LISTINGS_ILLUSTRATION_HEIGHT } from '../emptyStateLayout';
+import { DEFAULT_ROLES, TILE_LAYOUT, BUBBLE_LAYOUT, scaleLeft, REFERENCE_WIDTH, floatFor, fillToBottom, fitTitleSize, illustrationHeightFor, scaleTop, ILLUSTRATION_HEIGHT, LISTING_LAYOUT, DEFAULT_MARKET_CATEGORIES, LISTINGS_ILLUSTRATION_HEIGHT, textFitsOnScreen } from '../emptyStateLayout';
 import { ROLES } from '@features/crew/data/categories';
 import { ROLE_GLYPHS } from '@features/crew/data/roleTiles';
 
@@ -150,5 +150,18 @@ describe('listing cards (the marketplace)', () => {
         expect(highest).toBeGreaterThanOrEqual(0);
       }
     });
+  });
+});
+
+describe('textFitsOnScreen — may the page lock?', () => {
+  const base = { windowHeight: 800, panelTop: 300, illustrationHeight: 262, bottomInset: 90 };
+  it('unknown until both the panel and the text are measured', () => {
+    expect(textFitsOnScreen({ ...base, textHeight: null })).toBeNull();
+    expect(textFitsOnScreen({ ...base, panelTop: null, textHeight: 100 })).toBeNull();
+  });
+  it('fits when the text ends above the tab bar, not when it runs under it', () => {
+    // text ends at 300 + 262 − 12 + h; the bar starts at 800 − 90 = 710.
+    expect(textFitsOnScreen({ ...base, textHeight: 160 })).toBe(true);  // ends at 710
+    expect(textFitsOnScreen({ ...base, textHeight: 161 })).toBe(false); // ends at 711
   });
 });

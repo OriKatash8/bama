@@ -19,7 +19,7 @@ import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
 import { MARKET_CATEGORIES } from '@features/marketplace/data/categories';
 import {
   BUBBLE_LAYOUT, DEFAULT_MARKET_CATEGORIES, DEFAULT_ROLES, ILLUSTRATION_HEIGHT, LISTING_LAYOUT, LISTINGS_ILLUSTRATION_HEIGHT,
-  TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, illustrationHeightFor,
+  TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, illustrationHeightFor, textFitsOnScreen,
   scaleLeft, scaleTop, type MarketCategoryId, type Placement, type RoleId,
 } from './emptyStateLayout';
 
@@ -69,6 +69,12 @@ type Props = {
    * under it.
    */
   bottomInset?: number;
+  /**
+   * Told whether the text block (title … buttons) fits above the tab bar
+   * without scrolling, once measured. A page locks its scroll on an empty
+   * state only when it fits, so a short phone can still reach the button.
+   */
+  onFitsChange?: (fits: boolean) => void;
 };
 
 // ── Palette (the spec's; the app's brand gradients differ, so these are local) ──
@@ -139,7 +145,7 @@ function extraBold(rtl: boolean) {
  */
 export function AnimatedEmptyState({
   variant, title, subtitle, note, primaryCta, secondaryLink, roles = DEFAULT_ROLES, categories = DEFAULT_MARKET_CATEGORIES,
-  bleed = 0, bleedTop = 0, radius = 32, singleLineTitle = false, fitToScreen, bottomInset = 0,
+  bleed = 0, bleedTop = 0, radius = 32, singleLineTitle = false, fitToScreen, bottomInset = 0, onFitsChange,
 }: Props) {
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
@@ -170,6 +176,15 @@ export function AnimatedEmptyState({
     : fitToScreen
     ? illustrationHeightFor({ windowHeight, panelTop, textHeight, bottomInset: fitToScreen.bottomInset })
     : ILLUSTRATION_HEIGHT;
+
+  // Tell the page whether it may lock: the text must end above the tab bar.
+  const fits = textFitsOnScreen({
+    windowHeight, panelTop, illustrationHeight: h, textHeight,
+    bottomInset: fitToScreen ? fitToScreen.bottomInset : bottomInset,
+  });
+  useEffect(() => {
+    if (fits !== null) onFitsChange?.(fits);
+  }, [fits, onFitsChange]);
 
   // Tile / board cards follow the role list, in the specced back-to-front order.
   const tiles = TILE_LAYOUT.filter((t) => roles.includes(t.role));

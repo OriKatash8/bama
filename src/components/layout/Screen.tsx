@@ -13,9 +13,11 @@ type ScreenProps = {
   keyboardShouldPersistTaps?: 'always' | 'handled' | 'never';
   /** The page's ScrollView (when `scrollable`), for children that scroll the page. */
   scrollRef?: Ref<ScrollView>;
+  /** False locks the page (no scroll, no bounce) — e.g. while an empty state fills it. */
+  scrollEnabled?: boolean;
 };
 
-export function Screen({ children, scrollable = true, style, backgroundColor, gradient, keyboardShouldPersistTaps, scrollRef }: ScreenProps) {
+export function Screen({ children, scrollable = true, style, backgroundColor, gradient, keyboardShouldPersistTaps, scrollRef, scrollEnabled = true }: ScreenProps) {
   const colors = useTheme();
   const bg: readonly [string, string] = gradient
     ? gradient
@@ -31,7 +33,7 @@ export function Screen({ children, scrollable = true, style, backgroundColor, gr
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           {scrollable ? (
-            <ScrollView ref={scrollRef} style={styles.transparent} contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps={keyboardShouldPersistTaps} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+            <ScrollView ref={scrollRef} style={styles.transparent} contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps={keyboardShouldPersistTaps} showsVerticalScrollIndicator={false} scrollEnabled={scrollEnabled} bounces={scrollEnabled}>{children}</ScrollView>
           ) : (
             children
           )}

@@ -124,6 +124,25 @@ export function illustrationHeightFor(m: {
   return Math.max(MIN_ILLUSTRATION_HEIGHT, Math.min(ILLUSTRATION_HEIGHT, Math.floor(room)));
 }
 
+/**
+ * Whether the empty state's text block (title, subtitle, buttons) ends above
+ * the tab bar without scrolling: `null` until both are measured. A page may
+ * lock its scroll only when this is true — otherwise its button would sit
+ * below the fold of a page that cannot scroll.
+ */
+export function textFitsOnScreen(m: {
+  windowHeight: number;
+  panelTop: number | null;
+  illustrationHeight: number;
+  textHeight: number | null;
+  bottomInset: number;
+}): boolean | null {
+  if (m.panelTop === null || m.textHeight === null) return null;
+  // The text starts after a spacer of illustration − 12 (see AnimatedEmptyState).
+  const textBottom = m.panelTop + m.illustrationHeight - 12 + m.textHeight;
+  return textBottom <= m.windowHeight - m.bottomInset;
+}
+
 /** A card's top in an illustration of `height` (tops are specced against 420). */
 export function scaleTop(top: number, height: number): number {
   return (top * height) / ILLUSTRATION_HEIGHT;

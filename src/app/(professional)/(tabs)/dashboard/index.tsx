@@ -100,6 +100,8 @@ export default function DashboardScreen() {
   // The search magnifier takes the mode colour: purple client, blue pro.
   const { accent: searchIconColor } = useModeAccent();
   const tabBarClearance = useTabBarClearance();
+  /** Whether the empty state fits the screen (it reports once measured). */
+  const [emptyFits, setEmptyFits] = useState(true);
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
@@ -360,6 +362,10 @@ export default function DashboardScreen() {
     ? t('noticeboard.open_projects_one', { count: displayed.length })
     : t('noticeboard.open_projects_other', { count: displayed.length });
 
+  const boardEmpty = onBoard && !isLoading && displayed.length === 0;
+  // Locked only when the empty state fits the screen (a short phone still scrolls to its button).
+  const locked = boardEmpty && emptyFits;
+
   return (
     <Screen scrollable={false} backgroundColor={PAGE_BG}>
       <ScrollView
@@ -367,6 +373,9 @@ export default function DashboardScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        // An empty board ends the page (the empty state fits the screen): locked.
+        scrollEnabled={!locked}
+        bounces={!locked}
       >
         {/* ── Notice board ── the header sits on the violet band. */}
         <GradientBand style={styles.band} flip>
@@ -592,6 +601,7 @@ export default function DashboardScreen() {
             // the illustration giving up height above it if needed.
             singleLineTitle
             fitToScreen={{ bottomInset: tabBarClearance }}
+            onFitsChange={setEmptyFits}
             title={t('noticeboard.no_projects')}
             subtitle={t('noticeboard.check_back')}
             {...(!activeProjectsLoading && activeProjects.length === 0

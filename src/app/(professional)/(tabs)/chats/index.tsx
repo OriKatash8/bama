@@ -77,6 +77,8 @@ export default function ProfessionalChatsScreen() {
   // The search magnifier takes the mode colour: purple client, blue pro.
   const { accent: searchIconColor } = useModeAccent();
   const tabBarHeight = useTabBarHeight();
+  /** Whether the empty state fits the screen (it reports once measured); the page locks only then. */
+  const [emptyFits, setEmptyFits] = useState(true);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const user = useAuthStore((s) => s.user);
@@ -279,7 +281,13 @@ export default function ProfessionalChatsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <Screen scrollRef={pageScrollRef} style={{ padding: 0, paddingBottom: tabBarHeight + TAB_BAR_CONTENT_GAP }} backgroundColor={PAGE_BG}>
+    {/* With no chats the page is locked: the empty state ends it (it fits the screen). */}
+    <Screen
+      scrollRef={pageScrollRef}
+      style={{ padding: 0, paddingBottom: tabBarHeight + TAB_BAR_CONTENT_GAP }}
+      backgroundColor={PAGE_BG}
+      scrollEnabled={!(active === 'chats' && !chatsLoading && !hasChats && emptyFits)}
+    >
       {/* Header — the three-way switch as one segmented control on the band.
           Same order and setActive logic as before. */}
       <GradientBand style={styles.band} flip>
@@ -336,6 +344,10 @@ export default function ProfessionalChatsScreen() {
               variant="bubbles"
               // English: "You don't have any …" on one row, shrunk to fit.
               singleLineTitle
+              // The page doesn't scroll here: the text and buttons must show
+              // above the tab bar, the illustration giving up height if needed.
+              fitToScreen={{ bottomInset: tabBarHeight + TAB_BAR_CONTENT_GAP }}
+              onFitsChange={setEmptyFits}
               title={t('chats.empty_pro_title')}
               subtitle={proProfileCompleted === false ? t('chats.empty_pro_incomplete_desc') : t('chats.empty_pro_complete_desc')}
               primaryCta={proProfileCompleted === false

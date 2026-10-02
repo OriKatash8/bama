@@ -97,6 +97,8 @@ export default function MarketplaceScreen() {
   // The search magnifier takes the mode colour: purple client, blue pro.
   const { accent: searchIconColor } = useModeAccent();
   const tabBarHeight = useTabBarHeight();
+  /** Whether the empty state fits the screen (it reports once measured); the page locks only then. */
+  const [emptyFits, setEmptyFits] = useState(true);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const { listings, isLoading } = useMarketplaceListings(activeTab);
@@ -141,6 +143,7 @@ export default function MarketplaceScreen() {
 
   // Which empty state, if any: nothing listed on this tab, or nothing matching.
   const empty = emptyCase({ tab: activeTab, isLoading, total: listings.length, shown: filtered.length });
+  const locked = !!empty && emptyFits;
 
   const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterCondition;
 
@@ -217,6 +220,10 @@ export default function MarketplaceScreen() {
         contentContainerStyle={[styles.scrollContent, empty ? null : { paddingBottom: tabBarHeight + FAB_SIZE + TAB_BAR_CONTENT_GAP * 2 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        // An empty market ends the page (no scrolling past the empty state) —
+        // when it fits the screen; a phone too short for it still scrolls.
+        scrollEnabled={!locked}
+        bounces={!locked}
       >
         {/* Toggle + mode description, on the violet band */}
         <GradientBand style={styles.band} flip>
@@ -316,6 +323,7 @@ export default function MarketplaceScreen() {
             // The sheet takes the panel's colour while empty, so no corners of its own.
             radius={0}
             bottomInset={tabBarHeight + TAB_BAR_CONTENT_GAP}
+            onFitsChange={setEmptyFits}
             variant="listings"
             title={t(empty === 'filtered' ? 'marketplace.empty_filtered_title' : empty === 'rental' ? 'marketplace.empty_rental_title' : 'marketplace.empty_market_title')}
             subtitle={t(empty === 'filtered' ? 'marketplace.empty_filtered_desc' : empty === 'rental' ? 'marketplace.empty_rental_desc' : 'marketplace.empty_market_desc')}

@@ -36,6 +36,8 @@ export default function ChatsPage() {
   // The search magnifier takes the mode colour: purple client, blue pro.
   const { accent: searchIconColor } = useModeAccent();
   const tabBarClearance = useTabBarClearance();
+  /** Whether the empty state fits the screen (it reports once measured); the page locks only then. */
+  const [emptyFits, setEmptyFits] = useState(true);
   const font = useAppFont();
   const colors = useTheme();
   const router = useRouter();
@@ -75,9 +77,9 @@ export default function ChatsPage() {
   const hasChats = realChats.length > 0;
 
   return (
-    // Always scrollable: the animated empty state is taller than the screen, so
-    // with no chats it must scroll too (it used to scroll only with chats).
-    <Screen style={{ padding: 0, paddingBottom: tabBarClearance }} backgroundColor={PAGE_BG}>
+    // With no chats the page is locked: the empty state ends the page — when it
+    // fits the screen; on a phone too short for it the page still scrolls.
+    <Screen style={{ padding: 0, paddingBottom: tabBarClearance }} backgroundColor={PAGE_BG} scrollEnabled={loading || hasChats || !emptyFits}>
       <GradientBand style={styles.band} flip>
         <PageTitle style={titleType}>{t(tr, 'chats_page.title')}</PageTitle>
       </GradientBand>
@@ -99,6 +101,10 @@ export default function ChatsPage() {
             variant="bubbles"
             // English: "You don't have any …" on one row, shrunk to fit.
             singleLineTitle
+            // The page doesn't scroll here: the text and button must show above
+            // the tab bar, the illustration giving up height if needed.
+            fitToScreen={{ bottomInset: tabBarClearance }}
+            onFitsChange={setEmptyFits}
             title={t(tr, 'chats.empty_client_title')}
             subtitle={t(tr, 'chats.empty_client_desc')}
             primaryCta={{
