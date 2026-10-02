@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-import { Ban, ChevronLeft, ChevronRight, Info } from 'lucide-react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Ban, Banknote, ChevronLeft, ChevronRight, Info } from 'lucide-react-native';
 import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
 import { useCancellationLog } from '@features/admin/useCancellationLog';
 import { periodBuckets, type Period } from '@features/admin/periodBuckets';
+import { useLargeEngagements, type LargeEngagement, type LargeFeeState } from '@features/admin/useLargeEngagements';
 import {
   AdminPage,
   AdminText,
@@ -12,9 +13,12 @@ import {
   CardHead,
   ChartCard,
   Chip,
+  CountBadge,
   EmptyState,
   IconTile,
   Legend,
+  PillButton,
+  RADIUS,
   Row,
   SPACE,
   Segment,
@@ -41,6 +45,7 @@ export default function MoneyAdmin() {
   const router = useRouter();
   const [period, setPeriod] = useState<Period>('daily');
   const { entries: cancellations } = useCancellationLog();
+  const large = useLargeEngagements();
 
   const locale = rtl ? 'he-IL' : 'en-US';
   const Chevron = rtl ? ChevronLeft : ChevronRight;
@@ -104,6 +109,29 @@ export default function MoneyAdmin() {
         </View>
       </ChartCard>
 
+      {/* Large projects: a professional's own amount above ₪5,000 — big fees to follow to payment */}
+      <Card testID="large-card">
+        <CardHead
+          title={t('large_title')}
+          sub={t('large_sub', { amount: shekels(large.above) })}
+          side={large.rows.length > 0 ? <CountBadge n={large.rows.length} testID="large-count" /> : undefined}
+        />
+        {large.loading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={p.accent} testID="large-loading" />
+          </View>
+        ) : large.failed ? (
+          <View style={[styles.failed, { flexDirection: rowDir }]}>
+            <AdminText style={[TYPE.rowMeta, styles.failedText, { color: p.text2, textAlign }]}>{t('large_failed')}</AdminText>
+            <PillButton variant="primary" label={t('retry')} onPress={() => void large.reload()} testID="large-retry" />
+          </View>
+        ) : large.rows.length === 0 ? (
+          <EmptyState text={t('no_large', { amount: shekels(large.above) })} testID="large-empty" />
+        ) : (
+          large.rows.map((r) => <LargeRow key={`${r.projectId}-${r.professionalId}`} row={r} />)
+        )}
+      </Card>
+
       {/* Cancellation log — projects (live) + purchases (audit) */}
       <Card testID="cancellations-card">
         <CardHead
@@ -156,8 +184,63 @@ export default function MoneyAdmin() {
   );
 }
 
+const STATE_TONE: Record<LargeFeeState, 'warn' | 'good' | 'bad' | 'neutral'> = {
+  pending: 'warn',
+  paid: 'good',
+  disputed: 'bad',
+  not_owed: 'neutral',
+  exempt: 'neutral',
+};
+
+/** One large engagement: project · professional, the amount and the fee, where the fee stands. Opens the project chat. */
+function LargeRow({ row }: { row: LargeEngagement }) {
+  const p = useAdminPalette();
+  const router = useRouter();
+  const { t, rtl, rowDir, textAlign } = useScopedT('admin_money');
+  const Chevron = rtl ? ChevronLeft : ChevronRight;
+  const tone = STATE_TONE[row.feeState];
+  const [bg, fg] = {
+    warn: [p.warnBg, p.warn],
+    good: [p.goodBg, p.good],
+    bad: [p.badBg, p.bad],
+    neutral: [p.surface3, p.text2],
+  }[tone];
+  const stateLabel =
+    row.feeState === 'pending' ? t('state_pending', { amount: shekels(row.outstanding) }) : t(`state_${row.feeState}`);
+  const meta = [
+    row.proName || '—',
+    shekels(row.baseAmount),
+    row.fee > 0 ? t('fee_of', { amount: shekels(row.fee) }) : null,
+    t(row.active ? 'in_progress' : 'finished'),
+  ].filter(Boolean).join(' · ');
+  const open = row.chatId
+    ? () => router.push(`/admin/project-chat?chatId=${row.chatId}&projectId=${row.projectId}` as never)
+    : undefined;
+  return (
+    <Row
+      rowDir={rowDir}
+      testID={`large-${row.projectId}-${row.professionalId}`}
+      onPress={open}
+      accessibilityLabel={open ? `${row.title || '—'} · ${meta}` : undefined}
+    >
+      <IconTile icon={Banknote} tone={tone} />
+      <WhoBlock name={row.title || '—'} meta={meta} textAlign={textAlign} />
+      <View style={[styles.stateChip, { backgroundColor: bg }]} testID={`large-state-${row.projectId}-${row.professionalId}`}>
+        <AdminText weight="semiBold" tabular numberOfLines={1} style={[TYPE.chip, { color: fg }]}>
+          {stateLabel}
+        </AdminText>
+      </View>
+      {open ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
+    </Row>
+  );
+}
+
 const styles = StyleSheet.create({
   plot: { paddingHorizontal: SPACE.rowPadH, paddingTop: 10, paddingBottom: 16 },
+  loading: { paddingVertical: 22, alignItems: 'center' },
+  failed: { alignItems: 'center', gap: 10, paddingHorizontal: SPACE.rowPadH, paddingBottom: 16 },
+  failedText: { flex: 1 },
+  stateChip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
   note: { alignItems: 'flex-start', gap: 12, padding: SPACE.cardPad },
   noteText: { flex: 1, minWidth: 0, gap: 2 },
   noteBody: { fontSize: 13, lineHeight: 20 },

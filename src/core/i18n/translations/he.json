@@ -744,7 +744,20 @@
     "cancelled_by": "בוטל על ידי",
     "no_cancellations": "אין ביטולים",
     "coming_soon_title": "אין עדיין נתונים פיננסיים",
-    "coming_soon_body": "הנתונים הפיננסיים יופיעו כאן לאחר חיבור מערכת התשלומים."
+    "coming_soon_body": "הנתונים הפיננסיים יופיעו כאן לאחר חיבור מערכת התשלומים.",
+    "large_title": "פרויקטים גדולים",
+    "large_sub": "סכום של איש מקצוע מעל {{amount}} — מעקב אחר העמלה",
+    "no_large": "אין עדיין פרויקטים מעל {{amount}}",
+    "large_failed": "לא ניתן לטעון את הפרויקטים הגדולים",
+    "retry": "נסו שוב",
+    "fee_of": "עמלה {{amount}}",
+    "state_pending": "לגבייה {{amount}}",
+    "state_paid": "שולם",
+    "state_disputed": "במחלוקת",
+    "state_not_owed": "לא חייב",
+    "state_exempt": "ללא עמלה",
+    "in_progress": "בעבודה",
+    "finished": "הסתיים"
   },
   "moderation": {
     "suspended_title": "החשבון הושעה",

@@ -189,3 +189,94 @@ export const adminListFlaggedProjects = onCall(async (request) => {
     })),
   };
 });
+
+/** A professional's own amount on a project above this many shekels is "large":
+ *  its fee is big enough that the admin follows it from hire to payment. */
+export const LARGE_ENGAGEMENT_ABOVE = 5000;
+
+type LargeFeeState = 'pending' | 'paid' | 'disputed' | 'not_owed' | 'exempt';
+
+/** Where a large engagement's fee stands, in the admin's terms. */
+function largeFeeState(fee: FeeDoc): LargeFeeState {
+  if (fee.feeStatus !== 'owed') return 'exempt';
+  if (fee.status === 'disputed') return 'disputed';
+  if (fee.status === 'not_owed') return 'not_owed';
+  if (fee.feePaid === true || fee.status === 'paid') return 'paid';
+  return 'pending';
+}
+
+export type LargeEngagementRow = {
+  projectId: string;
+  professionalId: string;
+  baseAmount: number;
+  /** The whole fee on this engagement (rate × amount, floored), 0 when exempt. */
+  fee: number;
+  /** What is still to be paid of it. */
+  outstanding: number;
+  feeState: LargeFeeState;
+  /** Still working on it (holds a slot) — or finished / left. */
+  active: boolean;
+  hiredAt: number | null;
+};
+
+/**
+ * Pure: the fee records whose professional's own amount is above the line,
+ * biggest first. Kept apart from the callable so it is tested without Firestore.
+ */
+export function largeEngagementRows(
+  fees: { id: string; parentId: string | null; data: FeeDoc }[],
+  above = LARGE_ENGAGEMENT_ABOVE,
+): LargeEngagementRow[] {
+  return fees
+    .filter(({ data }) => (data.baseAmount ?? 0) > above)
+    .map(({ id, parentId, data }) => ({
+      projectId: data.projectId ?? parentId ?? '',
+      professionalId: data.professionalId ?? id,
+      baseAmount: data.baseAmount,
+      fee: data.feeStatus === 'owed' ? computeFee(data.baseAmount, data.feeRate, data.minFeeApplied ?? 0) : 0,
+      outstanding: outstandingOn(data),
+      feeState: largeFeeState(data),
+      active: data.slotActive === true,
+      hiredAt: millis(data.hiredAt) ?? millis(data.createdAt),
+    }))
+    .sort((a, b) => b.baseAmount - a.baseAmount);
+}
+
+/**
+ * Engagements where a professional's own amount is above ₪5,000 — the big fees
+ * the admin wants to keep an eye on, whatever their state. Same shape and
+ * reasoning as adminListArrears: fee records are server-read only.
+ */
+export const adminListLargeEngagements = onCall(async (request) => {
+  requireAuth(request.auth?.uid);
+  requireAdmin(request.auth?.token);
+
+  const feesSnap = await db.collectionGroup('fees').limit(SCAN_LIMIT).get();
+  const rows = largeEngagementRows(
+    feesSnap.docs.map((d) => ({ id: d.id, parentId: d.ref.parent.parent?.id ?? null, data: d.data() as FeeDoc })),
+  );
+
+  const proIds = [...new Set(rows.map((r) => r.professionalId))];
+  const projectIds = [...new Set(rows.map((r) => r.projectId).filter(Boolean))];
+  const [users, projects] = await Promise.all([
+    Promise.all(proIds.map((id) => db.doc(`users/${id}`).get())),
+    Promise.all(projectIds.map((id) => db.doc(`projects/${id}`).get())),
+  ]);
+  const nameOf = new Map(users.map((u) => [u.id, (u.data()?.displayName as string) ?? '']));
+  const projectOf = new Map(projects.map((p) => [p.id, p.data() ?? {}]));
+
+  return {
+    above: LARGE_ENGAGEMENT_ABOVE,
+    scanned: feesSnap.size,
+    rows: rows.map((r) => {
+      const p = projectOf.get(r.projectId) ?? {};
+      return {
+        ...r,
+        proName: nameOf.get(r.professionalId) ?? '',
+        title: (p.title as string) ?? '',
+        projectStatus: (p.status as string) ?? '',
+        chatId: (p.chatId as string) ?? null,
+      };
+    }),
+  };
+});

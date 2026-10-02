@@ -744,7 +744,20 @@
     "cancelled_by": "cancelled by",
     "no_cancellations": "No cancellations",
     "coming_soon_title": "No financial data yet",
-    "coming_soon_body": "Financial reporting will appear here once payments are wired up."
+    "coming_soon_body": "Financial reporting will appear here once payments are wired up.",
+    "large_title": "Large projects",
+    "large_sub": "A professional's amount above {{amount}} — follow the fee",
+    "no_large": "No projects above {{amount}} yet",
+    "large_failed": "Couldn't load the large projects",
+    "retry": "Try again",
+    "fee_of": "fee {{amount}}",
+    "state_pending": "To collect {{amount}}",
+    "state_paid": "Paid",
+    "state_disputed": "Disputed",
+    "state_not_owed": "Not owed",
+    "state_exempt": "No fee",
+    "in_progress": "In progress",
+    "finished": "Finished"
   },
   "moderation": {
     "suspended_title": "Account suspended",
