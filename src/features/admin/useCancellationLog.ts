@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { where } from 'firebase/firestore';
-import { subscribeToCollection, getDocument, setDocument } from '@core/firebase/firestore';
+import { subscribeToCollection, getDocument, setDocument, deleteDocument } from '@core/firebase/firestore';
 import { serverTimestamp } from 'firebase/firestore';
 import type { ProjectRequest } from '@core/types/project';
 
@@ -74,7 +74,7 @@ export function useCancellationLog() {
     });
   }, [projects]);
 
-  const entries = useMemo<CancellationEntry[]>(() => {
+  const { entries, hiddenEntries } = useMemo(() => {
     const proj: CancellationEntry[] = projects.map((p) => ({
       id: `proj-${p.id}`,
       kind: 'project',
@@ -91,7 +91,12 @@ export function useCancellationLog() {
       actorName: c.actorName ?? null,
       ts: secondsOf(c.createdAt),
     }));
-    return [...proj, ...purch].filter((e) => !hidden.has(e.id)).sort((a, b) => b.ts - a.ts).slice(0, 20);
+    const all = [...proj, ...purch].sort((a, b) => b.ts - a.ts);
+    return {
+      entries: all.filter((e) => !hidden.has(e.id)).slice(0, 20),
+      /** What the admin removed, newest first — shown so a removal can be undone. */
+      hiddenEntries: all.filter((e) => hidden.has(e.id)),
+    };
   }, [projects, purchases, names, hidden]);
 
   /** Removes an entry from the list: an admin-only mark, nothing is deleted. */
@@ -99,5 +104,10 @@ export function useCancellationLog() {
     await setDocument(`cancellationLogHidden/${entryId}`, { hiddenAt: serverTimestamp() });
   }, []);
 
-  return { entries, loading, hide };
+  /** Undoes a removal: deletes the mark, and the entry is back in the list. */
+  const unhide = useCallback(async (entryId: string) => {
+    await deleteDocument(`cancellationLogHidden/${entryId}`);
+  }, []);
+
+  return { entries, hiddenEntries, loading, hide, unhide };
 }

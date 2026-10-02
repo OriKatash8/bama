@@ -34,6 +34,7 @@ const E = en.admin_money;
 const H = he.admin_money;
 const log = useCancellationLog as jest.Mock;
 const mockHide = jest.fn();
+const mockUnhide = jest.fn();
 const large = useLargeEngagements as jest.Mock;
 const mockReload = jest.fn();
 const mockMarkPaid = jest.fn();
@@ -54,7 +55,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
   mockLang = 'en';
-  log.mockReturnValue({ entries: [], hide: mockHide });
+  log.mockReturnValue({ entries: [], hiddenEntries: [], hide: mockHide, unhide: mockUnhide });
   large.mockReturnValue(LARGE([]));
 });
 afterEach(() => jest.useRealTimers());
@@ -107,7 +108,7 @@ it('says so when there are no cancellations', () => {
 });
 
 it('lists each cancellation with its kind, title and who cancelled it', () => {
-  log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
+  log.mockReturnValue({ entries: ENTRIES, hiddenEntries: [], hide: mockHide, unhide: mockUnhide });
   const r = render(<MoneyAdmin />);
   expect(r.queryByTestId('cancellations-empty')).toBeNull();
   const first = within(r.getByTestId('cancellation-c1'));
@@ -120,7 +121,7 @@ it('lists each cancellation with its kind, title and who cancelled it', () => {
 });
 
 it("tapping a cancelled project opens its chat; rows without a chat aren't buttons", () => {
-  log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
+  log.mockReturnValue({ entries: ENTRIES, hiddenEntries: [], hide: mockHide, unhide: mockUnhide });
   const r = render(<MoneyAdmin />);
   expect(r.getByTestId('cancellation-c1').props.accessibilityRole).toBe('button');
   fireEvent.press(r.getByTestId('cancellation-c1'));
@@ -141,7 +142,7 @@ it('keeps the coming-soon note', () => {
 
 it('mirrors in Hebrew: rows run right to left, text aligns right', () => {
   mockLang = 'he';
-  log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
+  log.mockReturnValue({ entries: ENTRIES, hiddenEntries: [], hide: mockHide, unhide: mockUnhide });
   const r = render(<MoneyAdmin />);
   expect(StyleSheet.flatten(r.getByText(H.title).props.style).textAlign).toBe('right');
   expect(StyleSheet.flatten(r.getByText(H.coming_soon_title).props.style).textAlign).toBe('right');
@@ -158,20 +159,20 @@ it('clears the floating tab bar at the bottom', () => {
 
 describe('removing a cancellation from the list (a bin; nothing else changes)', () => {
   it('asks first, then hides that entry and says so', async () => {
-    log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
+    log.mockReturnValue({ entries: ENTRIES, hiddenEntries: [], hide: mockHide, unhide: mockUnhide });
     mockConfirm.mockResolvedValue(true);
     mockHide.mockResolvedValue(undefined);
     const r = render(<MoneyAdmin />);
     await act(async () => { fireEvent.press(r.getByTestId('cancellation-remove-c1')); });
     expect(mockConfirm).toHaveBeenCalledWith(E.remove_cancellation, E.remove_cancellation_confirm.replace('{{title}}', 'Kitchen remodel'), expect.any(Object));
     expect(mockHide).toHaveBeenCalledWith('c1');
-    expect(mockToast).toHaveBeenCalledWith(E.cancellation_removed, 'success');
+    expect(mockToast).toHaveBeenCalledWith(E.cancellation_removed_undo, 'success');
     // The bin does not also open the project chat.
     expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('keeps it when the confirm is cancelled, and says so if it fails', async () => {
-    log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
+    log.mockReturnValue({ entries: ENTRIES, hiddenEntries: [], hide: mockHide, unhide: mockUnhide });
     mockConfirm.mockResolvedValue(false);
     let r = render(<MoneyAdmin />);
     await act(async () => { fireEvent.press(r.getByTestId('cancellation-remove-c2')); });
@@ -181,6 +182,47 @@ describe('removing a cancellation from the list (a bin; nothing else changes)', 
     r = render(<MoneyAdmin />);
     await act(async () => { fireEvent.press(r.getByTestId('cancellation-remove-c2')); });
     expect(mockToast).toHaveBeenCalledWith(E.remove_failed, 'error');
+  });
+});
+
+describe('undo: bringing a removed cancellation back', () => {
+  const HIDDEN = [{ id: 'h1', kind: 'project', title: 'Old shoot', actorName: 'Ben', ts: 1_700_000_000 }];
+
+  it('no switch while nothing is removed', () => {
+    log.mockReturnValue({ entries: ENTRIES, hiddenEntries: [], hide: mockHide, unhide: mockUnhide });
+    const r = render(<MoneyAdmin />);
+    expect(r.queryByTestId('cancellations-hidden-toggle')).toBeNull();
+  });
+
+  it('"Removed (N)" shows them; the restore button brings one back; the switch returns to the list', async () => {
+    log.mockReturnValue({ entries: ENTRIES, hiddenEntries: HIDDEN, hide: mockHide, unhide: mockUnhide });
+    mockUnhide.mockResolvedValue(undefined);
+    const r = render(<MoneyAdmin />);
+    const toggle = r.getByTestId('cancellations-hidden-toggle');
+    expect(within(toggle).getByText(E.hidden_count.replace('{{n}}', '1'))).toBeTruthy();
+    expect(r.queryByTestId('hidden-h1')).toBeNull();
+
+    fireEvent.press(toggle);
+    const card = within(r.getByTestId('cancellations-card'));
+    expect(card.getByText(E.hidden_title)).toBeTruthy();
+    expect(card.getByTestId('hidden-h1')).toBeTruthy();
+    expect(card.queryByTestId('cancellation-c1')).toBeNull();
+
+    await act(async () => { fireEvent.press(r.getByTestId('cancellation-restore-h1')); });
+    expect(mockUnhide).toHaveBeenCalledWith('h1');
+    expect(mockToast).toHaveBeenCalledWith(E.cancellation_restored, 'success');
+
+    fireEvent.press(r.getByTestId('cancellations-hidden-toggle'));
+    expect(r.getByTestId('cancellation-c1')).toBeTruthy();
+  });
+
+  it('says so if it cannot bring it back', async () => {
+    log.mockReturnValue({ entries: [], hiddenEntries: HIDDEN, hide: mockHide, unhide: mockUnhide });
+    mockUnhide.mockRejectedValue(new Error('denied'));
+    const r = render(<MoneyAdmin />);
+    fireEvent.press(r.getByTestId('cancellations-hidden-toggle'));
+    await act(async () => { fireEvent.press(r.getByTestId('cancellation-restore-h1')); });
+    expect(mockToast).toHaveBeenCalledWith(E.restore_failed, 'error');
   });
 });
 

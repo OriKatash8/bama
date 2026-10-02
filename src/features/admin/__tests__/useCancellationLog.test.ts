@@ -4,10 +4,12 @@ import { act, renderHook } from '@testing-library/react-native';
 
 const subs: Record<string, (d: unknown[]) => void> = {};
 const mockSet = jest.fn(() => Promise.resolve());
+const mockDelete = jest.fn(() => Promise.resolve());
 jest.mock('@core/firebase/firestore', () => ({
   subscribeToCollection: (path: string, cb: (d: unknown[]) => void) => { subs[path] = cb; return () => {}; },
   getDocument: jest.fn(() => Promise.resolve({ displayName: 'Avi' })),
   setDocument: (...a: unknown[]) => mockSet(...(a as [])),
+  deleteDocument: (...a: unknown[]) => mockDelete(...(a as [])),
 }));
 jest.mock('firebase/firestore', () => ({ where: jest.fn(), serverTimestamp: () => 'TS' }));
 
@@ -24,6 +26,11 @@ it('hides the entries marked removed, and removing writes only that mark', async
 
   await act(async () => { subs.cancellationLogHidden([{ id: 'proj-a' }, { id: 'pur-x' }]); });
   expect(result.current.entries.map((e) => e.id)).toEqual(['proj-b']);
+  // The removed ones are kept apart, newest first, so a removal can be undone.
+  expect(result.current.hiddenEntries.map((e) => e.id)).toEqual(['pur-x', 'proj-a']);
+
+  await act(async () => { await result.current.unhide('proj-a'); });
+  expect(mockDelete).toHaveBeenCalledWith('cancellationLogHidden/proj-a');
 
   await act(async () => { await result.current.hide('proj-b'); });
   expect(mockSet).toHaveBeenCalledWith('cancellationLogHidden/proj-b', { hiddenAt: 'TS' });

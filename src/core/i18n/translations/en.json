@@ -765,7 +765,14 @@
     "remove_cancellation": "Remove from the list",
     "remove_cancellation_confirm": "Remove “{{title}}” from the cancellations list? Nothing else changes.",
     "cancellation_removed": "Removed from the list",
-    "remove_failed": "Couldn't remove it"
+    "remove_failed": "Couldn't remove it",
+    "hidden_title": "Removed cancellations",
+    "hidden_count": "Removed ({{n}})",
+    "back_to_list": "Back to the list",
+    "restore": "Bring back",
+    "cancellation_restored": "Back in the list",
+    "restore_failed": "Couldn't bring it back",
+    "cancellation_removed_undo": "Removed — undo from “Removed” above"
   },
   "moderation": {
     "suspended_title": "Account suspended",

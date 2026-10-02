@@ -765,7 +765,14 @@
     "remove_cancellation": "הסרה מהרשימה",
     "remove_cancellation_confirm": "להסיר את „{{title}}” מרשימת הביטולים? שום דבר אחר לא משתנה.",
     "cancellation_removed": "הוסר מהרשימה",
-    "remove_failed": "לא ניתן להסיר"
+    "remove_failed": "לא ניתן להסיר",
+    "hidden_title": "ביטולים שהוסרו",
+    "hidden_count": "הוסרו ({{n}})",
+    "back_to_list": "חזרה לרשימה",
+    "restore": "החזרה",
+    "cancellation_restored": "הוחזר לרשימה",
+    "restore_failed": "לא ניתן להחזיר",
+    "cancellation_removed_undo": "הוסר — אפשר לבטל דרך „הוסרו” למעלה"
   },
   "moderation": {
     "suspended_title": "החשבון הושעה",

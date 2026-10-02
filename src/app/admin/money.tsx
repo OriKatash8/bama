@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { Ban, Banknote, ChevronLeft, ChevronRight, Info, Trash2 } from 'lucide-react-native';
+import { Ban, Banknote, ChevronLeft, ChevronRight, Info, RotateCcw, Trash2 } from 'lucide-react-native';
 import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
 import { useUiStore } from '@core/stores/uiStore';
 import { confirmDialog } from '@utils/confirmDialog';
@@ -46,7 +46,12 @@ export default function MoneyAdmin() {
 
   const router = useRouter();
   const [period, setPeriod] = useState<Period>('daily');
-  const { entries: cancellations, hide: hideCancellation } = useCancellationLog();
+  const {
+    entries: cancellations, hiddenEntries, hide: hideCancellation, unhide: unhideCancellation,
+  } = useCancellationLog();
+  /** The cancellations card shows the removed entries instead, to undo a removal. */
+  const [showHidden, setShowHidden] = useState(false);
+  const viewingHidden = showHidden && hiddenEntries.length > 0;
   const large = useLargeEngagements();
   const { showToast } = useUiStore();
   const { t: tCommon } = useScopedT('common');
@@ -63,9 +68,24 @@ export default function MoneyAdmin() {
     setRemoving((b) => ({ ...b, [key]: true }));
     try {
       await hideCancellation(id);
-      showToast(t('cancellation_removed'), 'success');
+      showToast(t('cancellation_removed_undo'), 'success');
     } catch {
       showToast(t('remove_failed'), 'error');
+    } finally {
+      setRemoving((b) => ({ ...b, [key]: false }));
+    }
+  }
+
+  /** Undo: the entry goes back into the cancellations list. */
+  async function restoreCancellation(id: string) {
+    const key = `c-${id}`;
+    if (removing[key]) return;
+    setRemoving((b) => ({ ...b, [key]: true }));
+    try {
+      await unhideCancellation(id);
+      showToast(t('cancellation_restored'), 'success');
+    } catch {
+      showToast(t('restore_failed'), 'error');
     } finally {
       setRemoving((b) => ({ ...b, [key]: false }));
     }
@@ -188,10 +208,57 @@ export default function MoneyAdmin() {
       {/* Cancellation log — projects (live) + purchases (audit) */}
       <Card testID="cancellations-card">
         <CardHead
-          title={t('cancellations')}
-          side={cancellations.length > 0 ? <Chip label={String(cancellations.length)} tabular /> : undefined}
+          title={viewingHidden ? t('hidden_title') : t('cancellations')}
+          side={
+            <View style={[styles.headSide, { flexDirection: rowDir }]}>
+              {!viewingHidden && cancellations.length > 0 ? <Chip label={String(cancellations.length)} tabular /> : null}
+              {/* Removed entries can be brought back: switch to them, and back. */}
+              {hiddenEntries.length > 0 ? (
+                <Pressable
+                  onPress={() => setShowHidden((v) => !v)}
+                  accessibilityRole="button"
+                  hitSlop={6}
+                  testID="cancellations-hidden-toggle"
+                  style={({ pressed }) => [styles.hiddenToggle, { backgroundColor: pressed ? p.surface3 : p.surface2, borderColor: p.border }]}
+                >
+                  <AdminText weight="semiBold" tabular numberOfLines={1} style={[TYPE.chip, { color: p.text2 }]}>
+                    {viewingHidden ? t('back_to_list') : t('hidden_count', { n: hiddenEntries.length })}
+                  </AdminText>
+                </Pressable>
+              ) : null}
+            </View>
+          }
         />
-        {cancellations.length === 0 ? (
+        {viewingHidden ? (
+          hiddenEntries.map((c) => (
+            <Row key={c.id} rowDir={rowDir} testID={`hidden-${c.id}`}>
+              <IconTile icon={Ban} tone="neutral" />
+              <WhoBlock
+                name={`${t(`type_${c.kind}`)} · ${c.title || '—'}`}
+                meta={`${t('cancelled_by')} ${c.actorName || '—'}`}
+                textAlign={textAlign}
+              />
+              <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
+                {fmtDate(c.ts)}
+              </AdminText>
+              <Pressable
+                onPress={() => void restoreCancellation(c.id)}
+                disabled={!!removing[`c-${c.id}`]}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('restore')} · ${c.title || '—'}`}
+                testID={`cancellation-restore-${c.id}`}
+                style={({ pressed }) => [styles.trashBtn, { backgroundColor: pressed ? p.surface3 : p.accentSoft }]}
+              >
+                {removing[`c-${c.id}`] ? (
+                  <ActivityIndicator size="small" color={p.accent} />
+                ) : (
+                  <RotateCcw size={16} color={p.accent} strokeWidth={2.2} />
+                )}
+              </Pressable>
+            </Row>
+          ))
+        ) : cancellations.length === 0 ? (
           <EmptyState text={t('no_cancellations')} testID="cancellations-empty" />
         ) : (
           cancellations.map((c) => {
@@ -331,6 +398,8 @@ const styles = StyleSheet.create({
   failed: { alignItems: 'center', gap: 10, paddingHorizontal: SPACE.rowPadH, paddingBottom: 16 },
   failedText: { flex: 1 },
   stateChip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
+  headSide: { alignItems: 'center', gap: 8 },
+  hiddenToggle: { borderRadius: RADIUS.pill, borderWidth: 1, paddingVertical: 4, paddingHorizontal: 10 },
   trashBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   note: { alignItems: 'flex-start', gap: 12, padding: SPACE.cardPad },
   noteText: { flex: 1, minWidth: 0, gap: 2 },
