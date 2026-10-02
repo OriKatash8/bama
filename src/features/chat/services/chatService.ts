@@ -78,6 +78,9 @@ export function channelDocToMessage(id: string, data: DocumentData): Message {
     imageUrl: data.imageUrl as string | null | undefined,
     posterId: data.posterId as string | undefined,
     posterName: data.posterName as string | undefined,
+    listingType: data.listingType as 'secondhand' | 'rental' | undefined,
+    storeName: data.storeName as string | null | undefined,
+    pricePeriod: data.pricePeriod as 'day' | 'week' | 'month' | null | undefined,
   };
 }
 

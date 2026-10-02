@@ -1,12 +1,12 @@
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, useWindowDimensions,
+  ScrollView, Alert, ActivityIndicator, Linking, useWindowDimensions,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
-import { X } from 'lucide-react-native';
+import { ExternalLink, X } from 'lucide-react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
@@ -25,6 +25,7 @@ const CONDITION_COLOR: Record<string, string> = {
   fair: '#e53935',
 };
 import type { MarketplaceListing } from '../types';
+import { PERIOD_SUFFIX_KEY, periodOf } from '../utils/rentalPrice';
 import { useState, useRef } from 'react';
 
 type Translations = typeof en;
@@ -94,10 +95,13 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
   if (!listing) return null;
 
   const priceLabel = listing.type === 'rental'
-    ? `₪${listing.price.toLocaleString()}${t('marketplace.per_day')}`
+    ? `₪${listing.price.toLocaleString()}${t(`marketplace.${PERIOD_SUFFIX_KEY[periodOf(listing)]}`)}`
     : `₪${listing.price.toLocaleString()}`;
 
   const isOwnListing = currentUserId === listing.posterId;
+  // A rental belongs to an outside store: it shows the store (never the poster)
+  // and opens the store's product page instead of a chat with the seller.
+  const isRental = listing.type === 'rental';
   // Item stays on the market during discussion; only reserved/sold are unavailable.
   const isUnavailable = listing.status === 'reserved' || listing.status === 'sold';
 
@@ -204,9 +208,16 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             keyboardShouldPersistTaps="handled"
           >
             {/* Image */}
-            <View style={styles.imageWrap} testID="listing-image">
+            {/* A rental shows its whole photo, fitted and a little taller; 2nd-hand fills the box. */}
+            <View style={[styles.imageWrap, isRental && styles.imageWrapRental]} testID="listing-image">
               {listing.imageUrl ? (
-                <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
+                <Image
+                  testID="listing-detail-image"
+                  source={{ uri: listing.imageUrl }}
+                  style={[styles.image, isRental && styles.imageRental]}
+                  contentFit={isRental ? 'contain' : 'cover'}
+                  cachePolicy="memory-disk"
+                />
               ) : (
                 <Text style={styles.imagePlaceholder}>📦</Text>
               )}
@@ -283,13 +294,24 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
               </View>
             </View>
 
-            {/* Seller: the label on one side, the name on the other */}
-            <View style={styles.sellerBox}>
-              <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-seller-row">
-                <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.posted_by')}</AppText>
-                <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>{listing.posterName}</AppText>
+            {/* Seller (or, for a rental, the store): the label on one side, the name on the other */}
+            {isRental ? (
+              listing.storeName ? (
+                <View style={styles.sellerBox}>
+                  <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-store-row">
+                    <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.store')}</AppText>
+                    <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>{listing.storeName}</AppText>
+                  </View>
+                </View>
+              ) : null
+            ) : (
+              <View style={styles.sellerBox}>
+                <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-seller-row">
+                  <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.posted_by')}</AppText>
+                  <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>{listing.posterName}</AppText>
+                </View>
               </View>
-            </View>
+            )}
           </ScrollView>
 
           {/* Owner actions: share + edit + delete */}
@@ -325,8 +347,22 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             </>
           )}
 
+          {/* Rental: the store's product page */}
+          {isRental && !isOwnListing && !readOnly && !!listing.productUrl && (
+            <TouchableOpacity
+              testID="listing-primary-btn"
+              style={[styles.buyBtn, styles.storeBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={() => Linking.openURL(listing.productUrl!)}
+              activeOpacity={0.8}
+              accessibilityRole="link"
+            >
+              <AppText weight="bold" style={styles.buyText}>{t('marketplace.go_to_store')}</AppText>
+              <ExternalLink size={16} color="#fff" strokeWidth={2.4} />
+            </TouchableOpacity>
+          )}
+
           {/* Talk / In Discussion — pinned outside ScrollView */}
-          {!isOwnListing && !readOnly && (
+          {!isRental && !isOwnListing && !readOnly && (
             isUnavailable ? (
               <View style={styles.reservedBtn}>
                 <AppText weight="bold" style={styles.reservedText}>
@@ -498,6 +534,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,74,173,0.15)',
   },
   image: { width: '100%', height: 180 },
+  imageWrapRental: { height: 220 },
+  imageRental: { height: 220 },
   imagePlaceholder: { fontSize: 52 },
 
   price: { fontSize: 18, fontWeight: '700', color: '#004aad' },
@@ -557,6 +595,7 @@ const styles = StyleSheet.create({
   },
   buyBtnDisabled: { opacity: 0.4 },
   buyText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  storeBtn: { justifyContent: 'center', gap: 8 },
 
   // Secondary: the add sheet's pill outline, full width.
   ownerActionsRow: { gap: 8, marginTop: 10 },

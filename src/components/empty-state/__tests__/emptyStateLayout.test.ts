@@ -117,11 +117,11 @@ it('the editor card never covers the sound card — tilted, floating or squeezed
 describe('listing cards (the marketplace)', () => {
   it('five cards back to front, audio last so it draws in front, at the specced spots', () => {
     expect(LISTING_LAYOUT).toEqual([
-      { category: 'camera', left: 262, top: 4, rotate: -6 },
-      { category: 'lens', left: -16, top: 16, rotate: 6 },
-      { category: 'lighting', left: 238, top: 118, rotate: 4 },
-      { category: 'drone', left: 8, top: 124, rotate: -4 },
-      { category: 'audio', left: 128, top: 58, rotate: -2 },
+      { category: 'camera', left: 262, top: 16, rotate: -6 },
+      { category: 'lens', left: -16, top: 28, rotate: 6 },
+      { category: 'lighting', left: 238, top: 130, rotate: 4 },
+      { category: 'drone', left: 8, top: 136, rotate: -4 },
+      { category: 'audio', left: 128, top: 70, rotate: -2 },
     ]);
   });
 
@@ -129,8 +129,26 @@ describe('listing cards (the marketplace)', () => {
     expect(DEFAULT_MARKET_CATEGORIES).toEqual(['camera', 'lens', 'audio', 'lighting', 'drone']);
   });
 
-  it('a 250pt illustration that every card (122 tall) fits inside', () => {
-    expect(LISTINGS_ILLUSTRATION_HEIGHT).toBe(250);
+  it('a 262pt illustration that every card (122 tall) fits inside', () => {
+    expect(LISTINGS_ILLUSTRATION_HEIGHT).toBe(262);
     for (const c of LISTING_LAYOUT) expect(c.top + 122).toBeLessThanOrEqual(LISTINGS_ILLUSTRATION_HEIGHT);
+  });
+
+  // The panel clips at its top edge. A card is 112×122, tilted about its centre,
+  // and floats up by dy while its tilt changes by dRotate: its highest corner,
+  // at every point of the float, must stay inside (the camera card used to rise
+  // ~8pt above it and was cut off).
+  it('no card rises above the top edge while it floats', () => {
+    const W = 112, H = 122, rad = (d: number) => (d * Math.PI) / 180;
+    LISTING_LAYOUT.forEach((c, i) => {
+      const f = floatFor(i);
+      for (let k = 0; k <= 10; k++) {
+        const t = k / 10;
+        const a = rad(c.rotate + f.dRotate * t);
+        const halfHeight = (W * Math.abs(Math.sin(a)) + H * Math.abs(Math.cos(a))) / 2;
+        const highest = c.top + H / 2 - halfHeight + f.dy * t;
+        expect(highest).toBeGreaterThanOrEqual(0);
+      }
+    });
   });
 });

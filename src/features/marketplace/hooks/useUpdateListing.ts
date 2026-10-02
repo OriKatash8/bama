@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { updateDocument } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
 import type { MarketplaceListing } from '../types';
-import type { CreateListingInput } from './useCreateListing';
+import { rentalFields, type CreateListingInput } from './useCreateListing';
 
 export function useUpdateListing() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +32,7 @@ export function useUpdateListing() {
         category: input.category || null,
         subcategory: input.subcategory && input.subcategory.length ? input.subcategory : null,
         brand: input.brand?.trim() || null,
+        ...rentalFields(input),
       });
     } catch (e) {
       throw e; // let callers (PostListingSheet) show error toasts

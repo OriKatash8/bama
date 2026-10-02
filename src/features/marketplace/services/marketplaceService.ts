@@ -291,6 +291,9 @@ export async function shareListingToCommunities(
         imageUrl: listing.imageUrl ?? null,
         posterId: listing.posterId,
         posterName: sender.name,
+        ...(listing.type === 'rental'
+          ? { storeName: listing.storeName ?? null, pricePeriod: listing.pricePeriod ?? 'day' }
+          : {}),
         createdAt: serverTimestamp(),
       });
       await updateDoc(doc(db, 'chats', cid, 'channels', 'market'), {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { addDocument } from '@core/firebase/firestore';
 import { uploadFile } from '@core/firebase/storage';
 import { useAuthStore } from '@core/stores/authStore';
-import type { MarketplaceListingType, ProductCondition } from '../types';
+import type { MarketplaceListingType, ProductCondition, RentalPeriod } from '../types';
 
 export type CreateListingInput = {
   type: MarketplaceListingType;
@@ -14,7 +14,24 @@ export type CreateListingInput = {
   category?: string;
   subcategory?: string[];
   brand?: string;
+  /** Rentals only: the store and its product page (already normalised to https). */
+  storeName?: string;
+  productUrl?: string;
+  /** Rentals only: what the price is per. */
+  pricePeriod?: RentalPeriod;
 };
+
+/** A rental's store fields; nothing for 2nd-hand. Shared by create and update. */
+export function rentalFields(
+  input: CreateListingInput,
+): { storeName?: string | null; productUrl?: string | null; pricePeriod?: RentalPeriod } {
+  if (input.type !== 'rental') return {};
+  return {
+    storeName: input.storeName?.trim() || null,
+    productUrl: input.productUrl || null,
+    pricePeriod: input.pricePeriod ?? 'day',
+  };
+}
 
 export function useCreateListing() {
   const user = useAuthStore((s) => s.user);
@@ -42,6 +59,7 @@ export function useCreateListing() {
         category: input.category || null,
         subcategory: input.subcategory && input.subcategory.length ? input.subcategory : null,
         brand: input.brand?.trim() || null,
+        ...rentalFields(input),
         status: 'available',
         createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
       });

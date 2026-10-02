@@ -16,8 +16,9 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
-import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '../types';
-import { brandLabel } from '../utils';
+import type { MarketplaceListing, MarketplaceListingType, ProductCondition, RentalPeriod } from '../types';
+import { brandLabel, PERIOD_SUFFIX_KEY, RENTAL_PERIODS, periodOf } from '../utils';
+import { normalizeCourseUrl as normalizeWebUrl } from '@features/courses/courseUrl';
 
 type Translations = typeof en;
 
@@ -187,6 +188,10 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   const [location, setLocation]       = useState(editListing?.location ?? '');
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [price, setPrice]             = useState(editListing ? String(editListing.price) : '');
+  // Rentals: the outside store and its product page (the rental opens it).
+  const [storeName, setStoreName]     = useState(editListing?.storeName ?? '');
+  const [productUrl, setProductUrl]   = useState(editListing?.productUrl ?? '');
+  const [pricePeriod, setPricePeriod] = useState<RentalPeriod>(editListing ? periodOf(editListing) : 'day');
 
   const subcategoryOptions  = category ? SUBCATEGORIES[category] : undefined;
   const hasSubcategoryStep  = subcategoryOptions !== undefined;
@@ -196,13 +201,15 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
     category.length > 0 &&
     location.trim().length > 0 &&
     Number(price) > 0 &&
+    (type !== 'rental' || (storeName.trim().length > 0 && productUrl.trim().length > 0)) &&
     !isSubmitting;
 
   async function pickImage() {
+    // A rental keeps its whole photo (it is shown fitted, never cropped);
+    // 2nd-hand photos are cropped square, as their cards fill the box.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as const,
-      allowsEditing: true,
-      aspect: [1, 1],
+      ...(type === 'rental' ? { allowsEditing: false } : { allowsEditing: true, aspect: [1, 1] as [number, number] }),
       quality: 0.8,
     });
     if (!result.canceled) setImageUri(result.assets[0].uri);
@@ -211,7 +218,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   function reset() {
     setImageUri(null); setProductName(''); setCategory('');
     setSubcategory([]); setBrand(''); setCustomBrand(''); setCondition(null);
-    setLocation(''); setPrice('');
+    setLocation(''); setPrice(''); setStoreName(''); setProductUrl(''); setPricePeriod('day');
   }
 
   function handleCategorySelect(id: string) {
@@ -226,6 +233,11 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   }
 
   async function handleSubmit() {
+    const link = type === 'rental' ? normalizeWebUrl(productUrl) : '';
+    if (link === null) {
+      showToast(t('marketplace.url_invalid'), 'error');
+      return;
+    }
     const input = {
       type,
       productName: productName.trim(),
@@ -236,6 +248,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
       category,
       subcategory,
       brand: brand === 'Other' ? customBrand.trim() : brand,
+      ...(type === 'rental' ? { storeName: storeName.trim(), productUrl: link, pricePeriod } : {}),
     };
     try {
       if (isEditing && editListing) {
@@ -305,7 +318,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             </SheetText>
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
               {imageUri ? (
-                <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                <Image source={{ uri: imageUri }} style={styles.previewImage} contentFit={type === 'rental' ? 'contain' : 'cover'} testID="listing-image-preview" />
               ) : (
                 <View style={[styles.imagePickerPlaceholder, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Image
@@ -328,6 +341,37 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
               value={productName}
               onChangeText={setProductName}
             />
+
+            {/* Rentals: the store that rents it, and the product page the rental opens. */}
+            {type === 'rental' && (
+              <>
+                <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('marketplace.store_name')}
+                </SheetText>
+                <TextInput
+                  testID="input-store-name"
+                  style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                  placeholder={t('marketplace.store_name')}
+                  placeholderTextColor="rgba(0,0,0,0.3)"
+                  value={storeName}
+                  onChangeText={setStoreName}
+                />
+                <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('marketplace.product_link')}
+                </SheetText>
+                <TextInput
+                  testID="input-product-url"
+                  style={[styles.input, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                  placeholder="https://..."
+                  placeholderTextColor="rgba(0,0,0,0.3)"
+                  value={productUrl}
+                  onChangeText={setProductUrl}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+              </>
+            )}
 
             {/* Category */}
             <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -472,22 +516,45 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             <View style={[styles.priceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <TextInput
                 style={[styles.input, styles.priceInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                placeholder={type === 'rental' ? t('marketplace.price_per_day') : t('marketplace.price_ils')}
+                testID="input-price"
+                placeholder={type === 'rental' ? t(`marketplace.price_${PERIOD_SUFFIX_KEY[pricePeriod]}`) : t('marketplace.price_ils')}
                 placeholderTextColor="rgba(0,0,0,0.3)"
                 value={price}
                 onChangeText={setPrice}
                 keyboardType="numeric"
               />
               {type === 'rental' && (
-                <SheetText weight="semiBold" style={styles.priceSuffix}>{t('marketplace.per_day')}</SheetText>
+                <SheetText weight="semiBold" style={styles.priceSuffix} testID="price-suffix">{t(`marketplace.${PERIOD_SUFFIX_KEY[pricePeriod]}`)}</SheetText>
               )}
             </View>
+
+            {/* Rentals: what the price is per — day, week or month */}
+            {type === 'rental' && (
+              <View style={[styles.chipRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                {RENTAL_PERIODS.map((p) => (
+                  <TouchableOpacity
+                    key={p}
+                    testID={`period-${p}`}
+                    style={[styles.chip, pricePeriod === p && styles.chipActive]}
+                    onPress={() => setPricePeriod(p)}
+                    activeOpacity={0.8}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: pricePeriod === p }}
+                  >
+                    <SheetText weight="semiBold" style={[styles.chipLabel, pricePeriod === p && styles.chipLabelActive]}>
+                      {t(`marketplace.period_${p}`)}
+                    </SheetText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
           </ScrollView>
 
           {/* Actions — pinned below the scroll, like the filter modal's apply row */}
           <View style={[styles.actions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity
+              testID="listing-submit"
               style={[styles.submitBtn, !canSubmit && styles.disabled]}
               onPress={handleSubmit}
               disabled={!canSubmit}

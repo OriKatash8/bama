@@ -24,7 +24,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition } from '@features/marketplace/types';
-import { brandLabel, emptyCase } from '@features/marketplace/utils';
+import { brandLabel, emptyCase, sortByPrice } from '@features/marketplace/utils';
 import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 
@@ -135,8 +135,7 @@ export default function MarketplaceScreen() {
     if (filterCondition) {
       result = result.filter((l) => l.condition === filterCondition);
     }
-    if (priceSort === 'asc') result = [...result].sort((a, b) => a.price - b.price);
-    if (priceSort === 'desc') result = [...result].sort((a, b) => b.price - a.price);
+    if (priceSort === 'asc' || priceSort === 'desc') result = sortByPrice(result, priceSort);
     return result;
   }, [listings, searchQuery, selectedCategory, filterBrands, filterCondition, priceSort]);
 

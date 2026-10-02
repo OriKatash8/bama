@@ -51,7 +51,7 @@ const AM = en.admin_marketplace;
 
 const listings = [
   { id: 'l1', type: 'secondhand', productName: 'Sony FX3', price: 12000, posterName: 'Avi', location: 'Haifa', imageUrl: 'https://x/fx3.jpg', status: 'available', createdAt: { seconds: 1_700_000_000 } },
-  { id: 'l2', type: 'rental', productName: 'Aputure 600d', price: 250, posterName: 'Noa', location: 'Tel Aviv', imageUrl: null, status: 'reserved', createdAt: { seconds: 1_700_000_000 } },
+  { id: 'l2', type: 'rental', productName: 'Aputure 600d', price: 250, posterName: 'Noa', storeName: 'RentCam', location: 'Tel Aviv', imageUrl: null, status: 'reserved', createdAt: { seconds: 1_700_000_000 } },
   { id: 'l3', type: 'secondhand', productName: 'Old Tripod', price: 100, posterName: 'Ben', location: 'Eilat', imageUrl: null, createdAt: { seconds: 1_700_000_000 } },
 ];
 
@@ -85,8 +85,11 @@ it('lists every listing with its type, price, poster and status', () => {
   const r = render(<MarketplaceAdmin />);
   const row = within(r.getByTestId('listing-l2'));
   expect(row.getByText('Aputure 600d')).toBeTruthy();
-  expect(row.getByText(`${M.rental} · ₪250`)).toBeTruthy();
-  expect(row.getByText(/^Noa · Tel Aviv · /)).toBeTruthy();
+  expect(row.getByText(`${M.rental} · ₪250${M.per_day}`)).toBeTruthy();
+  // A rental names its store, not who posted it.
+  expect(row.getByText(/^RentCam · Tel Aviv · /)).toBeTruthy();
+  expect(row.queryByText(/Noa/)).toBeNull();
+  expect(within(r.getByTestId('listing-l1')).getByText(/^Avi · Haifa · /)).toBeTruthy();
   expect(row.getByText(AM.status_reserved)).toBeTruthy();
   // A listing without a status counts as available.
   expect(within(r.getByTestId('listing-l3')).getByText(AM.status_available)).toBeTruthy();
@@ -112,6 +115,15 @@ it('"Add a rental" opens the app\'s add-listing popup, locked to Rental', () => 
   expect(mockSheet).toHaveBeenLastCalledWith(expect.objectContaining({ visible: true, initialType: 'rental', lockedType: true }));
   act(() => { (mockSheet.mock.calls.at(-1)![0] as { onClose: () => void }).onClose(); });
   expect(mockSheet).toHaveBeenLastCalledWith(expect.objectContaining({ visible: false }));
+});
+
+it('a rental row can be edited (e.g. to give it a store and link); 2nd-hand rows cannot', () => {
+  const r = render(<MarketplaceAdmin />);
+  expect(r.queryByTestId('edit-l1')).toBeNull();
+  fireEvent.press(r.getByTestId('edit-l2'));
+  expect(mockSheet).toHaveBeenLastCalledWith(expect.objectContaining({
+    visible: true, initialType: 'rental', lockedType: true, editListing: expect.objectContaining({ id: 'l2' }),
+  }));
 });
 
 it('says so when there are no rentals yet', () => {

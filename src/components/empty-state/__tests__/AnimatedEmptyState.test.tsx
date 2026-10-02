@@ -486,12 +486,12 @@ describe("'listings' (the marketplace)", () => {
     expect(r.queryAllByText('₪', H)).toHaveLength(5);
   });
 
-  it('a 250pt illustration; tops are not stretched, lefts scale with the window', () => {
+  it('a 262pt illustration; tops are not stretched, lefts scale with the window', () => {
     const w = windowWidth();
     const r = render(<AnimatedEmptyState variant="listings" {...base} />);
-    expect(flat(r.getByTestId('empty-illustration', H)).height).toBe(250);
+    expect(flat(r.getByTestId('empty-illustration', H)).height).toBe(262);
     const audio = flat(r.getByTestId('empty-card-audio', H));
-    expect(audio.top).toBe(58);
+    expect(audio.top).toBe(70);
     expect(audio.left).toBeCloseTo(scaleLeft(128, w));
   });
 

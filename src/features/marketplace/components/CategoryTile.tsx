@@ -88,6 +88,8 @@ const styles = StyleSheet.create({
   // The visible gap is not `gap` — that was already 2. It is transparent padding
   // baked into the 72×72 contentFit="contain" icons, so the label is pulled up
   // into it rather than the spacing being reduced. Icon hit area is unchanged.
-  label: { fontSize: 11, fontWeight: '500', marginTop: -10 },
+  // Centred line by line: a two-line label ("Studio Accessories") fills the
+  // tile's width, so the tile's alignItems can no longer centre it.
+  label: { fontSize: 11, fontWeight: '500', marginTop: -10, textAlign: 'center' },
   labelActive: { fontWeight: '600', color: ACTIVE_LABEL },
 });

@@ -74,6 +74,10 @@ export interface Message {
   imageUrl?: string | null;
   posterId?: string;
   posterName?: string;
+  /** A shared rental: the store that rents it — shown instead of the sharer. */
+  storeName?: string | null;
+  /** A shared rental: what its price is per. Missing means per day. */
+  pricePeriod?: 'day' | 'week' | 'month' | null;
   /** 'project_closed': the team's contact list, posted once when the project ends. */
   kind?: 'project_closed';
   closedAs?: 'completed' | 'cancelled';

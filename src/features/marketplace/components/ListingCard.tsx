@@ -4,6 +4,7 @@ import { AppText } from '@components/ui/AppText';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import type { MarketplaceListing } from '../types';
+import { PERIOD_SUFFIX_KEY, periodOf } from '../utils/rentalPrice';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -44,9 +45,16 @@ export function ListingCard({ listing, onPress }: Props) {
       onPress={onPress}
       activeOpacity={0.9}
     >
-      <View style={styles.imageWrap}>
+      {/* A rental shows its whole photo, fitted on a light ground; 2nd-hand fills the box. */}
+      <View style={[styles.imageWrap, isRental && styles.imageWrapFit]}>
         {listing.imageUrl ? (
-          <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
+          <Image
+            testID="listing-card-image"
+            source={{ uri: listing.imageUrl }}
+            style={styles.image}
+            contentFit={isRental ? 'contain' : 'cover'}
+            cachePolicy="memory-disk"
+          />
         ) : (
           <View style={styles.imagePlaceholder}>
             <Text style={styles.placeholderIcon}>{isRental ? '🎬' : '📦'}</Text>
@@ -91,11 +99,15 @@ export function ListingCard({ listing, onPress }: Props) {
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {[listing.location, `${t('marketplace.by')} ${listing.posterName}`].filter(Boolean).join(' · ')}
+            {/* A rental belongs to an outside store: show the store, never who posted it. */}
+            {(isRental
+              ? [listing.location, listing.storeName]
+              : [listing.location, `${t('marketplace.by')} ${listing.posterName}`]
+            ).filter(Boolean).join(' · ')}
           </AppText>
         </View>
         <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>
-          ₪{listing.price.toLocaleString()}{isRental ? t('marketplace.per_day') : ''}
+          ₪{listing.price.toLocaleString()}{isRental ? t(`marketplace.${PERIOD_SUFFIX_KEY[periodOf(listing)]}`) : ''}
         </Text>
       </View>
     </TouchableOpacity>
@@ -117,6 +129,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   imageWrap: { width: '100%', height: 112, position: 'relative' },
+  imageWrapFit: { backgroundColor: '#F4F2FB' },
   image: { width: '100%', height: 112 },
   imagePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3EEFE' },
   placeholderIcon: { fontSize: 36 },

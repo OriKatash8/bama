@@ -53,3 +53,12 @@ it('tapping it calls onPress', () => {
   fireEvent.press(r.getByText('Lenses'));
   expect(onPress).toHaveBeenCalled();
 });
+
+// "Studio Accessories" wraps to two lines in the 82pt tile; each line must
+// centre under the icon, chosen or not.
+it('a two-line label is centred under the icon', () => {
+  for (const isActive of [false, true]) {
+    const r = render(<CategoryTile cat={cat} label="Studio Accessories" isActive={isActive} onPress={jest.fn()} inactiveLabelColor="#000" />);
+    expect(StyleSheet.flatten(r.getByText('Studio Accessories').props.style).textAlign).toBe('center');
+  }
+});

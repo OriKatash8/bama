@@ -93,6 +93,7 @@ import { ListingCard } from '@features/marketplace/components/ListingCard';
 import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketplaceListings';
 import { shareListingToCommunities } from '@features/marketplace/services/marketplaceService';
 import type { MarketplaceListing } from '@features/marketplace/types';
+import { PERIOD_SUFFIX_KEY, periodOf } from '@features/marketplace/utils/rentalPrice';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Chat, Message } from '../types';
@@ -532,10 +533,11 @@ function SharedListingCard({ msg }: { msg: Message }) {
       {/* Listing card */}
       <View style={styles.listingWrapper}>
         <View style={[styles.listingCard, removed && { opacity: 0.6 }]}>
-          {/* Header box: avatar (leading), name, and send time */}
+          {/* Header box: avatar (leading), name, and send time. A rental belongs
+              to an outside store: it shows the store's name, no person. */}
           <View style={styles.listingHeader}>
             <View style={[styles.listingHeaderRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {photoURL ? (
+              {isRental ? null : photoURL ? (
                 <Image source={{ uri: photoURL }} style={styles.listingHeaderAvatar} resizeMode="cover" />
               ) : (
                 <View style={[styles.listingHeaderAvatar, styles.listingHeaderAvatarFallback]}>
@@ -543,7 +545,7 @@ function SharedListingCard({ msg }: { msg: Message }) {
                 </View>
               )}
               <AppText weight="bold" numberOfLines={1} style={[styles.listingHeaderName, { textAlign: rtl ? 'right' : 'left' }]}>
-                {posterName}
+                {isRental ? (msg.storeName ?? '') : posterName}
               </AppText>
             </View>
           </View>
@@ -570,7 +572,7 @@ function SharedListingCard({ msg }: { msg: Message }) {
               {msg.title ?? ''}
             </AppText>
             <AppText weight="bold" style={[styles.listingPrice, { textAlign: rtl ? 'right' : 'left' }]}>
-              ₪{(msg.price ?? 0).toLocaleString()}
+              ₪{(msg.price ?? 0).toLocaleString()}{isRental ? t(`marketplace.${PERIOD_SUFFIX_KEY[periodOf(msg)]}`) : ''}
             </AppText>
             {removed ? (
               <View style={[styles.listingCta, styles.listingCtaDisabled, { flexDirection: rtl ? 'row-reverse' : 'row', marginTop: 10 }]}>

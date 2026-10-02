@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { ShoppingBag, Trash2 } from 'lucide-react-native';
+import { Pencil, ShoppingBag, Trash2 } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
 import { useUiStore } from '@core/stores/uiStore';
 import { deleteListing } from '@features/marketplace/services/marketplaceService';
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
 import type { MarketplaceListing, ListingStatus } from '@features/marketplace/types';
+import { PERIOD_SUFFIX_KEY, periodOf } from '@features/marketplace/utils/rentalPrice';
 import {
   AdminPage, AdminText, Card, CardHead, CountBadge, EmptyState, IconTile, PillButton, Row, Segment,
   RADIUS, TYPE, useAdminPalette, useScopedT,
@@ -60,6 +61,7 @@ export default function MarketplaceAdmin() {
   const [filter, setFilter] = useState<FilterTab>('all');
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
   const [addRentalOpen, setAddRentalOpen] = useState(false);
+  const [editRental, setEditRental] = useState<MarketplaceListing | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'marketplace_listings'), orderBy('createdAt', 'desc'));
@@ -120,15 +122,30 @@ export default function MarketplaceAdmin() {
             {listing.productName}
           </AdminText>
           <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
-            {`${listing.type === 'rental' ? t('rental') : t('for_sale')} · ₪${price}`}
+            {listing.type === 'rental'
+              ? `${t('rental')} · ₪${price}${t(PERIOD_SUFFIX_KEY[periodOf(listing)])}`
+              : `${t('for_sale')} · ₪${price}`}
           </AdminText>
           <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
-            {`${listing.posterName} · ${listing.location} · ${fmtDate(listing.createdAt?.seconds)}`}
+            {/* A rental belongs to a store: name the store, not who posted it. */}
+            {[listing.type === 'rental' ? listing.storeName || '—' : listing.posterName, listing.location, fmtDate(listing.createdAt?.seconds)].join(' · ')}
           </AdminText>
           <View style={[styles.chipRow, { flexDirection: rowDir }]}>
             <StatusChip status={status} label={tAdm(STATUS_KEY[status])} />
           </View>
         </View>
+        {listing.type === 'rental' && (
+          <Pressable
+            onPress={() => setEditRental(listing)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('edit_listing')} ${listing.productName}`}
+            testID={`edit-${listing.id}`}
+            style={({ pressed }) => [styles.deleteBtn, { backgroundColor: pressed ? p.surface3 : p.accentSoft }]}
+          >
+            <Pencil size={16} color={p.accent} strokeWidth={2.2} />
+          </Pressable>
+        )}
         <Pressable
           onPress={() => confirmDelete(listing)}
           disabled={busy}
@@ -204,6 +221,17 @@ export default function MarketplaceAdmin() {
         lockedType
         onClose={() => setAddRentalOpen(false)}
       />
+      {/* Edit a rental (e.g. give an older one its store and link). Keyed so it re-reads the listing. */}
+      {editRental && (
+        <PostListingSheet
+          key={editRental.id}
+          visible
+          initialType="rental"
+          lockedType
+          editListing={editRental}
+          onClose={() => setEditRental(null)}
+        />
+      )}
     </AdminPage>
   );
 }

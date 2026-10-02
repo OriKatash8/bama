@@ -117,4 +117,33 @@ describe('useCreateListing', () => {
     ).rejects.toThrow('write failed');
     expect(result.current.isSubmitting).toBe(false);
   });
+
+  it('a rental carries its store and product page; 2nd-hand does not', async () => {
+    const { result } = renderHook(() => useCreateListing());
+    await act(async () => {
+      await result.current.create({
+        type: 'rental', productName: 'Aputure 600d', location: 'Tel Aviv', price: 250, imageUri: null,
+        storeName: ' RentCam ', productUrl: 'https://rentcam.example/600d',
+      });
+    });
+    expect(mockAddDocument).toHaveBeenLastCalledWith('marketplace_listings', expect.objectContaining({
+      storeName: 'RentCam', productUrl: 'https://rentcam.example/600d', pricePeriod: 'day',
+    }));
+    await act(async () => {
+      await result.current.create({
+        type: 'secondhand', productName: 'Tripod', location: 'Haifa', price: 100, imageUri: null,
+        storeName: 'ignored', productUrl: 'https://ignored.example',
+      });
+    });
+    const doc = mockAddDocument.mock.calls.at(-1)![1] as Record<string, unknown>;
+    expect(doc).not.toHaveProperty('storeName');
+    expect(doc).not.toHaveProperty('productUrl');
+    expect(doc).not.toHaveProperty('pricePeriod');
+    await act(async () => {
+      await result.current.create({
+        type: 'rental', productName: 'Lens', location: 'Haifa', price: 700, imageUri: null, pricePeriod: 'week',
+      });
+    });
+    expect(mockAddDocument).toHaveBeenLastCalledWith('marketplace_listings', expect.objectContaining({ pricePeriod: 'week' }));
+  });
 });
