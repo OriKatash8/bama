@@ -30,13 +30,22 @@ export const TILE_LAYOUT: (Placement & { role: RoleId })[] = [
   { role: 'graphic_designer', left: 236, top: 284, rotate: 6 },
 ];
 
+/**
+ * Chat bubbles in the notice board's arrangement: bubble i takes TILE_LAYOUT[i]'s
+ * spot — same row, same side, same tilt, centred on the same height (a 62pt
+ * bubble sits 21pt lower than a ~104pt card's top). A bubble is 188 wide, not
+ * 142, so it keeps the card's OUTER edge: left-side bubbles share the card's
+ * left, right-side ones its right (left − 46). The middle row is the exception —
+ * two 188pt bubbles cannot both keep their card's edges without touching, so
+ * they sit at −4 and 196, a 12pt gap between them.
+ */
 export const BUBBLE_LAYOUT: Placement[] = [
-  { left: 200, top: 26, rotate: -3 },
-  { left: -22, top: 82, rotate: 4 },
-  { left: 62, top: 168, rotate: 2 },
-  { left: 190, top: 196, rotate: -1 },
-  { left: -18, top: 290, rotate: -4 },
-  { left: 214, top: 312, rotate: 5 },
+  { left: 180, top: 43, rotate: -4 },  // ← videographer (right)
+  { left: -14, top: 85, rotate: 5 },   // ← photographer (left)
+  { left: 196, top: 179, rotate: -2 }, // ← sound (middle row, right)
+  { left: -4, top: 183, rotate: 3 },   // ← editor (middle row, left)
+  { left: -12, top: 283, rotate: -5 }, // ← lighting (left)
+  { left: 190, top: 305, rotate: 6 },  // ← graphic designer (right)
 ];
 
 /** The first five categories of the marketplace's category row. */

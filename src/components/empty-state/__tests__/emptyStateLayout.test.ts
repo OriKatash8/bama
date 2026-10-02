@@ -29,10 +29,42 @@ it('places the tiles back to front as specced (editor moved clear of sound)', ()
   expect(order.indexOf('editor')).toBeGreaterThan(order.indexOf('sound'));
 });
 
-it('places the six bubbles as specced', () => {
-  expect(BUBBLE_LAYOUT.map((b) => [b.left, b.top, b.rotate])).toEqual([
-    [200, 26, -3], [-22, 82, 4], [62, 168, 2], [190, 196, -1], [-18, 290, -4], [214, 312, 5],
-  ]);
+describe('chat bubbles are arranged like the notice board cards', () => {
+  const CARD_W = 142, CARD_H = 104, BUBBLE_W = 188, BUBBLE_H = 62;
+  const pairs = BUBBLE_LAYOUT.map((b, i) => ({ b, t: TILE_LAYOUT[i] }));
+
+  it('six bubbles, one per board card, each with its card\'s tilt', () => {
+    expect(BUBBLE_LAYOUT).toHaveLength(TILE_LAYOUT.length);
+    for (const { b, t } of pairs) expect(b.rotate).toBe(t.rotate);
+  });
+
+  it('each bubble is centred on its card\'s height and sits on its card\'s side', () => {
+    for (const { b, t } of pairs) {
+      expect(b.top + BUBBLE_H / 2).toBe(t.top + CARD_H / 2);
+      const cardLeftSide = t.left + CARD_W / 2 < REFERENCE_WIDTH / 2;
+      expect(b.left + BUBBLE_W / 2 < REFERENCE_WIDTH / 2).toBe(cardLeftSide);
+    }
+  });
+
+  it('outer rows keep the card\'s outer edge (left edge on the left, right edge on the right)', () => {
+    for (const [i, { b, t }] of pairs.entries()) {
+      if (i === 2 || i === 3) continue; // the middle row, see below
+      if (t.left + CARD_W / 2 < REFERENCE_WIDTH / 2) expect(b.left).toBe(t.left);
+      else expect(b.left + BUBBLE_W).toBe(t.left + CARD_W);
+    }
+  });
+
+  it('no two bubbles overlap, and the middle pair keeps a 12pt gap', () => {
+    const box = (b: { left: number; top: number }) => ({ x0: b.left, x1: b.left + BUBBLE_W, y0: b.top, y1: b.top + BUBBLE_H });
+    for (let i = 0; i < BUBBLE_LAYOUT.length; i++) {
+      for (let j = i + 1; j < BUBBLE_LAYOUT.length; j++) {
+        const a = box(BUBBLE_LAYOUT[i]), c = box(BUBBLE_LAYOUT[j]);
+        const overlap = a.x0 < c.x1 && c.x0 < a.x1 && a.y0 < c.y1 && c.y0 < a.y1;
+        expect(overlap).toBe(false);
+      }
+    }
+    expect(BUBBLE_LAYOUT[2].left - (BUBBLE_LAYOUT[3].left + BUBBLE_W)).toBe(12);
+  });
 });
 
 it('scales left by width / 390 and leaves the reference width untouched', () => {
