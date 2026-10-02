@@ -30,3 +30,4 @@ export * from './lifecycle/disputeResolution';
 // deployed until the web landing task; deploy the others by name.
 export * from './communities/invites';
 export * from './communities/adminDelete';
+export * from './communities/adminActions';

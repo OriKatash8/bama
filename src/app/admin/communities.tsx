@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import {
-  collection, onSnapshot, updateDoc, deleteDoc, doc,
-  query, where, orderBy, Timestamp, arrayRemove, getDoc,
+  collection, onSnapshot, updateDoc, doc,
+  query, where, orderBy, Timestamp, getDoc,
 } from 'firebase/firestore';
-import { ChevronDown, ChevronUp, Search } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Search, Trash2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { createCommunityChat } from '@features/chat/services/chatService';
@@ -51,8 +51,23 @@ type Community = {
   ownerId: string;
   members: string[];
   createdAt: Timestamp | null;
-  status: 'active' | 'suspended';
+  /** Absent on communities created without it — read as active (isActive). */
+  status?: 'active' | 'suspended';
 };
+
+/** A community is active unless explicitly suspended: communities are created
+ *  with no `status` at all, and reading that as "not active" showed every one
+ *  of them as suspended. */
+export function isActive(c: { status?: string }): boolean {
+  return c.status !== 'suspended';
+}
+
+/** Suspend / unsuspend, new owner, remove a member (functions/src/communities/adminActions.ts):
+ *  the chat rules let only members change a community, and the admin usually is not one. */
+const adminCommunityAction = callFunction<
+  { communityId: string; action: 'suspend' | 'unsuspend' | 'set_owner' | 'remove_member'; userId?: string },
+  { ok: boolean }
+>('adminCommunityAction');
 
 /** Deletes a community with everything in it (functions/src/communities/adminDelete.ts). */
 const adminDeleteCommunity = callFunction<{ communityId: string }, { ok: boolean }>('adminDeleteCommunity');
@@ -139,8 +154,8 @@ export default function CommunitiesAdmin() {
    *  confirmDialog, not Alert.alert — the latter no-ops on web, where admin runs. */
   async function handleDelete(id: string) {
     if (deleting[id]) return;
-    const ok = await confirmDialog(tp('delete_title'), k.proj('delete_confirm_body'), {
-      confirm: k.proj('delete_confirm_ok'), cancel: k.common('cancel'),
+    const ok = await confirmDialog(tp('delete_title'), tp('delete_body'), {
+      confirm: tp('delete'), cancel: k.common('cancel'),
     });
     if (!ok) return;
     setDeleting((d) => ({ ...d, [id]: true }));
@@ -155,22 +170,34 @@ export default function CommunitiesAdmin() {
   }
 
   async function handleToggleSuspend(c: Community) {
-    const next = c.status === 'active' ? 'suspended' : 'active';
-    await updateDoc(doc(db, 'chats', c.id), { status: next });
-    showToast(tp(next === 'suspended' ? 'toast_suspended' : 'toast_activated'), 'success');
+    const suspend = isActive(c);
+    try {
+      await adminCommunityAction({ communityId: c.id, action: suspend ? 'suspend' : 'unsuspend' });
+      showToast(tp(suspend ? 'toast_suspended' : 'toast_activated'), 'success');
+    } catch {
+      showToast(tp('suspend_failed'), 'error');
+    }
   }
 
   async function handleRemoveMember(communityId: string, memberId: string) {
-    await updateDoc(doc(db, 'chats', communityId), { members: arrayRemove(memberId) });
-    showToast(k.ca('toast_removed', { name: memberId }), 'success');
+    try {
+      await adminCommunityAction({ communityId, action: 'remove_member', userId: memberId });
+      showToast(k.ca('toast_removed', { name: memberId }), 'success');
+    } catch {
+      showToast(tp('action_failed'), 'error');
+    }
   }
 
   async function handleChangeOwner(communityId: string) {
     const newOwner = newOwnerInput[communityId]?.trim();
     if (!newOwner) return;
-    await updateDoc(doc(db, 'chats', communityId), { ownerId: newOwner });
-    setNewOwnerInput((prev) => ({ ...prev, [communityId]: '' }));
-    showToast(tp('toast_owner'), 'success');
+    try {
+      await adminCommunityAction({ communityId, action: 'set_owner', userId: newOwner });
+      setNewOwnerInput((prev) => ({ ...prev, [communityId]: '' }));
+      showToast(tp('toast_owner'), 'success');
+    } catch {
+      showToast(tp('action_failed'), 'error');
+    }
   }
 
   function back() {
@@ -290,7 +317,7 @@ export default function CommunitiesAdmin() {
             shown.map((c) => {
               const open = !!expandedMembers[c.id];
               const Chevron = open ? ChevronUp : ChevronDown;
-              const active = c.status === 'active';
+              const active = isActive(c);
               const count = c.members?.length ?? 0;
               return (
                 <View key={c.id} testID={`community-${c.id}`} style={[styles.block, { borderTopColor: p.border }]}>
@@ -343,7 +370,24 @@ export default function CommunitiesAdmin() {
                       onPress={() => handleToggleSuspend(c)}
                       testID={`suspend-${c.id}`}
                     />
-                    <PillButton variant="danger" label={k.proj('delete_confirm_ok')} onPress={() => void handleDelete(c.id)} disabled={!!deleting[c.id]} testID={`delete-${c.id}`} />
+                    {/* Delete: the red bin, as on the admin's other lists. */}
+                    <Pressable
+                      onPress={() => void handleDelete(c.id)}
+                      disabled={!!deleting[c.id]}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${tp('delete')} ${c.name}`}
+                      testID={`delete-${c.id}`}
+                      style={({ pressed }) => [styles.deleteBtn, { backgroundColor: pressed ? p.bad : p.badBg }]}
+                    >
+                      {({ pressed }) =>
+                        deleting[c.id] ? (
+                          <ActivityIndicator size="small" color={p.bad} testID={`deleting-${c.id}`} />
+                        ) : (
+                          <Trash2 size={16} color={pressed ? p.onAccent : p.bad} strokeWidth={2.2} />
+                        )
+                      }
+                    </Pressable>
                   </View>
 
                   {open && (
@@ -384,6 +428,7 @@ function StatusPill({ active, label, testID }: { active: boolean; label: string;
 }
 
 const styles = StyleSheet.create({
+  deleteBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   text: { flex: 1, minWidth: 0, gap: 1 },
   actions: { gap: 7, flexShrink: 0 },
   head: { alignItems: 'center', gap: 10, paddingTop: 16, paddingHorizontal: SPACE.rowPadH, flexWrap: 'wrap' },

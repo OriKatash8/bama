@@ -36,9 +36,12 @@ jest.mock('@core/stores/authStore', () => ({
 jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 const mockDeleteCommunity = jest.fn((_data: unknown) => Promise.resolve({ ok: true }));
+const mockCommunityAction = jest.fn((_data: unknown) => Promise.resolve({ ok: true }));
 jest.mock('@core/firebase/functions', () => ({
   callFunction: (name: string) => (data: unknown) =>
-    name === 'adminDeleteCommunity' ? mockDeleteCommunity(data) : Promise.reject(new Error(`unexpected ${name}`)),
+    name === 'adminDeleteCommunity' ? mockDeleteCommunity(data)
+      : name === 'adminCommunityAction' ? mockCommunityAction(data)
+        : Promise.reject(new Error(`unexpected ${name}`)),
 }));
 jest.mock('@features/chat/services/chatService', () => ({ createCommunityChat: jest.fn(() => Promise.resolve()) }));
 jest.mock('firebase/firestore', () => ({
@@ -159,32 +162,35 @@ it('approves and rejects a creation request', async () => {
   expect(updateDoc).toHaveBeenCalledWith('communityRequests/r1', { status: 'rejected' });
 });
 
-it('suspends / unsuspends, changes the owner and removes a member', async () => {
+// The admin is usually not a member, and the chat rules let only members change
+// a community — so all three go through the admin callable, never a client write.
+it('suspends / unsuspends, changes the owner and removes a member — through the server', async () => {
   const r = await renderPage();
-  await act(async () => {
-    fireEvent.press(r.getByTestId('suspend-c1'));
-  });
-  expect(updateDoc).toHaveBeenCalledWith('chats/c1', { status: 'suspended' });
-  await act(async () => {
-    fireEvent.press(r.getByTestId('suspend-c2'));
-  });
-  expect(updateDoc).toHaveBeenCalledWith('chats/c2', { status: 'active' });
+  await act(async () => { fireEvent.press(r.getByTestId('suspend-c1')); });
+  expect(mockCommunityAction).toHaveBeenCalledWith({ communityId: 'c1', action: 'suspend' });
+  expect(mockToast).toHaveBeenCalledWith(en.admin_communities.toast_suspended, 'success');
+  await act(async () => { fireEvent.press(r.getByTestId('suspend-c2')); });
+  expect(mockCommunityAction).toHaveBeenCalledWith({ communityId: 'c2', action: 'unsuspend' });
 
   fireEvent.changeText(r.getByTestId('owner-input-c1'), ' new-owner ');
-  await act(async () => {
-    fireEvent.press(r.getByTestId('owner-set-c1'));
-  });
-  expect(updateDoc).toHaveBeenCalledWith('chats/c1', { ownerId: 'new-owner' });
+  await act(async () => { fireEvent.press(r.getByTestId('owner-set-c1')); });
+  expect(mockCommunityAction).toHaveBeenCalledWith({ communityId: 'c1', action: 'set_owner', userId: 'new-owner' });
 
   expect(r.queryByTestId('members-c1')).toBeNull();
   fireEvent.press(r.getByTestId('members-toggle-c1'));
   expect(r.getByTestId('members-c1')).toBeTruthy();
-  await act(async () => {
-    fireEvent.press(r.getByTestId('remove-c1-m2'));
-  });
-  expect(arrayRemove).toHaveBeenCalledWith('m2');
-  expect(updateDoc).toHaveBeenCalledWith('chats/c1', { members: { arrayRemove: 'm2' } });
-  expect(doc).toHaveBeenCalled();
+  await act(async () => { fireEvent.press(r.getByTestId('remove-c1-m2')); });
+  expect(mockCommunityAction).toHaveBeenCalledWith({ communityId: 'c1', action: 'remove_member', userId: 'm2' });
+
+  expect(updateDoc).not.toHaveBeenCalledWith(expect.stringMatching(/^chats\//), expect.anything());
+});
+
+it('a refused owner change or removal says so', async () => {
+  const r = await renderPage();
+  mockCommunityAction.mockRejectedValueOnce(new Error('not-found'));
+  fireEvent.changeText(r.getByTestId('owner-input-c1'), 'nobody');
+  await act(async () => { fireEvent.press(r.getByTestId('owner-set-c1')); });
+  expect(mockToast).toHaveBeenCalledWith(en.admin_communities.action_failed, 'error');
 });
 
 it('deletes a community only after the destructive confirm — on the server, with everything in it', async () => {
@@ -204,6 +210,24 @@ it('deletes a community only after the destructive confirm — on the server, wi
   alert.mockRestore();
 });
 
+it('delete is a red bin, not a text button, named for screen readers', async () => {
+  const r = await renderPage();
+  const bin = r.getByTestId('delete-c2');
+  expect(within(bin).queryByText(en.admin_communities.delete)).toBeNull();
+  expect(bin.props.accessibilityLabel).toBe(`${en.admin_communities.delete} Grips Club`);
+});
+
+it('the confirm reads in real words (it used to show raw keys from a block that lacks them)', async () => {
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('delete-c2'));
+  const [title, body, buttons] = alert.mock.calls[0] as [string, string, { text: string }[]];
+  expect(title).toBe(en.admin_communities.delete_title);
+  expect(body).toBe(en.admin_communities.delete_body);
+  expect(buttons.map((b) => b.text)).toEqual([en.common.cancel, en.admin_communities.delete]);
+  alert.mockRestore();
+});
+
 it('cancelling the confirm deletes nothing; a refused delete says so', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const r = await renderPage();
@@ -216,4 +240,27 @@ it('cancelling the confirm deletes nothing; a refused delete says so', async () 
   await act(async () => { (alert.mock.calls[1][2] as { onPress?: () => void }[])[1].onPress?.(); });
   expect(mockToast).toHaveBeenCalledWith(en.admin_communities.delete_failed, 'error');
   alert.mockRestore();
+});
+
+// Communities are created with no `status` field. Reading that as "not active"
+// showed every real community as suspended.
+it('a community with no status is active — shown so, counted so, and suspending it suspends', async () => {
+  const fresh = { id: 'c3', name: 'Editors Room', description: '', ownerId: 'o3', members: ['m4'], createdAt: null };
+  snap.mockImplementation((q: string, next: (s: unknown) => void) => {
+    const rows = q === 'communityRequests' ? REQUESTS : [...COMMUNITIES, fresh];
+    next({ docs: rows.map(({ id, ...data }) => ({ id, data: () => data })) });
+    return () => {};
+  });
+  const r = await renderPage();
+  expect(within(r.getByTestId('status-c3')).getByText(en.admin_users.status_active)).toBeTruthy();
+  expect(within(r.getByTestId('suspend-c3')).getByText(en.admin_users.suspend)).toBeTruthy();
+  await act(async () => { fireEvent.press(r.getByTestId('suspend-c3')); });
+  expect(mockCommunityAction).toHaveBeenCalledWith({ communityId: 'c3', action: 'suspend' });
+});
+
+it('says so when suspending is refused', async () => {
+  mockCommunityAction.mockRejectedValueOnce(new Error('permission-denied'));
+  const r = await renderPage();
+  await act(async () => { fireEvent.press(r.getByTestId('suspend-c1')); });
+  expect(mockToast).toHaveBeenCalledWith(en.admin_communities.suspend_failed, 'error');
 });

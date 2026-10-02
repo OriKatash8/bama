@@ -581,11 +581,15 @@
     "owner_placeholder": "New owner UID",
     "set_owner": "Set",
     "delete_title": "Delete community?",
+    "delete": "Delete",
+    "delete_body": "The community, its channels and all their messages will be deleted. This can't be undone.",
     "toast_approved": "Community approved",
     "toast_deleted": "Community deleted",
     "delete_failed": "Couldn't delete the community",
     "toast_suspended": "Community suspended",
     "toast_activated": "Community active again",
+    "suspend_failed": "Couldn't change the community's status",
+    "action_failed": "Couldn't do that — check the user ID and try again",
     "toast_owner": "Owner updated"
   },
   "admin_courses": {

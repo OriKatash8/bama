@@ -581,11 +581,15 @@
     "owner_placeholder": "UID של הבעלים החדש",
     "set_owner": "עדכון",
     "delete_title": "למחוק את הקהילה?",
+    "delete": "מחיקה",
+    "delete_body": "הקהילה, הערוצים שלה וכל ההודעות בהם יימחקו. לא ניתן לבטל פעולה זו.",
     "toast_approved": "הקהילה אושרה",
     "toast_deleted": "הקהילה נמחקה",
     "delete_failed": "לא ניתן למחוק את הקהילה",
     "toast_suspended": "הקהילה הושעתה",
     "toast_activated": "הקהילה פעילה שוב",
+    "suspend_failed": "לא ניתן לשנות את סטטוס הקהילה",
+    "action_failed": "הפעולה לא הצליחה — בדקו את מזהה המשתמש ונסו שוב",
     "toast_owner": "הבעלים עודכן"
   },
   "admin_courses": {
