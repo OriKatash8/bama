@@ -24,6 +24,9 @@ export const onNotificationCreate = functions.firestore
 const ESSENTIAL = [
   'offer', 'offer_accepted', 'purchase', 'system',
   'engagement_completed', 'charge_failed', 'end_date_soon',
+  // The overdue-fee notices: money owed, and a deadline after which new work is
+  // blocked. Exactly the kind of message muting must not hide.
+  'fee_due', 'fee_overdue_soon', 'fee_overdue',
   // A mention is addressed to you by name and already overrides mute; letting
   // notifPrefs silence it would make @ mean nothing.
   'mention',

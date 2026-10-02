@@ -49,14 +49,16 @@ describe('the slot a contest holds', () => {
     expect(d.isComplete).toBe(false);
   });
 
-  it('PATH B — the fee was voided by didnt_happen: there is NO callable to resolve it', () => {
-    // markFeePaid is the only admin lever, and settleFee refuses outright:
+  it('PATH B — the fee was voided by didnt_happen: settleFee cannot resolve it (resolveFeeDispute does)', () => {
+    // markFeePaid cannot be the lever here — settleFee refuses outright:
     // contestEngagement sets status 'not_owed' for didnt_happen, and settleFee
     // throws 'nothing-owed' on exactly that (completion.ts:457).
     const refusesToSettle = (status: string) => status === 'not_owed';
     expect(refusesToSettle('not_owed')).toBe(true);
 
-    // So engagementStatus can never leave 'disputed' by any existing path.
+    // So settling never moves engagementStatus out of 'disputed'. The resolution
+    // is resolveFeeDispute (disputeResolution.ts), which moves it to a terminal
+    // status — see feeOverdue.test.ts for its pricing.
     expect(stillHoldsSlot('disputed')).toBe(true);
   });
 

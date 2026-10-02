@@ -37,6 +37,10 @@ export const DEFAULT_MIN_FEE_AMOUNT = 6;
 /** Days between an engagement completing and its fee charging — and the window
  *  in which the professional may say it did not happen. */
 export const DEFAULT_CHARGE_WINDOW_DAYS = 4;
+/** Days after completion before an unpaid fee blocks new work. See feeIsOverdue. */
+export const DEFAULT_FEE_OVERDUE_BLOCK_DAYS = 7;
+/** Kill switch for the overdue-fee block. OFF unless config says exactly `true`. */
+export const DEFAULT_FEE_OVERDUE_BLOCK_ENABLED = false;
 
 /**
  * DEAD. Nothing reads this.
@@ -178,6 +182,13 @@ export type PricingConfig = {
   minFeeAmount: number;
   /** Days between completion and charge; also the contest window. */
   chargeWindowDays: number;
+  /** Days after completion at which an unpaid fee becomes overdue and blocks new
+   *  work. Stamped onto the fee as `overdueAt` at completion time. */
+  feeOverdueBlockDays: number;
+  /** Kill switch for the whole overdue-fee block. Off: nothing is stamped, the
+   *  hire gate and the offer rule skip it, and no overdue notices go out. The
+   *  rules read this same field directly (feeOverdueBlocks in firestore.rules). */
+  feeOverdueBlockEnabled: boolean;
 };
 
 export const CONFIG_DEFAULTS: PricingConfig = {
@@ -190,7 +201,11 @@ export const CONFIG_DEFAULTS: PricingConfig = {
   paymentFailureGraceDays: DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
   minFeeAmount: DEFAULT_MIN_FEE_AMOUNT,
   chargeWindowDays: DEFAULT_CHARGE_WINDOW_DAYS,
+  feeOverdueBlockDays: DEFAULT_FEE_OVERDUE_BLOCK_DAYS,
+  feeOverdueBlockEnabled: DEFAULT_FEE_OVERDUE_BLOCK_ENABLED,
 };
+
+type NumericConfigKey = { [K in keyof PricingConfig]: PricingConfig[K] extends number ? K : never }[keyof PricingConfig];
 
 /**
  * Merge a raw config document over the defaults, FIELD BY FIELD.
@@ -204,11 +219,16 @@ export function resolveConfig(raw: unknown): PricingConfig {
   const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const out = { ...CONFIG_DEFAULTS };
   for (const key of Object.keys(CONFIG_DEFAULTS) as (keyof PricingConfig)[]) {
+    if (typeof CONFIG_DEFAULTS[key] !== 'number') continue;
     const v = data[key];
     // All of these are strictly positive. A 0 would read as "no fee" or "no
     // window" — too consequential to arrive by typo.
-    if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[key] = v;
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[key as NumericConfigKey] = v;
   }
+  // Only a real boolean `true` switches the block on. A string "true", a 1, a
+  // missing key or a failed read all leave it off — the failure mode of a kill
+  // switch must be the safe one.
+  out.feeOverdueBlockEnabled = data.feeOverdueBlockEnabled === true;
   return out;
 }
 
@@ -276,6 +296,75 @@ export function feeBlocksNewHire(
   if (!Number.isFinite(graceDays) || graceDays <= 0) return false;
 
   return now - sentAt > graceDays * 86400_000;
+}
+
+type TimestampLike = { toMillis?: () => number } | null | undefined;
+
+/** The fee-doc fields the overdue rule reads. Structural, so a raw `d.data()`
+ *  and a FeeDoc both fit. */
+export type OverdueFeeFields = {
+  feeStatus?: unknown;
+  status?: unknown;
+  feePaid?: unknown;
+  feeDue?: unknown;
+  engagementStatus?: unknown;
+  overdueAt?: TimestampLike;
+  chargeDueAt?: TimestampLike;
+};
+
+function millisOf(t: TimestampLike): number | undefined {
+  const ms = typeof t?.toMillis === 'function' ? t.toMillis() : undefined;
+  return typeof ms === 'number' && Number.isFinite(ms) ? ms : undefined;
+}
+
+/** Engagement states in which an unpaid fee never counts as overdue. 'disputed'
+ *  is the pause: the clock stops while an admin looks, and resolveFeeDispute
+ *  restarts it with a fresh `overdueAt`. Checked on `engagementStatus`, because
+ *  the fee-level `status: 'disputed'` is declared but never written. */
+const OVERDUE_EXEMPT_ENGAGEMENT = new Set(['disputed', 'cancelled', 'withdrawn']);
+
+/**
+ * The moment this fee starts blocking, or undefined if it never will as things
+ * stand.
+ *
+ * `max(overdueAt, chargeDueAt)`: a professional is never blocked while they can
+ * still contest. With the defaults (7 vs 4 days) this is just `overdueAt`; it only
+ * bites if config sets feeOverdueBlockDays below chargeWindowDays.
+ *
+ * The SAME time feeBlocks/{uid}.blockedFrom is built from (earliestOverdueAt), so
+ * the offer rule and the hire gate can never disagree about when a block starts.
+ *
+ * No `overdueAt` = never overdue. That is the whole no-backfill mechanism: only a
+ * completion made with the switch on stamps one.
+ */
+export function effectiveOverdueAt(fee: OverdueFeeFields): number | undefined {
+  if (fee.feeStatus !== 'owed') return undefined;
+  if (fee.feePaid === true) return undefined;
+  if (fee.status === 'paid' || fee.status === 'not_owed') return undefined;
+  if (typeof fee.feeDue === 'number' && fee.feeDue <= 0) return undefined;
+  if (OVERDUE_EXEMPT_ENGAGEMENT.has(fee.engagementStatus as string)) return undefined;
+  const overdueAt = millisOf(fee.overdueAt);
+  if (overdueAt === undefined) return undefined;
+  const chargeDueAt = millisOf(fee.chargeDueAt);
+  return chargeDueAt === undefined ? overdueAt : Math.max(overdueAt, chargeDueAt);
+}
+
+/** Is this fee overdue at `now`? Pure. The kill switch is the CALLER's check —
+ *  this answers only what the fee itself says. */
+export function feeIsOverdue(fee: OverdueFeeFields, now: number): boolean {
+  const at = effectiveOverdueAt(fee);
+  return at !== undefined && now >= at;
+}
+
+/** The earliest moment any of these fees starts blocking, or null if none will.
+ *  This is what feeBlocks/{proId}.blockedFrom stores. */
+export function earliestOverdueAt(fees: Iterable<OverdueFeeFields>): number | null {
+  let min: number | null = null;
+  for (const fee of fees) {
+    const at = effectiveOverdueAt(fee);
+    if (at !== undefined && (min === null || at < min)) min = at;
+  }
+  return min;
 }
 
 /** Is `now` still inside the dispute window that ended at `endsAtMs`? */

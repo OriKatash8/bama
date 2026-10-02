@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, requireAuth, feeRef, notify, type ReleaseReason } from './helpers';
 import { applyDerivedProjectState } from './derive';
+import { recomputeFeeBlockSafely } from './feeOverdue';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
 
@@ -184,6 +185,9 @@ export async function releaseEngagement(
   if (removalSnap.exists) batch.delete(removalRef);
 
   await batch.commit();
+  // The fee is now not_owed — lift any overdue block it carried, without
+  // waiting for the fee trigger.
+  if (feeSnap.exists) await recomputeFeeBlockSafely(proId);
 
   // A professional declining during review is news the client has to act on —
   // the seat is open again — and the chat notice alone reaches no one

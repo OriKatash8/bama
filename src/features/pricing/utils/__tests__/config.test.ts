@@ -28,6 +28,8 @@ describe('resolvePricingConfig', () => {
       paymentFailureGraceDays: 9,
       minFeeAmount: 11,
       chargeWindowDays: 5,
+      feeOverdueBlockDays: 8,
+      feeOverdueBlockEnabled: true,
     };
     expect(resolvePricingConfig(raw)).toEqual(raw);
   });
@@ -61,5 +63,16 @@ describe('feeRateOf', () => {
   it('converts the config percent to the fraction a fee document stores', () => {
     expect(feeRateOf({ ...PRICING_CONFIG_DEFAULTS, feePercent: 3 })).toBeCloseTo(0.03);
     expect(feeRateOf({ ...PRICING_CONFIG_DEFAULTS, feePercent: 12.5 })).toBeCloseTo(0.125);
+  });
+});
+
+describe('resolvePricingConfig — the overdue-fee kill switch', () => {
+  it('is off by default and on only for a real `true`, as the server and rules read it', () => {
+    expect(PRICING_CONFIG_DEFAULTS.feeOverdueBlockEnabled).toBe(false);
+    expect(PRICING_CONFIG_DEFAULTS.feeOverdueBlockDays).toBe(7);
+    expect(resolvePricingConfig({ feeOverdueBlockEnabled: true }).feeOverdueBlockEnabled).toBe(true);
+    for (const v of ['true', 1, null, undefined, false]) {
+      expect(resolvePricingConfig({ feeOverdueBlockEnabled: v }).feeOverdueBlockEnabled).toBe(false);
+    }
   });
 });

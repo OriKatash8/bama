@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertTriangle, Receipt } from 'lucide-react-native';
 import { callFunction } from '@core/firebase/functions';
 import { useUiStore } from '@core/stores/uiStore';
 import { confirmDialog } from '@utils/confirmDialog';
+import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 import {
   AdminPage, AdminText, Card, CardHead, EmptyState, IconTile, InitialsAvatar, PillButton, Segment,
   StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
@@ -18,10 +19,17 @@ type ArrearsRow = {
   oldestUnpaidAt: number | null; demandSentAt: number | null; blocked: boolean;
   projects: ArrearsProject[];
 };
+/** One contested engagement on a flagged project — what resolveFeeDispute acts on. */
+type DisputeRow = {
+  proId: string; proName: string; reason: string;
+  baseAmount: number; feeDueIfCompleted: number;
+};
 type FlaggedRow = {
   projectId: string; title: string; status: string; reason: string;
   proId: string | null; proName: string; clientName: string;
   flaggedAt: number | null; note: string;
+  /** Absent from a server that predates resolveFeeDispute. */
+  disputes?: DisputeRow[];
 };
 
 const listArrears = callFunction<
@@ -36,6 +44,18 @@ const markDemandSent = callFunction<
 const markFeePaid = callFunction<
   { projectId: string; professionalId: string }, { ok: boolean; paid: number }
 >('markFeePaid');
+const resolveFeeDispute = callFunction<
+  { projectId: string; proId: string; outcome: 'completed' | 'cancelled'; agreedAmount?: number },
+  { ok: boolean; outcome: string; feeDue: number }
+>('resolveFeeDispute');
+
+/** The corrected price an admin typed, or undefined for none / not a number. */
+function parseAgreed(raw: string | undefined): number | undefined {
+  const trimmed = (raw ?? '').replace(/[,\s₪]/g, '');
+  if (!trimmed) return undefined;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : NaN;
+}
 
 type Tab = 'arrears' | 'flagged';
 
@@ -81,6 +101,8 @@ export default function AdminFeesScreen() {
   const [graceDays, setGraceDays] = useState(0);
   const [flagged, setFlagged] = useState<FlaggedRow[]>([]);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
+  /** Corrected price typed per contested engagement, keyed `${projectId}:${proId}`. */
+  const [agreed, setAgreed] = useState<Record<string, string>>({});
   /**
    * THREE states, not two, and the third is the point of this screen.
    *
@@ -358,6 +380,80 @@ export default function AdminFeesScreen() {
                       <AdminText style={[styles.body, { color: p.text2, textAlign }]}>{row.note}</AdminText>
                     </View>
                   )}
+                  {(row.disputes ?? []).map((d) => {
+                    const key = `${row.projectId}:${d.proId}`;
+                    const isBusy = busy[key] === true;
+                    const price = parseAgreed(agreed[key]);
+                    function resolveCompleted() {
+                      if (price !== undefined && !(price >= MIN_OFFER_PRICE && price <= MAX_OFFER_PRICE)) {
+                        showToast(t('agreed_invalid', {
+                          min: MIN_OFFER_PRICE.toLocaleString(), max: MAX_OFFER_PRICE.toLocaleString(),
+                        }), 'error');
+                        return;
+                      }
+                      void act(
+                        key,
+                        price === undefined
+                          ? t('confirm_resolve_completed', { amount: d.feeDueIfCompleted.toLocaleString() })
+                          : t('confirm_resolve_completed_price', { price: price.toLocaleString() }),
+                        () => resolveFeeDispute({
+                          projectId: row.projectId, proId: d.proId, outcome: 'completed',
+                          ...(price === undefined ? {} : { agreedAmount: price }),
+                        }),
+                        t('resolve_done'),
+                      );
+                    }
+                    return (
+                      <View
+                        key={key}
+                        testID={`dispute-${key}`}
+                        style={[styles.dispute, { backgroundColor: p.surface2 }]}
+                      >
+                        <AdminText weight="semiBold" style={[TYPE.rowName, { textAlign }]}>
+                          {t('dispute_head', { name: d.proName || d.proId })}
+                        </AdminText>
+                        {!!d.reason && (
+                          <AdminText style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>
+                            {t(`reason_${d.reason}`)}
+                          </AdminText>
+                        )}
+                        <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                          {t('dispute_fee_if_completed', { amount: d.feeDueIfCompleted.toLocaleString() })}
+                        </AdminText>
+                        <TextInput
+                          testID={`agreed-${key}`}
+                          value={agreed[key] ?? ''}
+                          onChangeText={(v) => setAgreed((a) => ({ ...a, [key]: v }))}
+                          placeholder={t('agreed_placeholder')}
+                          placeholderTextColor={p.text3}
+                          keyboardType="numeric"
+                          editable={!isBusy}
+                          style={[styles.agreedInput, { borderColor: p.border, color: p.text, textAlign }]}
+                        />
+                        <View style={[styles.actions, { flexDirection: rowDir }]}>
+                          {isBusy ? <ActivityIndicator size="small" color={p.accent} testID={`busy-${key}`} /> : null}
+                          <PillButton
+                            variant="primary"
+                            label={t('resolve_completed')}
+                            disabled={isBusy}
+                            testID={`resolve-completed-${key}`}
+                            onPress={resolveCompleted}
+                          />
+                          <PillButton
+                            label={t('resolve_cancelled')}
+                            disabled={isBusy}
+                            testID={`resolve-cancelled-${key}`}
+                            onPress={() => act(
+                              key,
+                              t('confirm_resolve_cancelled'),
+                              () => resolveFeeDispute({ projectId: row.projectId, proId: d.proId, outcome: 'cancelled' }),
+                              t('resolve_done'),
+                            )}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
             ))
@@ -400,4 +496,6 @@ const styles = StyleSheet.create({
   flagRow: { alignItems: 'flex-start', gap: 12, paddingVertical: SPACE.rowPadV, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1 },
   reason: { marginTop: 1, marginBottom: 2 },
   note: { borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, marginTop: 6 },
+  dispute: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 10, marginTop: 8, gap: 6 },
+  agreedInput: { borderWidth: 1, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, fontSize: 14, lineHeight: 21 },
 });

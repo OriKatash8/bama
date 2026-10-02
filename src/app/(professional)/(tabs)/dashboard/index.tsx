@@ -22,6 +22,8 @@ import { SlotBlockedSheet } from '@features/pricing/components/SlotBlockedSheet'
 import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import { useFeeArrears } from '@features/pricing/hooks/useFeeArrears';
 import { FeeArrearsSheet } from '@features/pricing/components/FeeArrearsSheet';
+import { FeeOverdueBanner } from '@features/pricing/components/FeeOverdueBanner';
+import { showFeeOverdueDialog } from '@features/pricing/utils/feeOverdueDialog';
 import { listenToSlotUsage, type SlotUsage } from '@features/pricing/services/slotsService';
 import { slotGuardBlocks } from '@features/pricing/utils/slots';
 import { listenToMyFees } from '@features/pricing/services/feesService';
@@ -160,6 +162,12 @@ export default function DashboardScreen() {
   function guardSlots(request: ProjectRequest): boolean {
     if (arrears.blocked) {
       setArrearsOpen(true);
+      return true;
+    }
+    // An overdue fee (completion + feeOverdueBlockDays, unpaid): the offer rule
+    // and hireProfessional both refuse, so say so before an offer is composed.
+    if (arrears.overdueBlocked) {
+      void showFeeOverdueDialog(rtl ? 'he' : 'en', arrears.overdueTotal, () => router.push('/settings/pricing'));
       return true;
     }
     // A project he is already on takes another role without a new slot.
@@ -476,6 +484,7 @@ export default function DashboardScreen() {
         {notifPrompt.visible && pendingCount > 0 && (
           <NotifPermissionBanner context="offers" onDismiss={notifPrompt.dismiss} />
         )}
+        {arrears.overdueBlocked && <FeeOverdueBanner amount={arrears.overdueTotal} />}
 
         {/* ── In-progress projects — shown only while the toggle is on ── */}
         {showInProgress && activeProjects.length > 0 && (
@@ -592,9 +601,10 @@ export default function DashboardScreen() {
           <AnimatedEmptyState
             // Cancels the sheet's paddingHorizontal: the empty state spans the screen.
             bleed={20}
-            // The sheet's paddingTop too — unless the notifications prompt or the
-            // search row (projects exist but none match) sits above it.
-            bleedTop={(notifPrompt.visible && pendingCount > 0) || biddable.length > 0 ? 0 : 18}
+            // The sheet's paddingTop too — unless the notifications prompt, the
+            // overdue-fee banner or the search row (projects exist but none
+            // match) sits above it.
+            bleedTop={(notifPrompt.visible && pendingCount > 0) || arrears.overdueBlocked || biddable.length > 0 ? 0 : 18}
             radius={26}
             variant="board"
             // English: the title on one row; and the text shows without scrolling,
@@ -665,6 +675,12 @@ export default function DashboardScreen() {
         professionalCategories={categories}
         roleSkills={selected?.targetProfessionalId === currentUserId ? null : (roleSkills ?? [])}
         offeredCategories={selected ? offeredByProject.get(selected.id) : undefined}
+        feeOverdue={{
+          blocked: arrears.overdueBlocked,
+          amount: arrears.overdueTotal,
+          from: arrears.overdueFrom,
+          onTerms: () => router.push('/settings/pricing'),
+        }}
       />
 
       {/* Sort & filter modal */}

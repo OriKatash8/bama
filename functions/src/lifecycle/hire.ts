@@ -8,7 +8,7 @@ import { assignFilledCapability } from '../matching';
 import {
   DEFAULT_PROJECT_DURATION_DAYS,
   canHireOnStatus, isOfferPriceValid,
-  hireConsumesNewSlot, atSlotCap, feeBlocksNewHire,
+  hireConsumesNewSlot, atSlotCap, feeBlocksNewHire, feeIsOverdue,
 } from '../pricing';
 
 type Filled = { category: string; professionalId: string; requiredCapability?: string };
@@ -139,6 +139,21 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
     // professional cannot take on more work. Per §6 they are never told why —
     // a client must not learn that a professional owes BAMA money.
     throw new HttpsError('resource-exhausted', 'fee-arrears');
+  }
+
+  // ── Overdue fee ──
+  // The automatic counterpart of the arrears gate above: an unpaid fee past
+  // effectiveOverdueAt (completion + feeOverdueBlockDays, never inside the
+  // contest window) blocks new work with no admin action. Same query, same
+  // in-memory filtering, same opaque `resource-exhausted` for the client.
+  //
+  // Read live from the fees, NOT from feeBlocks/{proId}: the hire gate is the
+  // authoritative one and must not be able to go stale. Behind the kill switch.
+  if (config.feeOverdueBlockEnabled) {
+    const now = Date.now();
+    if (feesSnap.docs.some((d) => feeIsOverdue(d.data(), now))) {
+      throw new HttpsError('resource-exhausted', 'fee-overdue');
+    }
   }
 
   return { projSnap, project, config, existingFeeSnap, consumesNewSlot };
@@ -305,6 +320,13 @@ async function commitHire(args: {
     feeUpdate.feePaid = false;
     feeUpdate.feePaidAt = FieldValue.delete();
     feeUpdate.status = 'pending';
+    // A fresh debt cycle: the settled one's overdue clock and notices must not
+    // carry over, or the next completion would inherit a deadline that already
+    // passed and block on the spot.
+    feeUpdate.overdueAt = FieldValue.delete();
+    feeUpdate.dueNotifiedAt = FieldValue.delete();
+    feeUpdate.overdueWarnedAt = FieldValue.delete();
+    feeUpdate.overdueBlockNotifiedAt = FieldValue.delete();
   }
   tx.set(feeRef(projSnap.id, proId), feeUpdate, { merge: true });
 

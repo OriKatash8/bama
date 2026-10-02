@@ -7,7 +7,7 @@ import {
   isOfferPriceValid, canHireOnStatus, MIN_OFFER_PRICE, MAX_OFFER_PRICE, HIREABLE_STATUSES,
   hireConsumesNewSlot, atSlotCap,
   resolveConfig, feeRateOf, withinDisputeWindow, CONFIG_DEFAULTS, feeBlocksNewHire,
-  DEFAULT_MAX_OPEN_PROJECTS,
+  DEFAULT_MAX_OPEN_PROJECTS, effectiveOverdueAt, feeIsOverdue, earliestOverdueAt,
 } from '../pricing';
 import { computeFee } from '../lifecycle/helpers';
 
@@ -363,5 +363,82 @@ describe('withinDisputeWindow', () => {
   it('is false with no deadline — the caller must not treat that as open', () => {
     expect(withinDisputeWindow(undefined, 0)).toBe(false);
     expect(withinDisputeWindow(NaN, 0)).toBe(false);
+  });
+});
+
+describe('resolveConfig — the overdue-fee block', () => {
+  it('defaults to 7 days, switched OFF', () => {
+    expect(CONFIG_DEFAULTS.feeOverdueBlockDays).toBe(7);
+    expect(CONFIG_DEFAULTS.feeOverdueBlockEnabled).toBe(false);
+    expect(resolveConfig(null).feeOverdueBlockEnabled).toBe(false);
+  });
+
+  it('reads the period from config like every other period', () => {
+    expect(resolveConfig({ feeOverdueBlockDays: 10 }).feeOverdueBlockDays).toBe(10);
+    expect(resolveConfig({ feeOverdueBlockDays: 0 }).feeOverdueBlockDays).toBe(7);
+  });
+
+  it.each([['true', true, true], ['"true"', 'true', false], ['1', 1, false], ['false', false, false], ['null', null, false]])(
+    'switch %s → %s',
+    (_label, value, expected) => {
+      expect(resolveConfig({ feeOverdueBlockEnabled: value }).feeOverdueBlockEnabled).toBe(expected);
+    },
+  );
+});
+
+describe('effectiveOverdueAt / feeIsOverdue / earliestOverdueAt', () => {
+  const ts = (ms: number) => ({ toMillis: () => ms });
+  const T = Date.UTC(2026, 9, 2);
+  const DAY = 86400_000;
+  // A completed, unpaid fee whose clock was stamped at completion.
+  const due = (over: Record<string, unknown> = {}) => ({
+    feeStatus: 'owed', status: 'pending', feePaid: false, feeDue: 30,
+    engagementStatus: 'completed', overdueAt: ts(T), chargeDueAt: ts(T - 3 * DAY), ...over,
+  });
+
+  it('is overdue from overdueAt on, not before', () => {
+    expect(feeIsOverdue(due(), T - 1)).toBe(false);
+    expect(feeIsOverdue(due(), T)).toBe(true);
+    expect(feeIsOverdue(due(), T + DAY)).toBe(true);
+  });
+
+  it('never blocks inside the contest window: max(overdueAt, chargeDueAt)', () => {
+    const late = due({ chargeDueAt: ts(T + 2 * DAY) });
+    expect(effectiveOverdueAt(late)).toBe(T + 2 * DAY);
+    expect(feeIsOverdue(late, T + DAY)).toBe(false);
+    expect(feeIsOverdue(late, T + 2 * DAY)).toBe(true);
+  });
+
+  it.each([
+    ['no overdueAt — completed while the switch was off', { overdueAt: undefined }],
+    ['paid flag', { feePaid: true }],
+    ['paid status', { status: 'paid' }],
+    ['voided', { status: 'not_owed' }],
+    ['nothing left', { feeDue: 0 }],
+    ['exempt', { feeStatus: 'exempt' }],
+    ['included', { feeStatus: 'included' }],
+    ['disputed — the clock is paused', { engagementStatus: 'disputed' }],
+    ['cancelled', { engagementStatus: 'cancelled' }],
+    ['withdrawn', { engagementStatus: 'withdrawn' }],
+  ])('is never overdue when %s', (_label, over) => {
+    expect(effectiveOverdueAt(due(over))).toBeUndefined();
+    expect(feeIsOverdue(due(over), T + 100 * DAY)).toBe(false);
+  });
+
+  it('blockedFrom is the earliest effective time over the fees that count', () => {
+    expect(earliestOverdueAt([])).toBeNull();
+    expect(earliestOverdueAt([due({ feePaid: true })])).toBeNull();
+    expect(earliestOverdueAt([
+      due({ overdueAt: ts(T + 5 * DAY) }),
+      due({ overdueAt: ts(T + 2 * DAY) }),
+      due({ overdueAt: ts(T), engagementStatus: 'disputed' }), // paused: ignored
+    ])).toBe(T + 2 * DAY);
+  });
+
+  it('blockedFrom and the predicate agree at the boundary', () => {
+    const fees = [due({ overdueAt: ts(T) }), due({ overdueAt: ts(T + DAY), chargeDueAt: ts(T + 2 * DAY) })];
+    const from = earliestOverdueAt(fees)!;
+    expect(fees.some((f) => feeIsOverdue(f, from))).toBe(true);
+    expect(fees.some((f) => feeIsOverdue(f, from - 1))).toBe(false);
   });
 });

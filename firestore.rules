@@ -281,7 +281,36 @@ service cloud.firestore {
         && request.resource.data.get('status', '') == 'pending'
         && request.resource.data.get('projectId', '') != ''
         && exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId))
-        && offerPriceInRange();
+        && offerPriceInRange()
+        && !feeOverdueBlocks();
+    }
+
+    // ── Overdue-fee block ─────────────────────────────────────────────────
+    // A professional with an unpaid fee past its overdue time may not send NEW
+    // offers or applications. feeBlocks/{uid}.blockedFrom is the earliest moment
+    // any of their fees starts blocking, maintained server-side (recomputeFeeBlock,
+    // functions/src/lifecycle/feeOverdue.ts) because rules cannot run the
+    // collection-group query that decides it.
+    //
+    // A TIME, compared to request.time, not a flag: the block starts on the
+    // second with no cron, and lifts the moment a payment recomputes it.
+    //
+    // The KILL SWITCH is read here directly from config/pricing, not baked into
+    // feeBlocks: turning feeOverdueBlockEnabled off lifts every block on the
+    // next request, without rewriting a single feeBlocks doc. Anything but a
+    // real `true` reads as off. Existing offers are untouched — updates do not
+    // go through this.
+    //
+    // exists() before each get(): a get() of a missing doc is null, and `.data`
+    // on null is an ERROR — which would deny every offer, not none.
+    function feeOverdueBlocks() {
+      let cfgPath = /databases/$(database)/documents/config/pricing;
+      let blockPath = /databases/$(database)/documents/feeBlocks/$(request.auth.uid);
+      return exists(cfgPath)
+        && get(cfgPath).data.get('feeOverdueBlockEnabled', false) == true
+        && exists(blockPath)
+        && get(blockPath).data.get('blockedFrom', null) != null
+        && request.time >= get(blockPath).data.blockedFrom;
     }
 
     // ── Offer price bounds ──────────────────────────────────────────────────
@@ -1206,7 +1235,7 @@ service cloud.firestore {
     // ─── projectApplications ─────────────────────────────────────────
     // Written client-side but not queried client-side (possible future admin view).
     match /projectApplications/{applicationId} {
-      allow create: if isAuth();
+      allow create: if isAuth() && !feeOverdueBlocks();
       allow read, update, delete: if isAdmin();
     }
 
@@ -1231,6 +1260,17 @@ service cloud.firestore {
       // bind {proId}, so the wildcard form would deny the very query this rule
       // exists to permit.
       allow read: if isAuth() && resource.data.professionalId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ─── feeBlocks ───────────────────────────────────────────────────
+    // When this professional's overdue-fee block starts (see feeOverdueBlocks).
+    // Server-only, and readable only by its owner: a client must never learn that
+    // a professional owes BAMA money (§6), which is why this is not a field on
+    // users/{uid}, readable by every signed-in user. The rules' own get() above
+    // is not subject to this read rule.
+    match /feeBlocks/{userId} {
+      allow read: if isOwner(userId);
       allow write: if false;
     }
 

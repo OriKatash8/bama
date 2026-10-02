@@ -53,7 +53,7 @@ const cases: { name: string; file: string[]; index: number; variant: string; mus
   },
   {
     name: 'pro notice board', file: ['(professional)', '(tabs)', 'dashboard', 'index.tsx'], index: 0, variant: 'board',
-    above: '(notifPrompt.visible && pendingCount > 0) || biddable.length > 0',
+    above: '(notifPrompt.visible && pendingCount > 0) || arrears.overdueBlocked || biddable.length > 0',
     must: ["'noticeboard.no_projects'", "'noticeboard.check_back'", "'noticeboard.upgrade_profile_hint'",
       "'noticeboard.upgrade_profile_btn'", "router.push('/(professional)/(tabs)/profile?edit=1')",
       // Only for a pro with no active projects, as before.

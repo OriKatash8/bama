@@ -23,6 +23,7 @@ import he from '@core/i18n/translations/he.json';
 import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import { grossFee, isMinimumFee } from '@features/pricing/utils/fee';
+import { showFeeOverdueDialog, isPermissionDenied } from '@features/pricing/utils/feeOverdueDialog';
 
 // Blue outline, black copy. The card used to be ringed in magenta with blue and
 // purple text scattered through it; the blue now lives in the chrome — the
@@ -89,9 +90,16 @@ type Props = {
   roleSkills: RoleSkillEntry[] | null;
   /** Categories this professional has already bid on for THIS project. */
   offeredCategories?: Set<string>;
+  /**
+   * This professional's overdue-fee state (useFeeArrears), so a submit the offer
+   * rule would refuse is explained instead of failing silently. `from` is the
+   * earliest block time, used to read a rules refusal as the overdue block when
+   * the device clock is slightly behind the server's.
+   */
+  feeOverdue?: { blocked: boolean; amount: number; from: number | null; onTerms: () => void };
 };
 
-export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories, roleSkills, offeredCategories }: Props) {
+export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initialView = 'details', professionalCategories, roleSkills, offeredCategories, feeOverdue }: Props) {
   const { submit, submitWithBundle, isSubmitting } = usePriceOffer();
   const pricing = usePricingConfig();
   const colors = useTheme();
@@ -202,7 +210,30 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
     }
   }
 
+  /** The overdue-fee message, through confirmDialog. "Fee terms" leaves the modal. */
+  function explainOverdue() {
+    if (!feeOverdue) return;
+    void showFeeOverdueDialog(rtl ? 'he' : 'en', feeOverdue.amount, () => {
+      handleClose();
+      feeOverdue.onTerms();
+    });
+  }
+
+  /** True when the submit must not go out: the offer rule would refuse it. */
+  function overdueStopsSubmit(): boolean {
+    if (!feeOverdue?.blocked) return false;
+    explainOverdue();
+    return true;
+  }
+
+  /** A rules refusal on create from a professional with a known overdue fee IS
+   *  that block — the mirror was a moment behind the server. */
+  function explainRefusal(err: unknown) {
+    if (isPermissionDenied(err) && feeOverdue && feeOverdue.from !== null) explainOverdue();
+  }
+
   async function doSubmitIndividual() {
+    if (overdueStopsSubmit()) return;
     try {
       await submit(
         request!.id,
@@ -210,8 +241,8 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
       );
       setView('details');
       onApply();
-    } catch {
-      // error handled by hook
+    } catch (err) {
+      explainRefusal(err);
     }
   }
 
@@ -234,6 +265,7 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
       return;
     }
     setBundleError('');
+    if (overdueStopsSubmit()) return;
     try {
       await submitWithBundle(
         request!.id,
@@ -242,8 +274,8 @@ export function ProjectDetailModal({ request, onClose, onApply, onDismiss, initi
       );
       setView('details');
       onApply();
-    } catch {
-      // error handled by hook
+    } catch (err) {
+      explainRefusal(err);
     }
   }
 

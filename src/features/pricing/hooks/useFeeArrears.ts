@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
 import { listenToMyFees } from '../services/feesService';
 import { outstandingFee } from '../utils/fee';
+import { earliestOverdueAt, feeIsOverdue } from '../utils/overdue';
 import { usePricingConfig } from './usePricingConfig';
 import type { ProjectFee } from '@core/types/project';
 
@@ -14,10 +15,20 @@ export type FeeArrears = {
   /** The oldest payment demand, in ms. `null` when none has been sent. */
   oldestDemandSentAt: number | null;
   graceDays: number;
+  /** True when an unpaid fee is past its overdue time (completion +
+   *  feeOverdueBlockDays) and the kill switch is on — the condition the hire gate
+   *  and the offer rule refuse on. */
+  overdueBlocked: boolean;
+  /** What is owed on the overdue fees alone — the banner's amount. */
+  overdueTotal: number;
+  /** The earliest moment any fee starts blocking, in ms (may be in the future).
+   *  `null` when none will. Mirrors feeBlocks/{uid}.blockedFrom. */
+  overdueFrom: number | null;
 };
 
 const EMPTY: FeeArrears = {
   blocked: false, totalOwed: 0, oldestDemandSentAt: null, graceDays: 0,
+  overdueBlocked: false, overdueTotal: 0, overdueFrom: null,
 };
 
 /**
@@ -39,15 +50,38 @@ const EMPTY: FeeArrears = {
  */
 export function useFeeArrears(): FeeArrears {
   const userId = useAuthStore((s) => s.user?.id);
-  const { paymentFailureGraceDays } = usePricingConfig();
+  const { paymentFailureGraceDays, feeOverdueBlockEnabled } = usePricingConfig();
   const [fees, setFees] = useState<Map<string, ProjectFee> | null>(null);
+  // Bumped when a future block time arrives, so the banner appears on the second
+  // the server starts refusing, not on the next unrelated re-render.
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     if (!userId) { setFees(null); return; }
     return listenToMyFees(userId, setFees);
   }, [userId]);
 
+  const overdueFrom = feeOverdueBlockEnabled && fees ? earliestOverdueAt(fees.values()) : null;
+  useEffect(() => {
+    if (overdueFrom === null) return;
+    const wait = overdueFrom - Date.now();
+    // setTimeout overflows past ~24.8 days; a block that far out is re-armed by
+    // the next fee snapshot or remount long before it arrives.
+    if (wait <= 0 || wait > 2_000_000_000) return;
+    const id = setTimeout(() => setTick((n) => n + 1), wait + 50);
+    return () => clearTimeout(id);
+  }, [overdueFrom]);
+
   if (!fees) return { ...EMPTY, graceDays: paymentFailureGraceDays };
+
+  const now = Date.now();
+  let overdueTotal = 0;
+  if (feeOverdueBlockEnabled) {
+    for (const fee of fees.values()) {
+      if (feeIsOverdue(fee, now)) overdueTotal += outstandingFee(fee);
+    }
+  }
+  const overdueBlocked = overdueFrom !== null && now >= overdueFrom;
 
   let totalOwed = 0;
   let oldestDemandSentAt: number | null = null;
@@ -71,5 +105,8 @@ export function useFeeArrears(): FeeArrears {
     }
   }
 
-  return { blocked, totalOwed, oldestDemandSentAt, graceDays: paymentFailureGraceDays };
+  return {
+    blocked, totalOwed, oldestDemandSentAt, graceDays: paymentFailureGraceDays,
+    overdueBlocked, overdueTotal, overdueFrom,
+  };
 }

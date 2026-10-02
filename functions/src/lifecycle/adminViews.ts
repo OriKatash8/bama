@@ -1,8 +1,9 @@
 import { onCall } from 'firebase-functions/v2/https';
-import { db, requireAuth, requireAdmin, computeFee, type FeeDoc } from './helpers';
+import { db, feesCol, requireAuth, requireAdmin, computeFee, type FeeDoc } from './helpers';
 import { readConfig } from './config';
-import { feeBlocksNewHire } from '../pricing';
+import { feeBlocksNewHire, feeIsOverdue } from '../pricing';
 import { withdrawalCount } from './derive';
+import { resolvedFee } from './disputeResolution';
 
 /**
  * Read-only admin views over state the app deliberately hides from everyone else.
@@ -72,7 +73,11 @@ export const adminListArrears = onCall(async (request) => {
   for (const d of feesSnap.docs) {
     const fee = d.data() as FeeDoc;
     const owed = outstandingOn(fee);
-    const blocks = feeBlocksNewHire(fee, config.paymentFailureGraceDays, now);
+    // Either gate hireProfessional applies: the invoice-based arrears gate, or the
+    // automatic overdue one (behind its kill switch) — so this chip cannot say
+    // "not blocked" about a professional the server is refusing.
+    const blocks = feeBlocksNewHire(fee, config.paymentFailureGraceDays, now)
+      || (config.feeOverdueBlockEnabled && feeIsOverdue(fee, now));
     if (owed <= 0 && !blocks) continue;
 
     const proId = fee.professionalId ?? d.id;
@@ -143,6 +148,32 @@ export const adminListArrears = onCall(async (request) => {
  * it (`completion_unanswered`). Silence never confirms a completion, so these sit
  * here until someone looks.
  */
+type DisputeRow = {
+  proId: string;
+  /** 'didnt_happen' | 'fee_disputed' | … — the fee's own adminReview.reason. */
+  reason: string;
+  baseAmount: number;
+  /** What resolving as 'completed' with no corrected price would leave owing. */
+  feeDueIfCompleted: number;
+  minFeeApplied: number;
+  feeRate: number;
+};
+
+/** One contested engagement, in the admin's terms. Pure. */
+export function disputeRowOf(proId: string, fee: FeeDoc): DisputeRow {
+  // The same function resolveFeeDispute prices with, so the admin sees exactly
+  // what pressing "completed" will leave owing.
+  const { baseAmount, feeDue: feeDueIfCompleted } = resolvedFee(fee);
+  return {
+    proId,
+    reason: fee.adminReview?.reason ?? '',
+    baseAmount,
+    feeDueIfCompleted,
+    minFeeApplied: fee.minFeeApplied ?? 0,
+    feeRate: fee.feeRate ?? 0,
+  };
+}
+
 export const adminListFlaggedProjects = onCall(async (request) => {
   requireAuth(request.auth?.uid);
   requireAdmin(request.auth?.token);
@@ -170,10 +201,20 @@ export const adminListFlaggedProjects = onCall(async (request) => {
     };
   });
 
+  // The contested engagements on each flagged project — what resolveFeeDispute
+  // acts on. Per engagement, because the project's own adminReview names at
+  // most one professional and a project can carry several disputes.
+  const disputesByProject = new Map<string, DisputeRow[]>();
+  await Promise.all(rows.map(async (r) => {
+    const fees = await feesCol(r.projectId).where('engagementStatus', '==', 'disputed').get();
+    disputesByProject.set(r.projectId, fees.docs.map((d) => disputeRowOf(d.id, d.data() as FeeDoc)));
+  }));
+
   const ids = new Set<string>();
   for (const r of rows) {
     if (r.proId) ids.add(r.proId);
     if (r.clientId) ids.add(r.clientId);
+    for (const d of disputesByProject.get(r.projectId) ?? []) ids.add(d.proId);
   }
   const users = await Promise.all([...ids].map((id) => db.doc(`users/${id}`).get()));
   const nameOf = new Map(users.map((u) => [u.id, (u.data()?.displayName as string) ?? '']));
@@ -186,6 +227,9 @@ export const adminListFlaggedProjects = onCall(async (request) => {
       ...r,
       proName: r.proId ? nameOf.get(r.proId) ?? '' : '',
       clientName: nameOf.get(r.clientId) ?? '',
+      disputes: (disputesByProject.get(r.projectId) ?? []).map((d) => ({
+        ...d, proName: nameOf.get(d.proId) ?? '',
+      })),
     })),
   };
 });

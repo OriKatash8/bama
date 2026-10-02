@@ -149,6 +149,15 @@ export function useNotificationRouting(): void {
         await navigate('professional', '/(professional)/(tabs)/dashboard');
         return;
       }
+      // ── overdue fee ──
+      // The professional's own balance, which is where what is owed and how to
+      // settle it are listed — the same place a failed charge goes.
+      case 'fee_due':
+      case 'fee_overdue_soon':
+      case 'fee_overdue': {
+        await navigate('professional', '/settings/payment');
+        return;
+      }
       case 'end_date_soon': {
         // The CLIENT, and the only thing being asked is "move the date if it is
         // wrong" — which is edited on project details.

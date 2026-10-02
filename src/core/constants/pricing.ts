@@ -37,6 +37,11 @@ export const DEFAULT_PAYMENT_FAILURE_GRACE_DAYS = 7;
 export const DEFAULT_MIN_FEE_AMOUNT = 6;
 /** Days between completion and charge; also the contest window. */
 export const DEFAULT_CHARGE_WINDOW_DAYS = 4;
+/** Days after completion before an unpaid fee blocks new work. FALLBACK ONLY —
+ *  the live value is `config/pricing.feeOverdueBlockDays`. */
+export const DEFAULT_FEE_OVERDUE_BLOCK_DAYS = 7;
+/** The overdue-fee kill switch. Off unless config says exactly `true`. */
+export const DEFAULT_FEE_OVERDUE_BLOCK_ENABLED = false;
 
 /**
  * DEAD. Nothing reads this.

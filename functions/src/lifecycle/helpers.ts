@@ -170,6 +170,22 @@ export type FeeDoc = {
     note?: string;
   };
   endDatePromptedAt?: admin.firestore.Timestamp;
+  /** When this unpaid fee starts blocking new work: completion (or dispute
+   *  resolution) + `feeOverdueBlockDays`. Stamped only while
+   *  `feeOverdueBlockEnabled` is on — absence means never. Read it through
+   *  `effectiveOverdueAt()` (pricing.ts), never directly. */
+  overdueAt?: admin.firestore.Timestamp;
+  /** Dedupe markers for the three overdue notices (feeOverdueCron). */
+  dueNotifiedAt?: admin.firestore.Timestamp;
+  overdueWarnedAt?: admin.firestore.Timestamp;
+  overdueBlockNotifiedAt?: admin.firestore.Timestamp;
+  /** The fee as it stood the moment the professional contested it, so a dispute
+   *  resolved as 'completed' can put back what `didnt_happen` zeroed. */
+  preDispute?: { feeDue: number; status: FeeSettlementStatus | null; baseAmount: number };
+  /** Set by resolveFeeDispute. */
+  agreedAmount?: number;
+  resolvedAt?: admin.firestore.Timestamp;
+  resolvedOutcome?: 'completed' | 'cancelled';
 };
 
 /**
@@ -226,6 +242,21 @@ export function computeFee(
   minFee = 0,
 ): number {
   return Math.max(Math.round(baseAmount * feeRate), minFee);
+}
+
+/**
+ * What a pro still owes: their fee on their own amount, less anything already
+ * paid. Floors at zero, so a price DROP after an early payment yields no refund
+ * (§5) rather than a negative — this floor, not a pinned base, is what makes
+ * early payments non-refundable.
+ */
+export function outstandingOf(fee: FeeDoc, baseAmount: number): number {
+  // `minFeeApplied ?? 0` — THIS pro's locked floor, never the live config. A
+  // record predating the floor has none and prices exactly as it always did.
+  return Math.max(
+    0,
+    computeFee(baseAmount, fee.feeRate, fee.minFeeApplied ?? 0) - (fee.paidAmount ?? 0),
+  );
 }
 
 /**

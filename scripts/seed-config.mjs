@@ -31,6 +31,10 @@ const SEED = {
   paymentFailureGraceDays: 7,
   minFeeAmount: 6,
   chargeWindowDays: 4,
+  feeOverdueBlockDays: 7,
+  // The overdue-fee kill switch. Seeded OFF; turning it on is a deliberate
+  // console edit, never a side effect of seeding.
+  feeOverdueBlockEnabled: false,
 };
 
 // ── args ───────────────────────────────────────────────────────────────────
@@ -74,7 +78,10 @@ console.log(`Mode:     ${commit ? '*** COMMIT — will write ***' : 'DRY RUN —
 const payload = {};
 for (const [key, value] of Object.entries(SEED)) {
   const current = existing?.[key];
-  const present = typeof current === 'number' && Number.isFinite(current);
+  // Present = same type as the seed (and finite, for numbers). Typed by the SEED
+  // value, so an additive run can never flip a live boolean back to its default.
+  const present = typeof current === typeof value
+    && (typeof value !== 'number' || Number.isFinite(current));
   if (present && !overwrite) {
     console.log(`  keep    ${key.padEnd(24)} ${current}`);
     continue;

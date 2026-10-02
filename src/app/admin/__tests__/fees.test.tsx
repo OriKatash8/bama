@@ -41,6 +41,7 @@ jest.mock('@core/firebase/functions', () => {
     adminListFlaggedProjects: jest.fn(),
     markDemandSent: jest.fn(),
     markFeePaid: jest.fn(),
+    resolveFeeDispute: jest.fn(),
   };
   return { callFunction: (name: string) => fns[name], __fns: fns };
 });
@@ -80,6 +81,7 @@ beforeEach(() => {
   fns.adminListFlaggedProjects.mockResolvedValue(FLAGGED);
   fns.markDemandSent.mockResolvedValue({ ok: true });
   fns.markFeePaid.mockResolvedValue({ ok: true, paid: 1000 });
+  fns.resolveFeeDispute.mockResolvedValue({ ok: true, outcome: 'completed', feeDue: 30 });
   confirm.mockResolvedValue(true);
 });
 afterEach(() => jest.useRealTimers());
@@ -191,4 +193,70 @@ it('back returns to the previous page', async () => {
   const r = await renderPage();
   fireEvent.press(r.getByTestId('admin-back'));
   expect(mockBack).toHaveBeenCalled();
+});
+
+describe('resolving a contested engagement', () => {
+  const DISPUTED = {
+    rows: [{
+      ...FLAGGED.rows[0],
+      disputes: [{ proId: 'pro-2', proName: 'Yael', reason: 'didnt_happen', baseAmount: 1000, feeDueIfCompleted: 30 }],
+    }],
+  };
+  const KEY = 'fp1:pro-2';
+
+  async function openFlagged() {
+    fns.adminListFlaggedProjects.mockResolvedValue(DISPUTED);
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('tab-flagged'));
+    return r;
+  }
+
+  it('lists each contested engagement with what completing it would leave owing', async () => {
+    const r = await openFlagged();
+    const row = within(r.getByTestId(`dispute-${KEY}`));
+    expect(row.getByText('Disputed: Yael')).toBeTruthy();
+    expect(row.getByText(E.reason_didnt_happen)).toBeTruthy();
+    expect(row.getByText('If resolved as completed: ₪30 owed')).toBeTruthy();
+  });
+
+  it('completed with no price restores the fee: confirms with the amount, then calls resolveFeeDispute', async () => {
+    const r = await openFlagged();
+    await act(async () => { fireEvent.press(r.getByTestId(`resolve-completed-${KEY}`)); });
+    expect(confirm).toHaveBeenCalledWith(E.title, E.confirm_resolve_completed.replace('{{amount}}', '30'), expect.anything());
+    expect(fns.resolveFeeDispute).toHaveBeenCalledWith({ projectId: 'fp1', proId: 'pro-2', outcome: 'completed' });
+    expect(mockToast).toHaveBeenCalledWith(E.resolve_done, 'success');
+    expect(fns.adminListFlaggedProjects).toHaveBeenCalledTimes(2);
+  });
+
+  it('completed with a corrected price sends it as agreedAmount', async () => {
+    const r = await openFlagged();
+    fireEvent.changeText(r.getByTestId(`agreed-${KEY}`), '1,500');
+    await act(async () => { fireEvent.press(r.getByTestId(`resolve-completed-${KEY}`)); });
+    expect(fns.resolveFeeDispute).toHaveBeenCalledWith({
+      projectId: 'fp1', proId: 'pro-2', outcome: 'completed', agreedAmount: 1500,
+    });
+  });
+
+  it('an out-of-range corrected price is refused before anything is asked or sent', async () => {
+    const r = await openFlagged();
+    fireEvent.changeText(r.getByTestId(`agreed-${KEY}`), '999999');
+    await act(async () => { fireEvent.press(r.getByTestId(`resolve-completed-${KEY}`)); });
+    expect(confirm).not.toHaveBeenCalled();
+    expect(fns.resolveFeeDispute).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith('Enter a price between ₪1 and ₪50,000', 'error');
+  });
+
+  it('no fee voids it', async () => {
+    const r = await openFlagged();
+    await act(async () => { fireEvent.press(r.getByTestId(`resolve-cancelled-${KEY}`)); });
+    expect(confirm).toHaveBeenCalledWith(E.title, E.confirm_resolve_cancelled, expect.anything());
+    expect(fns.resolveFeeDispute).toHaveBeenCalledWith({ projectId: 'fp1', proId: 'pro-2', outcome: 'cancelled' });
+  });
+
+  it('a cancelled confirm resolves nothing', async () => {
+    confirm.mockResolvedValue(false);
+    const r = await openFlagged();
+    await act(async () => { fireEvent.press(r.getByTestId(`resolve-cancelled-${KEY}`)); });
+    expect(fns.resolveFeeDispute).not.toHaveBeenCalled();
+  });
 });

@@ -353,6 +353,14 @@ export type ProjectFee = {
    *  project field today, so the "did this end?" prompt fires once for the whole
    *  project however many professionals are on it. */
   endDatePromptedAt?: Timestamp;
+
+  /** When this unpaid fee starts blocking new work (completion + config
+   *  feeOverdueBlockDays). Server-written; absent = never. Read it through
+   *  `effectiveOverdueAt()` in features/pricing/utils/overdue.ts. */
+  overdueAt?: Timestamp;
+  /** Set by resolveFeeDispute. */
+  agreedAmount?: number;
+  resolvedOutcome?: 'completed' | 'cancelled';
 };
 
 /** See `PriceOffer.review`. */

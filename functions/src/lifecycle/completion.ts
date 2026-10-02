@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import {
   db, FieldValue, Timestamp, requireAuth, requireAdmin, notify,
-  feeRef, feesCol, computeProAmount, computeFee, publishProReview, contestWindowEndsAt,
+  feeRef, feesCol, computeProAmount, computeFee, outstandingOf, publishProReview, contestWindowEndsAt,
   type FeeDoc,
 } from './helpers';
 import { readConfig } from './config';
@@ -11,6 +11,7 @@ import { releaseEngagement } from './removal';
 import { warnIfCompletedUnderReview } from './review';
 import { deletePendingOffers } from './offerCleanup';
 import { addChatCloseWrites } from './chatClose';
+import { overdueStampFields, recomputeFeeBlockSafely } from './feeOverdue';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -18,21 +19,6 @@ async function loadProject(projectId: string) {
   const snap = await db.doc(`projects/${projectId}`).get();
   if (!snap.exists) throw new HttpsError('not-found', 'Project not found');
   return { snap, project: snap.data() as Record<string, unknown> };
-}
-
-/**
- * What a pro still owes: their fee on their own amount, less anything already
- * paid. Floors at zero, so a price DROP after an early payment yields no refund
- * (§5) rather than a negative — this floor, not a pinned base, is what makes
- * early payments non-refundable.
- */
-function outstandingOf(fee: FeeDoc, baseAmount: number): number {
-  // `minFeeApplied ?? 0` — THIS pro's locked floor, never the live config. A
-  // record predating the floor has none and prices exactly as it always did.
-  return Math.max(
-    0,
-    computeFee(baseAmount, fee.feeRate, fee.minFeeApplied ?? 0) - (fee.paidAmount ?? 0),
-  );
 }
 
 /**
@@ -161,8 +147,10 @@ export async function confirmCompletionInternal(
   // thing as `chargeDueAt` and was written by a different path — see
   // contestWindowEndsAt for why that pair was dangerous rather than merely
   // redundant.
-  const { chargeWindowDays } = await readConfig();
-  const chargeDueAt = Timestamp.fromMillis(Date.now() + chargeWindowDays * 86400_000);
+  const config = await readConfig();
+  const { chargeWindowDays } = config;
+  const completedAtMs = Date.now();
+  const chargeDueAt = Timestamp.fromMillis(completedAtMs + chargeWindowDays * 86400_000);
 
   const batch = db.batch();
   const owedByPro = new Map<string, number>();
@@ -226,6 +214,8 @@ export async function confirmCompletionInternal(
       batch.update(feeRef(projectId, proId), {
         baseAmount, feeDue: outstanding, feePaid: false, slotActive: false,
         status: 'pending', projectId, ...engagementClose,
+        // The overdue clock (empty while the kill switch is off).
+        ...overdueStampFields(config, completedAtMs, fee),
       } as Update);
     } else {
       // Already paid in full, or the price fell far enough that nothing remains.
@@ -390,6 +380,8 @@ export const cancelProject = onCall(async (request) => {
   // never leaves the project un-cancelled.
   await deletePendingOffers(projectId);
   await applyDerivedProjectState(projectId);
+  // Every fee here is now not_owed — lift any overdue block it was carrying.
+  for (const d of feesSnap.docs) await recomputeFeeBlockSafely(d.id);
   return { ok: true, refundReviewPending: refundPros };
 });
 
@@ -446,7 +438,7 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
   if (preFee.status === 'not_owed') throw new HttpsError('failed-precondition', 'nothing-owed');
   const currentAmount = await computeProAmount(projectId, proId);
 
-  return db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     const [pSnap, fSnap] = await Promise.all([tx.get(projRef), tx.get(fRef)]);
     if (!pSnap.exists) throw new HttpsError('not-found', 'Project not found');
     const project = pSnap.data() as Record<string, unknown>;
@@ -456,7 +448,13 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
     // have been cancelled between the pre-read and here.
     if (fee.status === 'not_owed') throw new HttpsError('failed-precondition', 'nothing-owed');
 
-    const confirmed = (project.completion as { state?: string } | undefined)?.state === 'confirmed';
+    // THIS engagement's completion counts, not just the project's. Completion is
+    // per engagement now, so a pro whose own engagement completed (or whose
+    // dispute was resolved at an agreed price) on a project others are still
+    // working on has a fixed feeDue — repricing it from the accepted offers here
+    // would silently overwrite that agreed amount.
+    const confirmed = (project.completion as { state?: string } | undefined)?.state === 'confirmed'
+      || fee.engagementStatus === 'completed';
     // Early: price it now off the pro's current accepted amount, and lock that
     // (§5). Confirmed: feeDue was already stored NET of anything paid earlier.
     const baseAmount = confirmed ? (fee.baseAmount ?? 0) : currentAmount;
@@ -489,6 +487,11 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
 
     return { paid: outstanding };
   });
+
+  // Lift the overdue block NOW, not whenever the fee trigger runs: a pro who has
+  // paid must be able to send an offer the moment markFeePaid returns.
+  await recomputeFeeBlockSafely(proId);
+  return result;
 }
 
 /**
@@ -796,8 +799,10 @@ export async function completeEngagementInternal(
     return { completed: false, reason: 'already-terminal' };
   }
 
-  const { chargeWindowDays } = await readConfig();
-  const chargeDueAt = Timestamp.fromMillis(Date.now() + chargeWindowDays * 86400_000);
+  const config = await readConfig();
+  const { chargeWindowDays } = config;
+  const completedAtMs = Date.now();
+  const chargeDueAt = Timestamp.fromMillis(completedAtMs + chargeWindowDays * 86400_000);
 
   // The fee is priced HERE, from the accepted offers as they stand, exactly as
   // the old confirmation path priced it. The floor and rate come off the
@@ -819,6 +824,9 @@ export async function completeEngagementInternal(
       confirmedAt: FieldValue.serverTimestamp(),
     },
     projectId,
+    // The overdue clock — only when something is actually left to pay, and
+    // empty while the kill switch is off.
+    ...(outstanding > 0 ? overdueStampFields(config, completedAtMs, eng) : {}),
   } as Update);
 
   // The slot goes back now, not at charge time. The work is done; holding
@@ -891,6 +899,14 @@ export const contestEngagement = onCall(async (request) => {
   const note = boundedReason(request.data?.note);
   await engRef.update({
     engagementStatus: 'disputed',
+    // What the fee was before this contest touched it. `didnt_happen` zeroes
+    // feeDue and voids the status below; resolveFeeDispute('completed') puts
+    // these back. Written for both reasons so resolution reads one shape.
+    preDispute: {
+      feeDue: typeof eng.feeDue === 'number' ? eng.feeDue : 0,
+      status: eng.status ?? null,
+      baseAmount: typeof eng.baseAmount === 'number' ? eng.baseAmount : 0,
+    },
     ...(reason === 'didnt_happen'
       // Voided outright. A shoot that never happened owes nothing, and leaving
       // the fee live would charge at chargeDueAt while an admin was still
@@ -920,5 +936,7 @@ export const contestEngagement = onCall(async (request) => {
   } as Update);
 
   await applyDerivedProjectState(projectId);
+  // The overdue clock pauses while disputed — take effect now, not on the trigger.
+  await recomputeFeeBlockSafely(uid);
   return { ok: true, reason };
 });

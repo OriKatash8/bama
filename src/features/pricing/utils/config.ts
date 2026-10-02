@@ -3,6 +3,7 @@ import {
   DEFAULT_AUTO_CLOSE_REMINDER_DAYS, DEFAULT_AUTO_CLOSE_FINAL_DAYS,
   DEFAULT_AUTO_CLOSE_DAYS, DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
   DEFAULT_MIN_FEE_AMOUNT, DEFAULT_CHARGE_WINDOW_DAYS,
+  DEFAULT_FEE_OVERDUE_BLOCK_DAYS, DEFAULT_FEE_OVERDUE_BLOCK_ENABLED,
 } from '@core/constants/pricing';
 
 /**
@@ -32,6 +33,10 @@ export type PricingConfig = {
   minFeeAmount: number;
   /** Days between completion and charge; also the contest window. */
   chargeWindowDays: number;
+  /** Days after completion before an unpaid fee blocks new work. */
+  feeOverdueBlockDays: number;
+  /** The overdue-fee kill switch. Off: no banner, no offer dialog. */
+  feeOverdueBlockEnabled: boolean;
 };
 
 export const PRICING_CONFIG_DEFAULTS: PricingConfig = {
@@ -44,7 +49,11 @@ export const PRICING_CONFIG_DEFAULTS: PricingConfig = {
   paymentFailureGraceDays: DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
   minFeeAmount: DEFAULT_MIN_FEE_AMOUNT,
   chargeWindowDays: DEFAULT_CHARGE_WINDOW_DAYS,
+  feeOverdueBlockDays: DEFAULT_FEE_OVERDUE_BLOCK_DAYS,
+  feeOverdueBlockEnabled: DEFAULT_FEE_OVERDUE_BLOCK_ENABLED,
 };
+
+type NumericConfigKey = { [K in keyof PricingConfig]: PricingConfig[K] extends number ? K : never }[keyof PricingConfig];
 
 /**
  * Merge a raw document over the defaults, FIELD BY FIELD.
@@ -57,10 +66,13 @@ export function resolvePricingConfig(raw: unknown): PricingConfig {
   const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const out = { ...PRICING_CONFIG_DEFAULTS };
   for (const key of Object.keys(PRICING_CONFIG_DEFAULTS) as (keyof PricingConfig)[]) {
+    if (typeof PRICING_CONFIG_DEFAULTS[key] !== 'number') continue;
     const v = data[key];
     // All strictly positive. A 0 would read as "no fee" or "no window".
-    if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[key] = v;
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[key as NumericConfigKey] = v;
   }
+  // Only a real `true` — the server and the rules read it the same way.
+  out.feeOverdueBlockEnabled = data.feeOverdueBlockEnabled === true;
   return out;
 }
 
