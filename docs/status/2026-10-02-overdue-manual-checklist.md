@@ -26,15 +26,15 @@ know a user's language.
 
 2) One day before the block
 
-   תזכורת: עמלה בסך ₪120 טרם שולמה. מחר לא ניתן יהיה לשלוח הצעות או להתקבל לפרויקטים חדשים עד להסדרתה.
+   תזכורת: עמלת התיווך בסך ₪120 טרם שולמה. מחר לא ניתן יהיה לשלוח הצעות או להתקבל לפרויקטים חדשים עד להסדרתה.
 
-   EN: Reminder: a ₪120 fee is still unpaid. From tomorrow you won't be able to send offers or be hired for new projects until it's settled.
+   EN: Reminder: your ₪120 brokerage fee is still unpaid. From tomorrow you won't be able to send offers or be hired for new projects until it's settled.
 
 3) The block has started
 
-   עמלה בסך ₪120 באיחור. שליחת הצעות וקבלה לפרויקטים חדשים מושהות עד להסדרתה. הפרויקטים הקיימים שלך ממשיכים כרגיל.
+   עמלת התיווך בסך ₪120 באיחור. שליחת הצעות וקבלה לפרויקטים חדשים מושהות עד להסדרתה. הפרויקטים הקיימים שלך ממשיכים כרגיל.
 
-   EN: A ₪120 fee is overdue. Sending offers and being hired for new projects are paused until it's settled. Your current projects continue as normal.
+   EN: Your ₪120 brokerage fee is overdue. Sending offers and being hired for new projects are paused until it's settled. Your current projects continue as normal.
 
 
 Accounts:
@@ -42,7 +42,8 @@ Accounts:
   PRO    = a professional account
   ADMIN  = your admin account (role: admin)
 Use the Part B test logins for section 4. They are in
-~/dev/bama-app/.env.test-logins.local (gitignored, never committed). Sections 1–3 can use any accounts
+~/bama-test-logins.txt — OUTSIDE the project on purpose: a stray file in the
+project root broke the app (Metro tried to bundle it). Never put it back inside. Sections 1–3 can use any accounts
 you normally test with.
 
 
@@ -133,7 +134,7 @@ Setup (done by me after you approve Part B):
   - TEST PRO has one completed project with an OVERDUE fee;
   - TEST PRO also has one active, hired job (the "existing job");
   - TEST CLIENT has one open project with a pending offer from TEST PRO.
-The logins are in the local file I will name. They are not committed.
+The logins are in ~/bama-test-logins.txt (outside the project, never committed).
 
 19. TEST PRO, web: sign in and open the notice board (dashboard).
     See: a red box at the top, "You have an overdue fee"
@@ -182,7 +183,10 @@ AFTERWARDS
 ----------
 Tell me "done". I will then:
   - turn the switch OFF;
-  - delete the Part B accounts and data with the sweep script;
+  - delete the Part B accounts and data with the sweep script, reading the
+    stamp and uids from the logins file:
+      node scripts/probe-fee-overdue-sweep-prod.mjs --logins ~/bama-test-logins.txt
+  - then delete ~/bama-test-logins.txt itself;
   - list any real (non-test) fee that got an overdueAt while the switch was ON,
     for your decision;
   - show the proof.
