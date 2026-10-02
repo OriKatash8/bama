@@ -59,7 +59,7 @@ import {
 } from 'firebase/firestore';
 import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronLeft, ChevronRight, Users, UserMinus, Search } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -1407,9 +1407,6 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // One switch for "this conversation is closed to new messages".
   const isReadOnly = chatReadOnly || projectCompleted;
-  // The header mirrors in Hebrew — and in a community in English too (asked
-  // for): back and the picture on the right, search on the left.
-  const headerFlip = rtl || chatType === 'community';
   const endNotice = endDateNotice({
     endDate: projectEndDate, status: projectStatus, hasHires: projectHasHires, now: noticeNow,
   });
@@ -1724,9 +1721,9 @@ export function ChatRoomScreen({ chatId }: Props) {
     >
       {/* Header */}
       {/* Back, the chat's picture beside it, then the name — like WhatsApp,
-          mirrored in Hebrew so there the back button sits at the right edge.
-          A community is mirrored in English too (headerFlip). */}
-      <View style={[styles.header, { flexDirection: headerFlip ? 'row-reverse' : 'row', backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
+          laid out from the right in BOTH languages (asked for): back and the
+          picture at the right edge, search at the left. */}
+      <View style={[styles.header, { flexDirection: 'row-reverse', backgroundColor: '#ffffff', borderBottomColor: colors.border, paddingTop: TOP_INSET + 8 }]}>
         {/* dismissTo, not push: the list is already underneath us, and pushing
             a second copy on top of it left this room mounted, played the
             forward animation, and held the app header and the tab bar back
@@ -1734,7 +1731,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             back to navigating there for a chat opened cold from a
             notification. */}
         <TouchableOpacity onPress={() => router.dismissTo(`/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/chats${chatType === 'community' ? '?tab=communities' : ''}`)} style={styles.headerBack} activeOpacity={0.7}>
-          {headerFlip ? <ChevronRight size={30} color={modeAccent} strokeWidth={2.2} /> : <ChevronLeft size={30} color={modeAccent} strokeWidth={2.2} />}
+          <ChevronRight size={30} color={modeAccent} strokeWidth={2.2} />
         </TouchableOpacity>
         {/* The chat's picture, right beside the back button. */}
         <View style={styles.headerRight}>
@@ -1761,17 +1758,17 @@ export function ChatRoomScreen({ chatId }: Props) {
           })()}
         </View>
         {/* The name, next to the picture, reading from the start side. */}
-        <View style={[styles.headerCenter, { alignItems: headerFlip ? 'flex-end' : 'flex-start' }]}>
+        <View style={[styles.headerCenter, { alignItems: 'flex-end' }]}>
           {chatType === 'group' && chatProjectId ? (
             <TouchableOpacity
               style={styles.headerNameTouchable}
               onPress={() => router.push(`/${chatGroup}/chat/project-details?projectId=${chatProjectId}&chatId=${chatId}`)}
               activeOpacity={0.8}
             >
-              <AppText weight="bold" style={[styles.headerName, { textAlign: headerFlip ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={[styles.headerName, { textAlign: 'right' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
-              <AppText style={[chatStyles.headerHint, { textAlign: headerFlip ? 'right' : 'left' }]}>{t('chats.click_for_project_info')}</AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: 'right' }]}>{t('chats.click_for_project_info')}</AppText>
             </TouchableOpacity>
           ) : chatType === 'purchase' && purchaseListing ? (
             <TouchableOpacity
@@ -1779,10 +1776,10 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => setShowPurchaseNotice(true)}
               activeOpacity={0.8}
             >
-              <AppText weight="bold" style={[styles.headerName, { textAlign: headerFlip ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={[styles.headerName, { textAlign: 'right' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
-              <AppText style={[chatStyles.headerHint, { textAlign: headerFlip ? 'right' : 'left' }]}>{t('chats.purchase_info_hint')}</AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: 'right' }]}>{t('chats.purchase_info_hint')}</AppText>
             </TouchableOpacity>
           ) : chatType === 'community' ? (
             <TouchableOpacity
@@ -1790,10 +1787,10 @@ export function ChatRoomScreen({ chatId }: Props) {
               onPress={() => router.push(`/${chatGroup}/chat/community-details?chatId=${chatId}`)}
               activeOpacity={0.8}
             >
-              <AppText weight="bold" style={[styles.headerName, { textAlign: headerFlip ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={[styles.headerName, { textAlign: 'right' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
-              <AppText style={[chatStyles.headerHint, { textAlign: headerFlip ? 'right' : 'left' }]}>{t('chats.click_for_community_info')}</AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: 'right' }]}>{t('chats.click_for_community_info')}</AppText>
             </TouchableOpacity>
           ) : chatType === 'dm' && dmOtherUserId && dmOtherUserId !== SYSTEM_USER_ID ? (
             <TouchableOpacity
@@ -1803,20 +1800,19 @@ export function ChatRoomScreen({ chatId }: Props) {
               accessibilityRole="button"
               accessibilityLabel={t('chats.click_for_profile')}
             >
-              <AppText weight="bold" style={[styles.headerName, { textAlign: headerFlip ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+              <AppText weight="bold" style={[styles.headerName, { textAlign: 'right' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
                 {chatName}
               </AppText>
-              <AppText style={[chatStyles.headerHint, { textAlign: headerFlip ? 'right' : 'left' }]}>{t('chats.click_for_profile')}</AppText>
+              <AppText style={[chatStyles.headerHint, { textAlign: 'right' }]}>{t('chats.click_for_profile')}</AppText>
             </TouchableOpacity>
           ) : (
-            <AppText weight="bold" style={[styles.headerName, { textAlign: headerFlip ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
+            <AppText weight="bold" style={[styles.headerName, { textAlign: 'right' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>
               {chatName}
             </AppText>
           )}
         </View>
-        {/* Search this chat — the far end from back: left when the header is
-            mirrored, right otherwise. Opens a sheet over the room, not another
-            page. */}
+        {/* Search this chat — the far end from back, at the left edge. Opens a
+            sheet over the room, not another page. */}
         <TouchableOpacity
           testID="chat-search"
           onPress={() => setSearchOpen(true)}

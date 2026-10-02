@@ -3,14 +3,14 @@ import { join } from 'node:path';
 
 /**
  * The project details header puts its back button where the chat header does:
- * the right edge in Hebrew, the left in English — the row mirrors, the title
- * stays centred (the spacer on the far side balances the button).
+ * the right edge, in Hebrew AND in English (asked for). The title stays centred
+ * (the spacer on the far side balances the button).
  */
 const SRC = readFileSync(join(__dirname, '..', 'project-details.tsx'), 'utf8');
 const header = SRC.slice(SRC.indexOf('{/* Header — scrolls with content'), SRC.indexOf('{/* Removal banner'));
 
-it('mirrors with the language', () => {
-  expect(header).toMatch(/style=\{\[styles\.header, \{ flexDirection: rtl \? 'row-reverse' : 'row', marginHorizontal: -16, marginTop: -16 \}\]\}/);
+it('runs from the right in either language', () => {
+  expect(header).toMatch(/style=\{\[styles\.header, \{ flexDirection: 'row-reverse', marginHorizontal: -16, marginTop: -16 \}\]\}/);
 });
 
 it('the back button comes first in the row, the balancing spacer last', () => {
@@ -18,7 +18,8 @@ it('the back button comes first in the row, the balancing spacer last', () => {
   expect(header.indexOf('style={styles.headerCenter}')).toBeLessThan(header.indexOf('style={styles.headerRight}'));
 });
 
-it('the back arrow points outward, as an icon rather than a text glyph', () => {
-  expect(header).toMatch(/rtl \? <ChevronRight[^>]*\/> : <ChevronLeft[^>]*\/>/);
+it('the back arrow points outward (right), as an icon rather than a text glyph', () => {
+  expect(header).toMatch(/<ChevronRight size=\{28\}/);
+  expect(header).not.toMatch(/<ChevronLeft/);
   expect(header).not.toMatch(/\{'‹'\}/);
 });
