@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import {
   collection, onSnapshot, updateDoc, deleteDoc, doc,
   query, where, orderBy, Timestamp, arrayRemove, getDoc,
@@ -9,6 +9,8 @@ import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { createCommunityChat } from '@features/chat/services/chatService';
 import { useUiStore } from '@core/stores/uiStore';
+import { callFunction } from '@core/firebase/functions';
+import { confirmDialog } from '@utils/confirmDialog';
 import { HEEBO ,
   AdminPage,
   AdminText,
@@ -52,6 +54,9 @@ type Community = {
   status: 'active' | 'suspended';
 };
 
+/** Deletes a community with everything in it (functions/src/communities/adminDelete.ts). */
+const adminDeleteCommunity = callFunction<{ communityId: string }, { ok: boolean }>('adminDeleteCommunity');
+
 /** This page's strings live in `admin_communities`; the rest reuse existing blocks. */
 function usePageT() {
   const own = useScopedT('admin_communities');
@@ -86,6 +91,7 @@ export default function CommunitiesAdmin() {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
   const [expandedMembers, setExpandedMembers] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
   const [newOwnerInput, setNewOwnerInput] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -129,17 +135,23 @@ export default function CommunitiesAdmin() {
     showToast(k.ca('toast_rejected', { name: req.name }), 'success');
   }
 
+  /** Deletes the community and everything in it (server-side), after a confirm.
+   *  confirmDialog, not Alert.alert — the latter no-ops on web, where admin runs. */
   async function handleDelete(id: string) {
-    Alert.alert(tp('delete_title'), k.proj('delete_confirm_body'), [
-      { text: k.common('cancel'), style: 'cancel' },
-      {
-        text: k.proj('delete_confirm_ok'), style: 'destructive',
-        onPress: async () => {
-          await deleteDoc(doc(db, 'chats', id));
-          showToast(tp('toast_deleted'), 'success');
-        },
-      },
-    ]);
+    if (deleting[id]) return;
+    const ok = await confirmDialog(tp('delete_title'), k.proj('delete_confirm_body'), {
+      confirm: k.proj('delete_confirm_ok'), cancel: k.common('cancel'),
+    });
+    if (!ok) return;
+    setDeleting((d) => ({ ...d, [id]: true }));
+    try {
+      await adminDeleteCommunity({ communityId: id });
+      showToast(tp('toast_deleted'), 'success');
+    } catch {
+      showToast(tp('delete_failed'), 'error');
+    } finally {
+      setDeleting((d) => ({ ...d, [id]: false }));
+    }
   }
 
   async function handleToggleSuspend(c: Community) {
@@ -331,7 +343,7 @@ export default function CommunitiesAdmin() {
                       onPress={() => handleToggleSuspend(c)}
                       testID={`suspend-${c.id}`}
                     />
-                    <PillButton variant="danger" label={k.proj('delete_confirm_ok')} onPress={() => handleDelete(c.id)} testID={`delete-${c.id}`} />
+                    <PillButton variant="danger" label={k.proj('delete_confirm_ok')} onPress={() => void handleDelete(c.id)} disabled={!!deleting[c.id]} testID={`delete-${c.id}`} />
                   </View>
 
                   {open && (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, StyleSheet, Modal, Pressable,
-  Switch, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
+  Switch, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, deleteField, doc,
@@ -18,6 +18,7 @@ import {
 import { useAuthStore } from '@core/stores/authStore';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { useUiStore } from '@core/stores/uiStore';
+import { confirmDialog } from '@utils/confirmDialog';
 import {
   AdminPage, AdminText, Card, CardHead, Chip, CountBadge, EmptyState, IconTile, PillButton,
   StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
@@ -200,17 +201,16 @@ export default function CoursesAdmin() {
     setSaving(false);
   }
 
+  /** confirmDialog, not Alert.alert — the latter no-ops on web, where admin runs. */
   async function handleDelete(id: string) {
-    Alert.alert(tc('delete_title'), tc('delete_body'), [
-      { text: tc('cancel'), style: 'cancel' },
-      {
-        text: tc('delete'), style: 'destructive',
-        onPress: async () => {
-          await deleteDoc(doc(db, 'courses', id));
-          showToast(tc('deleted'), 'success');
-        },
-      },
-    ]);
+    const ok = await confirmDialog(tc('delete_title'), tc('delete_body'), { confirm: tc('delete'), cancel: tc('cancel') });
+    if (!ok) return;
+    try {
+      await deleteDoc(doc(db, 'courses', id));
+      showToast(tc('deleted'), 'success');
+    } catch {
+      showToast(tc('delete_failed'), 'error');
+    }
   }
 
   async function handleVideoUpload() {

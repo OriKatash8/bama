@@ -583,6 +583,7 @@
     "delete_title": "Delete community?",
     "toast_approved": "Community approved",
     "toast_deleted": "Community deleted",
+    "delete_failed": "Couldn't delete the community",
     "toast_suspended": "Community suspended",
     "toast_activated": "Community active again",
     "toast_owner": "Owner updated"
@@ -606,6 +607,7 @@
     "created": "Course created",
     "save_failed": "Failed to save course",
     "deleted": "Course deleted",
+    "delete_failed": "Couldn't delete the course",
     "delete_title": "Delete Course",
     "delete_body": "Are you sure?",
     "delete": "Delete",

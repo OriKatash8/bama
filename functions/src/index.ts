@@ -29,3 +29,4 @@ export * from './lifecycle/disputeResolution';
 // Community invites (europe-west1). resolveCommunityInvite is exported but NOT
 // deployed until the web landing task; deploy the others by name.
 export * from './communities/invites';
+export * from './communities/adminDelete';

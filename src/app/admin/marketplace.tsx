@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Pencil, ShoppingBag, Trash2 } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
 import { useUiStore } from '@core/stores/uiStore';
+import { confirmDialog } from '@utils/confirmDialog';
 import { deleteListing } from '@features/marketplace/services/marketplaceService';
 import { PostListingSheet } from '@features/marketplace/components/PostListingSheet';
 import type { MarketplaceListing, ListingStatus } from '@features/marketplace/types';
@@ -76,25 +77,21 @@ export default function MarketplaceAdmin() {
     else router.replace('/admin/operations');
   }
 
-  function confirmDelete(listing: MarketplaceListing) {
-    Alert.alert(t('delete_confirm_title'), `“${listing.productName}”\n${t('delete_confirm_body')}`, [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('delete_listing'),
-        style: 'destructive',
-        onPress: async () => {
-          setDeleting((prev) => ({ ...prev, [listing.id]: true }));
-          try {
-            await deleteListing(listing.id, listing.imageUrl);
-            showToast(t('listing_deleted'), 'success');
-          } catch {
-            showToast(t('failed_delete'), 'error');
-          } finally {
-            setDeleting((prev) => ({ ...prev, [listing.id]: false }));
-          }
-        },
-      },
-    ]);
+  /** confirmDialog, not Alert.alert — the latter no-ops on web, where admin runs. */
+  async function confirmDelete(listing: MarketplaceListing) {
+    const ok = await confirmDialog(t('delete_confirm_title'), `“${listing.productName}”\n${t('delete_confirm_body')}`, {
+      confirm: t('delete_listing'), cancel: t('cancel'),
+    });
+    if (!ok) return;
+    setDeleting((prev) => ({ ...prev, [listing.id]: true }));
+    try {
+      await deleteListing(listing.id, listing.imageUrl);
+      showToast(t('listing_deleted'), 'success');
+    } catch {
+      showToast(t('failed_delete'), 'error');
+    } finally {
+      setDeleting((prev) => ({ ...prev, [listing.id]: false }));
+    }
   }
 
   // Rentals have their own section (only the admin adds them); the status
@@ -147,7 +144,7 @@ export default function MarketplaceAdmin() {
           </Pressable>
         )}
         <Pressable
-          onPress={() => confirmDelete(listing)}
+          onPress={() => void confirmDelete(listing)}
           disabled={busy}
           hitSlop={6}
           accessibilityRole="button"

@@ -35,6 +35,11 @@ jest.mock('@core/stores/authStore', () => ({
 }));
 jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
+const mockDeleteCommunity = jest.fn((_data: unknown) => Promise.resolve({ ok: true }));
+jest.mock('@core/firebase/functions', () => ({
+  callFunction: (name: string) => (data: unknown) =>
+    name === 'adminDeleteCommunity' ? mockDeleteCommunity(data) : Promise.reject(new Error(`unexpected ${name}`)),
+}));
 jest.mock('@features/chat/services/chatService', () => ({ createCommunityChat: jest.fn(() => Promise.resolve()) }));
 jest.mock('firebase/firestore', () => ({
   collection: jest.fn((_db, name: string) => name),
@@ -182,15 +187,33 @@ it('suspends / unsuspends, changes the owner and removes a member', async () => 
   expect(doc).toHaveBeenCalled();
 });
 
-it('deletes a community only after the destructive confirm', async () => {
+it('deletes a community only after the destructive confirm — on the server, with everything in it', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const r = await renderPage();
   fireEvent.press(r.getByTestId('delete-c2'));
-  expect(deleteDoc).not.toHaveBeenCalled();
-  const buttons = alert.mock.calls[0][2] as { style?: string; onPress?: () => Promise<void> }[];
+  expect(mockDeleteCommunity).not.toHaveBeenCalled();
+  const buttons = alert.mock.calls[0][2] as { style?: string; onPress?: () => void }[];
   expect(buttons.map((b) => b.style)).toEqual(['cancel', 'destructive']);
   await act(async () => {
-    await buttons[1].onPress?.();
+    buttons[1].onPress?.();
   });
-  expect(deleteDoc).toHaveBeenCalledWith('chats/c2');
+  expect(mockDeleteCommunity).toHaveBeenCalledWith({ communityId: 'c2' });
+  // Never a client delete: rules forbid it, and it would orphan the channels.
+  expect(deleteDoc).not.toHaveBeenCalled();
+  expect(mockToast).toHaveBeenCalledWith(en.admin_communities.toast_deleted, 'success');
+  alert.mockRestore();
+});
+
+it('cancelling the confirm deletes nothing; a refused delete says so', async () => {
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  const r = await renderPage();
+  fireEvent.press(r.getByTestId('delete-c2'));
+  await act(async () => { (alert.mock.calls[0][2] as { onPress?: () => void }[])[0].onPress?.(); });
+  expect(mockDeleteCommunity).not.toHaveBeenCalled();
+
+  mockDeleteCommunity.mockRejectedValueOnce(new Error('permission-denied'));
+  fireEvent.press(r.getByTestId('delete-c2'));
+  await act(async () => { (alert.mock.calls[1][2] as { onPress?: () => void }[])[1].onPress?.(); });
+  expect(mockToast).toHaveBeenCalledWith(en.admin_communities.delete_failed, 'error');
+  alert.mockRestore();
 });
