@@ -1157,6 +1157,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ─── cancellationLogHidden ───────────────────────────────────────
+    // The admin's "remove from the list" on the Money page's cancellation log.
+    // The log's sources are never touched — cancelled projects stay as they are
+    // and the purchase audit trail stays append-only; a mark here only hides the
+    // entry (doc id = the log entry id, e.g. "proj-<projectId>"). Admin only.
+    match /cancellationLogHidden/{entryId} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
+    }
+
     // ─── cancellations ──────────────────────────────────────────────
     // Append-only audit trail of purchase cancellations (project cancellations
     // are read live from `projects`). Written by the cancelling user; only

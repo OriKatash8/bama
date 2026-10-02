@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Ban, Banknote, ChevronLeft, ChevronRight, Info } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Ban, Banknote, ChevronLeft, ChevronRight, Info, Trash2 } from 'lucide-react-native';
 import { MoneyFlowChart } from '@components/charts/MoneyFlowChart';
+import { useUiStore } from '@core/stores/uiStore';
+import { confirmDialog } from '@utils/confirmDialog';
 import { useCancellationLog } from '@features/admin/useCancellationLog';
 import { periodBuckets, type Period } from '@features/admin/periodBuckets';
 import { useLargeEngagements, type LargeEngagement, type LargeFeeState } from '@features/admin/useLargeEngagements';
@@ -44,8 +46,52 @@ export default function MoneyAdmin() {
 
   const router = useRouter();
   const [period, setPeriod] = useState<Period>('daily');
-  const { entries: cancellations } = useCancellationLog();
+  const { entries: cancellations, hide: hideCancellation } = useCancellationLog();
   const large = useLargeEngagements();
+  const { showToast } = useUiStore();
+  const { t: tCommon } = useScopedT('common');
+  const [removing, setRemoving] = useState<Record<string, boolean>>({});
+
+  /** Removes a cancellation from the list (hidden only — the project / audit record is untouched). */
+  async function removeCancellation(id: string, title: string) {
+    const key = `c-${id}`;
+    if (removing[key]) return;
+    const ok = await confirmDialog(t('remove_cancellation'), t('remove_cancellation_confirm', { title: title || '—' }), {
+      confirm: tCommon('confirm'), cancel: tCommon('cancel'),
+    });
+    if (!ok) return;
+    setRemoving((b) => ({ ...b, [key]: true }));
+    try {
+      await hideCancellation(id);
+      showToast(t('cancellation_removed'), 'success');
+    } catch {
+      showToast(t('remove_failed'), 'error');
+    } finally {
+      setRemoving((b) => ({ ...b, [key]: false }));
+    }
+  }
+
+  /** They don't owe anymore: record the fee as paid, after a confirm. It then leaves the list. */
+  async function markPaid(row: LargeEngagement) {
+    const key = `${row.projectId}-${row.professionalId}`;
+    if (removing[key]) return;
+    // confirmDialog, not Alert.alert — the latter no-ops on web, where admin runs.
+    const ok = await confirmDialog(
+      t('mark_paid'),
+      t('mark_paid_confirm', { amount: shekels(row.outstanding), name: row.proName || '—', title: row.title || '—' }),
+      { confirm: tCommon('confirm'), cancel: tCommon('cancel') },
+    );
+    if (!ok) return;
+    setRemoving((b) => ({ ...b, [key]: true }));
+    try {
+      await large.markPaid(row);
+      showToast(t('marked_paid'), 'success');
+    } catch {
+      showToast(t('mark_paid_failed'), 'error');
+    } finally {
+      setRemoving((b) => ({ ...b, [key]: false }));
+    }
+  }
 
   const locale = rtl ? 'he-IL' : 'en-US';
   const Chevron = rtl ? ChevronLeft : ChevronRight;
@@ -128,7 +174,14 @@ export default function MoneyAdmin() {
         ) : large.rows.length === 0 ? (
           <EmptyState text={t('no_large', { amount: shekels(large.above) })} testID="large-empty" />
         ) : (
-          large.rows.map((r) => <LargeRow key={`${r.projectId}-${r.professionalId}`} row={r} />)
+          large.rows.map((r) => (
+            <LargeRow
+              key={`${r.projectId}-${r.professionalId}`}
+              row={r}
+              busy={!!removing[`${r.projectId}-${r.professionalId}`]}
+              onMarkPaid={() => void markPaid(r)}
+            />
+          ))
         )}
       </Card>
 
@@ -161,6 +214,12 @@ export default function MoneyAdmin() {
                 <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
                   {fmtDate(c.ts)}
                 </AdminText>
+                <TrashButton
+                  busy={!!removing[`c-${c.id}`]}
+                  onPress={() => void removeCancellation(c.id, c.title)}
+                  label={`${t('remove_cancellation')} · ${c.title || '—'}`}
+                  testID={`cancellation-remove-${c.id}`}
+                />
                 {chatId ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
               </Row>
             );
@@ -184,6 +243,30 @@ export default function MoneyAdmin() {
   );
 }
 
+/** The red bin that removes a row from its list; a spinner while it works. Same look as the admin lists' delete. */
+function TrashButton({ busy, onPress, label, testID }: { busy: boolean; onPress: () => void; label: string; testID: string }) {
+  const p = useAdminPalette();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={busy}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID={testID}
+      style={({ pressed }) => [styles.trashBtn, { backgroundColor: pressed ? p.bad : p.badBg }]}
+    >
+      {({ pressed }) =>
+        busy ? (
+          <ActivityIndicator size="small" color={p.bad} testID={`${testID}-busy`} />
+        ) : (
+          <Trash2 size={16} color={pressed ? p.onAccent : p.bad} strokeWidth={2.2} />
+        )
+      }
+    </Pressable>
+  );
+}
+
 const STATE_TONE: Record<LargeFeeState, 'warn' | 'good' | 'bad' | 'neutral'> = {
   pending: 'warn',
   paid: 'good',
@@ -192,8 +275,9 @@ const STATE_TONE: Record<LargeFeeState, 'warn' | 'good' | 'bad' | 'neutral'> = {
   exempt: 'neutral',
 };
 
-/** One large engagement: project · professional, the amount and the fee, where the fee stands. Opens the project chat. */
-function LargeRow({ row }: { row: LargeEngagement }) {
+/** One large engagement: project · professional, the amount and the fee, where the fee stands,
+ *  and a bin for when they don't owe anymore (records it paid). Opens the project chat. */
+function LargeRow({ row, busy, onMarkPaid }: { row: LargeEngagement; busy: boolean; onMarkPaid: () => void }) {
   const p = useAdminPalette();
   const router = useRouter();
   const { t, rtl, rowDir, textAlign } = useScopedT('admin_money');
@@ -230,6 +314,12 @@ function LargeRow({ row }: { row: LargeEngagement }) {
           {stateLabel}
         </AdminText>
       </View>
+      <TrashButton
+        busy={busy}
+        onPress={onMarkPaid}
+        label={`${t('mark_paid')} · ${row.title || '—'}`}
+        testID={`large-pay-${row.projectId}-${row.professionalId}`}
+      />
       {open ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
     </Row>
   );
@@ -241,6 +331,7 @@ const styles = StyleSheet.create({
   failed: { alignItems: 'center', gap: 10, paddingHorizontal: SPACE.rowPadH, paddingBottom: 16 },
   failedText: { flex: 1 },
   stateChip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
+  trashBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   note: { alignItems: 'flex-start', gap: 12, padding: SPACE.cardPad },
   noteText: { flex: 1, minWidth: 0, gap: 2 },
   noteBody: { fontSize: 13, lineHeight: 20 },

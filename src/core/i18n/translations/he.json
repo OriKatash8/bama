@@ -757,7 +757,15 @@
     "state_not_owed": "לא חייב",
     "state_exempt": "ללא עמלה",
     "in_progress": "בעבודה",
-    "finished": "הסתיים"
+    "finished": "הסתיים",
+    "mark_paid": "סימון כשולם",
+    "mark_paid_confirm": "לרשום את {{amount}} מ{{name}} ({{title}}) כשולם? הוא ייצא מהרשימה.",
+    "marked_paid": "נרשם כשולם",
+    "mark_paid_failed": "לא ניתן לרשום את התשלום",
+    "remove_cancellation": "הסרה מהרשימה",
+    "remove_cancellation_confirm": "להסיר את „{{title}}” מרשימת הביטולים? שום דבר אחר לא משתנה.",
+    "cancellation_removed": "הוסר מהרשימה",
+    "remove_failed": "לא ניתן להסיר"
   },
   "moderation": {
     "suspended_title": "החשבון הושעה",

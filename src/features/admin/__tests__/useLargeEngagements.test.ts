@@ -24,3 +24,13 @@ it('reports a failure, and a retry loads again', async () => {
   await act(async () => { await result.current.reload(); });
   expect(result.current.failed).toBe(false);
 });
+
+it('markPaid records the fee as paid with the Fees page action, then reloads', async () => {
+  mockCall.mockResolvedValue({ rows: [], above: 5000 });
+  const { result } = renderHook(() => useLargeEngagements());
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  mockCall.mockClear();
+  await act(async () => { await result.current.markPaid({ projectId: 'p1', professionalId: 'pro1' }); });
+  expect(mockCall).toHaveBeenNthCalledWith(1, 'markFeePaid', { projectId: 'p1', professionalId: 'pro1' });
+  expect(mockCall).toHaveBeenNthCalledWith(2, 'adminListLargeEngagements', {});
+});

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { where } from 'firebase/firestore';
-import { subscribeToCollection, getDocument } from '@core/firebase/firestore';
+import { subscribeToCollection, getDocument, setDocument } from '@core/firebase/firestore';
+import { serverTimestamp } from 'firebase/firestore';
 import type { ProjectRequest } from '@core/types/project';
 
 type Secondsish = { seconds?: number } | null | undefined;
@@ -36,12 +37,14 @@ function secondsOf(ts: Secondsish): number {
 /**
  * Admin cancellation log: cancelled projects (read live from `projects`, full
  * history) + cancelled purchases (from the `cancellations` audit collection,
- * written forward on cancel). Merged newest-first, capped at 20.
+ * written forward on cancel). Merged newest-first, capped at 20, without the
+ * entries the admin removed (cancellationLogHidden).
  */
 export function useCancellationLog() {
   const [projects, setProjects] = useState<CancelledProject[]>([]);
   const [purchases, setPurchases] = useState<PurchaseCancellation[]>([]);
   const [names, setNames] = useState<Record<string, string | null>>({});
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef<Set<string>>(new Set());
 
@@ -52,7 +55,11 @@ export function useCancellationLog() {
     const unsubC = subscribeToCollection<PurchaseCancellation>(
       'cancellations', (d) => setPurchases(d), where('type', '==', 'purchase'),
     );
-    return () => { unsubP(); unsubC(); };
+    // Entries the admin removed from the list (the sources stay untouched).
+    const unsubH = subscribeToCollection<{ id: string }>(
+      'cancellationLogHidden', (d) => setHidden(new Set(d.map((h) => h.id))),
+    );
+    return () => { unsubP(); unsubC(); unsubH(); };
   }, []);
 
   // Resolve each cancelled project's client id → display name (once each).
@@ -84,8 +91,13 @@ export function useCancellationLog() {
       actorName: c.actorName ?? null,
       ts: secondsOf(c.createdAt),
     }));
-    return [...proj, ...purch].sort((a, b) => b.ts - a.ts).slice(0, 20);
-  }, [projects, purchases, names]);
+    return [...proj, ...purch].filter((e) => !hidden.has(e.id)).sort((a, b) => b.ts - a.ts).slice(0, 20);
+  }, [projects, purchases, names, hidden]);
 
-  return { entries, loading };
+  /** Removes an entry from the list: an admin-only mark, nothing is deleted. */
+  const hide = useCallback(async (entryId: string) => {
+    await setDocument(`cancellationLogHidden/${entryId}`, { hiddenAt: serverTimestamp() });
+  }, []);
+
+  return { entries, loading, hide };
 }

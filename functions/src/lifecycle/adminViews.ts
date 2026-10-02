@@ -196,6 +196,9 @@ export const LARGE_ENGAGEMENT_ABOVE = 5000;
 
 type LargeFeeState = 'pending' | 'paid' | 'disputed' | 'not_owed' | 'exempt';
 
+/** The states the list keeps: money still to come in. */
+const FOLLOWED: LargeFeeState[] = ['pending', 'disputed'];
+
 /** Where a large engagement's fee stands, in the admin's terms. */
 function largeFeeState(fee: FeeDoc): LargeFeeState {
   if (fee.feeStatus !== 'owed') return 'exempt';
@@ -220,8 +223,8 @@ export type LargeEngagementRow = {
 };
 
 /**
- * Pure: the fee records whose professional's own amount is above the line,
- * biggest first. Kept apart from the callable so it is tested without Firestore.
+ * Pure: the fee records whose professional's own amount is above the line and
+ * whose fee is still to settle, biggest first. Kept apart from the callable so it is tested without Firestore.
  */
 export function largeEngagementRows(
   fees: { id: string; parentId: string | null; data: FeeDoc }[],
@@ -229,6 +232,9 @@ export function largeEngagementRows(
 ): LargeEngagementRow[] {
   return fees
     .filter(({ data }) => (data.baseAmount ?? 0) > above)
+    // Only what is still to settle: once paid (or voided, or never charged) the
+    // admin is done following it, so it leaves the list.
+    .filter(({ data }) => FOLLOWED.includes(largeFeeState(data)))
     .map(({ id, parentId, data }) => ({
       projectId: data.projectId ?? parentId ?? '',
       professionalId: data.professionalId ?? id,
@@ -243,8 +249,9 @@ export function largeEngagementRows(
 }
 
 /**
- * Engagements where a professional's own amount is above ₪5,000 — the big fees
- * the admin wants to keep an eye on, whatever their state. Same shape and
+ * Engagements where a professional's own amount is above ₪5,000 and the fee is
+ * still to settle — the big fees the admin follows until they are paid (the
+ * admin marks one paid with markFeePaid, and it leaves the list). Same shape and
  * reasoning as adminListArrears: fee records are server-read only.
  */
 export const adminListLargeEngagements = onCall(async (request) => {

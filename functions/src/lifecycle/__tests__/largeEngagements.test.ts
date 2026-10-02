@@ -31,14 +31,14 @@ it('computes the fee and what is still owed of it', () => {
   expect(part).toMatchObject({ fee: 300, outstanding: 200, feeState: 'pending' });
 });
 
-it('says where the fee stands: paid, disputed, not owed, exempt', () => {
-  const state = (over: Record<string, unknown>) => largeEngagementRows([fee('a', over)])[0].feeState;
-  expect(state({ feePaid: true })).toBe('paid');
-  expect(state({ status: 'paid' })).toBe('paid');
-  expect(state({ status: 'disputed' })).toBe('disputed');
-  expect(state({ status: 'not_owed' })).toBe('not_owed');
-  const exempt = largeEngagementRows([fee('a', { feeStatus: 'exempt' })])[0];
-  expect(exempt).toMatchObject({ feeState: 'exempt', fee: 0, outstanding: 0 });
+it('follows only fees still to settle: pending and disputed stay; paid, voided and exempt leave', () => {
+  const kept = (over: Record<string, unknown>) => largeEngagementRows([fee('a', over)]).map((r) => r.feeState);
+  expect(kept({})).toEqual(['pending']);
+  expect(kept({ status: 'disputed' })).toEqual(['disputed']);
+  expect(kept({ feePaid: true })).toEqual([]);
+  expect(kept({ status: 'paid' })).toEqual([]);
+  expect(kept({ status: 'not_owed' })).toEqual([]);
+  expect(kept({ feeStatus: 'exempt' })).toEqual([]);
 });
 
 it('prefers the denormalised projectId and the hire time', () => {

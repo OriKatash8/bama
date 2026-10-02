@@ -23,6 +23,10 @@ const listLarge = callFunction<Record<string, never>, { rows: LargeEngagement[];
   'adminListLargeEngagements',
 );
 
+const markFeePaid = callFunction<{ projectId: string; professionalId: string }, { ok: boolean; paid: number }>(
+  'markFeePaid',
+);
+
 /** Above this many shekels (the server's LARGE_ENGAGEMENT_ABOVE) until it answers. */
 export const LARGE_ABOVE_DEFAULT = 5000;
 
@@ -52,5 +56,15 @@ export function useLargeEngagements() {
 
   useEffect(() => { void load(); }, [load]);
 
-  return { rows, above, loading, failed, reload: load };
+  /** Records the fee as paid (the Fees page's own action), then reloads — a
+   *  settled fee leaves the list. Throws if the server refuses. */
+  const markPaid = useCallback(
+    async (row: Pick<LargeEngagement, 'projectId' | 'professionalId'>) => {
+      await markFeePaid({ projectId: row.projectId, professionalId: row.professionalId });
+      await load();
+    },
+    [load],
+  );
+
+  return { rows, above, loading, failed, reload: load, markPaid };
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { fireEvent, render, within } from '@testing-library/react-native';
+import { act, fireEvent, render, within } from '@testing-library/react-native';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import MoneyAdmin from '../money';
@@ -25,14 +25,20 @@ jest.mock('@core/stores/authStore', () => ({
 }));
 jest.mock('@features/admin/useCancellationLog', () => ({ useCancellationLog: jest.fn() }));
 jest.mock('@features/admin/useLargeEngagements', () => ({ useLargeEngagements: jest.fn() }));
+const mockToast = jest.fn();
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
+const mockConfirm = jest.fn();
+jest.mock('@utils/confirmDialog', () => ({ confirmDialog: (...a: unknown[]) => mockConfirm(...a) }));
 
 const E = en.admin_money;
 const H = he.admin_money;
 const log = useCancellationLog as jest.Mock;
+const mockHide = jest.fn();
 const large = useLargeEngagements as jest.Mock;
 const mockReload = jest.fn();
+const mockMarkPaid = jest.fn();
 const LARGE = (rows: unknown[], over: Record<string, unknown> = {}) =>
-  ({ rows, above: 5000, loading: false, failed: false, reload: mockReload, ...over });
+  ({ rows, above: 5000, loading: false, failed: false, reload: mockReload, markPaid: mockMarkPaid, ...over });
 const ROW = {
   projectId: 'p1', professionalId: 'pro1', proName: 'Rona', title: 'Wedding film', projectStatus: 'in_progress',
   chatId: 'chat-p1', baseAmount: 12000, fee: 360, outstanding: 360, feeState: 'pending', active: true, hiredAt: null,
@@ -48,7 +54,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
   mockLang = 'en';
-  log.mockReturnValue({ entries: [] });
+  log.mockReturnValue({ entries: [], hide: mockHide });
   large.mockReturnValue(LARGE([]));
 });
 afterEach(() => jest.useRealTimers());
@@ -101,7 +107,7 @@ it('says so when there are no cancellations', () => {
 });
 
 it('lists each cancellation with its kind, title and who cancelled it', () => {
-  log.mockReturnValue({ entries: ENTRIES });
+  log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
   const r = render(<MoneyAdmin />);
   expect(r.queryByTestId('cancellations-empty')).toBeNull();
   const first = within(r.getByTestId('cancellation-c1'));
@@ -114,7 +120,7 @@ it('lists each cancellation with its kind, title and who cancelled it', () => {
 });
 
 it("tapping a cancelled project opens its chat; rows without a chat aren't buttons", () => {
-  log.mockReturnValue({ entries: ENTRIES });
+  log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
   const r = render(<MoneyAdmin />);
   expect(r.getByTestId('cancellation-c1').props.accessibilityRole).toBe('button');
   fireEvent.press(r.getByTestId('cancellation-c1'));
@@ -135,7 +141,7 @@ it('keeps the coming-soon note', () => {
 
 it('mirrors in Hebrew: rows run right to left, text aligns right', () => {
   mockLang = 'he';
-  log.mockReturnValue({ entries: ENTRIES });
+  log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
   const r = render(<MoneyAdmin />);
   expect(StyleSheet.flatten(r.getByText(H.title).props.style).textAlign).toBe('right');
   expect(StyleSheet.flatten(r.getByText(H.coming_soon_title).props.style).textAlign).toBe('right');
@@ -148,6 +154,34 @@ it('clears the floating tab bar at the bottom', () => {
   const r = render(<MoneyAdmin />);
   const scroll = r.UNSAFE_root.findAll((n) => n.props.contentContainerStyle !== undefined)[0];
   expect(StyleSheet.flatten(scroll.props.contentContainerStyle).paddingBottom).toBeGreaterThanOrEqual(80 + 24);
+});
+
+describe('removing a cancellation from the list (a bin; nothing else changes)', () => {
+  it('asks first, then hides that entry and says so', async () => {
+    log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
+    mockConfirm.mockResolvedValue(true);
+    mockHide.mockResolvedValue(undefined);
+    const r = render(<MoneyAdmin />);
+    await act(async () => { fireEvent.press(r.getByTestId('cancellation-remove-c1')); });
+    expect(mockConfirm).toHaveBeenCalledWith(E.remove_cancellation, E.remove_cancellation_confirm.replace('{{title}}', 'Kitchen remodel'), expect.any(Object));
+    expect(mockHide).toHaveBeenCalledWith('c1');
+    expect(mockToast).toHaveBeenCalledWith(E.cancellation_removed, 'success');
+    // The bin does not also open the project chat.
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('keeps it when the confirm is cancelled, and says so if it fails', async () => {
+    log.mockReturnValue({ entries: ENTRIES, hide: mockHide });
+    mockConfirm.mockResolvedValue(false);
+    let r = render(<MoneyAdmin />);
+    await act(async () => { fireEvent.press(r.getByTestId('cancellation-remove-c2')); });
+    expect(mockHide).not.toHaveBeenCalled();
+    mockConfirm.mockResolvedValue(true);
+    mockHide.mockRejectedValue(new Error('denied'));
+    r = render(<MoneyAdmin />);
+    await act(async () => { fireEvent.press(r.getByTestId('cancellation-remove-c2')); });
+    expect(mockToast).toHaveBeenCalledWith(E.remove_failed, 'error');
+  });
 });
 
 describe('large projects (a professional\'s amount above ₪5,000)', () => {
@@ -191,5 +225,49 @@ describe('large projects (a professional\'s amount above ₪5,000)', () => {
     expect(r.getByText(E.large_failed)).toBeTruthy();
     fireEvent.press(r.getByTestId('large-retry'));
     expect(mockReload).toHaveBeenCalled();
+  });
+
+  describe("the bin — they don't owe anymore: records the fee paid", () => {
+    it('is a bin, not a text button', () => {
+      large.mockReturnValue(LARGE([ROW]));
+      const r = render(<MoneyAdmin />);
+      const bin = r.getByTestId('large-pay-p1-pro1');
+      expect(bin.props.accessibilityLabel).toBe(`${E.mark_paid} · Wedding film`);
+      expect(within(bin).queryByText(E.mark_paid)).toBeNull();
+    });
+
+    it('asks first, then records the fee as paid and says so', async () => {
+      large.mockReturnValue(LARGE([ROW]));
+      mockConfirm.mockResolvedValue(true);
+      mockMarkPaid.mockResolvedValue(undefined);
+      const r = render(<MoneyAdmin />);
+      await act(async () => { fireEvent.press(r.getByTestId('large-pay-p1-pro1')); });
+      expect(mockConfirm).toHaveBeenCalledWith(
+        E.mark_paid,
+        E.mark_paid_confirm.replace('{{amount}}', '₪360').replace('{{name}}', 'Rona').replace('{{title}}', 'Wedding film'),
+        expect.any(Object),
+      );
+      expect(mockMarkPaid).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'p1', professionalId: 'pro1' }));
+      expect(mockToast).toHaveBeenCalledWith(E.marked_paid, 'success');
+      // Pressing the button does not also open the chat.
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the confirm is cancelled', async () => {
+      large.mockReturnValue(LARGE([ROW]));
+      mockConfirm.mockResolvedValue(false);
+      const r = render(<MoneyAdmin />);
+      await act(async () => { fireEvent.press(r.getByTestId('large-pay-p1-pro1')); });
+      expect(mockMarkPaid).not.toHaveBeenCalled();
+    });
+
+    it('says so when the server refuses', async () => {
+      large.mockReturnValue(LARGE([ROW]));
+      mockConfirm.mockResolvedValue(true);
+      mockMarkPaid.mockRejectedValue(new Error('already-paid'));
+      const r = render(<MoneyAdmin />);
+      await act(async () => { fireEvent.press(r.getByTestId('large-pay-p1-pro1')); });
+      expect(mockToast).toHaveBeenCalledWith(E.mark_paid_failed, 'error');
+    });
   });
 });
