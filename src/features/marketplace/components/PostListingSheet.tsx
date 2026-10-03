@@ -50,7 +50,6 @@ const CATEGORIES: { id: string; labelKey: string }[] = [
   { id: 'drone',       labelKey: 'category_drone' },
   { id: 'studio',      labelKey: 'category_studio' },
   { id: 'accessories', labelKey: 'category_accessories' },
-  { id: 'other',       labelKey: 'category_other' },
 ];
 
 const CONDITIONS: { value: ProductCondition; color: string }[] = [
