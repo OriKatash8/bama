@@ -3,6 +3,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { getDocument, queryDocuments, where } from '@core/firebase/firestore';
 import type { ProjectRequest } from '@core/types/project';
 import { ReviewFlow, type ReviewProfessional } from './ReviewFlow';
+import { reviewableProIds } from '@features/reviews/utils/reviewTargets';
 
 type GateData = {
   projectId: string;
@@ -38,7 +39,8 @@ export function ReviewFlowGate() {
 
         const project = pending[0];
         const filledSlots = project.filledSlots ?? [];
-        const uniqueProfIds = [...new Set(filledSlots.map((s) => s.professionalId))];
+        // Only pros still on the project — a released one would be refused.
+        const uniqueProfIds = reviewableProIds(filledSlots, project.professionalIds);
         console.log('[ReviewFlowGate] uniqueProfIds:', uniqueProfIds);
         if (uniqueProfIds.length === 0) return;
 

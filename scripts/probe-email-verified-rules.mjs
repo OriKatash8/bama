@@ -95,7 +95,11 @@ const content = [
   ['marketplace listing', (uid) => addDoc(collection(db, 'marketplace_listings'), { posterId: uid, title: 'Lens', price: 100, status: 'active' })],
   ['new chat', (uid) => addDoc(collection(db, 'chats'), { type: 'dm', members: [uid, VERIFIED.uid], lastMessage: null })],
   ['chat message', (uid) => addDoc(collection(db, 'chats', CHAT, 'messages'), { senderId: uid, text: 'hello', timestamp: serverTimestamp(), readBy: [uid] })],
-  ['review', (uid) => addDoc(collection(db, 'reviews'), { reviewerId: uid, professionalId: 'someone-else', rating: 5, text: 'great' })],
+  // A review needs a completed project of the reviewer with the pro on it (rule-holes fix).
+  ['review', async (uid) => {
+    await adminDb.doc(`projects/probe-ev-rev-${uid}`).set({ clientId: uid, status: 'completed', professionalIds: ['someone-else'], crewSlots: [], filledSlots: [] });
+    return addDoc(collection(db, 'reviews'), { projectId: `probe-ev-rev-${uid}`, reviewerId: uid, professionalId: 'someone-else', rating: 5, text: 'great' });
+  }],
 ];
 const signUpWrites = [
   // NO `email` in this payload. The field is denied on users/{uid} — the doc is

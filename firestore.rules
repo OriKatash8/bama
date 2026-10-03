@@ -637,9 +637,31 @@ service cloud.firestore {
           );
       }
 
-      allow create: if isAuth() && verified() && (
-        request.resource.data.type != 'community' || isAdmin()
-      ) && dmNotBlocked()
+      // A client creates exactly two kinds of chat, both with themselves in it:
+      // a DM (chatService.getOrCreateDM) and a purchase chat with the listing's
+      // seller (createPurchaseChat). Before this, a chat could be created for
+      // anyone, without the creator, with any ownerId — which then unlocked the
+      // owner-only members change (2026-10-03 rule-holes report, hole 1).
+      // Communities are admin-created; group chats are server-only (hire.ts).
+      function purchaseSellerInMembers() {
+        let lid = request.resource.data.get('purchaseListingId', '');
+        let listing = /databases/$(database)/documents/marketplace_listings/$(lid);
+        return lid is string && lid != ''
+          && exists(listing)
+          && get(listing).data.posterId in request.resource.data.members;
+      }
+      function clientChatCreateOk() {
+        let d = request.resource.data;
+        return d.get('type', '') in ['dm', 'purchase']
+          && d.members is list
+          && d.members.size() == 2
+          && request.auth.uid in d.members
+          && !d.keys().hasAny(['ownerId', 'roles', 'readOnly', 'readOnlyReason', 'status', 'archived'])
+          && (d.type != 'purchase' || purchaseSellerInMembers());
+      }
+      allow create: if isAuth() && verified()
+        && (isAdmin() || clientChatCreateOk())
+        && dmNotBlocked()
         // Demo isolation: the creator and every member are on one side.
         && oneSide(request.resource.data.get('members', []));
       // ── Update guard ────────────────────────────────────────────────────
@@ -668,6 +690,15 @@ service cloud.firestore {
       // ownerId exists on communities only. On a dm/group/purchase doc this is
       // false, so the owner-only fields below are simply not client-writable
       // there — intended, not an oversight.
+      // The caller is the seller in this purchase chat: the poster of its listing.
+      function isPurchaseSeller() {
+        let lid = resource.data.get('purchaseListingId', '');
+        let listing = /databases/$(database)/documents/marketplace_listings/$(lid);
+        return resource.data.get('type', '') == 'purchase'
+          && lid is string && lid != ''
+          && exists(listing)
+          && get(listing).data.posterId == request.auth.uid;
+      }
       function isChatOwner() {
         return isAuth() && resource.data.get('ownerId', '') == request.auth.uid;
       }
@@ -744,7 +775,13 @@ service cloud.firestore {
         && (!touchedKeys().hasAny(['members']) || isSelfRemoval() || isChatOwner())
         // 4. Demo isolation: a members change leaves the chat on one side (an
         //    owner can never add someone from the other side).
-        && (!touchedKeys().hasAny(['members']) || oneSide(request.resource.data.members));
+        && (!touchedKeys().hasAny(['members']) || oneSide(request.resource.data.members))
+        // 5. Purchase agreement: each party sets only its OWN flag — the seller
+        //    (the listing's poster) sellerAgreed, the buyer buyerAgreed. acceptDeal
+        //    writes both as true, but the other one is already true then, so it
+        //    is not a change (hole 4 of the rule-holes report).
+        && (!touchedKeys().hasAny(['sellerAgreed']) || isPurchaseSeller())
+        && (!touchedKeys().hasAny(['buyerAgreed']) || !isPurchaseSeller());
 
       allow delete: if false;
 
@@ -957,6 +994,8 @@ service cloud.firestore {
       // (useProjectRequests, DirectProjectSheet). Unchecked, a client could create
       // one already 'in_progress' and skip the review gate the update rule holds.
       allow create: if isAuth() && verified() &&
+        // Only in your own name (rule-holes report, hole 2).
+        request.resource.data.get('clientId', '') == request.auth.uid &&
         request.resource.data.get('status', 'open') == 'open' &&
         request.resource.data.get('filledSlots', []) == [] &&
         !request.resource.data.keys().hasAny(
@@ -1159,6 +1198,18 @@ service cloud.firestore {
         || isAdmin();
     }
 
+    function purchaseChatAgreed(listingId) {
+      let cid = request.resource.data.get('purchaseChatId', '');
+      let chatPath = /databases/$(database)/documents/chats/$(cid);
+      return cid is string && cid != ''
+        && exists(chatPath)
+        && get(chatPath).data.get('type', '') == 'purchase'
+        && get(chatPath).data.get('purchaseListingId', '') == listingId
+        && request.auth.uid in get(chatPath).data.members
+        && resource.data.posterId in get(chatPath).data.members
+        && get(chatPath).data.get('sellerAgreed', false) == true;
+    }
+
     match /marketplace_listings/{listingId} {
       allow read: if isAuth();
       allow create: if isAuth() && verified() && request.resource.data.posterId == request.auth.uid
@@ -1191,6 +1242,10 @@ service cloud.firestore {
            request.resource.data.buyerId == request.auth.uid &&
            request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['status', 'buyerId', 'purchaseChatId']) &&
+           // Only through this listing's purchase chat, buyer and seller in it,
+           // after the SELLER agreed — get() reads it before this batch
+           // (rule-holes report, hole 4).
+           purchaseChatAgreed(listingId) &&
            // Demo isolation: the buyer is on the seller's side.
            oneSide([resource.data.posterId]))
         );
@@ -1247,10 +1302,24 @@ service cloud.firestore {
       // hole. Existing self-reviews are untouched: reviews are already immutable
       // to clients (`allow update, delete: if false`) and this constrains only
       // creation.
+      // A review needs a real engagement behind it (rule-holes report, hole 3):
+      // the reviewer's own project, completed, with the pro still on it. A
+      // legacy project without professionalIds is accepted on owner + status.
+      function reviewedEngagementOk() {
+        let pid = request.resource.data.get('projectId', '');
+        let projectPath = /databases/$(database)/documents/projects/$(pid);
+        return pid is string && pid != ''
+          && exists(projectPath)
+          && get(projectPath).data.clientId == request.auth.uid
+          && get(projectPath).data.get('status', '') == 'completed'
+          && (!('professionalIds' in get(projectPath).data)
+              || request.resource.data.professionalId in get(projectPath).data.professionalIds);
+      }
       allow create: if isAuth() && verified() &&
         request.resource.data.reviewerId == request.auth.uid &&
         request.resource.data.professionalId != request.auth.uid &&
         !request.resource.data.keys().hasAny(['published', 'visibleAt']) &&
+        reviewedEngagementOk() &&
         // Demo isolation: a review stays on the reviewer's side.
         oneSide([request.resource.data.professionalId]);
       allow update, delete: if false;  // reviews are immutable (Admin SDK bypasses)

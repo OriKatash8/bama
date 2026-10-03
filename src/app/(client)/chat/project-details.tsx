@@ -59,6 +59,7 @@ import { isValidUrl } from '@utils/validators';
 import { MiniCalendar, MiniTimePicker, RolePickerModal } from '@features/crew/components';
 import { categoryLabel } from '@features/crew/data/categories';
 import { ReviewFlow, type ReviewProfessional } from '@features/reviews/components/ReviewFlow';
+import { reviewableProIds } from '@features/reviews/utils/reviewTargets';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import {
@@ -525,11 +526,14 @@ export default function ProjectDetailsScreen() {
     // Mark complete and require reviews. `status`/`completedAt` are server-owned
     // — the callable computes feeDue and decides whether the slot stays occupied.
     // reviewsCompleted/reviewsPending stay client-owned (pure review-flow state).
-    const uniqueProfIds = [...new Set((project.filledSlots ?? []).map((s) => s.professionalId))];
-    console.log('[ReviewFlow] uniqueProfIds:', uniqueProfIds);
     setIsConfirming(true);
     try {
       await confirmCompletion({ projectId });
+      // Re-read: the snapshot taken when this screen opened can be stale (a pro
+      // released since). Only pros still on the project can be reviewed.
+      const fresh = (await getDocument<ProjectRequest>(`projects/${projectId}`)) ?? project;
+      const uniqueProfIds = reviewableProIds(fresh.filledSlots, fresh.professionalIds);
+      console.log('[ReviewFlow] uniqueProfIds:', uniqueProfIds);
       await updateDoc(doc(db, 'projects', projectId), {
         reviewsCompleted: false,
         reviewsPending: uniqueProfIds,
@@ -537,7 +541,7 @@ export default function ProjectDetailsScreen() {
       console.log('[ReviewFlow] completion confirmed — setting showReviewFlow=true');
       setProject((prev) =>
         prev
-          ? { ...prev, status: 'completed', reviewsCompleted: false, reviewsPending: uniqueProfIds }
+          ? { ...prev, ...fresh, id: prev.id, status: 'completed', reviewsCompleted: false, reviewsPending: uniqueProfIds }
           : prev,
       );
       setShowPaymentSummary(false);
@@ -1052,9 +1056,11 @@ export default function ProjectDetailsScreen() {
   };
 
   const filledSlots: FilledSlot[] = project.filledSlots ?? [];
+  // Only pros still on the project can be reviewed (firestore.rules, reviews create).
+  const reviewableIds = reviewableProIds(filledSlots, project.professionalIds);
 
   const reviewProfessionals: ReviewProfessional[] = Object.values(
-    filledSlots.reduce<Record<string, { professionalId: string; roles: string[] }>>(
+    filledSlots.filter((s) => reviewableIds.includes(s.professionalId)).reduce<Record<string, { professionalId: string; roles: string[] }>>(
       (acc, slot) => {
         const role = slot.category;
         const entry = acc[slot.professionalId];

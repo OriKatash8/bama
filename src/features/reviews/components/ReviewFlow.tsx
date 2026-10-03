@@ -13,8 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star, User as UserIcon } from 'lucide-react-native';
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { db } from '@core/firebase/config';
+import { submitReviews } from '@features/reviews/services/submitReviews';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
@@ -107,31 +106,17 @@ export function ReviewFlow({
 
     setIsSubmitting(true);
     try {
-      await Promise.all(
-        professionals.map((prof, i) => {
-          const d = drafts[i];
-          return addDoc(collection(db, 'reviews'), {
-            projectId,
-            professionalId: prof.id,
-            reviewerId: clientId,
-            authorId: clientId,
-            authorName: clientDisplayName,
-            rating: d.rating,
-            text: d.text,
-            body: d.text,
-            createdAt: serverTimestamp(),
-          });
-        }),
-      );
-      await updateDoc(doc(db, 'projects', projectId), {
-        reviewsCompleted: true,
-        reviewsPending: [],
+      // Each review on its own, then the project is always marked reviewed —
+      // see submitReviews for why one refusal must not block the rest.
+      await submitReviews({
+        projectId,
+        clientId,
+        clientDisplayName,
+        reviews: professionals.map((prof, i) => ({ professionalId: prof.id, rating: drafts[i].rating, text: drafts[i].text })),
       });
-      onComplete();
-    } catch {
-      onComplete();
     } finally {
       setIsSubmitting(false);
+      onComplete();
     }
   }
 

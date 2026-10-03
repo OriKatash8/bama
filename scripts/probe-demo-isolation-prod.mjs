@@ -152,9 +152,13 @@ await attempt('project retarget', true, () => updateDoc(doc(C.db, 'projects', di
 await attempt('price offer', true, () => priceOffer(P, directRef.id));
 await attempt('bundle offer (offers + bundle + backfill batch)', true, () => bundleOffer(P, directRef.id));
 await attempt('project application', true, () => application(P, directRef.id));
-await attempt('review', true, () => review(C, directRef.id, P.uid));
+// A review needs a completed project of the reviewer with the pro on it (as after confirmCompletion).
+const doneP = adb.doc(`projects/${STAMP}-done`); track(doneP);
+await doneP.set({ clientId: C.uid, title: `Probe ${STAMP}`, status: 'completed', professionalIds: [P.uid], filledSlots: [{ category: 'Editor', professionalId: P.uid }], crewSlots: [{ category: 'Editor', quantity: 1 }] });
+await attempt('review', true, () => review(C, doneP.id, P.uid));
 await attempt('listing create', true, async () => { listingRef = await listing(Q); });
 await attempt('purchase chat create', true, async () => { pchatRef = await purchaseChat(P, Q.uid, listingRef.id); });
+await attempt('seller agrees first (agreeToDeal: own flag)', true, () => updateDoc(doc(Q.db, 'chats', pchatRef.id), { sellerAgreed: true }));
 await attempt('listing reserve (acceptDeal by buyer)', true, () => reserve(P, listingRef.id, pchatRef.id));
 const cid = `${STAMP}-community`;
 await adb.doc(`chats/${cid}`).set({ type: 'community', name: `zzz probe ${STAMP}`, ownerId: C.uid, members: [C.uid], lastMessage: null, createdAt: FieldValue.serverTimestamp() });
@@ -203,7 +207,9 @@ if (STATE === 'present') {
   await attempt('price offer on demo project', false, () => priceOffer(P, demoOpen));
   await attempt('bundle offer on demo project', false, () => bundleOffer(P, demoOpen));
   await attempt('application to demo project', false, () => application(P, demoOpen));
-  await attempt('review a demo pro', false, () => review(C, directRef.id, D1));
+  const doneD = adb.doc(`projects/${STAMP}-done-demo`); track(doneD);
+  await doneD.set({ clientId: C.uid, title: `Probe ${STAMP}`, status: 'completed', professionalIds: [D1], filledSlots: [], crewSlots: [] });
+  await attempt('review a demo pro', false, () => review(C, doneD.id, D1));
   await attempt('join the demo community', false, () => joinRequest(P, DEMO_COMMUNITY_ID));
   // Demo by OWNER, with no communityIds entry (communityIsDemo): a throwaway community owned by test1.
   const unlisted = `${STAMP}-unlisted-demo-community`;
@@ -225,7 +231,9 @@ if (STATE === 'present') {
   await attempt('demo offers on a real project', false, () => priceOffer(D, directRef.id));
   await attempt('demo bundle on a real project', false, () => bundleOffer(D, directRef.id));
   await attempt('demo applies to a real project', false, () => application(D, directRef.id));
-  await attempt('demo reviews a real pro', false, () => review(D, directRef.id, P.uid));
+  const doneR = adb.doc(`projects/${STAMP}-done-real`); track(doneR);
+  await doneR.set({ clientId: D.uid, title: `Probe ${STAMP}`, status: 'completed', professionalIds: [P.uid], filledSlots: [], crewSlots: [] });
+  await attempt('demo reviews a real pro', false, () => review(D, doneR.id, P.uid));
   await attempt('demo joins a real community', false, () => joinRequest(D, cid));
   const l2 = await listing(Q);
   await attempt('demo purchase chat with a real seller', false, () => purchaseChat(D, Q.uid, l2.id));

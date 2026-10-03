@@ -271,9 +271,14 @@ const BAMA_FLOWS = {
   // a chat with an admin (neutral)
   dmWithAdmin: (a) => addDoc(collection(db, 'chats'), { type: 'dm', members: [a, ADMIN], lastMessage: null, createdAt: serverTimestamp() }),
   // a group chat with an admin and BAMA itself, created and then left (self-removal)
+  // (Clients can no longer create group chats — rule-holes fix — so the chat
+  // with an admin and BAMA is seeded, and the user leaves it.)
   chatWithAdminAndSystemCreateLeave: async (a) => {
-    const ref = await addDoc(collection(db, 'chats'), { type: 'group', name: 'x', members: [a, ADMIN, 'bama-system'], lastMessage: null, createdAt: serverTimestamp() });
-    await updateDoc(ref, { members: arrayRemove(a) });
+    const id = uniq('grp-admin');
+    await adb.doc(`chats/${id}`).set({ type: 'group', name: 'x', members: [a, ADMIN, 'bama-system'], lastMessage: null });
+    await updateDoc(doc(db, 'chats', id), { members: arrayRemove(a) });
+    const dm = await addDoc(collection(db, 'chats'), { type: 'dm', members: [a, ADMIN], lastMessage: null, createdAt: serverTimestamp() });
+    await updateDoc(dm, { members: arrayRemove(a) });
   },
   // leaving a community whose members include an admin and BAMA itself
   leaveCommunityWithAdmin: async (a) => {
@@ -315,7 +320,10 @@ async function runAll(state, present) {
       await setState(false);                         // seed under the old rules' world
       const s = f.seed ? await f.seed(a, b) : {};
       await setState(present);
-      await attempt(state, flow, a, b, expected, () => f.run(a, b, s));
+      // A project in someone else's name is refused for every pair since the
+      // rule-holes fix (clientId must be the caller).
+      const exp = flow === 'projectOwnedByOther' ? false : expected;
+      await attempt(state, flow, a, b, exp, () => f.run(a, b, s));
     }
   }
   // Open project with no target: the client alone.
