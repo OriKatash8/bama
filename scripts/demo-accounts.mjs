@@ -46,8 +46,8 @@ import {
 import { getAuth, connectAuthEmulator, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import {
-  ACCOUNTS, byKey, DEMO_UIDS, DEMO_COMMUNITY_ID, ROLE_SKILLS, LEGACY,
-  COMPLETED, ACTIVE, OPEN, DM, LISTINGS, COMMUNITY,
+  ACCOUNTS, byKey, DEMO_UIDS, ROLE_SKILLS, LEGACY,
+  COMPLETED, ACTIVE, OPEN, DM, LISTINGS,
 } from './lib/demoAccountsData.mjs';
 
 const PROJECT = 'bama-af0a0';
@@ -214,8 +214,6 @@ async function cleanup() {
     const sys = adb.doc(`chats/sys_${uid}`);
     if ((await sys.get()).exists && !chatIds.has(sys.id)) { chatIds.add(sys.id); await del(sys, 'chats', true); }
   }
-  const community = adb.doc(`chats/${DEMO_COMMUNITY_ID}`);
-  if ((await community.get()).exists && !chatIds.has(DEMO_COMMUNITY_ID)) await del(community, 'chats', true);
 
   for (const uid of DEMO_UIDS) {
     for (const field of ['reviewerId', 'professionalId']) {
@@ -391,33 +389,6 @@ async function seedListings() {
   say(`  listings: sale ${sale.id} (${s.by}), rental ${rental.id} (${r.by})`);
 }
 
-async function seedCommunity() {
-  // Communities are admin-created only (chatService.createCommunityChat shape).
-  const ref = adb.doc(`chats/${DEMO_COMMUNITY_ID}`);
-  const owner = byKey[COMMUNITY.owner].uid;
-  await ref.set({
-    type: 'community', name: COMMUNITY.name, description: COMMUNITY.description, ownerId: owner,
-    members: DEMO_UIDS, lastMessage: null, createdAt: FieldValue.serverTimestamp(),
-  });
-  for (const uid of DEMO_UIDS) {
-    await ref.collection('communityEvents').add({ type: 'join', userId: uid, at: FieldValue.serverTimestamp() });
-  }
-  // ChatRoomScreen creates General on first open; do it as the owner would.
-  const general = await addDoc(collection(sessions[COMMUNITY.owner].db, 'chats', DEMO_COMMUNITY_ID, 'channels'), {
-    name: 'כללי', kind: 'general', createdAt: serverTimestamp(), createdBy: owner, lastMessage: null,
-  });
-  for (const [k, text] of COMMUNITY.messages) {                              // ChatRoomScreen channel send, exactly
-    const { db, uid } = sessions[k];
-    await addDoc(collection(db, 'chats', DEMO_COMMUNITY_ID, 'channels', general.id, 'messages'), {
-      senderId: uid, text, timestamp: serverTimestamp(), readBy: [uid],
-    });
-    await updateDoc(doc(db, 'chats', DEMO_COMMUNITY_ID, 'channels', general.id), {
-      lastMessage: { text, senderId: uid, timestamp: serverTimestamp() },
-    });
-  }
-  say(`  community: ${COMMUNITY.name} — ${DEMO_COMMUNITY_ID}`);
-}
-
 // ── canary: a live function must already see the new config ─────────────────
 async function canary() {
   const email = `demo-canary-${Date.now()}@probe.invalid`;
@@ -499,6 +470,10 @@ async function verify(password) {
   const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); say(`  ${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`); };
   const cfg = (await cfgRef.get()).data();
   check('config/demoAccounts present with the 3 uids', !!cfg && DEMO_UIDS.every((u) => cfg.uids?.includes(u)));
+  for (const cid of cfg?.communityIds ?? []) {
+    const c = await adb.doc(`chats/${cid}`).get();
+    check(`demo community ${cid} exists and is owned by a demo account`, c.exists && c.get('type') === 'community' && DEMO_UIDS.includes(c.get('ownerId')), c.get('name') ?? '(missing)');
+  }
 
   for (const a of ACCOUNTS) {
     const u = await aauth.getUser(a.uid).catch(() => null);
@@ -534,8 +509,9 @@ async function verify(password) {
       const l = await getDocs(query(collection(db, 'marketplace_listings'), where('type', '==', type)));
       check(`${a.key}: ${type} listings load, demo one present`, l.docs.some((d) => DEMO_UIDS.includes(d.get('posterId'))));
     }
+    // Demo communities are made by hand in the app (none is seeded): report membership, don't require it.
     const communities = await getDocs(query(collection(db, 'chats'), where('type', '==', 'community'), where('members', 'array-contains', uid)));
-    check(`${a.key}: member of the demo community`, communities.docs.some((d) => d.id === DEMO_COMMUNITY_ID));
+    say(`  info: ${a.key} is in ${communities.docs.filter((d) => cfg?.communityIds?.includes(d.id)).map((d) => d.get('name')).join(', ') || 'no demo community'}`);
     const fees = await getDocs(query(collectionGroup(db, 'fees'), where('professionalId', '==', uid)));   // feesService.ts:66
     check(`${a.key}: own fees load`, fees.size >= 1, `${fees.size}`);
   }
@@ -592,9 +568,11 @@ try {
     say('2. cleanup'); const { skipped } = await cleanup();
     if (skipped.length) throw new Error('cleanup found demo data touching non-demo users — stopping for a human');
     const neutral = ['bama-system', ...(await adminUids())];
-    say(`3. config/demoAccounts — uids ${DEMO_UIDS.join(', ')}; neutral ${neutral.length} (bama-system + admins); community ${DEMO_COMMUNITY_ID}`);
+    const keptCommunities = (await cfgRef.get()).get('communityIds') ?? [];
+    say(`3. config/demoAccounts — uids ${DEMO_UIDS.join(', ')}; neutral ${neutral.length} (bama-system + admins); communityIds kept as they are (${keptCommunities.length})`);
     if (!COMMIT) { say('\nDry run: nothing written. Re-run with --commit.'); process.exit(0); }
-    await cfgRef.set({ uids: DEMO_UIDS, neutralUids: neutral, communityIds: [DEMO_COMMUNITY_ID], seededAt: FieldValue.serverTimestamp() });
+    // merge: communityIds (communities made by hand for the demo accounts) are left as they are.
+    await cfgRef.set({ uids: DEMO_UIDS, neutralUids: neutral, seededAt: FieldValue.serverTimestamp() }, { merge: true });
     say('4. canary'); await canary();
     say('5. accounts'); await createAccounts(password);
     for (const a of ACCOUNTS) await signIn(a.key, password);
@@ -604,7 +582,6 @@ try {
     say('8. open project'); await seedOpen();
     say('9. direct chat'); await seedDm();
     say('10. listings'); await seedListings();
-    say('11. community'); await seedCommunity();
     say('12. portfolio restore'); await restorePortfolio();
     await printFees();
     writeFileSync(join(OUT, `${STAMP}-setup.json`), JSON.stringify(record, null, 2));

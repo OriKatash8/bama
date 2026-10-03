@@ -94,7 +94,6 @@ export const ACCOUNTS = [
 
 export const byKey = Object.fromEntries(ACCOUNTS.map((a) => [a.key, a]));
 export const DEMO_UIDS = ACCOUNTS.map((a) => a.uid);
-export const DEMO_COMMUNITY_ID = 'demo-community-bama';
 
 /**
  * Completed projects: in each, the client hires the other two, both finish, the
@@ -154,9 +153,4 @@ export const LISTINGS = {
     by: 'test2', type: 'rental', productName: 'Godox AD600 Pro lighting kit', location: 'Jerusalem', price: 180,
     condition: null, category: 'lighting', subcategory: null, brand: 'Godox', storeName: 'test2 Rentals', productUrl: null, pricePeriod: 'day',
   },
-};
-
-export const COMMUNITY = {
-  name: 'BAMA Demo Community', description: 'A community for the BAMA demo accounts.', owner: 'test1',
-  messages: [['test1', 'Welcome to the demo community!'], ['test2', 'Thanks, glad to be here.'], ['test3', 'Hi everyone.']],
 };

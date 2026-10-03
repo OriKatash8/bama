@@ -29,7 +29,7 @@ import {
   serverTimestamp, arrayUnion, arrayRemove, increment, query, where, setLogLevel,
 } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator, signInWithEmailAndPassword } from 'firebase/auth';
-import { DEMO_UIDS, DEMO_COMMUNITY_ID, byKey } from './lib/demoAccountsData.mjs';
+import { DEMO_UIDS, byKey } from './lib/demoAccountsData.mjs';
 
 setLogLevel('silent');
 const PROJECT = 'bama-af0a0';
@@ -194,7 +194,8 @@ if (STATE === 'present') {
   const D1 = DEMO_UIDS[0];
   const demoOpen = (await adb.collection('projects').where('clientId', '==', D1).where('status', '==', 'open').limit(1).get()).docs[0]?.id;
   const demoSale = (await adb.collection('marketplace_listings').where('posterId', '==', D1).limit(1).get()).docs[0]?.id;
-  if (!demoOpen || !demoSale) throw new Error('demo open project / listing not found — run the seed first');
+  const DEMO_COMMUNITY_ID = (await adb.doc('config/demoAccounts').get()).get('communityIds')?.[0];
+  if (!demoOpen || !demoSale || !DEMO_COMMUNITY_ID) throw new Error('demo open project / listing / community not found — run the seed first');
   console.log('\nReal → demo — every write must be denied:');
   await attempt('DM to demo', false, () => dm(C, D1));
   await attempt('direct project targeting demo', false, () => directProject(C, D1));
