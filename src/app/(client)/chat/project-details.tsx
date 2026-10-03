@@ -65,7 +65,7 @@ import { listenToProjectFee } from '@features/pricing/services/feesService';
 import {
   canDispute, markEngagementComplete, canMarkComplete, contestEngagement,
 } from '@features/projects/services/completionService';
-import { contestWindowEndsAt } from '@features/projects/utils/completion';
+import { afterConfirmCompletion, contestWindowEndsAt } from '@features/projects/utils/completion';
 import { CompleteEngagementSheet } from '@features/projects/components/CompleteEngagementSheet';
 import {
   ContestEngagementSheet, type ContestReason,
@@ -512,9 +512,15 @@ export default function ProjectDetailsScreen() {
       setIsConfirming(true);
       try {
         await confirmCompletion({ projectId });
-        setProject((prev) => (prev ? { ...prev, status: 'completed' } : prev));
+        // The server decides: a disputed engagement keeps the project open.
+        const fresh = (await getDocument<ProjectRequest>(`projects/${projectId}`)) ?? project;
+        const next = afterConfirmCompletion(fresh.status, true);
+        setProject((prev) => (prev ? { ...prev, ...fresh, id: prev.id } : prev));
         setShowPaymentSummary(false);
-        showToast(t('project_details.success_complete'), 'success');
+        showToast(
+          t(next === 'disputed' ? 'project_details.completed_except_disputed' : 'project_details.success_complete'),
+          next === 'disputed' ? 'info' : 'success',
+        );
       } catch {
         showToast(t('project_details.error_complete'), 'error');
       } finally {
@@ -532,6 +538,14 @@ export default function ProjectDetailsScreen() {
       // Re-read: the snapshot taken when this screen opened can be stale (a pro
       // released since). Only pros still on the project can be reviewed.
       const fresh = (await getDocument<ProjectRequest>(`projects/${projectId}`)) ?? project;
+      // Still open (a disputed engagement): no review flow and nothing marked
+      // reviewed — reviews need a completed project, so they would all be refused.
+      if (afterConfirmCompletion(fresh.status, false) === 'disputed') {
+        setProject((prev) => (prev ? { ...prev, ...fresh, id: prev.id } : prev));
+        setShowPaymentSummary(false);
+        showToast(t('project_details.completed_except_disputed'), 'info');
+        return;
+      }
       const uniqueProfIds = reviewableProIds(fresh.filledSlots, fresh.professionalIds);
       console.log('[ReviewFlow] uniqueProfIds:', uniqueProfIds);
       await updateDoc(doc(db, 'projects', projectId), {
@@ -541,7 +555,7 @@ export default function ProjectDetailsScreen() {
       console.log('[ReviewFlow] completion confirmed — setting showReviewFlow=true');
       setProject((prev) =>
         prev
-          ? { ...prev, ...fresh, id: prev.id, status: 'completed', reviewsCompleted: false, reviewsPending: uniqueProfIds }
+          ? { ...prev, ...fresh, id: prev.id, reviewsCompleted: false, reviewsPending: uniqueProfIds }
           : prev,
       );
       setShowPaymentSummary(false);

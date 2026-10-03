@@ -279,6 +279,7 @@
     "project_not_found": "הפרויקט לא נמצא",
     "error_payment": "לא ניתן לטעון פרטי תשלום. נסה שוב.",
     "success_complete": "הפרויקט נסגר.",
+    "completed_except_disputed": "שאר אנשי המקצוע סומנו כהושלמו. התקשרות אחת נמצאת במחלוקת וממתינה להחלטה של BAMA.",
     "error_complete": "לא ניתן להשלים את הפרויקט. נסה שוב.",
     "error_payment_request": "לא ניתן לשלוח בקשת תשלום. נסה שוב.",
     "error_accept_reject": "לא ניתן {{action}} את הבקשה. נסה שוב.",

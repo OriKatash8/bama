@@ -6,6 +6,7 @@ import {
   type FeeDoc,
 } from './helpers';
 import { readConfig } from './config';
+import { confirmationCloses, TERMINAL_ENGAGEMENT } from './confirmPolicy';
 import { assertSameSide } from '../demo';
 import { applyDerivedProjectState } from './derive';
 import { releaseEngagement } from './removal';
@@ -111,7 +112,6 @@ export const requestCompletion = onCall(async (request) => {
  * amount rather than the project total.
  */
 /** Engagement states that are finished and must never be re-processed. */
-const TERMINAL_ENGAGEMENT = new Set(['completed', 'withdrawn', 'cancelled']);
 
 export async function confirmCompletionInternal(
   projectId: string,
@@ -164,9 +164,10 @@ export async function confirmCompletionInternal(
     const fee = feeMap.get(proId);
 
     // Already finished — by an earlier single-engagement confirmation, by a
-    // withdrawal, or with the project. Skip it entirely: do not recompute, do not
-    // re-stamp, do not charge.
-    if (fee && TERMINAL_ENGAGEMENT.has(fee.engagementStatus ?? '')) continue;
+    // withdrawal, or with the project — or DISPUTED, which an admin decides, not
+    // this confirmation. Skip it entirely: do not recompute, do not re-stamp, do
+    // not charge (confirmPolicy.ts).
+    if (fee && !confirmationCloses(fee.engagementStatus)) continue;
 
     // Missing doc = exempt (the permanent fallback for pre-model projects);
     // 'included' = a legacy subscription-covered hire. Either way nothing is due.

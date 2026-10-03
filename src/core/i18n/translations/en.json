@@ -279,6 +279,7 @@
     "project_not_found": "Project not found",
     "error_payment": "Could not load payment details. Please try again.",
     "success_complete": "Project closed.",
+    "completed_except_disputed": "The other professionals are marked complete. One engagement is in dispute and is waiting for BAMA's decision.",
     "error_complete": "Could not complete the project. Please try again.",
     "error_payment_request": "Could not send payment request. Please try again.",
     "error_accept_reject": "Could not {{action}} request. Please try again.",

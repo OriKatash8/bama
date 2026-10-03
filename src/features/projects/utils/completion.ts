@@ -70,3 +70,25 @@ export function canMarkComplete(
   const status = engagement.engagementStatus ?? 'hired';
   return status === 'hired' || status === 'end_requested_by_client';
 }
+
+/**
+ * What the client's screen does once "confirm completion" has returned, decided
+ * from the project as the SERVER now has it (re-read), never assumed.
+ *
+ * A disputed engagement is not closed by the confirmation (functions
+ * confirmPolicy.ts), so the project can stay open. Showing it as completed and
+ * opening the review flow then was wrong twice: the badge lied, and every review
+ * was refused (reviews need a completed project) while the project was still
+ * marked reviewed — losing those reviews for good.
+ *
+ *   'review'   — completed, not yet reviewed: open the review flow
+ *   'done'     — completed and already reviewed: just close
+ *   'disputed' — still open: the others are completed, one engagement awaits
+ *                BAMA's decision; no review flow, nothing marked reviewed
+ */
+export type AfterConfirm = 'review' | 'done' | 'disputed';
+
+export function afterConfirmCompletion(serverStatus: string | undefined, alreadyReviewed: boolean): AfterConfirm {
+  if (serverStatus !== 'completed') return 'disputed';
+  return alreadyReviewed ? 'done' : 'review';
+}
