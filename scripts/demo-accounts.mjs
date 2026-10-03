@@ -50,7 +50,7 @@ import { getAuth, connectAuthEmulator, signInWithEmailAndPassword } from 'fireba
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import {
   ACCOUNTS, byKey, DEMO_UIDS, ROLE_SKILLS, LEGACY,
-  COMPLETED, ACTIVE, OPEN, DM, LISTINGS,
+  COMPLETED, ACTIVE, OPEN, LISTINGS,
 } from './lib/demoAccountsData.mjs';
 
 const PROJECT = 'bama-af0a0';
@@ -442,16 +442,6 @@ async function seedOpen() {
   say(`  open: ${OPEN.title} — ${pid}, pending offers from ${OPEN.offers.map((o) => o.pro).join(', ')}`);
 }
 
-async function seedDm() {
-  const { db } = sessions[DM.a];
-  const ref = await addDoc(collection(db, 'chats'), {                       // chatService.getOrCreateDM
-    type: 'dm', members: [byKey[DM.a].uid, byKey[DM.b].uid], lastMessage: null, createdAt: serverTimestamp(),
-  });
-  for (const [k, text] of DM.messages) await sendMessage(k, ref.id, text);
-  record.chats.dm = ref.id;
-  say(`  dm: ${DM.a} ↔ ${DM.b} — ${ref.id}`);
-}
-
 async function seedListings() {
   const s = LISTINGS.sale;
   const sale = await addDoc(collection(sessions[s.by].db, 'marketplace_listings'), {  // useCreateListing, exactly
@@ -587,7 +577,12 @@ async function verify(password) {
     const chats = await getDocs(query(collection(db, 'chats'), where('members', 'array-contains', uid)));
     let msgs = 0;
     for (const c of chats.docs) msgs += (await getDocs(collection(db, 'chats', c.id, 'messages'))).size;
-    check(`${a.key}: chats and their messages load`, chats.size >= 3 && msgs > 0, `${chats.size} chats, ${msgs} messages`);
+    // Chat membership is managed by hand in the app (no seeded direct chat; members may leave):
+    // the app's queries must load under the rules; the count is reported, not required.
+    check(`${a.key}: chats and their messages load`, true, `${chats.size} chats, ${msgs} messages`);
+    if (chats.docs.some((c) => c.get('type') === 'dm' && (c.get('members') ?? []).every((m) => DEMO_UIDS.includes(m)))) {
+      check(`${a.key}: no direct chat between demo accounts`, false, 'a demo-only direct chat exists');
+    }
     for (const type of ['secondhand', 'rental']) {
       const l = await getDocs(query(collection(db, 'marketplace_listings'), where('type', '==', type)));
       check(`${a.key}: ${type} listings load, demo one present`, l.docs.some((d) => DEMO_UIDS.includes(d.get('posterId'))));
@@ -666,7 +661,6 @@ try {
     for (const def of COMPLETED) await seedCompleted(def);
     say('7. active project'); await seedActive();
     say('8. open project'); await seedOpen();
-    say('9. direct chat'); await seedDm();
     say('10. listings'); await seedListings();
     say('12. hand-made content restore'); await restoreContent();
     await printFees();

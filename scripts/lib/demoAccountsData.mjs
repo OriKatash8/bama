@@ -142,7 +142,7 @@ export const OPEN = {
   deadlineDays: 45,
 };
 
-export const DM = { a: 'test1', b: 'test2', messages: [['test1', 'Hi! Are you free for a shoot next week?'], ['test2', 'Yes, Tuesday and Thursday are open.'], ['test1', 'Great, I will send details.']] };
+// No direct chat between demo accounts (owner decision 2026-10-03).
 
 export const LISTINGS = {
   sale: {
