@@ -29,6 +29,11 @@ describe('sameSide / oneSide (mirror of firestore.rules oneSide)', () => {
     expect(communityOnSide(cfg, 'd1', 'rc')).toBe(false);
     expect(communityOnSide(cfg, 'adm', 'dc')).toBe(true);
   });
+  it('a community OWNED by a demo account is demo with no config entry', () => {
+    expect(communityOnSide(cfg, 'r1', 'unlisted', 'd2')).toBe(false);
+    expect(communityOnSide(cfg, 'd1', 'unlisted', 'd2')).toBe(true);
+    expect(communityOnSide(cfg, 'd1', 'unlisted', 'r9')).toBe(false);
+  });
 });
 
 /** Wiring: each guard is present, and before the thing it protects. */
@@ -86,7 +91,7 @@ describe('wiring', () => {
   it('getCommunityInvite refuses a community on the other side', () => {
     const c = src('communities/invites.ts');
     const fn = c.slice(c.indexOf('export const getCommunityInvite'));
-    const g = fn.indexOf('communityOnSide(await readDemoConfig(), uid, found.communityId)');
+    const g = fn.indexOf('communityOnSide(await readDemoConfig(), uid, found.communityId, found.community.ownerId as string | undefined)');
     expect(g).toBeGreaterThan(-1);
     expect(g).toBeLessThan(fn.indexOf('authedInviteBody('));
   });

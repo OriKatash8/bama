@@ -90,7 +90,7 @@ export function useCommunityDiscovery(userId: string | undefined) {
   // and offers "Open Chat" instead of "Request to Join".
   // Demo communities (App Review) only for demo accounts, and the reverse — demoSides.ts.
   const demo = useDemoStore((s) => s.config);
-  const discover = discoverCommunities.filter((c) => isCommunityOnSide(demo, userId, c.id));
+  const discover = discoverCommunities.filter((c) => isCommunityOnSide(demo, userId, c.id, c.ownerId));
 
   return { myCommunities, discover, joinStatuses, requestToJoin, cancelJoinRequest };
 }

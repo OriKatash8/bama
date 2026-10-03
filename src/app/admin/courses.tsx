@@ -16,6 +16,7 @@ import {
   type CourseDraft, type CourseLevel,
 } from '@features/courses/components/CourseFormFields';
 import { useUiStore } from '@core/stores/uiStore';
+import { useDemoStore } from '@core/stores/demoStore';
 import { confirmDialog } from '@utils/confirmDialog';
 import {
   AdminPage, AdminText, Card, CardHead, Chip, CountBadge, EmptyState, IconTile, PillButton,
@@ -37,6 +38,8 @@ type Course = {
   durationHours?: number;
   lessonsCount?: number;
   level?: string;
+  /** Approved from a demo account's request — shown to demo accounts only. */
+  demoOnly?: boolean;
 };
 
 /** The popup's values: the same fields as the pro's "Add your course", plus Published.
@@ -212,7 +215,10 @@ export default function CoursesAdmin() {
   }
 
   async function handleApprove(req: CourseRequest) {
+    // A demo account's course (App Review) is shown to demo accounts only.
+    const demoOnly = useDemoStore.getState().config.uids.includes(req.submittedBy);
     await addDoc(collection(db, 'courses'), {
+      ...(demoOnly ? { demoOnly: true } : {}),
       title: req.title,
       description: req.description,
       price: req.price,

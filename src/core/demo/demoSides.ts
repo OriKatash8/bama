@@ -45,8 +45,23 @@ export function isSameSide(cfg: DemoConfig, me: string | null | undefined, other
   return cfg.uids.includes(me) === cfg.uids.includes(other);
 }
 
-/** Whether a community belongs in `me`'s discovery list. */
-export function isCommunityOnSide(cfg: DemoConfig, me: string | null | undefined, communityId: string): boolean {
+/**
+ * Whether a course belongs in `me`'s courses tab: `demoOnly` courses (approved
+ * from a demo account's request) for demo accounts only, and the rest for
+ * everyone else. Admins and BAMA see all.
+ */
+export function isCourseOnSide(cfg: DemoConfig, me: string | null | undefined, demoOnly: boolean | undefined): boolean {
   if (!me || isNeutral(cfg, me)) return true;
-  return cfg.uids.includes(me) === cfg.communityIds.includes(communityId);
+  return cfg.uids.includes(me) === (demoOnly === true);
+}
+
+/** A demo community: owned by a demo account (automatic), or listed in communityIds. */
+export function isDemoCommunity(cfg: DemoConfig, communityId: string, ownerId?: string | null): boolean {
+  return cfg.communityIds.includes(communityId) || (!!ownerId && cfg.uids.includes(ownerId));
+}
+
+/** Whether a community belongs in `me`'s discovery list. */
+export function isCommunityOnSide(cfg: DemoConfig, me: string | null | undefined, communityId: string, ownerId?: string | null): boolean {
+  if (!me || isNeutral(cfg, me)) return true;
+  return cfg.uids.includes(me) === isDemoCommunity(cfg, communityId, ownerId);
 }

@@ -30,6 +30,9 @@ export default function ModeSelectScreen() {
   const mustConsent = useAuthStore((st) => needsConsent(st.user));
   // A brand-new account sets up its name / picture / phone first.
   const mustSetUp = useAuthStore((st) => needsProfileSetup(st.user));
+  // Signed out while here (e.g. the account was deleted elsewhere): to login.
+  const signedOut = useAuthStore((st) => !st.isLoading && st.user === null);
+  if (signedOut) return <Redirect href={'/(auth)' as never} />;
   if (mustConsent) return <Redirect href={'/(auth)/consent' as never} />;
   if (mustSetUp) return <Redirect href={'/(auth)/setup' as never} />;
 

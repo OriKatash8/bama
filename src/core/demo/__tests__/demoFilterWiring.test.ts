@@ -13,11 +13,13 @@ const CASES: [string, RegExp][] = [
   ['src/features/crew/hooks/useUnifiedSearch.ts', /results\.filter\(\(r\) => isSameSide\(demo, currentUserId, r\.user\.id\)\)/],
   ['src/features/noticeboard/hooks/useNoticeboard.ts', /isSameSide\(demo, currentUserId, r\.clientId\)/],
   ['src/features/marketplace/hooks/useMarketplaceListings.ts', /isSameSide\(demo, me, l\.posterId\)/],
-  ['src/features/chat/hooks/useCommunityDiscovery.ts', /discoverCommunities\.filter\(\(c\) => isCommunityOnSide\(demo, userId, c\.id\)\)/],
+  ['src/features/chat/hooks/useCommunityDiscovery.ts', /discoverCommunities\.filter\(\(c\) => isCommunityOnSide\(demo, userId, c\.id, c\.ownerId\)\)/],
   ['src/app/(client)/(tabs)/home/summary.tsx', /users\.filter\(\(u\) => onMySide\(useAuthStore\.getState\(\)\.user\?\.id, u\.id\)\)/],
   ['src/app/(client)/(tabs)/browse/profile/[userId].tsx', /if \(!user \|\| !profile \|\| !onMySide\) \{/],
   ['src/app/(professional)/(tabs)/browse/profile/[userId].tsx', /if \(!user \|\| !profile \|\| !onMySide\) \{/],
   ['src/features/admin/useRegistrationStats.ts', /!demoUids\.includes\(u\.id\)/],
+  ['src/app/(professional)/(tabs)/chats/index.tsx', /allCourses\.filter\(\(c\) => isCourseOnSide\(demoConfig, user\?\.id, c\.demoOnly\)\)/],
+  ['src/app/admin/courses.tsx', /const demoOnly = useDemoStore\.getState\(\)\.config\.uids\.includes\(req\.submittedBy\);[\s\S]{0,120}\.\.\.\(demoOnly \? \{ demoOnly: true \} : \{\}\)/],
   ['src/features/admin/dashboard/counts.ts', /where\(documentId\(\), 'not-in', demoUids\)/],
 ];
 

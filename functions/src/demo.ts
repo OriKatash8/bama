@@ -9,7 +9,8 @@ import { HttpsError } from 'firebase-functions/v2/https';
  * `config/demoAccounts` is written only by scripts/demo-accounts.mjs (Admin SDK):
  *   uids         the demo accounts
  *   neutralUids  admins (plus bama-system, always) — on neither side, so never refused
- *   communityIds communities that belong to the demo side
+ *   communityIds extra communities on the demo side; one OWNED by a demo account
+ *                is demo automatically (communityIsDemo)
  *
  * A missing doc means nobody is demo, and every check passes: production behaves
  * exactly as before until the doc is written.
@@ -67,10 +68,15 @@ export function sameSide(cfg: DemoConfig, a: string, b: string): boolean {
   return oneSide(cfg, [a, b]);
 }
 
+/** A demo community: owned by a demo account (automatic), or listed in communityIds. */
+export function communityIsDemo(cfg: DemoConfig, communityId: string, ownerId: string | null | undefined): boolean {
+  return cfg.communityIds.has(communityId) || (!!ownerId && cfg.uids.has(ownerId));
+}
+
 /** Whether `uid` may see a community: demo communities for demo users only, and the reverse. */
-export function communityOnSide(cfg: DemoConfig, uid: string, communityId: string): boolean {
+export function communityOnSide(cfg: DemoConfig, uid: string, communityId: string, ownerId?: string | null): boolean {
   if (isNeutral(cfg, uid)) return true;
-  return cfg.uids.has(uid) === cfg.communityIds.has(communityId);
+  return cfg.uids.has(uid) === communityIsDemo(cfg, communityId, ownerId);
 }
 
 /**

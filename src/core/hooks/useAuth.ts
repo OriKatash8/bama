@@ -10,6 +10,7 @@ import { useDemoStore } from '@core/stores/demoStore';
 import { parseDemoConfig } from '@core/demo/demoSides';
 import { onAuthChange, onTokenChange, signOut } from '@core/firebase/auth';
 import { needsEmailVerification } from '@features/auth/utils/emailVerification';
+import { accountGone } from '@features/auth/utils/accountGone';
 import { getDocument, updateDocument, setDocument, subscribeToDocument } from '@core/firebase/firestore';
 import { registerIfGranted } from '@core/notifications/registerForPushNotifications';
 import { handleForegroundNotification } from '@core/notifications/foregroundHandler';
@@ -82,9 +83,16 @@ export function useAuth() {
       }
       console.log('[useAuth] firebaseUser received at', Date.now(), 'uid:', firebaseUser.uid);
       setLoading(true);
+      // Asked of the server in parallel with the user doc: a session cached for
+      // an account deleted elsewhere is signed out here and lands on login.
+      const gone = accountGone(firebaseUser);
       try {
         console.log('[useAuth] calling getDocument at', Date.now());
         const userData = await getDocument<LegacyUserDoc>(`users/${firebaseUser.uid}`);
+        if (await gone) {
+          await signOut();
+          return;
+        }
         if (userData) {
           // Enforcement: a suspended user is signed out immediately and shown
           // the (appealable) reason; a warned user is let in but sees a notice.
@@ -148,6 +156,10 @@ export function useAuth() {
           setLoading(false);
         }
       } catch (e: any) {
+        if (await gone) {
+          await signOut();
+          return;
+        }
         console.error('[useAuth] getDocument failed at', Date.now());
         console.error('[useAuth] error.code:', e?.code);
         console.error('[useAuth] error.message:', e?.message);

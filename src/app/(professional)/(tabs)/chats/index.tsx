@@ -27,6 +27,8 @@ import { GradientBand } from '@components/ui/GradientBand';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
+import { useDemoStore } from '@core/stores/demoStore';
+import { isCourseOnSide } from '@core/demo/demoSides';
 import { useUiStore } from '@core/stores/uiStore';
 import { db } from '@core/firebase/config';
 import { setDocument } from '@core/firebase/firestore';
@@ -69,6 +71,8 @@ type Course = {
   durationHours?: number;
   lessonsCount?: number;
   level?: string;
+  /** Set when approved from a demo account's request — shown to demo accounts only. */
+  demoOnly?: boolean;
 };
 
 export default function ProfessionalChatsScreen() {
@@ -124,7 +128,13 @@ export default function ProfessionalChatsScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   // Courses state
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [allCourses, setCourses] = useState<Course[]>([]);
+  // Demo accounts (App Review) see demo courses only, and nobody else sees them — demoSides.ts.
+  const demoConfig = useDemoStore((s) => s.config);
+  const courses = useMemo(
+    () => allCourses.filter((c) => isCourseOnSide(demoConfig, user?.id, c.demoOnly)),
+    [allCourses, demoConfig, user?.id],
+  );
   const [submitCourseModal, setSubmitCourseModal] = useState(false);
   const [courseSearch, setCourseSearch] = useState('');
   const [courseCategory, setCourseCategory] = useState<string>('all');

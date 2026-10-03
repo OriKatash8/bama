@@ -144,7 +144,7 @@ export const getCommunityInvite = onCall({ region: REGION }, async (request) => 
   const found = await lookupInvite(request.data?.tokenOrCode);
   if (!found) return PUBLIC_MISS;
   // A demo community's invite is refused to real users, and a real one to demo users.
-  if (!communityOnSide(await readDemoConfig(), uid, found.communityId)) {
+  if (!communityOnSide(await readDemoConfig(), uid, found.communityId, found.community.ownerId as string | undefined)) {
     throw new HttpsError('failed-precondition', 'demo-isolation');
   }
   if (found.invite.revoked === true) {

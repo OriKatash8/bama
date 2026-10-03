@@ -71,15 +71,15 @@ const label = { [R1]: 'di-real1', [R2]: 'di-real2', [D1]: 'di-demo1', [D2]: 'di-
 
 let n = 0;
 const uniq = (p) => `${p}-${Date.now().toString(36)}-${++n}`;
-/** A community on B's side: listed in communityIds when B is demo. */
+/** Communities listed in communityIds. A demo-OWNED community is demo with no
+ *  listing (communityIsDemo), so the flows below never list theirs; only
+ *  joinListedCommunity uses this, for a community a neutral admin owns. */
 const demoCommunities = [];
-const communityFor = (owner) => {
-  const id = uniq(owner === D1 || owner === D2 ? 'demo-comm' : 'comm');
-  if (owner === D1 || owner === D2) demoCommunities.push(id);
-  return id;
-};
+const communityFor = (owner) => uniq(owner === D1 || owner === D2 ? 'demo-comm' : 'comm');
 
+let statePresent = false;
 async function setState(present) {
+  statePresent = present;
   if (present) {
     await adb.doc('config/demoAccounts').set({ uids: [D1, D2], neutralUids: [ADMIN], communityIds: demoCommunities });
   } else {
@@ -260,6 +260,14 @@ const BAMA_FLOWS = {
     await getDoc(doc(db, 'chats', `sys_${a}`));
     await getDocs(collection(db, 'chats', `sys_${a}`, 'messages'));
   },
+  // a community owned by a neutral admin, put on the demo side by communityIds
+  joinListedCommunity: async (a) => {
+    const id = uniq('listed-comm');
+    demoCommunities.push(id);
+    await adb.doc(`chats/${id}`).set({ type: 'community', name: 'C', ownerId: ADMIN, members: [ADMIN], lastMessage: null });
+    if (statePresent) await adb.doc('config/demoAccounts').set({ uids: [D1, D2], neutralUids: [ADMIN], communityIds: demoCommunities });
+    await setDoc(doc(db, 'chats', id, 'joinRequests', a), { userId: a, displayName: 'x', requestedAt: serverTimestamp(), status: 'pending' });
+  },
   // a chat with an admin (neutral)
   dmWithAdmin: (a) => addDoc(collection(db, 'chats'), { type: 'dm', members: [a, ADMIN], lastMessage: null, createdAt: serverTimestamp() }),
   // a group chat with an admin and BAMA itself, created and then left (self-removal)
@@ -319,10 +327,12 @@ async function runAll(state, present) {
     }));
   }
   // Talking to BAMA: always allowed, both sides, including reporting across sides.
+  // joinListedCommunity: with the config present, only the demo side may join.
   for (const [flow, f] of Object.entries(BAMA_FLOWS)) {
     for (const [a, b] of [[R1, D1], [D1, R1]]) {
       await setState(present);
-      await attempt(state, flow, a, b, true, () => f(a, b));
+      const expected = flow === 'joinListedCommunity' ? (!present || a === D1) : true;
+      await attempt(state, flow, a, b, expected, () => f(a, b));
     }
   }
 }

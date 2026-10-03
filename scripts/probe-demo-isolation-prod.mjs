@@ -205,6 +205,11 @@ if (STATE === 'present') {
   await attempt('application to demo project', false, () => application(P, demoOpen));
   await attempt('review a demo pro', false, () => review(C, directRef.id, D1));
   await attempt('join the demo community', false, () => joinRequest(P, DEMO_COMMUNITY_ID));
+  // Demo by OWNER, with no communityIds entry (communityIsDemo): a throwaway community owned by test1.
+  const unlisted = `${STAMP}-unlisted-demo-community`;
+  await adb.doc(`chats/${unlisted}`).set({ type: 'community', name: `zzz probe ${STAMP}`, ownerId: D1, members: [D1], lastMessage: null });
+  track(adb.doc(`chats/${unlisted}`));
+  await attempt('join a demo-OWNED community not in communityIds', false, () => joinRequest(P, unlisted));
   await attempt('purchase chat with demo seller', false, () => purchaseChat(P, D1, demoSale));
   const forged = adb.collection('chats').doc(); track(forged);
   await forged.set({ type: 'purchase', members: [P.uid, D1], purchaseListingId: demoSale, sellerAgreed: true, lastMessage: null });

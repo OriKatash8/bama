@@ -39,6 +39,17 @@ it('a verified account without a phone is sent to add one', () => {
   expect(gate()).toBe('/settings/phone?required=1');
 });
 
+it('signed out (loading done, no user) goes to login, before every other rung', () => {
+  useAuthStore.setState({ isLoading: false, user: null, needsEmailVerification: true });
+  mockNeedsPhone = true;
+  expect(gate()).toBe('/(auth)');
+});
+
+it('still loading with no user yet does not redirect', () => {
+  useAuthStore.setState({ isLoading: true, user: null });
+  expect(gate()).toBeNull();
+});
+
 it('while verification is unknown, it does not block', () => {
   expect(gate()).toBeNull();
 });

@@ -7,7 +7,8 @@
  *   DEMO_PASSWORD=… node scripts/demo-accounts.mjs setup [--commit] [--out DIR]
  *   node scripts/demo-accounts.mjs verify [--out DIR]               (read-only)
  *   node scripts/demo-accounts.mjs cleanup [--commit] [--purge]
- *   node scripts/demo-accounts.mjs snapshot-portfolio [--commit]
+ *   node scripts/demo-accounts.mjs snapshot-content [--commit]     (alias: snapshot-portfolio)
+ *   node scripts/demo-accounts.mjs restore-content --commit
  *
  * Without --commit nothing is written: the command prints what it would do.
  * Credentials: Application Default Credentials (gcloud auth application-default
@@ -24,11 +25,13 @@
  * `setup` prints them and stops; mark them paid in the admin screen, then run
  * `verify`, which checks they are all paid.
  *
- * PORTFOLIO. Uploaded by hand in the app. `snapshot-portfolio` copies it (docs
+ * HAND-MADE CONTENT. Portfolio, avatar, listings and their photos, and owned
+ * communities are added by hand in the app. `snapshot-content` copies them (docs
  * and Storage objects, download tokens included) to demoBackups/{uid} and
  * Storage demo-backup/{uid}/ — both Admin-only. `setup` snapshots before it
- * cleans up (never replacing a backup with an empty one) and restores after,
- * to the same paths under the same fixed uids, so every saved URL keeps working.
+ * cleans up (never replacing a backup with an empty one, never from a deleted
+ * account) and restores after, to the same paths and ids under the same fixed
+ * uids, so every saved URL keeps working.
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -119,46 +122,126 @@ async function adminUids() {
   return out;
 }
 
-// ── portfolio backup ────────────────────────────────────────────────────────
+// ── hand-made content backup ────────────────────────────────────────────────
+// Everything the owner adds to a demo account by hand in the app survives a
+// re-run of setup (whose cleanup deletes it) and a reviewer's account deletion:
+//   portfolio items, the avatar, marketplace listings and their photos, and the
+//   communities the account owns (channels, messages, join requests, stats,
+//   events, their images and chat media).
+// Firestore copies go to demoBackups/{uid}/…, Storage copies to
+// demo-backup/{uid}/<original path> — both Admin-only. Objects are copied with
+// their metadata, download tokens included, and restored to the same paths
+// under the same fixed uid, so every saved URL keeps working.
 const backupPrefix = (uid) => `demo-backup/${uid}/`;
 const livePrefixes = (uid) => [`portfolio/${uid}/`, `avatars/${uid}`, `users/${uid}/avatar/`];
+// setup creates these two listings itself; backing them up would duplicate them.
+const SEEDED_LISTINGS = [LISTINGS.sale, LISTINGS.rental].map((l) => `${byKey[l.by].uid}|${l.productName}`);
+const isSeededListing = (d) => SEEDED_LISTINGS.includes(`${d.get('posterId')}|${d.get('productName')}`);
+const pathOfUrl = (url) => { const m = String(url ?? '').match(/\/o\/([^?]+)/); return m ? decodeURIComponent(m[1]) : null; };
 
-async function snapshotPortfolio() {
-  for (const a of ACCOUNTS) {
-    const docs = (await adb.collection(`users/${a.uid}/portfolio`).get()).docs;
-    const files = [];
-    for (const p of livePrefixes(a.uid)) files.push(...(await bucket.getFiles({ prefix: p }))[0]);
-    const photoURL = (await adb.doc(`users/${a.uid}`).get()).get('photoURL') ?? null;
-    if (docs.length === 0 && files.length === 0) {
-      say(`  ${a.key}: nothing live — existing backup (if any) kept`);
-      continue;
-    }
-    say(`  ${a.key}: ${docs.length} portfolio docs, ${files.length} storage objects${COMMIT ? '' : ' (dry run)'}`);
-    if (!COMMIT) continue;
-    // Replace the old backup with this one.
-    await adb.recursiveDelete(adb.doc(`demoBackups/${a.uid}`));
-    await bucket.deleteFiles({ prefix: backupPrefix(a.uid) });
-    for (const f of files) await f.copy(bucket.file(backupPrefix(a.uid) + f.name)); // metadata (incl. download tokens) is copied
-    const batch = adb.batch();
-    for (const d of docs) batch.set(adb.doc(`demoBackups/${a.uid}/portfolio/${d.id}`), d.data());
-    batch.set(adb.doc(`demoBackups/${a.uid}`), { photoURL, count: docs.length, files: files.map((f) => f.name), snapshotAt: FieldValue.serverTimestamp() });
-    await batch.commit();
+/** Copy a document and everything under it (Admin SDK). */
+async function copyTree(src, dst) {
+  const s = await src.get();
+  if (s.exists) await dst.set(s.data());
+  for (const sub of await src.listCollections()) {
+    for (const ref of await sub.listDocuments()) await copyTree(ref, dst.collection(sub.id).doc(ref.id));
   }
 }
 
-async function restorePortfolio() {
+async function gatherContent(uid) {
+  const portfolio = (await adb.collection(`users/${uid}/portfolio`).get()).docs;
+  const listings = (await adb.collection('marketplace_listings').where('posterId', '==', uid).get()).docs.filter((d) => !isSeededListing(d));
+  const communities = (await adb.collection('chats').where('type', '==', 'community').where('ownerId', '==', uid).get()).docs;
+  const prefixes = [...livePrefixes(uid)];
+  for (const l of listings) prefixes.push(`marketplace/${l.id}/`);
+  for (const c of communities) prefixes.push(`chat-images/${c.id}/`, `chat-audio/${c.id}/`);
+  const files = new Map();
+  for (const p of prefixes) for (const f of (await bucket.getFiles({ prefix: p }))[0]) files.set(f.name, f);
+  // Images referenced by URL from elsewhere (community photos, a listing photo outside its folder).
+  for (const url of [...communities.map((c) => c.get('photoURL')), ...listings.map((l) => l.get('imageUrl'))]) {
+    const p = pathOfUrl(url);
+    if (p && !files.has(p)) { const f = bucket.file(p); if ((await f.exists())[0]) files.set(p, f); }
+  }
+  const user = await adb.doc(`users/${uid}`).get();
+  return { portfolio, listings, communities, files: [...files.values()], photoURL: user.get('photoURL') ?? null, userDeleted: !user.exists || user.get('deleted') === true };
+}
+
+/**
+ * `force`: the owner's explicit snapshot replaces the backup whenever anything
+ * is live. The automatic one in setup does not touch the backup of an account a
+ * reviewer has deleted (its content is then partly gone), and never replaces a
+ * backup with an empty one.
+ */
+async function snapshotContent({ force }) {
+  for (const a of ACCOUNTS) {
+    const c = await gatherContent(a.uid);
+    const total = c.portfolio.length + c.listings.length + c.communities.length + c.files.length;
+    const summary = `${c.portfolio.length} portfolio, ${c.listings.length} listings, ${c.communities.length} communities, ${c.files.length} files`;
+    if (total === 0) { say(`  ${a.key}: nothing live — existing backup (if any) kept`); continue; }
+    if (!force && c.userDeleted) { say(`  ${a.key}: account was deleted — existing backup kept (live: ${summary})`); continue; }
+    say(`  ${a.key}: ${summary}${COMMIT ? '' : ' (dry run)'}`);
+    if (!COMMIT) continue;
+    await adb.recursiveDelete(adb.doc(`demoBackups/${a.uid}`));
+    await bucket.deleteFiles({ prefix: backupPrefix(a.uid) });
+    for (const f of c.files) await f.copy(bucket.file(backupPrefix(a.uid) + f.name)); // metadata (incl. download tokens) is copied
+    for (const d of c.portfolio) await adb.doc(`demoBackups/${a.uid}/portfolio/${d.id}`).set(d.data());
+    for (const d of c.listings) await adb.doc(`demoBackups/${a.uid}/listings/${d.id}`).set(d.data());
+    for (const d of c.communities) await copyTree(d.ref, adb.doc(`demoBackups/${a.uid}/communities/${d.id}`));
+    await adb.doc(`demoBackups/${a.uid}`).set({
+      photoURL: c.photoURL, files: c.files.map((f) => f.name),
+      counts: { portfolio: c.portfolio.length, listings: c.listings.length, communities: c.communities.length, files: c.files.length },
+      snapshotAt: FieldValue.serverTimestamp(),
+    });
+  }
+}
+
+/**
+ * Put it all back. Restoring community messages fires onNewCommunityMessage
+ * (unread counts, member stats, a notification per demo member), so the chat
+ * and memberStats docs are written again from the backup once the triggers have
+ * run, and the notifications they created are deleted. The pushes themselves
+ * reach only devices signed in as a demo account.
+ */
+async function restoreContent() {
+  const started = Timestamp.now();
+  const restoredChats = [];
   for (const a of ACCOUNTS) {
     const meta = await adb.doc(`demoBackups/${a.uid}`).get();
     if (!meta.exists) { say(`  ${a.key}: no backup`); continue; }
     const [files] = await bucket.getFiles({ prefix: backupPrefix(a.uid) });
     for (const f of files) await f.copy(bucket.file(f.name.slice(backupPrefix(a.uid).length)));
-    const docs = (await adb.collection(`demoBackups/${a.uid}/portfolio`).get()).docs;
-    const batch = adb.batch();
-    for (const d of docs) batch.set(adb.doc(`users/${a.uid}/portfolio/${d.id}`), d.data());
-    if (meta.get('photoURL')) batch.update(adb.doc(`users/${a.uid}`), { photoURL: meta.get('photoURL') });
-    await batch.commit();
-    say(`  ${a.key}: restored ${docs.length} portfolio docs, ${files.length} storage objects`);
+    const portfolio = (await adb.collection(`demoBackups/${a.uid}/portfolio`).get()).docs;
+    for (const d of portfolio) await adb.doc(`users/${a.uid}/portfolio/${d.id}`).set(d.data());
+    const listings = (await adb.collection(`demoBackups/${a.uid}/listings`).get()).docs;
+    for (const d of listings) {
+      const data = d.data();
+      // A reservation's purchase chat is not restored: put the item back on the market.
+      if (data.purchaseChatId && !(await adb.doc(`chats/${data.purchaseChatId}`).get()).exists) {
+        delete data.purchaseChatId; delete data.buyerId; data.status = 'available';
+      }
+      await adb.doc(`marketplace_listings/${d.id}`).set(data);
+    }
+    const communities = await adb.collection(`demoBackups/${a.uid}/communities`).listDocuments();
+    for (const ref of communities) { await copyTree(ref, adb.doc(`chats/${ref.id}`)); restoredChats.push({ uid: a.uid, id: ref.id }); }
+    if (communities.length) await cfgRef.set({ communityIds: FieldValue.arrayUnion(...communities.map((r) => r.id)) }, { merge: true });
+    if (meta.get('photoURL') && (await adb.doc(`users/${a.uid}`).get()).exists) await adb.doc(`users/${a.uid}`).update({ photoURL: meta.get('photoURL') });
+    say(`  ${a.key}: restored ${portfolio.length} portfolio, ${listings.length} listings, ${communities.length} communities, ${files.length} files`);
   }
+  if (!restoredChats.length) return;
+  await sleep(20000); // let the message triggers finish
+  for (const { uid, id } of restoredChats) {
+    const src = adb.doc(`demoBackups/${uid}/communities/${id}`);
+    await adb.doc(`chats/${id}`).set((await src.get()).data());
+    const stats = await src.collection('memberStats').get();
+    for (const s of (await adb.collection(`chats/${id}/memberStats`).get()).docs) if (!stats.docs.some((b) => b.id === s.id)) await s.ref.delete();
+    for (const s of stats.docs) await adb.doc(`chats/${id}/memberStats/${s.id}`).set(s.data());
+  }
+  const ids = new Set(restoredChats.map((c) => c.id));
+  let removed = 0;
+  for (const n of (await adb.collection('notifications').where('createdAt', '>=', started).get()).docs) {
+    if (ids.has(n.get('data')?.chatId)) { await n.ref.delete(); removed++; }
+  }
+  say(`  restored-community side effects undone: chat docs and memberStats rewritten, ${removed} notifications removed`);
 }
 
 // ── cleanup ─────────────────────────────────────────────────────────────────
@@ -554,8 +637,11 @@ async function verify(password) {
 // ── main ────────────────────────────────────────────────────────────────────
 const password = process.env.DEMO_PASSWORD;
 try {
-  if (CMD === 'snapshot-portfolio') {
-    say('snapshot-portfolio'); await snapshotPortfolio();
+  if (CMD === 'snapshot-content' || CMD === 'snapshot-portfolio') {
+    say(`snapshot-content${COMMIT ? '' : ' (dry run)'}`); await snapshotContent({ force: true });
+  } else if (CMD === 'restore-content') {
+    if (!COMMIT) { say('restore-content writes to production: pass --commit'); process.exit(2); }
+    say('restore-content'); await restoreContent();
   } else if (CMD === 'cleanup') {
     say(`cleanup${COMMIT ? '' : ' (dry run)'}${PURGE ? ' --purge' : ''}`); await cleanup();
   } else if (CMD === 'verify') {
@@ -564,7 +650,7 @@ try {
   } else if (CMD === 'setup') {
     if (!password) throw new Error('DEMO_PASSWORD is required');
     say(`setup${COMMIT ? '' : ' (dry run)'} — project ${PROJECT}, terms ${TERMS_VERSION}`);
-    say('1. portfolio snapshot'); await snapshotPortfolio();
+    say('1. hand-made content snapshot'); await snapshotContent({ force: false });
     say('2. cleanup'); const { skipped } = await cleanup();
     if (skipped.length) throw new Error('cleanup found demo data touching non-demo users — stopping for a human');
     const neutral = ['bama-system', ...(await adminUids())];
@@ -582,7 +668,7 @@ try {
     say('8. open project'); await seedOpen();
     say('9. direct chat'); await seedDm();
     say('10. listings'); await seedListings();
-    say('12. portfolio restore'); await restorePortfolio();
+    say('12. hand-made content restore'); await restoreContent();
     await printFees();
     writeFileSync(join(OUT, `${STAMP}-setup.json`), JSON.stringify(record, null, 2));
     say('\nSTOPPED: mark the fees above paid in the admin screen, then run `verify`.');

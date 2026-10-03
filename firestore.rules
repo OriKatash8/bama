@@ -30,7 +30,8 @@ service cloud.firestore {
     // scripts/demo-accounts.mjs (Admin SDK; config is client-read-only):
     //   uids         the demo accounts
     //   neutralUids  admins — on neither side, so never refused
-    //   communityIds communities that belong to the demo side
+    //   communityIds extra communities on the demo side (a community OWNED by a
+    //                demo account is demo automatically — communityIsDemo)
     // bama-system is always neutral, and an admin CALLER is neutral by token.
     //
     // DOC ABSENT ⇒ demoSet() is empty ⇒ every check below is true: behaviour is
@@ -74,11 +75,18 @@ service cloud.firestore {
       let s = uids.toSet().union(callerSet()).difference(neutralSet());
       return s.intersection(demoSet()).size() == 0 || demoSet().hasAll(s);
     }
+    // A demo community: owned by a demo account (automatic — no config edit), or
+    // listed in communityIds (kept for communities owned by someone neutral).
+    function communityIsDemo(communityId) {
+      let chatPath = /databases/$(database)/documents/chats/$(communityId);
+      return communityId in demoCommunitySet()
+        || (exists(chatPath) && get(chatPath).data.get('ownerId', '') in demoSet());
+    }
     // A community is on the caller's side: demo communities for demo users only.
     function communityOnCallerSide(communityId) {
       return callerIsAdmin()
         || request.auth.uid in neutralSet()
-        || ((request.auth.uid in demoSet()) == (communityId in demoCommunitySet()));
+        || ((request.auth.uid in demoSet()) == communityIsDemo(communityId));
     }
 
     // ─── No contact details before hire (Terms §6.8) ────────────────

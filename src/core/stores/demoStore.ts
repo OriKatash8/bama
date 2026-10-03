@@ -24,6 +24,6 @@ export function onMySide(me: string | null | undefined, other: string | null | u
 }
 
 /** Whether a community belongs in `me`'s discovery list, by the current config. */
-export function communityOnMySide(me: string | null | undefined, communityId: string): boolean {
-  return isCommunityOnSide(useDemoStore.getState().config, me, communityId);
+export function communityOnMySide(me: string | null | undefined, communityId: string, ownerId?: string | null): boolean {
+  return isCommunityOnSide(useDemoStore.getState().config, me, communityId, ownerId);
 }
