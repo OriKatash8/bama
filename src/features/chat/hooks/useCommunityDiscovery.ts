@@ -4,6 +4,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import type { Chat } from '../types';
+import { useDemoStore } from '@core/stores/demoStore';
+import { isCommunityOnSide } from '@core/demo/demoSides';
 
 export type JoinStatus = 'pending' | 'approved' | 'rejected' | null;
 
@@ -86,7 +88,9 @@ export function useCommunityDiscovery(userId: string | undefined) {
 
   // Include joined communities in Explore too — the UI marks them as "Member"
   // and offers "Open Chat" instead of "Request to Join".
-  const discover = discoverCommunities;
+  // Demo communities (App Review) only for demo accounts, and the reverse — demoSides.ts.
+  const demo = useDemoStore((s) => s.config);
+  const discover = discoverCommunities.filter((c) => isCommunityOnSide(demo, userId, c.id));
 
   return { myCommunities, discover, joinStatuses, requestToJoin, cancelJoinRequest };
 }

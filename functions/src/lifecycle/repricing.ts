@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { assertSameSide } from '../demo';
 import { db, FieldValue, requireAuth, notify, feeRef, type FeeDoc } from './helpers';
 import { isOfferPriceValid } from '../pricing';
 import { isPendingReview } from './review';
@@ -70,6 +71,7 @@ export const createPaymentRequest = onCall(async (request) => {
     throw new HttpsError('failed-precondition', 'professional-not-on-project');
   }
   const toUserId = callerIsClient ? targetPro : project.clientId;
+  await assertSameSide(uid, toUserId);
 
   const bundleId = request.data?.bundleId as string | undefined;
   const category = request.data?.category as string | undefined;

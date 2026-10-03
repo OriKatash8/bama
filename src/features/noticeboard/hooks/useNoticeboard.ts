@@ -7,6 +7,8 @@ import {
   professionalMatchesProject,
   type RoleSkillEntry,
 } from '@features/noticeboard/matching';
+import { useDemoStore } from '@core/stores/demoStore';
+import { isSameSide } from '@core/demo/demoSides';
 
 export type PosterInfo = { displayName: string; photoURL: string | null };
 
@@ -119,7 +121,9 @@ export function useNoticeboard(
     );
   }, [roleSkillsKey, currentUserId]);
 
-  const visible = requests.filter((r) => !dismissed.has(r.id));
+  // Demo accounts (App Review) and real users never see each other's projects — demoSides.ts.
+  const demo = useDemoStore((s) => s.config);
+  const visible = requests.filter((r) => !dismissed.has(r.id) && isSameSide(demo, currentUserId, r.clientId));
 
   return { requests: visible, posters, isLoading, dismiss, undismiss };
 }

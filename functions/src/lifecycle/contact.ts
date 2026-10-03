@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, requireAuth, feeRef, type FeeDoc } from './helpers';
 import { canRevealPhone } from './contactPolicy';
+import { assertSameSide } from '../demo';
 
 /**
  * The phone number of the other side of a project, once the professional's part
@@ -22,6 +23,8 @@ export const getContactPhone = onCall(async (request) => {
   const project = (await db.doc(`projects/${projectId}`).get()).data();
   if (!project) throw new HttpsError('not-found', 'Project not found');
   const clientId = project.clientId as string;
+  // Never across the demo line, whatever the engagement says.
+  await assertSameSide(uid, userId);
 
   // The pro whose engagement decides: the target when the client asks, the
   // caller's own when a pro asks.

@@ -24,6 +24,8 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { useDemoStore } from '@core/stores/demoStore';
+import { isSameSide } from '@core/demo/demoSides';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { User, ProfessionalProfile } from '@core/types/user';
@@ -63,6 +65,9 @@ export default function PublicProfileScreen() {
   const font = useAppFont();
   const { showToast } = useUiStore();
   const currentUserId = useAuthStore((s) => s.user?.id ?? '');
+  // A demo account (App Review) and a real user are never shown each other's
+  // profile — it renders as not found, with Block and Report still available.
+  const onMySide = isSameSide(useDemoStore((s) => s.config), currentUserId, userId as string);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
 
@@ -172,7 +177,7 @@ export default function PublicProfileScreen() {
     );
   }
 
-  if (!user || !profile) {
+  if (!user || !profile || !onMySide) {
     /**
      * BLOCK HAS TO SURVIVE THIS BRANCH.
      *

@@ -18,6 +18,7 @@ jest.mock('@core/firebase/auth', () => ({
 jest.mock('firebase/firestore', () => ({ deleteField: jest.fn(), serverTimestamp: jest.fn() }));
 jest.mock('@core/firebase/firestore', () => ({
   getDocument: jest.fn(), updateDocument: jest.fn(), setDocument: jest.fn(),
+  subscribeToDocument: jest.fn(() => jest.fn()),
 }));
 jest.mock('expo-notifications', () => ({ setNotificationHandler: jest.fn() }));
 jest.mock('@core/notifications/registerForPushNotifications', () => ({ registerIfGranted: jest.fn(() => Promise.resolve(null)) }));

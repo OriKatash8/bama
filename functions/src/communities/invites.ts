@@ -17,6 +17,7 @@ import {
   type Membership,
 } from './inviteCore';
 import { checkRateLimit } from './rateLimit';
+import { communityOnSide, readDemoConfig } from '../demo';
 import { assertVerifiedEmail } from '../auth/verifiedEmail';
 
 /**
@@ -142,6 +143,10 @@ export const getCommunityInvite = onCall({ region: REGION }, async (request) => 
 
   const found = await lookupInvite(request.data?.tokenOrCode);
   if (!found) return PUBLIC_MISS;
+  // A demo community's invite is refused to real users, and a real one to demo users.
+  if (!communityOnSide(await readDemoConfig(), uid, found.communityId)) {
+    throw new HttpsError('failed-precondition', 'demo-isolation');
+  }
   if (found.invite.revoked === true) {
     return authedInviteBody({ revoked: true, token: found.token, communityId: found.communityId, community: found.community, membership: 'none' });
   }

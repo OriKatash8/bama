@@ -164,7 +164,8 @@ describe('wiring', () => {
   it('the rules gate offers, bundles and applications, and read the kill switch themselves', () => {
     const valid = slice(RULES, 'function offerCreateValid()', '\n    }');
     expect(valid).toContain('!feeOverdueBlocks()');
-    expect(RULES).toMatch(/match \/projectApplications\/\{applicationId\} \{\s*allow create: if isAuth\(\) && !feeOverdueBlocks\(\);/);
+    // The demo-isolation helper sits between the match and the allow; the gate is unchanged.
+    expect(RULES).toMatch(/match \/projectApplications\/\{applicationId\} \{[\s\S]*?allow create: if isAuth\(\) && !feeOverdueBlocks\(\)( && applicationOnSide\(\))?;/);
     const fn = slice(RULES, 'function feeOverdueBlocks()', '\n    }');
     expect(fn).toContain("get(cfgPath).data.get('feeOverdueBlockEnabled', false) == true");
     expect(fn).toContain('request.time >= get(blockPath).data.blockedFrom');

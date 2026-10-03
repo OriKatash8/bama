@@ -6,6 +6,7 @@ import {
   type FeeDoc,
 } from './helpers';
 import { readConfig } from './config';
+import { assertSameSide } from '../demo';
 import { applyDerivedProjectState } from './derive';
 import { releaseEngagement } from './removal';
 import { warnIfCompletedUnderReview } from './review';
@@ -714,6 +715,7 @@ export const respondToEngagementEnd = onCall(async (request) => {
   if (project.clientId !== uid) {
     throw new HttpsError('permission-denied', 'Only the client can respond');
   }
+  await assertSameSide(uid, professionalId);
 
   const engRef = feeRef(projectId, professionalId);
   const eng = (await engRef.get()).data() as FeeDoc | undefined;

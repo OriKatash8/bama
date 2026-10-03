@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { assertSameSide } from '../demo';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, FieldValue, requireAuth, feeRef } from './helpers';
 import { releaseEngagement } from './removal';
@@ -143,6 +144,8 @@ export const rejectCandidate = onCall(async (request) => {
   const uid = requireAuth(request.auth?.uid);
   const { projectId, project } = await loadAsClient(uid, request.data?.projectId);
   const proId = requirePro(request.data?.professionalId);
+  // The reason goes out as a BAMA System DM to the pro: never across the demo line.
+  await assertSameSide(uid, proId);
 
   await requireUnderReview(projectId, proId);
 

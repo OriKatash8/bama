@@ -11,6 +11,7 @@ import { SYSTEM_USER_ID } from '../system';
 import { fanOutMessage, needMuteCheck } from './fanOut';
 import { bumpMemberStats } from '../communities/memberStats';
 import { communityUnreadUpdate } from './communityUnread';
+import { readDemoConfig, sameSide } from '../demo';
 
 async function createNotification(
   db: admin.firestore.Firestore,
@@ -405,11 +406,15 @@ export const onProjectCreate = functions.firestore
     const clientId = project.clientId;
     const title = project.title ?? '';
     const usersSnap = await db.collection('users').get();
+    // Read fresh on every run (never cached): a demo client's project reaches demo
+    // pros only, and a real client's project never reaches a demo pro.
+    const demo = await readDemoConfig();
 
     await Promise.all(
       usersSnap.docs.map(async (userDoc) => {
         const uid = userDoc.id;
         if (uid === clientId) return;
+        if (!sameSide(demo, clientId ?? '', uid)) return;
         // 'project' is optional — skip opted-out users (free: userDoc already loaded),
         // avoiding a notification doc the sender would only read again to discard.
         const prefs = userDoc.data()?.notifPrefs as Record<string, boolean> | undefined;

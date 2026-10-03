@@ -8,6 +8,8 @@ import { computeAverageRating } from '@features/reviews/utils/rating';
 import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import { roleIdForCategory } from '@features/noticeboard/matching';
 import { useAuthStore } from '@core/stores/authStore';
+import { useDemoStore } from '@core/stores/demoStore';
+import { isSameSide } from '@core/demo/demoSides';
 
 export type ProfessionalResult = {
   user: User;
@@ -20,6 +22,8 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
   // You are never a search result for yourself — see the note in
   // __tests__/excludesSelf.test.ts.
   const currentUserId = useAuthStore((s) => s.user?.id);
+  // Demo accounts (App Review) and real users never see each other — demoSides.ts.
+  const demo = useDemoStore((s) => s.config);
 
   void subcategory; // subcategory no longer stored on skills — kept as param for API compat
 
@@ -77,5 +81,5 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
     return () => { cancelled = true; };
   }, [category, currentUserId]);
 
-  return { results, isLoading };
+  return { results: results.filter((r) => isSameSide(demo, currentUserId, r.user.id)), isLoading };
 }

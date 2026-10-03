@@ -3,6 +3,7 @@ import { queryDocuments, getDocument } from '@core/firebase/firestore';
 import { SYSTEM_USER_ID } from '@core/constants/system';
 import type { User, ProfessionalProfile } from '@core/types/user';
 import { periodBuckets, type Period } from './periodBuckets';
+import { useDemoStore } from '@core/stores/demoStore';
 
 type Rec = { ts: number; isClient: boolean; isPro: boolean };
 
@@ -24,7 +25,10 @@ export function useRegistrationStats(period: Period, rtl: boolean) {
     let active = true;
     (async () => {
       try {
-        const users = (await queryDocuments<User>('users')).filter((u) => u.id !== SYSTEM_USER_ID);
+        // Neither BAMA itself nor the demo accounts (App Review) are registrations.
+        const demoUids = useDemoStore.getState().config.uids;
+        const users = (await queryDocuments<User>('users'))
+          .filter((u) => u.id !== SYSTEM_USER_ID && !demoUids.includes(u.id));
         const recs = await Promise.all(
           users.map(async (u) => {
             const profile = await getDocument<ProfessionalProfile>(`users/${u.id}/profile/data`).catch(() => null);

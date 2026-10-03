@@ -6,9 +6,11 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useModerationStore } from '@core/stores/moderationStore';
 import { useBlockStore } from '@core/stores/blockStore';
 import { subscribeBlocks } from '@features/blocking/services/blockService';
+import { useDemoStore } from '@core/stores/demoStore';
+import { parseDemoConfig } from '@core/demo/demoSides';
 import { onAuthChange, onTokenChange, signOut } from '@core/firebase/auth';
 import { needsEmailVerification } from '@features/auth/utils/emailVerification';
-import { getDocument, updateDocument, setDocument } from '@core/firebase/firestore';
+import { getDocument, updateDocument, setDocument, subscribeToDocument } from '@core/firebase/firestore';
 import { registerIfGranted } from '@core/notifications/registerForPushNotifications';
 import { handleForegroundNotification } from '@core/notifications/foregroundHandler';
 import i18n from '@core/i18n';
@@ -174,6 +176,25 @@ export function useAuth() {
     return () => {
       unsub();
       useBlockStore.getState().clear();
+    };
+  }, [user?.id]);
+
+  /**
+   * The demo-account config (App Review accounts), live, for the same reason:
+   * every list that shows other people filters by it — src/core/demo/demoSides.ts.
+   * A missing doc (or a failed read) leaves the empty config: nobody is demo.
+   */
+  useEffect(() => {
+    if (!user?.id) {
+      useDemoStore.getState().clear();
+      return;
+    }
+    const unsub = subscribeToDocument<Record<string, unknown>>('config/demoAccounts', (data) =>
+      useDemoStore.getState().setConfig(parseDemoConfig(data)),
+    );
+    return () => {
+      unsub();
+      useDemoStore.getState().clear();
     };
   }, [user?.id]);
 

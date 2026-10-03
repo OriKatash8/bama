@@ -5,6 +5,7 @@ import { readConfig, feeRateOf, type PricingConfig } from './config';
 import { applyDerivedProjectState } from './derive';
 import { slotCapBlocksHire } from './slotCap';
 import { assignFilledCapability } from '../matching';
+import { assertSameSide } from '../demo';
 import {
   DEFAULT_PROJECT_DURATION_DAYS,
   canHireOnStatus, isOfferPriceValid,
@@ -57,6 +58,11 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   if (proId === project.clientId) {
     throw new HttpsError('failed-precondition', 'cannot-hire-yourself');
   }
+
+  // Demo accounts (App Review) hire only each other, and nobody hires them. The
+  // hire creates the group chat and the fee, so every later callable on this
+  // engagement (candidates, completion, payment requests, phones) inherits it.
+  await assertSameSide(uid, proId);
 
   // A completed or cancelled project is closed to new hires. Without this a hire
   // could land AFTER cancelProject had emptied `slotHolders`, re-occupying a slot

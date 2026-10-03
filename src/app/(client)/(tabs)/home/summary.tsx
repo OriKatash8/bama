@@ -15,6 +15,8 @@ import { CATEGORIES } from '@features/crew/data/roleTiles';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { onMySide } from '@core/stores/demoStore';
 import { localizeLocation } from '@core/constants/israelLocations';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react-native';
@@ -139,7 +141,9 @@ export default function SummaryScreen() {
         // hold the publish up: past SCARCITY_SCAN_TIMEOUT_MS we skip the warning.
         const scan = queryDocuments<{ id: string }>('users').then((users) =>
           Promise.all(
-            users.map((u) =>
+            // Only pros on the client's side count — demo accounts (App Review)
+            // hold every skill and must not hide a real scarcity.
+            users.filter((u) => onMySide(useAuthStore.getState().user?.id, u.id)).map((u) =>
               getDocument<{ roleSkills?: RoleSkillEntry[] }>(
                 `users/${u.id}/profile/data`,
               ),
