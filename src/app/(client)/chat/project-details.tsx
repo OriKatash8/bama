@@ -2080,7 +2080,7 @@ export default function ProjectDetailsScreen() {
 
           <View>
             <Text style={[styles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
-              {t('project_details.description_optional')}
+              {t('project_details.meeting_description_optional')}
             </Text>
             <TextInput
               style={[styles.sheetInput, styles.sheetInputMultiline, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}

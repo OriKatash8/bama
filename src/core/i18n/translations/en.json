@@ -341,6 +341,7 @@
     "meeting_duration": "Duration",
     "meeting_minutes": "{{n}} min",
     "meeting_link_optional": "Link (optional)",
+    "meeting_description_optional": "Description (optional)",
     "meeting_link": "Link",
     "meeting_link_placeholder": "https://zoom.us/…",
     "meeting_link_invalid": "Enter a full link, starting with https://",
