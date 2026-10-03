@@ -37,7 +37,7 @@ beforeEach(() => {
   mockLang = 'en';
   // A just-registered account: its next step is the name / picture page.
   useAuthStore.setState({
-    user: { id: 'u1', termsVersion: '1.0', needsProfileSetup: true } as never,
+    user: { id: 'u1', termsVersion: '1.4', needsProfileSetup: true } as never,
     needsEmailVerification: false,
     activeMode: null,
   });

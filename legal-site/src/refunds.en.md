@@ -1,8 +1,8 @@
 # BAMA — Cancellation and Refund Policy
 
-Version: 1.3
+Version: 1.4
 
-Last updated: 01/10/2026
+Last updated: 03/10/2026
 
 This is an English translation of the BAMA Cancellation and Refund Policy. The Hebrew version is the binding version. In case of any conflict, the Hebrew version prevails.
 
@@ -12,14 +12,14 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 
 1.2. It is important to distinguish between two completely different payments:
 
-|  | Payment for media services | Platform Fee |
+|  | Payment for media services | Brokerage Fee |
 | --- | --- | --- |
 | Who pays | The Client | The Professional |
 | To whom | To the Professional, directly | To the Operator |
 | Is BAMA involved | No. The money does not pass through us and we do not hold it | Yes |
 | Who decides cancellation and refunds | The Client and the Professional, under their agreement and the law | This Policy |
 
-1.3. This Policy applies to the Platform Fee only. We cannot cancel, refund or withhold payment for media services, because it does not pass through us.
+1.3. This Policy applies to the Brokerage Fee only. We cannot cancel, refund or withhold payment for media services, because it does not pass through us.
 
 1.4. No in-app purchases. The App does not offer purchases, subscriptions or payments through the Apple App Store or Google Play (section 12.13 of the Terms). Refund requests are therefore not handled through the app stores, only with us and under this Policy.
 
@@ -53,13 +53,13 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 
 3.2. BAMA does not compensate, does not refund money and does not guarantee performance. The Operator has and will have no responsibility for payment made to the Professional that was not refunded.
 
-3.3. What we can do. Following a well-founded report, we may, at our discretion: cancel the Platform Fee charge for that Engagement, or refund it to the Professional if already collected; change the Engagement's status; and in repeated or serious cases — suspend or block the Professional. Reviews are published, removed or suspended only under chapter 10 of the Terms.
+3.3. What we can do. Following a well-founded report, we may, at our discretion: cancel the Brokerage Fee charge for that Engagement, or refund it to the Professional if already collected; change the Engagement's status; and in repeated or serious cases — suspend or block the Professional. Reviews are published, removed or suspended only under chapter 10 of the Terms.
 
 3.4. Disputes are submitted through the App, subject to chapter 16 of the Terms. The decision is administrative and internal only, and is not arbitration.
 
-## 4. Platform Fee — Cancellation and Refunds
+## 4. Brokerage Fee — Cancellation and Refunds
 
-4.1. When the charge is created. The Platform Fee charge is created at the end of the Dispute Period — 4 days from Engagement Completion, whether the Engagement was completed by the Professional's marking, by the Client's marking or automatically (sections 8.6 and 12.5 of the Terms). If a dispute is submitted in time, the charge is suspended until a decision is made.
+4.1. When the charge is created. The Brokerage Fee charge is created at the end of the Dispute Period — 4 days from Engagement Completion, whether the Engagement was completed by the Professional's marking, by the Client's marking or automatically (sections 8.6 and 12.5 of the Terms). If a dispute is submitted in time, the charge is suspended until a decision is made.
 
 4.1.1. A dispute is the main route. If the Engagement did not take place, or the amount on which the fee is calculated is wrong, submit a dispute in the App within the Dispute Period. The charge will then not be created until a decision is made, and no later refund request is needed.
 
@@ -93,7 +93,7 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 
 4.3.6. The request was submitted more than 14 days after the payment request, unless special circumstances justify otherwise.
 
-4.4. Cancelling an unsettled charge. Since the Platform Fee is settled outside the App (section 12.6 of the Terms), in most cases the charge has not yet been paid when the request is made. In that case, the charge will be cancelled and removed from the Professional's balance, and no refund is needed.
+4.4. Cancelling an unsettled charge. Since the Brokerage Fee is settled outside the App (section 12.6 of the Terms), in most cases the charge has not yet been paid when the request is made. In that case, the charge will be cancelled and removed from the Professional's balance, and no refund is needed.
 
 4.5. How refunds are made, if paid. If the fee was actually paid and the refund is approved, it will be made by the same method used for payment (including through the payment provider), or by another method agreed with the Professional, within up to 14 business days of approval. Delays by the bank or payment provider may occur.
 
@@ -158,4 +158,4 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 - Address: HaHadarim St., Kadima-Zoran, Israel
 - In the App: the "Contact Us" screen in Settings
 
-BAMA — Build A Media Alliance · Version 1.3 · 01.10.2026
+BAMA — Build A Media Alliance · Version 1.4 · 03.10.2026

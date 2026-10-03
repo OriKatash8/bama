@@ -1,8 +1,8 @@
 # BAMA — Terms of Use
 
-Version: 1.3
+Version: 1.4
 
-Last updated: 30/09/2026
+Last updated: 03/10/2026
 
 This is an English translation of the BAMA Terms of Use. The Hebrew version is the binding version. In case of any conflict between the Hebrew version and this translation, the Hebrew version prevails (see section 1.7).
 
@@ -44,7 +44,9 @@ In these Terms, the following terms have the meanings set out next to them:
 
 "Dispute Period" — 4 days from the date of Engagement Completion, as set out in section 8.6.5.
 
-"Platform Fee" — the consideration the Operator charges the Professional for using the Platform's services, as set out in chapter 12.
+"Payment Period" — 7 days from the date of Engagement Completion, as set out in section 12.8.1.
+
+"Brokerage Fee" — the consideration the Operator charges the Professional for using the Platform's services, as set out in chapter 12.
 
 "User Content" — any information, text, image, video, recording, file, rating, review, message, listing or other material that a User uploads, posts, sends or provides through the App.
 
@@ -114,13 +116,13 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 6.2. Crew Builder. The App allows a Client to set up a Project with several roles and to fill each role with a separate Professional. Filling a role creates a separate Engagement between the Client and that Professional, and the Professional is added to the Project Group. Professionals hired for the same Project have no legal relationship with each other by virtue of the App, unless they agree otherwise between themselves.
 
-6.3. Submitting an Offer. A Professional may submit an Offer for a Project, including a price and, where available, a package deal. The Offer binds the Professional according to its terms and subject to the agreements reached between the parties. The price in the accepted Offer, as updated in the App, is the basis for calculating the Platform Fee under chapter 12.
+6.3. Submitting an Offer. A Professional may submit an Offer for a Project, including a price and, where available, a package deal. The Offer binds the Professional according to its terms and subject to the agreements reached between the parties. The price in the accepted Offer, as updated in the App, is the basis for calculating the Brokerage Fee under chapter 12.
 
 6.4. Choosing a Professional. The Client chooses the Professional at its sole discretion. The Operator does not recommend, does not rank for recommendation purposes, and does not undertake that Offers will be received, that a suitable Professional will be found, or that a Project will take place.
 
 6.5. Display order. The order in which Professionals, Projects or Offers are displayed in the App is determined by the Operator and may be based on various considerations, including relevance, matching of roles and skills, rating, availability and activity. The display order is not an opinion, recommendation or quality ranking by the Operator.
 
-6.6. Engagement outside the App. Users may agree on the terms of their Engagement as they wish. However, managing the Engagement in the App — including its completion under section 8.6 — is a condition for the proper operation of the rating, reporting and history mechanisms. Using the App to make contact and then deliberately moving the Engagement off the Platform in order to avoid paying the Platform Fee is a material breach of the Terms (see section 12.9).
+6.6. Engagement outside the App. Users may agree on the terms of their Engagement as they wish. However, managing the Engagement in the App — including its completion under section 8.6 — is a condition for the proper operation of the rating, reporting and history mechanisms. Using the App to make contact and then deliberately moving the Engagement off the Platform in order to avoid paying the Brokerage Fee is a material breach of the Terms (see section 12.9).
 
 6.7. Declaration of genuine intent. By posting a Project, the Client declares that the Project is genuine, that there is a real need for it, and that the details provided are true. Posting a Project with no intention to engage — including for market research, collecting price lists, identifying competitors or collecting contact details — is prohibited and is a material breach of the Terms.
 
@@ -200,7 +202,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 8.6.5. Dispute Period. Within 4 days of Engagement Completion — whether marked by the Professional, marked by the Client or completed automatically — the Professional may notify in the App that the Engagement did not take place, or dispute the amount on which the fee is calculated. A dispute will be referred to the Operator for review under chapter 16, and the fee charge will be suspended until a decision is made. If no dispute is submitted within the Dispute Period, the completion and the amount become final for the purpose of the fee charge.
 
-8.6.6. Engagement Completion triggers the rating mechanism under chapter 10 and the disclosure of phone numbers under section 8.7, and creates the Professional's liability for the Platform Fee under chapter 12.
+8.6.6. Engagement Completion triggers the rating mechanism under chapter 10 and the disclosure of phone numbers under section 8.7, and creates the Professional's liability for the Brokerage Fee under chapter 12.
 
 8.7. Phone number disclosure. Upon Engagement Completion, each party's phone number will be shown to the other party to that Engagement, mutually, for continued contact regarding payment and follow-up questions. The number may not be used for any other purpose (see section 15.1.6).
 
@@ -274,7 +276,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 10.12. The Operator may display next to a review objective data from its system, such as the number of completed Projects, response rate and seniority on the Platform.
 
-10.13. Unconditional publication. A review is published upon Engagement Completion under section 8.6, and is not conditional on payment of the Platform Fee, on the status of the Professional's account, or on any other payment to the Operator. Non-payment of a fee may affect the status of the Professional's account under section 12.8, but will not delay, hide or change a review that has been written.
+10.13. Unconditional publication. A review is published upon Engagement Completion under section 8.6, and is not conditional on payment of the Brokerage Fee, on the status of the Professional's account, or on any other payment to the Operator. Non-payment of a fee may affect the status of the Professional's account under section 12.8, but will not delay, hide or change a review that has been written.
 
 ## 11. Chat, Groups and Communities
 
@@ -290,9 +292,9 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 11.6. It is prohibited to unlawfully record, document, photograph or publish other Users' conversations.
 
-## 12. Platform Fee and Payments to the Operator
+## 12. Brokerage Fee and Payments to the Operator
 
-12.1. Who pays. The Platform Fee is charged to the Professional only, for use of the Platform's services. The Client does not pay the Operator any fee or other payment for using the App.
+12.1. Who pays. The Brokerage Fee is charged to the Professional only, for use of the Platform's services. The Client does not pay the Operator any fee or other payment for using the App.
 
 12.2. Nature of the fee. The fee is paid for the Platform's services — exposure, discovery, communication and management — and is not payment for the media services themselves, nor part of them.
 
@@ -312,9 +314,23 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 12.7. Billing documents and taxes. The Operator will issue the Professional a lawful document for the fee, according to the Operator's tax status. VAT will be added to fee amounts as required by law, if applicable.
 
-12.8. Non-payment. If a charge is not settled on time, the Operator may, after giving a warning and a reasonable period to remedy: restrict the Professional's ability to receive new Projects; suspend their ability to submit Offers; hide their profile; suspend their account until the charge is settled in full, or close it; and take lawful collection proceedings. An amount not paid on time will bear linkage differentials and interest as provided by law.
+12.8. Non-payment.
 
-These restrictions concern only the status of the Professional's account and the receipt of new work. They do not delay a review that has been written, and settling the charge does not unlock any feature, capability or content in the App.
+12.8.1. Automatic restriction. If a charge is not settled within 7 days of the Engagement Completion it arose from (the "Payment Period"), the Professional cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The restriction applies automatically, without an individual decision by the Operator.
+
+12.8.2. Existing Engagements. The restriction does not apply to Engagements for which the Professional was already hired, and they continue as usual.
+
+12.8.3. Lifting the restriction. The restriction is lifted once the Operator confirms that all overdue charges have been settled.
+
+12.8.4. Pending dispute. A charge that is the subject of a dispute under section 8.6.5 is not an overdue charge while the dispute is undecided. If the Operator decides that the fee applies, the Payment Period starts again from the date of the decision.
+
+12.8.5. Reminders. The Operator will send the Professional a notice when the charge is created, and a reminder before the restriction begins. Failure to receive a notice, including because of device settings, does not prevent the restriction from applying.
+
+12.8.6. Length of the Payment Period. The Operator may update the length of the Payment Period with prior notice under section 23.2. An update will not apply to a charge created before it takes effect.
+
+12.8.7. Further remedies. In addition, if a charge is not settled on time, the Operator may, after giving a warning and a reasonable period to remedy: hide the Professional's profile; suspend their account until the charge is settled in full, or close it; and take lawful collection proceedings. An amount not paid on time will bear linkage differentials and interest as provided by law.
+
+12.8.8. These restrictions concern only the status of the Professional's account and the receipt of new work. They do not delay a review that has been written, and settling the charge does not unlock any feature, capability or content in the App.
 
 12.9. Circumventing the Platform. Conduct aimed at avoiding payment of the fee is a material breach of the Terms, including:
 
@@ -338,9 +354,9 @@ These restrictions concern only the status of the Professional's account and the
 
 12.11.2. A Professional who does not agree to the updated pricing may stop accepting new Projects or close their account before the effective date, without charge or penalty. Continuing to accept Projects after the effective date constitutes acceptance of the updated pricing.
 
-12.12. Refunds. Refund terms for the Platform Fee are set out in the Cancellation and Refund Policy.
+12.12. Refunds. Refund terms for the Brokerage Fee are set out in the Cancellation and Refund Policy.
 
-12.13. No in-app purchases. The App does not offer purchases, subscriptions or payments through the in-app purchase mechanisms of the Apple App Store or Google Play. The Platform Fee is payment for brokerage services relating to work performed outside the App, and is settled directly with the Operator only. Payment for the media services passes directly between the Client and the Professional, outside the App.
+12.13. No in-app purchases. The App does not offer purchases, subscriptions or payments through the in-app purchase mechanisms of the Apple App Store or Google Play. The Brokerage Fee is payment for brokerage services relating to work performed outside the App, and is settled directly with the Operator only. Payment for the media services passes directly between the Client and the Professional, outside the App.
 
 12.14. Active Engagement limit. The Operator may limit the number of active Engagements a Professional may hold at the same time. The current limit is shown in the App. The limit applies to Professionals only, and does not apply to Clients posting Projects. "Active Engagement" — an Engagement for which the Professional was hired and that has not yet been completed, as well as an Engagement for which a dispute was submitted and not yet decided. A place within the limit becomes free upon completion of the Engagement, its cancellation, or the Professional's withdrawal from it. The limit is intended to ensure that the Professional can meet their commitments to their Clients, and cannot be increased by payment or purchase of any kind. The number of Offers that may be submitted is not limited. The Operator may update the limit with reasonable prior notice.
 
@@ -438,7 +454,7 @@ These restrictions concern only the status of the Professional's account and the
 
 16.2.1. A Professional's dispute under section 8.6.5 will be reviewed through this mechanism. The Operator may contact the Client for their position, and decide whether the Engagement took place and the amount of the fee based on the information available to it.
 
-16.3. Nature of the decision. A decision or recommendation of the Operator's team under this mechanism is internal and administrative only, for the purpose of using tools under the Operator's control — such as changing an Engagement's status, deciding on charging or crediting the Platform Fee, removing a review or suspending an account. It is not arbitration within the meaning of the Arbitration Law, 5728‑1968, is not a judgment, does not decide the parties' legal rights, and does not affect either party's right to go to a competent court.
+16.3. Nature of the decision. A decision or recommendation of the Operator's team under this mechanism is internal and administrative only, for the purpose of using tools under the Operator's control — such as changing an Engagement's status, deciding on charging or crediting the Brokerage Fee, removing a review or suspending an account. It is not arbitration within the meaning of the Arbitration Law, 5728‑1968, is not a judgment, does not decide the parties' legal rights, and does not affect either party's right to go to a competent court.
 
 16.4. Discretion. The Operator does not undertake to intervene in every dispute, does not investigate, does not take testimony and does not make findings of fact. Its intervention is voluntary, is based solely on the information available to it, and does not impose any liability on it.
 
@@ -608,4 +624,4 @@ For questions, requests, reports, content removal requests, suspension appeals o
 
 We will try to respond within a reasonable time.
 
-BAMA — Build A Media Alliance · Version 1.3 · 30.9.2026
+BAMA — Build A Media Alliance · Version 1.4 · 03.10.2026

@@ -26,7 +26,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 const mockGetLast = Notifications.getLastNotificationResponse as jest.Mock;
 const tap = (id: string, data: object) => ({ notification: { request: { identifier: id, content: { data } } } });
-const signedIn = { user: { id: 'u1', termsVersion: '1.0' } as never, isLoading: false, needsEmailVerification: false };
+const signedIn = { user: { id: 'u1', termsVersion: '1.4' } as never, isLoading: false, needsEmailVerification: false };
 
 /** Routing awaits a mode switch and a storage write before it navigates, so
  *  give it a few ticks — one was not always enough under a full, loaded run. */
@@ -91,7 +91,7 @@ it('waits behind the terms gate: nothing routes until consent is given', async (
   renderHook(() => useNotificationRouting());
   await flush();
   expect(mockReplace).not.toHaveBeenCalled();
-  await act(async () => { useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never }); });
+  await act(async () => { useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never }); });
   await flush();
   expect(mockReplace).toHaveBeenCalledWith('/(client)/chat/c1');
 });

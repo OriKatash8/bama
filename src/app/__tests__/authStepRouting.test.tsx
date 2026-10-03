@@ -32,7 +32,7 @@ function renderAuthStack() {
 
 beforeEach(() => {
   useAuthStore.setState({
-    user: { id: 'u', termsVersion: '1.0', needsProfileSetup: true } as never,
+    user: { id: 'u', termsVersion: '1.4', needsProfileSetup: true } as never,
     needsEmailVerification: true,
     activeMode: null,
   });
@@ -55,12 +55,12 @@ it('verified: straight to the name / picture page', async () => {
 });
 
 it('the order: consent → email → setup → mode select → the app', () => {
-  const u = { id: 'u', termsVersion: '1.0' } as never;
+  const u = { id: 'u', termsVersion: '1.4' } as never;
   const s = (o: object) => nextAuthRoute({ user: u, needsEmailVerification: false, activeMode: null, ...o });
   expect(s({ user: null })).toBe('/(auth)');
   expect(s({ user: { id: 'u', needsProfileSetup: true } })).toBe('/(auth)/consent');
-  expect(s({ user: { id: 'u', termsVersion: '1.0', needsProfileSetup: true }, needsEmailVerification: true })).toBe('/(auth)/verify-email');
-  expect(s({ user: { id: 'u', termsVersion: '1.0', needsProfileSetup: true } })).toBe('/(auth)/setup');
+  expect(s({ user: { id: 'u', termsVersion: '1.4', needsProfileSetup: true }, needsEmailVerification: true })).toBe('/(auth)/verify-email');
+  expect(s({ user: { id: 'u', termsVersion: '1.4', needsProfileSetup: true } })).toBe('/(auth)/setup');
   expect(s({})).toBe('/(auth)/mode-select');
   expect(s({ activeMode: 'client' })).toBe('/(client)/(tabs)/home');
   expect(s({ activeMode: 'professional' })).toBe('/(professional)/(tabs)/dashboard');
@@ -70,7 +70,7 @@ it('the order: consent → email → setup → mode select → the app', () => {
 // An incomplete pro goes to the forced profile screen; "unknown" (the read timed
 // out or failed) goes to the noticeboard and the pro layout's lock takes over.
 it('a restored mode: client → home, pro → noticeboard, incomplete pro → profile', () => {
-  const u = { id: 'u', termsVersion: '1.0' } as never;
+  const u = { id: 'u', termsVersion: '1.4' } as never;
   const s = (o: object) => nextAuthRoute({ user: u, needsEmailVerification: false, activeMode: null, ...o });
   expect(s({ activeMode: 'client', proProfileCompleted: false })).toBe('/(client)/(tabs)/home');
   expect(s({ activeMode: 'professional', proProfileCompleted: true })).toBe('/(professional)/(tabs)/dashboard');

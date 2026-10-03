@@ -15,7 +15,7 @@ jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => { mockRedirects.push(href); return null; },
 }));
 
-const signedIn = { user: { id: 'u1', termsVersion: '1.0' } as never, isLoading: false, needsEmailVerification: false, proProfileCompleted: null };
+const signedIn = { user: { id: 'u1', termsVersion: '1.4' } as never, isLoading: false, needsEmailVerification: false, proProfileCompleted: null };
 
 beforeEach(() => {
   mockRedirects.length = 0;

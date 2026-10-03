@@ -31,7 +31,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   useAuthStore.setState({
-    user: { id: 'u1', displayName: 'Noa Levi', photoURL: null, termsVersion: '1.0', needsProfileSetup: true } as never,
+    user: { id: 'u1', displayName: 'Noa Levi', photoURL: null, termsVersion: '1.4', needsProfileSetup: true } as never,
     hasPhone: true,
   });
 });
@@ -56,7 +56,7 @@ it('no number yet (Apple sign-up): asks for it here', async () => {
 });
 
 it('someone who has already done it is sent on, not shown the page again', () => {
-  useAuthStore.setState({ user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.0' } as never });
+  useAuthStore.setState({ user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.4' } as never });
   render(<ProfileSetupScreen />);
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
 });

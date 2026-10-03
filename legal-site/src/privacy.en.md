@@ -1,8 +1,8 @@
 # BAMA — Privacy Policy
 
-Version: 1.2
+Version: 1.4
 
-Last updated: 01/10/2026
+Last updated: 03/10/2026
 
 This is an English translation of the BAMA Privacy Policy. The Hebrew version is the binding version. In case of any conflict, the Hebrew version prevails.
 
@@ -35,7 +35,7 @@ This is an English translation of the BAMA Privacy Policy. The Hebrew version is
 | Store listings | Item description, condition, price, photos, and sharing of the listing in Community "Store" channels. |
 | Courses | Course owner details, course details and the link to the course website, if you submitted a course listing request. |
 | Reports, blocks and requests | Reports about users or content (including screenshots you attached), the list of users you blocked, and the content of support requests and our responses. |
-| Platform Fee | The Engagement amount on which the fee is calculated, the fee amount, payment requests, payment status and billing documents. Payment method details are processed by the payment provider and are not stored by us. |
+| Brokerage Fee | The Engagement amount on which the fee is calculated, the fee amount, payment requests, payment status and billing documents. Payment method details are processed by the payment provider and are not stored by us. |
 
 ### 2.2. Information collected automatically
 
@@ -69,7 +69,7 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 3.4. Operational communications — verification codes (once enabled), notifications and messages about Projects, Offers, new messages, Engagement Completion, payment requests and system updates.
 
-3.5. Platform Fee — calculating the fee, sending payment requests, issuing billing documents, handling disputes, refunds and non-payment, and bookkeeping.
+3.5. Brokerage Fee — calculating the fee, sending payment requests, issuing billing documents, handling disputes, refunds and non-payment, and bookkeeping.
 
 3.6. Security, enforcement and fraud prevention — detecting suspicious activity, preventing impersonation and block evasion, looking into reports, disputes and disagreements, and enforcing the Terms. For these purposes only, the Operator's team may review the content of conversations, as set out in section 11.2 of the Terms.
 
@@ -109,7 +109,7 @@ We do not ask for and do not wish to receive information of special sensitivity 
 | Apple | Sign in with Apple and push notifications to iOS devices. |
 | Expo | Delivering push notifications to devices. |
 | SMS provider | Sending verification codes to your phone number, once phone verification is enabled. |
-| Payment provider (currently: Grow) | Processing Platform Fee payments from Professionals. |
+| Payment provider (currently: Grow) | Processing Brokerage Fee payments from Professionals. |
 | Email and support providers | Sending emails and managing support requests. |
 | Professional advisors | Accountants and lawyers, to the extent necessary. |
 | Competent authorities | Where required by law or court order, or to prevent a real danger to a person's life, body or property. |
@@ -141,7 +141,7 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 8.2. You can delete your account at any time through the account deletion screen in the App. After your account is deleted, we will delete or de-identify your personal information within a reasonable time, except for:
 
-8.2.1. Information we must keep by law — for example accounting records and Platform Fee billing documents, kept for the period required by tax law (usually 7 years);
+8.2.1. Information we must keep by law — for example accounting records and Brokerage Fee billing documents, kept for the period required by tax law (usually 7 years);
 
 8.2.2. Information needed to defend against claims, to collect an open debt, or to resolve an open disagreement or dispute — until the matter is concluded or the relevant limitation period ends;
 
@@ -202,4 +202,4 @@ For questions, access, correction or deletion requests, or any privacy matter:
 - Address: HaHadarim St., Kadima-Zoran, Israel
 - In the App: the "Contact Us" screen in Settings
 
-BAMA — Build A Media Alliance · Version 1.2 · 01.10.2026
+BAMA — Build A Media Alliance · Version 1.4 · 03.10.2026

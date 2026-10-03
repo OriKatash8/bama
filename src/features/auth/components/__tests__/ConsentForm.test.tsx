@@ -68,7 +68,7 @@ it('one box is not enough: nothing is written', async () => {
 it('accepting writes all four consent fields, then the new profile, then moves on', async () => {
   // syncUser is mocked: stand in for the new profile it puts in the store.
   (syncUser as jest.Mock).mockImplementationOnce(async () => {
-    useAuthStore.setState({ user: { id: 'new-uid', termsVersion: '1.0', needsProfileSetup: true } as never });
+    useAuthStore.setState({ user: { id: 'new-uid', termsVersion: '1.4', needsProfileSetup: true } as never });
   });
   const r = render(<ConsentForm />);
   fireEvent.press(r.getByTestId('consent-terms'));

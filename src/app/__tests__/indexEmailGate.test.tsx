@@ -17,19 +17,19 @@ jest.mock('expo-router', () => ({
 beforeEach(() => { mockRedirects.length = 0; useLaunchIntentStore.setState({ checked: true, hasPending: false }); });
 
 it('unverified password account → verify email, even with no mode chosen yet', () => {
-  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, isLoading: false, activeMode: null, needsEmailVerification: true });
+  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, isLoading: false, activeMode: null, needsEmailVerification: true });
   render(<Index />);
   expect(mockRedirects).toEqual(['/(auth)/verify-email']);
 });
 
 it('verified (or exempt) → carries on as before', () => {
-  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, isLoading: false, activeMode: null, needsEmailVerification: false });
+  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, isLoading: false, activeMode: null, needsEmailVerification: false });
   render(<Index />);
   expect(mockRedirects).toEqual(['/(auth)/mode-select']);
 });
 
 it('signed in but verification still UNKNOWN → a loading screen, never the app', () => {
-  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, isLoading: false, activeMode: 'client', needsEmailVerification: null });
+  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, isLoading: false, activeMode: 'client', needsEmailVerification: null });
   const r = render(<Index />);
   expect(r.getByTestId('gate-pending')).toBeTruthy();
   expect(mockRedirects).toEqual([]);

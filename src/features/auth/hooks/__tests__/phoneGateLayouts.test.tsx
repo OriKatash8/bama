@@ -26,14 +26,14 @@ jest.mock('@core/firebase/firestore', () => ({ subscribeToDocument: jest.fn(() =
 beforeEach(() => { mockRedirects.length = 0; mockNeedsPhone = false; useAuthStore.setState({ needsEmailVerification: null, isLoading: false }); });
 
 it('professional: no phone number is asked for ahead of the profile lock', () => {
-  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: 'professional', needsEmailVerification: false, proProfileCompleted: false });
+  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, activeMode: 'professional', needsEmailVerification: false, proProfileCompleted: false });
   mockNeedsPhone = true;
   render(<ProfessionalLayout />);
   expect(mockRedirects).toEqual(['/settings/phone?required=1']);
 });
 
 it('client not yet onboarded: goes to onboarding, which asks for the number there', () => {
-  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: 'client', needsEmailVerification: false, clientOnboarded: false });
+  useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, activeMode: 'client', needsEmailVerification: false, clientOnboarded: false });
   mockNeedsPhone = true;
   render(<ClientLayout />);
   expect(mockRedirects).toEqual(['/(client)/onboarding']);
@@ -44,28 +44,28 @@ describe.each([
   ['professional', ProfessionalLayout, { proProfileCompleted: false }],
 ] as const)('%s app', (mode, Layout, lockedOnboarding) => {
   it('a user with no phone number who is past onboarding is sent to enter one', () => {
-    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: mode, needsEmailVerification: false, clientOnboarded: true, proProfileCompleted: true });
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, activeMode: mode, needsEmailVerification: false, clientOnboarded: true, proProfileCompleted: true });
     mockNeedsPhone = true;
     render(<Layout />);
     expect(mockRedirects).toEqual(['/settings/phone?required=1']);
   });
 
   it('sends an unverified password account to verify its email — before the phone and onboarding', () => {
-    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: mode, needsEmailVerification: true, ...lockedOnboarding });
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, activeMode: mode, needsEmailVerification: true, ...lockedOnboarding });
     mockNeedsPhone = true;
     render(<Layout />);
     expect(mockRedirects).toEqual(['/(auth)/verify-email']);
   });
 
   it('while verification is still unknown, shows a loading screen — never the app, never a redirect', () => {
-    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: mode, needsEmailVerification: null, clientOnboarded: true, proProfileCompleted: true });
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, activeMode: mode, needsEmailVerification: null, clientOnboarded: true, proProfileCompleted: true });
     const r = render(<Layout />);
     expect(r.getByTestId('gate-pending')).toBeTruthy();
     expect(mockRedirects).toEqual([]);
   });
 
   it('leaves a user with a number alone', () => {
-    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.0' } as never, activeMode: mode, needsEmailVerification: false, clientOnboarded: true, proProfileCompleted: true });
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, activeMode: mode, needsEmailVerification: false, clientOnboarded: true, proProfileCompleted: true });
     render(<Layout />);
     expect(mockRedirects).toEqual([]);
   });
