@@ -80,6 +80,7 @@ const AUDIO_MIC_BRANDS: readonly string[]           = ['Sennheiser', 'Rode', 'Sh
 const AUDIO_RECORDER_BRANDS: readonly string[]      = ['Sound Devices', 'Zoom', 'Tascam', 'Roland', 'Nagra', 'Other'];
 const AUDIO_MIXER_BRANDS: readonly string[]         = ['Sound Devices', 'Zoom', 'Behringer', 'Yamaha', 'Allen & Heath', 'Other'];
 const AUDIO_HEADPHONES_BRANDS: readonly string[]    = ['Sony', 'Sennheiser', 'Audio-Technica', 'Beyerdynamic', 'AKG', 'Other'];
+const AUDIO_SPEAKER_BRANDS: readonly string[]       = ['JBL', 'Bose', 'Yamaha', 'Genelec', 'KRK', 'Other'];
 const AUDIO_WIRELESS_BRANDS: readonly string[]      = ['Sennheiser', 'Rode', 'Sony', 'Shure', 'Lectrosonics', 'Zaxcom', 'Other'];
 const LIGHT_LED_PANEL_BRANDS: readonly string[]     = ['Aputure', 'Nanlite', 'Godox', 'Litepanels', 'Arri', 'Kino Flo', 'Other'];
 const LIGHT_STROBE_BRANDS: readonly string[]        = ['Profoto', 'Godox', 'Broncolor', 'Elinchrom', 'Hensel', 'Other'];
@@ -115,6 +116,7 @@ const BRANDS_BY_CATEGORY: Record<string, Record<string, readonly string[]>> = {
     Recorder:           AUDIO_RECORDER_BRANDS,
     Mixer:              AUDIO_MIXER_BRANDS,
     Headphones:         AUDIO_HEADPHONES_BRANDS,
+    Speaker:            AUDIO_SPEAKER_BRANDS,
     'Wireless System':  AUDIO_WIRELESS_BRANDS,
   },
   lighting: {
