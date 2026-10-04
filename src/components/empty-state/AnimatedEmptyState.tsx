@@ -109,6 +109,8 @@ const PRO_TONE: Tone = {
 /** Final values the entrance springs to — also the static reduced-motion frame. */
 const ENTER_SPRING = { damping: 14, stiffness: 120, mass: 1 };
 const FLOAT_EASING = Easing.inOut(Easing.sin);
+/** Every floating card sits this many pt (at the 390 reference) right of its layout spot. */
+export const CARD_SHIFT = 10;
 
 /**
  * A role's name on its card: the empty state's own shorter label where one is
@@ -326,7 +328,7 @@ function Floating({ index, placement, width, reduced, testID, children }: {
       testID={testID}
       shouldRasterizeIOS
       renderToHardwareTextureAndroid
-      style={[styles.floating, { left: scaleLeft(placement.left, width), top: placement.top }, style]}
+      style={[styles.floating, { left: scaleLeft(placement.left + CARD_SHIFT, width), top: placement.top }, style]}
     >
       {children}
     </Animated.View>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, useWindowDimensions } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
-import { AnimatedEmptyState } from '../AnimatedEmptyState';
+import { CARD_SHIFT, AnimatedEmptyState } from '../AnimatedEmptyState';
 import { ROLES, labelOf } from '@features/crew/data/categories';
 import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
 import { scaleLeft, fitTitleSize } from '../emptyStateLayout';
@@ -221,7 +221,7 @@ describe('full width', () => {
     const w = windowWidth();
     const r = render(<AnimatedEmptyState variant="tiles" {...base} bleed={20} />);
     const card = StyleSheet.flatten(r.getByTestId('empty-card-videographer', H).props.style);
-    expect(card.left).toBeCloseTo(scaleLeft(226, w));
+    expect(card.left).toBeCloseTo(scaleLeft(226 + CARD_SHIFT, w));
   });
 });
 
@@ -492,7 +492,7 @@ describe("'listings' (the marketplace)", () => {
     expect(flat(r.getByTestId('empty-illustration', H)).height).toBe(262);
     const audio = flat(r.getByTestId('empty-card-audio', H));
     expect(audio.top).toBe(70);
-    expect(audio.left).toBeCloseTo(scaleLeft(128, w));
+    expect(audio.left).toBeCloseTo(scaleLeft(128 + CARD_SHIFT, w));
   });
 
   it('text: title 24 / 800, subtitle 15 in #5A566C, CTA 240×52 with a 16pt label', () => {
