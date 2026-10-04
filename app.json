@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/bama.icon",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.bamaapp.bama",
       "usesAppleSignIn": true,
       "infoPlist": {
