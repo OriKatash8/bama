@@ -215,6 +215,7 @@
     "system_price_title": "Price change request",
     "system_completion_done": "Project completed",
     "system_completion_title": "Project completion request",
+    "system_completion_request_detail": "{{name}} asks to mark the project as completed",
     "system_crew_title": "The crew is set",
     "crew_ready": "The team is ready",
     "system_left": "{{name}} left the project",

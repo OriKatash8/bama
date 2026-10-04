@@ -215,6 +215,7 @@
     "system_price_title": "בקשה לשינוי מחיר",
     "system_completion_done": "הפרויקט הושלם",
     "system_completion_title": "בקשה לסיום הפרויקט",
+    "system_completion_request_detail": "{{name}} מבקש/ת לסמן את הפרויקט כהושלם",
     "system_crew_title": "הצוות מוכן לעבודה",
     "crew_ready": "הצוות מוכן",
     "system_left": "{{name}} עזב את הפרויקט",

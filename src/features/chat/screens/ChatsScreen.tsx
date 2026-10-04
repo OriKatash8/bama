@@ -23,7 +23,7 @@ import { engagementStanding, feePaidEarly } from '@features/pricing/utils/balanc
 import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotifPermissionPrompt';
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 import { usePendingMentions } from '../hooks/usePendingMentions';
-import { isCrewReady } from '../utils/systemMessages';
+import { localizedSystemPreview } from '../utils/systemMessages';
 
 type ProjectStatus = ProjectRequest['status'];
 type ProjectRoleInfo = {
@@ -499,7 +499,7 @@ export function ChatsScreen({
      * who is on the crew is what opening the chat is for.
      */
     const previewFor = (text: string | undefined) =>
-      isCrewReady(text) ? t('chats.crew_ready') : text ?? '';
+      localizedSystemPreview(text, t) ?? text ?? '';
 
     const completedLine = viewerIsPro
       // A contest is its own state and gets its own sentence. Falling through to

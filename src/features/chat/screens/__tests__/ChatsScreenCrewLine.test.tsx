@@ -97,9 +97,9 @@ describe('the crew-ready preview', () => {
     expect(r.queryByText(en.chats.crew_ready)).toBeNull();
   });
 
-  it('leaves another system message alone', async () => {
-    const r = await renderWith('📅 פגישה חדשה');
-    expect(r.queryByText('📅 פגישה חדשה')).not.toBeNull();
+  it('leaves plain message text alone', async () => {
+    const r = await renderWith('hello there');
+    expect(r.queryByText('hello there')).not.toBeNull();
     expect(r.queryByText(en.chats.crew_ready)).toBeNull();
   });
 });

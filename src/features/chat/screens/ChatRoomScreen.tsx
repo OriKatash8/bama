@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { completionRequestName } from '../utils/systemMessages';
 import { SYSTEM_USER_ID } from '@core/constants/system';
 import { isolate } from '@utils/formatters';
 import { ReplyQuote } from '../components/ReplyQuote';
@@ -222,7 +223,11 @@ function parseSystemMessage(text: string, t: T, lang: 'he' | 'en'): { variant: S
   // Matched by phrase as well as emoji, for the same encoding reason as above.
   if (text.startsWith('🏁') || text.includes('בקשת סיום פרויקט') || text.includes('הפרויקט הושלם')) {
     const done = text.includes('הפרויקט הושלם');
-    const detail = text.replace(/^(?:🏁\s*)?(?:בקשת סיום פרויקט:?|הפרויקט הושלם)\s*/, '').trim();
+    const name = completionRequestName(text);
+    // The server's Hebrew sentence is rebuilt in the reader's language from the name.
+    const detail = name
+      ? t('chats.system_completion_request_detail', { name })
+      : text.replace(/^(?:🏁\s*)?(?:בקשת סיום פרויקט:?|הפרויקט הושלם)\s*/, '').trim();
     return {
       variant: 'completion',
       headline: done ? t('chats.system_completion_done') : t('chats.system_completion_title'),
