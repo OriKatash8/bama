@@ -13,9 +13,10 @@ type AuthState = {
 
 /**
  * Where a user goes next, in the gate order: consent → email verification →
- * first-time setup → mode select → the app. On a relaunch `activeMode` is the
- * restored last mode (useAuth), so the app is that mode's home — client home,
- * or the pro noticeboard (the profile screen while it is incomplete).
+ * first-time setup → mode select → the app. `activeMode` is the restored last
+ * mode (useAuth), so this gives that mode's home — client home, or the pro
+ * noticeboard (the profile screen while it is incomplete). The root (`/`) only
+ * uses that after the first launch visit, which opens mode-select (app/index.tsx).
  * The root (`/`) redirects here, and
  * the (auth) screens navigate here DIRECTLY when their step is done.
  *
