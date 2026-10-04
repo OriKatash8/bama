@@ -366,9 +366,9 @@ export default function ProjectsPage() {
                     {key === 'projects' ? t('chats_page.my_projects') : t('chats_page.price_offers')}
                   </AppText>
                 </TouchableOpacity>
-                {/* Unseen offers, top-left of the pill, until the tab is opened. */}
+                {/* Unseen offers, top corner of the pill (right in English, left in Hebrew), until the tab is opened. */}
                 {key === 'offers' && newOffersCount > 0 && (
-                  <View style={styles.offersBadge} pointerEvents="none" testID="offers-badge">
+                  <View style={[styles.offersBadge, rtl ? styles.offersBadgeStart : styles.offersBadgeEnd]} pointerEvents="none" testID="offers-badge">
                     <AppText weight="bold" style={styles.offersBadgeText}>
                       {newOffersCount > 99 ? '99+' : String(newOffersCount)}
                     </AppText>
@@ -629,12 +629,11 @@ const styles = StyleSheet.create({
   segText: { fontSize: 13.5, fontWeight: '600' },
   segTextActive: { color: '#4C1D95' },
   segTextInactive: { color: 'rgba(255,255,255,0.85)' },
-  // Unseen-offers count on the top-left of the price offers segment: a white
+  // Unseen-offers count on the top corner of the price offers segment: a white
   // circle with violet digits, so it reads against the violet band.
   offersBadge: {
     position: 'absolute',
     top: -7,
-    left: -7,
     minWidth: 22,
     height: 22,
     borderRadius: 11,
@@ -652,6 +651,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 3,
   },
+  offersBadgeStart: { left: -7 },
+  offersBadgeEnd: { right: -7 },
   offersBadgeText: { color: '#6D28D9', fontSize: 11, lineHeight: 14 },
 
   // ── New-offers strip ──
