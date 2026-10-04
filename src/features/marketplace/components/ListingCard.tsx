@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { FittedPhoto } from './FittedPhoto';
 import { AppText } from '@components/ui/AppText';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
@@ -46,16 +47,10 @@ export function ListingCard({ listing, onPress }: Props) {
       onPress={onPress}
       activeOpacity={0.9}
     >
-      {/* A rental shows its whole photo, fitted on a light ground; 2nd-hand fills the box. */}
-      <View style={[styles.imageWrap, isRental && styles.imageWrapFit]}>
+      {/* Every photo is shown whole, fitted over a soft blurred copy of itself. */}
+      <View style={styles.imageWrap}>
         {listing.imageUrl ? (
-          <Image
-            testID="listing-card-image"
-            source={{ uri: listing.imageUrl }}
-            style={styles.image}
-            contentFit={isRental ? 'contain' : 'cover'}
-            cachePolicy="memory-disk"
-          />
+          <FittedPhoto testID="listing-card-image" uri={listing.imageUrl} style={styles.image} />
         ) : (
           <View style={styles.imagePlaceholder}>
             <Text style={styles.placeholderIcon}>{isRental ? '🎬' : '📦'}</Text>
@@ -130,7 +125,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   imageWrap: { width: '100%', height: 112, position: 'relative' },
-  imageWrapFit: { backgroundColor: '#F4F2FB' },
   image: { width: '100%', height: 112 },
   imagePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3EEFE' },
   placeholderIcon: { fontSize: 36 },

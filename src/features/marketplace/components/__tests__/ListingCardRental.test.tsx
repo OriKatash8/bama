@@ -30,10 +30,10 @@ it("a rental's price shows its period; one without a period is per day", () => {
   expect(old.getByText(`₪250${en.marketplace.per_day}`)).toBeTruthy();
 });
 
-it('a rental shows its whole photo; 2nd-hand fills the box', () => {
+it('every listing shows its whole photo, fitted', () => {
   const pic = { imageUrl: 'https://x/p.jpg' };
   const rental = render(<ListingCard listing={{ ...base, ...pic, type: 'rental' } as never} onPress={jest.fn()} />);
   expect(rental.getByTestId('listing-card-image').props.contentFit).toBe('contain');
   const used = render(<ListingCard listing={{ ...base, ...pic, type: 'secondhand' } as never} onPress={jest.fn()} />);
-  expect(used.getByTestId('listing-card-image').props.contentFit).toBe('cover');
+  expect(used.getByTestId('listing-card-image').props.contentFit).toBe('contain');
 });

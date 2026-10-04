@@ -105,12 +105,13 @@ it('2nd-hand has no period choice', () => {
   expect(r.queryByTestId('period-day')).toBeNull();
 });
 
-it("a rental's photo is picked whole (no square crop); 2nd-hand is cropped square", async () => {
+it("the seller crops their own photo (editor on, no forced aspect), for rentals and 2nd-hand", async () => {
   const r = open();
   await act(async () => { fireEvent.press(r.getByText(M.upload_photo)); });
-  expect(mockPick).toHaveBeenLastCalledWith(expect.objectContaining({ allowsEditing: false }));
+  expect(mockPick).toHaveBeenLastCalledWith(expect.objectContaining({ allowsEditing: true }));
   expect(mockPick.mock.calls.at(-1)![0]).not.toHaveProperty('aspect');
   const s = render(<PostListingSheet visible initialType="secondhand" lockedType onClose={jest.fn()} />);
   await act(async () => { fireEvent.press(s.getByText(M.upload_photo)); });
-  expect(mockPick).toHaveBeenLastCalledWith(expect.objectContaining({ allowsEditing: true, aspect: [1, 1] }));
+  expect(mockPick).toHaveBeenLastCalledWith(expect.objectContaining({ allowsEditing: true }));
+  expect(mockPick.mock.calls.at(-1)![0]).not.toHaveProperty('aspect');
 });

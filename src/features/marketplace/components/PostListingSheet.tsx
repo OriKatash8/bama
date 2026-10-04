@@ -8,6 +8,7 @@ import { Image } from 'expo-image';
 const BLUE_CAM = require('../../../../assets/images/categories/blue-cam.png');
 import { X, MapPin } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { FittedPhoto } from './FittedPhoto';
 import { CityPickerModal } from './CityPickerModal';
 import { useCreateListing } from '../hooks/useCreateListing';
 import { useUpdateListing } from '../hooks/useUpdateListing';
@@ -205,11 +206,11 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
     !isSubmitting;
 
   async function pickImage() {
-    // A rental keeps its whole photo (it is shown fitted, never cropped);
-    // 2nd-hand photos are cropped square, as their cards fill the box.
+    // The seller picks the part of the photo to use in the editor (no forced
+    // aspect); whatever they choose is then shown whole, fitted (FittedPhoto).
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'] as const,
-      ...(type === 'rental' ? { allowsEditing: false } : { allowsEditing: true, aspect: [1, 1] as [number, number] }),
+      allowsEditing: true,
       quality: 0.8,
     });
     if (!result.canceled) setImageUri(result.assets[0].uri);
@@ -318,7 +319,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             </SheetText>
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
               {imageUri ? (
-                <Image source={{ uri: imageUri }} style={styles.previewImage} contentFit={type === 'rental' ? 'contain' : 'cover'} testID="listing-image-preview" />
+                <FittedPhoto uri={imageUri} style={styles.previewImage} testID="listing-image-preview" />
               ) : (
                 <View style={[styles.imagePickerPlaceholder, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
                   <Image

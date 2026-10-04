@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
+import { FittedPhoto } from './FittedPhoto';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
 import { ExternalLink, X } from 'lucide-react-native';
@@ -209,16 +210,10 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             keyboardShouldPersistTaps="handled"
           >
             {/* Image */}
-            {/* A rental shows its whole photo, fitted and a little taller; 2nd-hand fills the box. */}
-            <View style={[styles.imageWrap, isRental && styles.imageWrapRental]} testID="listing-image">
+            {/* Every photo is shown whole, fitted over a soft blurred copy of itself. */}
+            <View style={styles.imageWrap} testID="listing-image">
               {listing.imageUrl ? (
-                <Image
-                  testID="listing-detail-image"
-                  source={{ uri: listing.imageUrl }}
-                  style={[styles.image, isRental && styles.imageRental]}
-                  contentFit={isRental ? 'contain' : 'cover'}
-                  cachePolicy="memory-disk"
-                />
+                <FittedPhoto testID="listing-detail-image" uri={listing.imageUrl} style={styles.image} />
               ) : (
                 <Text style={styles.imagePlaceholder}>📦</Text>
               )}
@@ -524,7 +519,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 4 },
 
   imageWrap: {
-    height: 180,
+    height: 220,
     backgroundColor: 'rgba(0,74,173,0.04)',
     borderRadius: 12,
     alignItems: 'center',
@@ -534,9 +529,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.15)',
   },
-  image: { width: '100%', height: 180 },
-  imageWrapRental: { height: 220 },
-  imageRental: { height: 220 },
+  image: { width: '100%', height: 220 },
   imagePlaceholder: { fontSize: 52 },
 
   price: { fontSize: 18, fontWeight: '700', color: '#004aad' },
