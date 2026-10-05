@@ -1532,6 +1532,8 @@
     "open_dashboard": "לוח ניהול",
     "requests_title": "בקשות הצטרפות",
     "requests_note": "בקשה שאושרה מוסיפה את החבר לקהילה מיד.",
+    "profile_ready": "פרופיל מקצועי",
+    "profile_missing": "אין עדיין פרופיל מקצועי",
     "approve_all": "אישור הכל",
     "approve": "אישור",
     "reject": "דחייה",

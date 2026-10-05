@@ -227,7 +227,18 @@ export function Row({
 }
 
 /** Name over meta, both single-line with an ellipsis. */
-export function WhoBlock({ name, meta, textAlign }: { name: string; meta: string; textAlign: 'left' | 'right' }) {
+export function WhoBlock({
+  name,
+  meta,
+  textAlign,
+  badge,
+}: {
+  name: string;
+  meta: string;
+  textAlign: 'left' | 'right';
+  /** An optional third line, e.g. whether a requester has a professional profile. */
+  badge?: { text: string; color: string; testID?: string };
+}) {
   const p = useAdminPalette();
   return (
     <View style={styles.who}>
@@ -237,6 +248,16 @@ export function WhoBlock({ name, meta, textAlign }: { name: string; meta: string
       {meta ? (
         <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
           {meta}
+        </AdminText>
+      ) : null}
+      {badge ? (
+        <AdminText
+          weight="semiBold"
+          numberOfLines={1}
+          testID={badge.testID}
+          style={[TYPE.rowMeta, { color: badge.color, textAlign }]}
+        >
+          {badge.text}
         </AdminText>
       ) : null}
     </View>

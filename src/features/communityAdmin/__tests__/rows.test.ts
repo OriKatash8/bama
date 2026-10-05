@@ -16,7 +16,9 @@ const tEn = tFor(en);
 const tHe = tFor(he);
 
 const NOW = new Date(2026, 8, 25, 15);
-const person = (name: string, roleId: string | null = null): Person => ({ name, photoURL: null, roleId });
+const person = (name: string, roleId: string | null = null, roleIds: string[] = roleId ? [roleId] : []): Person => ({
+  name, photoURL: null, roleId, roleIds, hasUsableProProfile: !!name && roleIds.length > 0,
+});
 
 describe('buildRequestRows', () => {
   it('shows "role · time ago" for a professional', () => {
@@ -27,7 +29,35 @@ describe('buildRequestRows', () => {
       'en',
       NOW,
     );
-    expect(row).toEqual({ userId: 'u1', name: 'Noa Bareket', meta: 'Editor · 2 days ago' });
+    expect(row).toEqual({ userId: 'u1', name: 'Noa Bareket', meta: 'Editor · 2 days ago', proProfile: 'ready' });
+  });
+
+  it('lists every role, skips an unknown role id, and never doubles up', () => {
+    const [row] = buildRequestRows(
+      [{ userId: 'u1', displayName: 'x', requestedAt: new Date(2026, 8, 25, 8) }],
+      { u1: person('Noa', 'editor', ['editor', 'not-a-role', 'videographer']) },
+      tEn, 'en', NOW,
+    );
+    expect(row.meta).toBe('Editor, Videographer · today');
+    expect(row.proProfile).toBe('ready');
+  });
+
+  it('marks a requester with a name but no role as having no professional profile', () => {
+    const [row] = buildRequestRows(
+      [{ userId: 'u1', displayName: 'x', requestedAt: new Date(2026, 8, 25, 8) }],
+      { u1: person('Noa') },
+      tEn, 'en', NOW,
+    );
+    expect(row.proProfile).toBe('missing');
+  });
+
+  it('is unknown, not missing, until the person has been fetched', () => {
+    const [row] = buildRequestRows(
+      [{ userId: 'u1', displayName: 'x', requestedAt: new Date(2026, 8, 25, 8) }],
+      {},
+      tEn, 'en', NOW,
+    );
+    expect(row.proProfile).toBe('unknown');
   });
 
   it('falls back to the name on the request, and drops the role for a client', () => {

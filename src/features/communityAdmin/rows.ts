@@ -2,6 +2,7 @@ import { ROLE_BY_ID, labelOf } from '@features/crew/data/categories';
 import { median } from './aggregate';
 import { ago, type AdminT } from './i18n';
 import type { PendingRequest, Person } from './hooks';
+import type { ProProfileMark } from './proProfile';
 import type { RequestRowData } from './components/RequestsCard';
 import type { MemberRowData } from './components/MembersCard';
 
@@ -17,7 +18,17 @@ function roleLabels(person: Person | undefined): { current: (lang: Lang) => stri
 
 const joinMeta = (parts: (string | null)[]) => parts.filter(Boolean).join(' · ');
 
-/** "role · time ago" — role only for professionals, time only when known. */
+/** Every role the person has ("Editor, Colorist"); null for a client or an unknown role id. */
+function allRoles(person: Person | undefined, lang: Lang): string | null {
+  const labels = (person?.roleIds ?? []).flatMap((id) => (ROLE_BY_ID[id] ? [labelOf(ROLE_BY_ID[id], lang)] : []));
+  return labels.length ? labels.join(', ') : null;
+}
+
+/** 'unknown' until the person's profile has been fetched, so it never flashes "none". */
+const proProfileMark = (person: Person | undefined): ProProfileMark =>
+  !person ? 'unknown' : person.hasUsableProProfile ? 'ready' : 'missing';
+
+/** "roles · time ago" — every role, only for professionals; time only when known. */
 export function buildRequestRows(
   requests: PendingRequest[],
   people: Record<string, Person>,
@@ -31,7 +42,8 @@ export function buildRequestRows(
       userId: r.userId,
       // The request carries the name the requester had when asking; prefer the live one.
       name: person?.name || r.displayName,
-      meta: joinMeta([roleLabels(person).current(lang), r.requestedAt ? ago(t, r.requestedAt, now) : null]),
+      meta: joinMeta([allRoles(person, lang), r.requestedAt ? ago(t, r.requestedAt, now) : null]),
+      proProfile: proProfileMark(person),
     };
   });
 }

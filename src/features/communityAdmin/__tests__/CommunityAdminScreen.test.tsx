@@ -78,9 +78,12 @@ function seed({ requests = REQUESTS, community = COMMUNITY } = {}) {
   mocked.useCommunity.mockReturnValue({ community, loading: false });
   mocked.useJoinRequests.mockReturnValue(requests);
   mocked.usePeople.mockReturnValue({
-    owner: { name: 'Olive Owner', photoURL: null, roleId: null },
-    m1: { name: 'Maya Cohen', photoURL: null, roleId: 'editor' },
-    m2: { name: 'Adam Peretz', photoURL: null, roleId: 'videographer' },
+    owner: { name: 'Olive Owner', photoURL: null, roleId: null, roleIds: [], hasUsableProProfile: false },
+    m1: { name: 'Maya Cohen', photoURL: null, roleId: 'editor', roleIds: ['editor'], hasUsableProProfile: true },
+    m2: { name: 'Adam Peretz', photoURL: null, roleId: 'videographer', roleIds: ['videographer'], hasUsableProProfile: true },
+    // Requesters: r1 has a professional profile (two roles), r2 is a client with none.
+    r1: { name: 'Noa Bareket', photoURL: null, roleId: 'editor', roleIds: ['editor', 'videographer'], hasUsableProProfile: true },
+    r2: { name: 'Itay Segev', photoURL: null, roleId: null, roleIds: [], hasUsableProProfile: false },
   });
 }
 
@@ -103,6 +106,32 @@ it('puts the join requests first, with their count', () => {
   expect(within(r.getByTestId('requests-count')).getByText('2')).toBeTruthy();
   expect(r.getByText('Noa Bareket')).toBeTruthy();
   expect(r.getByText(E.members_count.replace('{{n}}', '3'))).toBeTruthy();
+});
+
+describe('what the owner sees about a requester\'s professional profile', () => {
+  it('a requester with a profile: marked, with every role', () => {
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    expect(r.getByTestId('request-profile-r1').props.children).toBe(E.profile_ready);
+    expect(within(r.getByTestId('request-r1')).getByText(/Editor, Videographer/)).toBeTruthy();
+  });
+
+  it('a requester with none: says so', () => {
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    expect(r.getByTestId('request-profile-r2').props.children).toBe(E.profile_missing);
+  });
+
+  it('shows nothing about it until the person has been fetched (never a false "none")', () => {
+    mocked.usePeople.mockReturnValue({});
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    expect(r.queryByTestId('request-profile-r1')).toBeNull();
+    expect(r.getByTestId('request-r1')).toBeTruthy();
+  });
+
+  it('in Hebrew', () => {
+    mockLang = 'he';
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    expect(r.getByTestId('request-profile-r1').props.children).toBe(H.profile_ready);
+  });
 });
 
 it('the header is part of the page: it scrolls with it and is not pinned', () => {

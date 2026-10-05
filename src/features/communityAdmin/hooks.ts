@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { collection, doc, getDoc, onSnapshot, orderBy, query, where, type Timestamp } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import type { CommunityEvent } from './aggregate';
+import { hasUsableProProfile } from './proProfile';
 
 /**
  * Live data for the owner dashboard. Everything that is a list is an
@@ -129,7 +130,16 @@ export function useMemberStats(chatId: string, enabled: boolean) {
   return counts;
 }
 
-export type Person = { name: string; photoURL: string | null; roleId: string | null };
+export type Person = {
+  name: string;
+  photoURL: string | null;
+  /** The first professional role (member rows show this one). */
+  roleId: string | null;
+  /** Every professional role, in the profile's order. */
+  roleIds: string[];
+  /** Derived (see proProfile.ts), not a stored flag. */
+  hasUsableProProfile: boolean;
+};
 
 /**
  * Name, photo and first professional role per uid. Fetched once per uid — a
@@ -156,10 +166,14 @@ export function usePeople(uids: string[]) {
           getDoc(doc(db, 'users', uid, 'profile', 'data')),
         ]);
         const roleSkills = (profile.data()?.roleSkills as { role: string }[] | undefined) ?? [];
+        const roleIds = roleSkills.map((r) => r?.role).filter((r): r is string => typeof r === 'string' && r.length > 0);
+        const name = (user.data()?.displayName as string | undefined) ?? '';
         const person: Person = {
-          name: (user.data()?.displayName as string | undefined) ?? '',
+          name,
           photoURL: (user.data()?.photoURL as string | null | undefined) ?? null,
-          roleId: roleSkills[0]?.role ?? null,
+          roleId: roleIds[0] ?? null,
+          roleIds,
+          hasUsableProProfile: hasUsableProProfile({ name, roleIds }),
         };
         return [uid, person] as const;
       }),

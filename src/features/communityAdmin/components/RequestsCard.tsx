@@ -3,8 +3,9 @@ import { useAdminPalette, useAdminT } from '../i18n';
 import { SPACE, TYPE } from '../theme';
 import { AdminText, Card, CountBadge, EmptyState, InitialsAvatar, PillButton, Row, WhoBlock } from './primitives';
 import { CollapseOut } from './CollapseOut';
+import type { ProProfileMark } from '../proProfile';
 
-export type RequestRowData = { userId: string; name: string; meta: string };
+export type RequestRowData = { userId: string; name: string; meta: string; proProfile: ProProfileMark };
 
 /**
  * The priority card, first on the screen: pending join requests, oldest first.
@@ -59,7 +60,20 @@ export function RequestsCard({
               <CollapseOut leaving={leaving} onGone={() => onGone(item.userId)}>
                 <Row rowDir={rowDir} testID={`request-${item.userId}`}>
                   <InitialsAvatar name={item.name} />
-                  <WhoBlock name={item.name} meta={item.meta} textAlign={textAlign} />
+                  <WhoBlock
+                    name={item.name}
+                    meta={item.meta}
+                    textAlign={textAlign}
+                    badge={
+                      item.proProfile === 'unknown'
+                        ? undefined
+                        : {
+                            text: t(item.proProfile === 'ready' ? 'profile_ready' : 'profile_missing'),
+                            color: item.proProfile === 'ready' ? p.good : p.text3,
+                            testID: `request-profile-${item.userId}`,
+                          }
+                    }
+                  />
                   <View style={[styles.actions, { flexDirection: rowDir }]}>
                     <PillButton
                       variant="primary"

@@ -1532,6 +1532,8 @@
     "open_dashboard": "Dashboard",
     "requests_title": "Join requests",
     "requests_note": "Approving adds the member to the community right away.",
+    "profile_ready": "Professional profile",
+    "profile_missing": "No professional profile yet",
     "approve_all": "Approve all",
     "approve": "Approve",
     "reject": "Reject",
