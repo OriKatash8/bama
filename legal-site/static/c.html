@@ -5,6 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BAMA · הזמנה לקהילה / Community invite</title>
 <meta name="description" content="Open this invite in the BAMA app.">
+<!-- Link preview (WhatsApp, Telegram, iMessage, X): a pasted bare URL reads as phishing, a card
+     reads as a product. Scrapers do not run JavaScript, so this is one generic card for every
+     invite; it cannot name the community until phase 2. Hebrew first, English after the dot.
+     {{SITE_ORIGIN}} is filled in by scripts/build-legal-site.mjs (one place to change when the
+     domain does); og:image must be absolute, and a PNG: WhatsApp skips WebP. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BAMA">
+<meta property="og:locale" content="he_IL">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="הוזמנת להצטרף לקהילה ב-BAMA">
+<meta property="og:description" content="הקישור ייפתח באפליקציית BAMA, ושם אפשר לשלוח בקשה להצטרף. · Open this link in the BAMA app to ask to join.">
+<meta property="og:url" content="{{SITE_ORIGIN}}/c">
+<meta property="og:image" content="{{SITE_ORIGIN}}/og-invite.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="BAMA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="הוזמנת להצטרף לקהילה ב-BAMA">
+<meta name="twitter:description" content="הקישור ייפתח באפליקציית BAMA, ושם אפשר לשלוח בקשה להצטרף. · Open this link in the BAMA app to ask to join.">
+<meta name="twitter:image" content="{{SITE_ORIGIN}}/og-invite.png">
+<meta name="twitter:image:alt" content="BAMA">
 <!-- The invite token is in this page's URL. No third-party requests (no web fonts, no
      analytics), no referrer, and not indexed: the token must go nowhere but this page. -->
 <meta name="referrer" content="no-referrer">

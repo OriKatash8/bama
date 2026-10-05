@@ -21,6 +21,14 @@ import { marked } from 'marked';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+/**
+ * The origin the invite landing page's link-preview tags (og:image, og:url, ...) must name in
+ * ABSOLUTE form. The one place to change when the real domain arrives, or set SITE_ORIGIN=...
+ * for a build. legal-site/static/c.html holds the {{SITE_ORIGIN}} placeholder.
+ */
+export const SITE_ORIGIN = (process.env.SITE_ORIGIN ?? 'https://bama-af0a0.web.app').replace(/\/+$/, '');
+if (!/^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(SITE_ORIGIN)) throw new Error(`SITE_ORIGIN must be a bare https origin, got ${SITE_ORIGIN}`);
+
 /** logo.webp is 701×176 (88px on the index at 2x); width/height keep the layout from jumping. */
 const LOGO = { src: '/logo.webp', ratio: 701 / 176 };
 
@@ -166,6 +174,10 @@ export function build(
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
   if (existsSync(staticDir)) cpSync(staticDir, outDir, { recursive: true });
+  const invitePage = join(outDir, 'c.html');
+  if (existsSync(invitePage)) {
+    writeFileSync(invitePage, readFileSync(invitePage, 'utf8').replaceAll('{{SITE_ORIGIN}}', SITE_ORIGIN));
+  }
   const written = [];
   for (const page of PAGES) {
     const md = readFileSync(join(srcDir, page.src), 'utf8');
