@@ -232,27 +232,36 @@ export const resolveCommunityInvite = onRequest(
 // ── Triggers ─────────────────────────────────────────────────────────────────
 
 /**
- * When a join request becomes pending with an invite token (on create, or when a
- * settled request is reset to pending; never twice for one pending request):
- *  1. useCount += 1 on the invite;
- *  2. the community owner gets a push saying who asked.
- * The rules have already checked that the token is a live invite for this community;
- * the communityId is re-checked here anyway, and an unknown or foreign token notifies
- * nobody. Requests that did NOT come through an invite (Discover) do not notify.
+ * When a join request becomes pending (created, or a settled one asking again):
+ *  1. the community owner gets a push saying who asked. EVERY request, however it
+ *     arrived: an owner told about one request and not the next is worse than never
+ *     told. An edit to a request that is already pending is not a new request.
+ *  2. if it carries an invite token, useCount += 1 on that invite (once per pending
+ *     request; the rules have already checked the token, the communityId is
+ *     re-checked here, and a token that does not check out is simply not counted).
  */
 export const onCommunityInviteJoinRequest = onDocumentWritten(
   { document: 'chats/{chatId}/joinRequests/{uid}', region: REGION },
   async (event) => {
     const before = event.data?.before.exists ? event.data.before.data() : undefined;
     const after = event.data?.after.exists ? event.data.after.data() : undefined;
-    if (!after || after.status !== 'pending' || !isTokenShape(after.inviteToken)) return;
-    if (before && before.status === 'pending' && before.inviteToken === after.inviteToken) return;
+    if (!after || after.status !== 'pending') return;
+    const wasPending = before?.status === 'pending';
+    const hasToken = isTokenShape(after.inviteToken);
+    // Same pending request, edited: nothing new to count or announce.
+    if (wasPending && (!hasToken || before?.inviteToken === after.inviteToken)) return;
 
-    const ref = invitesCol().doc(after.inviteToken);
-    const snap = await ref.get();
-    if (!snap.exists || snap.get('communityId') !== event.params.chatId) return;
-    await ref.update({ useCount: FieldValue.increment(1) });
+    if (hasToken) {
+      const ref = invitesCol().doc(after.inviteToken);
+      const snap = await ref.get();
+      if (snap.exists && snap.get('communityId') === event.params.chatId) {
+        await ref.update({ useCount: FieldValue.increment(1) });
+      }
+    }
 
+    // Only a request that was not already pending is news to the owner (a pending
+    // request that merely gains a token above is counted, not announced twice).
+    if (wasPending) return;
     // Best effort: a failed push must never undo or retry the count above.
     await notifyOwnerOfJoinRequest(event.params.chatId, event.params.uid, after.displayName, event.id)
       .catch((e) => console.warn('[onCommunityInviteJoinRequest] owner push failed', (e as Error)?.message));
