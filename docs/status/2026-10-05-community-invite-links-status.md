@@ -1,82 +1,174 @@
-# Community invite links: status, 2026-10-05
+# Community invite links: status, 2026-10-05 (updated after the review round)
 
-Phase 1 is built and committed locally. **Nothing is deployed and nothing is seeded in production.** Only `802d73bf` is pushed; the six commits after it are local.
+Phase 1 is built and committed. **Nothing is deployed, `config/appLinks` is not seeded in production, and hosting is not deployed.** Everything below was run against local emulators only.
 
-The earlier plan, `2026-10-05-community-invite-links-step1.md`, still contains the superseded proposals (pro-only gate, `hasResume`). This file is the current state.
+The earlier plan, `2026-10-05-community-invite-links-step1.md`, still contains superseded proposals (the pro-only gate, `hasResume`). This file is the current state.
 
-## What shipped (commits, in order)
+## What changed in the review round
 
-| Commit | Checkpoint | What |
-|---|---|---|
-| `802d73bf` (pushed) | 1 | `europe-west1` Functions instance, `inviteService`, error-to-string mapping (he/en), i18n |
-| `ee4b1620` | 2a | `/c/[token]` route + `InvitePreviewScreen`, join request, resume round trip |
-| `f163737a` | 2b | Communities you belong to are listed in the chats tab, in both modes |
-| `3fa28141` | 2c | Owner's request row shows a derived "professional profile" marker and all roles |
-| `2dd36674` | 3 | Owner-only share row on community details |
-| `6d92e3de` | 4 | Owner push on a new invite join request |
-| `9ffd958c` | 5 | Landing page `/c/<token>` + hosting rewrite (built, not deployed) |
+- **"View listing" is hidden when `activeMode === 'client'`.** The card and its content stay; only the action goes, because it opens the professional marketplace and there is no client one (`SharedListingCard` in `ChatRoomScreen.tsx`, test in `sharedListingCardAction.test.tsx`). Looked at in a browser as a client (no button) and as a professional (button).
+- **The owner push now fires for every new join request**, invite or not. The only reason I could find to keep the filter was spam, see "Risks" below; it is not a reason to keep it.
+- **The landing page says the truth when the app is not in the stores**, and shows store buttons by itself once the store links are seeded. See "Store links".
+- **Pushed to `origin/main`.** See the list at the end.
 
-## Decisions applied
+## Open product question
 
-- **No pro-only join gate.** Any signed-in user can request; the owner's approval is the gate. The spec's mode-switch confirm and profile redirect were dropped. The owner sees whether the requester has a usable profile (derived: display name + at least one role; **not** `proProfileCompleted`) and all their roles. Zero extra reads: `usePeople` already fetched both docs.
-- **Phase 1 only.** `bama://c/<token>`; no associated domains, no intent filters, nothing under `ios/` or `app.json` linking.
-- **No `expo-clipboard`.** Native share sheet; web `navigator.share` with `navigator.clipboard` fallback.
-- **Owner only** can create a link. `allowMemberInvites` was not added to the client type.
-- **`resolveCommunityInvite` is not part of this** and the landing page does not call it.
+**Should clients get marketplace access?** Today a client-mode community member can open the Market channel and see shared listings, but cannot open them. If the answer is yes, it needs a client marketplace route; I built nothing for it.
 
-## The resume round trip (the highest-risk part)
+## Store links (landing page)
 
-- Only `useSwitchMode` consumed a saved link. A **returning** user with a restored mode skips mode-select after consent, email verification and setup, so the link would have been dropped.
-- Fix: `postStepRoute` (`src/features/auth/utils/postStepRoute.ts`) is a second take site, called from `ConsentForm`, `VerifyEmailForm` (2 places) and `setup.tsx`. It consumes the link only when the next stop is a final destination, never when another auth step or mode-select is ahead. With no saved link it returns exactly what `nextAuthRoute` returns. Effects are once-guarded.
-- `pendingIntentStore` now refuses `takeResume()` before AsyncStorage hydrates, offers `takeResumeWhenReady()` (3 s cap), and keeps a not-persisted `consumedAt` so a late hydration cannot bring a used link back.
-- `/c/[token]` saves the link **before** its redirect renders, and uses `useOnboardingGate({ deferPhone: true })` so the phone rung stays with the group layouts: consent lands on the invite, not the phone screen (tested).
-- Every way out of the invite screen goes through `inviteExitHref`, which always names `(client)` or `(professional)` from the active mode (tested for both).
+The static page cannot read Firestore (`config/*` is for signed-in users only), so:
 
-## Verified
+1. `node scripts/seed-app-links.mjs --project bama-af0a0 --ios-url <https url> --android-url <https url>` sets only those two fields of the existing doc (no `--force`, `baseUrl` untouched; refuses anything that is not `https`).
+2. `npm run legal:deploy` now first runs `scripts/export-app-links.mjs --optional`, which writes `legal-site/static/app-links.json` (only the two URLs, gitignored), then builds and deploys. The page fetches `/app-links.json` from its own origin.
+3. With no links, an empty file, a missing file or any error, the page says in Hebrew and English that the app is not in the stores yet. With links it shows the matching buttons. No page edit is needed.
 
-- `npx jest`: 360 suites, 3154 tests green; `tsc` clean; `node --test scripts/__tests__/*.test.mjs`: 78 pass.
-- Mutation checks at every checkpoint (each asserts its anchor). Two of mine did not bite at first and were fixed: the pre-hydration test, and an invalid mutant that was a syntax error.
-- **Emulator, backend (29/29)** against auth + firestore + functions under `demo-bama`: create, create again returns the same invite; **create after revoke mints a new token and a new code** (the old link reads as revoked); lookups; join request through the rules (live token OK; revoked token, short code, extra field, someone else's uid all refused); `useCount` trigger; permission and error mapping on the **real** emulator errors.
-- **Emulator, owner push (16/16)**: one notification per new invite request; none for a non-invite request or an edit to a pending one; one more for a re-ask after a rejection; English when `users/{owner}.language` is `en`; no crash and the count still bumps when there is no owner.
-- **Hosting emulator**: `/c/**` serves the page with `X-Robots-Tag: noindex, nofollow` and `Referrer-Policy: no-referrer`; `/`, `/terms`, `/privacy`, `/refunds`, `/en/*` are unchanged and do not get those headers.
-- The harnesses are in the session scratchpad, not committed (`invite-emulator-proof.mjs`, `invite-push-proof.mjs`).
+`legal:deploy` does not fail if the export cannot run (no Google credentials, no doc): it prints a loud warning, deletes any older `app-links.json` so a stale one never ships, and deploys with the "not in the stores yet" message. The export reads production through Application Default Credentials, like `seed-app-links.mjs`.
 
-## NOT verified
+## The resume round trip
 
-- **No browser or device check at all.** The Chrome extension was not connected. The invite screen, the share row, the chats-tab community rows, the owner request row and the landing page have not been looked at, in Hebrew RTL or English LTR. Client-mode community rooms (`ChatRoomScreen` under `(client)`) were checked by reading only.
-- **Expo push delivery.** The emulator proves the `notifications` document is written; the existing `onNotificationCreate` path turns it into a push, and that was not exercised (no push tokens).
-- `resolveCommunityInvite` (public endpoint) is untouched and unverified, as before.
-- Composite indexes cannot be proven on the emulator. None were added by this work.
+- A **returning** user with a restored mode skips mode-select after consent, email verification and setup, so the saved link would have been dropped. `postStepRoute` (`src/features/auth/utils/postStepRoute.ts`) is a second take site, called from `ConsentForm`, `VerifyEmailForm` (2 places) and `setup.tsx`. It consumes the link only when the next stop is a final destination; with no saved link it returns exactly what `nextAuthRoute` returns. Effects are once-guarded.
+- `pendingIntentStore` refuses `takeResume()` before AsyncStorage hydrates, has `takeResumeWhenReady()` (3 s cap), and a not-persisted `consumedAt` so a late hydration cannot bring a used link back.
+- `/c/[token]` saves the link **before** its redirect renders, and uses `useOnboardingGate({ deferPhone: true })`, so consent lands on the invite, not the phone screen.
+- Every way out of the invite screen goes through `inviteExitHref`, which always names `(client)` or `(professional)`.
 
-## Things you should know
+## Run it locally (cold start)
 
-1. **Owner push language is Hebrew.** The server has no language field (`users/{uid}.language` does not exist; `feeOverdue.ts` says the same). The text is bilingual and switches to English the day that field is written. Only **invite** requests notify; Discover requests still do not. A muted community still sends this push (it is an action the owner must take). There is no per-type opt-out toggle for `community_join_request`.
-2. **Client-mode members and the Market channel.** The listing "view" button in a community chat (`ChatRoomScreen.tsx:588`) goes to `/(professional)/(tabs)/marketplace`, and there is no client marketplace. I left it unchanged. Hiding that button in client mode is the obvious follow-up; it is your product call.
-3. **Community rows sort by creation date.** The server never writes `lastMessage` on a community chat doc, so a community sits where its `createdAt` puts it and does not rise on new messages. The unread badge works (the server increments `unreadCount.<uid>` too, so my earlier "needs a `channelUnread` sum" was wrong and nothing was needed).
-4. **Phone.** The invite preview does not require a phone number; the phone rung applies when the user enters a chat from it. The `joinRequests` rules do not require one either.
-5. **`jest.setup.js` is new.** It registers the AsyncStorage jest mock globally, because the persisted store is now reached through the auth screens. Two older community-details tests also needed the invite service mocked.
-6. **Emulator noise that is not from this work:** `onUserCreate` crashes under the functions emulator when auth users are created (`admin.firestore.FieldValue` is undefined there; already documented in `docs/slice1-verification.md`). The rules log prints "evaluation error" for some denied writes; denial is the same either way.
-7. **Store links:** `config/appLinks` has empty `iosUrl`/`androidUrl`, so the landing page says "install BAMA, then open this link again" with no store button.
+All emulator-only. The fixture **wipes** the emulator's data and refuses to run against anything that is not a local `demo-` project.
 
-## What you need to deploy (you run these)
+```bash
+cd ~/dev/bama-app
+
+# 1. Build the functions the emulator loads.
+npm --prefix functions run build
+
+# 2. Terminal 1: the emulators (auth, firestore, functions). Leave running.
+firebase emulators:start --only auth,firestore,functions --project demo-bama
+
+# 3. Terminal 2: seed everything and mint the links. This also seeds config/appLinks
+#    (validated by the same rule createCommunityInvite enforces) and creates the invites
+#    through the REAL createCommunityInvite / revokeCommunityInvite callables.
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
+  node --no-warnings scripts/dev-invite-fixture.mjs --app-url http://localhost:8081
+
+# 4. Terminal 3: the app, pointed at the emulators (set on the command line; no .env file).
+#    Stop your current Metro on 8081 first, or add `--port 8089` and use that port in step 3.
+EXPO_PUBLIC_USE_EMULATORS=1 npx expo start --web --clear
+```
+
+The fixture prints, every run (the token is different each time):
+
+```
+Log in with any of these, password: Invite-test-1
+  owner@invite.test      owns the community (use professional mode)
+  member@invite.test     already a member of it
+  client@invite.test     no professional profile (a plain requester)
+  pro@invite.test        has a professional profile with two roles
+  nophone@invite.test    no phone number on file (phone rung comes after the invite)
+
+  live token      http://localhost:8081/c/<22-char token>      <- paste this one
+  live short code http://localhost:8081/c/<6-char code>
+  REVOKED token   http://localhost:8081/c/<22-char token>
+  unknown code    http://localhost:8081/c/ZZZZZZ
+  malformed       http://localhost:8081/c/not-a-token
+  Deep-link form: bama://c/<token>
+```
+
+**The URL to paste: `http://localhost:8081/c/<live token>`**, taken from the fixture's output. Open it signed out first (it should send you to login, and after login and picking a mode bring you back to the invite), then again signed in. To mint another link later, sign in as the owner and tap "Share community" on the community's details page (on web it copies the link), or rerun the fixture (it wipes and starts over). To seed `config/appLinks` on its own: `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 node --no-warnings scripts/seed-app-links.mjs --project demo-bama`.
+
+**iPhone:** the emulators must be reachable from the phone, and `127.0.0.1` is the phone itself. Use the LAN config and your computer's address:
+
+```bash
+firebase emulators:start --only auth,firestore,functions --project demo-bama --config firebase.emulators-lan.json
+EXPO_PUBLIC_USE_EMULATORS=1 EXPO_PUBLIC_EMULATOR_HOST=$(ipconfig getifaddr en0) npx expo start --dev-client
+```
+
+Open the invite on the phone with the deep-link form `bama://c/<token>` (paste it in Notes or Safari and tap it). While `firebase.emulators-lan.json` runs, anyone on the Wi-Fi can reach the emulators. **I did not try the phone setup**, see below.
+
+**The landing page locally:**
+
+```bash
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 node --no-warnings scripts/export-app-links.mjs --project demo-bama
+node scripts/build-legal-site.mjs
+# a hosting emulator with a config INSIDE the project folder (an absolute `public` path from elsewhere served only 404s):
+#   copy firebase.json's "hosting" block into a temp file next to it, set "emulators": {"hosting":{"port":5055},"hub":{"port":4410},"ui":{"enabled":false},"logging":{"port":4510}}
+firebase emulators:start --only hosting --project demo-bama --config <that file>
+# then http://127.0.0.1:5055/c/<token>
+```
+
+## What I looked at, and what I did not
+
+I drove the app in **headless Chromium (Playwright), 390×844 at 2x, against the emulators**, and read the screenshots. That is a web check. I have not seen any of this on an iPhone, in Safari, in Android, or in dark mode.
+
+**Screen by screen: looked at**
+
+| Screen | Seen |
+|---|---|
+| Invite preview `/c/<token>` | Hebrew as a client (invite, then request sent); English as a professional (invite, then request sent); revoked, unknown code and malformed link in English |
+| Resume round trip | Brand-new browser session: open link signed out, redirected to login, log in, mode-select, pick a mode, land on the invite. Client mode and professional mode |
+| Chats tab, community row | Hebrew, in professional mode (owner) and in client mode (the approved client) |
+| Community room as a client | Opens, channels, Market channel selected, composer in the client colour |
+| Community details, "Share community" | Hebrew and English label; tap on web: link copied to the clipboard (it was the real live URL), green "copied" toast |
+| Owner dashboard, join-request rows | Hebrew: requester with no profile ("אין עדיין פרופיל מקצועי"); English: requester with a profile ("Editor, Videographer" + "Professional profile"); approve removes the row |
+| Shared listing card in the Market channel | Hebrew: client sees the card, no button; professional sees the button |
+| Landing page `/c/<token>` | Three store states (both buttons, none seeded, no file) and a bad link, in the Hosting emulator |
+
+**Built but NOT looked at, or looked at only in part: read these critically**
+
+- **Invite preview.** The loading state; the error state with "Try again" (a real backend error, e.g. unverified email or rate limit); the "already a member" state and its "Open community" button; a community **with a photo** (only the no-photo icon was seen); a long name or long description; the English description; **dark mode**; **native iOS** layout (safe area, notch, keyboard). Its "returning to the app" button after a request was seen only as text.
+- **Resume round trip.** The **returning-user path** (restored mode, mode-select skipped after consent / email / setup) is covered by unit tests only, not clicked through. Not clicked: register, email-verify and setup chains; Google and Apple sign-in; opening `bama://c/<token>` from a cold start on a device.
+- **The phone-number ordering.** `nophone@invite.test` exists in the fixture but I did not run that path in the browser.
+- **Chats tab.** English; the unread badge on a community row; searching for a community; the empty state for a user whose only chat is a community (unit-tested).
+- **Share row.** The **native share sheet** (`Share.share`) is the biggest unknown: I have only seen the web clipboard fallback. The unverified-email toast and the busy spinner in a browser; the English layout beyond the label.
+- **Owner dashboard.** Two-column layout at 900px and wider; a long name; the row's collapse animation (the row did disappear).
+- **Listing card.** English; a rental listing; a listing with a photo; **tapping** the professional button.
+- **Owner push.** Receiving one on a phone, its text on a lock screen, and tapping it (the tap routing is unit-tested). The emulator proves the `notifications` document is written once; the existing `onNotificationCreate` turns it into an Expo push and that step was never run.
+- **Landing page.** Safari on iOS and Chrome on Android; what the "Open in the app" button does on a phone **without** the app (iOS shows an error for an unhandled scheme); **dark mode**; and especially **in-app browsers such as WhatsApp's**, which often refuse custom-scheme links like `bama://`. This is the real WhatsApp use case and I could not test it. Universal links (phase 2) are the fix if it fails.
+- **The iPhone emulator setup itself** (LAN config, `EXPO_PUBLIC_EMULATOR_HOST`): untested. iOS may also object to plain-http calls to a LAN address from the dev build.
+
+## Verified by tests
+
+- `npx jest`: 361 suites, 3157 tests green; `tsc` clean; `node --test scripts/__tests__/*.test.mjs`: 94 pass.
+- Mutation checks at every step, each asserting its anchor. Two of mine did not bite at first (a pre-hydration test; an invalid mutant) and were fixed. One more survived because two checks overlapped, so I confirmed removing both fails.
+- **Emulator, backend (29/29):** create; create again returns the same invite; **create after revoke mints a new token and code**; lookups; join request through the rules (live token OK, revoked token / short code / extra field / someone else's uid refused); the real emulator errors mapped to the right strings.
+- **Emulator, owner push (20/20):** one notification per new request, **invite or not**; none for an edit to a pending request or a cancel; one more for a re-ask after a rejection; English when `users/{owner}.language` is `en`; no crash and the count still bumps when there is no owner.
+- The harness scripts are in the session scratchpad and are not committed; the committed ones are `scripts/dev-invite-fixture.mjs` (guarded by `devFixtureGuard.test.mjs`) and `scripts/export-app-links.mjs`.
+
+## Risks and logged-not-fixed
+
+- **Owner push can be spammed.** A requester can cancel and ask again as often as they like (the rules allow deleting a pending request and creating a new one), and each new pending request pushes the owner. Same for invite requests before this change. No cap or per-requester cooldown exists. Worth a cooldown if it matters.
+- **Owner push is Hebrew.** The server has no language field (`users/{uid}.language` does not exist), so every push is Hebrew. The text is bilingual and switches the day the app writes that field. *Logged, not fixed.*
+- **Community rows do not sort by their last message.** The server never writes `lastMessage` on a community chat doc, so rows sit by creation date. The unread badge works (the server increments `unreadCount.<uid>`). *Pre-existing; logged, not fixed.*
+- A muted community still sends this push, and there is no per-type opt-out toggle for `community_join_request`.
+- The invite preview does not require a phone number; the phone rung applies when the user enters a chat from it. The `joinRequests` rules do not require one either.
+- `jest.setup.js` is new (a global AsyncStorage mock, because the persisted store is now reached through the auth screens).
+- Emulator noise that is not from this work: `onUserCreate` crashes under the functions emulator when auth users are created (`admin.firestore.FieldValue` is undefined there, already in `docs/slice1-verification.md`); the rules log prints "evaluation error" for some denied writes (denied either way); a browser logs a 404 for `/app-links.json` when no file was deployed.
+
+## What you run to deploy (I have not)
 
 Rules need **no** deploy: the invite rules (`5fe615c9`) are an ancestor of the last released rules commit `b0fccbc`. `docs/production-deploys.md` warns against casual rules deploys because of the `verified()` drift, so don't.
 
-1. **Seed `config/appLinks` in production** (the link base; `createCommunityInvite` fails without it). Dry run, write, verify:
+1. **Seed `config/appLinks` in production** (the link base; `createCommunityInvite` fails without it):
    ```
    node scripts/seed-app-links.mjs --project bama-af0a0 --dry-run
    node scripts/seed-app-links.mjs --project bama-af0a0
    node scripts/seed-app-links.mjs --project bama-af0a0 --verify
    ```
-2. **Functions, by name**, five of them (`resolveCommunityInvite` deliberately excluded). These were still held for the budget-alert confirmation as of 2026-09-25:
+2. **Functions, by name**, five of them (`resolveCommunityInvite` deliberately excluded). They were still held for the budget-alert confirmation as of 2026-09-25:
    ```
+   npm --prefix functions run build
    firebase deploy --only functions:createCommunityInvite,functions:getCommunityInvite,functions:revokeCommunityInvite,functions:onCommunityInviteJoinRequest,functions:onCommunityDeleted --project bama-af0a0
    ```
-   `onCommunityInviteJoinRequest` is the one changed here (owner push). Build first: `npm --prefix functions run build`.
-3. **Hosting** (builds the site, then deploys; adds `/c.html` and the `/c/**` rewrite):
+   `onCommunityInviteJoinRequest` is the one changed here (owner push, now for every request).
+3. **Hosting** (exports the store links if it can, builds, deploys; adds `/c.html`, the `/c/**` rewrite and the `/app-links.json` header):
    ```
    npm run legal:deploy
    ```
-4. **App**: JS only. No new native module and no `ios/` or `app.json` change, so nothing here needs a native rebuild. (I did not check whether OTA updates are configured for this project.)
+   Later, once the app is in the stores: seed the two links (see "Store links"), then run the same command again.
+4. **App:** JS only. No new native module and no `ios/` or `app.json` change, so nothing here needs a native rebuild. (I did not check whether OTA updates are configured.)
 
-Order: seed `appLinks`, then functions, then hosting, then ship the app. If the app ships before the functions are live, the callable answers "not found" and the owner sees the "This invite link doesn't exist" sentence on the share row, which is misleading; a deploy-order issue, not a code path I handled specially.
+Order: seed `appLinks`, then functions, then hosting, then ship the app. If the app ships before the functions are live, the callable answers "not found" and the owner sees "This invite link doesn't exist" on the share row; misleading, but a deploy-order issue.
+
+## Commits
+
+`802d73bf` → `ee4b1620` → `f163737a` → `3fa28141` → `2dd36674` → `6d92e3de` → `9ffd958c` → `d66491f4`, then this round (listing button, push for every request, landing page + store links, dev emulator switch / fixture / LAN config).
