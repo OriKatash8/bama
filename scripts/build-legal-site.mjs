@@ -8,6 +8,10 @@
 // plus index.html linking to all six. Fully static: no JavaScript, no cookies,
 // no analytics. legal-site/public/ is build output and is not committed.
 //
+// The one exception to "no JavaScript" is legal-site/static/c.html, the invite landing page
+// served for /c/** (firebase.json rewrite). Its few inline lines only read the token from the
+// address and build a bama://c/<token> link; it makes no network request and loads nothing.
+//
 // legal-site/static/ (logo, favicon, apple-touch-icon) is copied as is. The logo is
 // the app's gradient wordmark on a transparent background, the same in light and dark.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

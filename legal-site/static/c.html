@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BAMA · הזמנה לקהילה / Community invite</title>
+<meta name="description" content="Open this invite in the BAMA app.">
+<!-- The invite token is in this page's URL. No third-party requests (no web fonts, no
+     analytics), no referrer, and not indexed: the token must go nowhere but this page. -->
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--muted:#5f6368;--border:#d9dce1;--link:#004aad;--btn:#004aad;--btn-fg:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#121316;--fg:#e8e9ec;--muted:#a0a4ab;--border:#3a3d44;--link:#8ab4ff;--btn:#8ab4ff;--btn-fg:#0b1a33}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Heebo",Arial,sans-serif}
+.wrap{max-width:440px;margin:0 auto;padding:40px 20px 56px;text-align:center}
+.logo{display:block;margin:0 auto 28px;height:44px;width:auto}
+h1{font-size:22px;line-height:1.3;margin:0 0 6px}
+.en{color:var(--muted);font-size:15px;margin:0 0 4px}
+.lead{margin:0 0 24px;color:var(--muted)}
+.open{display:block;width:100%;padding:15px 18px;border-radius:14px;background:var(--btn);color:var(--btn-fg);font-weight:700;font-size:17px;text-decoration:none}
+.open small{display:block;font-weight:400;font-size:13px;opacity:.9}
+.hint{margin:22px 0 0;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
+.hint p{margin:0 0 6px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="/logo.webp" alt="BAMA" width="176" height="44">
+
+  <section id="valid" hidden>
+    <h1>הוזמנת להצטרף לקהילה ב-BAMA</h1>
+    <p class="en" dir="ltr">You've been invited to join a community on BAMA</p>
+    <p class="lead">הקישור ייפתח באפליקציה, ושם תוכל לשלוח בקשה להצטרף.</p>
+    <a id="open" class="open" href="#">פתיחה באפליקציה<small dir="ltr">Open in the app</small></a>
+    <div class="hint">
+      <p>אין לך עדיין את האפליקציה? התקן את BAMA ואז פתח את הקישור הזה שוב.</p>
+      <p dir="ltr">Don't have the app yet? Install BAMA, then open this link again.</p>
+    </div>
+  </section>
+
+  <section id="invalid" hidden>
+    <h1>הקישור לא נראה תקין</h1>
+    <p class="en" dir="ltr">This link doesn't look right</p>
+    <p class="lead">בקש מבעל הקהילה לשלוח לך את הקישור שוב.</p>
+    <p class="lead" dir="ltr">Ask the community owner to send you the link again.</p>
+  </section>
+
+  <noscript>
+    <h1>פתח את הקישור הזה בטלפון שבו מותקנת אפליקציית BAMA</h1>
+    <p class="en" dir="ltr">Open this link on a phone that has the BAMA app installed.</p>
+  </noscript>
+</div>
+<script>
+/* /c/<token>  ->  bama://c/<token>. Nothing is sent anywhere: the token is read from the
+   address, checked, and put into a link on this page. The pattern is the app's own
+   (src/core/deepLinks/allowlist.ts: a 22-character token or a 6-character code), so a
+   link the app would refuse is never turned into a button. */
+(function () {
+  var TOKEN_OR_CODE = /^(?:[A-Za-z0-9_-]{22}|[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})$/;
+  var parts = location.pathname.split('/');
+  var token = parts[1] === 'c' && parts.length === 3 ? parts[2] : '';
+  var valid = TOKEN_OR_CODE.test(token);
+  if (valid) document.getElementById('open').setAttribute('href', 'bama://c/' + token);
+  document.getElementById('valid').hidden = !valid;
+  document.getElementById('invalid').hidden = valid;
+})();
+</script>
+</body>
+</html>

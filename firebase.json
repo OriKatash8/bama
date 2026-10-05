@@ -14,10 +14,20 @@
     "public": "legal-site/public",
     "cleanUrls": true,
     "trailingSlash": false,
+    "rewrites": [
+      { "source": "/c/**", "destination": "/c.html" }
+    ],
     "headers": [
       {
         "regex": "^/(?:[^.]*|.*[.]html)$",
         "headers": [{ "key": "Cache-Control", "value": "max-age=300" }]
+      },
+      {
+        "source": "/c/**",
+        "headers": [
+          { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+          { "key": "Referrer-Policy", "value": "no-referrer" }
+        ]
       }
     ]
   },
