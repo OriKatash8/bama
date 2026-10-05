@@ -14,17 +14,35 @@ const config = JSON.parse(readFileSync(join(ROOT, 'firebase.json'), 'utf8'));
 const TOKEN = 'abcDEF123_-xyzABC456789'.slice(0, 22);
 const CODE = 'K7MX9P';
 
-/** Runs the page's inline script against a tiny fake document at `pathname`. */
-function run(pathname) {
+const IDS = ['open', 'valid', 'invalid', 'get-app', 'stores', 'no-stores', 'store-ios', 'store-android'];
+
+/**
+ * Runs the page's inline script against a tiny fake document at `pathname`.
+ * `appLinks` is what /app-links.json answers: an object, or an Error to simulate a failure,
+ * or 'missing' for a 404. The fetch calls it made are returned in `calls`.
+ */
+function run(pathname, appLinks = 'missing') {
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   const el = (id) => ({ id, hidden: undefined, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } });
-  const els = { open: el('open'), valid: el('valid'), invalid: el('invalid') };
+  const els = Object.fromEntries(IDS.map((id) => [id, el(id)]));
+  const calls = [];
+  const fetchStub = (url, opts) => {
+    calls.push({ url, opts });
+    if (appLinks instanceof Error) return Promise.reject(appLinks);
+    if (appLinks === 'missing') return Promise.resolve({ ok: false, json: async () => { throw new Error('404 page'); } });
+    return Promise.resolve({ ok: true, json: async () => appLinks });
+  };
   vm.runInNewContext(script, {
     location: { pathname },
     document: { getElementById: (id) => els[id] },
+    fetch: fetchStub,
+    URL,
   });
+  els.calls = calls;
   return els;
 }
+/** Lets the page's promise chain finish. */
+const settle = () => new Promise((r) => setImmediate(r));
 
 test('a valid token builds the bama://c/<token> button and shows the invite', () => {
   const els = run(`/c/${TOKEN}`);
@@ -62,9 +80,13 @@ test('its token pattern is EXACTLY the app\'s (allowlist.ts): same accepts, same
   }
 });
 
-test('it reaches nowhere: no external URLs, no fetch/XHR, no third-party assets, no referrer, not indexed', () => {
-  assert.doesNotMatch(html, /https?:\/\//i, 'an absolute http(s) URL appeared');
-  assert.doesNotMatch(html, /\bfetch\s*\(|XMLHttpRequest|sendBeacon|WebSocket|document\.cookie|localStorage/i);
+test('it reaches nowhere but its own /app-links.json: no external URLs, no other requests, no third-party assets, no referrer, not indexed', () => {
+  // The only absolute URL allowed is the "https://" prefix check on store links.
+  const withoutPrefixCheck = html.replace(/indexOf\('https:\/\/'\)/g, '').replace(/'https:'/g, '');
+  assert.doesNotMatch(withoutPrefixCheck, /https?:\/\//i, 'an absolute http(s) URL appeared');
+  assert.equal((html.match(/\bfetch\s*\(/g) ?? []).length, 1, 'more than one fetch');
+  assert.match(html, /fetch\('\/app-links\.json', \{ cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' \}\)/);
+  assert.doesNotMatch(html, /XMLHttpRequest|sendBeacon|WebSocket|document\.cookie|localStorage|navigator\.send/i);
   assert.match(html, /<meta name="referrer" content="no-referrer">/);
   assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
   assert.doesNotMatch(html, /<link[^>]+stylesheet/i, 'a stylesheet would be a request that carries the token');
@@ -79,11 +101,87 @@ test('Hebrew first (rtl) with English alongside; the open button carries both', 
 test('hosting rewrites /c/** to the page, and adds noindex + no-referrer headers for it', () => {
   const h = config.hosting;
   assert.deepEqual(h.rewrites, [{ source: '/c/**', destination: '/c.html' }]);
+  const json = h.headers.find((x) => x.source === '/app-links.json');
+  assert.ok(json, 'no header rule for /app-links.json');
+  assert.deepEqual(json.headers, [{ key: 'Cache-Control', value: 'no-cache' }]);
   const rule = h.headers.find((x) => x.source === '/c/**');
   assert.ok(rule, 'no header rule for /c/**');
   const map = Object.fromEntries(rule.headers.map((x) => [x.key, x.value]));
   assert.equal(map['X-Robots-Tag'], 'noindex, nofollow');
   assert.equal(map['Referrer-Policy'], 'no-referrer');
+});
+
+test('a valid link asks /app-links.json (same origin, no credentials) and nothing else; a bad one asks nothing', async () => {
+  const ok = run(`/c/${TOKEN}`, { iosUrl: '', androidUrl: '' });
+  await settle();
+  assert.equal(ok.calls.length, 1);
+  assert.equal(ok.calls[0].url, '/app-links.json');
+  assert.equal(ok.calls[0].opts.credentials, 'omit');
+  assert.ok(!ok.calls[0].url.includes(TOKEN), 'the token must not be in the request');
+  const bad = run('/c/not-a-token');
+  await settle();
+  assert.equal(bad.calls.length, 0);
+  assert.equal(bad['get-app'].hidden, undefined, 'the stores area is not touched for a bad link');
+});
+
+test('app not in the stores yet (empty URLs): says so, honestly, and offers no store buttons', async () => {
+  const els = run(`/c/${TOKEN}`, { iosUrl: '', androidUrl: '' });
+  await settle();
+  assert.equal(els['get-app'].hidden, false);
+  assert.equal(els['no-stores'].hidden, false);
+  assert.equal(els.stores.hidden, true);
+  assert.equal(els['store-ios'].hidden, true);
+  assert.equal(els['store-android'].hidden, true);
+  assert.equal(els['store-ios'].attrs.href, undefined);
+  assert.match(html, /האפליקציה של BAMA עדיין לא זמינה בחנויות האפליקציות/);
+});
+
+test('both store links seeded: both buttons appear, with exactly those URLs, no code change', async () => {
+  const els = run(`/c/${TOKEN}`, { iosUrl: 'https://apps.apple.com/app/id123', androidUrl: 'https://play.google.com/store/apps/details?id=com.bamaapp.bama' });
+  await settle();
+  assert.equal(els.stores.hidden, false);
+  assert.equal(els['no-stores'].hidden, true);
+  assert.equal(els['store-ios'].hidden, false);
+  assert.equal(els['store-android'].hidden, false);
+  assert.equal(els['store-ios'].attrs.href, 'https://apps.apple.com/app/id123');
+  assert.equal(els['store-android'].attrs.href, 'https://play.google.com/store/apps/details?id=com.bamaapp.bama');
+});
+
+test('only one store seeded: only that button', async () => {
+  const els = run(`/c/${TOKEN}`, { iosUrl: 'https://apps.apple.com/app/id123', androidUrl: '' });
+  await settle();
+  assert.equal(els['store-ios'].hidden, false);
+  assert.equal(els['store-android'].hidden, true);
+  assert.equal(els.stores.hidden, false);
+  assert.equal(els['no-stores'].hidden, true);
+});
+
+test('only https store links become buttons (javascript:, http:, credentials, junk are refused)', async () => {
+  for (const bad of ['javascript:alert(1)', 'http://apps.apple.com/x', 'https://user:pw@evil.example/x', 'data:text/html,x', '//evil.example', 'bama://c/x', 42, null, {}]) {
+    const els = run(`/c/${TOKEN}`, { iosUrl: bad, androidUrl: bad });
+    await settle();
+    assert.equal(els['store-ios'].attrs.href, undefined, `rendered ${String(bad)}`);
+    assert.equal(els['store-android'].attrs.href, undefined);
+    assert.equal(els['no-stores'].hidden, false, `did not fall back to the honest message for ${String(bad)}`);
+  }
+});
+
+test('no file (404), a network error, or garbage: the honest message, never a blank area', async () => {
+  for (const answer of ['missing', new Error('offline'), null, 'a string', []]) {
+    const els = run(`/c/${TOKEN}`, answer);
+    await settle();
+    assert.equal(els['get-app'].hidden, false, `blank for ${String(answer)}`);
+    assert.equal(els['no-stores'].hidden, false);
+    assert.equal(els.stores.hidden, true);
+  }
+});
+
+test('the open-in-app button does not wait for the stores request', () => {
+  const els = run(`/c/${TOKEN}`, { iosUrl: '', androidUrl: '' });
+  // Synchronously, before the fetch has answered:
+  assert.equal(els.open.attrs.href, `bama://c/${TOKEN}`);
+  assert.equal(els.valid.hidden, false);
+  assert.equal(els['get-app'].hidden, undefined, 'the stores area waits for its answer instead of flashing');
 });
 
 test('the rewrite is only for /c/**: the legal pages are not swallowed', () => {

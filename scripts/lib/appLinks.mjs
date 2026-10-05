@@ -36,6 +36,10 @@ try {
 /** The real function createCommunityInvite uses. Re-exported so tests can assert identity. */
 export const buildInviteUrl = core.buildInviteUrl;
 
+// Store links are a separate rule from the invite origin (see ./storeLinks.mjs).
+import { isStoreUrl, storeLinks } from './storeLinks.mjs';
+export { isStoreUrl, storeLinks };
+
 /** Development value. Switching to the real domain is a change to baseUrl only. */
 export const APP_LINKS_DEV = Object.freeze({
   baseUrl: 'https://bama-af0a0.web.app',
@@ -55,5 +59,8 @@ export function validateAppLinks(doc) {
   if (!isBareHttpsOrigin(doc.baseUrl)) problems.push(`baseUrl must be a bare https origin, got ${JSON.stringify(doc.baseUrl)}`);
   if (typeof doc.iosUrl !== 'string') problems.push(`iosUrl must be a string (may be empty), got ${JSON.stringify(doc.iosUrl)}`);
   if (typeof doc.androidUrl !== 'string') problems.push(`androidUrl must be a string (may be empty), got ${JSON.stringify(doc.androidUrl)}`);
+  for (const k of ['iosUrl', 'androidUrl']) {
+    if (typeof doc[k] === 'string' && doc[k] !== '' && !isStoreUrl(doc[k])) problems.push(`${k} must be empty or an https URL, got ${JSON.stringify(doc[k])}`);
+  }
   return problems;
 }

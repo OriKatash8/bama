@@ -7,6 +7,11 @@
  *   node scripts/seed-app-links.mjs --project bama-af0a0 --force     write, overwriting
  *   node scripts/seed-app-links.mjs --project bama-af0a0 --verify    READ-ONLY: read back and assert
  *
+ * Store links, once the app is in the stores (changes ONLY those fields of the existing
+ * doc; baseUrl is never touched; no --force needed; the value must be empty or https):
+ *   node scripts/seed-app-links.mjs --project bama-af0a0 --ios-url https://apps.apple.com/... --android-url https://play.google.com/...
+ * The landing page picks them up at the next `npm run legal:deploy` (scripts/export-app-links.mjs).
+ *
  * Targets the emulator when FIRESTORE_EMULATOR_HOST is set, otherwise PRODUCTION
  * (Application Default Credentials). The target is printed before anything happens.
  *
@@ -50,6 +55,33 @@ if (desiredProblems.length) {
 
 const db = getFirestore(initializeApp({ projectId }));
 const ref = db.collection('config').doc('appLinks');
+
+const storeUpdate = {};
+if (valueOf('--ios-url') !== undefined) storeUpdate.iosUrl = valueOf('--ios-url');
+if (valueOf('--android-url') !== undefined) storeUpdate.androidUrl = valueOf('--android-url');
+if (Object.keys(storeUpdate).length) {
+  if (valueOf('--base-url') || flag('--force') || flag('--verify')) {
+    console.error('ERROR: --ios-url / --android-url update only the store links; do not combine them with --base-url, --force or --verify.');
+    process.exit(2);
+  }
+  const snap = await ref.get();
+  if (!snap.exists) {
+    console.error('ERROR: config/appLinks does not exist yet. Seed it first (without --ios-url / --android-url).');
+    process.exit(1);
+  }
+  const next = { ...snap.data(), ...storeUpdate };
+  const problems = validateAppLinks(next);
+  if (problems.length) {
+    console.error('ERROR: the result would be invalid:\n  ' + problems.join('\n  '));
+    process.exit(1);
+  }
+  console.log(`${flag('--dry-run') ? 'would set' : 'setting'} on config/appLinks: ${JSON.stringify(storeUpdate)}`);
+  if (!flag('--dry-run')) {
+    await ref.update(storeUpdate);
+    console.log('next: --verify, then `npm run legal:deploy` so the landing page shows the buttons');
+  }
+  process.exit(0);
+}
 
 if (flag('--dry-run')) {
   const existing = await ref.get();

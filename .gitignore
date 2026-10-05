@@ -68,3 +68,6 @@ cors.json
 # Legal site build output (npm run legal:build)
 legal-site/public/
 .firebase/
+
+# written at deploy time from config/appLinks (scripts/export-app-links.mjs)
+legal-site/static/app-links.json
