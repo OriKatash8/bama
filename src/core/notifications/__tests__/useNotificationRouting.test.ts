@@ -120,3 +120,32 @@ it('the launch tap arriving again through the listener is handled once', async (
   await flush();
   expect(mockReplace.mock.calls.length + mockPush.mock.calls.length).toBe(1);
 });
+
+describe('the owner\'s join-request push opens the community dashboard', () => {
+  it.each([
+    ['client', '/(client)/chat/community-admin?chatId=c1'],
+    ['professional', '/(professional)/chat/community-admin?chatId=c1'],
+  ] as const)('cold start in %s mode: one replace into the SAME mode\'s group', async (mode, href) => {
+    useAuthStore.setState({ ...signedIn, activeMode: mode });
+    mockGetLast.mockReturnValue(tap('jr1', { type: 'community_join_request', chatId: 'c1' }));
+    renderHook(() => useNotificationRouting());
+    await flush();
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith(href);
+  });
+
+  it('a tap while the app is open pushes (Back returns to where the owner was)', async () => {
+    renderHook(() => useNotificationRouting());
+    await act(async () => { mockTapListener!(tap('jr2', { type: 'community_join_request', chatId: 'c9' })); });
+    await flush();
+    expect(mockPush).toHaveBeenCalledWith('/(client)/chat/community-admin?chatId=c9');
+  });
+
+  it('without a chat id there is nothing to open', async () => {
+    mockGetLast.mockReturnValue(tap('jr3', { type: 'community_join_request' }));
+    renderHook(() => useNotificationRouting());
+    await flush();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});

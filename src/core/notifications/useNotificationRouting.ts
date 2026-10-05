@@ -107,6 +107,14 @@ export function useNotificationRouting(): void {
         await navigate(null, `/${modeSegment(current)}/chat/${data.chatId}`);
         return;
       }
+      // The owner's push for a new invite join request: straight to the community
+      // dashboard, where the request waits with Approve / Reject. The dashboard
+      // exists in both route groups, so it opens in the mode the owner is in.
+      case 'community_join_request': {
+        if (!data.chatId) return;
+        await navigate(null, `/${modeSegment(current)}/chat/community-admin?chatId=${data.chatId}`);
+        return;
+      }
       case 'offer_accepted': {
         await navigate(
           'professional',

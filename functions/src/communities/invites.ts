@@ -19,6 +19,8 @@ import {
 import { checkRateLimit } from './rateLimit';
 import { communityOnSide, readDemoConfig } from '../demo';
 import { assertVerifiedEmail } from '../auth/verifiedEmail';
+import { userLang } from '../notifications/userLang';
+import { JOIN_REQUEST_NOTIFICATION_TYPE, joinRequestNotice, joinRequestNotificationId } from './joinRequestNotice';
 
 /**
  * Community invites. Region: europe-west1, next to the eur3 database.
@@ -230,10 +232,13 @@ export const resolveCommunityInvite = onRequest(
 // ── Triggers ─────────────────────────────────────────────────────────────────
 
 /**
- * useCount += 1 when a join request becomes pending with an invite token (on create,
- * or when a settled request is reset to pending). Never twice for one pending request.
+ * When a join request becomes pending with an invite token (on create, or when a
+ * settled request is reset to pending; never twice for one pending request):
+ *  1. useCount += 1 on the invite;
+ *  2. the community owner gets a push saying who asked.
  * The rules have already checked that the token is a live invite for this community;
- * the communityId is re-checked here anyway.
+ * the communityId is re-checked here anyway, and an unknown or foreign token notifies
+ * nobody. Requests that did NOT come through an invite (Discover) do not notify.
  */
 export const onCommunityInviteJoinRequest = onDocumentWritten(
   { document: 'chats/{chatId}/joinRequests/{uid}', region: REGION },
@@ -247,8 +252,36 @@ export const onCommunityInviteJoinRequest = onDocumentWritten(
     const snap = await ref.get();
     if (!snap.exists || snap.get('communityId') !== event.params.chatId) return;
     await ref.update({ useCount: FieldValue.increment(1) });
+
+    // Best effort: a failed push must never undo or retry the count above.
+    await notifyOwnerOfJoinRequest(event.params.chatId, event.params.uid, after.displayName, event.id)
+      .catch((e) => console.warn('[onCommunityInviteJoinRequest] owner push failed', (e as Error)?.message));
   },
 );
+
+async function notifyOwnerOfJoinRequest(chatId: string, requesterUid: string, requesterName: unknown, eventId: string) {
+  const chat = await db.collection('chats').doc(chatId).get();
+  const ownerId = chat.get('ownerId');
+  if (typeof ownerId !== 'string' || !ownerId || ownerId === requesterUid) return;
+
+  const { title, message } = joinRequestNotice(await userLang(ownerId), {
+    communityName: chat.get('name'),
+    requesterName,
+  });
+  try {
+    // create(), with an id derived from the event: a redelivered event finds it and stops.
+    await db.collection('notifications').doc(joinRequestNotificationId(eventId)).create({
+      userId: ownerId,
+      title,
+      message,
+      data: { type: JOIN_REQUEST_NOTIFICATION_TYPE, chatId },
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    if ((e as { code?: number | string })?.code === 6 || (e as { code?: string })?.code === 'already-exists') return;
+    throw e;
+  }
+}
 
 /**
  * When a community is deleted (console or Admin SDK, since clients can't delete chats),
