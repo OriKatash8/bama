@@ -73,8 +73,8 @@ export default function ChatsPage() {
   };
 
   const { chats, loading } = useUserChats();
-  const realChats = chats.filter((c) => c.type !== 'community');
-  const hasChats = realChats.length > 0;
+  // Communities the user is a member of count: they are listed in this tab too.
+  const hasChats = chats.length > 0;
 
   return (
     // With no chats the page is locked: the empty state ends the page — when it
