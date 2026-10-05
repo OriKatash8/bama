@@ -1,22 +1,44 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { initializeAuth, getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
+import { initializeAuth, getAuth, connectAuthEmulator, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { initializeFirestore } from 'firebase/firestore';
+import { initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
-import { getFunctions } from 'firebase/functions';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import i18n from '@core/i18n';
 import { firebaseLanguageCode } from './languageCode';
 
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
-};
+/**
+ * DEV ONLY, OPT-IN: `EXPO_PUBLIC_USE_EMULATORS=1 npx expo start --web --clear` points
+ * Auth, Firestore and Functions at the local emulators (scripts/dev-invite-fixture.mjs
+ * seeds them). It switches to a `demo-` project id and a fake key, so nothing can
+ * reach production even by mistake; Storage and the Realtime Database have no
+ * emulator here and are left unreachable. Set it on the command line, not in a
+ * .env file. `EXPO_PUBLIC_EMULATOR_HOST` is the machine running them (default
+ * 127.0.0.1; a phone needs the computer's LAN address).
+ */
+const USE_EMULATORS = __DEV__ && process.env.EXPO_PUBLIC_USE_EMULATORS === '1';
+const EMULATOR_HOST = process.env.EXPO_PUBLIC_EMULATOR_HOST || '127.0.0.1';
+
+const firebaseConfig = USE_EMULATORS
+  ? {
+      apiKey: 'emulator-fake-key',
+      authDomain: 'demo-bama.firebaseapp.com',
+      projectId: 'demo-bama',
+      storageBucket: 'demo-bama.appspot.com',
+      messagingSenderId: '0',
+      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      databaseURL: undefined,
+    }
+  : {
+      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
+    };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
@@ -61,3 +83,11 @@ export const functions = getFunctions(app);
 // The community-invite callables are pinned to europe-west1; the rest of the
 // backend is in the default region, so this is a second instance, not a swap.
 export const functionsEU = getFunctions(app, 'europe-west1');
+
+if (USE_EMULATORS) {
+  connectAuthEmulator(auth, `http://${EMULATOR_HOST}:9099`, { disableWarnings: true });
+  connectFirestoreEmulator(db, EMULATOR_HOST, 8080);
+  connectFunctionsEmulator(functions, EMULATOR_HOST, 5001);
+  connectFunctionsEmulator(functionsEU, EMULATOR_HOST, 5001);
+  console.warn(`[firebase] EMULATORS ON (${EMULATOR_HOST}) — project demo-bama, not production.`);
+}
