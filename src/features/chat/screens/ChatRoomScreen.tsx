@@ -491,8 +491,10 @@ interface Props {
 /** A marketplace listing shared into a community market channel. Shows a
  *  rental/sale ribbon and, if the listing was removed/sold, a "not relevant"
  *  state with a disabled CTA. */
-function SharedListingCard({ msg }: { msg: Message }) {
+/** A marketplace listing shared into a chat. Exported for its test. */
+export function SharedListingCard({ msg }: { msg: Message }) {
   const language = useSettingsStore((s) => s.language);
+  const activeMode = useAuthStore((s) => s.activeMode);
   const rtl = language === 'he';
   const t = makeT(language === 'he' ? he : en);
   const router = useRouter();
@@ -583,7 +585,10 @@ function SharedListingCard({ msg }: { msg: Message }) {
               <View style={[styles.listingCta, styles.listingCtaDisabled, { flexDirection: rtl ? 'row-reverse' : 'row', marginTop: 10 }]}>
                 <AppText weight="bold" style={styles.listingCtaText}>{t('marketplace.listing_unavailable')}</AppText>
               </View>
-            ) : (
+            ) : activeMode === 'client' ? null : (
+              // The marketplace is a professional route and there is no client one, so a
+              // client-mode member (communities now reach them) sees the card without the
+              // action rather than a button into the other mode's stack.
               <TouchableOpacity
                 onPress={() => router.push(`/(professional)/(tabs)/marketplace?listingId=${msg.listingId}` as never)}
                 activeOpacity={0.85}
