@@ -22,7 +22,8 @@ export function useSwitchMode() {
     // allowlist-checked and TTL-checked inside takeResume, and wins over the mode's
     // home in either mode: the routes it can hold live outside the mode groups and
     // do their own gating (the invite preview renders even for an incomplete pro).
-    const resume = usePendingIntentStore.getState().takeResume();
+    // Waits for the persisted store to load first: a take before that would not see a saved link.
+    const resume = await usePendingIntentStore.getState().takeResumeWhenReady();
     if (resume) {
       router.replace(resume as never);
       return;

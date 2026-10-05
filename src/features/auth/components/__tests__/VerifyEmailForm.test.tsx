@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { VerifyEmailForm } from '../VerifyEmailForm';
 import { useAuthStore } from '@core/stores/authStore';
+import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -60,9 +61,10 @@ it('"check again" goes on to the name / picture page once verified', async () =>
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/setup');
 });
 
-it('a quiet poll that verifies goes there too', () => {
+it('a quiet poll that verifies goes there too', async () => {
   mockHook.state = 'verified';
   render(<VerifyEmailForm />);
+  await act(async () => {}); // navigation resolves a microtask later (postStepRoute is async)
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/setup');
 });
 
@@ -95,4 +97,31 @@ it('"change email address" signs out to registration; log out signs out to the s
   expect(mockLogout).toHaveBeenCalledWith('/(auth)/register');
   await act(async () => { fireEvent.press(r.getByText(ev.logout)); });
   expect(mockLogout).toHaveBeenLastCalledWith();
+});
+
+describe('a saved invite link (returning user, mode restored: mode-select is skipped)', () => {
+  const HREF = `/c/${'V'.repeat(22)}`;
+  beforeEach(async () => {
+    await usePendingIntentStore.persist.rehydrate();
+    usePendingIntentStore.setState({ resume: null, afterProfile: null, consumedAt: 0 });
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.4' } as never, needsEmailVerification: false, activeMode: 'client' });
+  });
+
+  it('a quiet poll that verifies goes to the link, once, even when the effect runs twice (StrictMode)', async () => {
+    usePendingIntentStore.getState().saveResume(HREF);
+    mockHook.state = 'verified';
+    render(<React.StrictMode><VerifyEmailForm /></React.StrictMode>);
+    await act(async () => {});
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith(HREF);
+  });
+
+  it('"check again" goes to the link', async () => {
+    usePendingIntentStore.getState().saveResume(HREF);
+    mockHook.checkVerified = jest.fn(async () => true);
+    const r = render(<VerifyEmailForm />);
+    await act(async () => { fireEvent.press(r.getByText(ev.check_again)); });
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith(HREF);
+  });
 });

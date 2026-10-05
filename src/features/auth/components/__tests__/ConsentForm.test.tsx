@@ -9,6 +9,7 @@ import { signOut } from '@core/firebase/auth';
 import { syncUser } from '@features/auth/utils/syncUser';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
 import { CURRENT_TERMS_VERSION } from '@core/constants/legal';
 
 /**
@@ -159,4 +160,36 @@ it.each([
   fireEvent.press(r.getByTestId('consent-privacy-link'));
   expect(openURL).toHaveBeenLastCalledWith(privacy);
   openURL.mockRestore();
+});
+
+describe('a returning user (mode restored, so mode-select is skipped) re-accepting new terms', () => {
+  const HREF = `/c/${'C'.repeat(22)}`;
+  async function reAccept() {
+    usePendingSignupStore.setState({ pending: null });
+    useAuthStore.setState({
+      user: { id: 'new-uid', displayName: 'Old', termsVersion: '0.9' } as never,
+      needsEmailVerification: false,
+      activeMode: 'client',
+    });
+    const r = render(<ConsentForm />);
+    fireEvent.press(r.getByTestId('consent-terms'));
+    fireEvent.press(r.getByTestId('consent-age'));
+    await act(async () => { fireEvent.press(r.getByText(A.consent_continue)); });
+  }
+  beforeEach(async () => {
+    await usePendingIntentStore.persist.rehydrate();
+    usePendingIntentStore.setState({ resume: null, afterProfile: null, consumedAt: 0 });
+  });
+
+  it('lands on the saved invite link, not their home', async () => {
+    usePendingIntentStore.getState().saveResume(HREF);
+    await reAccept();
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith(HREF);
+  });
+
+  it('with no saved link goes to their home exactly as before', async () => {
+    await reAccept();
+    expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
+  });
 });

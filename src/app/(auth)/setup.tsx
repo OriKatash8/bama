@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@core/stores/authStore';
 import { usePhoneGate } from '@features/auth/hooks/usePhoneGate';
 import { needsProfileSetup } from '@features/auth/utils/needsProfileSetup';
-import { nextAuthRoute } from '@features/auth/utils/nextAuthRoute';
+import { postStepRoute } from '@features/auth/utils/postStepRoute';
 import { ProfileSetupForm } from '@features/auth/components/ProfileSetupForm';
 
 /**
@@ -19,9 +19,13 @@ export default function ProfileSetupScreen() {
   usePhoneGate();
   // Checked once, on arrival: finishing clears the flag and navigates itself.
   const [alreadyDone] = useState(() => !needsProfileSetup(useAuthStore.getState().user));
+  // Once: a second effect run would find a saved invite link already spent.
+  const navigated = useRef(false);
   useEffect(() => {
+    if (!alreadyDone || navigated.current) return;
+    navigated.current = true;
     // The next step directly — never '/', which from inside (auth) is login.
-    if (alreadyDone) router.replace(nextAuthRoute(useAuthStore.getState()) as never);
+    void postStepRoute(useAuthStore.getState()).then((to) => router.replace(to as never));
   }, [alreadyDone, router]);
   if (alreadyDone) return null;
   return (

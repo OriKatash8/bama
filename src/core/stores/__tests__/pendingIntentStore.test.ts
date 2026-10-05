@@ -2,10 +2,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   usePendingIntentStore,
   mergePersistedIntent,
   PENDING_INTENT_TTL_MS,
+  HYDRATION_WAIT_MS,
 } from '../pendingIntentStore';
 
 /**
@@ -19,8 +21,17 @@ import {
 const NOW = 1_800_000_000_000;
 const HREF = '/c/K7MX9P';
 
-beforeEach(() => {
-  usePendingIntentStore.setState({ resume: null, afterProfile: null });
+// takeResume refuses to run before storage has hydrated; the cases below that are
+// not about hydration need a hydrated store.
+beforeAll(async () => {
+  await usePendingIntentStore.persist.rehydrate();
+});
+
+beforeEach(async () => {
+  jest.useRealTimers();
+  await AsyncStorage.clear();
+  usePendingIntentStore.setState({ resume: null, afterProfile: null, consumedAt: 0 });
+  await usePendingIntentStore.persist.rehydrate();
 });
 
 const store = () => usePendingIntentStore.getState();
@@ -115,5 +126,79 @@ describe('hydration merge', () => {
   it('survives garbage in storage', () => {
     expect(mergePersistedIntent('nonsense', { resume: null, afterProfile: null }))
       .toEqual({ resume: null, afterProfile: null });
+  });
+});
+
+describe('hydration guard', () => {
+  const KEY = 'bama-pending-intent';
+  const stored = (resume: { href: string; savedAt: number } | null) =>
+    JSON.stringify({ state: { resume, afterProfile: null }, version: 0 });
+
+  it('a sync take before hydration returns null and does NOT consume a resume saved in memory', async () => {
+    // A cold start from a link: /c/[token] saved before AsyncStorage answered.
+    const fresh = Date.now();
+    const hydrating = usePendingIntentStore.persist.rehydrate(); // hasHydrated() is false until this settles
+    expect(usePendingIntentStore.persist.hasHydrated()).toBe(false);
+    store().saveResume(HREF, fresh);
+    expect(store().takeResume(fresh)).toBeNull();
+    expect(store().resume?.href).toBe(HREF); // untouched, not cleared
+    await hydrating;
+    expect(store().takeResume(fresh)).toBe(HREF); // and usable once storage has answered
+  });
+
+  it('takeResumeWhenReady waits for slow storage, then hands the href back exactly once', async () => {
+    const fresh = Date.now();
+    await AsyncStorage.setItem(KEY, stored({ href: HREF, savedAt: fresh }));
+    const hydrating = usePendingIntentStore.persist.rehydrate();
+    const waiting = store().takeResumeWhenReady();
+    await hydrating;
+    await expect(waiting).resolves.toBe(HREF);
+    await expect(store().takeResumeWhenReady()).resolves.toBeNull();
+  });
+
+  it('a second takeResume returns null and the persisted copy is cleared', async () => {
+    store().saveResume(HREF, NOW);
+    expect(store().takeResume(NOW + 1)).toBe(HREF);
+    expect(store().takeResume(NOW + 2)).toBeNull();
+    await Promise.resolve(); // let the persist write land
+    const raw = await AsyncStorage.getItem(KEY);
+    expect(JSON.parse(raw as string).state.resume).toBeNull();
+  });
+
+  it('a consumed resume is not resurrected by a late hydration of the stored copy', async () => {
+    store().saveResume(HREF, NOW);
+    expect(store().takeResume(NOW + 1)).toBe(HREF);
+    // Storage still holds the old copy, as it would if hydration finished after the take.
+    await AsyncStorage.setItem(KEY, stored({ href: HREF, savedAt: NOW }));
+    await usePendingIntentStore.persist.rehydrate();
+    expect(store().resume).toBeNull();
+    expect(store().takeResume(NOW + 3)).toBeNull();
+  });
+
+  it('clearAll is not undone by a late hydration either', async () => {
+    store().saveResume(HREF, NOW);
+    store().clearAll();
+    await AsyncStorage.setItem(KEY, stored({ href: HREF, savedAt: NOW }));
+    await usePendingIntentStore.persist.rehydrate();
+    expect(store().resume).toBeNull();
+  });
+
+  it('a resume saved AFTER a consumed one still survives hydration', async () => {
+    store().saveResume(HREF, NOW);
+    store().takeResume(NOW + 1);
+    store().saveResume('/c/AAAAAA', NOW + 10);
+    await usePendingIntentStore.persist.rehydrate();
+    expect(store().resume?.href).toBe('/c/AAAAAA');
+  });
+
+  it('gives up waiting after the timeout and takes from memory', async () => {
+    jest.useFakeTimers();
+    store().saveResume(HREF, Date.now());
+    // Storage that never answers: hydration cannot finish.
+    jest.spyOn(AsyncStorage, 'getItem').mockImplementationOnce(() => new Promise(() => {}));
+    void usePendingIntentStore.persist.rehydrate();
+    const waiting = store().takeResumeWhenReady();
+    await jest.advanceTimersByTimeAsync(HYDRATION_WAIT_MS);
+    await expect(waiting).resolves.toBe(HREF);
   });
 });

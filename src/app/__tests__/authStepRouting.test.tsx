@@ -87,5 +87,5 @@ it.each([
 ])('%s never sends anyone to "/" (that is login, from inside (auth))', (file) => {
   const src = readFileSync(join(__dirname, '..', '..', file), 'utf8');
   expect(src).not.toMatch(/replace\('\/'\)/);
-  expect(src).toMatch(/nextAuthRoute\(/);
+  expect(src).toMatch(/postStepRoute\(/);
 });

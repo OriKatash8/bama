@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useEmailVerification } from '@features/auth/hooks/useEmailVerification';
 import { useLogout } from '@features/auth/hooks/useLogout';
-import { nextAuthRoute } from '@features/auth/utils/nextAuthRoute';
+import { postStepRoute } from '@features/auth/utils/postStepRoute';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -51,12 +51,21 @@ export function VerifyEmailForm() {
   const { logout } = useLogout();
   const email = auth.currentUser?.email ?? '';
 
+  // Once: the effect can run again (StrictMode, or `router` changing identity), and
+  // a second run would find the saved link already spent and replace it with the home.
+  const navigated = useRef(false);
+  function goNext() {
+    if (navigated.current) return;
+    navigated.current = true;
+    void postStepRoute(useAuthStore.getState()).then((to) => router.replace(to as never));
+  }
   useEffect(() => {
-    if (state === 'verified') router.replace(nextAuthRoute(useAuthStore.getState()) as never);
+    if (state === 'verified') goNext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, router]);
 
   async function handleCheck() {
-    if (await checkVerified()) router.replace(nextAuthRoute(useAuthStore.getState()) as never);
+    if (await checkVerified()) goNext();
   }
 
   return (

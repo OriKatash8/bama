@@ -16,7 +16,7 @@ import { legalUrl } from '@core/constants/legal';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 import { discardUnconsentedSignup, recordConsent } from '@features/auth/utils/consent';
 import { syncUser } from '@features/auth/utils/syncUser';
-import { nextAuthRoute } from '@features/auth/utils/nextAuthRoute';
+import { postStepRoute } from '@features/auth/utils/postStepRoute';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -74,7 +74,7 @@ export function ConsentForm() {
         if (current) setUser({ ...current, ...fields });
       }
       // The next step directly — never '/', which from inside (auth) is login.
-      router.replace(nextAuthRoute(useAuthStore.getState()) as never);
+      router.replace((await postStepRoute(useAuthStore.getState())) as never);
     } catch (e) {
       console.warn('[consent] could not record consent:', e);
       showToast(t('auth.consent_failed'), 'error');

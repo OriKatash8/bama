@@ -4,6 +4,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import ProfileSetupScreen from '../setup';
 import { useAuthStore } from '@core/stores/authStore';
+import { usePendingIntentStore } from '@core/stores/pendingIntentStore';
 import { savePhone } from '@features/auth/services/phoneService';
 import { updateDocument } from '@core/firebase/firestore';
 
@@ -55,10 +56,46 @@ it('no number yet (Apple sign-up): asks for it here', async () => {
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
 });
 
-it('someone who has already done it is sent on, not shown the page again', () => {
+it('someone who has already done it is sent on, not shown the page again', async () => {
   useAuthStore.setState({ user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.4' } as never });
   render(<ProfileSetupScreen />);
+  await act(async () => {}); // navigation resolves a microtask later (postStepRoute is async)
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
+});
+
+describe('a saved invite link (returning user, mode restored: mode-select is skipped)', () => {
+  const HREF = `/c/${'S'.repeat(22)}`;
+  beforeEach(async () => {
+    await usePendingIntentStore.persist.rehydrate();
+    usePendingIntentStore.setState({ resume: null, afterProfile: null, consumedAt: 0 });
+    useAuthStore.setState({
+      user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.4' } as never,
+      needsEmailVerification: false,
+      activeMode: 'client',
+    });
+  });
+
+  it('is where an already-set-up user goes, instead of the home', async () => {
+    usePendingIntentStore.getState().saveResume(HREF);
+    render(<ProfileSetupScreen />);
+    await act(async () => {});
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith(HREF);
+  });
+
+  it('is navigated to ONCE even when the effect runs twice (StrictMode): the second run must not replace it with the home', async () => {
+    usePendingIntentStore.getState().saveResume(HREF);
+    render(<React.StrictMode><ProfileSetupScreen /></React.StrictMode>);
+    await act(async () => {});
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith(HREF);
+  });
+
+  it('with no saved link a restored-mode user still goes to their home', async () => {
+    render(<ProfileSetupScreen />);
+    await act(async () => {});
+    expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
+  });
 });
 
 describe('the look: the client home page\'s — white page, black text, blue button', () => {

@@ -2,7 +2,7 @@ import type { User } from '@core/types/user';
 import { needsConsent } from './needsConsent';
 import { needsProfileSetup } from './needsProfileSetup';
 
-type AuthState = {
+export type AuthState = {
   user: User | null;
   needsEmailVerification: boolean | null;
   activeMode: 'client' | 'professional' | null;

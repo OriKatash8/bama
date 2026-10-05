@@ -296,6 +296,140 @@ The only `takeResume` caller is `useSwitchMode.ts:25`. `saveResume` has no calle
 - I'll build to the spec unless you say otherwise. It is a notable product rule, because a client-only user can't join a community from a link.
 - **Sitting outside the groups** means the preview does not enforce the phone rung or the client onboarding, so a user with no phone number can still send a request from the preview. The `joinRequests` rules don't require a phone either.
 
+## Revision 2 (your latest reply; supersedes the earlier "pro-only gate" and "hasResume" proposals)
+
+Checkpoint 1 is committed locally as `802d73bf`. **Push is pending.** I'll run `git push` as the first action once plan mode is off, because plan mode blocks anything that changes the remote.
+
+### Decision 1: no pro-only join gate
+
+**What the spec says, verbatim** (`docs/community-invites-spec.md`):
+- Line 27, under "Facts the design rests on": "**Communities are pro-only in the UI.** New pros are locked to the profile screen until it's complete. `src/app/c/[token].tsx` sits outside the mode groups, so that lock doesn't wrap it."
+- Lines 66-70, "`/c/[token]` gating":
+  - "the preview renders in any mode;"
+  - "requesting to join needs professional mode **and** a complete pro profile;"
+  - "client mode → an explicit confirm before switching to pro;"
+  - "incomplete pro → the profile screen, with the invite kept; on save, the request is sent automatically and they land on the pending preview."
+- Line 243: "member → into the community (confirm first if not in pro mode);"
+
+**Stated reason:** only line 27, and it is about **UI placement, not content access.** I checked the code to see whether that is the whole story:
+- **UI:** the client chats tab filters communities out (`src/app/(client)/(tabs)/chats/index.tsx:76`, `chats.filter((c) => c.type !== 'community')`). Discovery (`CommunityDiscoveryTab`) lives only in the professional chats tab.
+- **Content:** the `chats/{chatId}` read rule has no role check. It is `members`, or `type == 'community'` metadata for any signed-in user. Nothing in the rules makes community content professional-only.
+- **So the gate does not move to approval time.** I found no content-level reason for it.
+
+**One consequence to be aware of, not a blocker:** a client-only user who is approved will not see the community in their client chat list. The route still opens in client mode: `ChatRoomScreen` handles `type 'community'` under `(client)/chat/[chatId]`.
+- On the preview, the "member" state's "open community" button uses the explicit group href for the active mode.
+- The "request sent" state says the owner decides.
+- The spec's mode-switch confirm and the profile redirect are dropped, as are `afterProfile` and any coupling to forced pro-profile completion. The `afterProfile` store API stays untouched and unused.
+
+**Owner's join-request row: show whether the requester has a completed pro profile and their roles.**
+- **Cost: zero extra reads.** `CommunityAdminScreen` already calls `usePeople` over `[...members, ...requests.map(r => r.userId)]` (line ~58), and `usePeople` already reads `users/{uid}` and `users/{uid}/profile/data` once per uid, cached, outside the listener. Today it keeps only `roleSkills[0].role`.
+- **Change:**
+  1. `Person` (`hooks.ts:132`) gains `roleIds: string[]` (all roles from `roleSkills`) and `proProfileCompleted: boolean`, from the doc it already fetched.
+  2. `buildRequestRows` (`rows.ts:~34`) adds a "Professional profile complete / not set up" marker and the role list to the request row. This is a separate small field on the row, not crammed into `meta`.
+  3. `RequestsCard.tsx` renders it.
+- **Not added:** nothing goes into the `onSnapshot` listener, no fan-out, and no denormalized fields on the `joinRequests` doc. The rules' key allowlist and the trigger stay unchanged.
+- **Tests:** `rows.test`, `RequestsCard.test` and the `usePeople` test updated, plus new cases for completed, incomplete and missing profile.
+- **Strings:** new he/en keys under the existing community-admin i18n (`features/communityAdmin/i18n.ts`).
+
+### Decision 2: second `takeResume()` call site, no sign-in flow change for users without a resume
+
+**Is `takeResume()` atomic?** In memory, yes: it does `const r = get().resume; if (r) set({ resume: null }); return valid ? r.href : null` synchronously, so a second call returns `null`. I'll add a test asserting that, and that the persisted snapshot is cleared. The one gap is cold-start hydration: `mergePersistedIntent` keeps the stored `resume` when the in-memory one is null, so a take that runs before AsyncStorage hydrates could be resurrected. Takes only happen after sign-in, long after hydration, so this is theoretical. I'll leave `pendingIntentStore` unchanged and say so rather than add machinery. Tell me if you want a `hasHydrated` guard instead.
+
+**Where I'm adding the call (exact):**
+- **New function:** `postStepRoute(state)` in a new file `src/features/auth/utils/postStepRoute.ts`.
+  ```ts
+  export function postStepRoute(state: AuthState): string {
+    const next = nextAuthRoute(state);
+    if (next.startsWith('/(auth)')) return next;          // another auth step, or mode-select: leave the flow alone
+    return usePendingIntentStore.getState().takeResume() ?? next;  // destination override, consumed here
+  }
+  ```
+- **Why not inside `nextAuthRoute`:** it is pure and `src/app/index.tsx` calls it during render. A take in render would be consumed by a StrictMode double render and then lost.
+- **Why not `src/app/index.tsx`:** it is a render-time redirect, and the root only reaches home on a later visit. A pending resume there goes through mode-select and `switchMode` (first visit) as today.
+- **Call sites** (event handlers and effects where "mode-select is skipped"): `ConsentForm.tsx:77`, `VerifyEmailForm.tsx:55` and `:59`, and `src/app/(auth)/setup.tsx:24`.
+  - Each replaces `nextAuthRoute(useAuthStore.getState())` with `postStepRoute(useAuthStore.getState())`.
+  - `VerifyEmailForm:55` and `setup.tsx:24` sit inside `useEffect`s. A repeat run (StrictMode, or `router` changing identity) would make the second run find no resume and `replace` to the home, undoing the first. I'll guard both with a `navigated` ref.
+- **Behavior:** the resume is consumed only when the next step is a final app destination, which is exactly the "restored `activeMode`, mode-select skipped" case. When `activeMode` is null the result is still `/(auth)/mode-select`, so `switchMode` consumes it as today. With **no** resume, `postStepRoute` returns exactly what `nextAuthRoute` returns, so the flow is unchanged.
+- **Existing test to update:** `src/app/__tests__/authStepRouting.test.tsx:90` asserts each of those three files matches `/nextAuthRoute\(/`. It becomes `/(?:nextAuthRoute|postStepRoute)\(/`. The "never `replace('/')`" assertion stays.
+- **`/c/[token]` itself:** signed out, or gated by `useOnboardingGate()`, it calls `saveResume('/c/<token>')` in an effect and renders the `<Redirect>` only after the save completes.
+
+### Tests for both resume paths (`src/app/__tests__/inviteResume.test.tsx` plus unit tests)
+
+- **a. New signed-out user, full rung chain:** `/c/<token>` saves the resume, redirects to `/(auth)`. Then the real `postStepRoute` is stepped through consent, email verification and setup (each returns an `(auth)` route, resume untouched), then mode-select, then the real `useSwitchMode.switchMode('client')`, which replaces to `/c/<token>`.
+- **b. Returning user, restored `activeMode`, mode-select skipped:** with `activeMode: 'client'` (and again with `'professional'`), a pending resume and each of consent, verify-email and setup completing, `postStepRoute` returns `/c/<token>`, and a second call returns the plain home (resume consumed once).
+- **c. Returning user, no resume:** `postStepRoute(state) === nextAuthRoute(state)` across the existing matrix (signed out, each gate, restored client, restored pro, incomplete pro), and `activeMode: null` still gives `/(auth)/mode-select`. A source check confirms `ModePicker`/`useLogin` are unchanged.
+- **d. Invite opened while `activeMode === 'professional'`:** a pure helper `inviteExitHref(activeMode, target)` that every navigation out of the preview uses. Tests assert `/(professional)/chat/<id>` for professional and `/(client)/chat/<id>` for client, never a bare `/chat/...`, and the same for the home targets.
+- **Plus:** `takeResume` atomicity (second call `null`, persisted state cleared), the `navigated` guards (two effect runs give one `replace`), and the three call-site assertions.
+
+## Revision 3 (your five changes; supersedes Revision 2 where they conflict)
+
+**First action once plan mode is off:** `git push` for `802d73bf`, then re-copy this plan to `docs/status/2026-10-05-community-invite-links-step1.md` (it was copied at commit time and has changed since). I can't do either while plan mode blocks writes outside this file.
+
+### Item 1: client members can't reach their community (investigated, nothing built)
+
+**What I found:**
+- **The row renderer can already draw a community.** `ChatsScreen` (shared by both chats tabs, `src/features/chat/screens/ChatsScreen.tsx`) has a `type === 'community'` avatar (line 328), a name branch (line 411) and navigation `router.push(/${modeSegment}/chat/${id})` (line 556). It is a dormant path, because line 363 filters communities out: "Communities live in their own tab — keep them out of the chats list."
+- **Client mode has no "their own tab" at all.** `(client)/(tabs)/chats/index.tsx:76` filters them again (`realChats`, which also drives the empty state). Pro mode surfaces joined communities in `CommunityDiscoveryTab`'s "my communities" strip (query: `type == community` and `members array-contains uid`) and also filters them at `(professional)/(tabs)/chats/index.tsx:94`.
+- **`useUserChats` already returns them.** `listenToUserChats` is `members array-contains uid`, so the data is already loaded in both modes.
+- **`ChatRoomScreen` is one shared, mode-aware component** (`activeMode`, `chatGroupOf`). The community header goes to `/${chatGroup}/chat/community-details`, and the channels and market channel are not mode-specific in the code. I **cannot claim it fully works in client mode from reading alone.** I'll verify in the browser against the emulator as part of 2b.
+- **Two client-mode defects I found by reading:**
+  1. **Unread dot would be wrong.** `ChatsScreen` reads `item.unreadCount[uid]`, but communities track unread per channel in `channelUnread[uid][channelId]`, so a community row would never show unread.
+  2. **Listing links in the Market channel go to the wrong group.** `ChatRoomScreen.tsx:588` hardcodes `/(professional)/(tabs)/marketplace?listingId=...`. A client tapping one lands in the professional group with `activeMode === 'client'`.
+- **Back button:** `ChatRoomScreen.tsx:1738` dismisses to `/(client)/(tabs)/chats?tab=communities`. The client tab ignores `tab`, so that lands on the chats list, which is fine once communities appear there.
+
+**Intended fix and real cost (2b, built only after you approve this cost):**
+- Discovery stays as is: `CommunityDiscoveryTab` and Discover are untouched.
+- `ChatsScreen.tsx:363`: stop filtering communities the user is a member of (all rows from `listenToUserChats` already are), and sum `channelUnread[uid]` for the unread indicator. Communities appear under the default "All" filter only, not under Open, Completed or Marketplace.
+- `(client)/(tabs)/chats/index.tsx:76` and `(professional)/(tabs)/chats/index.tsx:94`: count communities toward `hasChats`, so a user with only communities gets the list, not the empty state.
+- `ChatRoomScreen.tsx:588`: build the listing href from `chatGroup`/`activeMode` instead of the hardcoded `(professional)` path.
+- **Side effect:** in pro mode a joined community shows both in the chat list and in the existing "my communities" strip. That is the "both modes" behavior you asked for.
+- **Tests:** `ChatsScreen*.test.tsx` (communities now listed; unread from `channelUnread`), the two `hasChats` cases, the listing href in both modes.
+- **Size:** about 4 source files plus tests. The unknown is what the browser check turns up in client mode.
+
+### Item 2: derived completeness, not the stored flag
+
+- **No `proProfileCompleted` read anywhere** in this feature.
+- **`hasUsableProProfile(profile, userDoc)`** in `src/features/communityAdmin/` (a pure helper named as a derivation): true when the user's display name is non-empty **and** `roleSkills` has at least one entry. Documented as derived from the profile doc `usePeople` already fetches, not a stored flag.
+- `Person` gains `roleIds: string[]` and `hasUsableProProfile: boolean`. Still zero extra reads.
+
+### Item 3: revoke then create (`inviteCore.ts` / `invites.ts`) — NOT a bug
+
+- `createCommunityInvite` reuses an invite only via `where communityId == X, createdBy == uid, revoked == false`.
+- `revokeCommunityInvite` sets `revoked: true` and leaves the doc and its short-code doc in place.
+- **After a revoke the query returns nothing, so create mints a new token and a new short code.** It cannot return the revoked one. The old link and code still resolve to `{exists: true, revoked: true}`.
+- **Gap:** the existing functions tests are pure-helper tests (`communityInvites.test.ts`), with none covering create-after-revoke. I'll prove it against the emulator in checkpoint 3 (create, revoke, create, assert a different token and that the old token reads as revoked), before the share row relies on it.
+
+### Item 4: `hasHydrated` guard in `pendingIntentStore`
+
+- **Design:**
+  - `takeResume()` stays synchronous but, if the store has **not** hydrated, it returns `null` and clears nothing. It cannot lose or replay a resume.
+  - New `takeResumeWhenReady()` awaits hydration (immediate on web, where `localStorage` is synchronous), bounded at 3 s, then takes. The call sites use this one.
+  - New module-level tombstone: the `savedAt` of the last consumed or cleared resume. `mergePersistedIntent` drops any stored resume with `savedAt <=` the tombstone, so late hydration cannot resurrect a consumed resume. `clearAll()` sets it too.
+- **Consequence:** `postStepRoute` becomes `async` and returns `Promise<string>`. The call sites become `postStepRoute(...).then(r => router.replace(r))`, still behind the `navigated` ref. `useSwitchMode.switchMode` is already async and awaits `takeResumeWhenReady()`.
+- **Tests:**
+  1. A sync take before hydration returns `null` and the stored resume survives.
+  2. `takeResumeWhenReady` waits for a delayed AsyncStorage mock, then returns the href exactly once.
+  3. Take, then late `rehydrate()` of a stored copy: the resume stays gone.
+  4. `clearAll` then rehydrate: stays gone.
+  5. A second take returns `null`.
+  6. The timeout path takes from memory.
+
+### Item 5: new checkpoint order
+
+- **2a:** `src/app/c/[token].tsx` + `InvitePreviewScreen` + resume wiring + `postStepRoute` (async) + `inviteExitHref` + join request (any signed-in user, no pro gate) + tests a-d + the hydration work.
+- **2b:** member visibility (item 1).
+- **2c:** owner join-request row with the derived marker and roles (item 2).
+- Then 3 (share row), 4 (owner push), 5 (landing page), as before.
+
+### Additional test: no verified phone, resume pending
+
+- **The ordering is intended:** completing consent lands on `/c/<token>`, **not** the phone screen. The phone rung is a group-layout gate (`useOnboardingGate`), and `/c/[token]` is outside the groups. The user meets phone verification later, when entering `(client)/chat/...` from the preview.
+- **A trap I found in my own plan:** `/c/[token]` was going to call `useOnboardingGate()`, which includes the phone rung (`/settings/phone?required=1`). It will call **`useOnboardingGate({ deferPhone: true })`** so only signed-out, consent, email and setup apply, and never phone.
+- **Tests:**
+  1. A state with a pending resume and no phone: `postStepRoute` after consent resolves to `/c/<token>`.
+  2. `useOnboardingGate({ deferPhone: true })` returns `null` for a signed-in, consented, verified, set-up user with no phone.
+  3. A source assertion that `src/app/c/[token].tsx` has no `usePhoneGate` and no `/settings/phone`.
+
 ## Revised build order (commit at each checkpoint; `npx jest` and `tsc` clean each time)
 
 1. **Region-aware Functions instance + `inviteService` + i18n keys.**
@@ -303,7 +437,7 @@ The only `takeResume` caller is `useSwitchMode.ts:25`. `saveResume` has no calle
    - **Error mapping:** every `getCommunityInvite` and `createCommunityInvite` error code gets its own Hebrew and English string. That covers `unauthenticated`, `permission-denied`, `not-found`, `resource-exhausted`, and each `failed-precondition` reason: unverified email (`אמת את כתובת האימייל שלך כדי ליצור קישור הזמנה`), `demo-isolation`, and `appLinks` missing or not https. There is also a generic fallback.
    - **Emulator:** seed `config/appLinks` in the emulator as part of this step.
    - Mapping tests use the exact server error `code` and `message` strings.
-2. **`src/app/c/[token].tsx` + `InvitePreviewScreen`, the resume wiring, and the `nextAuthRoute` and `hasResume` fix, with tests including the full round trip.**
+2. **Split into 2a, 2b, 2c, see Revision 3.** 2a: `/c/[token]` + preview + resume wiring + async `postStepRoute` + `inviteExitHref` + join request (no pro gate) + tests a-d + hydration guard. 2b: member visibility in the chat list. 2c: owner join-request row with the derived pro-profile marker and roles.
    - **Requirement C:** every navigation out of the invite screen uses an explicit group href, never `/chat/...`. The same applies when `activeMode` is `'professional'`.
    - Targets: `/(client)/chat/...`, `/(professional)/chat/...`, `/(client)/(tabs)/home`, or `/(professional)/(tabs)/profile`, chosen from `activeMode`, as `useNotificationRouting` does.
    - Tests assert the href string for both modes.
