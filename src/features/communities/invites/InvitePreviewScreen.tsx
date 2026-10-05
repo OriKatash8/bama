@@ -89,7 +89,6 @@ export function InvitePreviewScreen({ tokenOrCode }: { tokenOrCode: string }) {
     }
   }
 
-  const align = rtl ? 'right' : 'left';
   const center = { textAlign: 'center' as const };
 
   function body() {
@@ -135,7 +134,7 @@ export function InvitePreviewScreen({ tokenOrCode }: { tokenOrCode: string }) {
         ) : null}
         <AppText weight="bold" style={[styles.title, center, { color: colors.text }]} testID="invite-name">{invite.communityName}</AppText>
         {invite.description ? (
-          <AppText style={[{ color: colors.textMuted, textAlign: align }, styles.desc]}>{invite.description}</AppText>
+          <AppText style={[center, { color: colors.textMuted }, styles.desc]}>{invite.description}</AppText>
         ) : null}
 
         {invite.membership === 'none' ? (
