@@ -91,6 +91,18 @@ await db.doc(`chats/${COMMUNITY_ID}`).set({
   ownerId: 'fx-owner', members: ['fx-owner', 'fx-member'], lastMessage: null, createdAt: now,
 });
 
+// 4b. Edge-case communities for the invite preview: details that are missing or null.
+//     (fx-bare: the fields are ABSENT; fx-null: they are explicit nulls; fx-photo: has a photo.)
+const PHOTO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAIAAABt+uBvAAAAp0lEQVR42u3SQQ0AIBADwR5BB5qQjSswQEj4zz4qoJkac1VS2fa6LXrWU054RRBBBBFEEEEEEUSQCCKIIIIIIogggkQQQQQRRBBBBBEkgggiiCCCCCKIIIJEEEEEEUQQQQQRJIIIIogggggiiCARRBBBBBFEEEEEESSCCCKIIIIIIoggEUQQQQQRRBBBBIkggggiiCCCCCKIIBFEEEEEEUQQQQSJoK8OMcAxs9if2bAAAAAASUVORK5CYII='; // a 96x96 gradient PNG as a data: URI, so no network is needed
+const EDGE = [
+  { id: 'fx-bare', label: 'no photo, no description (fields absent)', doc: { name: 'Bare Community' } },
+  { id: 'fx-null', label: 'no photo, no description (fields are null)', doc: { name: 'Null Community', description: null, photoURL: null } },
+  { id: 'fx-photo', label: 'has a photo', doc: { name: 'Photo Community', description: 'A community with a picture.', photoURL: PHOTO } },
+];
+for (const e of EDGE) {
+  await db.doc(`chats/${e.id}`).set({ type: 'community', ownerId: 'fx-owner', members: ['fx-owner'], lastMessage: null, createdAt: now, ...e.doc });
+}
+
 // 5. Invites, through the real callables, as the owner.
 const app = initializeApp({ projectId: PROJECT, apiKey: 'fake' }, 'fixture-owner');
 const auth = getAuth(app);
@@ -106,6 +118,9 @@ await call('revokeCommunityInvite', { token: revoked.token });
 const live = await call('createCommunityInvite', { communityId: COMMUNITY_ID });
 if (live.token === revoked.token) throw new Error('create after revoke returned the revoked token');
 
+const edgeInvites = [];
+for (const e of EDGE) edgeInvites.push({ ...e, invite: await call('createCommunityInvite', { communityId: e.id }) });
+
 // 6. What to paste.
 const rows = PEOPLE.map((p) => `  ${p.email.padEnd(22)} ${p.note}`).join('\n');
 console.log(`
@@ -120,6 +135,9 @@ Invite links (open in the app running with EXPO_PUBLIC_USE_EMULATORS=1):
   REVOKED token   ${APP_URL}/c/${revoked.token}
   unknown code    ${APP_URL}/c/ZZZZZZ
   malformed       ${APP_URL}/c/not-a-token
+
+Edge-case communities (the preview with missing details):
+${edgeInvites.map((e) => `  ${e.label.padEnd(46)} ${APP_URL}/c/${e.invite.token}`).join('\n')}
 
 Deep-link form (device/simulator):  bama://c/${live.token}
 Community id: ${COMMUNITY_ID}   (owner dashboard: ${APP_URL}/chat/community-admin?chatId=${COMMUNITY_ID} in the owner's mode)

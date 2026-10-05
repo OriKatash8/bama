@@ -9,7 +9,13 @@ import { InvitePreviewScreen } from '../InvitePreviewScreen';
 
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }), Stack: { Screen: () => null } }));
-jest.mock('expo-image', () => ({ Image: () => null }));
+// Renders an element we can find, carrying the uri it was given.
+jest.mock('expo-image', () => ({
+  Image: ({ source }: { source: { uri: string } }) => {
+    const { View } = require('react-native');
+    return <View testID="invite-avatar-image" accessibilityLabel={source?.uri} />;
+  },
+}));
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock('@core/firebase/config', () => ({ db: {}, auth: {} }));
 const mockGet = jest.fn();
@@ -92,6 +98,44 @@ describe('states', () => {
     useSettingsStore.setState({ language: 'he' } as never);
     const r = await open(ready('none'));
     expect(r.getByText(he.community_invite.preview.join_cta)).toBeTruthy();
+  });
+});
+
+describe('communities with missing details (null photoURL is the classic crash)', () => {
+  const bare = (over: object) => ({ ...ready('none'), ...over });
+
+  it.each([
+    ['photo and description both null', { avatarUrl: null, description: null }],
+    ['photo and description both ABSENT', { avatarUrl: undefined, description: undefined }],
+    ['an empty-string description and photo', { avatarUrl: '', description: '' }],
+  ])('%s: renders the name and the join button, with the placeholder icon and no description', async (_name, over) => {
+    const r = await open(bare(over));
+    expect(r.getByTestId('invite-name').props.children).toBe('Gaffers');
+    expect(r.getByTestId('invite-join')).toBeTruthy();
+    expect(r.queryByTestId('invite-avatar-image')).toBeNull();
+  });
+
+  it('no description line is drawn when there is none', async () => {
+    const r = await open(bare({ description: null }));
+    expect(r.queryByText('Lights')).toBeNull();
+  });
+
+  it('a photo is drawn, from the url the server sent', async () => {
+    const r = await open(bare({ avatarUrl: 'https://example.invalid/p.jpg' }));
+    expect(r.getByTestId('invite-avatar-image').props.accessibilityLabel).toBe('https://example.invalid/p.jpg');
+  });
+
+  it('every state survives missing details: pending and member too', async () => {
+    for (const membership of ['pending', 'member'] as const) {
+      const r = await open(bare({ membership, avatarUrl: null, description: null }));
+      expect(r.getByTestId('invite-name')).toBeTruthy();
+      r.unmount();
+    }
+  });
+
+  it('a community with no name at all does not crash (empty title)', async () => {
+    const r = await open(bare({ communityName: '', avatarUrl: null, description: null }));
+    expect(r.getByTestId('invite-join')).toBeTruthy();
   });
 });
 
