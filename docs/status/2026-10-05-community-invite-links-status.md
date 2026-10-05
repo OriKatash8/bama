@@ -1,4 +1,4 @@
-# Community invite links: status, 2026-10-05 (updated after the review round)
+# Community invite links: status, 2026-10-05 (updated: link card, push cooldown, empty states)
 
 Phase 1 is built and committed. **Nothing is deployed, `config/appLinks` is not seeded in production, and hosting is not deployed.** Everything below was run against local emulators only.
 
@@ -10,24 +10,49 @@ The earlier plan, `2026-10-05-community-invite-links-step1.md`, still contains s
 
 **The "open in app" action is a real anchor the user taps.** `<a id="open" class="open" href="#">` inside the valid-link section. The page script reads `location.pathname` (the only use of `location`), validates the token, and calls `setAttribute('href', 'bama://c/<token>')` on that anchor. There is no redirect, no `window.location` / `location.href` assignment, no `window.open`, no `.click()`, no timer, no meta refresh and no inline handler; nothing is attempted on page load. Tests lock this in (including a `location` that records every write and sees none), and four deliberate regressions each fail them. Under the button, always visible, in Hebrew and English: *if nothing happened, open this page in Safari or Chrome (from the menu of the app you opened the link in)*.
 
-**Known limit of phase 1: `bama://` is unreliable inside the WhatsApp in-app browser.** Custom-scheme links are often refused there, silently. The tap-anchor and the fallback line make the failure recoverable, but they do not fix it. **Universal links on a real domain are the actual fix.**
+**Verified on iOS by you:** the `/c/**` rewrite works in production (on a preview channel), and tapping "open in app" from inside WhatsApp's in-app browser handed off to the app. **Android is untested.** So the tap-anchor works where it was tried, and universal links on the real domain are now polish rather than a dependency. The caveat that remains: custom-scheme links are refused by some in-app browsers (and can fail silently), which is what the always-visible fallback line is for.
 
 ## Step 14 (universal links): waiting for the domain
 
 You are buying a real domain. Once it exists, associated domains, Android intent filters, the AASA file and `assetlinks.json` ride the **pre-launch native build you need anyway for the Heebo fix**, not a separate build. Not started; waiting for the domain. Switching the link base is a single `config/appLinks.baseUrl` edit (plus `--force`/`--verify` on the seed script).
 
-## Queued, NOT started
+## This round: link card, push cooldown, empty states, password
 
-- **(a) Push cooldown** (closes the cancel-and-re-request spam risk). My pick and why, below.
-- **(b) Missing emulator states** for the invite preview: a community with no `photoURL`, no description, and the loading and error states. (A null `photoURL` is the classic crash; the no-photo case was seen, the other combinations were not.)
-- **(c) Rename the fixture's test password** to something self-evidently non-secret (read from an env var with a default like `emulator-only-not-a-secret`) with a one-line comment that it only works against the emulator.
+### Link-preview card (WhatsApp, Telegram, iMessage, X)
 
-**My pick for (a): a server-only cooldown stamp, not the two options as stated.** Both of the cheaper ideas fail against exactly the case that matters. The rules let a requester delete their pending request and create a new one, so a stamp on the request doc (`notifiedAt`) is deleted with it, and "notify only if no prior request doc existed" is true again after the delete. The second also goes silent for a legitimate re-ask after a rejection. What survives a delete is a record the requester cannot touch: `chats/{chatId}/joinRequestNotices/{uid}` with `lastNotifiedAt`, written only by the trigger (the rules deny everything not listed, so no rule change). The trigger notifies when there is no stamp or it is older than the cooldown (I would start at 1 hour, a constant), and records the time in the same transaction as the check. Cost: one read and one write per new request. Trade-off: a genuine re-ask inside the cooldown is silent, which is right (the owner was just told). Small loose end: those docs are orphaned when a community is deleted unless the delete path removes them.
+A pasted bare URL reads as phishing, so the landing page now carries `og:` and `twitter:` tags: `og:type`, `og:site_name`, `og:locale` (he_IL, alternate en_US), `og:title`, `og:description`, `og:url`, `og:image` (+ type, width, height, alt) and `twitter:card` (`summary_large_image`), `twitter:title`, `twitter:description`, `twitter:image`, `twitter:image:alt`. Hebrew title ("הוזמנת להצטרף לקהילה ב-BAMA"), description in Hebrew with the English after a dot. **Generic by necessity**: scrapers do not run JavaScript, so one card serves every invite and cannot name the community until phase 2 (a server-rendered page).
+
+- **The image** is `legal-site/static/og-invite.png`: 1200×630 (the 1.91:1 preview shape), 44 KB, the BAMA wordmark from `logo.webp` centred on the app's gradient. A PNG on purpose: WhatsApp does not reliably render WebP, and the wordmark is transparent so it needs a background of ours. Regenerate with `python3 scripts/make-invite-og-image.py` (Pillow).
+- **Absolute URLs** (`og:image`, `og:url`, `twitter:image`) are filled in at build time from one constant, `SITE_ORIGIN` in `scripts/build-legal-site.mjs` (default `https://bama-af0a0.web.app`; or `SITE_ORIGIN=https://... npm run legal:build`). The source `c.html` holds a `{{SITE_ORIGIN}}` placeholder. **When the real domain arrives, this is one of the places to change** (the others: `config/appLinks.baseUrl`, step 14). A value that is not a bare `https` origin fails the build.
+- **Tested** against the built page: every required tag, absolute https URLs, no placeholder left, the PNG signature and its real dimensions matching the declared ones, under 300 KB, tags within the first 5 KB, a different origin flowing through every URL, a bad origin failing the build. Six deliberate regressions each fail the tests. Fetched through the Hosting emulator with the WhatsApp, Facebook, Telegram and Twitter user agents: all four receive the tags, and the image is served as `image/png`.
+- **Not verified: WhatsApp actually drawing the card.** That is yours to see.
+- **Two things that will catch you when you test it.** (1) The image URL is absolute and points at the production origin, so **on a preview-channel URL the image will 404** (the live site does not have `og-invite.png` yet) and the card will have no picture. To see the real card before going live, deploy once to the channel, take the URL it prints, then `SITE_ORIGIN=<that url> npm run legal:build` and redeploy to the same channel. (2) **WhatsApp caches a preview per URL**, so a link you already pasted will not update; use a link you have not pasted before (any well-formed token works for the page itself).
+
+### Owner-push cooldown (closes the spam risk)
+
+My pick, as discussed: a record the requester cannot touch, not a stamp on the request (which is deleted when they cancel).
+
+- `chats/{chatId}/joinRequestNotices/{uid}` holds `lastNotifiedAt`, written only by the trigger. **Rules check:** the only wildcards in `firestore.rules` are the final `/{document=**}` deny-all and a collection-group rule for subcollections named `fees`; nothing under `chats/{chatId}` is a wildcard, so the new subcollection is denied by default like `memberStats`. A test pins that (no rule names it, only those two wildcards exist, the deny-all is last); two deliberate violations each fail it. In the emulator, no client can read, write, delete or list it, **including the community owner**.
+- The announce step (`functions/src/communities/joinRequestAnnounce.ts`) does everything in **one transaction**: read the stamp and this event's notification, then write both. Within 1 hour of the last notification for that requester and community it stays silent. The window is the constant `JOIN_REQUEST_NOTIFY_COOLDOWN_MS`.
+- **The transactional stamp also makes the trigger idempotent against at-least-once duplicate delivery.** The notification's id is derived from the event id, and the transaction checks for it first, so a redelivered copy of the same event is a no-op **even hours later, long after the cooldown** (without that check the late copy crashes with `ALREADY_EXISTS`). And because the check and the write are one transaction, **five simultaneous events for one requester let exactly one through**. I ran the real compiled function directly against the emulator for this (17/17), since a redelivered event cannot be provoked through the emulator; removing the transaction, the "already announced" check, or the cooldown check each fails it.
+- Through the real triggers (34/34): cancel and re-ask three times in a row, plus a re-ask after a rejection, leave exactly **one** notification for that requester; with the stamp aged to two hours the next re-ask notifies and moves the stamp; the invite's `useCount` still counts every request (it is not behind the cooldown).
+- `onCommunityDeleted` now also removes the stamps (verified: three stamps gone after deleting the community).
+- **Trade-off:** a genuine re-ask inside the hour, even after the owner rejected the first, is silent, because the owner was just told. The owner still sees it on the dashboard.
+
+### Invite preview with missing details (checked in the app, not only in unit tests)
+
+Against the emulators, in the real app, as a signed-in client, with three new fixture communities: **no photo and no description (fields absent)**, **same with explicit `null`s**, and **one with a photo** (a data URI). All three render the name, the placeholder icon (or the photo), the join button and the note, with **no page errors**; no description line is drawn when there is none. The **loading state** (the lookup held back 4 s) shows the spinner and "Opening invite…" then the preview. The **error states** were produced by making the callable answer with a failure: `demo-isolation`, rate-limited, signed-out, a 500 carrying a stack-trace-looking message, and an aborted request each show their own Hebrew sentence and **never** the raw server text, and **Try again recovers**. The **already-a-member** state shows "Open community", which lands in the room. Unit tests cover the same cases (null / absent / empty photo and description, empty name).
+
+Two cosmetic things I saw and left alone: an aborted request (offline) reads "משהו השתבש" rather than "no connection", because the Firebase SDK reports it as `internal`; and the permanent errors (`demo-isolation`, not allowed) still offer "Try again".
+
+### Fixture password
+
+Now `process.env.FIXTURE_PASSWORD ?? 'emulator-only-not-a-secret'`, with a comment that these accounts exist only in the local Auth emulator. Checked on the emulator: the default signs in, the old password is rejected, the override works. Nothing else in the repo used the old value.
 
 ## What changed in the review round
 
 - **"View listing" is hidden when `activeMode === 'client'`.** The card and its content stay; only the action goes, because it opens the professional marketplace and there is no client one (`SharedListingCard` in `ChatRoomScreen.tsx`, test in `sharedListingCardAction.test.tsx`). Looked at in a browser as a client (no button) and as a professional (button).
-- **The owner push now fires for every new join request**, invite or not. The only reason I could find to keep the filter was spam, see "Risks" below; it is not a reason to keep it.
+- **The owner push now fires for every new join request**, invite or not (and, as of this round, at most once per requester per community per hour, see above).
 - **The landing page says the truth when the app is not in the stores**, and shows store buttons by itself once the store links are seeded. See "Store links".
 - **Pushed to `origin/main`.** See the list at the end.
 
@@ -124,7 +149,7 @@ I drove the app in **headless Chromium (Playwright), 390×844 at 2x, against the
 
 | Screen | Seen |
 |---|---|
-| Invite preview `/c/<token>` | Hebrew as a client (invite, then request sent); English as a professional (invite, then request sent); revoked, unknown code and malformed link in English |
+| Invite preview `/c/<token>` | Hebrew as a client (invite, then request sent); English as a professional (invite, then request sent); revoked, unknown code and malformed link in English; **no photo / no description (absent and null), with a photo, loading, five error states with Try again, and already-a-member** (Hebrew) |
 | Resume round trip | Brand-new browser session: open link signed out, redirected to login, log in, mode-select, pick a mode, land on the invite. Client mode and professional mode |
 | Chats tab, community row | Hebrew, in professional mode (owner) and in client mode (the approved client) |
 | Community room as a client | Opens, channels, Market channel selected, composer in the client colour |
@@ -135,7 +160,7 @@ I drove the app in **headless Chromium (Playwright), 390×844 at 2x, against the
 
 **Built but NOT looked at, or looked at only in part: read these critically**
 
-- **Invite preview.** The loading state; the error state with "Try again" (a real backend error, e.g. unverified email or rate limit); the "already a member" state and its "Open community" button; a community **with a photo** (only the no-photo icon was seen); a long name or long description; the English description; **dark mode**; **native iOS** layout (safe area, notch, keyboard). Its "returning to the app" button after a request was seen only as text.
+- **Invite preview.** A long name or long description; the new states in English; **dark mode**; **native iOS** layout (safe area, notch, keyboard). Its "back to the app" button after a request was seen only as text.
 - **Resume round trip.** The **returning-user path** (restored mode, mode-select skipped after consent / email / setup) is covered by unit tests only, not clicked through. Not clicked: register, email-verify and setup chains; Google and Apple sign-in; opening `bama://c/<token>` from a cold start on a device.
 - **The phone-number ordering.** `nophone@invite.test` exists in the fixture but I did not run that path in the browser.
 - **Chats tab.** English; the unread badge on a community row; searching for a community; the empty state for a user whose only chat is a community (unit-tested).
@@ -143,20 +168,21 @@ I drove the app in **headless Chromium (Playwright), 390×844 at 2x, against the
 - **Owner dashboard.** Two-column layout at 900px and wider; a long name; the row's collapse animation (the row did disappear).
 - **Listing card.** English; a rental listing; a listing with a photo; **tapping** the professional button.
 - **Owner push.** Receiving one on a phone, its text on a lock screen, and tapping it (the tap routing is unit-tested). The emulator proves the `notifications` document is written once; the existing `onNotificationCreate` turns it into an Expo push and that step was never run.
-- **Landing page.** Safari on iOS and Chrome on Android; what the "Open in the app" button does on a phone **without** the app (iOS shows an error for an unhandled scheme); **dark mode**; and especially **in-app browsers such as WhatsApp's**, which often refuse custom-scheme links like `bama://`. This is the real WhatsApp use case and I could not test it; you are about to. If it fails there, the fallback line is the manual route and universal links on the real domain are the fix.
+- **Landing page.** **Android** (Chrome and WhatsApp's in-app browser); what "Open in the app" does on a phone **without** the app (iOS shows an error for an unhandled scheme); **dark mode**; and the **link-preview card as WhatsApp draws it**. The iOS WhatsApp handoff you tested yourself.
 - **The iPhone emulator setup itself** (LAN config, `EXPO_PUBLIC_EMULATOR_HOST`): untested. iOS may also object to plain-http calls to a LAN address from the dev build.
 
 ## Verified by tests
 
-- `npx jest`: 361 suites, 3157 tests green; `tsc` clean; `node --test scripts/__tests__/*.test.mjs`: 94 pass.
+- `npx jest`: 362 suites, 3175 tests green; `tsc` clean; `node --test scripts/__tests__/*.test.mjs`: 106 pass.
 - Mutation checks at every step, each asserting its anchor. Two of mine did not bite at first (a pre-hydration test; an invalid mutant) and were fixed. One more survived because two checks overlapped, so I confirmed removing both fails.
 - **Emulator, backend (29/29):** create; create again returns the same invite; **create after revoke mints a new token and code**; lookups; join request through the rules (live token OK, revoked token / short code / extra field / someone else's uid refused); the real emulator errors mapped to the right strings.
-- **Emulator, owner push (20/20):** one notification per new request, **invite or not**; none for an edit to a pending request or a cancel; one more for a re-ask after a rejection; English when `users/{owner}.language` is `en`; no crash and the count still bumps when there is no owner.
+- **Emulator, owner push (34/34):** one notification per new request, **invite or not**; none for an edit to a pending request or a cancel; **the 1-hour cooldown** (re-ask and repeated cancel-and-re-ask are silent; notifies again once the stamp is older than an hour); the stamp is unreachable to any client, the owner included; English when `users/{owner}.language` is `en`; no crash and the count still bumps when there is no owner; the stamps are removed when the community is deleted.
+- **Emulator, announce step run directly (17/17):** duplicate and late redelivery of one event, the cooldown boundary to the millisecond, a second requester unaffected, five concurrent events letting one through, no-owner / owner-asks-themselves / missing community.
 - The harness scripts are in the session scratchpad and are not committed; the committed ones are `scripts/dev-invite-fixture.mjs` (guarded by `devFixtureGuard.test.mjs`) and `scripts/export-app-links.mjs`.
 
 ## Risks and logged-not-fixed
 
-- **Owner push can be spammed.** A requester can cancel and ask again as often as they like (the rules allow deleting a pending request and creating a new one), and each new pending request pushes the owner. Same for invite requests before this change. No cap or per-requester cooldown exists. Worth a cooldown if it matters.
+- **Owner push spam: closed** by the cooldown above. Residual: a requester can still create a request every hour per community, and the cooldown is per requester, so many different accounts each get one push.
 - **Owner push is Hebrew.** The server has no language field (`users/{uid}.language` does not exist), so every push is Hebrew. The text is bilingual and switches the day the app writes that field. *Logged, not fixed.*
 - **Community rows do not sort by their last message.** The server never writes `lastMessage` on a community chat doc, so rows sit by creation date. The unread badge works (the server increments `unreadCount.<uid>`). *Pre-existing; logged, not fixed.*
 - A muted community still sends this push, and there is no per-type opt-out toggle for `community_join_request`.
@@ -179,11 +205,12 @@ Rules need **no** deploy: the invite rules (`5fe615c9`) are an ancestor of the l
    npm --prefix functions run build
    firebase deploy --only functions:createCommunityInvite,functions:getCommunityInvite,functions:revokeCommunityInvite,functions:onCommunityInviteJoinRequest,functions:onCommunityDeleted --project bama-af0a0
    ```
-   `onCommunityInviteJoinRequest` is the one changed here (owner push, now for every request).
-3. **Hosting** (exports the store links if it can, builds, deploys; adds `/c.html`, the `/c/**` rewrite and the `/app-links.json` header):
+   Two of these changed here: `onCommunityInviteJoinRequest` (owner push for every request, with the cooldown) and `onCommunityDeleted` (removes the cooldown stamps). No rules or index change.
+3. **Hosting.** The hosting-only command that skips the store-link export (no production config is read), and which now also ships `og-invite.png`:
    ```
-   npm run legal:deploy
+   cd ~/dev/bama-app && npm run legal:build && firebase deploy --only hosting --project bama-af0a0
    ```
+   `npm run legal:deploy` does the same plus the best-effort store-link export (it reads `config/appLinks` through your Google credentials). To see the link card on a **preview channel** first, see "Two things that will catch you" above.
    Later, once the app is in the stores: seed the two links (see "Store links"), then run the same command again.
 4. **App:** JS only. No new native module and no `ios/` or `app.json` change, so nothing here needs a native rebuild. (I did not check whether OTA updates are configured.)
 
@@ -191,4 +218,4 @@ Order: seed `appLinks`, then functions, then hosting, then ship the app. If the 
 
 ## Commits
 
-`802d73bf` → `ee4b1620` → `f163737a` → `3fa28141` → `2dd36674` → `6d92e3de` → `9ffd958c` → `d66491f4`, then this round (listing button, push for every request, landing page + store links, dev emulator switch / fixture / LAN config).
+`802d73bf` → `ee4b1620` → `f163737a` → `3fa28141` → `2dd36674` → `6d92e3de` → `9ffd958c` → `d66491f4` → `7b2c85e9` (listing button) → `96b1241d` (push for every request) → `b1b98748` (store links) → `6f092666` (emulator mode, fixture, LAN config) → `f342bcb7` → `41dc5fe2` → `30608720` (fallback line) → `a233cfa6` (link card) → `8355805b` (push cooldown) → `623e2301` (empty states) → `4512731c` (fixture password) → this doc.
