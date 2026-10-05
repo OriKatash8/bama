@@ -63,6 +63,8 @@ jest.mock('@features/chat/services/chatService', () => ({
   muteChat: jest.fn(() => Promise.resolve()),
   unmuteChat: jest.fn(() => Promise.resolve()),
 }));
+// The invite row's service reaches firebase/functions (ESM); these tests are not about it.
+jest.mock('@features/communities/invites/inviteService', () => ({ createCommunityInvite: jest.fn() }));
 jest.mock('@features/chat/components/CommunityDiscoveryTab', () => ({ CommunityAvatar: () => null }));
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn() }));
 jest.mock('@core/stores/settingsStore', () => ({

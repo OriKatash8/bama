@@ -1316,8 +1316,8 @@
   },
   "community_invite": {
     "share_label": "שיתוף הקהילה",
-    "share_message": "הצטרפו אליי ל{{name}} ב-BAMA: {{url}}",
-    "share_title": "הזמנה ל{{name}}",
+    "share_message": "הצטרפו אליי לקהילה {{name}} ב-BAMA: {{url}}",
+    "share_title": "הזמנה לקהילה {{name}}",
     "link_copied": "קישור ההזמנה הועתק",
     "preview": {
       "loading": "פותח הזמנה…",

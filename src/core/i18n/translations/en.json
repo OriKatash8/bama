@@ -1316,7 +1316,7 @@
   },
   "community_invite": {
     "share_label": "Share community",
-    "share_message": "Join {{name}} on BAMA: {{url}}",
+    "share_message": "Join the {{name}} community on BAMA: {{url}}",
     "share_title": "Invite to {{name}}",
     "link_copied": "Invite link copied",
     "preview": {

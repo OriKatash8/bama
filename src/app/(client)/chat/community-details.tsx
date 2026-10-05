@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Search, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Search, Share2, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -21,6 +21,7 @@ import { auth } from '@core/firebase/config';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { useUiStore } from '@core/stores/uiStore';
 import { chatGroupOf } from '@features/chat/utils/chatGroup';
 import { ChatMediaSection } from '@features/chat/components/ChatMediaSection';
 import { AppText } from '@components/ui/AppText';
@@ -32,6 +33,9 @@ import {
   unmuteChat,
 } from '@features/chat/services/chatService';
 import { leaveCommunity } from '@features/chat/services/communityMembership';
+import { createCommunityInvite } from '@features/communities/invites/inviteService';
+import { inviteErrorI18nKey } from '@features/communities/invites/inviteErrors';
+import { shareInviteLink } from '@features/communities/invites/shareInviteLink';
 import type { Chat } from '@features/chat/types';
 import type { User } from '@core/types/user';
 import en from '@core/i18n/translations/en.json';
@@ -83,6 +87,9 @@ export default function CommunityDetailsScreen() {
   const [muted, setMuted] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [membersExpanded, setMembersExpanded] = useState(false);
+  // Above the early returns below: hooks must run on every render.
+  const showToast = useUiStore((s) => s.showToast);
+  const [inviteBusy, setInviteBusy] = useState(false);
 
   // Live, not a one-shot read: the member list changes when the owner approves a
   // join request while this page is open, and leaving has to be reflected too.
@@ -172,6 +179,28 @@ export default function CommunityDetailsScreen() {
 
   const members = community.members ?? [];
   const isOwner = currentUserId === community.ownerId;
+
+  /** Owner: create (or reuse) the community's invite link and hand it to the OS share sheet. */
+  async function handleShareInvite() {
+    if (inviteBusy || !community) return;
+    setInviteBusy(true);
+    try {
+      const invite = await createCommunityInvite(chatId);
+      const name = community.name ?? '';
+      const outcome = await shareInviteLink({
+        title: t('community_invite.share_title', { name }),
+        message: t('community_invite.share_message', { name, url: invite.url }),
+        url: invite.url,
+      });
+      if (outcome === 'copied') showToast(t('community_invite.link_copied'), 'success');
+      else if (outcome === 'unsupported') showToast(t('community_invite.errors.generic'), 'error');
+    } catch (e) {
+      // A real sentence per failure (unverified email, rate limit, ...), never the raw function error.
+      showToast(t(inviteErrorI18nKey(e)), 'error');
+    } finally {
+      setInviteBusy(false);
+    }
+  }
 
   async function handleToggleMute(next: boolean) {
     if (!currentUserId || !chatId) return;
@@ -296,6 +325,28 @@ export default function CommunityDetailsScreen() {
             <Search size={18} color={colors.primary} strokeWidth={2} />
             <AppText weight="semiBold" style={[styles.settingLabel, { color: colors.text, textAlign: align }]}>
               {t('community_search.open')}
+            </AppText>
+          </TouchableOpacity>
+        )}
+
+        {/* Invite link — the owner only. */}
+        {isOwner && (
+          <TouchableOpacity
+            style={[styles.settingCard, styles.searchRow, { flexDirection: rowDir }, inviteBusy && { opacity: 0.6 }]}
+            onPress={handleShareInvite}
+            disabled={inviteBusy}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={t('community_invite.share_label')}
+            testID="share-community-invite"
+          >
+            {inviteBusy ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Share2 size={18} color={colors.primary} strokeWidth={2} />
+            )}
+            <AppText weight="semiBold" style={[styles.settingLabel, { color: colors.text, textAlign: align }]}>
+              {t('community_invite.share_label')}
             </AppText>
           </TouchableOpacity>
         )}
