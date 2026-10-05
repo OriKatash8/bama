@@ -4,6 +4,26 @@ Phase 1 is built and committed. **Nothing is deployed, `config/appLinks` is not 
 
 The earlier plan, `2026-10-05-community-invite-links-step1.md`, still contains superseded proposals (the pro-only gate, `hasResume`). This file is the current state.
 
+## Before any hosting deploy (done: legal check, anchor)
+
+**Legal site safety check: no differences.** `npm run legal:build`, then every built file fetched from `https://bama-af0a0.web.app` and compared by SHA-256: `index`, `terms`, `privacy`, `refunds`, `en/terms`, `en/privacy`, `en/refunds`, `logo.webp`, both favicons and the apple-touch-icon are **byte-identical** (11 of 11). The built file list equals the list in `.firebase/hosting.*.cache` (the last deploy from this machine) plus exactly one new file, `c.html`; there is no `app-links.json`. What the deploy would add: `c.html`, the `/c/**` rewrite, and header rules for `/c/**` and `/app-links.json`. The existing header rule is unchanged. A caveat I cannot remove: the live file list cannot be enumerated without credentials, so a file that is live but absent from this machine's last-deploy list would be dropped by the deploy (a hosting deploy publishes exactly the local folder). Nothing suggests there is one.
+
+**The "open in app" action is a real anchor the user taps.** `<a id="open" class="open" href="#">` inside the valid-link section. The page script reads `location.pathname` (the only use of `location`), validates the token, and calls `setAttribute('href', 'bama://c/<token>')` on that anchor. There is no redirect, no `window.location` / `location.href` assignment, no `window.open`, no `.click()`, no timer, no meta refresh and no inline handler; nothing is attempted on page load. Tests lock this in (including a `location` that records every write and sees none), and four deliberate regressions each fail them. Under the button, always visible, in Hebrew and English: *if nothing happened, open this page in Safari or Chrome (from the menu of the app you opened the link in)*.
+
+**Known limit of phase 1: `bama://` is unreliable inside the WhatsApp in-app browser.** Custom-scheme links are often refused there, silently. The tap-anchor and the fallback line make the failure recoverable, but they do not fix it. **Universal links on a real domain are the actual fix.**
+
+## Step 14 (universal links): waiting for the domain
+
+You are buying a real domain. Once it exists, associated domains, Android intent filters, the AASA file and `assetlinks.json` ride the **pre-launch native build you need anyway for the Heebo fix**, not a separate build. Not started; waiting for the domain. Switching the link base is a single `config/appLinks.baseUrl` edit (plus `--force`/`--verify` on the seed script).
+
+## Queued, NOT started
+
+- **(a) Push cooldown** (closes the cancel-and-re-request spam risk). My pick and why, below.
+- **(b) Missing emulator states** for the invite preview: a community with no `photoURL`, no description, and the loading and error states. (A null `photoURL` is the classic crash; the no-photo case was seen, the other combinations were not.)
+- **(c) Rename the fixture's test password** to something self-evidently non-secret (read from an env var with a default like `emulator-only-not-a-secret`) with a one-line comment that it only works against the emulator.
+
+**My pick for (a): a server-only cooldown stamp, not the two options as stated.** Both of the cheaper ideas fail against exactly the case that matters. The rules let a requester delete their pending request and create a new one, so a stamp on the request doc (`notifiedAt`) is deleted with it, and "notify only if no prior request doc existed" is true again after the delete. The second also goes silent for a legitimate re-ask after a rejection. What survives a delete is a record the requester cannot touch: `chats/{chatId}/joinRequestNotices/{uid}` with `lastNotifiedAt`, written only by the trigger (the rules deny everything not listed, so no rule change). The trigger notifies when there is no stamp or it is older than the cooldown (I would start at 1 hour, a constant), and records the time in the same transaction as the check. Cost: one read and one write per new request. Trade-off: a genuine re-ask inside the cooldown is silent, which is right (the owner was just told). Small loose end: those docs are orphaned when a community is deleted unless the delete path removes them.
+
 ## What changed in the review round
 
 - **"View listing" is hidden when `activeMode === 'client'`.** The card and its content stay; only the action goes, because it opens the professional marketplace and there is no client one (`SharedListingCard` in `ChatRoomScreen.tsx`, test in `sharedListingCardAction.test.tsx`). Looked at in a browser as a client (no button) and as a professional (button).
@@ -123,7 +143,7 @@ I drove the app in **headless Chromium (Playwright), 390×844 at 2x, against the
 - **Owner dashboard.** Two-column layout at 900px and wider; a long name; the row's collapse animation (the row did disappear).
 - **Listing card.** English; a rental listing; a listing with a photo; **tapping** the professional button.
 - **Owner push.** Receiving one on a phone, its text on a lock screen, and tapping it (the tap routing is unit-tested). The emulator proves the `notifications` document is written once; the existing `onNotificationCreate` turns it into an Expo push and that step was never run.
-- **Landing page.** Safari on iOS and Chrome on Android; what the "Open in the app" button does on a phone **without** the app (iOS shows an error for an unhandled scheme); **dark mode**; and especially **in-app browsers such as WhatsApp's**, which often refuse custom-scheme links like `bama://`. This is the real WhatsApp use case and I could not test it. Universal links (phase 2) are the fix if it fails.
+- **Landing page.** Safari on iOS and Chrome on Android; what the "Open in the app" button does on a phone **without** the app (iOS shows an error for an unhandled scheme); **dark mode**; and especially **in-app browsers such as WhatsApp's**, which often refuse custom-scheme links like `bama://`. This is the real WhatsApp use case and I could not test it; you are about to. If it fails there, the fallback line is the manual route and universal links on the real domain are the fix.
 - **The iPhone emulator setup itself** (LAN config, `EXPO_PUBLIC_EMULATOR_HOST`): untested. iOS may also object to plain-http calls to a LAN address from the dev build.
 
 ## Verified by tests

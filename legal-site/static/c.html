@@ -27,6 +27,8 @@ h1{font-size:22px;line-height:1.3;margin:0 0 6px}
 .open small{display:block;font-weight:400;font-size:13px;opacity:.9}
 .hint{margin:22px 0 0;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
 .hint p{margin:0 0 6px}
+.fallback{margin:14px 0 0;color:var(--muted);font-size:13px}
+.fallback + .fallback{margin-top:4px}
 .stores{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .store{display:block;padding:12px 16px;border-radius:12px;border:1px solid var(--btn);color:var(--link);font-weight:600;text-decoration:none}
 .store small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
@@ -41,7 +43,14 @@ h1{font-size:22px;line-height:1.3;margin:0 0 6px}
     <h1>הוזמנת להצטרף לקהילה ב-BAMA</h1>
     <p class="en" dir="ltr">You've been invited to join a community on BAMA</p>
     <p class="lead">הקישור ייפתח באפליקציה, ושם תוכל לשלוח בקשה להצטרף.</p>
+    <!-- A real link the user TAPS: iOS and Android in-app browsers (WhatsApp, Instagram, Chrome
+         Custom Tabs) refuse a custom-scheme navigation that is not a user gesture, and fail
+         silently. So this is never a redirect, a window.location assignment or an attempt on
+         page load; the script below only fills in its href. -->
     <a id="open" class="open" href="#">פתיחה באפליקציה<small dir="ltr">Open in the app</small></a>
+    <!-- The manual escape hatch when the in-app browser refuses the scheme anyway. -->
+    <p id="fallback" class="fallback">אם לא קרה כלום, פתח את הדף הזה בדפדפן: Safari או Chrome (מהתפריט של האפליקציה שבה פתחת את הקישור).</p>
+    <p class="fallback" dir="ltr">If nothing happened, open this page in Safari or Chrome (from the menu of the app you opened the link in).</p>
     <!-- Shown once /app-links.json has answered: store buttons if the app is in the stores,
          otherwise the plain truth. Hidden until then so neither flashes. -->
     <div id="get-app" class="hint" hidden>

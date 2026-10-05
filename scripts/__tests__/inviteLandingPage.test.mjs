@@ -184,6 +184,41 @@ test('the open-in-app button does not wait for the stores request', () => {
   assert.equal(els['get-app'].hidden, undefined, 'the stores area waits for its answer instead of flashing');
 });
 
+test('"Open in the app" is a real <a href="bama://c/..."> the user taps, never a redirect or an automatic attempt', () => {
+  // The element: a plain anchor (not a button or a div with a handler).
+  assert.match(html, /<a id="open" class="open" href="#">/);
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  // The script may READ location.pathname and nothing else about navigation.
+  const withoutComments = script.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.deepEqual(withoutComments.match(/\blocation\b[^;\n]*/g), ['location.pathname.split(\'/\')']);
+  assert.doesNotMatch(withoutComments, /window\.|\.click\(|\.submit\(|setTimeout|setInterval|requestAnimationFrame|\.assign\(|\.replace\(|\.open\(|\bhistory\./);
+  assert.doesNotMatch(html, /http-equiv\s*=\s*["']?refresh/i);
+  assert.doesNotMatch(html, /\bonload\s*=|\bonclick\s*=/i);
+  // The only thing done with the scheme URL is putting it in the anchor's href.
+  assert.equal((withoutComments.match(/bama:\/\//g) ?? []).length, 1);
+  assert.match(withoutComments, /getElementById\('open'\)\.setAttribute\('href', 'bama:\/\/c\/' \+ token\)/);
+});
+
+test('running the page never navigates: a location that records any write sees none', () => {
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const writes = [];
+  const location = new Proxy({ pathname: `/c/${TOKEN}` }, { set(_t, k, v) { writes.push([k, v]); return true; } });
+  const el = (id) => ({ id, hidden: undefined, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } });
+  const els = Object.fromEntries(IDS.map((id) => [id, el(id)]));
+  vm.runInNewContext(script, { location, document: { getElementById: (id) => els[id] }, fetch: () => new Promise(() => {}), URL });
+  assert.deepEqual(writes, []);
+  assert.equal(els.open.attrs.href, `bama://c/${TOKEN}`);
+});
+
+test('the fallback is visible next to the button, in Hebrew and English: open this page in Safari/Chrome', () => {
+  const validSection = html.slice(html.indexOf('<section id="valid"'), html.indexOf('<section id="invalid"'));
+  assert.ok(validSection.indexOf('id="open"') < validSection.indexOf('id="fallback"'), 'the fallback comes right after the button');
+  assert.match(validSection, /אם לא קרה כלום, פתח את הדף הזה בדפדפן: Safari או Chrome/);
+  assert.match(validSection, /If nothing happened, open this page in Safari or Chrome/);
+  // Not inside any block that is hidden once the stores answer.
+  assert.ok(validSection.indexOf('id="fallback"') < validSection.indexOf('id="get-app"'));
+});
+
 test('the rewrite is only for /c/**: the legal pages are not swallowed', () => {
   for (const r of config.hosting.rewrites) assert.equal(r.source, '/c/**');
 });
