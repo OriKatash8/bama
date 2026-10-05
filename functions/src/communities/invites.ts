@@ -19,8 +19,7 @@ import {
 import { checkRateLimit } from './rateLimit';
 import { communityOnSide, readDemoConfig } from '../demo';
 import { assertVerifiedEmail } from '../auth/verifiedEmail';
-import { userLang } from '../notifications/userLang';
-import { JOIN_REQUEST_NOTIFICATION_TYPE, joinRequestNotice, joinRequestNotificationId } from './joinRequestNotice';
+import { announceJoinRequest } from './joinRequestAnnounce';
 
 /**
  * Community invites. Region: europe-west1, next to the eur3 database.
@@ -263,34 +262,10 @@ export const onCommunityInviteJoinRequest = onDocumentWritten(
     // request that merely gains a token above is counted, not announced twice).
     if (wasPending) return;
     // Best effort: a failed push must never undo or retry the count above.
-    await notifyOwnerOfJoinRequest(event.params.chatId, event.params.uid, after.displayName, event.id)
+    await announceJoinRequest({ chatId: event.params.chatId, requesterUid: event.params.uid, requesterName: after.displayName, eventId: event.id })
       .catch((e) => console.warn('[onCommunityInviteJoinRequest] owner push failed', (e as Error)?.message));
   },
 );
-
-async function notifyOwnerOfJoinRequest(chatId: string, requesterUid: string, requesterName: unknown, eventId: string) {
-  const chat = await db.collection('chats').doc(chatId).get();
-  const ownerId = chat.get('ownerId');
-  if (typeof ownerId !== 'string' || !ownerId || ownerId === requesterUid) return;
-
-  const { title, message } = joinRequestNotice(await userLang(ownerId), {
-    communityName: chat.get('name'),
-    requesterName,
-  });
-  try {
-    // create(), with an id derived from the event: a redelivered event finds it and stops.
-    await db.collection('notifications').doc(joinRequestNotificationId(eventId)).create({
-      userId: ownerId,
-      title,
-      message,
-      data: { type: JOIN_REQUEST_NOTIFICATION_TYPE, chatId },
-      createdAt: FieldValue.serverTimestamp(),
-    });
-  } catch (e) {
-    if ((e as { code?: number | string })?.code === 6 || (e as { code?: string })?.code === 'already-exists') return;
-    throw e;
-  }
-}
 
 /**
  * When a community is deleted (console or Admin SDK, since clients can't delete chats),
@@ -301,6 +276,11 @@ export const onCommunityDeleted = onDocumentDeleted(
   async (event) => {
     if (event.data?.get('type') !== 'community') return;
     const chatId = event.params.chatId;
+
+    // The owner-push cooldown stamps (one per requester). Subcollections outlive their parent
+    // document, so nothing else removes them. Before the invite loop below, which returns early.
+    await db.recursiveDelete(db.collection(`chats/${chatId}/joinRequestNotices`))
+      .catch((e) => console.warn('[onCommunityDeleted] could not remove joinRequestNotices', (e as Error)?.message));
 
     for (;;) {
       const page = await invitesCol().where('communityId', '==', chatId).limit(200).get();

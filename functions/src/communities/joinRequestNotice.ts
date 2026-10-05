@@ -25,6 +25,34 @@ export function joinRequestNotice(
 }
 
 /**
+ * The owner is told about one person's request to one community at most once per this
+ * window, however many times that person cancels and asks again. The rules let a requester
+ * delete a pending request and create a new one, so nothing ON the request can remember
+ * (it is deleted with it): the memory is the server-only doc at joinRequestNoticePath.
+ */
+export const JOIN_REQUEST_NOTIFY_COOLDOWN_MS = 60 * 60 * 1000;
+
+/** `chats/{chatId}/joinRequestNotices/{uid}`: { lastNotifiedAt }. Written only by the trigger; the rules deny clients (no rule matches it, so the catch-all applies). */
+export const joinRequestNoticePath = (chatId: string, requesterUid: string) =>
+  `chats/${chatId}/joinRequestNotices/${requesterUid}`;
+
+/**
+ * Whether to notify, given when this requester last caused a notification to this community.
+ * No stamp, or one we cannot read, notifies. A stamp from further in the future than the
+ * cooldown (clock trouble) is not trusted either, so it can never silence an owner for good.
+ */
+export function shouldNotify(
+  lastNotifiedAtMs: number | null | undefined,
+  nowMs: number,
+  cooldownMs: number = JOIN_REQUEST_NOTIFY_COOLDOWN_MS,
+): boolean {
+  if (typeof lastNotifiedAtMs !== 'number' || !Number.isFinite(lastNotifiedAtMs)) return true;
+  const elapsed = nowMs - lastNotifiedAtMs;
+  if (elapsed < -cooldownMs) return true;
+  return elapsed >= cooldownMs;
+}
+
+/**
  * Trigger events are delivered at least once. Keying the notification doc on the
  * EVENT id and creating it (not adding) makes a redelivery a no-op instead of a
  * second push.
