@@ -1314,6 +1314,25 @@
     "required_stars": "Please select a rating",
     "required_text": "Please write at least 10 characters"
   },
+  "community_invite": {
+    "share_label": "Share community",
+    "share_message": "Join {{name}} on BAMA: {{url}}",
+    "share_title": "Invite to {{name}}",
+    "link_copied": "Invite link copied",
+    "errors": {
+      "signed_out": "Sign in to continue.",
+      "email_not_verified": "Verify your email address to create an invite link.",
+      "demo_isolation": "This invite isn't available for your account.",
+      "links_unavailable": "Invite links aren't available right now. Please try again later.",
+      "not_allowed": "You don't have permission to invite to this community.",
+      "invalid": "This invite link isn't valid.",
+      "not_found": "This invite link doesn't exist.",
+      "rate_limited": "Too many attempts. Wait a minute and try again.",
+      "try_again": "Something went wrong. Please try again.",
+      "network": "No connection. Check your internet and try again.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
   "community_details": {
     "header": "Community details",
     "manage": "Manage community",

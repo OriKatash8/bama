@@ -58,3 +58,6 @@ export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: 
 export const storage = getStorage(app);
 export const rtdb = firebaseConfig.databaseURL ? getDatabase(app) : null;
 export const functions = getFunctions(app);
+// The community-invite callables are pinned to europe-west1; the rest of the
+// backend is in the default region, so this is a second instance, not a swap.
+export const functionsEU = getFunctions(app, 'europe-west1');
