@@ -79,7 +79,7 @@ EXPO_PUBLIC_USE_EMULATORS=1 npx expo start --web --clear
 The fixture prints, every run (the token is different each time):
 
 ```
-Log in with any of these, password: Invite-test-1
+Log in with any of these, password: emulator-only-not-a-secret   (override with FIXTURE_PASSWORD)
   owner@invite.test      owns the community (use professional mode)
   member@invite.test     already a member of it
   client@invite.test     no professional profile (a plain requester)

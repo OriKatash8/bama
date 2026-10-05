@@ -40,3 +40,12 @@ test('the app\'s emulator switch is dev-only, opt-in, and points at a demo- proj
   // The production config is the default branch.
   assert.match(src, /:\s*\{\s*apiKey: process\.env\.EXPO_PUBLIC_FIREBASE_API_KEY/);
 });
+
+test('the test accounts\' password is self-evidently not a secret, overridable, and says it only works on the emulator', () => {
+  const src = readFileSync(join(ROOT, 'scripts/dev-invite-fixture.mjs'), 'utf8');
+  assert.match(src, /const PASSWORD = process\.env\.FIXTURE_PASSWORD \?\? 'emulator-only-not-a-secret';/);
+  assert.match(src, /Not a secret: these accounts exist only in the local Auth emulator/);
+  assert.doesNotMatch(src, /Invite-test-1/);
+  // The emulator wants 6+ characters; the default must satisfy it.
+  assert.ok('emulator-only-not-a-secret'.length >= 6);
+});
