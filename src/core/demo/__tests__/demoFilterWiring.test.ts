@@ -19,6 +19,7 @@ const CASES: [string, RegExp][] = [
   ['src/app/(professional)/(tabs)/browse/profile/[userId].tsx', /if \(!user \|\| !profile \|\| !onMySide\) \{/],
   ['src/features/admin/useRegistrationStats.ts', /!demoUids\.includes\(u\.id\)/],
   ['src/app/(professional)/(tabs)/chats/index.tsx', /allCourses\.filter\(\(c\) => isCourseOnSide\(demoConfig, user\?\.id, c\.demoOnly\)\)/],
+  ['src/app/(professional)/(tabs)/chats/index.tsx', /TAB_KEYS\.filter\(\(k\) => k !== 'courses' \|\| canSeeCourses\(demoConfig, user\?\.id\)\)/],
   ['src/app/admin/courses.tsx', /const demoOnly = useDemoStore\.getState\(\)\.config\.uids\.includes\(req\.submittedBy\);[\s\S]{0,120}\.\.\.\(demoOnly \? \{ demoOnly: true \} : \{\}\)/],
   ['src/features/admin/dashboard/counts.ts', /where\(documentId\(\), 'not-in', demoUids\)/],
 ];

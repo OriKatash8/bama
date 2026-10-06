@@ -28,7 +28,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useAuthStore } from '@core/stores/authStore';
 import { useDemoStore } from '@core/stores/demoStore';
-import { isCourseOnSide } from '@core/demo/demoSides';
+import { canSeeCourses, isCourseOnSide } from '@core/demo/demoSides';
 import { useUiStore } from '@core/stores/uiStore';
 import { db } from '@core/firebase/config';
 import { setDocument } from '@core/firebase/firestore';
@@ -94,7 +94,15 @@ export default function ProfessionalChatsScreen() {
   // A joined community is listed in the chats tab too, so it counts toward "has chats".
   const hasChats = userChats.length > 0;
 
+  const demoConfig = useDemoStore((s) => s.config);
+  // Real accounts get no Courses tab at all.
+  const tabKeys = useMemo(
+    () => TAB_KEYS.filter((k) => k !== 'courses' || canSeeCourses(demoConfig, user?.id)),
+    [demoConfig, user?.id],
+  );
   const [active, setActive] = useState<TabKey>('chats');
+  // The tab can vanish under the user (the demo config loads after sign-in): fall back to chats.
+  useEffect(() => { if (!tabKeys.includes(active)) setActive('chats'); }, [tabKeys, active]);
   /** Visual only: which search field is focused, for its border. */
   const [focusedSearch, setFocusedSearch] = useState<'chats' | 'courses' | null>(null);
   // Pop the newly-selected tab, as MarketplaceToggle does. One value per tab
@@ -113,10 +121,10 @@ export default function ProfessionalChatsScreen() {
   // with ?tab=communities so the user lands back on the communities tab).
   const params = useLocalSearchParams<{ tab?: string }>();
   useEffect(() => {
-    if (params.tab && TAB_KEYS.includes(params.tab as TabKey)) {
+    if (params.tab && tabKeys.includes(params.tab as TabKey)) {
       setActive(params.tab as TabKey);
     }
-  }, [params.tab]);
+  }, [params.tab, tabKeys]);
 
   // Communities state
   const [commModal, setCommModal] = useState(false);
@@ -130,8 +138,7 @@ export default function ProfessionalChatsScreen() {
 
   // Courses state
   const [allCourses, setCourses] = useState<Course[]>([]);
-  // Demo accounts (App Review) see demo courses only, and nobody else sees them — demoSides.ts.
-  const demoConfig = useDemoStore((s) => s.config);
+  // Courses are App Review demo content: demo accounts (and admins) only — demoSides.ts.
   const courses = useMemo(
     () => allCourses.filter((c) => isCourseOnSide(demoConfig, user?.id, c.demoOnly)),
     [allCourses, demoConfig, user?.id],
@@ -303,7 +310,7 @@ export default function ProfessionalChatsScreen() {
           Same order and setActive logic as before. */}
       <GradientBand style={styles.band} flip>
         <View style={[styles.tabBar, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-          {TAB_KEYS.map((key) => {
+          {tabKeys.map((key) => {
             const isActive = active === key;
             return (
               <View key={key} style={styles.tabSlot}>

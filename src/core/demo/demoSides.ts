@@ -46,13 +46,19 @@ export function isSameSide(cfg: DemoConfig, me: string | null | undefined, other
 }
 
 /**
- * Whether a course belongs in `me`'s courses tab: `demoOnly` courses (approved
- * from a demo account's request) for demo accounts only, and the rest for
- * everyone else. Admins and BAMA see all.
+ * Courses are shown to App Review demo accounts only (as demo content): a demo account sees the
+ * `demoOnly` courses, a real account sees none, and admins and BAMA see all.
  */
 export function isCourseOnSide(cfg: DemoConfig, me: string | null | undefined, demoOnly: boolean | undefined): boolean {
-  if (!me || isNeutral(cfg, me)) return true;
-  return cfg.uids.includes(me) === (demoOnly === true);
+  if (!me) return false;
+  if (isNeutral(cfg, me)) return true;
+  return cfg.uids.includes(me) && demoOnly === true;
+}
+
+/** Whether `me` gets the Courses tab at all: demo accounts, admins and BAMA. */
+export function canSeeCourses(cfg: DemoConfig, me: string | null | undefined): boolean {
+  if (!me) return false;
+  return isNeutral(cfg, me) || cfg.uids.includes(me);
 }
 
 /** A demo community: owned by a demo account (automatic), or listed in communityIds. */
