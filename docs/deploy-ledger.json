@@ -81,16 +81,6 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
-    "callClaude": {
-      "region": "us-central1",
-      "generation": 2,
-      "updateTime": "2026-10-01T23:28:10.888242741Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "found-unrecorded",
-      "recordedOn": "2026-10-06",
-      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
-    },
     "cancelProject": {
       "region": "us-central1",
       "generation": 2,
@@ -154,12 +144,12 @@
     "createCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-01T23:29:09.374813914Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "found-unrecorded",
+      "updateTime": "2026-10-06T16:32:36.076679721Z",
+      "treeSha": "2bbfb572ac1281706f838fe6a535cb7fe3f3f93c",
+      "commit": "8355805b",
+      "how": "deploy",
       "recordedOn": "2026-10-06",
-      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+      "note": "2026-10-06: five invite functions updated to 0d996cf8; resolveCommunityInvite and callClaude deleted"
     },
     "createPaymentRequest": {
       "region": "us-central1",
@@ -274,12 +264,12 @@
     "getCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-03T09:00:08.477923122Z",
-      "treeSha": "6589a9be51c87361faf4223ee276772845104b2b",
-      "commit": "6e435e4c",
-      "how": "found-unrecorded",
+      "updateTime": "2026-10-06T16:32:39.749747024Z",
+      "treeSha": "2bbfb572ac1281706f838fe6a535cb7fe3f3f93c",
+      "commit": "8355805b",
+      "how": "deploy",
       "recordedOn": "2026-10-06",
-      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+      "note": "2026-10-06: five invite functions updated to 0d996cf8; resolveCommunityInvite and callClaude deleted"
     },
     "getContactPhone": {
       "region": "us-central1",
@@ -364,22 +354,22 @@
     "onCommunityDeleted": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-01T23:29:09.600134791Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "found-unrecorded",
+      "updateTime": "2026-10-06T16:32:40.600592671Z",
+      "treeSha": "2bbfb572ac1281706f838fe6a535cb7fe3f3f93c",
+      "commit": "8355805b",
+      "how": "deploy",
       "recordedOn": "2026-10-06",
-      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+      "note": "2026-10-06: five invite functions updated to 0d996cf8; resolveCommunityInvite and callClaude deleted"
     },
     "onCommunityInviteJoinRequest": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-01T23:29:11.357914532Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "found-unrecorded",
+      "updateTime": "2026-10-06T16:32:41.919393085Z",
+      "treeSha": "2bbfb572ac1281706f838fe6a535cb7fe3f3f93c",
+      "commit": "8355805b",
+      "how": "deploy",
       "recordedOn": "2026-10-06",
-      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+      "note": "2026-10-06: five invite functions updated to 0d996cf8; resolveCommunityInvite and callClaude deleted"
     },
     "onFeeWrittenRecomputeBlock": {
       "region": "europe-west1",
@@ -561,16 +551,6 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
-    "resolveCommunityInvite": {
-      "region": "europe-west1",
-      "generation": 2,
-      "updateTime": "2026-10-01T23:29:09.069051793Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "found-unrecorded",
-      "recordedOn": "2026-10-06",
-      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
-    },
     "resolveFeeDispute": {
       "region": "us-central1",
       "generation": 2,
@@ -604,12 +584,12 @@
     "revokeCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-01T23:29:10.706370831Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "found-unrecorded",
+      "updateTime": "2026-10-06T16:32:38.799355461Z",
+      "treeSha": "2bbfb572ac1281706f838fe6a535cb7fe3f3f93c",
+      "commit": "8355805b",
+      "how": "deploy",
       "recordedOn": "2026-10-06",
-      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+      "note": "2026-10-06: five invite functions updated to 0d996cf8; resolveCommunityInvite and callClaude deleted"
     },
     "sendSystemMessage": {
       "region": "us-central1",
