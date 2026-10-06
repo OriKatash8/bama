@@ -1,4 +1,4 @@
-import { EMPTY_DEMO_CONFIG, canSeeCourses, isCommunityOnSide, isCourseOnSide, isSameSide, parseDemoConfig } from '../demoSides';
+import { EMPTY_DEMO_CONFIG, isCommunityOnSide, isCourseOnSide, isSameSide, parseDemoConfig } from '../demoSides';
 
 const cfg = parseDemoConfig({ uids: ['d1', 'd2'], neutralUids: ['adm'], communityIds: ['dc'] });
 
@@ -59,16 +59,6 @@ describe('isCourseOnSide', () => {
     expect(isCourseOnSide(cfg, null, true)).toBe(false);
     expect(isCourseOnSide(EMPTY_DEMO_CONFIG, 'r1', undefined)).toBe(false);
     expect(isCourseOnSide(EMPTY_DEMO_CONFIG, 'r1', true)).toBe(false);
-  });
-});
-
-describe('canSeeCourses', () => {
-  it('demo accounts and admins get the Courses tab; everyone else does not', () => {
-    expect(canSeeCourses(cfg, 'd1')).toBe(true);
-    expect(canSeeCourses(cfg, 'adm')).toBe(true);
-    expect(canSeeCourses(cfg, 'r1')).toBe(false);
-    expect(canSeeCourses(cfg, null)).toBe(false);
-    expect(canSeeCourses(EMPTY_DEMO_CONFIG, 'r1')).toBe(false);
   });
 });
 

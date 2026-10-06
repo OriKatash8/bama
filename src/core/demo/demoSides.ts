@@ -55,12 +55,6 @@ export function isCourseOnSide(cfg: DemoConfig, me: string | null | undefined, d
   return cfg.uids.includes(me) && demoOnly === true;
 }
 
-/** Whether `me` gets the Courses tab at all: demo accounts, admins and BAMA. */
-export function canSeeCourses(cfg: DemoConfig, me: string | null | undefined): boolean {
-  if (!me) return false;
-  return isNeutral(cfg, me) || cfg.uids.includes(me);
-}
-
 /** A demo community: owned by a demo account (automatic), or listed in communityIds. */
 export function isDemoCommunity(cfg: DemoConfig, communityId: string, ownerId?: string | null): boolean {
   return cfg.communityIds.includes(communityId) || (!!ownerId && cfg.uids.includes(ownerId));
