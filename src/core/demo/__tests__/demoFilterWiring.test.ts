@@ -32,3 +32,9 @@ it('useAuth keeps the config live for as long as someone is signed in', () => {
   expect(src).toMatch(/subscribeToDocument<Record<string, unknown>>\('config\/demoAccounts'/);
   expect(src).toMatch(/useDemoStore\.getState\(\)\.setConfig\(parseDemoConfig\(data\)\)/);
 });
+
+it('the Courses tab is switched off for everyone until after release (flip COURSES_TAB_ENABLED to bring it back)', () => {
+  const src = read('src/app/(professional)/(tabs)/chats/index.tsx');
+  expect(src).toMatch(/^const COURSES_TAB_ENABLED = false;$/m);
+  expect(src).toMatch(/const TAB_KEYS: TabKey\[\] = COURSES_TAB_ENABLED \? \['chats', 'communities', 'courses'\] : \['chats', 'communities'\];/);
+});

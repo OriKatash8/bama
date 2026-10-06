@@ -57,7 +57,9 @@ const BLUE = '#1D4ED8';
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 type TabKey = 'chats' | 'courses' | 'communities';
-const TAB_KEYS: TabKey[] = ['chats', 'communities', 'courses'];
+/** Courses are off until after the first release: set to true to bring the tab (and its FAB) back. */
+const COURSES_TAB_ENABLED = false;
+const TAB_KEYS: TabKey[] = COURSES_TAB_ENABLED ? ['chats', 'communities', 'courses'] : ['chats', 'communities'];
 
 type Course = {
   id: string;
