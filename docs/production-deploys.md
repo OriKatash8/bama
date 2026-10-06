@@ -24,6 +24,71 @@ installed builds would hit bare permission errors. Until then:
 When the update is out, deploy both, verify (`scripts/probe-email-verified-rules.mjs`),
 record them below, and delete this section.
 
+> **Correction, 2026-10-06: this section no longer describes production.** The drift check
+> reports `firestore.rules` **matches the repo** (released 2026-10-03T09:39:44Z, so `verified()`
+> is in force), and `callClaude` and `createCommunityInvite` (which has the guard) are both
+> **deployed**. Not deleted, because whether the app update with the verify screen has shipped is
+> not recorded here; delete it when that is confirmed. See the next section for the invite functions.
+
+## Community-invite functions: the hold, its conditions, and what is actually live (recorded 2026-10-06)
+
+**The hold, as written.** Five functions (`createCommunityInvite`, `getCommunityInvite`,
+`revokeCommunityInvite`, `onCommunityInviteJoinRequest`, `onCommunityDeleted`) were "held",
+"still waiting on the budget-alert confirmation" (rows dated 2026-09-17 below). The detail is in
+`docs/community-invites-spec.md` lines 19, 170 and 192: a **budget alert** and a **Cloud Monitoring
+policy** set up and live, and the owner's confirmation. It names a condition and a confirmation by
+the owner; no individual is named.
+
+**The three pre-deploy conditions are met.**
+
+| Condition | Status | How it is known |
+|---|---|---|
+| TTL on `rateLimits.expireAt` | **ACTIVE**, reported by the owner as of 2026-10-05 | Verified read-only 2026-10-06: `gcloud firestore fields ttls list --project bama-af0a0` → `state: ACTIVE` |
+| Billing budget alert | **Live as of 2026-10-06** per the owner: scoped to `bama-af0a0`, ₪25 / month, alerts at 50 / 90 / 100 % to the owner's email | **Not verified from here.** The Cloud Billing Budget API is not enabled on the project, so `gcloud billing budgets list` cannot read it (I did not enable it). Recorded from the owner's statement |
+| Cloud Monitoring policy | **Live as of 2026-10-06** per the owner: Cloud Function executions above 300, email | Verified read-only 2026-10-06: policy `BAMA function spike` is enabled, condition `Cloud Function - Executions`, one notification channel. **See the threshold note below** |
+
+**Threshold note (my reading, not changed).** The condition is `execution_count` aligned with
+`ALIGN_RATE` over a 300 s window, compared `> 300.0`. `ALIGN_RATE` is a rate **per second**, so as
+configured this fires at roughly 300 executions per second sustained (about 90,000 per five minutes)
+for one function. If "above 300" was meant as 300 executions in five minutes, the aligner should be
+`ALIGN_DELTA` with threshold 300 (or `ALIGN_RATE` with a threshold near 1). The spec never fixed a
+number; its own worst case for one rate-limited caller is 300 requests per minute. Until it is
+checked in the console, the ₪25 budget alert is the cost backstop that is actually sensitive.
+
+**The hold had already been bypassed, before any of this.** Cloud Audit Logs, read 2026-10-06:
+
+- all six community-invite functions (the five plus `resolveCommunityInvite`) were **created
+  2026-09-30 21:15 UTC** under `orikatash8@gmail.com`, **updated 2026-10-01 23:29 UTC** (each twice),
+  and `getCommunityInvite` was updated again on **2026-10-03** (06:15, 06:16, 08:59 and 09:00 UTC);
+- none of it was recorded here, so this file kept saying "held" until today;
+- the logs cannot say whether that was intended (a deploy of all functions would include them). The
+  drift check also reports `callClaude` deployed, although it is allowlisted as not deployed; I did
+  not look up when;
+- so the functions ran **without** the TTL (until 2026-10-05), the budget alert and the Monitoring
+  policy (until 2026-10-06). Whether anything hit the public `resolveCommunityInvite` in that time was
+  **not checked**.
+
+**What is live right now (verified read-only, 2026-10-06).**
+
+- All six are `ACTIVE`, v2, `europe-west1`, `nodejs22`. `updateTime`: `createCommunityInvite`
+  2026-10-01T23:29:09Z, `revokeCommunityInvite` …23:29:10Z, `onCommunityInviteJoinRequest` …23:29:11Z,
+  `onCommunityDeleted` …23:29:09Z, `resolveCommunityInvite` …23:29:09Z, `getCommunityInvite`
+  2026-10-03T09:00:08Z.
+- **They run the 2026-09-26 code, not today's.** The uploaded source of `onCommunityInviteJoinRequest`
+  was downloaded and diffed: its `invites.ts` is byte-identical to commit `11f783a3` (2026-09-26),
+  `inviteCore.ts` to `00dd54a6`, `rateLimit.ts` to `acdaca40`. It contains **none** of the 2026-10-05
+  work (no owner push, no cooldown stamps, no stamp cleanup). The other five were not diffed.
+- **`config/appLinks` does not exist in production** (`seed-app-links.mjs --verify`: "config/appLinks
+  does not exist"). Until it is seeded, `createCommunityInvite` fails with `failed-precondition`.
+- Rules and indexes: drift check says `firestore.rules` matches (released 2026-10-03T09:39:44Z),
+  `storage.rules` matches (2026-09-26T13:15:35Z), all 16 composite indexes present.
+- Drift check overall: **7 allowlist entries are stale** (`createCommunityInvite`, `getCommunityInvite`,
+  `revokeCommunityInvite`, `onCommunityInviteJoinRequest`, `onCommunityDeleted`, `resolveCommunityInvite`,
+  `callClaude` are deployed). `scripts/deploy-drift-allowlist.json` is deliberately **not** edited yet:
+  whether `resolveCommunityInvite` and `callClaude` should stay live is the owner's decision.
+- Hosting: the `live` release is 2026-10-03 07:54:14 (CLI local time), the legal pages only.
+  A preview channel `invite-test` exists (released 2026-10-05 22:15, expires 2026-10-06 22:15).
+
 ## Firestore rules (`firestore.rules`)
 
 | Released (UTC) | Commit | Ruleset | How verified |
@@ -57,6 +122,10 @@ Single-function deploys, verified by downloading the uploaded source from the
 
 | Released (UTC) | Function | Commit | Revision | How verified |
 |---|---|---|---|---|
+| 2026-10-03 06:15–09:00 | `getCommunityInvite` (four `UpdateFunction` calls: 06:15:48, 06:16:37, 08:59:10, 09:00:08Z) | not known | not known | **Not recorded at the time.** Found in the Cloud Audit Logs on 2026-10-06 (principal `orikatash8@gmail.com`). Source not diffed |
+| 2026-10-02 15:01–15:13 | `adminDeleteCommunity`, `adminCommunityAction` (gen2, us-central1; `CreateFunction`, twice each) | not known | not known | **Not recorded at the time.** Found in the Cloud Audit Logs on 2026-10-06 while looking for the invite functions. Source not diffed |
+| 2026-10-01 23:29 | `createCommunityInvite`, `getCommunityInvite`, `revokeCommunityInvite`, `resolveCommunityInvite`, `onCommunityInviteJoinRequest`, `onCommunityDeleted` (`UpdateFunction`, twice each, 23:29:01–23:29:11Z) | `onCommunityInviteJoinRequest`'s uploaded `invites.ts` == `11f783a3`, `inviteCore.ts` == `00dd54a6`, `rateLimit.ts` == `acdaca40` | not known | **Not recorded at the time**, and contrary to the hold above. Found in the Cloud Audit Logs on 2026-10-06 (principal `orikatash8@gmail.com`). Uploaded source of `onCommunityInviteJoinRequest` downloaded from `gcf-v2-sources-*` and diffed on 2026-10-06; the other five were not |
+| 2026-09-30 21:15 | the same six (`CreateFunction`, 21:15:12–21:15:30Z) | not known | not known | **Not recorded at the time**; first creation of the six, while this file said they were held. Found in the Cloud Audit Logs on 2026-10-06 |
 | 2026-09-26 01:00 | `onProjectClosed` (gen2, europe-west1 — the database region, nodejs22) — NEW, Firestore trigger on `projects/{projectId}` updates | `753c407` (main) | created | Posts the closing team-contact message (members, roles, phones, bama.app.hk@gmail.com) once when a project turns completed/cancelled. Pre-deploy: functions build clean; `closingNotice` (15), `closingTriggerWiring` (6) and `closingTriggerRun` (4, the handler against an in-memory store: posts once, a second closing posts nothing, cancel posts, other updates nothing) green. Post-deploy: ACTIVE, trigger filter `projects/{projectId}`; uploaded source zip downloaded, `src/` identical to `functions/src` at `753c407`, compiled `closingTrigger.js` writes the fixed id `project-closed`; no ERROR logs since. Not yet exercised by a real project ending |
 | 2026-09-26 00:30 | `getContactPhone` (gen2, us-central1, nodejs22) — NEW | `233fc88` (main) | created | Pre-deploy: functions build clean, `npx jest functions/src` green incl. `contactPolicy` (12) and `contactWiring` (5); compiled `lib/index.js` exports it. Post-deploy: `gcloud functions describe`: GEN_2, nodejs22, ACTIVE; an unauthenticated call returns `UNAUTHENTICATED` ("Sign in required"). Deployed after the rules above, so no client could write a number before its doc was allowed |
 | 2026-09-25 ~23:48 (`compressVideo` updateTime 23:48:48Z) | **45 functions**, same set as above: **runtime Node.js 20 → 22** (`engines.node` in `functions/package.json`; Node 20 is decommissioned 2026-10-30). No source change besides the engines field; `firebase-functions` stays 5.1.1 | `c117802` (main) | gen2 + gen1, 45/45 "Successful update operation" | Pre-deploy: functions build clean, `npx jest functions/src` 302/302, compiled `lib/index.js` loads under a real Node v22.23.3 (58 exports); drift check = baseline. Post-deploy: `gcloud functions list`: all 45 report runtime `nodejs22` (29 gen2 `ACTIVE`, 16 gen1 status `ACTIVE`); the Node 20 deprecation warning is gone from the deploy log; no ERROR-severity log entries from any function since the deploy. `compressVideo` (bundles `ffmpeg-static`) is `ACTIVE` on nodejs22 but has not been invoked since, so a real video upload is its first live test |

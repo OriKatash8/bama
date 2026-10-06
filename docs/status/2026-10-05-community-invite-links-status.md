@@ -1,8 +1,26 @@
 # Community invite links: status, 2026-10-05 (updated: link card, push cooldown, empty states)
 
-Phase 1 is built and committed. **Nothing is deployed, `config/appLinks` is not seeded in production, and hosting is not deployed.** Everything below was run against local emulators only.
+Phase 1 is built and committed. **I have deployed nothing**: the new hosting files are not live, `config/appLinks` is not seeded in production, and the 2026-10-05 function changes are not live. Everything I ran was against local emulators, plus read-only checks of production.
+
+**Correction (2026-10-06): the invite functions are already live, in their old form.** See "Pre-deploy conditions, and what is actually live" just below. The deploy plan in this file is written around that.
 
 The earlier plan, `2026-10-05-community-invite-links-step1.md`, still contains superseded proposals (the pro-only gate, `hasResume`). This file is the current state.
+
+## Pre-deploy conditions, and what is actually live (2026-10-06)
+
+Recorded in `docs/production-deploys.md` (section "Community-invite functions: the hold, its conditions, and what is actually live") so the repo has the answer instead of an inference.
+
+**The three conditions are met:** TTL on `rateLimits.expireAt` is ACTIVE (I verified it with `gcloud` read-only); the billing budget alert (₪25/month, 50/90/100 % to your email, live 2026-10-06) is recorded from your statement, because I **cannot** read it (the Budget API is not enabled on the project and I did not enable it); the Monitoring policy `BAMA function spike` exists, is enabled and has one notification channel (verified).
+
+**Things that do not match what we assumed:**
+
+1. **The hold was already bypassed.** The audit log shows all six invite functions (the five plus `resolveCommunityInvite`) **created 2026-09-30 21:15 UTC** under your account and updated 2026-10-01 and 2026-10-03. Nothing recorded it. `callClaude` is live too, though the drift allowlist says it is not.
+2. **They run the 2026-09-26 code.** The live `onCommunityInviteJoinRequest` source is byte-identical to the repo at `11f783a3`. None of the 2026-10-05 work (owner push for every request, 1-hour cooldown, stamp cleanup) is live. So the functions step below is an **update of five live functions**, not a first deploy.
+3. **`resolveCommunityInvite` is live**, a public unauthenticated endpoint, since 2026-09-30. Excluding it from the deploy leaves the old version running; it does not remove it. Whether to delete it is your decision.
+4. **`config/appLinks` does not exist in production**, so `createCommunityInvite` currently fails with `failed-precondition`.
+5. **The Monitoring threshold probably does not mean what you intended.** `ALIGN_RATE` is per second: as configured it fires at about 300 executions *per second*, not 300 in five minutes. Details and the fix are in the deploy log.
+6. **"Four callables and two triggers":** the code has **three callables** (`createCommunityInvite`, `getCommunityInvite`, `revokeCommunityInvite`) and **two triggers** (`onCommunityInviteJoinRequest`, `onCommunityDeleted`), so five functions. `resolveCommunityInvite` is a plain HTTP endpoint, not a callable. I did not invent a fourth.
+7. The "Held back on purpose" section of the deploy log (email verification) is also out of date: the rules with `verified()` are live (released 2026-10-03). I added a correction note and did not delete it.
 
 ## Before any hosting deploy (done: legal check, anchor)
 
@@ -192,29 +210,95 @@ I drove the app in **headless Chromium (Playwright), 390×844 at 2x, against the
 
 ## What you run to deploy (I have not)
 
-Rules need **no** deploy: the invite rules (`5fe615c9`) are an ancestor of the last released rules commit `b0fccbc`. `docs/production-deploys.md` warns against casual rules deploys because of the `verified()` drift, so don't.
+Run from `~/dev/bama-app`, in this order. First `git status -sb` should show a clean tree on `main`, not behind `origin/main`. **Rules need no deploy** (they match the repo; `docs/production-deploys.md` warns against casual rules deploys because of the `verified()` history), and **nothing here needs a native rebuild**.
 
-1. **Seed `config/appLinks` in production** (the link base; `createCommunityInvite` fails without it):
-   ```
-   node scripts/seed-app-links.mjs --project bama-af0a0 --dry-run
-   node scripts/seed-app-links.mjs --project bama-af0a0
-   node scripts/seed-app-links.mjs --project bama-af0a0 --verify
-   ```
-2. **Functions, by name**, five of them (`resolveCommunityInvite` deliberately excluded). They were still held for the budget-alert confirmation as of 2026-09-25:
-   ```
-   npm --prefix functions run build
-   firebase deploy --only functions:createCommunityInvite,functions:getCommunityInvite,functions:revokeCommunityInvite,functions:onCommunityInviteJoinRequest,functions:onCommunityDeleted --project bama-af0a0
-   ```
-   Two of these changed here: `onCommunityInviteJoinRequest` (owner push for every request, with the cooldown) and `onCommunityDeleted` (removes the cooldown stamps). No rules or index change.
-3. **Hosting.** The hosting-only command that skips the store-link export (no production config is read), and which now also ships `og-invite.png`:
-   ```
-   cd ~/dev/bama-app && npm run legal:build && firebase deploy --only hosting --project bama-af0a0
-   ```
-   `npm run legal:deploy` does the same plus the best-effort store-link export (it reads `config/appLinks` through your Google credentials). To see the link card on a **preview channel** first, see "Two things that will catch you" above.
-   Later, once the app is in the stores: seed the two links (see "Store links"), then run the same command again.
-4. **App:** JS only. No new native module and no `ios/` or `app.json` change, so nothing here needs a native rebuild. (I did not check whether OTA updates are configured.)
+### 1. Rebuild the site with the production origin
 
-Order: seed `appLinks`, then functions, then hosting, then ship the app. If the app ships before the functions are live, the callable answers "not found" and the owner sees "This invite link doesn't exist" on the share row; misleading, but a deploy-order issue.
+```
+SITE_ORIGIN=https://bama-af0a0.web.app npm run legal:build
+```
+
+**Changes:** only the local, gitignored `legal-site/public/`. (That origin is already the default; setting it makes the intent explicit. It fills the absolute `og:image` / `og:url` URLs in `c.html`.) **Verify:**
+
+```
+ls legal-site/public                         # c.html and og-invite.png present
+test ! -e legal-site/public/app-links.json && echo "no app-links.json (expected)"
+grep -c '{{' legal-site/public/c.html        # 0
+grep -o 'og:image" content="[^"]*"' legal-site/public/c.html   # https://bama-af0a0.web.app/og-invite.png
+node scripts/compare-legal-site-to-live.mjs  # 11 identical, 0 differ, 2 not live yet (c.html, og-invite.png), RESULT: OK
+```
+
+**Stop if the last command prints any `DIFFERS`.** That script fetches each file from the live site and compares SHA-256 (read-only, public GETs); I ran it today and it reads exactly as above.
+
+### 2. Deploy hosting
+
+```
+firebase deploy --only hosting --project bama-af0a0
+```
+
+**Changes:** publishes `legal-site/public` as the live site: adds `c.html` (served at `/c`, and for `/c/<anything>` through the rewrite), `og-invite.png`, and the header rules for `/c/**` and `/app-links.json`. The legal pages are unchanged (step 1 proves it). No functions, rules or data. **Verify:**
+
+```
+node scripts/compare-legal-site-to-live.mjs --all-live     # 13 identical, RESULT: OK
+curl -sI https://bama-af0a0.web.app/c/AbCdEfGhIjKlMnOpQrStUv | grep -iE '^HTTP|x-robots|referrer-policy'   # 200, noindex, no-referrer
+curl -s  https://bama-af0a0.web.app/c/AbCdEfGhIjKlMnOpQrStUv | grep -c 'og:image'                          # 1
+curl -sI https://bama-af0a0.web.app/og-invite.png | grep -iE '^HTTP|content-type|content-length'            # 200, image/png, 44546
+curl -s -o /dev/null -w '%{http_code}\n' https://bama-af0a0.web.app/app-links.json                          # 404 (expected until store links are seeded)
+firebase hosting:channel:list --project bama-af0a0                                                          # the live row's release time is now
+```
+
+**Rollback:** the console's Hosting → Release history → roll back to the 2026-10-03 07:54 release. (The preview channel `invite-test` expires on its own at 2026-10-06 22:15; delete it earlier with `firebase hosting:channel:delete invite-test --project bama-af0a0`.)
+
+### 3. Update the five invite functions
+
+```
+firebase deploy --only functions:createCommunityInvite,functions:getCommunityInvite,functions:revokeCommunityInvite,functions:onCommunityInviteJoinRequest,functions:onCommunityDeleted --project bama-af0a0
+```
+
+The predeploy step builds `functions/` first. With `--only` the CLI should not offer to delete anything; if it does, answer **N**. `resolveCommunityInvite` is not named, so it is untouched.
+
+**Changes:** replaces the live 2026-09-26 code of these five with HEAD: **an owner push for every new join request, a 1-hour per-requester cooldown (server-only stamps, transactional, idempotent against duplicate delivery), stamps removed when a community is deleted**, plus everything else in `invites.ts`, `inviteCore.ts` and `rateLimit.ts` since those commits. Creates no new function. **Verify:**
+
+```
+for f in createCommunityInvite getCommunityInvite revokeCommunityInvite onCommunityInviteJoinRequest onCommunityDeleted resolveCommunityInvite; do
+  printf "%-30s " $f; gcloud functions describe $f --gen2 --region europe-west1 --project bama-af0a0 --format='value(state,updateTime)'; done
+# the first five: ACTIVE and updateTime = just now.  resolveCommunityInvite: still 2026-10-01T23:29, proving it was not touched.
+
+read B O < <(gcloud functions describe onCommunityInviteJoinRequest --gen2 --region europe-west1 --project bama-af0a0 --format='value(buildConfig.source.storageSource.bucket,buildConfig.source.storageSource.object)')
+gcloud storage cp "gs://$B/$O" /tmp/oc.zip && unzip -l /tmp/oc.zip | grep -E 'joinRequestAnnounce|joinRequestNotice'
+# expect both files listed (today they are absent from the live source)
+
+curl -s -X POST https://europe-west1-bama-af0a0.cloudfunctions.net/getCommunityInvite -H 'content-type: application/json' -d '{"data":{"tokenOrCode":"ZZZZZZ"}}'
+# {"error":{"message":"Sign in required","status":"UNAUTHENTICATED"}}
+
+gcloud logging read 'resource.type="cloud_run_revision" AND severity>=ERROR AND resource.labels.service_name=~"communityinvite|oncommunity"' --freshness=15m --project bama-af0a0 --limit 10
+# no output = no errors since the deploy
+```
+
+**Rollback:** functions do not revert with a click. Redeploy the previous source: the live versions correspond to `invites.ts` at `11f783a3`; ask me and I will prepare the exact commands.
+
+`node scripts/check-deploy-drift.mjs --project bama-af0a0` will still report the stale allowlist entries (see the decisions below); rules, storage rules and indexes read `ok`.
+
+### 4. Seed `config/appLinks` in production
+
+Needs your Google credentials as Application Default Credentials (`gcloud auth application-default login` if it says it cannot find any; it worked for me read-only today).
+
+```
+node scripts/seed-app-links.mjs --project bama-af0a0 --dry-run   # target PRODUCTION; "no existing doc"; the doc below
+node scripts/seed-app-links.mjs --project bama-af0a0
+node scripts/seed-app-links.mjs --project bama-af0a0 --verify    # VERIFY OK
+```
+
+**Changes:** creates one document, `config/appLinks` = `{ baseUrl: 'https://bama-af0a0.web.app', iosUrl: '', androidUrl: '' }`. It refuses to overwrite an existing one. From then on `createCommunityInvite` succeeds and links read `https://bama-af0a0.web.app/c/<token>`. **Verify end to end:** run the app against production (`npx expo start`, **without** `EXPO_PUBLIC_USE_EMULATORS`), as a community owner in professional mode tap "Share community" and confirm a link appears; open it in a browser (landing page) and paste a fresh one into WhatsApp (card); then, as a second non-owner account, open it and request to join: the owner gets the push once, and cancelling and re-asking within the hour stays silent.
+
+**Why this order:** each step stands alone. Between 3 and 4 invites cannot be created (the share row shows "Invite links aren't available right now"), nothing breaks. Doing 3 before 4 means the first invites ever created already run the new code.
+
+### Decisions that are yours (not part of the four steps)
+
+- **`resolveCommunityInvite`** is live and unauthenticated; nothing calls it, and its IP rate key is unverified. Leave it (it is allowlisted as a known exception once the entry is corrected), or remove it: `firebase functions:delete resolveCommunityInvite --region europe-west1 --project bama-af0a0` (reversible by redeploying).
+- **`callClaude`** is live although its allowlist entry says it was deliberately held (no screen calls it; it spends the platform's Anthropic key). Your call; I did not look into how it got there.
+- **The Monitoring threshold** (see the deploy log): confirm in the console whether it should be per second or per five minutes.
+- Once you have decided the first two, tell me and I will bring `scripts/deploy-drift-allowlist.json` in line so the drift check goes green.
 
 ## Commits
 
