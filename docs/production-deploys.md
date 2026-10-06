@@ -72,6 +72,8 @@ loop or a flood within one window. What it will not catch is a slow burn under 5
 600-member community is 600 `onNotificationCreate` executions within seconds, about 2 / s averaged
 over a window.
 
+**Decision, 2026-10-06 (owner): the threshold is 5 per second.**
+
 **Observed use of the invite functions since 2026-09-30 (Cloud Run request logs, read 2026-10-06;
 logs are kept 30 days).** The expectation was zero. It was not:
 
@@ -118,9 +120,11 @@ notifications 0, `config/appLinks` absent.
   09-18, two on 09-19, one on 09-20): **three HTTP 500 and one 204** (a CORS preflight), from two
   desktop Chrome sessions and two iOS app builds. **No call has succeeded in the window, and none at
   all since it was re-created on 09-30.** Nothing at WARNING or above was logged.
+- **Decision, 2026-10-06 (owner): delete it.** The 2026-09-30 deploy resurrected a function that had been deleted on purpose; it is redeployed when a screen calls it. The key secret and its three enabled versions are not touched by deleting the function.
 - **Exposure, in one line.** An account that has verified an email can spend at most 60 calls a day on
-  small prompts; there is no cap across accounts, and **Anthropic spend is not covered by the Google
-  Cloud budget alert**, so the Anthropic console's own spending limit is the control that matters.
+  small prompts; there is no cap across accounts, and **Anthropic spend is covered by neither the Google
+  Cloud budget alert nor the Monitoring policy**: from Google's side there was no cost tripwire on this
+  function at all, so the Anthropic console's own spending limit is the control that matters.
 
 **The hold had already been bypassed, before any of this.** Cloud Audit Logs, read 2026-10-06:
 

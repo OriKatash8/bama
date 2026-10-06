@@ -18,13 +18,21 @@ Recorded in `docs/production-deploys.md` (section "Community-invite functions: t
 2. **They run the 2026-09-26 code.** The live `onCommunityInviteJoinRequest` source is byte-identical to the repo at `11f783a3`. None of the 2026-10-05 work (owner push for every request, 1-hour cooldown, stamp cleanup) is live. So the functions step below is an **update of five live functions**, not a first deploy.
 3. **`resolveCommunityInvite` is live**, a public unauthenticated endpoint, since 2026-09-30. **Decided: delete it** (step 3a below); it is redeployed when phase 2 needs it. It had **zero** requests of any kind in 30 days.
 4. **`config/appLinks` does not exist in production**, so `createCommunityInvite` currently fails with `failed-precondition`.
-5. **The Monitoring threshold was per second**, so 300 would never have fired. **Lowering it to 5 is sane**: the busiest 5-minute window any function had in 7 days was 0.26 per second, so 5 is about 19 times that; the policy does cover the 2nd-gen invite functions. Numbers and the trade-off are in the deploy log.
+5. **The Monitoring threshold was per second**, so 300 would never have fired. **Decided: 5 per second.** It is sane: the busiest 5-minute window any function had in 7 days was 0.26 per second, so 5 is about 19 times that; the policy does cover the 2nd-gen invite functions. Numbers and the trade-off are in the deploy log.
 6. **"Four callables and two triggers":** the code has **three callables** (`createCommunityInvite`, `getCommunityInvite`, `revokeCommunityInvite`) and **two triggers** (`onCommunityInviteJoinRequest`, `onCommunityDeleted`), so five functions. `resolveCommunityInvite` is a plain HTTP endpoint, not a callable. I did not invent a fourth.
 7. The "Held back on purpose" section of the deploy log (email verification) is also out of date: the rules with `verified()` are live (released 2026-10-03). I added a correction note and did not delete it.
 
 **Observed, not expected: use of the six functions since 2026-09-30.** Not zero. `createCommunityInvite` was called **12 times** (all HTTP 400) and `getCommunityInvite` **3 times** (all 200), all on 2026-10-05 between 18:39 and 21:25 your time, all from the native iOS app: your phone. The two triggers fired 41 and 97 times on 10-02/10-03 (every join request and chat deletion; consistent with the demo seeding), with nothing at warning level or above. `revokeCommunityInvite` and `resolveCommunityInvite`: **0**. `rateLimits` holds 0 documents (the TTL sweeps them; "never written" cannot be told apart from "written and swept"), and there are 0 invites, 0 invite codes and 0 owner-push notifications. No external caller was seen. Table and detail in the deploy log.
 
-**`callClaude`, investigated (unchanged, your decision).** A public callable that runs one of three fixed prompts on Anthropic's Haiku with the platform's key. It requires sign-in **and a verified email** and limits each account to 10 a minute and 60 a day. The key is in Secret Manager (`CLAUDE_API_KEY`, bound at version 3; I read metadata only); **versions 1 and 2 are also still enabled**. **Nothing calls it**: no screen imports the three hooks. It was deleted on purpose on 2026-09-26 and **re-created on 2026-09-30 21:12 UTC by the same deploy that created the invite functions**. The live code is the hardened HEAD version. In the 30-day logs it was called 4 times, all before the deletion (three HTTP 500, one preflight), and **never since re-creation**. The Google Cloud budget alert does **not** cover Anthropic spend. My lean: delete it as you did `resolveCommunityInvite` (`firebase functions:delete callClaude --region us-central1 --project bama-af0a0`), redeploy it in the change that ships the UI, and disable key versions 1 and 2. Your call.
+**`callClaude`: decided, delete (step 3b).** The 09-30 blanket deploy resurrected a function that had been deliberately deleted on 2026-09-26, which settles it. It is redeployed when a screen actually calls it. What it was: a public callable running one of three fixed prompts on Anthropic's Haiku with the platform's key; it requires sign-in and a verified email and limits each account to 10 a minute and 60 a day; the key is in Secret Manager (`CLAUDE_API_KEY`, bound at version 3; I read metadata only). **Nothing calls it** (no screen imports the three hooks). In the 30-day logs it was called 4 times, all before the deletion, and never since re-creation. The live code is the hardened HEAD version.
+
+**There was no cost tripwire on it at all.** The Google Cloud budget alert and the Monitoring policy watch Google Cloud spend and function executions; **neither covers Anthropic spend**, which is billed by Anthropic against the key. From Google's side nothing would have fired however much it spent. Whether an Anthropic-side spending limit exists is not recorded anywhere I can see. **Deleting the function does not delete the secret or disable its key versions**: all three versions of `CLAUDE_API_KEY` are still enabled. Disabling 1 and 2 (the superseded ones) is a separate, reversible step, not part of the numbered list: `gcloud secrets versions disable 1 --secret=CLAUDE_API_KEY --project bama-af0a0` (and `2`; `enable` undoes it).
+
+## `getCommunityInvite` returns for a missing or revoked invite; it does not throw
+
+Read in the source and in the **live** source (same shape), and checked in the browser earlier. For a missing invite it returns **HTTP 200 with `{ exists: false }`**; for a revoked one **200 with `{ exists: true, revoked: true }`**. It throws an `HttpsError` only for: not signed in (`unauthenticated`), over the per-account rate limit (`resource-exhausted`), a demo/real mismatch (`failed-precondition`, `demo-isolation`), and an unexpected server fault. "Missing" is also what you get for a token that exists but whose community was deleted or is not a community. **So the three production 200s were most likely `{ exists: false }`, and your phone showed "Invite not found"** (the response bodies are not logged, so this is an inference from the code and the 0 invites).
+
+**The client does not try to render a community that does not exist.** `InvitePreviewScreen` branches on the payload: `!exists` goes to its own "Invite not found" state, `revoked` to "Invite cancelled", and only a real, live invite reaches the preview. Both were driven in the real app against the emulator (an unknown code and a revoked token). The five Hebrew **error** states are for the cases that really throw (signed out, rate limit, demo mismatch, a server or network fault); they fire in production for those. They were driven by making the callable fail, since a normal missing invite does not. One more fact: invites never expire; `expiresAt` is written as `null` and nothing reads it.
 
 ## The drift check now covers functions (the real finding)
 
@@ -270,7 +278,15 @@ firebase functions:delete resolveCommunityInvite --region europe-west1 --project
 
 **Changes:** removes the public, unauthenticated invite resolver (zero requests of any kind in 30 days; nothing calls it; the landing page does not). Reversible by redeploying it in phase 2. **Verify:** `gcloud functions describe resolveCommunityInvite --gen2 --region europe-west1 --project bama-af0a0` should say not found.
 
-### 3b. Update the five invite functions
+### 3b. Delete `callClaude` (your decision)
+
+```
+firebase functions:delete callClaude --region us-central1 --project bama-af0a0
+```
+
+**Changes:** removes the Anthropic-calling function (it is in `us-central1`, unlike the invite functions). Nothing calls it, and it had no successful call in the 30-day logs. The secret `CLAUDE_API_KEY` and its key versions are **not** touched. Redeploy when a screen actually calls it. **Verify:** `gcloud functions describe callClaude --gen2 --region us-central1 --project bama-af0a0` should say not found.
+
+### 3c. Update the five invite functions
 
 ```
 firebase deploy --only functions:createCommunityInvite,functions:getCommunityInvite,functions:revokeCommunityInvite,functions:onCommunityInviteJoinRequest,functions:onCommunityDeleted --project bama-af0a0
@@ -298,21 +314,23 @@ gcloud logging read 'resource.type="cloud_run_revision" AND severity>=ERROR AND 
 
 **Rollback:** functions do not revert with a click. Redeploy the previous source: the live versions correspond to `invites.ts` at `11f783a3`; ask me and I will prepare the exact commands.
 
-### 3c. Record the function changes in the ledger (after you have checked 3a and 3b)
+### 3d. Record the function changes in the ledger (after you have checked 3a to 3c)
 
 ```
 node scripts/check-deploy-drift.mjs --project bama-af0a0
-# before recording it SHOULD report: the five updated functions (new updateTime and source) and resolveCommunityInvite (in the ledger, gone). Anything else is a surprise.
+# before recording it SHOULD report: the five updated functions (new updateTime and source) and resolveCommunityInvite and callClaude (in the ledger, gone). Anything else is a surprise.
 
 node scripts/check-deploy-drift.mjs --project bama-af0a0 --record-functions \
-  --only createCommunityInvite,getCommunityInvite,revokeCommunityInvite,onCommunityInviteJoinRequest,onCommunityDeleted,resolveCommunityInvite \
-  --note "2026-10-06: five invite functions updated to $(git rev-parse --short HEAD) (owner push for every request, 1-hour cooldown, stamp cleanup); resolveCommunityInvite deleted on purpose, phase 2."
-# recorded: 5 updated, resolveCommunityInvite removed
+  --only createCommunityInvite,getCommunityInvite,revokeCommunityInvite,onCommunityInviteJoinRequest,onCommunityDeleted,resolveCommunityInvite,callClaude \
+  --note "2026-10-06: five invite functions updated to $(git rev-parse --short HEAD) (owner push for every request, 1-hour cooldown, stamp cleanup); resolveCommunityInvite and callClaude deleted on purpose (phase 2 / no caller)."
+# recorded: 5 updated, resolveCommunityInvite and callClaude removed
 
 node scripts/check-deploy-drift.mjs --project bama-af0a0   # the ledger line is now green
 ```
 
-Then commit `docs/deploy-ledger.json`. Once `resolveCommunityInvite` is deleted its allowlist entry is correct again; the only drift line left should be `callClaude`, until you decide.
+Then commit `docs/deploy-ledger.json`.
+
+**The allowlist entries for `resolveCommunityInvite` and `callClaude` stay; they are not cleared.** `scripts/deploy-drift-allowlist.json` lists functions that are exported in the code but **intentionally not deployed**. After 3a and 3b that is exactly what these two are, so the entries become correct again (today they read as stale only because the functions are still live). Removing them would make the check report two exported functions as *missing*, which is drift. What I do after you confirm the deletions: refresh each entry's reason and reset its date to 2026-10-06 (an entry expires after 60 days, so each must then be re-affirmed or deployed). The five invite entries, which stay deployed, are already gone. After that the drift check should be fully green.
 
 ### 4. Seed `config/appLinks` in production
 
@@ -331,15 +349,19 @@ node scripts/seed-app-links.mjs --project bama-af0a0 --verify    # VERIFY OK
 ### Decisions that are yours (not part of the four steps)
 
 - **`resolveCommunityInvite`**: decided, delete (step 3a).
-- **`callClaude`**: investigated above; delete, or leave it live. Either way, consider disabling Secret Manager versions 1 and 2 of `CLAUDE_API_KEY` and checking the Anthropic console's spending limit.
-- **The Monitoring threshold**: lower it to 5 as you planned (see the deploy log for why that is sane).
-- After 3a, I update `resolveCommunityInvite`'s allowlist entry text; after your `callClaude` decision I update or remove that entry, and the drift check goes fully green. The five invite entries are already removed.
+- **`callClaude`**: decided, delete (step 3b). Separately, and still open: disabling Secret Manager versions 1 and 2 of `CLAUDE_API_KEY`, and checking the Anthropic console's own spending limit.
+- **The Monitoring threshold**: 5 per second, decided; you set it in the console.
+- After 3a and 3b, tell me and I refresh both allowlist entries (kept, not removed; see 3d).
 
-## Flaky test, logged (not chased)
+## Flaky test, logged: a suite that intermittently fails to LOAD
 
-**`src/core/stores/__tests__/authStore.test.ts`** (5 tests: initial state, `setUser`, `setActiveMode`, `setLoading`, `clear`) showed as a failed suite **once**, on 2026-10-06, in a full `npx jest` run: `Test Suites: 1 failed, 361 passed, 362 total` and `Tests: 3170 passed, 3170 total`. That is **5 tests fewer than the 3175 of every other run, so the suite failed to run** (it did not fail an assertion). It passed run alone and in the next full run (362 suites, 3175 tests).
+**`src/core/stores/__tests__/authStore.test.ts`** (5 tests: initial state, `setUser`, `setActiveMode`, `setLoading`, `clear`) showed as a failed suite **once**, on 2026-10-06, in a full `npx jest` run: `Test Suites: 1 failed, 361 passed, 362 total` and `Tests: 3170 passed, 3170 total`. That is **5 tests fewer than the 3175 of every other run**: the suite **failed to load, so none of its tests ran**; it did not fail an assertion. It passed run alone and in the next full run (362 suites, 3175 tests).
 
-What I do **not** know: the error text. My command filtered the output down to the summary lines and I did not keep the rest. **A correction to what I told you at the time:** I said it failed "under load, alongside the node tests". The commands in that run were sequential (`node --test`, then `tsc`, then `jest`), so I had no basis for blaming load; that was a guess and I withdraw it. I know of nothing else that was running. Next time it fails, capture it with `npx jest --json --outputFile=/tmp/jest.json` before rerunning, so the reason survives. The suite imports the auth store, which is also imported by many other suites (so a shared-module or worker problem is possible); that is a guess, not a finding.
+**Why this is worse than a flaky assertion.** A failed assertion is loud. A suite that fails to load looks like "1 failed" in a long run, is easily rerun and forgotten, and until then **that run had less coverage and nothing said so**; the only trace is a lower test count.
+
+**What I do not know:** the error text. My command filtered the output down to the summary lines and the rest was not kept. **A correction to what I said then:** I blamed "load, alongside the node tests". Those commands were sequential (`node --test`, then `tsc`, then `jest`), so I had no basis; I withdraw it. I know of nothing else that was running. A shared-module or worker problem is possible (the auth store is imported by many suites); that is a guess, not a finding.
+
+**So the capture is now automatic: `npm run test:checked`** (`scripts/jest-checked.mjs`) runs Jest, always writes its full JSON to `.jest-last-run.json`, reports suites that **failed to load** separately from failed assertions **with the real error text**, warns when **fewer tests ran than last time**, and on any bad run keeps a timestamped copy in `.jest-failures/` (both gitignored); it exits non-zero on a load failure even if Jest itself said success. I checked it against a genuine load failure (a test importing a module that does not exist): it named the file, showed the actual error, kept the JSON and exited 1. I will use it for my full runs from now on. When `authStore.test.ts` fails to load again, `.jest-failures/` will hold the reason. **Not chased.**
 
 ## Commits
 
