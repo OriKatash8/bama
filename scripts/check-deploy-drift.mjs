@@ -16,13 +16,29 @@
  *   node scripts/check-deploy-drift.mjs --project bama-af0a0
  *
  * Exits non-zero on drift, so it can gate a release.
+ *
+ * FUNCTIONS ARE CHECKED THREE WAYS: every exported function is deployed (or allowlisted); and
+ * every deployed function's uploaded source is fetched, reduced to a git tree hash and compared
+ * with docs/deploy-ledger.json, the record of deploys a human accepted. A function that is live
+ * and not in a recorded deploy, or was updated since, is DRIFT. (A deploy that went unrecorded
+ * for a week, on 2026-09-30, is why.) Source hashing downloads ~60 small zips; --no-source skips
+ * it and compares update times only.
+ *
+ * RECORDING a deploy, after you have checked it:
+ *   node scripts/check-deploy-drift.mjs --project P --record-functions --only a,b --note "what and why"
+ *   node scripts/check-deploy-drift.mjs --project P --record-functions --baseline --note "..."   (everything live, first time)
+ * A name in --only that is no longer deployed is REMOVED from the ledger (that is how a deletion
+ * is recorded). --how is deploy (default), baseline (default with --baseline) or found-unrecorded.
+ * Nothing is recorded without an explicit list or --baseline, and an unreadable source is refused.
  */
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase-admin/app';
 import { GoogleAuth } from 'google-auth-library';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { evaluateAllowlist, todayUtc, ALLOWLIST_MAX_AGE_DAYS } from './lib/driftAllowlist.mjs';
+import { evaluateLedger, recordFunctions, serializeLedger, RECORD_HOWS } from './lib/functionsLedger.mjs';
+import { commitIndex, listFunctions, pool, projectNumberOf, sourceTreeSha } from './lib/functionSources.mjs';
 
 const args = process.argv.slice(2);
 const projectId = args[args.indexOf('--project') + 1];
@@ -31,11 +47,21 @@ if (!args.includes('--project') || !projectId || projectId.startsWith('--')) {
   process.exit(1);
 }
 
+const flag = (f) => args.includes(f);
+const flagValue = (f) => { const i = args.indexOf(f); return i !== -1 && !args[i + 1]?.startsWith('--') ? args[i + 1] : undefined; };
+const LEDGER_PATH = flagValue('--ledger') ?? 'docs/deploy-ledger.json';
+const LEDGER_HEADER = {
+  _readme: 'The deploys of Cloud Functions that a human has accepted: per function, the updateTime and the git tree hash of the uploaded src/ that were live when it was recorded. scripts/check-deploy-drift.mjs fails on any function that is live and not in here, or whose updateTime or source differs from its entry here. Update it with --record-functions (see that script); never by hand. how: deploy = recorded right after a deploy; baseline = the state found on the day the ledger was created, NOT individually verified; found-unrecorded = a deploy that was discovered afterwards.',
+};
+const readLedger = () => { try { return JSON.parse(readFileSync(LEDGER_PATH, 'utf8')).functions ?? {}; } catch { return null; } };
+
 const auth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 });
 const client = await auth.getClient();
-const get = async (url) => (await client.request({ url })).data;
+// A timeout, so a stalled connection fails in a minute instead of hanging for ten.
+const REQUEST_TIMEOUT_MS = 60_000;
+const get = async (url) => (await client.request({ url, timeout: REQUEST_TIMEOUT_MS })).data;
 
 let drift = 0;
 const ok = (m) => console.log(`  ok    ${m}`);
@@ -135,6 +161,66 @@ if (missingFns.length === 0) {
   bad(`${missingFns.length} exported function(s) are NOT deployed`);
   missingFns.forEach((m) => console.log(`        ${m}`));
   console.log('        run: firebase deploy --only functions:<name>');
+}
+
+// ── functions: which source is running, and was the deploy recorded? ───────
+const deployedList = (await listFunctions(get, projectId)).filter((f) => f.state === 'ACTIVE');
+const projectNumber = projectNumberOf(deployedList);
+const repoCommits = commitIndex('.');
+const withSources = async (names) => {
+  const wanted = deployedList.filter((f) => !names || names.includes(f.name));
+  const hashed = await pool(wanted, 6, async (f) => ({ ...f, treeSha: await sourceTreeSha(client, f, projectNumber) }));
+  return hashed.map((f) => ({ ...f, commit: repoCommits.index.get(f.treeSha)?.commit ?? null }));
+};
+
+if (flag('--record-functions')) {
+  const baseline = flag('--baseline');
+  const only = (flagValue('--only') ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+  const note = flagValue('--note');
+  const how = flagValue('--how') ?? (baseline ? 'baseline' : 'deploy');
+  if (!baseline && only.length === 0) { console.error('ERROR: --record-functions needs --only name,name or --baseline. It will not record "everything that drifted".'); process.exit(2); }
+  if (!note) { console.error('ERROR: --record-functions needs --note "what was deployed and why".'); process.exit(2); }
+  if (!RECORD_HOWS.includes(how)) { console.error(`ERROR: --how must be one of ${RECORD_HOWS.join(', ')}.`); process.exit(2); }
+  const hashed = await withSources(baseline ? null : only);
+  const result = recordFunctions({
+    ledger: readLedger() ?? {},
+    deployed: hashed,
+    only: baseline ? deployedList.map((f) => f.name) : only,
+    how, note, today: todayUtc(),
+  });
+  writeFileSync(LEDGER_PATH, serializeLedger(result.ledger, LEDGER_HEADER));
+  console.log(`recorded in ${LEDGER_PATH} (${how}): ${result.changed.length} change(s)`);
+  result.changed.forEach((c) => console.log(`  ${c.action.padEnd(8)} ${c.name}`));
+  const unknown = only.filter((n) => !deployedList.some((f) => f.name === n) && !result.changed.some((c) => c.name === n));
+  if (unknown.length) console.log(`  note: not deployed and not in the ledger, nothing to do: ${unknown.join(', ')}`);
+  process.exit(0);
+}
+
+const ledger = readLedger();
+if (ledger === null) {
+  bad(`${LEDGER_PATH} does not exist or is unreadable: no deploy of any function has been recorded`);
+  console.log('        run: node scripts/check-deploy-drift.mjs --project <p> --record-functions --baseline --note "..."');
+} else {
+  const checked = flag('--no-source')
+    ? deployedList.map((f) => ({ ...f, treeSha: ledger[f.name]?.treeSha ?? null }))
+    : await withSources(null);
+  const verdict = evaluateLedger({ deployed: checked, ledger });
+  verdict.problems.forEach((p) => bad(`function deploy not recorded: ${p.message}`));
+  if (verdict.problems.length === 0) ok(`all ${checked.length} deployed functions are in the ledger, unchanged since (${flag('--no-source') ? 'update times only; --no-source' : 'source hashed'})`);
+  else ok(`${verdict.recorded.length} of ${checked.length} deployed functions are recorded and unchanged`);
+  if (verdict.problems.length) console.log('        after checking a deploy: node scripts/check-deploy-drift.mjs --project <p> --record-functions --only <names> --note "..."');
+  if (!flag('--no-source')) {
+    const notHead = checked.filter((f) => f.treeSha && f.treeSha !== repoCommits.headTree);
+    const byCommit = new Map();
+    for (const f of notHead) {
+      const label = f.commit ? `${f.commit} (${repoCommits.index.get(f.treeSha).date})` : 'NO COMMIT (an uncommitted tree)';
+      byCommit.set(label, [...(byCommit.get(label) ?? []), f.name]);
+    }
+    console.log(`  info  ${checked.length - notHead.length} functions run exactly HEAD's functions/src (${repoCommits.head}); ${notHead.length} run an older source (normal when a function was not touched by later commits):`);
+    for (const [label, names] of [...byCommit].sort((a, b) => b[1].length - a[1].length)) console.log(`          ${String(names.length).padStart(3)} @ ${label}${names.length <= 4 ? `: ${names.join(', ')}` : ''}`);
+    const orphans = checked.filter((f) => f.treeSha && !f.commit);
+    if (orphans.length) bad(`${orphans.length} function(s) run source that matches NO commit (deployed from an uncommitted tree): ${orphans.map((f) => f.name).join(', ')}`);
+  }
 }
 
 console.log('');
