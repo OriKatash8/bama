@@ -1,0 +1,635 @@
+{
+  "_readme": "The deploys of Cloud Functions that a human has accepted: per function, the updateTime and the git tree hash of the uploaded src/ that were live when it was recorded. scripts/check-deploy-drift.mjs fails on any function that is live and not in here, or whose updateTime or source differs from its entry here. Update it with --record-functions (see that script); never by hand. how: deploy = recorded right after a deploy; baseline = the state found on the day the ledger was created, NOT individually verified; found-unrecorded = a deploy that was discovered afterwards.",
+  "functions": {
+    "acknowledgeCandidacy": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:11.405710535Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "adminCommunityAction": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T15:13:16.429851413Z",
+      "treeSha": "ae75b73ace0b689f0856b9f824f359ba1bcb4284",
+      "commit": "9aa03f5b",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "adminDeleteCommunity": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T15:02:31.334378507Z",
+      "treeSha": "12c9bec350578a73a47c45d979c608801f6d2707",
+      "commit": "d80c0f39",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "adminFindUser": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:28:09.589199147Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "adminListArrears": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:57.281126172Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "adminListFlaggedProjects": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T04:49:25.794702250Z",
+      "treeSha": "cda4946e8d01e55a3f217f4bb8fa1de0db4c3550",
+      "commit": "14b0df34",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "adminListLargeEngagements": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:57.749843018Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "adminListUsers": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:28:09.139107592Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "callClaude": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:28:10.888242741Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "cancelProject": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:06.356163073Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "completeAllEngagements": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-03T10:23:04.629442821Z",
+      "treeSha": "359463fed5ba8042c71976478e641534433e5ea6",
+      "commit": "35993033",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "compressVideo": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:28:58.171889675Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "confirmCandidate": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:59.655328260Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "confirmCompletion": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-03T10:23:02.841100330Z",
+      "treeSha": "359463fed5ba8042c71976478e641534433e5ea6",
+      "commit": "35993033",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "contestEngagement": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:57.255488978Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "createCommunityInvite": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:29:09.374813914Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "createPaymentRequest": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-03T06:17:07.576504263Z",
+      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
+      "commit": "abb4e491",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "declineCandidacy": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:06.264145949Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "deleteMyAccount": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:28:07.439231521Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "deleteProject": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:57.810204884Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "discardUnconsentedSignup": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:28:09.016916468Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "disputeCompletion": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:13.509691350Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "disputeFeeByPro": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:01.088760447Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "feeOverdueCron": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T04:49:22.923972440Z",
+      "treeSha": "cda4946e8d01e55a3f217f4bb8fa1de0db4c3550",
+      "commit": "14b0df34",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "freeSlot": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:00.469434415Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "getAccountDeletionStatus": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:28:10.548767991Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "getAdminStatus": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:31.601Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "getCommunityInvite": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-03T09:00:08.477923122Z",
+      "treeSha": "6589a9be51c87361faf4223ee276772845104b2b",
+      "commit": "6e435e4c",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "getContactPhone": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-03T06:17:07.514532761Z",
+      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
+      "commit": "abb4e491",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "hireProfessional": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-03T06:17:08.667368848Z",
+      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
+      "commit": "abb4e491",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "lifecycleCron": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T04:49:25.698053560Z",
+      "treeSha": "cda4946e8d01e55a3f217f4bb8fa1de0db4c3550",
+      "commit": "14b0df34",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "markDemandSent": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:14.350815827Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "markEngagementComplete": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:13.440270755Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "markFeePaid": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:07.243847405Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "moderateUser": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:29.008Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onBookingCreate": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:35.976Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onCommunityDeleted": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:29:09.600134791Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "onCommunityInviteJoinRequest": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:29:11.357914532Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "onFeeWrittenRecomputeBlock": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:07.490389118Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onMarketplacePurchase": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:26.124Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onMeetingCreate": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:28.568Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onMissionCreate": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:28.912Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onNewChatMessage": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:32.478Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onNewCommunityMessage": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:28.679Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onNewPriceOffer": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:33.522Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onNotificationCreate": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-02T02:08:52.994Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onPriceOfferAccepted": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:26.868Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onProjectClosed": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:51.819430761Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onProjectCreate": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-03T06:17:02.592Z",
+      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
+      "commit": "abb4e491",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onProjectEndDateChange": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:50.476929385Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onRemovalRequest": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:26.850Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onReviewCreate": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:50.691006448Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "onUserCreate": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:30.153Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "rejectCandidate": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-03T06:17:07.851572309Z",
+      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
+      "commit": "abb4e491",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "requestCompletion": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:57.500479589Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "requestEngagementEnd": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:08:59.543093787Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "resolveCommunityInvite": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:29:09.069051793Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "resolveFeeDispute": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T04:49:23.758389973Z",
+      "treeSha": "cda4946e8d01e55a3f217f4bb8fa1de0db4c3550",
+      "commit": "14b0df34",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "respondToEngagementEnd": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-03T10:23:05.751872371Z",
+      "treeSha": "359463fed5ba8042c71976478e641534433e5ea6",
+      "commit": "35993033",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "respondToPaymentRequest": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:03.329719062Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "revokeCommunityInvite": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-01T23:29:10.706370831Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-06",
+      "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
+    },
+    "sendSystemMessage": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-10-01T23:28:34.767Z",
+      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
+      "commit": "1aa31494",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "setSubscription": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-02T02:09:14.809667837Z",
+      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
+      "commit": "76f1e025",
+      "how": "baseline",
+      "recordedOn": "2026-10-06",
+      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    }
+  }
+}

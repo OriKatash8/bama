@@ -8,6 +8,15 @@ ruleset), never from the CLI's success message alone.
 The commit is the last commit that changed the deployed file, so it stays correct
 while later commits leave that file alone.
 
+**Functions have a machine-checked ledger, `docs/deploy-ledger.json`** (added 2026-10-06 after a
+deploy on 2026-09-30 went unrecorded for a week). `node scripts/check-deploy-drift.mjs --project
+bama-af0a0` downloads every deployed function's uploaded source, reduces it to a git tree hash,
+and fails on any function that is live and not in the ledger, was updated since its entry, or runs
+different source. It also names which commit each function's source equals. After you deploy and
+have checked it, record it: `node scripts/check-deploy-drift.mjs --project bama-af0a0
+--record-functions --only <names> --note "what and why"` (a name that is no longer deployed is
+removed, which is how a deletion is recorded). Rows below remain the human-readable record.
+
 ## ⚠ Held back on purpose (not deployed)
 
 Email verification (`11f783a`) put its server half in the repo, but it must NOT go
@@ -47,13 +56,71 @@ the owner; no individual is named.
 | Billing budget alert | **Live as of 2026-10-06** per the owner: scoped to `bama-af0a0`, ₪25 / month, alerts at 50 / 90 / 100 % to the owner's email | **Not verified from here.** The Cloud Billing Budget API is not enabled on the project, so `gcloud billing budgets list` cannot read it (I did not enable it). Recorded from the owner's statement |
 | Cloud Monitoring policy | **Live as of 2026-10-06** per the owner: Cloud Function executions above 300, email | Verified read-only 2026-10-06: policy `BAMA function spike` is enabled, condition `Cloud Function - Executions`, one notification channel. **See the threshold note below** |
 
-**Threshold note (my reading, not changed).** The condition is `execution_count` aligned with
-`ALIGN_RATE` over a 300 s window, compared `> 300.0`. `ALIGN_RATE` is a rate **per second**, so as
-configured this fires at roughly 300 executions per second sustained (about 90,000 per five minutes)
-for one function. If "above 300" was meant as 300 executions in five minutes, the aligner should be
-`ALIGN_DELTA` with threshold 300 (or `ALIGN_RATE` with a threshold near 1). The spec never fixed a
-number; its own worst case for one rate-limited caller is 300 requests per minute. Until it is
-checked in the console, the ₪25 budget alert is the cost backstop that is actually sensitive.
+**Threshold note (not changed by me; the owner is lowering it to 5).** The condition is
+`execution_count` aligned with `ALIGN_RATE` over a 300 s window, compared `> 300.0`, with
+`duration: 0s` (a single window is enough) and no cross-series reducer (each function is judged on
+its own). `ALIGN_RATE` is **per second**, so 300 meant about 90,000 executions in five minutes for
+one function: it would never have fired. Measured 2026-10-06 from the same metric: it **does**
+cover the 2nd-gen invite functions (45 functions have data under it), and the highest 5-minute
+average rate any function reached in the last 7 days was **0.26 / s** (`onNotificationCreate`,
+then 0.17 for `onCommunityDeleted`, 0.14, 0.12, ...). **A threshold of 5 is sane**: it is about 19
+times the busiest normal window, equals 1,500 executions per five minutes per function, and equals
+the spec's own worst case for a single rate-limited caller (300 per minute). It will catch a runaway
+loop or a flood within one window. What it will not catch is a slow burn under 5 / s (up to roughly
+430,000 executions a day), which the ₪25 budget alert is the backstop for. A lower pick such as 2
+(8 times the observed peak) would warn earlier but would risk false alarms: an `@everyone` in a
+600-member community is 600 `onNotificationCreate` executions within seconds, about 2 / s averaged
+over a window.
+
+**Observed use of the invite functions since 2026-09-30 (Cloud Run request logs, read 2026-10-06;
+logs are kept 30 days).** The expectation was zero. It was not:
+
+| Function | Requests | What they were |
+|---|---|---|
+| `createCommunityInvite` | **12**, all HTTP 400 | all on 2026-10-05 between 18:39 and 19:51 UTC, all from the native iOS app (`BAMA/1 CFNetwork Darwin/25.6`), none before. 400 is what a `failed-precondition` (`config/appLinks` missing) returns; the function's own log lines were not read individually |
+| `getCommunityInvite` | **3**, all HTTP 200 | 2026-10-05 19:21 to 19:25 UTC, the same iOS app |
+| `revokeCommunityInvite` | 0 | |
+| `onCommunityInviteJoinRequest` | **41**, all 200 | 2 on 2026-10-02 and 39 on 2026-10-03 (Firestore triggers fire on every `joinRequests` write); nothing at WARNING or above. Consistent with the 10-02/10-03 demo-account seeding and cleanup (my inference) |
+| `onCommunityDeleted` | **97**, all 200 | 13 on 2026-10-02 and 84 on 2026-10-03 (every chat deletion); nothing at WARNING or above. Same inference |
+| `resolveCommunityInvite` | **0** | no request-log entry of any status in 30 days: no traffic at all, not even scanners. Its Cloud Run service grants `allUsers` the invoker role, so it was reachable |
+
+All of it from one source: the owner's own phone, the evening of 2026-10-05. No external caller was
+seen for any of the six. Data, read-only: `rateLimits` holds **0** documents (no oldest to report).
+`getCommunityInvite` ran three times, so it will have written three; they expire within minutes and
+the TTL policy deletes expired documents, so 0 is expected now, but "never written" cannot be told
+apart from "written and swept". `communityInvites` 0, `communityInviteCodes` 0, `community_join_request`
+notifications 0, `config/appLinks` absent.
+
+**`callClaude` (investigated 2026-10-06; unchanged).**
+
+- **What it is.** A public HTTPS callable (2nd gen, `us-central1`, 256 Mi, up to 20 instances; the
+  Cloud Run invoker is `allUsers`, normal for a callable). It runs one of three fixed tasks
+  (`project-title`, `crew-suggestion`, `crew-recommendation`) against the Anthropic API,
+  model `claude-haiku-4-5`, with server-held prompts, output limits of 30 / 300 / 600 tokens and
+  input limits of 4,000 / 4,000 / 6,000 characters. The caller supplies only a task name and one string.
+- **Auth.** Required: unauthenticated callers are refused, an **unverified email** is refused, and each
+  account is limited to **10 calls a minute and 60 a day** (the same Firestore rate limiter).
+- **API key.** Yes: the Secret Manager secret `CLAUDE_API_KEY`, bound as an environment variable at
+  **version 3**. I read secret **metadata only, never a value**. All three versions (all created
+  2026-07-13) are still **enabled**, so versions 1 and 2, superseded keys, are still live credentials
+  in Secret Manager if they are still valid at Anthropic. No key appears anywhere in the repo (0 matches).
+- **What calls it.** Nothing. Three hooks call it through `core/services/aiService.ts`
+  (`useGenerateTitle`, `useAiCrewSuggestion`, `useAiCrewRecommendation`); no screen imports any of
+  them (two are re-exported from a barrel nobody uses; `useGenerateTitle` is imported by nothing). The
+  source comment still says "NOT DEPLOYED", which is stale.
+- **How it got there.** It existed before 2026-09-13, was **deleted on 2026-09-26 12:56 UTC** (the
+  allowlist entry is dated the same day: undeployed on purpose), and was **re-created on 2026-09-30
+  21:12 UTC**, three minutes before the invite functions, then updated 2026-10-01 23:27 to 23:28. That
+  pattern is a deploy of every exported function, which undid the deliberate hold on all seven at once.
+- **What is live is the hardened version.** Its uploaded source is byte-identical to HEAD; it does not
+  accept a caller-supplied prompt, model or token limit.
+- **Invocations.** In the 30-day log window it was called **4 times, all before the deletion** (one on
+  09-18, two on 09-19, one on 09-20): **three HTTP 500 and one 204** (a CORS preflight), from two
+  desktop Chrome sessions and two iOS app builds. **No call has succeeded in the window, and none at
+  all since it was re-created on 09-30.** Nothing at WARNING or above was logged.
+- **Exposure, in one line.** An account that has verified an email can spend at most 60 calls a day on
+  small prompts; there is no cap across accounts, and **Anthropic spend is not covered by the Google
+  Cloud budget alert**, so the Anthropic console's own spending limit is the control that matters.
 
 **The hold had already been bypassed, before any of this.** Cloud Audit Logs, read 2026-10-06:
 
@@ -82,10 +149,17 @@ checked in the console, the ₪25 budget alert is the cost backstop that is actu
   does not exist"). Until it is seeded, `createCommunityInvite` fails with `failed-precondition`.
 - Rules and indexes: drift check says `firestore.rules` matches (released 2026-10-03T09:39:44Z),
   `storage.rules` matches (2026-09-26T13:15:35Z), all 16 composite indexes present.
-- Drift check overall: **7 allowlist entries are stale** (`createCommunityInvite`, `getCommunityInvite`,
-  `revokeCommunityInvite`, `onCommunityInviteJoinRequest`, `onCommunityDeleted`, `resolveCommunityInvite`,
-  `callClaude` are deployed). `scripts/deploy-drift-allowlist.json` is deliberately **not** edited yet:
-  whether `resolveCommunityInvite` and `callClaude` should stay live is the owner's decision.
+- Drift check: it found **7 stale allowlist entries**. The five that are staying deployed
+  (`createCommunityInvite`, `getCommunityInvite`, `revokeCommunityInvite`, `onCommunityInviteJoinRequest`,
+  `onCommunityDeleted`) were removed from `scripts/deploy-drift-allowlist.json` on 2026-10-06. Two remain,
+  waiting on the owner: **`resolveCommunityInvite`** (decided: delete; the entry is correct again once it
+  is deleted) and **`callClaude`** (investigated above, undecided).
+- **`docs/deploy-ledger.json` was created on 2026-10-06** from what was live that day: 63 functions
+  (48 2nd-gen, 15 1st-gen), every one's source matching an exact repo commit (none from an uncommitted
+  tree). 54 are `baseline` (the state found, **not** individually verified when deployed) and 9 are
+  `found-unrecorded` (the six invite functions, `callClaude`, `adminDeleteCommunity`,
+  `adminCommunityAction`). The invite functions and `callClaude` run `functions/src` as of commit
+  `1aa31494`; `getCommunityInvite` as of `6e435e4c`.
 - Hosting: the `live` release is 2026-10-03 07:54:14 (CLI local time), the legal pages only.
   A preview channel `invite-test` exists (released 2026-10-05 22:15, expires 2026-10-06 22:15).
 
