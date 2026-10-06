@@ -71,3 +71,7 @@ legal-site/public/
 
 # written at deploy time from config/appLinks (scripts/export-app-links.mjs)
 legal-site/static/app-links.json
+
+# jest-checked.mjs: the full JSON of the last run, and of any run that failed or lost tests
+.jest-last-run.json
+.jest-failures/

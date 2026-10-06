@@ -77,6 +77,7 @@
     "lint": "expo lint",
     "test": "jest",
     "check:bundle": "node scripts/check-dev-bundle.mjs",
+    "test:checked": "node scripts/jest-checked.mjs",
     "legal:build": "node scripts/build-legal-site.mjs",
     "legal:deploy": "node scripts/export-app-links.mjs --project bama-af0a0 --optional && npm run legal:build && firebase deploy --only hosting"
   },
