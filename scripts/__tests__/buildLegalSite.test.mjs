@@ -116,3 +116,24 @@ test('every page has the favicon and apple-touch-icon', () => {
     assert.match(html, /<link rel="apple-touch-icon" href="\/apple-touch-icon\.png">/);
   }
 });
+
+function buildWith(staticFiles) {
+  const src = mkdtempSync(join(tmpdir(), 'legal-src-'));
+  for (const f of ['terms.he.md', 'privacy.he.md', 'refunds.he.md', 'terms.en.md', 'privacy.en.md', 'refunds.en.md']) writeFileSync(join(src, f), '# x\n');
+  const stat = mkdtempSync(join(tmpdir(), 'legal-static-'));
+  for (const [f, body] of Object.entries(staticFiles)) writeFileSync(join(stat, f), body);
+  const out = join(mkdtempSync(join(tmpdir(), 'legal-out-')), 'public');
+  build(src, out, stat);
+  return out;
+}
+
+test('app-links.json is always emitted: empty store URLs when nothing was exported, so the page gets a 200, not a 404', () => {
+  const out = buildWith({ 'logo.webp': 'x' });
+  assert.deepEqual(JSON.parse(readFileSync(join(out, 'app-links.json'), 'utf8')), { iosUrl: '', androidUrl: '' });
+});
+
+test('an exported app-links.json is never overwritten by the default', () => {
+  const exported = '{"iosUrl":"https://apps.apple.com/app/id1","androidUrl":""}\n';
+  const out = buildWith({ 'app-links.json': exported });
+  assert.equal(readFileSync(join(out, 'app-links.json'), 'utf8'), exported);
+});

@@ -105,9 +105,9 @@ The static page cannot read Firestore (`config/*` is for signed-in users only), 
 
 1. `node scripts/seed-app-links.mjs --project bama-af0a0 --ios-url <https url> --android-url <https url>` sets only those two fields of the existing doc (no `--force`, `baseUrl` untouched; refuses anything that is not `https`).
 2. `npm run legal:deploy` now first runs `scripts/export-app-links.mjs --optional`, which writes `legal-site/static/app-links.json` (only the two URLs, gitignored), then builds and deploys. The page fetches `/app-links.json` from its own origin.
-3. With no links, an empty file, a missing file or any error, the page says in Hebrew and English that the app is not in the stores yet. With links it shows the matching buttons. No page edit is needed.
+3. With no links, an empty file, a missing file, any error or no answer within 4 s, the page says in Hebrew and English that the app is not in the stores yet. With links it shows the matching buttons. No page edit is needed.
 
-`legal:deploy` does not fail if the export cannot run (no Google credentials, no doc): it prints a loud warning, deletes any older `app-links.json` so a stale one never ships, and deploys with the "not in the stores yet" message. The export reads production through Application Default Credentials, like `seed-app-links.mjs`.
+`legal:deploy` does not fail if the export cannot run (no Google credentials, no doc): it prints a loud warning, deletes any older `app-links.json` so a stale one never ships, and deploys with the "not in the stores yet" message (the build then writes `{"iosUrl":"","androidUrl":""}` itself, so the page always gets a 200). The export reads production through Application Default Credentials, like `seed-app-links.mjs`.
 
 ## The resume round trip
 
@@ -243,10 +243,10 @@ SITE_ORIGIN=https://bama-af0a0.web.app npm run legal:build
 
 ```
 ls legal-site/public                         # c.html and og-invite.png present
-test ! -e legal-site/public/app-links.json && echo "no app-links.json (expected)"
+cat legal-site/public/app-links.json            # {"iosUrl":"","androidUrl":""} until store links are seeded
 grep -c '{{' legal-site/public/c.html        # 0
 grep -o 'og:image" content="[^"]*"' legal-site/public/c.html   # https://bama-af0a0.web.app/og-invite.png
-node scripts/compare-legal-site-to-live.mjs  # 11 identical, 0 differ, 2 not live yet (c.html, og-invite.png), RESULT: OK
+node scripts/compare-legal-site-to-live.mjs  # first-ever deploy: 11 identical, 2 not live yet (c.html, og-invite.png). Redeploy of the anchor fix: see "Redeploy: anchor fix" below
 ```
 
 **Stop if the last command prints any `DIFFERS`.** That script fetches each file from the live site and compares SHA-256 (read-only, public GETs); I ran it today and it reads exactly as above.
@@ -260,11 +260,11 @@ firebase deploy --only hosting --project bama-af0a0
 **Changes:** publishes `legal-site/public` as the live site: adds `c.html` (served at `/c`, and for `/c/<anything>` through the rewrite), `og-invite.png`, and the header rules for `/c/**` and `/app-links.json`. The legal pages are unchanged (step 1 proves it). No functions, rules or data. **Verify:**
 
 ```
-node scripts/compare-legal-site-to-live.mjs --all-live     # 13 identical, RESULT: OK
+node scripts/compare-legal-site-to-live.mjs --all-live     # 14 identical, RESULT: OK (13 files + app-links.json)
 curl -sI https://bama-af0a0.web.app/c/AbCdEfGhIjKlMnOpQrStUv | grep -iE '^HTTP|x-robots|referrer-policy'   # 200, noindex, no-referrer
 curl -s  https://bama-af0a0.web.app/c/AbCdEfGhIjKlMnOpQrStUv | grep -c 'og:image'                          # 1
 curl -sI https://bama-af0a0.web.app/og-invite.png | grep -iE '^HTTP|content-type|content-length'            # 200, image/png, 44546
-curl -s -o /dev/null -w '%{http_code}\n' https://bama-af0a0.web.app/app-links.json                          # 404 (expected until store links are seeded)
+curl -s https://bama-af0a0.web.app/app-links.json                                                          # 200 {"iosUrl":"","androidUrl":""} until store links are seeded
 firebase hosting:channel:list --project bama-af0a0                                                          # the live row's release time is now
 ```
 
@@ -366,3 +366,23 @@ node scripts/seed-app-links.mjs --project bama-af0a0 --verify    # VERIFY OK
 ## Commits
 
 `802d73bf` → `ee4b1620` → `f163737a` → `3fa28141` → `2dd36674` → `6d92e3de` → `9ffd958c` → `d66491f4` → `7b2c85e9` (listing button) → `96b1241d` (push for every request) → `b1b98748` (store links) → `6f092666` (emulator mode, fixture, LAN config) → `f342bcb7` → `41dc5fe2` → `30608720` (fallback line) → `a233cfa6` (link card) → `8355805b` (push cooldown) → `623e2301` (empty states) → `4512731c` (fixture password) → this doc.
+
+## Redeploy: anchor fix (built, NOT deployed)
+
+What changed in `legal-site/static/c.html` and the build:
+
+- **Hang case:** if `/app-links.json` never answers, the stores area shows "not in the stores yet" after 4 s (a late real answer still upgrades it). Nothing in that code can touch the button.
+- **No 404 on the normal path:** `scripts/build-legal-site.mjs` always emits `app-links.json` (`{"iosUrl":"","androidUrl":""}` when nothing was exported; an exported file is never overwritten). The built site is now **14 files**, so the post-deploy check reads **14 identical**.
+- **Debug line:** the built link is printed as small text under the button (`bama://c/<token>`, tap-and-hold to copy). If a tap ever fails, a screenshot shows exactly what the page built.
+- **Tests:** unit tests per failure mode (404, network error, HTML 200, JSON junk, never answers) assert the href AFTER the failure settles; a real-browser test (Chromium and WebKit via Playwright, skipped if not installed) does the same against a server with `/app-links.json` absent, default and hanging. Four mutations (no timeout, href set after fetch, no failure handler, no debug line) were each caught.
+
+Deploy and verify (you run it):
+
+```
+SITE_ORIGIN=https://bama-af0a0.web.app npm run legal:build
+node scripts/compare-legal-site-to-live.mjs   # expected: 12 identical, 1 differ (c.html: the new page), 1 not live yet (app-links.json); RESULT: FAIL is expected this once
+firebase deploy --only hosting --project bama-af0a0
+node scripts/compare-legal-site-to-live.mjs --all-live   # 14 identical, RESULT: OK
+```
+
+**What this does not prove:** Playwright's WebKit is not Mobile Safari. The anchor is a plain `<a id="open" class="open" href="bama://c/<token>">` with no `target`, `rel`, `download`, `ping`, handler or `preventDefault`; its only child is an inline `<small>`; a hit-test at its centre lands on the anchor, in an iPhone-profile WebKit and a Pixel-profile Chromium. In both, tapping the label or the `<small>` does the same thing. Nothing found distinguishes a real Safari tap from Playwright's, but headless WebKit swallows an unhandled custom scheme silently, so it cannot reproduce Safari's "address is invalid" dialog either way. Only a phone can.

@@ -8,7 +8,7 @@
  *   node scripts/compare-legal-site-to-live.mjs --origin https://bama-af0a0--some-channel.web.app
  *
  * Before a hosting deploy the legal pages must read IDENTICAL; only the new files (c.html,
- * og-invite.png) may read NOT LIVE YET. Exit 1 on any DIFFERS or ERROR, and with --all-live
+ * og-invite.png, and app-links.json until its first deploy) may read NOT LIVE YET; a changed c.html reads DIFFERS. Exit 1 on any DIFFERS or ERROR, and with --all-live
  * on any NOT LIVE YET too.
  */
 import { createHash } from 'node:crypto';

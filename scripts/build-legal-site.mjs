@@ -10,7 +10,8 @@
 //
 // The one exception to "no JavaScript" is legal-site/static/c.html, the invite landing page
 // served for /c/** (firebase.json rewrite). Its few inline lines only read the token from the
-// address and build a bama://c/<token> link; it makes no network request and loads nothing.
+// address and build a bama://c/<token> link, and ask its own origin for /app-links.json (the store
+// links). It loads nothing else.
 //
 // legal-site/static/ (logo, favicon, apple-touch-icon) is copied as is. The logo is
 // the app's gradient wordmark on a transparent background, the same in light and dark.
@@ -174,6 +175,10 @@ export function build(
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
   if (existsSync(staticDir)) cpSync(staticDir, outDir, { recursive: true });
+  // The landing page asks for /app-links.json; with no exported file it must still be a 200 (not a
+  // 404 in every visitor's console), saying "no store links". An exported file is never replaced.
+  const appLinks = join(outDir, 'app-links.json');
+  if (!existsSync(appLinks)) writeFileSync(appLinks, JSON.stringify({ iosUrl: '', androidUrl: '' }) + '\n');
   const invitePage = join(outDir, 'c.html');
   if (existsSync(invitePage)) {
     writeFileSync(invitePage, readFileSync(invitePage, 'utf8').replaceAll('{{SITE_ORIGIN}}', SITE_ORIGIN));

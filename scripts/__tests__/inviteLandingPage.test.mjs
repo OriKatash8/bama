@@ -14,20 +14,24 @@ const config = JSON.parse(readFileSync(join(ROOT, 'firebase.json'), 'utf8'));
 const TOKEN = 'abcDEF123_-xyzABC456789'.slice(0, 22);
 const CODE = 'K7MX9P';
 
-const IDS = ['open', 'valid', 'invalid', 'get-app', 'stores', 'no-stores', 'store-ios', 'store-android'];
+const IDS = ['open', 'debug-link', 'valid', 'invalid', 'get-app', 'stores', 'no-stores', 'store-ios', 'store-android'];
 
 /**
  * Runs the page's inline script against a tiny fake document at `pathname`.
  * `appLinks` is what /app-links.json answers: an object, or an Error to simulate a failure,
- * or 'missing' for a 404. The fetch calls it made are returned in `calls`.
+ * or 'missing' for a 404, or 'hang' for a request that never answers, or 'html' for a 200 that is
+ * not JSON. The fetch calls it made are returned in `calls`; timers the page set are in `timers`
+ * (nothing runs until a test calls `fireTimers()`).
  */
 function run(pathname, appLinks = 'missing') {
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-  const el = (id) => ({ id, hidden: undefined, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } });
   const els = Object.fromEntries(IDS.map((id) => [id, el(id)]));
   const calls = [];
+  const timers = [];
   const fetchStub = (url, opts) => {
     calls.push({ url, opts });
+    if (appLinks === 'hang') return new Promise(() => {});
+    if (appLinks === 'html') return Promise.resolve({ ok: true, json: async () => { throw new SyntaxError('Unexpected token <'); } });
     if (appLinks instanceof Error) return Promise.reject(appLinks);
     if (appLinks === 'missing') return Promise.resolve({ ok: false, json: async () => { throw new Error('404 page'); } });
     return Promise.resolve({ ok: true, json: async () => appLinks });
@@ -36,11 +40,16 @@ function run(pathname, appLinks = 'missing') {
     location: { pathname },
     document: { getElementById: (id) => els[id] },
     fetch: fetchStub,
+    setTimeout: (fn, ms) => { timers.push({ fn, ms, cleared: false }); return timers.length - 1; },
+    clearTimeout: (i) => { if (timers[i]) timers[i].cleared = true; },
     URL,
   });
   els.calls = calls;
+  els.timers = timers;
+  els.fireTimers = () => timers.filter((t) => !t.cleared).forEach((t) => t.fn());
   return els;
 }
+const el = (id) => ({ id, hidden: undefined, attrs: {}, textContent: '', setAttribute(k, v) { this.attrs[k] = v; } });
 /** Lets the page's promise chain finish. */
 const settle = () => new Promise((r) => setImmediate(r));
 
@@ -176,6 +185,84 @@ test('no file (404), a network error, or garbage: the honest message, never a bl
   }
 });
 
+test('REGRESSION: whatever /app-links.json does, the open button\'s href AFTER the failure has settled is bama://c/<token>, never #', async () => {
+  const modes = { '404': 'missing', 'network error': new Error('offline'), 'HTML 200 (not JSON)': 'html', 'JSON null': null, 'JSON string': 'a string', 'never answers': 'hang' };
+  for (const [name, answer] of Object.entries(modes)) {
+    for (const path of [`/c/${TOKEN}`, `/c/${CODE}`]) {
+      const els = run(path, answer);
+      await settle();
+      els.fireTimers(); // the 4 s fallback, for the request that never answers
+      assert.equal(els.open.attrs.href, `bama://c/${path.slice(3)}`, `${name}: href after settle`);
+      assert.notEqual(els.open.attrs.href, '#');
+      assert.equal(els.valid.hidden, false, `${name}: invite section`);
+    }
+  }
+});
+
+test('a request that never answers: the stores area degrades to "not in the stores yet" after the timeout, and not before', async () => {
+  const els = run(`/c/${TOKEN}`, 'hang');
+  await settle();
+  assert.equal(els['get-app'].hidden, undefined, 'nothing flashes before the timeout');
+  assert.deepEqual(els.timers.map((t) => t.ms), [4000]);
+  els.fireTimers();
+  assert.equal(els['get-app'].hidden, false);
+  assert.equal(els['no-stores'].hidden, false);
+  assert.equal(els.stores.hidden, true);
+});
+
+test('an answer cancels the timeout; a late answer after the timeout still upgrades to the real store buttons', async () => {
+  const fast = run(`/c/${TOKEN}`, { iosUrl: '', androidUrl: '' });
+  await settle();
+  assert.ok(fast.timers.every((t) => t.cleared), 'timer left running after an answer');
+  // Slow: the timeout fires first, then the answer arrives.
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const els = Object.fromEntries(IDS.map((id) => [id, el(id)]));
+  let answer; const timers = [];
+  vm.runInNewContext(script, {
+    location: { pathname: `/c/${TOKEN}` }, document: { getElementById: (id) => els[id] }, URL,
+    fetch: () => new Promise((r) => { answer = r; }),
+    setTimeout: (fn) => { timers.push(fn); return 0; }, clearTimeout: () => {},
+  });
+  timers.forEach((f) => f());
+  assert.equal(els['no-stores'].hidden, false);
+  answer({ ok: true, json: async () => ({ iosUrl: 'https://apps.apple.com/app/id1', androidUrl: '' }) });
+  await settle();
+  assert.equal(els['store-ios'].hidden, false);
+  assert.equal(els['no-stores'].hidden, true);
+});
+
+test('the built link is printed as small text under the button, outside the anchor, from the same value as the href', () => {
+  const els = run(`/c/${TOKEN}`, { iosUrl: '', androidUrl: '' });
+  assert.equal(els['debug-link'].textContent, `bama://c/${TOKEN}`);
+  assert.equal(els['debug-link'].textContent, els.open.attrs.href);
+  const validSection = html.slice(html.indexOf('<section id="valid"'), html.indexOf('<section id="invalid"'));
+  const anchor = validSection.match(/<a id="open"[\s\S]*?<\/a>/)[0];
+  assert.doesNotMatch(anchor, /debug-link/);
+  assert.ok(validSection.indexOf('id="open"') < validSection.indexOf('id="debug-link"'));
+  assert.ok(validSection.indexOf('id="debug-link"') < validSection.indexOf('id="fallback"'));
+  // A bad link prints nothing.
+  assert.equal(run('/c/nope')['debug-link'].textContent, '');
+});
+
+test('a debug line that throws cannot take the button down', () => {
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const els = Object.fromEntries(IDS.map((id) => [id, el(id)]));
+  Object.defineProperty(els['debug-link'], 'textContent', { set() { throw new Error('boom'); } });
+  vm.runInNewContext(script, { location: { pathname: `/c/${TOKEN}` }, document: { getElementById: (id) => els[id] }, fetch: () => new Promise(() => {}), setTimeout: () => 0, clearTimeout: () => {}, URL });
+  assert.equal(els.open.attrs.href, `bama://c/${TOKEN}`);
+  assert.equal(els.valid.hidden, false);
+});
+
+test('the anchor carries nothing that changes how a real Safari tap is handled: no target, rel, download, ping, onclick, or handler', () => {
+  const validSection = html.slice(html.indexOf('<section id="valid"'), html.indexOf('<section id="invalid"'));
+  const tag = validSection.match(/<a id="open"[^>]*>/)[0];
+  assert.equal(tag, '<a id="open" class="open" href="#">');
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(script, /addEventListener|preventDefault|\.onclick|\.target\b|\.rel\b|\.download\b/);
+  // Its only child is an inline-valid <small> label.
+  assert.match(validSection, /<a id="open"[^>]*>פתיחה באפליקציה<small dir="ltr">Open in the app<\/small><\/a>/);
+});
+
 test('the open-in-app button does not wait for the stores request', () => {
   const els = run(`/c/${TOKEN}`, { iosUrl: '', androidUrl: '' });
   // Synchronously, before the fetch has answered:
@@ -191,21 +278,23 @@ test('"Open in the app" is a real <a href="bama://c/..."> the user taps, never a
   // The script may READ location.pathname and nothing else about navigation.
   const withoutComments = script.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.deepEqual(withoutComments.match(/\blocation\b[^;\n]*/g), ['location.pathname.split(\'/\')']);
-  assert.doesNotMatch(withoutComments, /window\.|\.click\(|\.submit\(|setTimeout|setInterval|requestAnimationFrame|\.assign\(|\.replace\(|\.open\(|\bhistory\./);
+  assert.doesNotMatch(withoutComments, /window\.|\.click\(|\.submit\(|setInterval|requestAnimationFrame|\.assign\(|\.replace\(|\.open\(|\bhistory\./);
   assert.doesNotMatch(html, /http-equiv\s*=\s*["']?refresh/i);
   assert.doesNotMatch(html, /\bonload\s*=|\bonclick\s*=/i);
   // The only thing done with the scheme URL is putting it in the anchor's href.
   assert.equal((withoutComments.match(/bama:\/\//g) ?? []).length, 1);
-  assert.match(withoutComments, /getElementById\('open'\)\.setAttribute\('href', 'bama:\/\/c\/' \+ token\)/);
+  assert.match(withoutComments, /var link = 'bama:\/\/c\/' \+ token;/);
+  assert.match(withoutComments, /getElementById\('open'\)\.setAttribute\('href', link\)/);
+  // The one timer is the stores-area fallback, nothing else.
+  assert.deepEqual(withoutComments.match(/\bsetTimeout\([^)]*\)/g), ['setTimeout(none, 4000)']);
 });
 
 test('running the page never navigates: a location that records any write sees none', () => {
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   const writes = [];
   const location = new Proxy({ pathname: `/c/${TOKEN}` }, { set(_t, k, v) { writes.push([k, v]); return true; } });
-  const el = (id) => ({ id, hidden: undefined, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } });
   const els = Object.fromEntries(IDS.map((id) => [id, el(id)]));
-  vm.runInNewContext(script, { location, document: { getElementById: (id) => els[id] }, fetch: () => new Promise(() => {}), URL });
+  vm.runInNewContext(script, { location, document: { getElementById: (id) => els[id] }, fetch: () => new Promise(() => {}), setTimeout: () => 0, clearTimeout: () => {}, URL });
   assert.deepEqual(writes, []);
   assert.equal(els.open.attrs.href, `bama://c/${TOKEN}`);
 });

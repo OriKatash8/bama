@@ -49,6 +49,7 @@ h1{font-size:22px;line-height:1.3;margin:0 0 6px}
 .open small{display:block;font-weight:400;font-size:13px;opacity:.9}
 .hint{margin:22px 0 0;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
 .hint p{margin:0 0 6px}
+.debug{margin:8px 0 0;color:var(--muted);font-size:11px;word-break:break-all;-webkit-user-select:all;user-select:all}
 .fallback{margin:14px 0 0;color:var(--muted);font-size:13px}
 .fallback + .fallback{margin-top:4px}
 .stores{display:flex;flex-direction:column;gap:10px;margin-top:12px}
@@ -70,6 +71,9 @@ h1{font-size:22px;line-height:1.3;margin:0 0 6px}
          silently. So this is never a redirect, a window.location assignment or an attempt on
          page load; the script below only fills in its href. -->
     <a id="open" class="open" href="#">פתיחה באפליקציה<small dir="ltr">Open in the app</small></a>
+    <!-- The link the button points at, as plain text (tap-and-hold to copy). Diagnostic: if the
+         button ever fails, this shows what the page built. Not part of the anchor. -->
+    <p id="debug-link" class="debug" dir="ltr"></p>
     <!-- The manual escape hatch when the in-app browser refuses the scheme anyway. -->
     <p id="fallback" class="fallback">אם לא קרה כלום, פתח את הדף הזה בדפדפן: Safari או Chrome (מהתפריט של האפליקציה שבה פתחת את הקישור).</p>
     <p class="fallback" dir="ltr">If nothing happened, open this page in Safari or Chrome (from the menu of the app you opened the link in).</p>
@@ -113,17 +117,23 @@ h1{font-size:22px;line-height:1.3;margin:0 0 6px}
   var parts = location.pathname.split('/');
   var token = parts[1] === 'c' && parts.length === 3 ? parts[2] : '';
   var valid = TOKEN_OR_CODE.test(token);
-  if (valid) document.getElementById('open').setAttribute('href', 'bama://c/' + token);
+  /* The button comes first and synchronously; nothing below can undo it. */
+  if (valid) {
+    var link = 'bama://c/' + token;
+    document.getElementById('open').setAttribute('href', link);
+    try { document.getElementById('debug-link').textContent = link; } catch (e) {}
+  }
   document.getElementById('valid').hidden = !valid;
   document.getElementById('invalid').hidden = valid;
   if (!valid) return;
 
-  /* Store buttons. /app-links.json is written at deploy time from config/appLinks
-     (scripts/export-app-links.mjs): {"iosUrl":"...","androidUrl":"..."}. Seeding those two
-     values and redeploying is all it takes; there is nothing to edit here. Only https links
-     become buttons. A missing file, an error, or empty values all mean the same, honest
-     thing: the app is not in the stores yet. Same-origin, no cookies, no referrer, and the
-     request path does not contain the token. */
+  /* Store buttons. /app-links.json is written at build time (scripts/build-legal-site.mjs,
+     from config/appLinks via scripts/export-app-links.mjs): {"iosUrl":"...","androidUrl":"..."},
+     empty strings when the app is not in the stores. Seeding those two values and redeploying
+     is all it takes; there is nothing to edit here. Only https links become buttons. A missing
+     file, an error, junk, an answer that never comes (4 s) or empty values all mean the same,
+     honest thing: the app is not in the stores yet. Same-origin, no cookies, no referrer, and
+     the request path does not contain the token. */
   function httpsUrl(v) {
     if (typeof v !== 'string' || v.indexOf('https://') !== 0) return '';
     try { var u = new URL(v); return u.protocol === 'https:' && !u.username && !u.password ? v : ''; } catch (e) { return ''; }
@@ -139,12 +149,15 @@ h1{font-size:22px;line-height:1.3;margin:0 0 6px}
     document.getElementById('no-stores').hidden = !!(ios || android);
     document.getElementById('get-app').hidden = false;
   }
-  var none = function () { show(null); };
+  var timer = null;
+  var none = function () { try { show(null); } catch (e) {} };
+  var answered = function (links) { clearTimeout(timer); try { show(links); } catch (e) { none(); } };
   try {
+    timer = setTimeout(none, 4000);
     fetch('/app-links.json', { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(show, none);
-  } catch (e) { none(); }
+      .then(answered, function () { clearTimeout(timer); none(); });
+  } catch (e) { clearTimeout(timer); none(); }
 })();
 </script>
 </body>
