@@ -36,8 +36,10 @@ const cases: { name: string; file: string[]; lock: RegExp[]; blocks: number; fit
   {
     name: 'pro — chats',
     file: ['(professional)', '(tabs)', 'chats', 'index.tsx'],
-    lock: [/scrollEnabled=\{!\(active === 'chats' && !chatsLoading && !hasChats && emptyFits\)\}/],
-    blocks: 1, fitted: true,
+    lock: [/scrollEnabled=\{!\(\(active === 'chats' && !chatsLoading && !hasChats && emptyFits\) \|\| coursesEmptyShown && emptyFits\)\}/,
+      /const coursesEmptyShown = active === 'courses' && coursesLoaded && courses\.length === 0;/],
+    // The chats-tab state (bubbles) fits to the screen; the Courses "coming soon" one (listings) has a fixed illustration.
+    blocks: 2, fitted: true,
   },
   {
     name: 'client — chats',
@@ -64,7 +66,7 @@ describe.each(cases)('$name', ({ file, lock, blocks: count, fitted }) => {
     expect(blocks).toHaveLength(count);
     for (const b of blocks) {
       expect(b).toMatch(/onFitsChange=\{setEmptyFits\}/);
-      if (fitted) expect(b).toMatch(/fitToScreen=\{\{ bottomInset: /);
+      if (fitted && !/variant="listings"/.test(b)) expect(b).toMatch(/fitToScreen=\{\{ bottomInset: /);
     }
   });
 });

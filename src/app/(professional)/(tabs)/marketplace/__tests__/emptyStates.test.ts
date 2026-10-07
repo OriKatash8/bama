@@ -21,9 +21,9 @@ it('picks the case from all listings vs the filtered ones', () => {
   expect(SRC).toMatch(/emptyCase\(\{ tab: activeTab, isLoading, total: listings\.length, shown: filtered\.length \}\)/);
 });
 
-it('market: posts through the same sheet as the +; rental: no button; filtered: clears everything', () => {
+it('market: posts through the same sheet as the +; rental: asks to join as a supplier by mail; filtered: clears everything', () => {
   expect(SRC).toMatch(/'marketplace\.empty_market_cta'[\s\S]{0,200}onPress: \(\) => setPostSheetVisible\(true\)/);
-  expect(SRC).toMatch(/empty === 'rental'\s*\?\s*undefined/);
+  expect(SRC).toMatch(/empty === 'rental'\s*\?\s*\{ label: t\('marketplace\.rental_apply_cta'\), onPress: \(\) => void rentalMail\.open\(\) \}/);
   expect(SRC).toMatch(/function clearSearchAndFilters\(\) \{\s*setSearchQuery\(''\);\s*setSelectedCategory\('all'\);\s*clearFilters\(\);/);
   expect(SRC).toMatch(/'marketplace\.empty_filtered_cta'[\s\S]{0,120}onPress: clearSearchAndFilters/);
 });
@@ -55,7 +55,8 @@ describe('copy', () => {
     const m = he.marketplace as Record<string, string>;
     expect([m.empty_market_title, m.empty_market_desc, m.empty_market_cta]).toEqual(
       ['עוד אין כאן ציוד', 'היו הראשונים לפרסם ציוד יד שנייה למכירה', 'פרסמו ציוד']);
-    expect([m.empty_rental_title, m.empty_rental_desc]).toEqual(['עוד אין ציוד להשכרה', 'ציוד להשכרה יופיע כאן ברגע שיתפרסם']);
+    expect([m.empty_rental_title, m.empty_rental_desc]).toEqual(['עדיין אין ציוד להשכרה', 'משכירים ציוד? הצטרפו כמשכירים ראשונים ב-BAMA']);
+    expect([m.rental_apply_cta, m.rental_apply_subject]).toEqual(['הגשת בקשה', 'בקשה להצטרף כמשכיר ציוד - BAMA']);
     expect([m.empty_filtered_title, m.empty_filtered_desc, m.empty_filtered_cta]).toEqual(
       ['לא נמצא ציוד שמתאים לחיפוש', 'נסו מילת חיפוש אחרת או נקו את הסינון', 'נקו סינון']);
   });

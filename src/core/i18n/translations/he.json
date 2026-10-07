@@ -968,8 +968,10 @@
     "empty_market_title": "עוד אין כאן ציוד",
     "empty_market_desc": "היו הראשונים לפרסם ציוד יד שנייה למכירה",
     "empty_market_cta": "פרסמו ציוד",
-    "empty_rental_title": "עוד אין ציוד להשכרה",
-    "empty_rental_desc": "ציוד להשכרה יופיע כאן ברגע שיתפרסם",
+    "empty_rental_title": "עדיין אין ציוד להשכרה",
+    "empty_rental_desc": "משכירים ציוד? הצטרפו כמשכירים ראשונים ב-BAMA",
+    "rental_apply_cta": "הגשת בקשה",
+    "rental_apply_subject": "בקשה להצטרף כמשכיר ציוד - BAMA",
     "empty_filtered_title": "לא נמצא ציוד שמתאים לחיפוש",
     "empty_filtered_desc": "נסו מילת חיפוש אחרת או נקו את הסינון",
     "empty_filtered_cta": "נקו סינון",
@@ -1174,6 +1176,9 @@
     "softask_allow": "הפעלת התראות",
     "softask_not_now": "לא עכשיו"
   },
+  "mail_cta": {
+    "failed": "לא הצלחנו לפתוח את אפליקציית הדואר. אפשר לכתוב לנו ל-{{email}}"
+  },
   "contact": {
     "title": "צרו קשר",
     "reply_note": "יש לכם שאלה או צריכים עזרה? כתבו לנו — נחזור אליכם בהקדם האפשרי.",
@@ -1258,6 +1263,10 @@
   "courses": {
     "browse": "עיין בקורסים",
     "empty": "אין קורסים זמינים עדיין",
+    "coming_soon_title": "הקורסים בדרך",
+    "coming_soon_desc": "מלמדים בתחום המדיה? הצטרפו כמדריכים ראשונים ב-BAMA",
+    "coming_soon_cta": "הגשת בקשה",
+    "coming_soon_subject": "בקשה להצטרף כמדריך - BAMA",
     "modal_title": "כל הקורסים",
     "add_your_course": "הוסף את הקורס שלך",
     "submit_course": "שלח קורס",

@@ -19,6 +19,10 @@ import { useMarketplaceListings } from '@features/marketplace/hooks/useMarketpla
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getDocument } from '@core/firebase/firestore';
 import { useUiStore } from '@core/stores/uiStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { useDemoStore } from '@core/stores/demoStore';
+import { hidesRentals } from '@core/demo/demoSides';
+import { useBamaMail } from '@core/contact/useBamaMail';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -101,7 +105,16 @@ export default function MarketplaceScreen() {
   const [emptyFits, setEmptyFits] = useState(true);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
-  const { listings, isLoading } = useMarketplaceListings(activeTab);
+  const { listings: fetched, isLoading } = useMarketplaceListings(activeTab);
+  // Rentals launch as "coming soon": App Review's demo accounts see the same empty rental tab as
+  // real users (the seeded demo rental stays in the data; only this screen hides it).
+  const me = useAuthStore((s) => s.user?.id);
+  const demoConfig = useDemoStore((s) => s.config);
+  const listings = useMemo(
+    () => (activeTab === 'rental' && hidesRentals(demoConfig, me) ? [] : fetched),
+    [activeTab, demoConfig, me, fetched],
+  );
+  const rentalMail = useBamaMail(t('marketplace.rental_apply_subject'), t('mail_cta.failed'));
 
   // Deep-link: open a specific listing when arriving with ?listingId= (e.g. from a שוק card).
   const params = useLocalSearchParams<{ listingId?: string }>();
@@ -327,11 +340,13 @@ export default function MarketplaceScreen() {
             variant="listings"
             title={t(empty === 'filtered' ? 'marketplace.empty_filtered_title' : empty === 'rental' ? 'marketplace.empty_rental_title' : 'marketplace.empty_market_title')}
             subtitle={t(empty === 'filtered' ? 'marketplace.empty_filtered_desc' : empty === 'rental' ? 'marketplace.empty_rental_desc' : 'marketplace.empty_market_desc')}
+            // After a failed mailto the address stays on screen, selectable.
+            note={empty === 'rental' && rentalMail.failed ? rentalMail.email : undefined}
             primaryCta={empty === 'filtered'
               ? { label: t('marketplace.empty_filtered_cta'), onPress: clearSearchAndFilters }
-              // New rentals are paused: nothing to post on the rental tab.
+              // Nothing to post on the rental tab (new rentals are admin-only): ask to become a supplier.
               : empty === 'rental'
-                ? undefined
+                ? { label: t('marketplace.rental_apply_cta'), onPress: () => void rentalMail.open() }
                 : {
                   label: t('marketplace.empty_market_cta'),
                   icon: <Plus size={20} color="#FFFFFF" strokeWidth={2.4} />,

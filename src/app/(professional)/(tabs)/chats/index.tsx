@@ -30,6 +30,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useDemoStore } from '@core/stores/demoStore';
 import { isCourseOnSide } from '@core/demo/demoSides';
 import { useUiStore } from '@core/stores/uiStore';
+import { useBamaMail } from '@core/contact/useBamaMail';
 import { db } from '@core/firebase/config';
 import { setDocument } from '@core/firebase/firestore';
 import { ROLE_CATEGORIES, categoryLabel, communityCategoryLabel } from '@features/crew/data/categories';
@@ -57,8 +58,8 @@ const BLUE = '#1D4ED8';
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 type TabKey = 'chats' | 'courses' | 'communities';
-/** Courses are off until after the first release: set to true to bring the tab (and its FAB) back. */
-const COURSES_TAB_ENABLED = false;
+/** The Courses tab shows a "coming soon" request screen until real courses exist. false hides the tab. */
+const COURSES_TAB_ENABLED = true;
 const TAB_KEYS: TabKey[] = COURSES_TAB_ENABLED ? ['chats', 'communities', 'courses'] : ['chats', 'communities'];
 
 type Course = {
@@ -139,7 +140,10 @@ export default function ProfessionalChatsScreen() {
     () => allCourses.filter((c) => isCourseOnSide(demoConfig, user?.id, c.demoOnly)),
     [allCourses, demoConfig, user?.id],
   );
+  const [coursesLoaded, setCoursesLoaded] = useState(false);
   const [submitCourseModal, setSubmitCourseModal] = useState(false);
+  const coursesEmptyShown = active === 'courses' && coursesLoaded && courses.length === 0;
+  const courseMail = useBamaMail(t('courses.coming_soon_subject'), t('mail_cta.failed'));
   const [courseSearch, setCourseSearch] = useState('');
   const [courseCategory, setCourseCategory] = useState<string>('all');
   const [courseLevel, setCourseLevel] = useState<CourseLevelKey | null>(null);
@@ -225,7 +229,8 @@ export default function ProfessionalChatsScreen() {
     );
     return onSnapshot(q, (snap) => {
       setCourses(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Course)));
-    });
+      setCoursesLoaded(true);
+    }, () => setCoursesLoaded(true));
   }, []);
 
   async function handlePickCommunityPhoto() {
@@ -300,7 +305,7 @@ export default function ProfessionalChatsScreen() {
       scrollRef={pageScrollRef}
       style={{ padding: 0, paddingBottom: tabBarHeight + TAB_BAR_CONTENT_GAP }}
       backgroundColor={PAGE_BG}
-      scrollEnabled={!(active === 'chats' && !chatsLoading && !hasChats && emptyFits)}
+      scrollEnabled={!((active === 'chats' && !chatsLoading && !hasChats && emptyFits) || coursesEmptyShown && emptyFits)}
     >
       {/* Header — the three-way switch as one segmented control on the band.
           Same order and setActive logic as before. */}
@@ -414,241 +419,266 @@ export default function ProfessionalChatsScreen() {
 
       {/* Courses tab */}
       {active === 'courses' && (
-        <View>
-          {/* Row 1 — search + filter button */}
-          <View style={[styles.courseSearchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-            <View style={[styles.searchRow, styles.searchRowFlex, focusedSearch === 'courses' && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              <TextInput
-                style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
-                placeholder={rtlSafe(t('courses.search_placeholder'), rtl)}
-                placeholderTextColor="#9C99AD"
-                value={courseSearch}
-                onChangeText={setCourseSearch}
-                onFocus={() => setFocusedSearch('courses')}
-                onBlur={() => setFocusedSearch(null)}
-                returnKeyType="search"
-              />
-              {courseSearch.length > 0 && (
-                <TouchableOpacity onPress={() => setCourseSearch('')} activeOpacity={0.7}>
-                  <Text style={{ color: BLUE, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
-                </TouchableOpacity>
-              )}
-              <Search size={18} color={searchIconColor} strokeWidth={2.5} />
-            </View>
-            <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterSheetOpen(true)} activeOpacity={0.85}>
-              <SlidersHorizontal size={18} color={BLUE} strokeWidth={2.2} />
-              {activeRefinementCount > 0 && (
-                <View style={styles.filterBadge}>
-                  <Text style={[styles.filterBadgeText, { ...font.bold }]}>{activeRefinementCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+        !coursesLoaded ? (
+          <View style={{ minHeight: windowHeight * 0.6, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={BLUE} />
           </View>
+        ) : courses.length === 0 ? (
+          // Nothing visible to this user (real and demo accounts alike at launch): "coming soon" with a
+          // request button. No search, filters or + here: the button is the only action.
+          <View style={{ minHeight: windowHeight * 0.6 }}>
+            <AnimatedEmptyState
+              bleed={20}
+              // Nothing sits above it: meet the sheet's top edge, like the chats tab's empty state.
+              bleedTop={16}
+              radius={26}
+              bottomInset={tabBarHeight + TAB_BAR_CONTENT_GAP}
+              variant="listings"
+              onFitsChange={setEmptyFits}
+              title={t('courses.coming_soon_title')}
+              subtitle={t('courses.coming_soon_desc')}
+              // After a failed mailto the address stays on screen, selectable.
+              note={courseMail.failed ? courseMail.email : undefined}
+              primaryCta={{ label: t('courses.coming_soon_cta'), onPress: () => void courseMail.open() }}
+            />
+          </View>
+        ) : (
+          <View>
+            {/* Row 1 — search + filter button */}
+            <View style={[styles.courseSearchRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.searchRow, styles.searchRowFlex, focusedSearch === 'courses' && styles.searchRowFocused, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                <TextInput
+                  style={[styles.searchInput, webNoOutline, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
+                  placeholder={rtlSafe(t('courses.search_placeholder'), rtl)}
+                  placeholderTextColor="#9C99AD"
+                  value={courseSearch}
+                  onChangeText={setCourseSearch}
+                  onFocus={() => setFocusedSearch('courses')}
+                  onBlur={() => setFocusedSearch(null)}
+                  returnKeyType="search"
+                />
+                {courseSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => setCourseSearch('')} activeOpacity={0.7}>
+                    <Text style={{ color: BLUE, fontSize: 14, paddingHorizontal: 4 }}>✕</Text>
+                  </TouchableOpacity>
+                )}
+                <Search size={18} color={searchIconColor} strokeWidth={2.5} />
+              </View>
+              <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterSheetOpen(true)} activeOpacity={0.85}>
+                <SlidersHorizontal size={18} color={BLUE} strokeWidth={2.2} />
+                {activeRefinementCount > 0 && (
+                  <View style={styles.filterBadge}>
+                    <Text style={[styles.filterBadgeText, { ...font.bold }]}>{activeRefinementCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
 
-          {/* Row 2 — category pills only */}
-          <ScrollView
-            ref={categoryScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            // RTL row flows row-reverse, so its visual start is the right edge —
-            // anchor the scroll there once the content is laid out.
-            onContentSizeChange={() => { if (rtl) categoryScrollRef.current?.scrollToEnd({ animated: false }); }}
-            onLayout={(e) => { categoryViewportW.current = e.nativeEvent.layout.width; }}
-            contentContainerStyle={[
-              styles.categoryPillsRow,
-              {
-                flexDirection: rtl ? 'row-reverse' : 'row',
-                // The row bleeds 20 past the sheet on both sides (see
-                // categoryPillsScroll); the leading 20 puts it back in line.
-                paddingLeft: rtl ? 40 : 20,
-                paddingRight: rtl ? 20 : 40,
-              },
-            ]}
-            style={styles.categoryPillsScroll}
-          >
-            <TouchableOpacity
-              style={[styles.catPill, courseCategory === 'all' && styles.catPillActive]}
-              onPress={() => setCourseCategory('all')}
-              activeOpacity={0.8}
+            {/* Row 2 — category pills only */}
+            <ScrollView
+              ref={categoryScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              // RTL row flows row-reverse, so its visual start is the right edge —
+              // anchor the scroll there once the content is laid out.
+              onContentSizeChange={() => { if (rtl) categoryScrollRef.current?.scrollToEnd({ animated: false }); }}
+              onLayout={(e) => { categoryViewportW.current = e.nativeEvent.layout.width; }}
+              contentContainerStyle={[
+                styles.categoryPillsRow,
+                {
+                  flexDirection: rtl ? 'row-reverse' : 'row',
+                  // The row bleeds 20 past the sheet on both sides (see
+                  // categoryPillsScroll); the leading 20 puts it back in line.
+                  paddingLeft: rtl ? 40 : 20,
+                  paddingRight: rtl ? 20 : 40,
+                },
+              ]}
+              style={styles.categoryPillsScroll}
             >
-              <Text style={[styles.catPillText, courseCategory === 'all' && styles.catPillTextActive, { ...font.semiBold }]}>
-                {t('courses.filter_all')}
-              </Text>
-            </TouchableOpacity>
-            {courseCategories.map((cat) => (
               <TouchableOpacity
-                key={cat}
-                onLayout={(e) => {
-                  const { x, width } = e.nativeEvent.layout;
-                  categoryOffsets.current[cat] = { x, width };
-                }}
-                style={[styles.catPill, courseCategory === cat && styles.catPillActive]}
-                onPress={() => setCourseCategory(cat)}
+                style={[styles.catPill, courseCategory === 'all' && styles.catPillActive]}
+                onPress={() => setCourseCategory('all')}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.catPillText, courseCategory === cat && styles.catPillTextActive, { ...font.semiBold }]}>
-                  {categoryLabel(cat, rtl ? 'he' : 'en')}
+                <Text style={[styles.catPillText, courseCategory === 'all' && styles.catPillTextActive, { ...font.semiBold }]}>
+                  {t('courses.filter_all')}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Row 3 — active refinement chips */}
-          {activeRefinementCount > 0 && (
-            <View style={[styles.activeChipsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {courseLevel && (
-                <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseLevel(null)} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>{t(`courses.level_${courseLevel}`)}</Text>
-                  <X size={13} color={BLUE} strokeWidth={2.4} />
-                </TouchableOpacity>
-              )}
-              {coursePriceBand !== 'all' && (
-                <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCoursePriceBand('all')} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>
-                    {t(PRICE_BANDS.find((b) => b.id === coursePriceBand)?.labelKey ?? 'courses.price_all')}
+              {courseCategories.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  onLayout={(e) => {
+                    const { x, width } = e.nativeEvent.layout;
+                    categoryOffsets.current[cat] = { x, width };
+                  }}
+                  style={[styles.catPill, courseCategory === cat && styles.catPillActive]}
+                  onPress={() => setCourseCategory(cat)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.catPillText, courseCategory === cat && styles.catPillTextActive, { ...font.semiBold }]}>
+                    {categoryLabel(cat, rtl ? 'he' : 'en')}
                   </Text>
-                  <X size={13} color={BLUE} strokeWidth={2.4} />
                 </TouchableOpacity>
-              )}
-              {courseSort !== 'newest' && (
-                <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseSort('newest')} activeOpacity={0.7}>
-                  <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>
-                    {t(courseSort === 'price_low_high' ? 'courses.price_low_high' : 'courses.price_high_low')}
-                  </Text>
-                  <X size={13} color={BLUE} strokeWidth={2.4} />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={() => { setCourseLevel(null); setCoursePriceBand('all'); setCourseSort('newest'); }} activeOpacity={0.7} style={styles.clearAllBtn}>
-                <Text style={[styles.clearAllText, { ...font.semiBold, color: BLUE }]}>{t('courses.clear_all')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+              ))}
+            </ScrollView>
 
-          {filteredCourses.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyText, { ...font.regular, color: TEXT }]}>
-                {courses.length === 0 ? t('courses.empty') : t('courses.no_results')}
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={filteredCourses}
-              keyExtractor={(c) => c.id}
-              scrollEnabled={false}
-              // The page already clears the tab bar; this adds room for the +
-              // button that floats just above it.
-              contentContainerStyle={{ paddingTop: 8, paddingBottom: FAB_SIZE + TAB_BAR_CONTENT_GAP, gap: 12 }}
-              renderItem={({ item }) => (
-                <View style={styles.courseCard}>
-                  {/* Cover */}
-                  <View style={styles.coverArea}>
-                    {item.coverImageUrl ? (
-                      <Image source={{ uri: item.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-                    ) : (
-                      <LinearGradient colors={['#534AB7', '#cb6ce6']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                        <View style={styles.coverCenter}>
-                          <Play size={32} color="rgba(255,255,255,0.9)" fill="rgba(255,255,255,0.9)" />
+            {/* Row 3 — active refinement chips */}
+            {activeRefinementCount > 0 && (
+              <View style={[styles.activeChipsRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                {courseLevel && (
+                  <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseLevel(null)} activeOpacity={0.7}>
+                    <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>{t(`courses.level_${courseLevel}`)}</Text>
+                    <X size={13} color={BLUE} strokeWidth={2.4} />
+                  </TouchableOpacity>
+                )}
+                {coursePriceBand !== 'all' && (
+                  <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCoursePriceBand('all')} activeOpacity={0.7}>
+                    <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>
+                      {t(PRICE_BANDS.find((b) => b.id === coursePriceBand)?.labelKey ?? 'courses.price_all')}
+                    </Text>
+                    <X size={13} color={BLUE} strokeWidth={2.4} />
+                  </TouchableOpacity>
+                )}
+                {courseSort !== 'newest' && (
+                  <TouchableOpacity style={[styles.activeChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]} onPress={() => setCourseSort('newest')} activeOpacity={0.7}>
+                    <Text style={[styles.activeChipText, { ...font.semiBold, color: TEXT }]}>
+                      {t(courseSort === 'price_low_high' ? 'courses.price_low_high' : 'courses.price_high_low')}
+                    </Text>
+                    <X size={13} color={BLUE} strokeWidth={2.4} />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => { setCourseLevel(null); setCoursePriceBand('all'); setCourseSort('newest'); }} activeOpacity={0.7} style={styles.clearAllBtn}>
+                  <Text style={[styles.clearAllText, { ...font.semiBold, color: BLUE }]}>{t('courses.clear_all')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {filteredCourses.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyText, { ...font.regular, color: TEXT }]}>
+                  {courses.length === 0 ? t('courses.empty') : t('courses.no_results')}
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredCourses}
+                keyExtractor={(c) => c.id}
+                scrollEnabled={false}
+                // The page already clears the tab bar; this adds room for the +
+                // button that floats just above it.
+                contentContainerStyle={{ paddingTop: 8, paddingBottom: FAB_SIZE + TAB_BAR_CONTENT_GAP, gap: 12 }}
+                renderItem={({ item }) => (
+                  <View style={styles.courseCard}>
+                    {/* Cover */}
+                    <View style={styles.coverArea}>
+                      {item.coverImageUrl ? (
+                        <Image source={{ uri: item.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                      ) : (
+                        <LinearGradient colors={['#534AB7', '#cb6ce6']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                          <View style={styles.coverCenter}>
+                            <Play size={32} color="rgba(255,255,255,0.9)" fill="rgba(255,255,255,0.9)" />
+                          </View>
+                        </LinearGradient>
+                      )}
+                      {item.category ? (
+                        <View style={[styles.categoryTag, { [rtl ? 'right' : 'left']: 10 }]}>
+                          <Text style={[styles.categoryTagText, { ...font.semiBold }]}>
+                            {item.category ? categoryLabel(item.category, rtl ? 'he' : 'en') : item.category}
+                          </Text>
                         </View>
-                      </LinearGradient>
-                    )}
-                    {item.category ? (
-                      <View style={[styles.categoryTag, { [rtl ? 'right' : 'left']: 10 }]}>
-                        <Text style={[styles.categoryTagText, { ...font.semiBold }]}>
-                          {item.category ? categoryLabel(item.category, rtl ? 'he' : 'en') : item.category}
+                      ) : null}
+                    </View>
+
+                    {/* Body */}
+                    <View style={styles.cardBody}>
+                      {/* Title + price */}
+                      <View style={[styles.titlePriceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                        <Text style={[styles.cardTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
+                          {item.title}
+                        </Text>
+                        <Text style={[styles.coursePrice, { ...font.bold }]}>
+                          ₪{item.price.toLocaleString()}
                         </Text>
                       </View>
-                    ) : null}
-                  </View>
 
-                  {/* Body */}
-                  <View style={styles.cardBody}>
-                    {/* Title + price */}
-                    <View style={[styles.titlePriceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.cardTitle, { ...font.bold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
-                        {item.title}
-                      </Text>
-                      <Text style={[styles.coursePrice, { ...font.bold }]}>
-                        ₪{item.price.toLocaleString()}
-                      </Text>
-                    </View>
+                      {/* Description */}
+                      {!!item.description && (
+                        <Text style={[styles.cardDesc, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} ellipsizeMode="tail">
+                          {item.description}
+                        </Text>
+                      )}
 
-                    {/* Description */}
-                    {!!item.description && (
-                      <Text style={[styles.cardDesc, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} ellipsizeMode="tail">
-                        {item.description}
-                      </Text>
-                    )}
+                      {/* Metadata row */}
+                      {!!(item.durationHours || item.lessonsCount || item.level) && (
+                        <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                          {!!item.durationHours && (
+                            <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                              <Clock size={13} color={BLUE} strokeWidth={1.8} />
+                              <Text style={[styles.metaText, { ...font.regular }]}>{item.durationHours} {t('courses.hours')}</Text>
+                            </View>
+                          )}
+                          {!!item.lessonsCount && (
+                            <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                              <BookOpen size={13} color={BLUE} strokeWidth={1.8} />
+                              <Text style={[styles.metaText, { ...font.regular }]}>{item.lessonsCount} {t('courses.lessons')}</Text>
+                            </View>
+                          )}
+                          {!!item.level && (
+                            <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                              <BarChart2 size={13} color={BLUE} strokeWidth={1.8} />
+                              <Text style={[styles.metaText, { ...font.regular }]}>
+                                {normalizeLevel(item.level) ? t(`courses.level_${normalizeLevel(item.level)}`) : item.level}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
 
-                    {/* Metadata row */}
-                    {!!(item.durationHours || item.lessonsCount || item.level) && (
-                      <View style={[styles.metaRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                        {!!item.durationHours && (
-                          <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <Clock size={13} color={BLUE} strokeWidth={1.8} />
-                            <Text style={[styles.metaText, { ...font.regular }]}>{item.durationHours} {t('courses.hours')}</Text>
-                          </View>
-                        )}
-                        {!!item.lessonsCount && (
-                          <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <BookOpen size={13} color={BLUE} strokeWidth={1.8} />
-                            <Text style={[styles.metaText, { ...font.regular }]}>{item.lessonsCount} {t('courses.lessons')}</Text>
-                          </View>
-                        )}
-                        {!!item.level && (
-                          <View style={[styles.metaChip, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                            <BarChart2 size={13} color={BLUE} strokeWidth={1.8} />
-                            <Text style={[styles.metaText, { ...font.regular }]}>
-                              {normalizeLevel(item.level) ? t(`courses.level_${normalizeLevel(item.level)}`) : item.level}
+                      <View style={styles.cardDivider} />
+
+                      {/* Footer: instructor + visit */}
+                      <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                        <View style={[styles.instructorRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+                          <View style={styles.instructorAvatar}>
+                            <Text style={[styles.instructorInitial, { ...font.bold }]}>
+                              {item.instructorName.charAt(0).toUpperCase()}
                             </Text>
                           </View>
+                          <View style={{ flex: 1, minWidth: 0, alignItems: rtl ? 'flex-end' : 'flex-start' }}>
+                            <Text style={[styles.instructorName, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} ellipsizeMode="tail">
+                              {item.instructorName}
+                            </Text>
+                            <Text style={[styles.instructorBadge, { ...font.regular }]}>
+                              {t('courses.instructor_badge')}
+                            </Text>
+                          </View>
+                        </View>
+                        {!!item.courseUrl && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              // Record a unique visit (doc id = uid → repeats collapse to one).
+                              if (user?.id) {
+                                void setDocument(`courses/${item.id}/clicks/${user.id}`, { at: serverTimestamp() }).catch(() => {});
+                              }
+                              Linking.openURL(item.courseUrl!);
+                            }}
+                            activeOpacity={0.8}
+                            style={styles.visitBtn}
+                            // 36 visual + 4 of slop each side = 44.
+                            hitSlop={{ top: 4, bottom: 4 }}
+                          >
+                            <Text style={[styles.visitBtnText, { ...font.bold }]}>{t('courses.visit_course')}</Text>
+                            <ExternalLink size={14} color="#FFFFFF" strokeWidth={2.4} />
+                          </TouchableOpacity>
                         )}
                       </View>
-                    )}
-
-                    <View style={styles.cardDivider} />
-
-                    {/* Footer: instructor + visit */}
-                    <View style={[styles.cardFooter, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                      <View style={[styles.instructorRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                        <View style={styles.instructorAvatar}>
-                          <Text style={[styles.instructorInitial, { ...font.bold }]}>
-                            {item.instructorName.charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={{ flex: 1, minWidth: 0, alignItems: rtl ? 'flex-end' : 'flex-start' }}>
-                          <Text style={[styles.instructorName, { ...font.semiBold, textAlign: rtl ? 'right' : 'left' }]} numberOfLines={1} ellipsizeMode="tail">
-                            {item.instructorName}
-                          </Text>
-                          <Text style={[styles.instructorBadge, { ...font.regular }]}>
-                            {t('courses.instructor_badge')}
-                          </Text>
-                        </View>
-                      </View>
-                      {!!item.courseUrl && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            // Record a unique visit (doc id = uid → repeats collapse to one).
-                            if (user?.id) {
-                              void setDocument(`courses/${item.id}/clicks/${user.id}`, { at: serverTimestamp() }).catch(() => {});
-                            }
-                            Linking.openURL(item.courseUrl!);
-                          }}
-                          activeOpacity={0.8}
-                          style={styles.visitBtn}
-                          // 36 visual + 4 of slop each side = 44.
-                          hitSlop={{ top: 4, bottom: 4 }}
-                        >
-                          <Text style={[styles.visitBtnText, { ...font.bold }]}>{t('courses.visit_course')}</Text>
-                          <ExternalLink size={14} color="#FFFFFF" strokeWidth={2.4} />
-                        </TouchableOpacity>
-                      )}
                     </View>
                   </View>
-                </View>
-              )}
-            />
-          )}
-        </View>
+                )}
+              />
+            )}
+          </View>
+        )
       )}
       </View>
 
@@ -778,8 +808,8 @@ export default function ProfessionalChatsScreen() {
       </TouchableOpacity>
     )}
 
-    {/* FAB — courses tab */}
-    {active === 'courses' && (
+    {/* FAB — courses tab (not on the "coming soon" screen: its button is the only action) */}
+    {active === 'courses' && courses.length > 0 && (
       <TouchableOpacity style={[styles.fab, { bottom: tabBarHeight + TAB_BAR_CONTENT_GAP }]} onPress={() => setSubmitCourseModal(true)} activeOpacity={0.85}>
         <LinearGradient
           colors={[BLUE, BLUE]}

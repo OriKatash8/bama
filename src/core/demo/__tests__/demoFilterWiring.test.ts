@@ -33,8 +33,25 @@ it('useAuth keeps the config live for as long as someone is signed in', () => {
   expect(src).toMatch(/useDemoStore\.getState\(\)\.setConfig\(parseDemoConfig\(data\)\)/);
 });
 
-it('the Courses tab is switched off for everyone until after release (flip COURSES_TAB_ENABLED to bring it back)', () => {
+it('the Courses tab is on, and shows the "coming soon" request screen (flag in the chats screen)', () => {
   const src = read('src/app/(professional)/(tabs)/chats/index.tsx');
-  expect(src).toMatch(/^const COURSES_TAB_ENABLED = false;$/m);
+  expect(src).toMatch(/^const COURSES_TAB_ENABLED = true;$/m);
   expect(src).toMatch(/const TAB_KEYS: TabKey\[\] = COURSES_TAB_ENABLED \? \['chats', 'communities', 'courses'\] : \['chats', 'communities'\];/);
+  // Nothing visible: the empty state with the mail CTA, instead of search/filters/list.
+  expect(src).toMatch(/courses\.length === 0 \? \([\s\S]*?title=\{t\('courses\.coming_soon_title'\)\}[\s\S]*?courseMail\.open\(\)/);
+  // The + (submit a course) is not offered on that screen.
+  expect(src).toMatch(/\{active === 'courses' && courses\.length > 0 && \(/);
+});
+
+it('the Courses "coming soon" copy and subject are exactly as specced (Hebrew)', () => {
+  const c = (require('@core/i18n/translations/he.json') as { courses: Record<string, string> }).courses;
+  expect([c.coming_soon_title, c.coming_soon_desc, c.coming_soon_cta, c.coming_soon_subject]).toEqual(
+    ['הקורסים בדרך', 'מלמדים בתחום המדיה? הצטרפו כמדריכים ראשונים ב-BAMA', 'הגשת בקשה', 'בקשה להצטרף כמדריך - BAMA']);
+});
+
+it('the rental tab hides the demo rental from demo accounts (screen-level: chats that share a rental still resolve it) and offers the mail CTA', () => {
+  const src = read('src/app/(professional)/(tabs)/marketplace/index.tsx');
+  expect(src).toMatch(/activeTab === 'rental' && hidesRentals\(demoConfig, me\) \? \[\] : fetched/);
+  expect(src).toMatch(/empty === 'rental'\s*\? \{ label: t\('marketplace\.rental_apply_cta'\), onPress: \(\) => void rentalMail\.open\(\) \}/);
+  expect(read('src/features/marketplace/hooks/useMarketplaceListings.ts')).not.toMatch(/hidesRentals/);
 });

@@ -969,7 +969,9 @@
     "empty_market_desc": "Be the first to list second-hand gear for sale",
     "empty_market_cta": "List gear",
     "empty_rental_title": "No rental gear yet",
-    "empty_rental_desc": "Rental gear will show up here as soon as it's listed",
+    "empty_rental_desc": "Renting out gear? Join BAMA as one of the first rental partners",
+    "rental_apply_cta": "Send a request",
+    "rental_apply_subject": "Request to join as a gear rental provider - BAMA",
     "empty_filtered_title": "No gear matches your search",
     "empty_filtered_desc": "Try another search or clear the filters",
     "empty_filtered_cta": "Clear filters",
@@ -1174,6 +1176,9 @@
     "softask_allow": "Turn on notifications",
     "softask_not_now": "Not now"
   },
+  "mail_cta": {
+    "failed": "We couldn't open your mail app. You can write to us at {{email}}"
+  },
   "contact": {
     "title": "Contact us",
     "reply_note": "Have a question or need help? Write to us — we'll get back to you as fast as we can.",
@@ -1258,6 +1263,10 @@
   "courses": {
     "browse": "Browse Courses",
     "empty": "No courses available yet",
+    "coming_soon_title": "Courses are on the way",
+    "coming_soon_desc": "Teaching in media? Join BAMA as one of the first instructors",
+    "coming_soon_cta": "Send a request",
+    "coming_soon_subject": "Request to join as an instructor - BAMA",
     "modal_title": "All Courses",
     "add_your_course": "Add Your Course",
     "submit_course": "Submit Course",

@@ -262,7 +262,7 @@ export function AnimatedEmptyState({
           <Text style={[styles.title, extraBold(rtl), listings && styles.titleListings]}>{title}</Text>
         )}
         <Text style={[styles.subtitle, font.regular, listings && styles.subtitleListings]}>{subtitle}</Text>
-        {note ? <Text style={[styles.note, font.regular]}>{note}</Text> : null}
+        {note ? <Text selectable style={[styles.note, font.regular]}>{note}</Text> : null}
         {primaryCta && (
           <View style={[styles.ctaShadow, { shadowColor: tone.ctaShadow }]}>
             <TouchableOpacity testID="empty-cta" onPress={primaryCta.onPress} activeOpacity={0.88} accessibilityRole="button" style={styles.ctaTouch}>

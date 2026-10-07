@@ -1,4 +1,4 @@
-import { EMPTY_DEMO_CONFIG, isCommunityOnSide, isCourseOnSide, isSameSide, parseDemoConfig } from '../demoSides';
+import { EMPTY_DEMO_CONFIG, hidesRentals, isCommunityOnSide, isCourseOnSide, isSameSide, parseDemoConfig } from '../demoSides';
 
 const cfg = parseDemoConfig({ uids: ['d1', 'd2'], neutralUids: ['adm'], communityIds: ['dc'] });
 
@@ -46,19 +46,30 @@ describe('isCommunityOnSide', () => {
   });
 });
 
-describe('isCourseOnSide', () => {
-  it('demo accounts see only demo-only courses; real accounts see none', () => {
-    expect(isCourseOnSide(cfg, 'd1', true)).toBe(true);
-    expect(isCourseOnSide(cfg, 'd1', undefined)).toBe(false);
-    expect(isCourseOnSide(cfg, 'r1', true)).toBe(false);
-    expect(isCourseOnSide(cfg, 'r1', undefined)).toBe(false);
-  });
-  it('admins see every course; signed-out and no-config users see none', () => {
-    expect(isCourseOnSide(cfg, 'adm', true)).toBe(true);
-    expect(isCourseOnSide(cfg, 'adm', undefined)).toBe(true);
-    expect(isCourseOnSide(cfg, null, true)).toBe(false);
+describe('isCourseOnSide (courses launch as "coming soon")', () => {
+  it('nobody but admins sees a course: not real users, not demo accounts, even for demo-only courses', () => {
+    for (const demoOnly of [true, false, undefined]) {
+      expect(isCourseOnSide(cfg, 'r1', demoOnly)).toBe(false);
+      expect(isCourseOnSide(cfg, 'd1', demoOnly)).toBe(false);
+      expect(isCourseOnSide(cfg, null, demoOnly)).toBe(false);
+      expect(isCourseOnSide(cfg, 'adm', demoOnly)).toBe(true);
+    }
     expect(isCourseOnSide(EMPTY_DEMO_CONFIG, 'r1', undefined)).toBe(false);
-    expect(isCourseOnSide(EMPTY_DEMO_CONFIG, 'r1', true)).toBe(false);
+  });
+});
+
+describe('hidesRentals (demo accounts see the same empty rental tab as real users)', () => {
+  it('true for demo accounts only', () => {
+    expect(hidesRentals(cfg, 'd1')).toBe(true);
+    expect(hidesRentals(cfg, 'd2')).toBe(true);
+    expect(hidesRentals(cfg, 'r1')).toBe(false);
+    expect(hidesRentals(cfg, 'adm')).toBe(false);
+    expect(hidesRentals(cfg, null)).toBe(false);
+    expect(hidesRentals(EMPTY_DEMO_CONFIG, 'r1')).toBe(false);
+  });
+  it('does not touch the side rule other features use', () => {
+    expect(isSameSide(cfg, 'd1', 'd2')).toBe(true);
+    expect(isSameSide(cfg, 'r1', 'd1')).toBe(false);
   });
 });
 

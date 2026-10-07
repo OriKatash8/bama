@@ -46,13 +46,19 @@ export function isSameSide(cfg: DemoConfig, me: string | null | undefined, other
 }
 
 /**
- * Courses are shown to App Review demo accounts only (as demo content): a demo account sees the
- * `demoOnly` courses, a real account sees none, and admins and BAMA see all.
+ * Courses and rentals launch as "coming soon" (v1.0), so App Review's demo accounts must see the
+ * same empty states as real users: no demo course and no demo rental is shown to a demo account.
+ * Only admins and BAMA (neutral) see courses, for moderation. `demoOnly` is still stamped on
+ * courses approved from a demo account's request, so a later release can show them again by
+ * restoring `cfg.uids.includes(me) && demoOnly === true` here.
  */
-export function isCourseOnSide(cfg: DemoConfig, me: string | null | undefined, demoOnly: boolean | undefined): boolean {
-  if (!me) return false;
-  if (isNeutral(cfg, me)) return true;
-  return cfg.uids.includes(me) && demoOnly === true;
+export function isCourseOnSide(cfg: DemoConfig, me: string | null | undefined, _demoOnly: boolean | undefined): boolean {
+  return !!me && isNeutral(cfg, me);
+}
+
+/** Whether `me` must see the rental tab as empty (demo accounts: the seeded demo rental is hidden). */
+export function hidesRentals(cfg: DemoConfig, me: string | null | undefined): boolean {
+  return !!me && !isNeutral(cfg, me) && cfg.uids.includes(me);
 }
 
 /** A demo community: owned by a demo account (automatic), or listed in communityIds. */
