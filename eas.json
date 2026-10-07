@@ -31,7 +31,8 @@
       "autoIncrement": true,
       "ios": {
         "buildConfiguration": "Release",
-        "distribution": "store"
+        "distribution": "store",
+        "image": "macos-tahoe-26.5-xcode-26.6"
       },
       "env": {
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAgECKwk9l1gV-F8zbaNSWViXeG7Vc6Uz8",
