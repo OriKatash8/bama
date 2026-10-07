@@ -1,13 +1,10 @@
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react-native';
+import { act, render } from '@testing-library/react-native';
 import { ChatsScreen } from '../ChatsScreen';
-import en from '@core/i18n/translations/en.json';
 
 /**
- * A community the user is a MEMBER of is listed in the chats tab, in both modes.
- * (Finding communities to join stays in the professional Communities tab.) This is
- * how a client-mode member, who has no Communities tab, reaches the community they
- * joined from an invite link.
+ * Communities live in their own tab (professional mode's Communities tab), NOT in the chats list:
+ * a joined community never appears here, in either mode.
  */
 
 let mockSegment = '(client)';
@@ -49,46 +46,19 @@ async function show(chats: unknown[]) {
 
 beforeEach(() => { jest.clearAllMocks(); mockSegment = '(client)'; });
 
-describe('a joined community in the chat list', () => {
-  it('is listed by name, with no messages yet', async () => {
-    const r = await show([community()]);
-    expect(r.getByText('Gaffers Guild')).toBeTruthy();
-    expect(r.getByTestId('chat-row-comm-1')).toBeTruthy();
-  });
-
-  it.each([
-    ['(client)', '/(client)/chat/comm-1'],
-    ['(professional)', '/(professional)/chat/comm-1'],
-  ])('opens in the viewer\'s own mode: %s', async (segment, href) => {
+describe('communities are kept out of the chat list', () => {
+  it.each(['(client)', '(professional)'])('a joined community is not listed in %s mode', async (segment) => {
     mockSegment = segment;
-    const r = await show([community()]);
-    fireEvent.press(r.getByTestId('chat-row-comm-1'));
-    expect(mockPush).toHaveBeenCalledWith(href);
-  });
-
-  it('shows its unread count (the server writes unreadCount.<uid> for communities)', async () => {
-    const r = await show([community({ unreadCount: { me: 3 } })]);
-    expect(r.getByText('3')).toBeTruthy();
-  });
-
-  it('sits alongside other chats and is findable by search', async () => {
     const group = { id: 'g-1', type: 'group', name: 'Wedding crew', members: ['me', 'x'], lastMessage: { text: 'hello', timestamp: null } };
-    const r = render(<ChatsScreen chats={[group, community()] as never} searchQuery="gaff" />);
+    const r = await show([group, community()]);
+    expect(r.getByTestId('chat-row-g-1')).toBeTruthy();   // anchor: the list did render
+    expect(r.queryByTestId('chat-row-comm-1')).toBeNull();
+    expect(r.queryByText('Gaffers Guild')).toBeNull();
+  });
+
+  it('not even when searched for by name', async () => {
+    const r = render(<ChatsScreen chats={[community()] as never} searchQuery="gaff" />);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
-    expect(r.getByText('Gaffers Guild')).toBeTruthy();
-    expect(r.queryByTestId('chat-row-g-1')).toBeNull();
-  });
-
-  it('is not a project or a purchase: the Active, Completed and Marketplace filters leave it out', async () => {
-    const r = await show([community()]);
-    for (const f of [en.chats.filter_open, en.chats.filter_completed, en.chats.filter_marketplace]) {
-      await act(async () => { fireEvent.press(r.getByText(f)); });
-      expect(r.queryByTestId('chat-row-comm-1')).toBeNull();
-    }
-  });
-
-  it('shows under the default "All" view', async () => {
-    const r = await show([community()]);
-    expect(r.getByTestId('chat-row-comm-1')).toBeTruthy();
+    expect(r.queryByText('Gaffers Guild')).toBeNull();
   });
 });

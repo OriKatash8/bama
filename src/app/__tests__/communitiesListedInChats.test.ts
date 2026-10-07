@@ -2,19 +2,19 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 /**
- * Communities the user belongs to are listed in the chats tab in BOTH modes, so
- * neither tab may leave them out of its "do I have any chats" check (that check
- * picks the empty state over the list). The client tab has a behavior test
- * (chats/__tests__/communityOnly.test.tsx); the professional tab is too large to
- * mount, so this pins its one line.
+ * Communities are NOT listed in the chats tab (either mode): each tab's "do I have any chats" check
+ * leaves them out, and ChatsScreen filters them from the list. They live in the Communities tab.
  */
-it('the professional chats tab counts communities toward hasChats', () => {
-  const src = readFileSync(join(__dirname, '..', '(professional)', '(tabs)', 'chats', 'index.tsx'), 'utf8');
-  expect(src).toMatch(/const hasChats = userChats\.length > 0;/);
-  expect(src).not.toMatch(/type !== 'community'\)\.length > 0/);
+const read = (...p: string[]) => readFileSync(join(__dirname, '..', ...p), 'utf8');
+
+it('the professional chats tab leaves communities out of hasChats', () => {
+  expect(read('(professional)', '(tabs)', 'chats', 'index.tsx')).toMatch(/const hasChats = userChats\.filter\(\(c\) => c\.type !== 'community'\)\.length > 0;/);
 });
 
-it('ChatsScreen no longer filters communities out of the list', () => {
-  const src = readFileSync(join(__dirname, '..', '..', 'features', 'chat', 'screens', 'ChatsScreen.tsx'), 'utf8');
-  expect(src).not.toMatch(/filter\(\(c\) => c\.type !== 'community'\)/);
+it('the client chats tab leaves communities out of hasChats', () => {
+  expect(read('(client)', '(tabs)', 'chats', 'index.tsx')).toMatch(/const realChats = chats\.filter\(\(c\) => c\.type !== 'community'\);\s*const hasChats = realChats\.length > 0;/);
+});
+
+it('ChatsScreen filters communities out of the list', () => {
+  expect(read('..', 'features', 'chat', 'screens', 'ChatsScreen.tsx')).toMatch(/\.filter\(\(c\) => c\.type !== 'community'\)/);
 });

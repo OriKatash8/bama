@@ -94,8 +94,7 @@ export default function ProfessionalChatsScreen() {
   const router = useRouter();
   const { height: windowHeight } = useWindowDimensions();
   const { chats: userChats, loading: chatsLoading } = useUserChats();
-  // A joined community is listed in the chats tab too, so it counts toward "has chats".
-  const hasChats = userChats.length > 0;
+  const hasChats = userChats.filter((c) => c.type !== 'community').length > 0;
 
   const [active, setActive] = useState<TabKey>('chats');
   /** Visual only: which search field is focused, for its border. */

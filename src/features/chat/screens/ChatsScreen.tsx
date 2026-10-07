@@ -358,10 +358,9 @@ export function ChatsScreen({
   // renders once there is at least one chat.
   if (chats.length === 0) return null;
 
-  // Communities the user belongs to are listed here too, in both modes: `chats` is
-  // `members array-contains uid`, so every one is a community they are IN. Discovery
-  // (finding ones to join) stays in the professional Communities tab.
   const sortedChats = [...chats]
+    // Communities live in their own tab — keep them out of the chats list.
+    .filter((c) => c.type !== 'community')
     .sort((a, b) => {
       const aDown = a.type === 'purchase' && !!a.archived;
       const bDown = b.type === 'purchase' && !!b.archived;
