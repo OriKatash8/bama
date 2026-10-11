@@ -84,10 +84,32 @@ export function buildClosingNotice(input: {
   }
   const team = [member(clientId, true, []), ...[...pros].map(([uid, roles]) => member(uid, false, roles))];
 
-  const headline = status === 'completed' ? '🏁 הפרויקט הסתיים — פרטי הקשר של הצוות' : '🏁 הפרויקט בוטל — פרטי הקשר של הצוות';
+  return { kind: 'project_closed', closedAs: status, team, contactEmail: email, text: closingText(status, team, email) };
+}
+
+/**
+ * The plain-Hebrew `text` of a closing message, from its team list: the chat-list
+ * preview takes the first line, and an older app build shows all of it. Exported
+ * so a scrub (account deletion) can regenerate it from the edited team.
+ */
+export function closingText(
+  closedAs: 'completed' | 'cancelled',
+  team: ClosingMember[],
+  contactEmail: string,
+): string {
+  const headline = closedAs === 'completed' ? '🏁 הפרויקט הסתיים — פרטי הקשר של הצוות' : '🏁 הפרויקט בוטל — פרטי הקשר של הצוות';
   const lines = team.map((m) =>
     `• ${m.name || '—'} — ${m.isClient ? 'לקוח' : m.roles.join(', ')} — ${m.phone ? displayPhone(m.phone) : m.email ?? '—'}`);
-  const text = [headline, ...lines, `לפניות: ${email}`].join('\n');
+  return [headline, ...lines, `לפניות: ${contactEmail}`].join('\n');
+}
 
-  return { kind: 'project_closed', closedAs: status, team, contactEmail: email, text };
+/**
+ * The team list with one member's personal details removed — for account
+ * deletion: their name becomes the tombstone name, phone and email null, and
+ * their role(s) stay so the card still reads. Every other member is untouched.
+ * Null when the uid is not on the list (nothing to scrub).
+ */
+export function scrubClosingMember(team: ClosingMember[], uid: string, tombstoneName: string): ClosingMember[] | null {
+  if (!team.some((m) => m.uid === uid)) return null;
+  return team.map((m) => (m.uid === uid ? { ...m, name: tombstoneName, phone: null, email: null } : m));
 }

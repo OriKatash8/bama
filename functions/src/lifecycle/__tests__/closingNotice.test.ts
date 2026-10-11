@@ -1,4 +1,4 @@
-import { buildClosingNotice, isClosingTransition, BAMA_CONTACT_EMAIL } from '../closingNotice';
+import { buildClosingNotice, isClosingTransition, BAMA_CONTACT_EMAIL, closingText, scrubClosingMember } from '../closingNotice';
 
 /**
  * When a project ends — completed OR cancelled — the chat gets one closing
@@ -107,5 +107,28 @@ describe('the email shown instead of a phone number', () => {
     expect(n.team[2].email).toBeNull();
     expect(n.text).toContain('Noa — Editor — —');
     expect(buildClosingNotice(base).team[2].email).toBeNull();
+  });
+});
+
+describe('for account deletion', () => {
+  const emails = { p2: 'noa@example.com' };
+
+  it('closingText is exactly the text the builder writes', () => {
+    for (const status of ['completed', 'cancelled'] as const) {
+      const n = buildClosingNotice({ ...base, status, emails });
+      expect(closingText(status, n.team, n.contactEmail)).toBe(n.text);
+    }
+  });
+
+  it('scrubClosingMember: the user becomes the tombstone, keeps their roles; nobody else changes', () => {
+    const { team } = buildClosingNotice({ ...base, emails });
+    const scrubbed = scrubClosingMember(team, 'p2', 'חשבון שנמחק')!;
+    expect(scrubbed[2]).toEqual({ ...team[2], name: 'חשבון שנמחק', phone: null, email: null });
+    expect(scrubbed.slice(0, 2)).toEqual(team.slice(0, 2));
+    expect(closingText('completed', scrubbed, BAMA_CONTACT_EMAIL)).toContain('• חשבון שנמחק — Editor — —');
+  });
+
+  it('scrubClosingMember: null when the user is not on the list', () => {
+    expect(scrubClosingMember(buildClosingNotice(base).team, 'nobody', 'x')).toBeNull();
   });
 });

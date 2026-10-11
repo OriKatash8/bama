@@ -3,6 +3,10 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import {
   db, FieldValue, requireAuth, computeFee, computeProAmount,
 } from '../lifecycle/helpers';
+import { scrubClosingCards } from './closingScrub';
+
+/** The name a deleted account shows: on the tombstoned user doc and in closing cards. */
+export const DELETED_ACCOUNT_NAME = 'חשבון שנמחק';
 
 /**
  * Account deletion, as Apple 5.1.1(v) requires: available from inside the app,
@@ -39,7 +43,15 @@ import {
  *            notifications · their open marketplace listings
  *   KEPT     fee records (business/tax record of a real debt) · reviews they
  *            wrote or received · chat messages · project history
- *   TOMBSTONE users/{uid} → deleted: true, displayName replaced, photo cleared
+ *   SCRUBBED project-closing cards in chats (onProjectClosed) keep the message,
+ *            but the user's entry loses its name (→ tombstone name), phone and
+ *            email, and the plain text is regenerated (closingScrub.ts)
+ *   KEPT     adminActions evidence entries, INCLUDING the email moderateUser
+ *            wrote: an admin-only, append-only record of enforcement against
+ *            abuse, which is exactly what must outlive the account
+ *   TOMBSTONE users/{uid} → deleted: true, displayName replaced, photo cleared,
+ *            and any legacy `email` field (from before it moved to Auth only)
+ *            removed
  *
  * NOT LEGAL ADVICE. What a marketplace must retain for tax and what it must
  * erase on request are questions for BAMA's accountant and lawyer. This file
@@ -202,8 +214,10 @@ export const deleteMyAccount = onCall(async (request) => {
     {
       deleted: true,
       deletedAt: FieldValue.serverTimestamp(),
-      displayName: 'חשבון שנמחק',
+      displayName: DELETED_ACCOUNT_NAME,
       photoURL: null,
+      // Legacy: the email lived here before Auth became its only home.
+      email: FieldValue.delete(),
       mutedChats: FieldValue.delete(),
       pendingMentions: FieldValue.delete(),
     },
@@ -214,6 +228,11 @@ export const deleteMyAccount = onCall(async (request) => {
   await deleteQueryInBatches(db.collection(`users/${uid}/private`), 'private');
   await deleteQueryInBatches(db.collection(`users/${uid}/profile`), 'profile');
   await deleteQueryInBatches(db.collection(`users/${uid}/portfolio`), 'portfolio');
+
+  // 2b. Their name, phone and email in the project-closing cards. Before the
+  //     Auth deletion like everything else; a message that fails is logged
+  //     (uid + chatId) and never blocks the deletion.
+  await scrubClosingCards(uid, DELETED_ACCOUNT_NAME);
 
   // 3. Devices and their notifications.
   await deleteQueryInBatches(
