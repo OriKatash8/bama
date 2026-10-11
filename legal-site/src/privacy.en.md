@@ -1,8 +1,8 @@
 # BAMA — Privacy Policy
 
-Version: 1.4
+Version: 1.5
 
-Last updated: 03/10/2026
+Last updated: 11/10/2026
 
 This is an English translation of the BAMA Privacy Policy. The Hebrew version is the binding version. In case of any conflict, the Hebrew version prevails.
 
@@ -14,7 +14,7 @@ This is an English translation of the BAMA Privacy Policy. The Hebrew version is
 
 1.3. This Policy forms an integral part of the App's Terms of Use (the "Terms"). Terms not defined here have the meaning given to them in the Terms.
 
-1.4. When you register, you will be asked to expressly accept the Terms and this Policy. You are not legally required to provide us with information, and doing so depends on your free will and consent. However, without some details — such as your name, email address and phone number — we cannot open an account for you or provide the service or parts of it.
+1.4. When you register, you will be asked to expressly accept the Terms and this Policy. You are not legally required to provide us with information, and doing so depends on your free will and consent. However, without some details — such as your name and email address — we cannot open an account for you or provide the service or parts of it. Providing a phone number is optional.
 
 1.5. This Policy also applies to the BAMA web pages on which the Terms and this Policy are displayed.
 
@@ -24,7 +24,7 @@ This is an English translation of the BAMA Privacy Policy. The Hebrew version is
 
 | Category | Details |
 | --- | --- |
-| Account details | Full name, email address, mobile phone number, profile photo. Your password is stored by the authentication provider in hashed form and is not visible to us. |
+| Account details | Full name, email address, mobile phone number (optional), profile photo. Your password is stored by the authentication provider in hashed form and is not visible to us. |
 | Sign in with Apple | Your Apple user ID, name and email address, according to the permissions you approved. If you chose "Hide My Email", we receive a relay address instead of your address. |
 | Registration confirmations | Confirmation that you are at least 18, acceptance of the Terms and this Policy, the version of the Terms you accepted and the time of acceptance. |
 | Professional profile | Professional roles and skills, description, equipment list, service areas, price list, availability, and a business name or website for professional identification. |
@@ -65,7 +65,7 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 3.2. Verification and preventing duplicate accounts — verifying your phone number (once enabled), ensuring one account per person, and enforcing the active Engagement limit.
 
-3.3. Phone number disclosure — showing your phone number to the other party to an Engagement, only upon its completion, as set out in section 4.3.
+3.3. Contact details disclosure — showing your phone number, or your email address if you have not provided a phone number, to the other party to an Engagement and to the members of the Project Group, as set out in section 4.3.
 
 3.4. Operational communications — verification codes (once enabled), notifications and messages about Projects, Offers, new messages, Engagement Completion, payment requests and system updates.
 
@@ -89,7 +89,13 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 4.2. Project Group — the Client and all Professionals hired for the Project see the display names and profiles of the group members and the messages and files sent in the group.
 
-4.3. Phone number — is not public and is not searchable. It is shown only to the other party to an Engagement, mutually, upon its completion, for continued contact regarding payment and follow-up questions.
+4.3. Phone number and email address — are not public and are not searchable. Providing a phone number is optional; if you provide one, it is stored privately. They are shown to other users only as follows, for continued contact regarding payment and follow-up questions:
+
+4.3.1. Upon completion of an Engagement, the Client and the Professional in that Engagement see each other's phone number in the project details, mutually. A party who has no phone number on file is shown with their verified email address instead;
+
+4.3.2. When a Project closes — whether completed or cancelled — a closing message is posted in the Project Group listing the phone numbers of the Project's members to all of the group's members. On a completed Project, a member who has no phone number on file is listed with their verified email address instead;
+
+4.3.3. An email address is shown only if it has been verified. A relay address created with Apple's "Hide My Email" is never shown.
 
 4.4. Communities — content you post in a Community is visible to its members. Community managers appointed by the Operator may manage and remove content in the Community, in accordance with the Terms.
 
@@ -145,9 +151,9 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 8.2.2. Information needed to defend against claims, to collect an open debt, or to resolve an open disagreement or dispute — until the matter is concluded or the relevant limitation period ends;
 
-8.2.3. Limited information needed to prevent repeated breaches and the opening of circumvention accounts — for example a hash of the phone number, and the rating history and open charges of a deleted or blocked account, as set out in section 5.8 of the Terms;
+8.2.3. Limited information needed to prevent repeated breaches and the opening of circumvention accounts — for example the email address of an account against which enforcement action was taken, and the rating history and open charges of a deleted or blocked account, as set out in section 5.8 of the Terms;
 
-8.2.4. Content published in shared spaces — messages you sent to other users, messages in Project Groups and Communities, and reviews you wrote — may remain visible to other users, usually without your identifying details;
+8.2.4. Content published in shared spaces — messages you sent to other users, messages in Project Groups and Communities, and reviews you wrote — may remain visible to other users, usually without your identifying details. In the closing message of a Project Group (section 4.3.2), your name, phone number and email address are removed and replaced with a note that the account was deleted;
 
 8.2.5. Backups and technical logs, which are deleted in the regular backup cycle;
 
@@ -202,4 +208,4 @@ For questions, access, correction or deletion requests, or any privacy matter:
 - Address: HaHadarim St., Kadima-Zoran, Israel
 - In the App: the "Contact Us" screen in Settings
 
-BAMA — Build A Media Alliance · Version 1.4 · 03.10.2026
+BAMA — Build A Media Alliance · Version 1.5 · 11.10.2026

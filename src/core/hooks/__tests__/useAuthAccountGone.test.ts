@@ -55,27 +55,27 @@ it('an account deleted on the server is signed out — even with no user doc lef
 });
 
 it('a revoked or expired session is signed out too', async () => {
-  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.4' });
+  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.5' });
   await openAppAs({ uid: 'u1', email: 'a@b.c', reload: fail('auth/user-token-expired') });
   expect(mockSignOut).toHaveBeenCalledTimes(1);
   expect(useAuthStore.getState().user).toBeNull();
 });
 
 it('offline is not "gone": the user stays signed in', async () => {
-  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.4' });
+  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.5' });
   await openAppAs({ uid: 'u1', email: 'a@b.c', reload: fail('auth/network-request-failed') });
   expect(mockSignOut).not.toHaveBeenCalled();
   expect(useAuthStore.getState().user?.id).toBe('u1');
 });
 
 it('a suspension (disabled account) is left to the moderation flow, not signed out here', async () => {
-  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.4' });
+  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.5' });
   await openAppAs({ uid: 'u1', email: 'a@b.c', reload: fail('auth/user-disabled') });
   expect(mockSignOut).not.toHaveBeenCalled();
 });
 
 it('a live account opens normally', async () => {
-  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.4' });
+  mockGetDocument.mockResolvedValue({ id: 'u1', termsVersion: '1.5' });
   await openAppAs({ uid: 'u1', email: 'a@b.c', reload: () => Promise.resolve() });
   expect(mockSignOut).not.toHaveBeenCalled();
   expect(useAuthStore.getState().user?.id).toBe('u1');

@@ -32,7 +32,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   useAuthStore.setState({
-    user: { id: 'u1', displayName: 'Noa Levi', photoURL: null, termsVersion: '1.4', needsProfileSetup: true } as never,
+    user: { id: 'u1', displayName: 'Noa Levi', photoURL: null, termsVersion: '1.5', needsProfileSetup: true } as never,
     hasPhone: true,
   });
 });
@@ -77,7 +77,7 @@ it('no number yet (Apple sign-up): one given here is saved', async () => {
 });
 
 it('someone who has already done it is sent on, not shown the page again', async () => {
-  useAuthStore.setState({ user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.4' } as never });
+  useAuthStore.setState({ user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.5' } as never });
   render(<ProfileSetupScreen />);
   await act(async () => {}); // navigation resolves a microtask later (postStepRoute is async)
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
@@ -89,7 +89,7 @@ describe('a saved invite link (returning user, mode restored: mode-select is ski
     await usePendingIntentStore.persist.rehydrate();
     usePendingIntentStore.setState({ resume: null, afterProfile: null, consumedAt: 0 });
     useAuthStore.setState({
-      user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.4' } as never,
+      user: { id: 'u1', displayName: 'N', photoURL: null, termsVersion: '1.5' } as never,
       needsEmailVerification: false,
       activeMode: 'client',
     });

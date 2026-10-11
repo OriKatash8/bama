@@ -1,8 +1,8 @@
 # BAMA — Terms of Use
 
-Version: 1.4
+Version: 1.5
 
-Last updated: 03/10/2026
+Last updated: 11/10/2026
 
 This is an English translation of the BAMA Terms of Use. The Hebrew version is the binding version. In case of any conflict between the Hebrew version and this translation, the Hebrew version prevails (see section 1.7).
 
@@ -94,7 +94,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 5.1. Registration. Use of most App features requires registration and opening an account. Registration is done by providing the required details, or by signing in with an Apple account. When signing in through an external identity provider, you authorize the transfer of the required details from that provider to us, in accordance with the Privacy Policy.
 
-5.1.1. Phone verification. The Operator may require verification of a mobile phone number as a condition of registration or of using certain features. Once verification is enabled, each account will be linked to one phone number, and the same number may not be used for more than one account. The phone number is not displayed publicly and is not searchable, and it is revealed to another User only as set out in section 8.7.
+5.1.1. Phone verification. The Operator may require verification of a mobile phone number as a condition of using certain features. Once verification is enabled, each account will be linked to one phone number, and the same number may not be used for more than one account. The phone number is not displayed publicly and is not searchable, and it is revealed to another User only as set out in section 8.7.
 
 5.2. Accuracy of details. You undertake to provide true, complete and accurate details, and to update them whenever they change. Providing false details or impersonating another person or entity is prohibited and is a material breach of the Terms.
 
@@ -202,9 +202,9 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 8.6.5. Dispute Period. Within 4 days of Engagement Completion — whether marked by the Professional, marked by the Client or completed automatically — the Professional may notify in the App that the Engagement did not take place, or dispute the amount on which the fee is calculated. A dispute will be referred to the Operator for review under chapter 16, and the fee charge will be suspended until a decision is made. If no dispute is submitted within the Dispute Period, the completion and the amount become final for the purpose of the fee charge.
 
-8.6.6. Engagement Completion triggers the rating mechanism under chapter 10 and the disclosure of phone numbers under section 8.7, and creates the Professional's liability for the Brokerage Fee under chapter 12.
+8.6.6. Engagement Completion triggers the rating mechanism under chapter 10 and the disclosure of contact details under section 8.7, and creates the Professional's liability for the Brokerage Fee under chapter 12.
 
-8.7. Phone number disclosure. Upon Engagement Completion, each party's phone number will be shown to the other party to that Engagement, mutually, for continued contact regarding payment and follow-up questions. The number may not be used for any other purpose (see section 15.1.6).
+8.7. Contact details disclosure. Upon Engagement Completion, each party's phone number will be shown to the other party to that Engagement, mutually. In addition, when a Project closes — whether completed or cancelled — a closing message will be shown in the Project Group listing the phone numbers of the Project's members, to all of the group's members. Providing a phone number is optional; for a User who has not provided one, their verified email address is shown instead — in the project details upon Engagement Completion, and in the closing message of a completed Project only. An Apple relay address ("Hide My Email") is never shown. The details are shown for continued contact regarding payment and follow-up questions, and may not be used for any other purpose (see section 15.1.6).
 
 ## 9. Payment for Media Services
 
@@ -344,7 +344,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 12.9.5. Providing contact details in breach of section 6.8;
 
-12.9.6. Using Users' details obtained through the App, including a phone number disclosed under section 8.7, for a business approach unrelated to the specific Project, or passing them to a third party.
+12.9.6. Using Users' details obtained through the App, including a phone number or email address disclosed under section 8.7, for a business approach unrelated to the specific Project, or passing them to a third party.
 
 12.10. Remedy for circumvention. If an event described in section 12.9 occurs, the Operator may, in addition to any other remedy available to it under law: charge the fee that would have applied but for the breach; suspend or close the account; and demand agreed and pre-estimated liquidated damages of three times the avoided fee, and no less than ₪1,500 and no more than ₪10,000 per breach, without the need to prove damage. The parties declare that this amount was set as a reasonable and proportionate estimate of the damage expected to the Operator, including, among other things, the loss of the income itself, harm to the service model, and the costs of detection and enforcement.
 
@@ -424,7 +424,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 15.1.5. Systematic collection of information from other Users, including by scraping, bots or automated tools;
 
-15.1.6. Using Users' details, including a phone number disclosed under section 8.7, for a purpose other than the specific Engagement — including mailing, marketing or passing them to a third party — without consent;
+15.1.6. Using Users' details, including a phone number or email address disclosed under section 8.7, for a purpose other than the specific Engagement — including mailing, marketing or passing them to a third party — without consent;
 
 15.1.7. Reverse engineering, decompiling, hacking, bypassing security mechanisms, introducing malicious code, or placing an unreasonable load on the system;
 
@@ -548,9 +548,9 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 21.1. Using the App involves the collection and processing of personal information as defined in the Protection of Privacy Law, 5741‑1981. The full terms are set out in the BAMA Privacy Policy, which forms an integral part of these Terms and is available on the "Privacy Policy" screen in the App's settings, and at https://bama-af0a0.web.app/en/privacy.
 
-21.2. Information is collected for the Platform's purposes. We collect: account and profile details, a phone number, content you upload, messages, usage data, notification tokens, and the service area you entered yourself. The App does not collect location from your device. The information is used to operate the App, connect Users, provide security, prevent duplicate accounts, enforce the Terms and improve the service.
+21.2. Information is collected for the Platform's purposes. We collect: account and profile details, a phone number (if you provided one), content you upload, messages, usage data, notification tokens, and the service area you entered yourself. The App does not collect location from your device. The information is used to operate the App, connect Users, provide security, prevent duplicate accounts, enforce the Terms and improve the service.
 
-21.3. Public information. Please note that some of the information you provide — including your display name, profile photo, portfolio, rating and reviews received — is visible to other Users in the App. Your phone number is not public and is disclosed only as set out in section 8.7. Do not post in public fields any information you do not want disclosed.
+21.3. Public information. Please note that some of the information you provide — including your display name, profile photo, portfolio, rating and reviews received — is visible to other Users in the App. Your phone number and email address are not public and are disclosed only as set out in section 8.7. Do not post in public fields any information you do not want disclosed.
 
 21.4. Your rights to access, correct and delete your information, and how to exercise them, are set out in the Privacy Policy.
 
@@ -564,7 +564,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 22.3. Notices from you to the Operator. Notices to us should be sent to the address in chapter 27 and will be deemed received within 3 business days of sending, unless confirmation of receipt was received earlier.
 
-22.4. Up-to-date contact details. You must keep an up-to-date email address and phone number in your account. A notice sent to the up-to-date details in the account will be deemed duly delivered.
+22.4. Up-to-date contact details. You must keep an up-to-date email address in your account, and an up-to-date phone number if you provided one. A notice sent to the up-to-date details in the account will be deemed duly delivered.
 
 ## 23. Changes to the Terms and the App
 
@@ -624,4 +624,4 @@ For questions, requests, reports, content removal requests, suspension appeals o
 
 We will try to respond within a reasonable time.
 
-BAMA — Build A Media Alliance · Version 1.4 · 03.10.2026
+BAMA — Build A Media Alliance · Version 1.5 · 11.10.2026

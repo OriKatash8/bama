@@ -42,7 +42,7 @@ if (![FS, AUTH].every((h) => /^(127\.0\.0\.1|localhost|0\.0\.0\.0)(:\d+)?$/.test
 
 // Not a secret: these accounts exist only in the local Auth emulator, and this value works nowhere else.
 const PASSWORD = process.env.FIXTURE_PASSWORD ?? 'emulator-only-not-a-secret';
-const TERMS_VERSION = '1.4'; // CURRENT_TERMS_VERSION (src/core/constants/legal.ts)
+const TERMS_VERSION = '1.5'; // CURRENT_TERMS_VERSION (src/core/constants/legal.ts)
 const COMMUNITY_ID = 'fx-community';
 
 // 1. Clean slate, through the emulators' own reset endpoints.
