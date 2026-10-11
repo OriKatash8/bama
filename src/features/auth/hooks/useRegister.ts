@@ -12,8 +12,8 @@ type TermsConsent = { acceptedAt: number; version: string; ageConfirmedAt: numbe
 type RegisterState = {
   isLoading: boolean;
   error: string | null;
-  /** `phone` is already E.164 (normalizePhone). */
-  register: (fullName: string, email: string, password: string, terms: TermsConsent, phone: string) => Promise<void>;
+  /** `phone` is already E.164 (normalizePhone), or null when none was given. */
+  register: (fullName: string, email: string, password: string, terms: TermsConsent, phone: string | null) => Promise<void>;
 };
 
 export function useRegister(): RegisterState {
@@ -23,7 +23,7 @@ export function useRegister(): RegisterState {
   const { setUser } = useAuthStore();
   const { showToast } = useUiStore();
 
-  async function register(fullName: string, email: string, password: string, terms: TermsConsent, phone: string) {
+  async function register(fullName: string, email: string, password: string, terms: TermsConsent, phone: string | null) {
     setError(null);
     setIsLoading(true);
     try {
@@ -49,8 +49,8 @@ export function useRegister(): RegisterState {
         needsProfileSetup: true,
       };
       await setDocument(`users/${firebaseUser.uid}`, userData);
-      // Private, in its own owner-only doc: users/{uid} is readable by everyone.
-      await savePhone(firebaseUser.uid, phone);
+      // Optional. Private, in its own owner-only doc: users/{uid} is readable by everyone.
+      if (phone) await savePhone(firebaseUser.uid, phone);
       setUser({ ...userData, email });
       // Straight to the verify screen: a new password account is unverified,
       // and `/` routes on to mode-select once it is.

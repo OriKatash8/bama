@@ -69,8 +69,9 @@ export function ProfileSetupForm({
   const setUser = useAuthStore((s) => s.setUser);
   const setClientOnboarded = useAuthStore((s) => s.setClientOnboarded);
   // No number on file yet (an Apple / Google sign-up never saw the register
-  // form): this page asks for it, instead of a separate phone screen first.
-  // Unknown (null) does not ask — the phone gate catches it after onboarding.
+  // form): this page offers the field. It is optional (App Store 5.1.1(v)):
+  // left empty, nothing is saved; filled in, it must be a valid number.
+  // Unknown (null) does not offer it.
   const needsPhone = useAuthStore((s) => s.hasPhone) === false;
   const setHasPhone = useAuthStore((s) => s.setHasPhone);
   const { showToast } = useUiStore();
@@ -97,13 +98,14 @@ export function ProfileSetupForm({
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   }
 
-  const phoneOk = !needsPhone || normalizePhone(phone) !== null;
+  const phoneEntered = needsPhone && phone.trim().length > 0;
+  const phoneOk = !phoneEntered || normalizePhone(phone) !== null;
   const canContinue = name.trim().length > 0 && phoneOk && !saving;
 
   async function handleContinue() {
     if (!user || !canContinue) return;
-    const e164 = needsPhone ? normalizePhone(phone) : null;
-    if (needsPhone && !e164) {
+    const e164 = phoneEntered ? normalizePhone(phone) : null;
+    if (phoneEntered && !e164) {
       setPhoneError(t('auth.err_phone_invalid'));
       return;
     }
@@ -189,7 +191,7 @@ export function ProfileSetupForm({
 
         {needsPhone && (
           <>
-            <Text style={[styles.label, font.semiBold, { textAlign }]}>{t('auth.phone')}</Text>
+            <Text style={[styles.label, font.semiBold, { textAlign }]}>{t('auth.phone_optional')}</Text>
             <TextInput
               testID="setup-phone"
               value={phone}
@@ -204,6 +206,7 @@ export function ProfileSetupForm({
               style={fieldStyle('phone', !!phoneError)}
             />
             {phoneError ? <Text style={[styles.error, font.regular, { textAlign }]}>{phoneError}</Text> : null}
+            <Text testID="phone-email-hint" style={[styles.phoneHint, font.regular, { textAlign }]}>{t('auth.phone_email_fallback_hint')}</Text>
           </>
         )}
 
@@ -279,6 +282,7 @@ const styles = StyleSheet.create({
   inputFocused: { borderColor: C.blue, backgroundColor: C.page },
   inputError: { borderColor: C.error },
   error: { fontSize: 13, lineHeight: 20, color: C.error, marginTop: 6 },
+  phoneHint: { fontSize: 13, lineHeight: 20, color: C.textSec, marginTop: 6 },
 
   spacer: { flexGrow: 1, minHeight: 28 },
   cta: {

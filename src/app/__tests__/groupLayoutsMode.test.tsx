@@ -17,7 +17,7 @@ jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => { mockRedirects.push(href); return null; },
   usePathname: () => '/chat/c1',
 }));
-jest.mock('@features/auth/hooks/usePhoneGate', () => ({ usePhoneGate: () => false }));
+jest.mock('@features/auth/hooks/usePhoneOnFile', () => ({ usePhoneOnFile: () => true }));
 jest.mock('@core/firebase/firestore', () => ({ subscribeToDocument: jest.fn(() => () => {}) }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),

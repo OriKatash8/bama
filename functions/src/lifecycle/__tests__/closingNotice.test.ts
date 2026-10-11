@@ -76,3 +76,36 @@ describe('isClosingTransition', () => {
     expect(isClosingTransition(before, after)).toBe(expected);
   });
 });
+
+describe('the email shown instead of a phone number', () => {
+  const emails = { client: 'dana@example.com', p1: 'avi@example.com', p2: 'noa@example.com' };
+
+  it('on a completed project, only for a member with no phone', () => {
+    const n = buildClosingNotice({ ...base, emails });
+    expect(n.team.map((m) => [m.uid, m.phone, m.email])).toEqual([
+      ['client', '+972501234567', null],
+      ['p1', '+972541112222', null],
+      ['p2', null, 'noa@example.com'],
+    ]);
+  });
+
+  it('the plain-text version prints that email instead of a dash', () => {
+    const { text } = buildClosingNotice({ ...base, emails });
+    expect(text).toContain('Noa — Editor — noa@example.com');
+    expect(text).not.toContain('dana@example.com');
+  });
+
+  it('on a cancelled project, never — the member keeps the dash', () => {
+    const n = buildClosingNotice({ ...base, status: 'cancelled', emails });
+    expect(n.team.map((m) => m.email)).toEqual([null, null, null]);
+    expect(n.text).toContain('Noa — Editor — —');
+    expect(n.text).not.toContain('noa@example.com');
+  });
+
+  it('with no email to share, a member with no phone keeps the dash', () => {
+    const n = buildClosingNotice({ ...base, emails: { p2: null } });
+    expect(n.team[2].email).toBeNull();
+    expect(n.text).toContain('Noa — Editor — —');
+    expect(buildClosingNotice(base).team[2].email).toBeNull();
+  });
+});

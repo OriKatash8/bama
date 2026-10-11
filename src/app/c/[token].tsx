@@ -17,16 +17,12 @@ import { InvitePreviewScreen } from '@features/communities/invites/InvitePreview
  * user back here (useSwitchMode and postStepRoute take it). The save happens in an
  * effect and the <Redirect> is not rendered until it has, so no redirect can fire
  * ahead of it.
- *
- * deferPhone: the phone rung belongs to the group layouts. A user without a phone
- * number still sees the invite; they are asked for it when they enter a chat from
- * here. That ordering is intended.
  */
 export default function InviteRoute() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const isLoading = useAuthStore((s) => s.isLoading);
   const gatePending = useGatePending();
-  const gate = useOnboardingGate({ deferPhone: true });
+  const gate = useOnboardingGate();
   const href = `/c/${token ?? ''}`;
   const valid = isAllowedDeepLink(href);
   const [saved, setSaved] = useState(false);

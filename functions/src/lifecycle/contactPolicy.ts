@@ -10,6 +10,28 @@
  */
 const REVEALS = new Set(['completed', 'disputed']);
 
+const APPLE_PRIVATE_RELAY = '@privaterelay.appleid.com';
+
+/**
+ * The email getContactPhone may share INSTEAD of a phone number, behind the same
+ * gate (canRevealPhone). Only when there is no phone on file, the Auth record has
+ * an email, it is verified, and it is not an Apple private-relay address — a
+ * relay only forwards mail from senders Apple has registered for this app, so to
+ * the other side it is no contact at all. Anything else: null, nothing shown.
+ */
+export function revealableEmail(args: {
+  phone: string | null;
+  email: string | null | undefined;
+  emailVerified: boolean | undefined;
+}): string | null {
+  const { phone, email, emailVerified } = args;
+  if (phone) return null;
+  if (typeof email !== 'string' || !email.trim()) return null;
+  if (emailVerified !== true) return null;
+  if (email.trim().toLowerCase().endsWith(APPLE_PRIVATE_RELAY)) return null;
+  return email.trim();
+}
+
 export function canRevealPhone(args: {
   callerId: string;
   targetId: string;

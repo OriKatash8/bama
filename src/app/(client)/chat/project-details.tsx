@@ -82,7 +82,7 @@ import type { ProjectFee } from '@core/types/project';
 import { callFunction } from '@core/firebase/functions';
 
 const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('confirmCompletion');
-import { Calendar, CalendarDays, CalendarPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, Link as LinkIcon, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
+import { Calendar, CalendarDays, CalendarPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, Link as LinkIcon, Mail, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -2766,7 +2766,7 @@ function MemberRow({
   const t = makeT(language === 'he' ? he : en);
   const rowDir: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';
   const isClient = badge !== undefined;
-  const phone = useRevealedPhone(phoneFor?.projectId, phoneFor?.userId ?? '', !!phoneFor?.eligible);
+  const contact = useRevealedPhone(phoneFor?.projectId, phoneFor?.userId ?? '', !!phoneFor?.eligible);
   const canUpdate = !!onUpdate && (!!payment?.individualOffer || !!payment?.bundleId);
   const canContest = !!onContest;
   const awaitingClient = engagementStatus === 'end_requested_by_pro';
@@ -2824,18 +2824,35 @@ function MemberRow({
       </View>
 
       {/* Phone — only once the professional's part has ended; tapping calls. */}
-      {phone && (
+      {contact?.kind === 'phone' && (
         <TouchableOpacity
           testID="member-phone"
           style={[styles.memberPhoneRow, { flexDirection: rowDir }]}
-          onPress={() => void Linking.openURL(`tel:${phone}`)}
+          onPress={() => void Linking.openURL(`tel:${contact.value}`).catch(() => {})}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={`${t('project_details.phone')} ${formatPhoneForDisplay(phone)}`}
+          accessibilityLabel={`${t('project_details.phone')} ${formatPhoneForDisplay(contact.value)}`}
         >
           <Phone size={15} color={modeAccent} strokeWidth={2} />
           <AppText weight="semiBold" style={[styles.memberPhoneText, { color: modeAccent }]}>
-            {formatPhoneForDisplay(phone)}
+            {formatPhoneForDisplay(contact.value)}
+          </AppText>
+        </TouchableOpacity>
+      )}
+
+      {/* No phone on file: their email instead, same gate; tapping writes. */}
+      {contact?.kind === 'email' && (
+        <TouchableOpacity
+          testID="member-email"
+          style={[styles.memberPhoneRow, { flexDirection: rowDir }]}
+          onPress={() => void Linking.openURL(`mailto:${contact.value}`).catch(() => {})}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel={`${t('project_details.email')} ${contact.value}`}
+        >
+          <Mail size={15} color={modeAccent} strokeWidth={2} />
+          <AppText weight="semiBold" style={[styles.memberPhoneText, { color: modeAccent }]} numberOfLines={1}>
+            {contact.value}
           </AppText>
         </TouchableOpacity>
       )}

@@ -40,3 +40,14 @@ it('reads the number from the private doc, never the public user doc', () => {
   expect(call).toMatch(/db\.doc\(`users\/\$\{userId\}\/private\/contact`\)\.get\(\)/);
   expect(call).not.toMatch(/db\.doc\(`users\/\$\{userId\}`\)/);
 });
+
+it('with no phone, the email comes from Firebase Auth through the shared policy — never a document', () => {
+  expect(call).toMatch(/if \(phone\) return \{ phone, email: null \};/);
+  expect(call).toMatch(/admin\.auth\(\)\.getUser\(userId\)/);
+  expect(call).toMatch(/revealableEmail\(/);
+  // Read only after the gate has said yes, and after the phone.
+  expect(call.indexOf("'permission-denied'")).toBeLessThan(call.indexOf('getUser('));
+  expect(call.indexOf('private/contact')).toBeLessThan(call.indexOf('getUser('));
+  // Returned, never written anywhere.
+  expect(call).not.toMatch(/\.(set|update|create)\(/);
+});

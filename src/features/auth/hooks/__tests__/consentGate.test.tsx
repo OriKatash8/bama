@@ -13,7 +13,7 @@ import { CURRENT_TERMS_VERSION } from '@core/constants/legal';
  */
 
 let mockNeedsPhone = false;
-jest.mock('@features/auth/hooks/usePhoneGate', () => ({ usePhoneGate: () => mockNeedsPhone }));
+jest.mock('@features/auth/hooks/usePhoneOnFile', () => ({ usePhoneOnFile: () => !mockNeedsPhone }));
 const mockRedirects: string[] = [];
 jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => { mockRedirects.push(href); return null; },

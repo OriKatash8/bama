@@ -1,6 +1,7 @@
+import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db, requireAuth, feeRef, type FeeDoc } from './helpers';
-import { canRevealPhone } from './contactPolicy';
+import { canRevealPhone, revealableEmail } from './contactPolicy';
 import { assertSameSide } from '../demo';
 
 /**
@@ -8,7 +9,10 @@ import { assertSameSide } from '../demo';
  * has ended (contactPolicy). The number lives in `users/{uid}/private/contact`,
  * owner-only by rule; this is the only way anyone else reads it.
  *
- * `{ projectId, userId }` → `{ phone }` — null when the target has not added one.
+ * `{ projectId, userId }` → `{ phone, email }`. The phone is optional, so with
+ * none on file the target's email is shared instead — same gate, from Firebase
+ * Auth (never a document), and only a verified, non-relay address
+ * (revealableEmail). Both null when there is nothing to share.
  * Refused with permission-denied for anyone the policy does not allow, so the
  * client can never learn more than "not yet".
  */
@@ -37,5 +41,9 @@ export const getContactPhone = onCall(async (request) => {
 
   const contact = (await db.doc(`users/${userId}/private/contact`).get()).data();
   const phone = typeof contact?.phone === 'string' && contact.phone ? contact.phone : null;
-  return { phone };
+  if (phone) return { phone, email: null };
+
+  const authUser = await admin.auth().getUser(userId).catch(() => null);
+  const email = revealableEmail({ phone, email: authUser?.email, emailVerified: authUser?.emailVerified });
+  return { phone, email };
 });

@@ -40,8 +40,12 @@ export function normalizePhone(input: string): string | null {
   return null;
 }
 
-/** How a stored number is shown: the local way for Israel, as stored otherwise. */
-export function formatPhoneForDisplay(e164: string): string {
+/**
+ * How a stored number is shown: the local way for Israel, as stored otherwise.
+ * The number is optional, so a missing one shows as ''.
+ */
+export function formatPhoneForDisplay(e164: string | null | undefined): string {
+  if (typeof e164 !== 'string') return '';
   if (!e164.startsWith('+972')) return e164;
   const national = `0${e164.slice(4)}`;
   return national.length === 10

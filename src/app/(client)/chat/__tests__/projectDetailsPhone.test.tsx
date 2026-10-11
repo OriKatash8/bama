@@ -11,7 +11,8 @@ import { listenToProjectFee } from '@features/pricing/services/feesService';
  * Private until the professional's part has ended. Then the client sees that
  * pro's number on the pro's card, and the pro sees the client's number on the
  * client's card; tapping it calls. Each card asks only when the viewer can tell
- * it is allowed — the server (getContactPhone) decides for real.
+ * it is allowed — the server (getContactPhone) decides for real. With no phone
+ * on file the server shares the email instead (same gate): a mailto: row.
  */
 
 jest.mock('expo-router', () => ({
@@ -33,10 +34,14 @@ jest.mock('expo-image-picker', () => ({
 // satisfied by a screen that renders nothing at all.
 const mockViewer = { uid: 'client-1' };
 const mockPhoneCalls: [string | undefined, string, boolean][] = [];
+/** Users with no phone on file: the server returns their email instead. */
+const mockEmailOnly = new Set<string>();
 jest.mock('@features/projects/hooks/useRevealedPhone', () => ({
   useRevealedPhone: (projectId: string | undefined, userId: string, eligible: boolean) => {
     mockPhoneCalls.push([projectId, userId, eligible]);
-    return eligible ? (userId === 'client-1' ? '+97231234567' : '+972501234567') : null;
+    if (!eligible) return null;
+    if (mockEmailOnly.has(userId)) return { kind: 'email', value: `${userId}@example.com` };
+    return { kind: 'phone', value: userId === 'client-1' ? '+97231234567' : '+972501234567' };
   },
 }));
 jest.mock('@core/firebase/config', () => ({
@@ -107,6 +112,7 @@ const mockFee = listenToProjectFee as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   mockPhoneCalls.length = 0;
+  mockEmailOnly.clear();
   mockViewer.uid = 'client-1';
   project = {
     clientId: 'client-1',
@@ -156,7 +162,23 @@ describe('the client', () => {
   it('sees nothing while the pro is still working', async () => {
     const r = await renderLoaded();
     expect(r.queryByTestId('member-phone')).toBeNull();
+    expect(r.queryByTestId('member-email')).toBeNull();
     expect(mockPhoneCalls).toContainEqual(['p1', 'pro-1', false]);
+  });
+
+  it('a pro with no phone on file: sees their email instead, and tapping it writes', async () => {
+    project.endedEngagementIds = ['pro-1'];
+    mockEmailOnly.add('pro-1');
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
+    const r = await renderLoaded();
+
+    expect(r.queryByTestId('member-phone')).toBeNull();
+    const row = r.getByTestId('member-email');
+    expect(r.getByText('pro-1@example.com')).toBeTruthy();
+    expect(row.props.accessibilityLabel).toBe('Email pro-1@example.com');
+    fireEvent.press(row);
+    expect(open).toHaveBeenCalledWith('mailto:pro-1@example.com');
+    open.mockRestore();
   });
 });
 

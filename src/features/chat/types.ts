@@ -17,6 +17,9 @@ export type ClosingMember = {
   roles: string[];
   /** E.164, or null when the member never added one. */
   phone: string | null;
+  /** Shown instead of a phone: only with no phone, only on a completed project.
+   *  Absent on closing messages written before this field existed. */
+  email?: string | null;
 };
 
 export interface Message {

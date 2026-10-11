@@ -20,8 +20,10 @@ function makeT(translations: Translations) {
 /**
  * The closing message in a project chat (onProjectClosed): every member — the
  * client first — with their role(s) and phone number, then BAMA's email. A
- * number or the email opens the dialler / mail app. Everyone in the chat sees the
- * same list: the project is over, and the team may reach each other.
+ * number or an email opens the dialler / mail app. Everyone in the chat sees the
+ * same list: the project is over, and the team may reach each other. A member
+ * with no phone shows their email when the server included one (completed
+ * projects only), otherwise a dash.
  */
 export function ClosingTeamCard({ team, closedAs, contactEmail }: {
   team: ClosingMember[];
@@ -64,6 +66,17 @@ export function ClosingTeamCard({ team, closedAs, contactEmail }: {
             >
               <Phone size={14} color="#1e4fa3" strokeWidth={2} />
               <AppText weight="semiBold" style={styles.phoneText}>{formatPhoneForDisplay(m.phone)}</AppText>
+            </TouchableOpacity>
+          ) : typeof m.email === 'string' && m.email ? (
+            <TouchableOpacity
+              testID={`closing-email-${m.uid}`}
+              style={[styles.phone, styles.emailLink, { flexDirection: rowDir }]}
+              onPress={() => void Linking.openURL(`mailto:${m.email}`).catch(() => {})}
+              activeOpacity={0.7}
+              accessibilityRole="link"
+            >
+              <Mail size={14} color="#1e4fa3" strokeWidth={2} />
+              <AppText weight="semiBold" style={styles.phoneText} numberOfLines={1}>{m.email}</AppText>
             </TouchableOpacity>
           ) : (
             <AppText weight="regular" style={styles.noPhone}>—</AppText>
@@ -108,6 +121,8 @@ const styles = StyleSheet.create({
   roles: { fontSize: 12.5, color: 'rgba(15,15,31,0.55)' },
   phone: { alignItems: 'center', gap: 5 },
   phoneText: { fontSize: 14, color: '#1e4fa3' },
+  /** An address can be long: let it shrink beside the name instead of pushing it out. */
+  emailLink: { flexShrink: 1, maxWidth: '60%' },
   noPhone: { fontSize: 14, color: 'rgba(15,15,31,0.4)' },
   footer: {
     alignItems: 'center',

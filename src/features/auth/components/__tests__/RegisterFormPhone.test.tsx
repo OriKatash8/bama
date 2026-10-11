@@ -4,8 +4,9 @@ import { RegisterForm } from '../RegisterForm';
 import en from '@core/i18n/translations/en.json';
 
 /**
- * Registration asks for a phone number. It is REQUIRED and checked by format
- * only; what reaches useRegister is already normalised to E.164.
+ * Registration offers a phone number. It is OPTIONAL (App Store 5.1.1(v)); when
+ * given it is checked by format only, and what reaches useRegister is already
+ * normalised to E.164 — or null when none was given.
  */
 
 const mockRegister = jest.fn();
@@ -26,7 +27,7 @@ const a = en.auth;
 async function fill(r: ReturnType<typeof render>, phone: string) {
   fireEvent.changeText(r.getByPlaceholderText(a.full_name), 'Dana Cohen');
   fireEvent.changeText(r.getByPlaceholderText(a.email), 'dana@example.com');
-  fireEvent.changeText(r.getByPlaceholderText(a.phone), phone);
+  fireEvent.changeText(r.getByPlaceholderText(a.phone_optional), phone);
   fireEvent.changeText(r.getByPlaceholderText(a.password), 'Str0ng!Passw0rd');
   fireEvent.changeText(r.getByPlaceholderText(a.confirm_password), 'Str0ng!Passw0rd');
   for (const box of r.getAllByRole('checkbox')) fireEvent.press(box);
@@ -35,18 +36,25 @@ async function fill(r: ReturnType<typeof render>, phone: string) {
 
 beforeEach(() => jest.clearAllMocks());
 
-it('the phone field is a phone keypad with phone autofill', () => {
+it('the phone field says it is optional, with a phone keypad and phone autofill', () => {
   const r = render(<RegisterForm />);
-  const input = r.getByPlaceholderText(a.phone);
+  const input = r.getByPlaceholderText(a.phone_optional);
   expect(input.props.keyboardType).toBe('phone-pad');
   expect(input.props.autoComplete).toBe('tel');
 });
 
-it('is required', async () => {
+it('shows no email-fallback hint (that lives on the setup and Settings phone screens)', () => {
+  const r = render(<RegisterForm />);
+  expect(r.queryByTestId('phone-email-hint')).toBeNull();
+  expect(r.queryByText(a.phone_email_fallback_hint)).toBeNull();
+});
+
+it('is optional: registers without one, passing null', async () => {
   const r = render(<RegisterForm />);
   await fill(r, '');
-  expect(r.getByText(a.err_phone_invalid)).toBeTruthy();
-  expect(mockRegister).not.toHaveBeenCalled();
+  expect(r.queryByText(a.err_phone_invalid)).toBeNull();
+  expect(mockRegister).toHaveBeenCalledTimes(1);
+  expect(mockRegister.mock.calls[0][4]).toBeNull();
 });
 
 it('rejects a number that is not a phone number', async () => {

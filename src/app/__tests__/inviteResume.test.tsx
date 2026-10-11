@@ -33,7 +33,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 let mockNeedsPhone = false;
-jest.mock('@features/auth/hooks/usePhoneGate', () => ({ usePhoneGate: () => mockNeedsPhone }));
+jest.mock('@features/auth/hooks/usePhoneOnFile', () => ({ usePhoneOnFile: () => !mockNeedsPhone }));
 jest.mock('@core/firebase/firestore', () => ({ getDocument: jest.fn(async () => null), subscribeToDocument: jest.fn(() => () => {}) }));
 const mockPreview = jest.fn((_p: { tokenOrCode: string }) => null);
 jest.mock('@features/communities/invites/InvitePreviewScreen', () => ({ InvitePreviewScreen: (p: { tokenOrCode: string }) => mockPreview(p) }));
@@ -202,17 +202,15 @@ describe('no verified phone: the phone rung does not stand between consent and t
     expect(mockPreview).toHaveBeenCalled();
   });
 
-  it('the gate skips the phone rung with deferPhone and not without it (the group layouts still ask)', () => {
+  it('the gate has no phone rung at all: the number is optional', () => {
     mockNeedsPhone = true;
     useAuthStore.setState({ user: CONSENTED, needsEmailVerification: false });
-    expect(renderHook(() => useOnboardingGate({ deferPhone: true })).result.current).toBeNull();
-    expect(renderHook(() => useOnboardingGate()).result.current).toBe('/settings/phone?required=1');
+    expect(renderHook(() => useOnboardingGate()).result.current).toBeNull();
   });
 
   it('the route has no phone logic of its own', () => {
     const src = readFileSync(join(__dirname, '..', 'c', '[token].tsx'), 'utf8');
-    expect(src).not.toMatch(/usePhoneGate/);
+    expect(src).not.toMatch(/usePhoneOnFile/);
     expect(src).not.toMatch(/settings\/phone/);
-    expect(src).toMatch(/deferPhone: true/);
   });
 });

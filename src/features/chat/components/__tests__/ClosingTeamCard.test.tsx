@@ -9,7 +9,8 @@ import type { ClosingMember } from '../../types';
 
 /**
  * The closing message in a project chat: every member — the client first — with
- * their role(s) and phone number, tap to call; then BAMA's email, tap to write.
+ * their role(s) and phone number, tap to call; a member with no phone, their
+ * email when the server included one, tap to write; then BAMA's email.
  */
 
 let mockLang: 'he' | 'en' = 'en';
@@ -21,6 +22,7 @@ const TEAM: ClosingMember[] = [
   { uid: 'c', name: 'Dana', isClient: true, roles: [], phone: '+972501234567' },
   { uid: 'p1', name: 'Avi', isClient: false, roles: ['Video Photographer', 'Editor'], phone: '+14155552671' },
   { uid: 'p2', name: 'Noa', isClient: false, roles: ['Editor'], phone: null },
+  { uid: 'p3', name: 'Lior', isClient: false, roles: ['Video Photographer'], phone: null, email: 'lior@example.com' },
 ];
 const EMAIL = 'bama.app.hk@gmail.com';
 
@@ -42,7 +44,7 @@ it('says the project ended — or was cancelled', () => {
 it('lists every member in order, the client labelled as the client, pros with all their roles', () => {
   const r = renderCard();
   expect(r.getAllByTestId(/^closing-member-/).map((n) => n.props.testID))
-    .toEqual(['closing-member-c', 'closing-member-p1', 'closing-member-p2']);
+    .toEqual(['closing-member-c', 'closing-member-p1', 'closing-member-p2', 'closing-member-p3']);
   expect(r.getByText(en.chats.closing_client)).toBeTruthy();
   expect(r.getByText(`${categoryLabel('Video Photographer', 'en')} · ${categoryLabel('Editor', 'en')}`)).toBeTruthy();
 });
@@ -54,10 +56,32 @@ it('shows each number the local way, and tapping it calls', () => {
   expect(r.getByText('+14155552671')).toBeTruthy();
 });
 
-it('a member with no number shows a dash that does nothing', () => {
+it('a member with no number and no email shows a dash that does nothing', () => {
   const r = renderCard();
   expect(r.queryByTestId('closing-phone-p2')).toBeNull();
+  expect(r.queryByTestId('closing-email-p2')).toBeNull();
   expect(r.getByTestId('closing-member-p2').findByProps({ children: '—' })).toBeTruthy();
+});
+
+it('a member with no number but an email shows it, and tapping it writes', () => {
+  const r = renderCard();
+  expect(r.queryByTestId('closing-phone-p3')).toBeNull();
+  fireEvent.press(r.getByTestId('closing-email-p3'));
+  expect(open).toHaveBeenCalledWith('mailto:lior@example.com');
+  expect(r.getByText('lior@example.com')).toBeTruthy();
+});
+
+it('a phone always wins over an email', () => {
+  const team: ClosingMember[] = [{ uid: 'c', name: 'Dana', isClient: true, roles: [], phone: '+972501234567', email: 'dana@example.com' }];
+  const r = render(<ClosingTeamCard team={team} closedAs="completed" contactEmail={EMAIL} />);
+  expect(r.getByTestId('closing-phone-c')).toBeTruthy();
+  expect(r.queryByText('dana@example.com')).toBeNull();
+});
+
+it('a message from before the email existed (no `email` field) still shows the dash', () => {
+  const legacy = [{ uid: 'p9', name: 'Old', isClient: false, roles: ['Editor'], phone: null }] as ClosingMember[];
+  const r = render(<ClosingTeamCard team={legacy} closedAs="completed" contactEmail={EMAIL} />);
+  expect(r.getByTestId('closing-member-p9').findByProps({ children: '—' })).toBeTruthy();
 });
 
 it('ends with BAMA\'s email, and tapping it writes an email', () => {

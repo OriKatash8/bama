@@ -1,5 +1,5 @@
 import { useAuthStore } from '@core/stores/authStore';
-import { usePhoneGate } from '@features/auth/hooks/usePhoneGate';
+import { usePhoneOnFile } from '@features/auth/hooks/usePhoneOnFile';
 import { needsConsent } from '@features/auth/utils/needsConsent';
 import { needsProfileSetup } from '@features/auth/utils/needsProfileSetup';
 
@@ -17,9 +17,9 @@ import { needsProfileSetup } from '@features/auth/utils/needsProfileSetup';
  *   1. email — an unverified PASSWORD account (needsEmailVerification, which
  *      follows the ID token; Google/Apple are exempt) → /(auth)/verify-email
  *   2. setup — a brand-new account's name / picture / phone page
- *      (needsProfileSetup) → /(auth)/setup. It asks for the phone itself.
- *   3. phone — no number on file (usePhoneGate) → /settings/phone?required=1
- *   Further rungs (phone verification, forced pro-profile completion) go here,
+ *      (needsProfileSetup) → /(auth)/setup. The phone there is optional.
+ *   The phone number never gates (App Store guideline 5.1.1(v)).
+ *   Further rungs (forced pro-profile completion) go here,
  *   in order. The client onboarding and the pro profile lock still live in their
  *   group layouts, after this.
  *
@@ -29,19 +29,17 @@ import { needsProfileSetup } from '@features/auth/utils/needsProfileSetup';
  * might still need to verify.
  * Both group layouts call this — and nothing else calls the rungs directly.
  */
-export function useOnboardingGate(opts?: { deferPhone?: boolean }): string | null {
+export function useOnboardingGate(): string | null {
   const signedOut = useAuthStore((s) => !s.isLoading && s.user === null);
   const mustConsent = useAuthStore((s) => needsConsent(s.user));
   const needsEmail = useAuthStore((s) => s.needsEmailVerification) === true;
   const mustSetUp = useAuthStore((s) => needsProfileSetup(s.user));
-  // Called unconditionally: it is a hook, and it keeps the phone read live.
-  const needsPhone = usePhoneGate();
+  // Not a rung: keeps `hasPhone` live for the client onboarding page, which
+  // offers the (optional) phone field when none is on file.
+  usePhoneOnFile();
   if (signedOut) return '/(auth)';
   if (mustConsent) return '/(auth)/consent';
   if (needsEmail) return '/(auth)/verify-email';
   if (mustSetUp) return '/(auth)/setup';
-  // deferPhone: a later step asks for the number itself (the client
-  // onboarding page), so this rung waits until that step is done.
-  if (needsPhone && !opts?.deferPhone) return '/settings/phone?required=1';
   return null;
 }

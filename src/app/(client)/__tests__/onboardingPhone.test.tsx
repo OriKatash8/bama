@@ -7,10 +7,10 @@ import { savePhone } from '@features/auth/services/phoneService';
 import { updateDocument } from '@core/firebase/firestore';
 
 /**
- * The client's name-and-picture page asks for the phone number too, when the
- * account has none yet (Apple / Google sign-ups): one page instead of a
- * separate phone screen first. Someone who gave it on the register form is
- * not asked again.
+ * The client's name-and-picture page offers the phone number too, when the
+ * account has none yet (Apple / Google sign-ups). It is optional (App Store
+ * 5.1.1(v)): Continue needs only the name, and a number given must be valid.
+ * Someone who gave it on the register form is not asked again.
  */
 
 const mockReplace = jest.fn();
@@ -38,13 +38,26 @@ beforeEach(() => {
 
 const continueBtn = (r: ReturnType<typeof render>) => r.getByTestId('onboarding-continue');
 
-it('no number yet: asks for it, and cannot continue without a valid one', async () => {
+it('no number yet: offers it, labelled optional', () => {
   const r = render(<ClientOnboardingScreen />);
-  const input = r.getByTestId('setup-phone');
-  expect(input.props.keyboardType).toBe('phone-pad');
-  expect(continueBtn(r).props.accessibilityState.disabled).toBe(true);
+  expect(r.getByText(en.auth.phone_optional)).toBeTruthy();
+  expect(r.getByTestId('setup-phone').props.keyboardType).toBe('phone-pad');
+});
 
-  fireEvent.changeText(input, '12');
+it('continues with the name only, saving no number', async () => {
+  const r = render(<ClientOnboardingScreen />);
+  expect(continueBtn(r).props.accessibilityState.disabled).toBe(false);
+  await act(async () => { fireEvent.press(continueBtn(r)); });
+  expect(savePhone).not.toHaveBeenCalled();
+  expect(updateDocument).toHaveBeenCalledWith('users/u1', expect.objectContaining({ displayName: 'Noa Levi', clientOnboarded: true }));
+  expect(useAuthStore.getState().hasPhone).toBe(false);
+  expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
+});
+
+it('a number that is given must be valid', async () => {
+  const r = render(<ClientOnboardingScreen />);
+  fireEvent.changeText(r.getByTestId('setup-phone'), '12');
+  expect(continueBtn(r).props.accessibilityState.disabled).toBe(true);
   await act(async () => { fireEvent.press(continueBtn(r)); });
   expect(savePhone).not.toHaveBeenCalled();
   expect(updateDocument).not.toHaveBeenCalled();

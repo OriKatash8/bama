@@ -3,16 +3,14 @@ import { useAuthStore } from '@core/stores/authStore';
 import { subscribePhone } from '@features/auth/services/phoneService';
 
 /**
- * True when the signed-in user has no phone number and must enter one.
+ * Whether the signed-in user has a phone number on file: true, false, or null
+ * while unknown (still loading, or the read failed).
  *
- * The number is required, but not everyone saw the registration form: Google and
- * Apple sign-in skip it, and accounts from before it existed have none. Both group
- * layouts call this and redirect to /settings/phone?required=1 while it is true.
- *
- * Only a CONFIRMED absence gates. Unknown (still loading) or a failed read leave
- * `hasPhone` null, and null never locks anyone out of the app.
+ * The number is optional — nothing gates on it (App Store guideline 5.1.1(v)).
+ * This only keeps `hasPhone` in the store live, so the setup form knows whether
+ * to offer the phone field.
  */
-export function usePhoneGate(): boolean {
+export function usePhoneOnFile(): boolean | null {
   const userId = useAuthStore((s) => s.user?.id);
   const hasPhone = useAuthStore((s) => s.hasPhone);
   const setHasPhone = useAuthStore((s) => s.setHasPhone);
@@ -32,5 +30,5 @@ export function usePhoneGate(): boolean {
     );
   }, [userId, setHasPhone]);
 
-  return !!userId && hasPhone === false;
+  return userId ? hasPhone : null;
 }

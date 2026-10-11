@@ -77,7 +77,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "BAMA uses the microphone to record voice messages in chats."
+          "microphonePermission": "BAMA uses the microphone to record voice messages in chats.",
+          "enableBackgroundPlayback": false
         }
       ],
       [

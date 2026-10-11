@@ -365,7 +365,8 @@
     "edit_deadline_error": "Could not update the date. Please try again.",
     "edit_location_error": "Could not update the location. Please try again.",
     "close_now_body": "This will finish the project. Next, you’ll review the crew’s work, and the chat will become read-only.",
-    "phone": "Phone"
+    "phone": "Phone",
+    "email": "Email"
   },
   "chats_page": {
     "title": "Chats",
@@ -1140,6 +1141,8 @@
     "consent_failed": "Couldn't save your consent. Please try again.",
     "err_age_required": "You must be 18 or older to use this app",
     "phone": "Phone number",
+    "phone_optional": "Phone number (optional)",
+    "phone_email_fallback_hint": "Without a phone number, your email address will be shown to the project's members when the project ends.",
     "err_phone_invalid": "Enter a valid phone number."
   },
   "common": {
@@ -1613,7 +1616,6 @@
   },
   "phone_settings": {
     "title": "Phone number",
-    "required_explain": "Add your phone number to continue. It stays private: it's shared only with the other side of a project, once the work is done.",
     "edit_explain": "Private: shared only with the other side of a project, once the work is done.",
     "save": "Save",
     "saved": "Phone number saved",

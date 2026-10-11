@@ -1,6 +1,8 @@
+import * as admin from 'firebase-admin';
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { db, FieldValue } from './helpers';
 import { buildClosingNotice, isClosingTransition } from './closingNotice';
+import { revealableEmail } from './contactPolicy';
 
 /** One closing message per project chat — the id makes a second write fail. */
 const CLOSING_MESSAGE_ID = 'project-closed';
@@ -21,6 +23,11 @@ const CLOSING_MESSAGE_ID = 'project-closed';
  *
  * Phones come from each member's private contact doc (Admin SDK). Everyone in
  * the chat sees them in this message — decided: the project is over.
+ *
+ * The phone is optional. On a COMPLETED project, a member with none shows their
+ * email instead: from Firebase Auth, only a verified, non-relay address
+ * (revealableEmail) — the same check as getContactPhone. A cancelled project
+ * shares phones only, and never looks an email up.
  */
 export const onProjectClosed = onDocumentUpdated(
   'projects/{projectId}',
@@ -43,10 +50,18 @@ export const onProjectClosed = onDocumentUpdated(
       Promise.all(uids.map((uid) => db.doc(`users/${uid}/private/contact`).get())),
     ]);
     const people = Object.fromEntries(uids.map((uid, i) => [uid, { name: (userSnaps[i].data()?.displayName as string | undefined) ?? '' }]));
-    const phones = Object.fromEntries(uids.map((uid, i) => {
+    const phones: Record<string, string | null> = Object.fromEntries(uids.map((uid, i) => {
       const phone = contactSnaps[i].data()?.phone;
       return [uid, typeof phone === 'string' && phone ? phone : null];
     }));
+
+    const emails: Record<string, string | null> = {};
+    if (after.status === 'completed') {
+      await Promise.all(uids.filter((uid) => !phones[uid]).map(async (uid) => {
+        const authUser = await admin.auth().getUser(uid).catch(() => null);
+        emails[uid] = revealableEmail({ phone: null, email: authUser?.email, emailVerified: authUser?.emailVerified });
+      }));
+    }
 
     const notice = buildClosingNotice({
       status: after.status as 'completed' | 'cancelled',
@@ -54,6 +69,7 @@ export const onProjectClosed = onDocumentUpdated(
       filledSlots,
       people,
       phones,
+      emails,
     });
 
     const chatRef = db.collection('chats').doc(chatId);

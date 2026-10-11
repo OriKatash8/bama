@@ -33,8 +33,7 @@ export default function ProfessionalLayout() {
   }, [userId, activeMode, setProProfileCompleted]);
 
   // The onboarding gate, before anything else — onboarding included: an
-  // unverified password account verifies its email, then anyone without a
-  // phone number adds one (useOnboardingGate).
+  // unverified password account verifies its email (useOnboardingGate).
   // Signed in but the email answer has not arrived: neither the app nor a
   // guess — a loading screen until it does.
   if (modePending || gatePending) return <GatePendingScreen />;

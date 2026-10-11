@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Phone } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
@@ -30,21 +30,17 @@ function makeT(translations: Translations) {
 }
 
 /**
- * The user's phone number. One screen, two uses:
+ * The user's phone number, from Settings: pre-filled with the current number,
+ * with back. The number is optional (App Store 5.1.1(v)) — nothing sends anyone
+ * here and nothing requires one.
  *
- *  - `?required=1` — the gate (usePhoneGate) for a signed-in user with no number:
- *    Google/Apple sign-ins and accounts from before the field existed. There is no
- *    way back and no skip, since the number is required; saving continues into the
- *    app through `/`, which routes to the right place.
- *  - from Settings — edit, pre-filled with the current number, with back.
- *
- * Both validate with normalizePhone and save through savePhone, to the private
- * `users/{uid}/private/contact` — never the public user doc.
+ * A number is validated with normalizePhone and saved through savePhone, to the
+ * private `users/{uid}/private/contact` — never the public user doc. Saving an
+ * empty field with no number on file just goes back. A saved number can be
+ * changed but not cleared: firestore.rules forbids deleting the contact doc.
  */
 export default function PhoneSettings() {
   const router = useRouter();
-  const { required } = useLocalSearchParams<{ required?: string }>();
-  const isRequired = required === '1';
   const colors = useTheme();
   const font = useAppFont();
   const { accent } = useModeAccent();
@@ -60,6 +56,8 @@ export default function PhoneSettings() {
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
+  // Whether a number is on file. Kept live: it decides what an empty Save means.
+  const [onFile, setOnFile] = useState(false);
 
   // Pre-fill with the current number, once — later snapshots must not overwrite
   // what the user is typing.
@@ -67,6 +65,7 @@ export default function PhoneSettings() {
     if (!userId) return;
     let filled = false;
     return subscribePhone(userId, (phone) => {
+      setOnFile(phone !== null);
       if (filled) return;
       filled = true;
       if (phone) setValue(formatPhoneForDisplay(phone));
@@ -74,6 +73,11 @@ export default function PhoneSettings() {
   }, [userId]);
 
   async function handleSave() {
+    // Optional: with nothing on file, an empty field is simply nothing to save.
+    if (!value.trim() && !onFile) {
+      router.back();
+      return;
+    }
     const e164 = normalizePhone(value);
     if (!e164) {
       setError(t('auth.err_phone_invalid'));
@@ -84,16 +88,10 @@ export default function PhoneSettings() {
     setSaving(true);
     try {
       await savePhone(userId, e164);
-      // Lift the gate now. The group layout is not mounted while this screen is
-      // up, so nothing has updated the store; without this it would read the old
-      // "no number" on the way back in and redirect straight here again.
+      // The setup form reads this; nothing else updates the store meanwhile.
       setHasPhone(true);
-      if (isRequired) {
-        router.replace('/');
-      } else {
-        showToast(t('phone_settings.saved'), 'success');
-        router.back();
-      }
+      showToast(t('phone_settings.saved'), 'success');
+      router.back();
     } catch (err) {
       console.error('[phone] save failed:', err);
       showToast(t('phone_settings.error'), 'error');
@@ -104,21 +102,18 @@ export default function PhoneSettings() {
 
   return (
     <Screen style={styles.content} scrollable backgroundColor="#FFFFFF">
-      {/* The gate cannot be swiped away: the number is required. */}
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: !isRequired }} />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { flexDirection: rowDir }]}>
-        {!isRequired && (
-          <TouchableOpacity
-            testID="phone-back"
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            hitSlop={10}
-          >
-            {rtl ? <ChevronRight size={22} color={BLACK} strokeWidth={2} /> : <ChevronLeft size={22} color={BLACK} strokeWidth={2} />}
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          testID="phone-back"
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          hitSlop={10}
+        >
+          {rtl ? <ChevronRight size={22} color={BLACK} strokeWidth={2} /> : <ChevronLeft size={22} color={BLACK} strokeWidth={2} />}
+        </TouchableOpacity>
         <AppText weight="bold" style={[styles.title, { color: BLACK }]}>{t('phone_settings.title')}</AppText>
       </View>
 
@@ -126,12 +121,12 @@ export default function PhoneSettings() {
         <View style={[styles.explainRow, { flexDirection: rowDir }]}>
           <Phone size={18} color={BLACK} strokeWidth={2} />
           <AppText weight="regular" style={[styles.explain, { color: BLACK, textAlign }]}>
-            {t(isRequired ? 'phone_settings.required_explain' : 'phone_settings.edit_explain')}
+            {t('phone_settings.edit_explain')}
           </AppText>
         </View>
 
         <Input
-          placeholder={t('auth.phone')}
+          placeholder={t('auth.phone_optional')}
           placeholderTextColor={colors.placeholder}
           value={value}
           onChangeText={(v) => { setValue(v); setError(undefined); }}
@@ -141,8 +136,10 @@ export default function PhoneSettings() {
           error={error}
           textAlign={textAlign}
           style={{ backgroundColor: '#FFFFFF', borderColor: '#DCDCE2', color: BLACK, ...font.regular, textAlign }}
-          autoFocus={isRequired}
         />
+        <AppText testID="phone-email-hint" weight="regular" style={[styles.hint, { textAlign }]}>
+          {t('auth.phone_email_fallback_hint')}
+        </AppText>
 
         <TouchableOpacity
           style={[styles.saveBtn, { backgroundColor: accent }, saving && styles.saveBtnBusy]}
@@ -167,6 +164,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, padding: 16, gap: 14, backgroundColor: GREY },
   explainRow: { alignItems: 'flex-start', gap: 10 },
   explain: { flex: 1, fontSize: 14, lineHeight: 20 },
+  hint: { fontSize: 13, lineHeight: 19, color: '#5B5870' },
   saveBtn: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   saveBtnBusy: { opacity: 0.7 },
   saveText: { color: '#ffffff', fontSize: 16 },

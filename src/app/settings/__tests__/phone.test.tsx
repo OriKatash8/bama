@@ -6,19 +6,17 @@ import { useAuthStore } from '@core/stores/authStore';
 import en from '@core/i18n/translations/en.json';
 
 /**
- * One screen, two uses. `?required=1`: the gate for a signed-in user with no
- * number — no way back, and saving continues into the app. Without it: the
- * Settings edit screen, pre-filled, with back. Both validate the same way and
- * save the same normalised number.
+ * The Settings phone screen: pre-filled, with back. The number is optional
+ * (App Store 5.1.1(v)) — nothing sends anyone here, and an empty field with
+ * nothing on file is nothing to save. A number given is validated and saved
+ * normalised.
  */
 
-let mockRequired: string | undefined;
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useRouter: () => ({ back: mockBack, replace: mockReplace }),
-  useLocalSearchParams: () => ({ required: mockRequired }),
 }));
 const mockSave = jest.fn();
 let mockCurrent: string | null = null;
@@ -42,7 +40,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 const p = en.phone_settings;
 
 async function save(r: ReturnType<typeof render>, value: string) {
-  fireEvent.changeText(r.getByPlaceholderText(en.auth.phone), value);
+  fireEvent.changeText(r.getByPlaceholderText(en.auth.phone_optional), value);
   await act(async () => { fireEvent.press(r.getByText(p.save)); });
 }
 
@@ -53,76 +51,74 @@ beforeEach(() => {
   useAuthStore.setState({ user: { id: 'u1' } as never });
 });
 
-describe('required (the gate)', () => {
-  beforeEach(() => { mockRequired = '1'; });
-
-  it('explains why, and offers no way back', () => {
-    const r = render(<PhoneSettings />);
-    expect(r.getByText(p.required_explain)).toBeTruthy();
-    expect(r.queryByTestId('phone-back')).toBeNull();
-  });
-
-  it('refuses a number that is not a phone number', async () => {
-    const r = render(<PhoneSettings />);
-    await save(r, '123');
-    expect(r.getByText(en.auth.err_phone_invalid)).toBeTruthy();
-    expect(mockSave).not.toHaveBeenCalled();
-  });
-
-  it('saves the normalised number and continues into the app', async () => {
-    const r = render(<PhoneSettings />);
-    await save(r, '054-111-2222');
-    expect(mockSave).toHaveBeenCalledWith('u1', '+972541112222');
-    expect(mockReplace).toHaveBeenCalledWith('/');
-  });
-
-  it('lifts the gate as it leaves — or the layout would bounce straight back here', async () => {
-    // Nothing is listening while this screen is up (the group layout is not
-    // mounted), so the store still says "no number" until the save says otherwise.
-    useAuthStore.setState({ hasPhone: false });
-    const r = render(<PhoneSettings />);
-    await save(r, '054-111-2222');
-    expect(useAuthStore.getState().hasPhone).toBe(true);
-  });
+it('has back, says the number is optional, and starts from the current number', () => {
+  mockCurrent = '+972501234567';
+  const r = render(<PhoneSettings />);
+  expect(r.getByTestId('phone-back')).toBeTruthy();
+  expect(r.getByText(p.edit_explain)).toBeTruthy();
+  expect(r.getByPlaceholderText(en.auth.phone_optional).props.value).toBe('050-123-4567');
+  expect(r.getByText(en.auth.phone_email_fallback_hint)).toBeTruthy();
 });
 
-describe('from Settings (edit)', () => {
-  beforeEach(() => { mockRequired = undefined; });
+it('saves, says so, and goes back', async () => {
+  mockCurrent = '+972501234567';
+  const r = render(<PhoneSettings />);
+  await save(r, '+1 415 555 2671');
+  expect(mockSave).toHaveBeenCalledWith('u1', '+14155552671');
+  expect(mockToast).toHaveBeenCalledWith(p.saved, 'success');
+  expect(mockBack).toHaveBeenCalled();
+  expect(mockReplace).not.toHaveBeenCalled();
+});
 
-  it('has back, and starts from the current number', () => {
-    mockCurrent = '+972501234567';
-    const r = render(<PhoneSettings />);
-    expect(r.getByTestId('phone-back')).toBeTruthy();
-    expect(r.getByPlaceholderText(en.auth.phone).props.value).toBe('050-123-4567');
-  });
+it('marks the number as on file once saved', async () => {
+  useAuthStore.setState({ hasPhone: false });
+  const r = render(<PhoneSettings />);
+  await save(r, '054-111-2222');
+  expect(mockSave).toHaveBeenCalledWith('u1', '+972541112222');
+  expect(useAuthStore.getState().hasPhone).toBe(true);
+});
 
-  it('saves, says so, and goes back', async () => {
-    mockCurrent = '+972501234567';
-    const r = render(<PhoneSettings />);
-    await save(r, '+1 415 555 2671');
-    expect(mockSave).toHaveBeenCalledWith('u1', '+14155552671');
-    expect(mockToast).toHaveBeenCalledWith(p.saved, 'success');
-    expect(mockBack).toHaveBeenCalled();
-  });
+it('refuses a number that is not a phone number', async () => {
+  const r = render(<PhoneSettings />);
+  await save(r, '123');
+  expect(r.getByText(en.auth.err_phone_invalid)).toBeTruthy();
+  expect(mockSave).not.toHaveBeenCalled();
+});
 
-  it('says so when the save fails, and stays', async () => {
-    mockSave.mockRejectedValue(new Error('offline'));
-    const r = render(<PhoneSettings />);
-    await save(r, '0501234567');
-    expect(mockToast).toHaveBeenCalledWith(p.error, 'error');
-    expect(mockBack).not.toHaveBeenCalled();
-  });
+it('with no number on file, an empty field just goes back — nothing saved, no error', async () => {
+  const r = render(<PhoneSettings />);
+  await save(r, '');
+  expect(mockSave).not.toHaveBeenCalled();
+  expect(r.queryByText(en.auth.err_phone_invalid)).toBeNull();
+  expect(mockBack).toHaveBeenCalled();
+});
+
+it('a saved number cannot be cleared (the rules forbid deleting it)', async () => {
+  mockCurrent = '+972501234567';
+  const r = render(<PhoneSettings />);
+  await save(r, '');
+  expect(mockSave).not.toHaveBeenCalled();
+  expect(r.getByText(en.auth.err_phone_invalid)).toBeTruthy();
+  expect(mockBack).not.toHaveBeenCalled();
+});
+
+it('says so when the save fails, and stays', async () => {
+  mockSave.mockRejectedValue(new Error('offline'));
+  const r = render(<PhoneSettings />);
+  await save(r, '0501234567');
+  expect(mockToast).toHaveBeenCalledWith(p.error, 'error');
+  expect(mockBack).not.toHaveBeenCalled();
 });
 
 describe('look', () => {
-  beforeEach(() => { mockRequired = '1'; mockScreenProps.length = 0; });
+  beforeEach(() => { mockScreenProps.length = 0; });
 
   it('white page, grey card, black text', () => {
     const r = render(<PhoneSettings />);
     expect(mockScreenProps[mockScreenProps.length - 1].backgroundColor).toBe('#FFFFFF');
     expect(StyleSheet.flatten(r.getByTestId('phone-card').props.style).backgroundColor).toBe(GREY);
     expect(StyleSheet.flatten(r.getByText(p.title).props.style).color).toBe(BLACK);
-    expect(StyleSheet.flatten(r.getByText(p.required_explain).props.style).color).toBe(BLACK);
+    expect(StyleSheet.flatten(r.getByText(p.edit_explain).props.style).color).toBe(BLACK);
   });
 });
 

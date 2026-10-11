@@ -10,8 +10,8 @@ import { updateDocument } from '@core/firebase/firestore';
 
 /**
  * FIRST-TIME SETUP: right after the email is verified (or consent given, for
- * Apple), a new account fills in its name, picture and — if it has none —
- * phone, THEN chooses client or professional.
+ * Apple), a new account fills in its name, picture and — if it has none — an
+ * optional phone, THEN chooses client or professional.
  */
 
 const mockReplace = jest.fn();
@@ -23,7 +23,7 @@ jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { chil
 jest.mock('@core/firebase/storage', () => ({ uploadFile: jest.fn() }));
 jest.mock('@core/firebase/firestore', () => ({ updateDocument: jest.fn(async () => undefined) }));
 jest.mock('@features/auth/services/phoneService', () => ({ savePhone: jest.fn(async () => undefined) }));
-jest.mock('@features/auth/hooks/usePhoneGate', () => ({ usePhoneGate: jest.fn(() => false) }));
+jest.mock('@features/auth/hooks/usePhoneOnFile', () => ({ usePhoneOnFile: jest.fn(() => true) }));
 let mockLang = 'en';
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
@@ -47,7 +47,27 @@ it('saves the name, clears the flag, then goes to mode select', async () => {
   expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
 });
 
-it('no number yet (Apple sign-up): asks for it here', async () => {
+it('no number yet (Apple sign-up): Continue works with the name only (the phone is optional)', async () => {
+  useAuthStore.setState({ hasPhone: false });
+  const r = render(<ProfileSetupScreen />);
+  expect(r.getByText(en.auth.phone_optional)).toBeTruthy();
+  expect(r.getByText(en.auth.phone_email_fallback_hint)).toBeTruthy();
+  await act(async () => { fireEvent.press(r.getByTestId('onboarding-continue')); });
+  expect(savePhone).not.toHaveBeenCalled();
+  expect(updateDocument).toHaveBeenCalledWith('users/u1', expect.objectContaining({ needsProfileSetup: false }));
+  expect(mockReplace).toHaveBeenCalledWith('/(auth)/mode-select');
+});
+
+it('Hebrew: the phone label reads "(לא חובה)"', () => {
+  mockLang = 'he';
+  useAuthStore.setState({ hasPhone: false });
+  const r = render(<ProfileSetupScreen />);
+  expect(r.getByText('מספר טלפון (לא חובה)')).toBeTruthy();
+  expect(r.getByText('בלי מספר טלפון, כתובת האימייל שלך תוצג לחברי הפרויקט בסיום הפרויקט.')).toBeTruthy();
+  mockLang = 'en';
+});
+
+it('no number yet (Apple sign-up): one given here is saved', async () => {
   useAuthStore.setState({ hasPhone: false });
   const r = render(<ProfileSetupScreen />);
   fireEvent.changeText(r.getByTestId('setup-phone'), '050-123-4567');

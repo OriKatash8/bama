@@ -16,9 +16,7 @@ export default function ClientLayout() {
   const setClientOnboarded = useAuthStore((s) => s.setClientOnboarded);
   const pathname = usePathname();
   const modePending = useAdoptGroupMode('client');
-  // A client who has not finished onboarding gives the phone number THERE
-  // (the name-and-picture page asks for it), so the phone rung waits for it.
-  const gate = useOnboardingGate({ deferPhone: activeMode === 'client' && clientOnboarded !== true });
+  const gate = useOnboardingGate();
   const gatePending = useGatePending();
 
   // Track the first-time client onboarding flag from the user doc.
@@ -33,8 +31,7 @@ export default function ClientLayout() {
   }, [userId, activeMode, setClientOnboarded]);
 
   // The onboarding gate, before anything else — onboarding included: an
-  // unverified password account verifies its email, then anyone without a
-  // phone number adds one (useOnboardingGate).
+  // unverified password account verifies its email (useOnboardingGate).
   // Signed in but the email answer has not arrived: neither the app nor a
   // guess — a loading screen until it does.
   if (modePending || gatePending) return <GatePendingScreen />;
