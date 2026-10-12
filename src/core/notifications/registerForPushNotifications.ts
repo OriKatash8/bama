@@ -15,6 +15,34 @@ export function getCachedPushToken(): string | null {
   return cachedPushToken;
 }
 
+let androidChannelReady: Promise<void> | null = null;
+
+/**
+ * Android only: create the `default` notification channel. It must exist BEFORE
+ * the first permission request, because on Android 13+ the OS shows no
+ * notification prompt for an app that has no channel yet. Idempotent (the
+ * in-flight promise is shared) and never throws, so a channel failure can't
+ * block registration; a failure clears the cache so a later call retries.
+ * A no-op on iOS and web.
+ */
+export function ensureAndroidChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return Promise.resolve();
+  if (!androidChannelReady) {
+    androidChannelReady = Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#208AEF',
+    })
+      .then(() => undefined)
+      .catch((e) => {
+        console.log('[push] channel error:', e);
+        androidChannelReady = null;
+      });
+  }
+  return androidChannelReady;
+}
+
 export type NotifPermissionState = {
   status: 'granted' | 'denied' | 'undetermined';
   canAskAgain: boolean;
@@ -39,6 +67,7 @@ export async function getNotificationPermissionState(): Promise<NotifPermissionS
  */
 export async function requestNotificationPermission(): Promise<NotifPermissionState> {
   try {
+    await ensureAndroidChannel();
     const res = await Notifications.requestPermissionsAsync();
     const status = (res.status as NotifPermissionState['status']) ?? 'undetermined';
     const state: NotifPermissionState = { status, canAskAgain: res.canAskAgain ?? false, granted: status === 'granted' };
@@ -75,6 +104,7 @@ export async function requestNotificationPermission(): Promise<NotifPermissionSt
  */
 export async function registerIfGranted(): Promise<string | null> {
   if (!Device.isDevice) return null;
+  await ensureAndroidChannel();
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted') return null;
   return fetchAndCacheToken();
@@ -84,6 +114,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   console.log('[push] isDevice:', Device.isDevice);
   if (!Device.isDevice) return null;
 
+  await ensureAndroidChannel();
   const { status: existing } = await Notifications.getPermissionsAsync();
   const finalStatus =
     existing === 'granted'
@@ -96,25 +127,17 @@ export async function registerForPushNotifications(): Promise<string | null> {
   return fetchAndCacheToken();
 }
 
-/** Token fetch + cache + Android channel. Assumes permission is already granted. */
+/** Token fetch + cache. Assumes permission is already granted. */
 async function fetchAndCacheToken(): Promise<string | null> {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   console.log('[push] projectId:', projectId);
   if (!projectId) return null;
 
   try {
+    await ensureAndroidChannel();
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
     console.log('[push] got token:', token);
     cachedPushToken = token;
-
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#208AEF',
-      });
-    }
 
     return token;
   } catch (e) {
