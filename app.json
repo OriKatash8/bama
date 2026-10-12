@@ -30,6 +30,10 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.bamaapp.bama",
       "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.CAMERA"
+      ],
       "blockedPermissions": [
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR"
