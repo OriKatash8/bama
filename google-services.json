@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "165833515213",
+    "project_id": "bama-af0a0",
+    "storage_bucket": "bama-af0a0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165833515213:android:ada7210f26b51e2e4c0984",
+        "android_client_info": {
+          "package_name": "com.bamaapp.bama"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "165833515213-ne79l7lafiupu1gdvsubh6pjl7eogr7p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmjR6_R4hm3sQmjA1iUmGWWPzLXbSLKP4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "165833515213-ne79l7lafiupu1gdvsubh6pjl7eogr7p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bama.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
