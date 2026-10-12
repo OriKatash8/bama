@@ -115,7 +115,8 @@
       ],
       "@react-native-firebase/app-check",
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withAndroidLtrLock"
     ],
     "experiments": {
       "typedRoutes": true
