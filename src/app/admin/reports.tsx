@@ -29,7 +29,12 @@ type Report = {
   id: string;
   /** Absent on user reports. 'community_deletion' is a community owner asking BAMA
    *  to delete their community (CommunityManageModal); it has no reported user. */
-  type?: 'community_deletion';
+  type?: 'community_deletion' | 'user_blocked';
+  /** What the report points at (messages, listings, reviews, portfolio items…). */
+  targetType?: 'user' | 'message' | 'listing' | 'review' | 'portfolio';
+  targetId?: string;
+  /** A copy of the reported content, kept in case the original is gone. */
+  snippet?: string;
   communityId?: string;
   communityName?: string;
   reporterId: string;
@@ -318,7 +323,17 @@ export default function ReportsAdmin() {
                 />
 
                 <View style={[styles.body, { borderTopColor: p.border }]}>
+                  {(report.type === 'user_blocked' || (report.targetType && report.targetType !== 'user')) && (
+                    <AdminText weight="semiBold" style={[TYPE.rowMeta, { color: p.text, textAlign }]} testID={`kind-${report.id}`}>
+                      {report.type === 'user_blocked' ? t('kind_user_blocked') : t(`kind_${report.targetType}`)}
+                    </AdminText>
+                  )}
                   <AdminText style={[styles.reason, { color: p.text2, textAlign }]}>{report.reason}</AdminText>
+                  {!!report.snippet && (
+                    <AdminText style={[styles.reason, { color: p.text2, textAlign }]} testID={`snippet-${report.id}`}>
+                      {`${t('content_label')}: ${report.snippet}`}
+                    </AdminText>
+                  )}
 
                   {(report.evidenceURLs?.length ?? 0) > 0 && (
                     <ScrollView

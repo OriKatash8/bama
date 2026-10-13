@@ -234,6 +234,7 @@ export default function PublicProfileScreen() {
           onClose={() => setBlockVisible(false)}
           targetUserId={userId as string}
           targetName={user?.displayName ?? ''}
+          context="profile"
         />
       </Screen>
     );
@@ -256,6 +257,7 @@ export default function PublicProfileScreen() {
             hitSlop={8}
             accessibilityRole="button"
             testID="profile-report"
+            accessibilityLabel={t('report.action')}
           >
             <Flag size={18} color={REPORT_FLAG} strokeWidth={2} />
           </TouchableOpacity>
@@ -269,6 +271,7 @@ export default function PublicProfileScreen() {
             hitSlop={8}
             accessibilityRole="button"
             testID="profile-block"
+            accessibilityLabel={isBlocked ? t('blocking.unblock') : t('blocking.block')}
           >
             <Ban size={18} color={isBlocked ? '#C0392B' : REPORT_FLAG} strokeWidth={2} />
           </TouchableOpacity>
@@ -297,6 +300,16 @@ export default function PublicProfileScreen() {
       </GradientBand>
 
       <View style={styles.sheet}>
+        {isBlocked ? (
+          // I blocked them: the page keeps only the way back (Guideline 1.2).
+          <View style={{ alignItems: 'center', gap: 14, paddingVertical: 28 }} testID="profile-blocked-notice">
+            <Text style={{ color: '#000000', fontSize: 15, textAlign: 'center' }}>{t('blocking.profile_hidden')}</Text>
+            <TouchableOpacity onPress={() => setBlockVisible(true)} accessibilityRole="button" testID="profile-unblock">
+              <Text style={{ color: '#C0392B', fontSize: 15, fontWeight: '700' }}>{t('blocking.unblock')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+        <>
         {/* ── Bio ── */}
         <BioSection bio={profile.bio} isEditing={false} />
 
@@ -312,7 +325,7 @@ export default function PublicProfileScreen() {
         {/* ── Portfolio ── */}
         {portfolio.length > 0 && (
           <View style={styles.portfolioSection}>
-            <PortfolioGrid assets={portfolio} isEditing={false} owner={{ name: user.displayName, photoURL: user.photoURL ?? null }} />
+            <PortfolioGrid assets={portfolio} isEditing={false} owner={{ id: userId as string, name: user.displayName, photoURL: user.photoURL ?? null }} />
           </View>
         )}
 
@@ -327,7 +340,22 @@ export default function PublicProfileScreen() {
           </Text>
         </TouchableOpacity>
 
+        {/* Labelled Report / Block, for anyone who does not know the icons above (Guideline 1.2). */}
+        {userId !== currentUserId && (
+          <View style={styles.safetyRow} testID="profile-safety-row">
+            <TouchableOpacity style={styles.safetyItem} onPress={() => setReportVisible(true)} accessibilityRole="button" testID="profile-report-labelled">
+              <Flag size={16} color={REPORT_FLAG} strokeWidth={2} />
+              <Text style={styles.reportLabel}>{t('report.action')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.safetyItem} onPress={() => setBlockVisible(true)} accessibilityRole="button" testID="profile-block-labelled">
+              <Ban size={16} color={REPORT_FLAG} strokeWidth={2} />
+              <Text style={styles.reportLabel}>{t('blocking.block')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.bottomPad} />
+        </>
+        )}
       </View>
 
       <DirectProjectSheet
@@ -348,6 +376,7 @@ export default function PublicProfileScreen() {
         onClose={() => setBlockVisible(false)}
         targetUserId={userId as string}
         targetName={user?.displayName ?? ''}
+        context="profile"
       />
 
       {/* ── Report: the same pop-up as in project details ── */}
@@ -409,6 +438,9 @@ const styles = StyleSheet.create({
   // A soft violet tile under the flag, the same fill the builder's picked date
   // squares use, with the flag itself in the deep violet of that pair. Pale
   // tile, dark mark: the pair reads on the band without shouting.
+  safetyRow: { flexDirection: 'row', justifyContent: 'center', gap: 24, paddingTop: 8 },
+  safetyItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 },
+  reportLabel: { color: REPORT_FLAG, fontSize: 14, fontWeight: '600' },
   reportBtn: {
     width: 32,
     height: 32,

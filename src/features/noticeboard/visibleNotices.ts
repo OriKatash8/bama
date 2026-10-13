@@ -20,10 +20,17 @@ export type NoticeSort = 'newest' | 'oldest' | 'direct_only';
  */
 export function visibleNotices(
   list: ProjectRequest[],
-  opts: { roleFilter: string | null; search: string; sortBy: NoticeSort; currentUserId?: string },
+  opts: {
+    roleFilter: string | null;
+    search: string;
+    sortBy: NoticeSort;
+    currentUserId?: string;
+    /** Posters I blocked: their notices are left out (Guideline 1.2). */
+    blocked?: readonly string[];
+  },
 ): ProjectRequest[] {
-  const { roleFilter, search, sortBy, currentUserId } = opts;
-  let out = list;
+  const { roleFilter, search, sortBy, currentUserId, blocked } = opts;
+  let out = blocked?.length ? list.filter((r) => !blocked.includes(r.clientId)) : list;
 
   if (roleFilter) {
     out = out.filter((r) => getVacantSlots(r).some((s) => roleIdForCategory(s.category) === roleFilter));

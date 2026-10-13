@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
+import { useBlockStore } from '@core/stores/blockStore';
 import { queryDocuments, subscribeToCollectionIn, where } from '@core/firebase/firestore';
 import type { PriceOffer, ProjectRequest } from '@core/types/project';
 
@@ -7,6 +8,7 @@ export function usePriceOffers() {
   const user = useAuthStore((s) => s.user);
   const [offers, setOffers] = useState<PriceOffer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const blocked = useBlockStore((s) => s.blocked);
 
   useEffect(() => {
     if (!user) {
@@ -50,5 +52,6 @@ export function usePriceOffers() {
     };
   }, [user?.id]);
 
-  return { offers, isLoading };
+  // An offer from someone I blocked is hidden (Guideline 1.2), live.
+  return { offers: offers.filter((o) => !blocked.includes(o.professionalId)), isLoading };
 }

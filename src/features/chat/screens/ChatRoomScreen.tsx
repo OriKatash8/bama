@@ -60,13 +60,19 @@ import {
 } from 'firebase/firestore';
 import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search } from 'lucide-react-native';
+import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search, MoreVertical } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
+import { useBlockStore } from '@core/stores/blockStore';
+import { BlockUserSheet } from '@features/blocking/components/BlockUserSheet';
+import { unblockUser } from '@features/blocking/services/blockService';
+import { hiddenSenders, isHiddenByBlock } from '@features/blocking/utils/hidden';
+import { ContentActionSheet } from '@features/moderation/components/ContentActionSheet';
+import { ReportDialog, type ReportTarget } from '@features/moderation/components/ReportDialog';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { uploadFile } from '@core/firebase/storage';
@@ -652,10 +658,14 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [channelUnreadAtOpen, setChannelUnreadAtOpen] = useState<Record<string, number> | null>(null);
   const channelUnreadUsedRef = useRef(new Set<string>());
 
+  /** Who I blocked. Their messages are filtered out below, live (the store is a listener). */
+  const blocked = useBlockStore((s) => s.blocked);
+
   const listItems = useMemo((): ListItem[] => {
     const result: ListItem[] = [];
     let lastDateStr: string | null = null;
     for (const msg of messages) {
+      if (isHiddenByBlock(msg, blocked)) continue;
       const ts = msg.timestamp;
       const dateStr = ts && typeof ts === 'object' && 'seconds' in ts
         ? new Date(ts.seconds * 1000).toDateString()
@@ -679,7 +689,9 @@ export function ChatRoomScreen({ chatId }: Props) {
       result.push(msg);
     }
     return result;
-  }, [messages, language, unreadBanner, chatId]);
+  }, [messages, language, unreadBanner, chatId, blocked]);
+
+  const hiddenBlockedSenders = useMemo(() => hiddenSenders(messages, blocked), [messages, blocked]);
 
   const [inputText, setInputText] = useState('');
   const [userNames, setUserNames] = useState<Record<string, string>>({});
@@ -765,6 +777,28 @@ export function ChatRoomScreen({ chatId }: Props) {
    * this under Guideline 1.2.
    */
   const [dmOtherUserId, setDmOtherUserId] = useState<string | null>(null);
+
+  // ── Report / block (App Store Guideline 1.2) ──
+  /** The message whose Reply / Report / Block menu is open (long-press). */
+  const [actionMessage, setActionMessage] = useState<Message | null>(null);
+  /** The header ⋯ menu: report or block the other person in a DM / purchase chat. */
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const [blockTarget, setBlockTarget] = useState<{ userId: string; name: string } | null>(null);
+  /** Who the header menu is about. Project and community chats have no single
+   *  "other person" — there the per-message menu is the route. */
+  const headerMenuUserId =
+    chatType === 'dm'
+      ? (dmOtherUserId && dmOtherUserId !== SYSTEM_USER_ID ? dmOtherUserId : null)
+      : chatType === 'purchase'
+        ? (chatMembers.find((id) => id !== currentUserId) ?? null)
+        : null;
+  const blockContext = chatType === 'dm' ? 'dm'
+    : chatType === 'community' ? 'community'
+    : chatType === 'purchase' ? 'purchase'
+    : chatType === 'group' ? 'project' : 'other';
+  const messageSnippet = (m: Message) =>
+    m.text || (m.imageURL ? '[photo]' : m.videoUrl ? '[video]' : m.audioUrl ? '[voice message]' : '');
   /**
    * Open someone's profile. The only screen Block is reachable from, so every
    * route to it goes through here rather than rebuilding the path inline.
@@ -1821,6 +1855,20 @@ export function ChatRoomScreen({ chatId }: Props) {
             </AppText>
           )}
         </View>
+        {/* Report / block the other person — DMs and purchase chats. */}
+        {!!headerMenuUserId && (
+          <TouchableOpacity
+            testID="chat-menu"
+            onPress={() => setHeaderMenuOpen(true)}
+            style={styles.headerSearch}
+            hitSlop={8}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t('moderation.menu')}
+          >
+            <MoreVertical size={22} color={modeAccent} strokeWidth={2.2} />
+          </TouchableOpacity>
+        )}
         {/* Search this chat — the far end from back, at the left edge. Opens a
             sheet over the room, not another page. */}
         <TouchableOpacity
@@ -1913,6 +1961,82 @@ export function ChatRoomScreen({ chatId }: Props) {
         listing={showPurchaseNotice ? purchaseListing : null}
         onClose={() => setShowPurchaseNotice(false)}
         readOnly
+      />
+
+      {/* Messages from someone I blocked are hidden above; say so, with a way back. */}
+      {hiddenBlockedSenders.length > 0 && (
+        <View style={[styles.blockedBanner, { flexDirection: rtl ? 'row-reverse' : 'row' }]} testID="blocked-banner">
+          <AppText weight="regular" style={[styles.blockedBannerText, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('moderation.hidden_banner')}
+          </AppText>
+          <TouchableOpacity
+            onPress={() => {
+              if (hiddenBlockedSenders.length === 1) {
+                void unblockUser(currentUserId, hiddenBlockedSenders[0]).catch(() => showToast(t('blocking.failed'), 'error'));
+              } else {
+                router.push('/settings/blocked-users' as never);
+              }
+            }}
+            accessibilityRole="button"
+            testID="blocked-banner-unblock"
+          >
+            <AppText weight="bold" style={styles.blockedBannerAction}>
+              {hiddenBlockedSenders.length === 1 ? t('blocking.unblock') : t('moderation.manage_blocked')}
+            </AppText>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Report / block menus */}
+      <ContentActionSheet
+        visible={!!actionMessage}
+        subjectName={actionMessage ? (userNames[actionMessage.senderId] ?? '') : ''}
+        reportKind="message"
+        onClose={() => setActionMessage(null)}
+        onReply={actionMessage ? () => startReply(actionMessage) : undefined}
+        onReport={() => {
+          const m = actionMessage;
+          if (!m) return;
+          setReportTarget({
+            reportedUserId: m.senderId,
+            reportedUserName: userNames[m.senderId] ?? '',
+            targetType: 'message',
+            targetId: m.id,
+            chatId,
+            snippet: messageSnippet(m),
+          });
+        }}
+        onBlock={() => {
+          const m = actionMessage;
+          if (m) setBlockTarget({ userId: m.senderId, name: userNames[m.senderId] ?? '' });
+        }}
+      />
+      <ContentActionSheet
+        visible={headerMenuOpen}
+        subjectName={headerMenuUserId ? (userNames[headerMenuUserId] ?? chatName) : ''}
+        reportKind="user"
+        onClose={() => setHeaderMenuOpen(false)}
+        onReport={() => {
+          if (!headerMenuUserId) return;
+          setReportTarget({
+            reportedUserId: headerMenuUserId,
+            reportedUserName: userNames[headerMenuUserId] ?? chatName,
+            targetType: 'user',
+            chatId,
+          });
+        }}
+        onBlock={() => {
+          if (headerMenuUserId) setBlockTarget({ userId: headerMenuUserId, name: userNames[headerMenuUserId] ?? chatName });
+        }}
+      />
+      <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />
+      <BlockUserSheet
+        visible={!!blockTarget}
+        onClose={() => setBlockTarget(null)}
+        targetUserId={blockTarget?.userId ?? ''}
+        targetName={blockTarget?.name ?? ''}
+        context={blockContext}
+        chatId={chatId}
       />
 
       {/* Messages */}
@@ -2024,7 +2148,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               return <SharedListingCard msg={msg} />;
             }
             const isOwn = msg.senderId === currentUserId;
-            const quote = msg.replyTo ? (
+            const quote = msg.replyTo && !blocked.includes(msg.replyTo.senderId) ? (
               <ReplyQuote
                 replyTo={msg.replyTo}
                 rtl={rtl}
@@ -2048,6 +2172,9 @@ export function ChatRoomScreen({ chatId }: Props) {
                 rtl={rtl}
                 accent={modeAccent}
                 onReply={() => startReply(msg)}
+                // Someone else's message: hold for Reply / Report / Block. Your
+                // own keeps hold-to-reply (nothing to report or block).
+                onLongPress={isOwn ? undefined : () => setActionMessage(msg)}
                 style={[
                   styles.bubbleWrapper,
                   // Mirrored: yours on the right in English, on the LEFT in
@@ -2786,6 +2913,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%',
   },
+  blockedBanner: {
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#FFF4E5',
+  },
+  blockedBannerText: { flex: 1, color: '#000000', fontSize: 13 },
+  blockedBannerAction: { color: '#C0392B', fontSize: 13 },
   headerSearch: {
     width: 36,
     alignSelf: 'stretch',

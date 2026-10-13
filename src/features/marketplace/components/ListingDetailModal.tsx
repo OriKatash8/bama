@@ -7,7 +7,8 @@ import { Image } from 'expo-image';
 import { FittedPhoto } from './FittedPhoto';
 
 const LOCATION_ICON = require('../../../../assets/images/location-icon.png');
-import { ExternalLink, X } from 'lucide-react-native';
+import { ExternalLink, Flag, X } from 'lucide-react-native';
+import { ReportDialog, type ReportTarget } from '@features/moderation/components/ReportDialog';
 import { useRouter, useSegments } from 'expo-router';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
@@ -59,6 +60,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
@@ -192,11 +194,31 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
 
+        {reportTarget && <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />}
         <View testID="listing-card" style={styles.card}>
           {/* Header */}
           {/* Just the close button: the name is in the box under the picture.
               Pushed to the same end as before (left in Hebrew, right in English). */}
-          <View style={[styles.header, { flexDirection: rowDir, justifyContent: 'flex-end' }]}>
+          <View style={[styles.header, { flexDirection: rowDir, justifyContent: 'space-between' }]}>
+            {/* Report this listing (not your own) — Guideline 1.2. */}
+            {!isOwnListing && !isRental ? (
+              <TouchableOpacity
+                onPress={() => setReportTarget({
+                  reportedUserId: listing.posterId,
+                  reportedUserName: listing.posterName,
+                  targetType: 'listing',
+                  targetId: listing.id,
+                  snippet: listing.productName,
+                })}
+                style={{ flexDirection: rowDir, alignItems: 'center', gap: 6 }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                testID="listing-report"
+              >
+                <Flag size={16} color="#C0392B" strokeWidth={2} />
+                <AppText weight="regular" style={{ color: '#C0392B', fontSize: 13 }}>{t('report.action')}</AppText>
+              </TouchableOpacity>
+            ) : <View />}
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7} testID="listing-close">
               <X size={20} color="#004aad" />
             </TouchableOpacity>

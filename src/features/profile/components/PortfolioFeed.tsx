@@ -2,12 +2,14 @@ import { useCallback, useRef, useState } from 'react';
 import { FlatList, Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ViewToken } from 'react-native';
 import { Image } from 'expo-image';
-import { X } from 'lucide-react-native';
+import { Flag, X } from 'lucide-react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView, TouchableOpacity } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { ReportDialog, type ReportTarget } from '@features/moderation/components/ReportDialog';
 import { MEDIA_VIEWER_CHROME_BG, MEDIA_VIEWER_CHROME_FG } from '@core/constants/mediaViewer';
 import { formatShortDay, isoDayFromSeconds } from '@utils/formatters';
 import type { MediaAsset } from '@core/types/media';
@@ -76,7 +78,8 @@ function PinchablePhoto({ asset, width, height, onSize, onPinching }: {
 }
 
 /** Whose portfolio this is: shown above every post, like an Instagram profile. */
-export type PortfolioOwner = { name: string; photoURL: string | null };
+/** `id` is what makes a post reportable (Guideline 1.2); without it there is no Report button. */
+export type PortfolioOwner = { name: string; photoURL: string | null; id?: string };
 
 /** The owner's round picture and name, above the media. Initial when there is no photo. */
 function OwnerHeader({ owner, assetId, rtl }: { owner: PortfolioOwner; assetId: string; rtl: boolean }) {
@@ -188,12 +191,19 @@ function FeedBody({ assets, initialIndex, onClose, owner }: Omit<Props, 'visible
   const openedRef = useRef(false);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  /** The post on screen, so Report knows which one it is about. */
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const canReport = !!owner?.id && owner.id !== currentUserId;
 
   // The FIRST viewable video plays; every other video is paused. Stable (no
   // deps): FlatList does not accept a new onViewableItemsChanged after mount.
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const video = viewableItems.find((v) => v.isViewable && (v.item as MediaAsset).type === 'video');
     setActiveVideoId(video ? (video.item as MediaAsset).id : null);
+    const first = viewableItems.find((v) => v.isViewable);
+    if (first) setFocusedId((first.item as MediaAsset).id);
   }, []);
 
   // Posts have no fixed height (each takes its media's shape), so there is no
@@ -233,7 +243,7 @@ function FeedBody({ assets, initialIndex, onClose, owner }: Omit<Props, 'visible
           contentContainerStyle={{ paddingTop: insets.top + TOP_BAR_HEIGHT, paddingBottom: insets.bottom + 16 }}
         />
 
-        <View style={[styles.topBar, { top: insets.top, flexDirection: rtl ? 'row' : 'row-reverse' }]}>
+        <View style={[styles.topBar, { top: insets.top, flexDirection: rtl ? 'row' : 'row-reverse', justifyContent: 'space-between' }]}>
           {/* RNGH TouchableOpacity, as in PortfolioViewer: it works inside
               GestureHandlerRootView, and already renders a button on web. */}
           <TouchableOpacity
@@ -245,7 +255,25 @@ function FeedBody({ assets, initialIndex, onClose, owner }: Omit<Props, 'visible
           >
             <X size={18} color={MEDIA_VIEWER_CHROME_FG} strokeWidth={2.5} />
           </TouchableOpacity>
+          {canReport && (
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setReportTarget({
+                reportedUserId: owner!.id!,
+                reportedUserName: owner!.name,
+                targetType: 'portfolio',
+                targetId: focusedId ?? assets[initialIndex]?.id,
+              })}
+              accessibilityLabel="report"
+              testID="portfolio-report"
+              hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+              activeOpacity={0.7}
+            >
+              <Flag size={16} color={MEDIA_VIEWER_CHROME_FG} strokeWidth={2.5} />
+            </TouchableOpacity>
+          )}
         </View>
+        {reportTarget && <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />}
       </GestureHandlerRootView>
     </View>
   );

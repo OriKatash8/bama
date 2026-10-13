@@ -49,12 +49,15 @@ import { pageSwipeGuard } from '../utils/swipeGeometry';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function SwipeableMessageRow({
-  enabled, rtl, accent, onReply, style, children,
+  enabled, rtl, accent, onReply, onLongPress, style, children,
 }: {
   enabled: boolean;
   rtl: boolean;
   accent: string;
   onReply: () => void;
+  /** Replaces the long-press reply — e.g. with the report / block menu. The
+   *  swipe still replies, so reply stays one gesture away either way. */
+  onLongPress?: () => void;
   style?: object;
   children: React.ReactNode;
 }) {
@@ -158,7 +161,7 @@ export function SwipeableMessageRow({
       <AnimatedPressable
         testID="message-row-press"
         accessibilityHint={enabled ? 'Hold to reply to this message' : undefined}
-        onLongPress={enabled ? onReply : undefined}
+        onLongPress={enabled ? (onLongPress ?? onReply) : undefined}
         delayLongPress={400}
         style={[style, { transform: [{ translateX }] }]}
       >

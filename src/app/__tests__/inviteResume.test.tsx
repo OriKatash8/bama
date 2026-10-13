@@ -39,7 +39,7 @@ const mockPreview = jest.fn((_p: { tokenOrCode: string }) => null);
 jest.mock('@features/communities/invites/InvitePreviewScreen', () => ({ InvitePreviewScreen: (p: { tokenOrCode: string }) => mockPreview(p) }));
 
 const store = () => usePendingIntentStore.getState();
-const CONSENTED = { id: 'u1', termsVersion: '1.5' } as never;
+const CONSENTED = { id: 'u1', termsVersion: '1.6' } as never;
 
 beforeAll(async () => { await usePendingIntentStore.persist.rehydrate(); });
 beforeEach(() => {
@@ -108,8 +108,8 @@ describe('a. new signed-out user: the whole rung chain lands back on the invite'
 
     // 2. Each step finishing sends the user to the NEXT auth screen and leaves the link alone.
     expect(await postStepRoute(state({ user: user({}) }) as never)).toBe('/(auth)/consent');
-    expect(await postStepRoute(state({ user: user({ termsVersion: '1.5', needsProfileSetup: true }), needsEmailVerification: true }) as never)).toBe('/(auth)/verify-email');
-    expect(await postStepRoute(state({ user: user({ termsVersion: '1.5', needsProfileSetup: true }) }) as never)).toBe('/(auth)/setup');
+    expect(await postStepRoute(state({ user: user({ termsVersion: '1.6', needsProfileSetup: true }), needsEmailVerification: true }) as never)).toBe('/(auth)/verify-email');
+    expect(await postStepRoute(state({ user: user({ termsVersion: '1.6', needsProfileSetup: true }) }) as never)).toBe('/(auth)/setup');
     // A brand-new account has no restored mode: its next stop is mode-select.
     expect(await postStepRoute(state({}) as never)).toBe('/(auth)/mode-select');
     expect(store().resume?.href).toBe(HREF); // still waiting for switchMode
@@ -150,8 +150,8 @@ describe('c. returning user with NO saved link: the flow is exactly what it was'
   const states = [
     { user: null, needsEmailVerification: null, activeMode: null },
     { user: { id: 'u' }, needsEmailVerification: false, activeMode: 'client' },
-    { user: { id: 'u', termsVersion: '1.5', needsProfileSetup: true }, needsEmailVerification: true, activeMode: 'client' },
-    { user: { id: 'u', termsVersion: '1.5', needsProfileSetup: true }, needsEmailVerification: false, activeMode: 'professional' },
+    { user: { id: 'u', termsVersion: '1.6', needsProfileSetup: true }, needsEmailVerification: true, activeMode: 'client' },
+    { user: { id: 'u', termsVersion: '1.6', needsProfileSetup: true }, needsEmailVerification: false, activeMode: 'professional' },
     { user: CONSENTED, needsEmailVerification: false, activeMode: null },
     { user: CONSENTED, needsEmailVerification: false, activeMode: 'client' },
     { user: CONSENTED, needsEmailVerification: false, activeMode: 'professional', proProfileCompleted: true },

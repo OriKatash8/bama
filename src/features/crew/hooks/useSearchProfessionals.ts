@@ -24,6 +24,8 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
   const currentUserId = useAuthStore((s) => s.user?.id);
   // Demo accounts (App Review) and real users never see each other — demoSides.ts.
   const demo = useDemoStore((s) => s.config);
+  // Live, so blocking someone removes them from results already on screen.
+  const blockedIds = useBlockStore((s) => s.blocked);
 
   void subcategory; // subcategory no longer stored on skills — kept as param for API compat
 
@@ -81,5 +83,8 @@ export function useSearchProfessionals(category: string, subcategory?: string) {
     return () => { cancelled = true; };
   }, [category, currentUserId]);
 
-  return { results: results.filter((r) => isSameSide(demo, currentUserId, r.user.id)), isLoading };
+  return {
+    results: results.filter((r) => isSameSide(demo, currentUserId, r.user.id)).filter((r) => !blockedIds.includes(r.user.id)),
+    isLoading,
+  };
 }

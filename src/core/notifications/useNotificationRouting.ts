@@ -200,6 +200,11 @@ export function useNotificationRouting(): void {
         );
         return;
       }
+      // A new report or block, for the admin: straight to the queue.
+      case 'admin_report': {
+        await navigate(null, '/admin/reports');
+        return;
+      }
       case 'project': {
         // The noticeboard lives on the dashboard tab (no standalone route).
         await navigate('professional', '/(professional)/(tabs)/dashboard');

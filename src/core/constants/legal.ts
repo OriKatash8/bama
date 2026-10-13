@@ -3,7 +3,7 @@
  * documents change: every signed-in user whose stored termsVersion is lower (or
  * missing) is sent to the consent screen before they can use the app again.
  */
-export const CURRENT_TERMS_VERSION = '1.5';
+export const CURRENT_TERMS_VERSION = '1.6';
 /** The name older code imports; always the current version. */
 export const TERMS_VERSION = CURRENT_TERMS_VERSION;
 
