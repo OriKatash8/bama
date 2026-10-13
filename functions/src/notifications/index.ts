@@ -30,6 +30,8 @@ const ESSENTIAL = [
   // A mention is addressed to you by name and already overrides mute; letting
   // notifPrefs silence it would make @ mean nothing.
   'mention',
+  // A report or block reaching the admin: Guideline 1.2 needs these seen.
+  'admin_report',
 ];
     if (type && !ESSENTIAL.includes(type)) {
       const userDoc = await db.collection('users').doc(notification.userId).get();

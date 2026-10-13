@@ -5,6 +5,8 @@ export * from './claude';
 export * from './video';
 export * from './moderation';
 export * from './moderation/lookup';
+export * from './moderation/blocking';
+export * from './moderation/reportAlert';
 export * from './system';
 export * from './account/deletion';
 export * from './account/discardSignup';
