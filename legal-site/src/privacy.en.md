@@ -1,8 +1,8 @@
 # BAMA — Privacy Policy
 
-Version: 1.5
+Version: 1.6
 
-Last updated: 11/10/2026
+Last updated: 13/10/2026
 
 This is an English translation of the BAMA Privacy Policy. The Hebrew version is the binding version. In case of any conflict, the Hebrew version prevails.
 
@@ -71,7 +71,7 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 3.5. Brokerage Fee — calculating the fee, sending payment requests, issuing billing documents, handling disputes, refunds and non-payment, and bookkeeping.
 
-3.6. Security, enforcement and fraud prevention — detecting suspicious activity, preventing impersonation and block evasion, looking into reports, disputes and disagreements, and enforcing the Terms. For these purposes only, the Operator's team may review the content of conversations, as set out in section 11.2 of the Terms.
+3.6. Security, enforcement and fraud prevention — detecting suspicious activity, preventing impersonation and block evasion, looking into reports, disputes and disagreements, and enforcing the Terms. For these purposes only, the Operator's team may review the content of conversations, as set out in section 11.2 of the Terms. A report may include a copy of the reported content and any screenshot you attach, and is kept for moderation purposes. The list of users you blocked is not visible to other users and is used only to hide their content from you, and to notify the Operator of the block, as set out in section 15.2.1 of the Terms.
 
 3.7. Support — responding to requests and handling faults and requests.
 
@@ -208,4 +208,4 @@ For questions, access, correction or deletion requests, or any privacy matter:
 - Address: HaHadarim St., Kadima-Zoran, Israel
 - In the App: the "Contact Us" screen in Settings
 
-BAMA — Build A Media Alliance · Version 1.5 · 11.10.2026
+BAMA — Build A Media Alliance · Version 1.6 · 13.10.2026
