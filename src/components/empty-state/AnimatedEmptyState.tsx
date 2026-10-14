@@ -22,6 +22,7 @@ import {
   TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, illustrationHeightFor, textFitsOnScreen,
   scaleLeft, scaleTop, type MarketCategoryId, type Placement, type RoleId,
 } from './emptyStateLayout';
+import { shadow } from '@core/theme/shadow';
 
 export type EmptyStateVariant = 'tiles' | 'bubbles' | 'board' | 'listings';
 
@@ -480,11 +481,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'rgba(255,255,255,0.58)',
     borderWidth: 1,
-    shadowColor: '#5A46C8',
-    shadowOpacity: 0.13,
-    shadowOffset: { width: 0, height: 12 },
-    shadowRadius: 30,
-    elevation: 4,
+    ...shadow({ color: '#5A46C8', opacity: 0.13, radius: 30, offsetX: 0, offsetY: 12, elevation: 4 }),
   },
   // Height follows the content (min 104): a fixed 104 overflowed on iPhone,
   // where the board's ₪ row made the cards taller still. 12pt vertical padding

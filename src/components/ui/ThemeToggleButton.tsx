@@ -1,5 +1,6 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useUiStore } from '@core/stores/uiStore';
+import { shadow } from '@core/theme/shadow';
 
 export function ThemeToggleButton() {
   const isDark = useUiStore((s) => s.isDark);
@@ -23,11 +24,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#004aad',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 8,
+    ...shadow({ color: '#000', opacity: 0.35, radius: 4, offsetX: 0, offsetY: 2, elevation: 8 }),
   },
   icon: { fontSize: 20 },
 });

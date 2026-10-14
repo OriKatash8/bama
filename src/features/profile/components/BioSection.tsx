@@ -4,6 +4,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -74,11 +75,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 13,
     paddingHorizontal: 15,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 6, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
   cardLabel: {
     fontSize: 13,

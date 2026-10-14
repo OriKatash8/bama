@@ -32,6 +32,7 @@ import type { User, ProfessionalProfile } from '@core/types/user';
 import type { MediaAsset } from '@core/types/media';
 import type { Review } from '@core/types/project';
 import { useTabBarClearance } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -409,11 +410,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 20,
     gap: 14,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   errorText: { fontSize: 16, fontWeight: '500' },

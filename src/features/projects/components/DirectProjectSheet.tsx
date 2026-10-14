@@ -18,6 +18,7 @@ import { findLocation, localizeLocation, searchLocations } from '@core/constants
 import type { CrewRequestSlot } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 // Violet on white, the client mode's accent: the chrome — buttons, icons,
 // borders — carries the colour, and every line of copy is plain black. Only
@@ -548,10 +549,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   header: {
     alignItems: 'center',

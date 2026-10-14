@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { shadow } from '@core/theme/shadow';
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -159,11 +160,7 @@ const styles = StyleSheet.create({
     padding: 14,
     backgroundColor: '#FFFFFF',
     borderColor: '#E4DBFA',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
+    ...shadow({ color: '#4C1D95', opacity: 0.18, radius: 18, offsetX: 0, offsetY: 8, elevation: 10 }),
   },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   navArrow: { fontSize: 24, fontWeight: '600', paddingHorizontal: 8, color: VIOLET },

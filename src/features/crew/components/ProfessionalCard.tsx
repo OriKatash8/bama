@@ -8,6 +8,7 @@ import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProfessionalResult } from '../hooks/useSearchProfessionals';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -173,11 +174,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 5, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
   row: { alignItems: 'flex-start', gap: 12 },
   avatar: { width: 52, height: 52, borderRadius: 26 },

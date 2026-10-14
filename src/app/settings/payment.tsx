@@ -15,6 +15,7 @@ import type { ProjectFee, ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -270,11 +271,7 @@ export default function BalanceScreen() {
 // The app's card convention, hardcoded per screen rather than themed — see the
 // note on `card` in src/core/hooks/useTheme.tsx for why the token is not used.
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3',
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
+  ...shadow({ color: '#1e4fa3', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
 } as const;
 const CARD_BORDER = 'rgba(30,79,163,0.07)';
 /** Green marks affirmative STATE on this screen. There is no action to colour. */

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Platform, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@core/hooks/useTheme';
+import { shadow } from '@core/theme/shadow';
 
 type Props = {
   value: boolean;
@@ -82,11 +83,7 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: THUMB / 2,
     backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    ...shadow({ color: '#000', opacity: 0.18, radius: 2, offsetX: 0, offsetY: 1, elevation: 2 }),
   },
   disabled: { opacity: 0.5 },
 });

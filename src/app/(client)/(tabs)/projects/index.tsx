@@ -29,6 +29,7 @@ import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 import {
   nextPriceSort, effectiveShowOnly, type OfferSort, type ShowOnly,
 } from '@features/offers/utils/offerFilters';
+import { shadow } from '@core/theme/shadow';
 
 /** Which list the single vertical column is showing. Projects is always the
  *  default — deliberately NOT switched based on whether offers are pending. */
@@ -600,11 +601,7 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingHorizontal: 20,
     gap: 20,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
   section: { gap: 10 },
   // Four chips rather than the one "Sort & Filter" tile, so the row wraps and
@@ -645,11 +642,7 @@ const styles = StyleSheet.create({
     // translucent track instead. It only ever shows while the offers segment is
     // NOT selected (opening it marks everything seen), so it never sits on the
     // white thumb.
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 3,
+    ...shadow({ color: '#4C1D95', opacity: 0.25, radius: 4, offsetX: 0, offsetY: 1, elevation: 3 }),
   },
   offersBadgeStart: { left: -7 },
   offersBadgeEnd: { right: -7 },

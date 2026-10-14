@@ -7,6 +7,7 @@ import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -85,11 +86,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 1,
+    ...shadow({ color: '#000', opacity: 0.06, radius: 3, offsetX: 0, offsetY: 1, elevation: 1 }),
   },
   buttonDisabled: { opacity: 0.6 },
   googleLogo: { width: 50, height: 50 },

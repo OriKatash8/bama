@@ -22,6 +22,7 @@ import { cancelProject } from '@features/crew/services/projectCancellation';
 import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -36,11 +37,7 @@ function makeT(translations: Translations) {
 }
 
 const CARD_SHADOW = {
-  shadowColor: '#4C1D95',
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
+  ...shadow({ color: '#4C1D95', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
 } as const;
 
 /** Texts. */
@@ -546,11 +543,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 4,
     width: MENU_WIDTH,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 10,
+    ...shadow({ color: '#4C1D95', opacity: 0.12, radius: 10, offsetX: 0, offsetY: 4, elevation: 10 }),
   },
   moreMenuItemRow: {
     flexDirection: 'row',

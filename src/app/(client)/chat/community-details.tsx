@@ -40,6 +40,7 @@ import type { Chat } from '@features/chat/types';
 import type { User } from '@core/types/user';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -491,11 +492,7 @@ const MEMBER_GAP = 12;
 const MEMBER_DIVIDER_INSET = MEMBER_ROW_PAD + MEMBER_AVATAR + MEMBER_GAP;
 
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3' as const,
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
+  ...shadow({ color: '#1e4fa3' as const, opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
 };
 
 const styles = StyleSheet.create({

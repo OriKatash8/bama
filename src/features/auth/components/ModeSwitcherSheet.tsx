@@ -11,6 +11,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ActiveMode } from '@core/types/user';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -157,10 +158,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 4,
     borderWidth: 1,
     padding: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.15, radius: 20, elevation: 20 }),
   },
   row: {
     flexDirection: 'row',

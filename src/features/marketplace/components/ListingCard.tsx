@@ -10,6 +10,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { localizeLocation } from '@core/constants/israelLocations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -118,11 +119,7 @@ const styles = StyleSheet.create({
     borderColor: '#EFEDF5',
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 5, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
   imageWrap: { width: '100%', height: 112, position: 'relative' },
   image: { width: '100%', height: 112 },

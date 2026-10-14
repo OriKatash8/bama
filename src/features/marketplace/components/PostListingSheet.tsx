@@ -21,6 +21,7 @@ import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition, RentalPeriod } from '../types';
 import { brandLabel, PERIOD_SUFFIX_KEY, RENTAL_PERIODS, periodOf } from '../utils';
 import { normalizeCourseUrl as normalizeWebUrl } from '@features/courses/courseUrl';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -600,10 +601,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   header: {
     flexDirection: 'row',

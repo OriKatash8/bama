@@ -24,6 +24,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { ROLE_QUESTIONS, questionLabel } from '@features/projects/constants/roleQuestions';
 import { formatIsoDay } from '@utils/formatters';
+import { shadow } from '@core/theme/shadow';
 
 /** How long publishing waits for the few-matching-pros check before skipping it. */
 const SCARCITY_SCAN_TIMEOUT_MS = 2000;
@@ -476,11 +477,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 18,
     gap: 12,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
 
   card: {
@@ -489,11 +486,7 @@ const styles = StyleSheet.create({
     borderColor: '#EFEDF5',
     borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 6, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
   cardHeader: {
     alignItems: 'center',
@@ -559,11 +552,7 @@ const styles = StyleSheet.create({
     backgroundColor: VIOLET,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.28,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.28, radius: 9, offsetX: 0, offsetY: 6, elevation: 6 }),
   },
   publishBtnPressed: { backgroundColor: '#5B21B6' },
   publishBtnDisabled: { opacity: 0.4 },

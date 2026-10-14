@@ -1,6 +1,7 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import type { MentionAutocompleteState, MentionRow } from '../hooks/useMentionAutocomplete';
+import { shadow } from '@core/theme/shadow';
 
 /** Taller than this and it starts eating the conversation. */
 const MAX_HEIGHT = 240;
@@ -114,10 +115,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     marginBottom: 6,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    ...shadow({ color: '#000', opacity: 0.12, radius: 12, offsetX: 0, offsetY: 4 }),
   },
   row: { alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 9 },
   avatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },

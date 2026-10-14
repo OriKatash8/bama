@@ -4,6 +4,7 @@ import { BottomTabBarHeightContext } from 'expo-router/js-tabs';
 import { useSegments } from 'expo-router';
 import { useAuthStore } from '@core/stores/authStore';
 import type { ViewStyle } from 'react-native';
+import { shadow } from '@core/theme/shadow';
 
 export const FLOATING_TAB_BAR_ACTIVE_COLOR = '#004aad';
 
@@ -28,11 +29,7 @@ export function getFloatingTabBarStyle(isDark: boolean): ViewStyle {
     backgroundColor: isDark ? 'rgba(15, 15, 31, 0.85)' : 'rgba(255, 255, 255, 0.85)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 12,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 12, offsetX: 0, offsetY: 8, elevation: 12 }),
     ...(Platform.OS === 'web' ? ({ backdropFilter: 'blur(20px)' } as any) : null),
   };
 }

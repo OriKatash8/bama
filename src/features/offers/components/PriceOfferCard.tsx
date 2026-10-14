@@ -7,6 +7,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { categoryLabel } from '@features/crew/data/categories';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -19,11 +20,7 @@ function makeT(translations: Translations) {
 }
 
 const CARD_SHADOW = {
-  shadowColor: '#4C1D95',
-  shadowOpacity: 0.05,
-  shadowRadius: 7,
-  shadowOffset: { width: 0, height: 2 },
-  elevation: 2,
+  ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 7, offsetX: 0, offsetY: 2, elevation: 2 }),
 } as const;
 
 // Violet card palette, local to the client projects screen's cards.

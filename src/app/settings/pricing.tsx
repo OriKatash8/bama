@@ -9,6 +9,7 @@ import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -145,11 +146,7 @@ export default function PricingScreen() {
 // The app's card convention, hardcoded per screen rather than themed — matching
 // src/app/settings/payment.tsx, which this screen sits beside.
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3',
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 2,
+  ...shadow({ color: '#1e4fa3', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 2 }),
 };
 
 const styles = StyleSheet.create({

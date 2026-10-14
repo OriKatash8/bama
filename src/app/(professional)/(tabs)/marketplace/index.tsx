@@ -31,6 +31,7 @@ import type { MarketplaceListing, MarketplaceListingType, ProductCondition } fro
 import { brandLabel, emptyCase, sortByPrice } from '@features/marketplace/utils';
 import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -537,11 +538,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     paddingTop: 16,
     paddingHorizontal: 20,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
   /** The empty state's panel colour, so sheet and panel read as one. */
   sheetEmpty: { backgroundColor: '#F4F2FB' },
@@ -555,11 +552,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 999,
-    shadowColor: '#1E3A8A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.36,
-    shadowRadius: 11,
-    elevation: 10,
+    ...shadow({ color: '#1E3A8A', opacity: 0.36, radius: 11, offsetX: 0, offsetY: 8, elevation: 10 }),
   },
   fabFill: { flex: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 
@@ -577,10 +570,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
     gap: 8,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 5, offsetX: 0, offsetY: 2 }),
   },
   searchWrapFocused: { borderColor: BLUE },
   searchBar: {
@@ -681,10 +671,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   filterCardHeader: {
     flexDirection: 'row',

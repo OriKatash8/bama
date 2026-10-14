@@ -6,6 +6,7 @@ import { AppText } from '@components/ui/AppText';
 import { Settings } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import type { Lang } from '@core/stores/settingsStore';
+import { shadow } from '@core/theme/shadow';
 
 export function AuthSettingsButton() {
   const [open, setOpen] = useState(false);
@@ -69,11 +70,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: 240,
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 8,
+    ...shadow({ color: '#000', opacity: 0.18, radius: 12, offsetX: 0, offsetY: 4, elevation: 8 }),
   },
   rowLabel: {
     fontSize: 12,

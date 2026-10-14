@@ -15,6 +15,7 @@ import { ROLE_BY_ID, getSpecializations, labelOf } from '../data/categories';
 import type { CrewRequestSlot } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -472,11 +473,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 16,
     backgroundColor: VIOLET,
-    shadowColor: '#3B19A0',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    ...shadow({ color: '#3B19A0', opacity: 0.3, radius: 10, offsetX: 0, offsetY: 8, elevation: 8 }),
   },
   submitBtnOff: { opacity: 0.5 },
   submitFill: { flex: 1, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

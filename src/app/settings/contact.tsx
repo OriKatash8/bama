@@ -9,6 +9,7 @@ import { useModeAccent } from '@core/navigation/floatingTabBar';
 import { BAMA_CONTACT_EMAIL, BAMA_WHATSAPP_NUMBER } from '@core/constants/contact';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 /** +972529710467 → "+972 52-971-0467", for reading. */
 function formatIsraeliNumber(e164: string): string {
@@ -100,11 +101,7 @@ export default function ContactScreen() {
 }
 
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3',
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 2,
+  ...shadow({ color: '#1e4fa3', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 2 }),
 };
 
 // lineHeight ≥ 1.47× fontSize throughout: Heebo clips glyph tops below that on iOS.

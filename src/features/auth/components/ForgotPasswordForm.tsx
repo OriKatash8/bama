@@ -13,6 +13,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { isValidEmail } from '@utils/validators';
+import { shadow } from '@core/theme/shadow';
 
 
 type Translations = typeof en;
@@ -105,11 +106,7 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 10,
+    ...shadow({ color: '#000', opacity: 0.4, radius: 24, offsetX: 0, offsetY: 8, elevation: 10 }),
   },
   appLogo: { width: '80%', height: 130, resizeMode: 'contain', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 28, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },

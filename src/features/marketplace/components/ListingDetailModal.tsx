@@ -30,6 +30,7 @@ const CONDITION_COLOR: Record<string, string> = {
 import type { MarketplaceListing } from '../types';
 import { PERIOD_SUFFIX_KEY, periodOf } from '../utils/rentalPrice';
 import { useState, useRef } from 'react';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -519,10 +520,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
 
   header: {
