@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, PanResponder, Dimensions } from 'react-native';
+import { View, PanResponder, Dimensions, Platform } from 'react-native';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { Search, Home, MessageCircle, FolderKanban } from 'lucide-react-native';
 import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
@@ -117,7 +117,8 @@ export default function ClientTabsLayout() {
           screenOptions={{
             headerShown: false,
             // Full-width slide between tabs, like the stack's push/pop.
-            ...TAB_SLIDE,
+            // iOS only: on Android the full-width scene transform hangs the render thread.
+            ...(Platform.OS === 'ios' ? TAB_SLIDE : null),
             tabBarShowLabel: true,
             tabBarStyle: hideTabBar ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
             // Docked glass bar; it owns the bottom safe-area inset (the provider

@@ -36,6 +36,7 @@ it('animates with a spring, like the stack', () => {
 it('both tab bars use it', () => {
   for (const group of ['(client)', '(professional)']) {
     const src = readFileSync(join(__dirname, '..', '..', '..', 'app', group, '(tabs)', '_layout.tsx'), 'utf8');
-    expect(src).toMatch(/\.\.\.TAB_SLIDE/);
+    // iOS only: on Android the slide freezes the render thread.
+    expect(src).toMatch(/\.\.\.\(Platform\.OS === 'ios' \? TAB_SLIDE : null\)/);
   }
 });
