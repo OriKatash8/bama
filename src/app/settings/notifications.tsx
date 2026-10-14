@@ -90,14 +90,14 @@ export default function NotificationsSettings() {
   }
 
   const sectionHeader = (label: string) => (
-    <AppText weight="bold" style={[styles.sectionHeader, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+    <AppText weight="bold" style={[styles.sectionHeader, { color: '#000000', textAlign: rtl ? 'right' : 'left' }]}>
       {label}
     </AppText>
   );
 
   const prefRow = (type: string, value: boolean, disabled: boolean, onChange?: (v: boolean) => void) => (
     <View key={type} style={[styles.row, { flexDirection: rowDir, borderBottomColor: colors.border }]}>
-      <AppText weight="regular" style={[styles.rowLabel, { color: disabled ? colors.textMuted : colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+      <AppText weight="regular" style={[styles.rowLabel, { color: '#000000', textAlign: rtl ? 'right' : 'left' }]}>
         {t(`settings.notif_type_${type}`)}
       </AppText>
       <Switch
@@ -120,7 +120,7 @@ export default function NotificationsSettings() {
         hitSlop={10}
       >
         {rtl ? <ChevronRight size={22} color={accent} strokeWidth={2} /> : <ChevronLeft size={22} color={accent} strokeWidth={2} />}
-        <AppText weight="bold" style={[styles.title, { color: accent }]}>{t('settings.notifications')}</AppText>
+        <AppText weight="bold" style={[styles.title, { color: '#000000' }]}>{t('settings.notifications')}</AppText>
       </TouchableOpacity>
 
       {/* Section 1 — OS permission */}
@@ -132,7 +132,7 @@ export default function NotificationsSettings() {
             <View style={[styles.permIconOk, { backgroundColor: accent }]}>
               <Check size={15} color="#ffffff" strokeWidth={3} />
             </View>
-            <AppText weight="semiBold" style={[styles.permText, { color: colors.text, textAlign: rtl ? 'right' : 'left' }]}>
+            <AppText weight="semiBold" style={[styles.permText, { color: '#000000', textAlign: rtl ? 'right' : 'left' }]}>
               {t('settings.notif_perm_on')}
             </AppText>
           </View>
@@ -142,7 +142,7 @@ export default function NotificationsSettings() {
           // re-request there still works, so those users fall through to the
           // "enable" branch instead of a pointless trip to system Settings.
           <>
-            <AppText weight="regular" style={[styles.permText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+            <AppText weight="regular" style={[styles.permText, { color: '#000000', textAlign: rtl ? 'right' : 'left' }]}>
               {t('settings.notif_perm_denied_text')}
             </AppText>
             <TouchableOpacity style={[styles.permBtn, { backgroundColor: accent }]} onPress={() => Linking.openSettings()} activeOpacity={0.85} accessibilityRole="button">
@@ -153,7 +153,7 @@ export default function NotificationsSettings() {
           <>
             <View style={[styles.permRow, { flexDirection: rowDir }]}>
               <Bell size={18} color={colors.textMuted} strokeWidth={1.8} />
-              <AppText weight="regular" style={[styles.permText, { color: colors.textSec, textAlign: rtl ? 'right' : 'left' }]}>
+              <AppText weight="regular" style={[styles.permText, { color: '#000000', textAlign: rtl ? 'right' : 'left' }]}>
                 {t('settings.notif_perm_enable_text')}
               </AppText>
             </View>
@@ -171,7 +171,7 @@ export default function NotificationsSettings() {
           {/* Section 2 — Essential (always on, disabled) */}
           {sectionHeader(t('settings.notif_essential_title'))}
           {ESSENTIAL_TYPES.map((type) => prefRow(type, true, true))}
-          <AppText weight="regular" style={[styles.groupNote, { color: colors.textMuted, textAlign: rtl ? 'right' : 'left' }]}>
+          <AppText weight="regular" style={[styles.groupNote, { color: '#000000', textAlign: rtl ? 'right' : 'left' }]}>
             {t('settings.notif_essential_desc')}
           </AppText>
 

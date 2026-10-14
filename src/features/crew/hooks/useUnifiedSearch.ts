@@ -8,6 +8,7 @@ import { computeAverageRating } from '@features/reviews/utils/rating';
 import { fetchPublishedReviews } from '@features/reviews/services/reviewsService';
 import { ROLE_BY_ID } from '@features/crew/data/categories';
 import { useAuthStore } from '@core/stores/authStore';
+import { useBlockStore } from '@core/stores/blockStore';
 import { useDemoStore } from '@core/stores/demoStore';
 import { isSameSide } from '@core/demo/demoSides';
 
@@ -88,5 +89,9 @@ export function useUnifiedSearch(query: string): { results: ProfessionalResult[]
 
   // Demo accounts (App Review) and real users never see each other — demoSides.ts.
   const demo = useDemoStore((s) => s.config);
-  return { results: results.filter((r) => isSameSide(demo, currentUserId, r.user.id)), isLoading };
+  const blockedIds = useBlockStore((s) => s.blocked);
+  return {
+    results: results.filter((r) => isSameSide(demo, currentUserId, r.user.id)).filter((r) => !blockedIds.includes(r.user.id)),
+    isLoading,
+  };
 }

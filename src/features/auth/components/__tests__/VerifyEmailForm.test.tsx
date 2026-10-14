@@ -38,7 +38,7 @@ beforeEach(() => {
   mockLang = 'en';
   // A just-registered account: its next step is the name / picture page.
   useAuthStore.setState({
-    user: { id: 'u1', termsVersion: '1.5', needsProfileSetup: true } as never,
+    user: { id: 'u1', termsVersion: '1.6', needsProfileSetup: true } as never,
     needsEmailVerification: false,
     activeMode: null,
   });
@@ -104,7 +104,7 @@ describe('a saved invite link (returning user, mode restored: mode-select is ski
   beforeEach(async () => {
     await usePendingIntentStore.persist.rehydrate();
     usePendingIntentStore.setState({ resume: null, afterProfile: null, consumedAt: 0 });
-    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.5' } as never, needsEmailVerification: false, activeMode: 'client' });
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.6' } as never, needsEmailVerification: false, activeMode: 'client' });
   });
 
   it('a quiet poll that verifies goes to the link, once, even when the effect runs twice (StrictMode)', async () => {

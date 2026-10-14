@@ -5,7 +5,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useBlockStore } from '@core/stores/blockStore';
-import { blockUser, unblockUser } from '../services/blockService';
+import { blockUser, unblockUser, type BlockContext } from '../services/blockService';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 
@@ -29,12 +29,15 @@ function makeT(translations: Translations) {
  * nothing on one platform is worse than no confirmation.
  */
 export function BlockUserSheet({
-  visible, onClose, targetUserId, targetName,
+  visible, onClose, targetUserId, targetName, context, chatId,
 }: {
   visible: boolean;
   onClose: () => void;
   targetUserId: string;
   targetName: string;
+  /** Where the block was made — recorded on the admin report. */
+  context?: BlockContext;
+  chatId?: string;
 }) {
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
@@ -53,7 +56,7 @@ export function BlockUserSheet({
         await unblockUser(currentUserId, targetUserId);
         showToast(t('blocking.unblocked_toast'), 'success');
       } else {
-        await blockUser(currentUserId, targetUserId);
+        await blockUser(currentUserId, targetUserId, { context, chatId });
         showToast(t('blocking.blocked_toast'), 'success');
       }
       onClose();

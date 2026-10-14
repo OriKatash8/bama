@@ -195,6 +195,11 @@ export function RegisterForm() {
           style={{ borderColor: '#cb6ce6', color: colors.text, ...font.regular, textAlign }}
         />
 
+        {/* Stated before sign-up, beside the box that accepts it (Guideline 1.2). */}
+        <AppText weight="regular" testID="register-zero-tolerance" style={[styles.termsText, { color: colors.text, textAlign }]}>
+          {t('auth.zero_tolerance')}
+        </AppText>
+
         <View style={styles.termsRow}>
           <Checkbox
             checked={termsAccepted}

@@ -479,7 +479,13 @@
     "success": "הדיווח נשלח. נבדוק אותו בקרוב.",
     "min_chars": "אנא תאר את הבעיה (מינימום 20 תווים)",
     "failed_title": "הדיווח לא נשלח",
-    "failed": "משהו השתבש בשליחת הדיווח. נסו שוב."
+    "failed": "משהו השתבש בשליחת הדיווח. נסו שוב.",
+    "title_user": "דיווח על משתמש",
+    "title_message": "דיווח על הודעה",
+    "title_listing": "דיווח על מודעה",
+    "title_review": "דיווח על ביקורת",
+    "title_portfolio": "דיווח על פריט בתיק עבודות",
+    "action": "דווח"
   },
   "accessibility": {
     "language_header": "שפה",
@@ -747,7 +753,14 @@
     "delete_report": "מחיקת דיווח",
     "delete_report_confirm": "למחוק את הדיווח על {{name}}? מה שנעשה בעקבותיו נשאר מתועד.",
     "report_deleted": "הדיווח נמחק",
-    "delete_report_failed": "לא ניתן למחוק את הדיווח"
+    "delete_report_failed": "לא ניתן למחוק את הדיווח",
+    "kind_user_blocked": "חסימת משתמש",
+    "kind_user": "משתמש",
+    "kind_message": "הודעה",
+    "kind_listing": "מודעה",
+    "kind_review": "ביקורת",
+    "kind_portfolio": "פריט בתיק עבודות",
+    "content_label": "תוכן"
   },
   "admin_money": {
     "pending_now": "כרגע",
@@ -813,7 +826,15 @@
     "reason_label": "סיבה",
     "appeal_hint": "אם לדעתך מדובר בטעות, ניתן לערער על ידי פנייה לתמיכה.",
     "dismiss": "סגירה",
-    "acknowledge": "הבנתי"
+    "acknowledge": "הבנתי",
+    "reply": "השב",
+    "report_message": "דווח על הודעה",
+    "report_user": "דווח על משתמש",
+    "block_user": "חסום משתמש",
+    "cancel": "ביטול",
+    "menu": "דיווח או חסימה",
+    "hidden_banner": "הודעות ממשתמש שחסמת מוסתרות.",
+    "manage_blocked": "ניהול"
   },
   "history": {
     "title": "היסטוריה",
@@ -1143,7 +1164,8 @@
     "phone": "מספר טלפון",
     "phone_optional": "מספר טלפון (לא חובה)",
     "phone_email_fallback_hint": "בלי מספר טלפון, כתובת האימייל שלך תוצג לחברי הפרויקט בסיום הפרויקט.",
-    "err_phone_invalid": "יש להזין מספר טלפון תקין."
+    "err_phone_invalid": "יש להזין מספר טלפון תקין.",
+    "zero_tolerance": "ל-BAMA אפס סובלנות כלפי תוכן פוגעני ומשתמשים מתעללים. מפרים יוסרו מהשירות, ודיווחים נבחנים בתוך 24 שעות."
   },
   "common": {
     "cancel": "ביטול",
@@ -1223,7 +1245,8 @@
     "notif_type_purchase": "רכישות בשוק",
     "pricing": "תעריפים",
     "phone": "מספר טלפון",
-    "delete_account": "מחיקת חשבון"
+    "delete_account": "מחיקת חשבון",
+    "blocked_users": "משתמשים חסומים"
   },
   "communities": {
     "ask_delete": "בקשה למחיקת הקהילה",
@@ -1668,7 +1691,12 @@
     "blocked_toast": "נחסם",
     "unblocked_toast": "החסימה בוטלה",
     "failed": "לא הצלחנו. נסו שוב.",
-    "cancel": "ביטול"
+    "cancel": "ביטול",
+    "list_title": "משתמשים חסומים",
+    "list_empty": "לא חסמת אף משתמש.",
+    "list_hint": "משתמשים שחסמת לא יוכלו לפנות אליך, ולא תראה את התוכן שלהם. בטל חסימה כדי לראות אותם שוב.",
+    "unknown_user": "משתמש לא מוכר",
+    "profile_hidden": "חסמת משתמש זה. הפרופיל, הביקורות ותיק העבודות שלו מוסתרים."
   },
   "empty_state": {
     "role_label": {

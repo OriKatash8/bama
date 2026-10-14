@@ -479,7 +479,13 @@
     "success": "Report submitted. We'll review it soon.",
     "min_chars": "Please describe the issue (min 20 characters)",
     "failed_title": "Report not sent",
-    "failed": "Something went wrong sending your report. Please try again."
+    "failed": "Something went wrong sending your report. Please try again.",
+    "title_user": "Report User",
+    "title_message": "Report Message",
+    "title_listing": "Report Listing",
+    "title_review": "Report Review",
+    "title_portfolio": "Report Portfolio Item",
+    "action": "Report"
   },
   "accessibility": {
     "language_header": "LANGUAGE",
@@ -747,7 +753,14 @@
     "delete_report": "Delete report",
     "delete_report_confirm": "Delete the report about {{name}}? What was done about it stays on record.",
     "report_deleted": "Report deleted",
-    "delete_report_failed": "Couldn't delete the report"
+    "delete_report_failed": "Couldn't delete the report",
+    "kind_user_blocked": "User blocked",
+    "kind_user": "User",
+    "kind_message": "Message",
+    "kind_listing": "Listing",
+    "kind_review": "Review",
+    "kind_portfolio": "Portfolio item",
+    "content_label": "Content"
   },
   "admin_money": {
     "pending_now": "Right now",
@@ -813,7 +826,15 @@
     "reason_label": "Reason",
     "appeal_hint": "If you believe this is a mistake, you can appeal by contacting support.",
     "dismiss": "Close",
-    "acknowledge": "I understand"
+    "acknowledge": "I understand",
+    "reply": "Reply",
+    "report_message": "Report message",
+    "report_user": "Report user",
+    "block_user": "Block user",
+    "cancel": "Cancel",
+    "menu": "Report or block",
+    "hidden_banner": "Messages from someone you blocked are hidden.",
+    "manage_blocked": "Manage"
   },
   "history": {
     "title": "History",
@@ -1143,7 +1164,8 @@
     "phone": "Phone number",
     "phone_optional": "Phone number (optional)",
     "phone_email_fallback_hint": "Without a phone number, your email address will be shown to the project's members when the project ends.",
-    "err_phone_invalid": "Enter a valid phone number."
+    "err_phone_invalid": "Enter a valid phone number.",
+    "zero_tolerance": "BAMA has zero tolerance for objectionable content and abusive users. Violators are removed, and reports are reviewed within 24 hours."
   },
   "common": {
     "cancel": "Cancel",
@@ -1223,7 +1245,8 @@
     "notif_type_purchase": "Marketplace purchases",
     "pricing": "Pricing",
     "phone": "Phone number",
-    "delete_account": "Delete account"
+    "delete_account": "Delete account",
+    "blocked_users": "Blocked users"
   },
   "communities": {
     "ask_delete": "Ask to delete the community",
@@ -1668,7 +1691,12 @@
     "blocked_toast": "Blocked",
     "unblocked_toast": "Unblocked",
     "failed": "Couldn't do that. Please try again.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "list_title": "Blocked users",
+    "list_empty": "You haven't blocked anyone.",
+    "list_hint": "People you block can't message you, and you won't see their content. Unblock to see them again.",
+    "unknown_user": "Unknown user",
+    "profile_hidden": "You blocked this user. Their profile, reviews and portfolio are hidden."
   },
   "empty_state": {
     "role_label": {

@@ -135,6 +135,10 @@ export function ConsentForm() {
           {t('auth.consent_body')}
         </AppText>
 
+        <AppText weight="regular" testID="consent-zero-tolerance" style={[styles.body, { color: colors.text, textAlign }]}>
+          {t('auth.zero_tolerance')}
+        </AppText>
+
         <Checkbox
           testID="consent-terms"
           checked={termsAccepted}

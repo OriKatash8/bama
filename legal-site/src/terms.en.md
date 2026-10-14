@@ -1,8 +1,8 @@
 # BAMA — Terms of Use
 
-Version: 1.5
+Version: 1.6
 
-Last updated: 11/10/2026
+Last updated: 13/10/2026
 
 This is an English translation of the BAMA Terms of Use. The Hebrew version is the binding version. In case of any conflict between the Hebrew version and this translation, the Hebrew version prevails (see section 1.7).
 
@@ -412,6 +412,8 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 ## 15. Prohibited Conduct, Reporting and Moderation
 
+15.0. Zero tolerance. BAMA has zero tolerance for objectionable content and abusive users. Offensive, sexual, violent, racist, inciting, threatening or harassing content, content harmful to minors, and abusive conduct toward other Users are not permitted anywhere in the App — including messages, communities, listings, reviews, profiles and portfolios. A User who breaches this section will be removed from the App, and the offending content will be removed.
+
 15.1. Prohibited actions. When using the App, the following are strictly prohibited:
 
 15.1.1. Violating any law, including copyright, defamation, privacy protection, consumer protection and anti-money-laundering laws;
@@ -434,11 +436,11 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 15.1.10. Posting fictitious Projects or listings.
 
-15.2. Reporting. The App allows every User to report content, a listing, a review or a User, including by attaching a screenshot. Reports will be reviewed by the Operator's team.
+15.2. Reporting. Every User, message, listing, review and portfolio item in the App can be reported from within the App, including by attaching a screenshot. Reports are reviewed by the Operator's team.
 
-15.2.1. Blocking a User. Any User may block another User in the App. A blocked User will not be able to contact you through the App. Blocking does not cancel an Engagement already made, does not affect charges already created, and does not replace a report under section 15.2.
+15.2.1. Blocking a User. Any User may block another User in the App, from a chat, a message or a profile. Once a User is blocked, that User's messages, listings, reviews, profile and portfolio are hidden from you immediately, and they will not be able to send you direct messages through the App. The Operator is notified of every block and may treat it as a report. A blocked User who is a member of a project chat with you remains a member, so that the Engagement, its charges and its completion are not disrupted. Blocking does not cancel an Engagement already made, does not affect charges already created, and does not replace a report under section 15.2. You can see the Users you blocked, and unblock them, under Settings → Blocked users.
 
-15.3. Handling reports. The Operator will aim to review reports within a reasonable time. Following a review, the Operator may, at its discretion: reject the report; warn the User; remove or hide content; restrict features; suspend an account; permanently block a User; or contact the competent authorities.
+15.3. Handling reports. Reports are reviewed by the Operator's team within 24 hours of receipt. Following a review, the Operator may, at its discretion: reject the report; warn the User; remove or hide content; restrict features; suspend an account; permanently remove a User from the App; or contact the competent authorities. A User found to have posted objectionable content or to have acted abusively will be removed from the App.
 
 15.4. No duty to monitor. The Operator does not proactively and routinely monitor User Content and does not undertake to detect every breach. Operating moderation mechanisms does not make the Operator responsible for content that was not removed.
 
@@ -624,4 +626,4 @@ For questions, requests, reports, content removal requests, suspension appeals o
 
 We will try to respond within a reasonable time.
 
-BAMA — Build A Media Alliance · Version 1.5 · 11.10.2026
+BAMA — Build A Media Alliance · Version 1.6 · 13.10.2026

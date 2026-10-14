@@ -49,7 +49,7 @@ describe.each([
   ['professional', '/(professional)/(tabs)/dashboard', 'PRO-DASHBOARD'],
 ] as const)('a new social account choosing %s', (mode, home, homeText) => {
   it('with no phone number, goes straight in — never the phone screen', () => {
-    useAuthStore.setState({ user: { id: 'google-user', termsVersion: '1.5' } as never, activeMode: mode, hasPhone: null, needsEmailVerification: false, isLoading: false }); // a Google account: exempt
+    useAuthStore.setState({ user: { id: 'google-user', termsVersion: '1.6' } as never, activeMode: mode, hasPhone: null, needsEmailVerification: false, isLoading: false }); // a Google account: exempt
     renderRouter(routes, { initialUrl: '/(auth)/mode-select' });
 
     act(() => { router.replace(home); }); // what switchMode does
@@ -60,7 +60,7 @@ describe.each([
 
   it('with one, goes straight in too', () => {
     mockPhone = '+972501234567';
-    useAuthStore.setState({ user: { id: 'google-user', termsVersion: '1.5' } as never, activeMode: mode, hasPhone: null, needsEmailVerification: false, isLoading: false }); // a Google account: exempt
+    useAuthStore.setState({ user: { id: 'google-user', termsVersion: '1.6' } as never, activeMode: mode, hasPhone: null, needsEmailVerification: false, isLoading: false }); // a Google account: exempt
     renderRouter(routes, { initialUrl: '/(auth)/mode-select' });
 
     act(() => { router.replace(home); });

@@ -594,9 +594,11 @@ service cloud.firestore {
        */
       match /blocks/{blockedUserId} {
         allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId)
-          && blockedUserId != userId
-          && request.resource.data.keys().hasOnly(['blockedAt']);
+        // Created ONLY by the blockUser callable (Admin SDK), which files the
+        // admin report in the same transaction — App Store Guideline 1.2 wants
+        // blocking to notify the developer, so a client must not be able to
+        // block without it. Unblocking stays a plain client delete.
+        allow create, update: if false;
         allow delete: if isOwner(userId);
       }
     }

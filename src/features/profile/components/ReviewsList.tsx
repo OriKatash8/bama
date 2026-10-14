@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { AppText } from '@components/ui/AppText';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Flag } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { useBlockStore } from '@core/stores/blockStore';
+import { ReportDialog, type ReportTarget } from '@features/moderation/components/ReportDialog';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Review } from '@core/types/project';
@@ -33,8 +36,13 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-export function ReviewsList({ reviews }: ReviewsListProps) {
+export function ReviewsList({ reviews: allReviews }: ReviewsListProps) {
   const [index, setIndex] = useState(0);
+  // A review written by someone I blocked is hidden, live (Guideline 1.2).
+  const blocked = useBlockStore((s) => s.blocked);
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const reviews = useMemo(() => allReviews.filter((r) => !blocked.includes(r.authorId)), [allReviews, blocked]);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   // This card was written Hebrew-first: the three textAligns below were 'right'
   // and the header row a hardcoded 'row', so in ENGLISH the text sat against the
   // far edge from where reading starts. Alignment and row direction have to move
@@ -50,7 +58,7 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
     return <Text style={styles.empty}>{t('profile.no_reviews')}</Text>;
   }
 
-  const review = reviews[index];
+  const review = reviews[Math.min(index, reviews.length - 1)];
   const clamped = Math.max(0, Math.min(5, Math.round(review.rating)));
   const stars = '★'.repeat(clamped) + '☆'.repeat(5 - clamped);
   // Explicit locale: a bare toLocaleDateString() follows the DEVICE, so a Hebrew
@@ -58,11 +66,12 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
   // the app uses.
   const date = new Date(review.createdAt.seconds * 1000).toLocaleDateString(rtl ? 'he-IL' : 'en-GB');
 
-  function prev() { setIndex((i) => (i - 1 + reviews.length) % reviews.length); }
+  function prev() { setIndex((i) => (Math.min(i, reviews.length - 1) - 1 + reviews.length) % reviews.length); }
   function next() { setIndex((i) => (i + 1) % reviews.length); }
 
   return (
     <View style={styles.container}>
+      {reportTarget && <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />}
       {/* Review card — tap to go to next */}
       <TouchableOpacity activeOpacity={0.85} onPress={next} style={styles.card}>
         {/* Date, name, then avatar — mirrored as a unit so the avatar always sits
@@ -81,6 +90,26 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
         {/* Body */}
         <AppText style={[styles.body, { textAlign: align }]}>{review.body}</AppText>
       </TouchableOpacity>
+
+      {/* Report this review (not your own). */}
+      {review.authorId !== currentUserId && (
+        <TouchableOpacity
+          testID="review-report"
+          onPress={() => setReportTarget({
+            reportedUserId: review.authorId,
+            reportedUserName: review.authorName,
+            targetType: 'review',
+            targetId: review.id,
+            snippet: review.body,
+          })}
+          style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, alignSelf: rtl ? 'flex-end' : 'flex-start' }}
+          accessibilityRole="button"
+          hitSlop={8}
+        >
+          <Flag size={14} color="#C0392B" strokeWidth={2} />
+          <AppText weight="regular" style={{ color: '#C0392B', fontSize: 12 }}>{t('report.action')}</AppText>
+        </TouchableOpacity>
+      )}
 
       {/* Navigation row */}
       {reviews.length > 1 && (

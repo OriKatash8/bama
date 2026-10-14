@@ -18,7 +18,7 @@ const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronDown, ChevronLeft, ChevronRight, FileText, Globe, Info, LogOut, MessageCircle, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
+import { Ban, Bell, Camera, ChevronDown, ChevronLeft, ChevronRight, FileText, Globe, Info, LogOut, MessageCircle, Percent, Phone, Receipt, Settings, Shield, User, Wallet, X, Trash2 } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore, type Lang } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
@@ -346,6 +346,8 @@ export function AppHeader() {
                 {/* Phone number — both modes. Private; the gate asks for it once,
                     this is where it is changed. */}
                 {menuRow('phone', Phone, t('settings.phone'), () => go('/settings/phone'))}
+                {/* Who I blocked, and a way to undo it (Guideline 1.2). */}
+                {menuRow('blocked', Ban, t('settings.blocked_users'), () => go('/settings/blocked-users'))}
                 {!modeIsClient && menuRow('pricing', Percent, t('settings.pricing'), () => go('/settings/pricing'))}
                 {!modeIsClient && menuRow('balance', Wallet, t('balance.title'), () => go('/settings/payment'))}
               </>

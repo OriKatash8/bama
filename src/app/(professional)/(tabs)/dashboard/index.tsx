@@ -33,6 +33,7 @@ import { ROLE_TO_LEGACY_CATEGORY, ROLE_BY_ID, labelOf } from '@features/crew/dat
 import { useProfile } from '@features/profile/hooks/useProfile';
 import { useUiStore } from '@core/stores/uiStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { useBlockStore } from '@core/stores/blockStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { localizeLocation } from '@core/constants/israelLocations';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -116,6 +117,8 @@ export default function DashboardScreen() {
   );
 
   const { requests: visible, posters, isLoading, dismiss: hookDismiss, undismiss } = useNoticeboard(roleSkills, currentUserId);
+  // Whoever I blocked drops off the board at once.
+  const blocked = useBlockStore((s) => s.blocked);
 
   // Slot state, so a blocked professional is stopped BEFORE composing an offer
   // rather than by hireProfessional rejecting it afterwards. Same query the
@@ -270,8 +273,8 @@ export default function DashboardScreen() {
   );
 
   const displayed = useMemo(
-    () => visibleNotices(biddable, { roleFilter, search, sortBy, currentUserId }),
-    [biddable, roleFilter, sortBy, search, currentUserId],
+    () => visibleNotices(biddable, { roleFilter, search, sortBy, currentUserId, blocked }),
+    [biddable, roleFilter, sortBy, search, currentUserId, blocked],
   );
 
   // Legacy category strings (for ProjectDetailModal's role-Q&A display, which is keyed by them).

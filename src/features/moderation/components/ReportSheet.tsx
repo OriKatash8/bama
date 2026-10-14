@@ -29,6 +29,7 @@ function makeT(tr: typeof en) {
 export function ReportSheet({
   visible,
   name,
+  title,
   reason,
   onReason,
   evidence,
@@ -41,6 +42,8 @@ export function ReportSheet({
   visible: boolean;
   /** Who is being reported. */
   name: string;
+  /** Overrides the default "Report Account" heading for other content types. */
+  title?: string;
   reason: string;
   onReason: (v: string) => void;
   evidence: string[];
@@ -68,7 +71,7 @@ export function ReportSheet({
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} testID="report-backdrop" />
         <View style={styles.sheet}>
           <View style={[styles.header, { flexDirection: rowDirection }]} testID="report-header">
-            <AppText weight="bold" style={[styles.title, { textAlign }]}>{t('report.title')}</AppText>
+            <AppText weight="bold" style={[styles.title, { textAlign }]}>{title ?? t('report.title')}</AppText>
             <TouchableOpacity onPress={onClose} hitSlop={8} activeOpacity={0.7} testID="report-close" accessibilityRole="button">
               <X size={22} color="#000000" strokeWidth={2.2} />
             </TouchableOpacity>

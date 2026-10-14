@@ -67,3 +67,17 @@ it('still narrows by the search box while showing only mine', () => {
 
   expect(ids(out)).toEqual(['mine-rooftop']);
 });
+
+describe('blocked posters (Guideline 1.2)', () => {
+  it('leaves out notices posted by someone I blocked, in every sort', () => {
+    const theirs = notice('theirs', { clientId: 'bad-client' } as Partial<ProjectRequest>);
+    const mine = notice('mine', { clientId: 'ok-client' } as Partial<ProjectRequest>);
+    for (const sortBy of ['newest', 'oldest', 'direct_only'] as const) {
+      const out = visibleNotices([theirs, mine], { roleFilter: null, search: '', sortBy, currentUserId: ME, blocked: ['bad-client'] });
+      expect(out.map((n) => n.id)).not.toContain('theirs');
+    }
+    expect(
+      visibleNotices([theirs, mine], { roleFilter: null, search: '', sortBy: 'newest', currentUserId: ME, blocked: ['bad-client'] }).map((n) => n.id),
+    ).toEqual(['mine']);
+  });
+});

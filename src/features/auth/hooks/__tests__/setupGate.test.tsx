@@ -21,7 +21,7 @@ jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => { mockRedirects.push(href); return null; },
 }));
 
-const NEW = { id: 'u1', termsVersion: '1.5', needsProfileSetup: true };
+const NEW = { id: 'u1', termsVersion: '1.6', needsProfileSetup: true };
 
 beforeEach(() => {
   useLaunchIntentStore.setState({ checked: true, hasPending: false });
@@ -57,7 +57,7 @@ describe('the layouts\' gate', () => {
     expect(renderHook(() => useOnboardingGate()).result.current).toBe('/(auth)/setup');
   });
   it('an existing account is not sent there', () => {
-    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.5' } as never });
+    useAuthStore.setState({ user: { id: 'u1', termsVersion: '1.6' } as never });
     expect(renderHook(() => useOnboardingGate()).result.current).toBeNull();
   });
 });
