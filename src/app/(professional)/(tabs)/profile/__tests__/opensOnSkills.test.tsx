@@ -21,7 +21,11 @@ jest.mock('@features/profile/components/ContentTabs', () => ({
 }));
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}) }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
-jest.mock('react-native-safe-area-context', () => ({ initialWindowMetrics: { insets: { top: 0, bottom: 0 } } }));
+jest.mock('react-native-safe-area-context', () => ({
+  initialWindowMetrics: { insets: { top: 0, bottom: 0 } },
+  // Screen reads the insets context on Android.
+  SafeAreaInsetsContext: require('react').createContext(null),
+}));
 jest.mock('@components/ui/GradientBand', () => ({ GradientBand: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock('@features/profile/components/ProfileHeader', () => ({ ProfileHeader: () => null }));
 jest.mock('@features/profile/components/BioSection', () => ({ BioSection: () => null }));
