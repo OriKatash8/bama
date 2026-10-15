@@ -4,6 +4,7 @@ import {
   db, FieldValue, requireAuth, computeFee, computeProAmount,
 } from '../lifecycle/helpers';
 import { scrubClosingCards } from './closingScrub';
+import { deleteUnhiredOpenPosts } from './unhiredPosts';
 
 /** The name a deleted account shows: on the tombstoned user doc and in closing cards. */
 export const DELETED_ACCOUNT_NAME = 'חשבון שנמחק';
@@ -40,7 +41,8 @@ export const DELETED_ACCOUNT_NAME = 'חשבון שנמחק';
  *
  *   DELETED  Auth account · phone · profile (bio, equipment, prices, skills) ·
  *            portfolio docs and files · avatars · chat videos · push tokens ·
- *            notifications · their open marketplace listings
+ *            notifications · their open marketplace listings · their open
+ *            posts nobody was hired on (with offers and linked notifications)
  *   KEPT     fee records (business/tax record of a real debt) · reviews they
  *            wrote or received · chat messages · project history
  *   SCRUBBED project-closing cards in chats (onProjectClosed) keep the message,
@@ -233,6 +235,16 @@ export const deleteMyAccount = onCall(async (request) => {
   //     Auth deletion like everything else; a message that fails is logged
   //     (uid + chatId) and never blocks the deletion.
   await scrubClosingCards(uid, DELETED_ACCOUNT_NAME);
+
+  // 2c. Their open posts that nobody was hired on, so a deleted account does
+  //     not stay on the noticeboard. Posts with a hire are untouched (they
+  //     blocked the deletion above). A failure is logged and never blocks it.
+  try {
+    const { removed, kept } = await deleteUnhiredOpenPosts(uid);
+    if (removed.length || kept.length) console.log('[deleteAccount] open posts removed:', removed, 'kept:', kept);
+  } catch (e) {
+    console.error('[deleteAccount] removing open posts failed', uid, (e as Error)?.message);
+  }
 
   // 3. Devices and their notifications.
   await deleteQueryInBatches(
