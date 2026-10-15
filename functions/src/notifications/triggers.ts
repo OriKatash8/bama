@@ -12,6 +12,7 @@ import { fanOutMessage, needMuteCheck } from './fanOut';
 import { bumpMemberStats } from '../communities/memberStats';
 import { communityUnreadUpdate } from './communityUnread';
 import { readDemoConfig, sameSide } from '../demo';
+import { ADMIN_UIDS } from '../moderation/reportAlert';
 
 async function createNotification(
   db: admin.firestore.Firestore,
@@ -409,11 +410,15 @@ export const onProjectCreate = functions.firestore
     // Read fresh on every run (never cached): a demo client's project reaches demo
     // pros only, and a real client's project never reaches a demo pro.
     const demo = await readDemoConfig();
+    // Admin accounts are admin-only: never a matched professional, whatever
+    // their profile says.
+    const adminUids = new Set(ADMIN_UIDS.value().filter(Boolean));
 
     await Promise.all(
       usersSnap.docs.map(async (userDoc) => {
         const uid = userDoc.id;
         if (uid === clientId) return;
+        if (adminUids.has(uid)) return;
         if (!sameSide(demo, clientId ?? '', uid)) return;
         // 'project' is optional — skip opted-out users (free: userDoc already loaded),
         // avoiding a notification doc the sender would only read again to discard.
