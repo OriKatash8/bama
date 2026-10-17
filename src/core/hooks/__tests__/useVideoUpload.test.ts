@@ -154,3 +154,31 @@ it('a job error surfaces as an error', async () => {
   act(() => snapCb!(snap({ status: 'error', error: 'boom' })));
   expect(result.current.error).toBe('boom');
 });
+
+describe('getOutcome (lets callers tell Cancel from a failure)', () => {
+  it('ok after a done job', async () => {
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('chat-videos', 'u1', ASSET); });
+    await flush();
+    act(() => snapCb!(snap({ status: 'done', url: 'https://v/a.mp4' })));
+    expect(result.current.getOutcome()).toBe('ok');
+  });
+
+  it('failed after an upload error', async () => {
+    mockUpload.mockRejectedValue(new Error('network'));
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('chat-videos', 'u1', ASSET); });
+    await flush();
+    expect(result.current.getOutcome()).toBe('failed');
+  });
+
+  it('cancelled after cancel(), and reset by the next run', async () => {
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('chat-videos', 'u1', ASSET); });
+    await flush();
+    act(() => result.current.cancel());
+    expect(result.current.getOutcome()).toBe('cancelled');
+    act(() => { result.current.uploadVideo('chat-videos', 'u1', ASSET); });
+    expect(result.current.getOutcome()).toBeNull();
+  });
+});

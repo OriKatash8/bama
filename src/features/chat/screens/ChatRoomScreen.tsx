@@ -79,6 +79,9 @@ import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
 import { channelDocToMessage, listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
+import { VideoUploadStatus } from '@components/ui/VideoUploadStatus';
+import { ensureVideoWithinLimit } from '@core/video/duration';
+import { MAX_CHAT_VIDEO_SECONDS } from '@core/constants/video';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
@@ -873,9 +876,10 @@ export function ChatRoomScreen({ chatId }: Props) {
    * programmatic selection scrolls the field.
    */
   const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | undefined>();
-  const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
+  const { stage: videoStage, progress: videoProgress, slow: videoSlow, cancel: cancelVideo, getOutcome, uploadVideo } = useVideoUpload();
+  const videoActive = videoStage !== 'idle';
   const [imageUploading, setImageUploading] = useState(false);
-  const mediaActive = videoUploading || videoProcessing || imageUploading;
+  const mediaActive = videoActive || imageUploading;
   const [viewingMedia, setViewingMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [pendingMedia, setPendingMedia] = useState<{
     uri: string;
@@ -1579,15 +1583,37 @@ export function ChatRoomScreen({ chatId }: Props) {
         mediaTypes: ['images', 'videos'] as const,
         allowsEditing: false,
         quality: 1,
+        // Only honoured by camera capture / iOS editing; the real limit is checked below.
+        videoMaxDuration: MAX_CHAT_VIDEO_SECONDS,
         preferredAssetRepresentationMode:
           ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
         shouldDownloadFromNetwork: true,
       });
       if (result.canceled) return;
       const asset = result.assets[0];
+      if (asset.type === 'video' && !(await ensureVideoWithinLimit(asset, MAX_CHAT_VIDEO_SECONDS, t))) return;
       setPendingMedia({ uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image', asset });
     } catch {
       Alert.alert(t('chats.error'), t('chats.media_load_failed'));
+    }
+  }
+
+  /**
+   * Upload a chat video. A user Cancel ends quietly (null); a failure offers "try again"
+   * and runs the whole upload once more on yes.
+   */
+  async function uploadVideoWithRetry(asset: ImagePicker.ImagePickerAsset): Promise<string | null> {
+    if (!currentUserId) return null;
+    for (;;) {
+      const url = await uploadVideo('chat-videos', currentUserId, asset);
+      if (url) return url;
+      if (getOutcome() !== 'failed') return null;
+      const retry = await confirmDialog(t('chats.error'), t('chats.video_send_failed'), {
+        confirm: t('media.video_retry'),
+        cancel: t('media.video_cancel'),
+        destructive: false,
+      });
+      if (!retry) return null;
     }
   }
 
@@ -1601,11 +1627,9 @@ export function ChatRoomScreen({ chatId }: Props) {
     if (chatType === 'community' && activeChannelId) {
       const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
       if (type === 'video') {
-        const url = await uploadVideo('chat-videos', currentUserId, asset);
+        const url = await uploadVideoWithRetry(asset);
         if (url) {
           await addDoc(msgRef, { senderId: currentUserId, text: caption, timestamp: serverTimestamp(), readBy: [currentUserId], videoUrl: url });
-        } else {
-          Alert.alert(t('chats.error'), t('chats.video_send_failed'));
         }
       } else {
         setImageUploading(true);
@@ -1620,11 +1644,9 @@ export function ChatRoomScreen({ chatId }: Props) {
       }
     } else {
       if (type === 'video') {
-        const url = await uploadVideo('chat-videos', currentUserId, asset);
+        const url = await uploadVideoWithRetry(asset);
         if (url) {
           await sendMessage(chatId, currentUserId, caption, { videoUrl: url });
-        } else {
-          Alert.alert(t('chats.error'), t('chats.video_send_failed'));
         }
       } else {
         setImageUploading(true);
@@ -2431,12 +2453,27 @@ export function ChatRoomScreen({ chatId }: Props) {
         />
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
           {mediaActive ? (
+            videoActive ? (
+              <View style={{ flex: 1 }}>
+                <VideoUploadStatus
+                  stage={videoStage}
+                  progress={videoProgress}
+                  slow={videoSlow}
+                  onCancel={cancelVideo}
+                  accent={modeAccent}
+                  rtl={rtl}
+                  t={t}
+                  color={colors.textMuted}
+                />
+              </View>
+            ) : (
             <View style={styles.mediaSendingRow}>
               <ActivityIndicator size="small" color={modeAccent} />
               <AppText weight="regular" style={[styles.mediaSendingText, { color: colors.textMuted }]}>
-                {videoUploading || videoProcessing ? t('media.send_video') : t('chats.sending_image')}
+                {t('chats.sending_image')}
               </AppText>
             </View>
+            )
           ) : (
             <>
               <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} activeOpacity={0.7}>

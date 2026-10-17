@@ -29,6 +29,8 @@ export type UseVideoUploadResult = {
   processing: boolean;
   url: string | null;
   error: string | null;
+  /** How the most recent uploadVideo() ended; lets a caller tell Cancel from a failure. */
+  getOutcome: () => 'ok' | 'cancelled' | 'failed' | null;
   /** Stop whatever stage is running. The pending uploadVideo() resolves null with no error. */
   cancel: () => void;
   uploadVideo: (
@@ -52,6 +54,7 @@ export function useVideoUpload(): UseVideoUploadResult {
   const cancelRef = useRef<(() => void) | null>(null);
   const finishRef = useRef<((v: string | null) => void) | null>(null);
   const mountedRef = useRef(true);
+  const outcomeRef = useRef<'ok' | 'cancelled' | 'failed' | null>(null);
 
   function stopListening() {
     unsubRef.current?.();
@@ -71,6 +74,7 @@ export function useVideoUpload(): UseVideoUploadResult {
   }, []);
 
   function cancel() {
+    outcomeRef.current = 'cancelled';
     runRef.current += 1;
     cancelRef.current?.();
     cancelRef.current = null;
@@ -89,6 +93,7 @@ export function useVideoUpload(): UseVideoUploadResult {
     asset?: ImagePicker.ImagePickerAsset
   ): Promise<string | null> {
     stopListening();
+    outcomeRef.current = null;
     const run = ++runRef.current;
     const live = () => runRef.current === run && mountedRef.current;
 
@@ -145,6 +150,7 @@ export function useVideoUpload(): UseVideoUploadResult {
       cancelRef.current = null;
       // A cancel() bumped the run, so this is its aftermath, not a failure.
       if (!live() || err instanceof CompressionCancelled) return null;
+      outcomeRef.current = 'failed';
       setStage('idle');
       setProgress(0);
       setError(err instanceof Error ? err.message : 'Upload failed');
@@ -182,11 +188,13 @@ export function useVideoUpload(): UseVideoUploadResult {
           console.log('[useVideoUpload] job change — jobId:', jobId, '— data:', JSON.stringify(data));
 
           if (data.status === 'done' && data.url) {
+            outcomeRef.current = 'ok';
             setStage('idle');
             setSlow(false);
             setUrl(data.url);
             finish(data.url);
           } else if (data.status === 'error') {
+            outcomeRef.current = 'failed';
             setStage('idle');
             setSlow(false);
             setError(data.error ?? 'Video processing failed');
@@ -195,6 +203,7 @@ export function useVideoUpload(): UseVideoUploadResult {
         },
         (err) => {
           if (!live()) return;
+          outcomeRef.current = 'failed';
           setStage('idle');
           setSlow(false);
           setError(err.message);
@@ -213,6 +222,7 @@ export function useVideoUpload(): UseVideoUploadResult {
     url,
     error,
     cancel,
+    getOutcome: () => outcomeRef.current,
     uploadVideo,
   };
 }
