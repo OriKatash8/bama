@@ -3,9 +3,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { uploadFile } from '@core/firebase/storage';
-import { startVideoCompression } from '@core/video/compressForUpload';
-
-const TIMEOUT_MS = 3 * 60 * 1000;
+import { startVideoCompression, CompressionCancelled } from '@core/video/compressForUpload';
+import { VIDEO_PROCESSING_TIMEOUT_MS } from '@core/constants/video';
 
 type VideoJobStatus = {
   status: 'processing' | 'done' | 'error';
@@ -13,11 +12,25 @@ type VideoJobStatus = {
   error?: string;
 };
 
+/**
+ * compressing → uploading → processing (waiting on the videoJobs doc).
+ * `processing` with `slow` set means VIDEO_PROCESSING_TIMEOUT_MS passed: still listening.
+ */
+export type VideoUploadStage = 'idle' | 'compressing' | 'uploading' | 'processing';
+
 export type UseVideoUploadResult = {
+  stage: VideoUploadStage;
+  /** 0..1 within the current stage (compressing / uploading); 0 otherwise. */
+  progress: number;
+  /** Processing outlasted the timeout. Not a failure: the job doc is still being watched. */
+  slow: boolean;
+  /** Compressing or uploading (kept for existing callers). */
   uploading: boolean;
   processing: boolean;
   url: string | null;
   error: string | null;
+  /** Stop whatever stage is running. The pending uploadVideo() resolves null with no error. */
+  cancel: () => void;
   uploadVideo: (
     destination: 'portfolio' | 'chat-videos' | 'courses',
     userId: string,
@@ -26,31 +39,63 @@ export type UseVideoUploadResult = {
 };
 
 export function useVideoUpload(): UseVideoUploadResult {
-  const [uploading, setUploading] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [stage, setStage] = useState<VideoUploadStage>('idle');
+  const [progress, setProgress] = useState(0);
+  const [slow, setSlow] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const unsubRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped by every start and by cancel(); work from an older run must not touch state.
+  const runRef = useRef(0);
+  const cancelRef = useRef<(() => void) | null>(null);
+  const finishRef = useRef<((v: string | null) => void) | null>(null);
+  const mountedRef = useRef(true);
+
+  function stopListening() {
+    unsubRef.current?.();
+    unsubRef.current = null;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+  }
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      unsubRef.current?.();
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      mountedRef.current = false;
+      runRef.current += 1;
+      cancelRef.current?.();
+      stopListening();
     };
   }, []);
+
+  function cancel() {
+    runRef.current += 1;
+    cancelRef.current?.();
+    cancelRef.current = null;
+    stopListening();
+    setStage('idle');
+    setProgress(0);
+    setSlow(false);
+    setError(null);
+    finishRef.current?.(null);
+    finishRef.current = null;
+  }
 
   async function uploadVideo(
     destination: 'portfolio' | 'chat-videos' | 'courses',
     userId: string,
     asset?: ImagePicker.ImagePickerAsset
   ): Promise<string | null> {
-    unsubRef.current?.();
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    stopListening();
+    const run = ++runRef.current;
+    const live = () => runRef.current === run && mountedRef.current;
 
     setUrl(null);
     setError(null);
+    setSlow(false);
+    setProgress(0);
 
     let picked: ImagePicker.ImagePickerAsset;
     if (asset) {
@@ -68,71 +113,106 @@ export function useVideoUpload(): UseVideoUploadResult {
     }
     const filePath = `${destination}/${userId}/${Date.now()}.mp4`;
 
-    console.log('[useVideoUpload] upload started — filePath:', filePath);
-    setUploading(true);
+    console.log('[useVideoUpload] started — filePath:', filePath);
+    let blobUri: string;
     try {
-      // Shrink on the phone first (≤1080p, ~4 Mbps); falls back to the original on any failure.
-      const uri = await startVideoCompression(picked.uri, picked).promise;
-      const blob = await fetch(uri).then((r) => r.blob());
-      await uploadFile(filePath, blob, undefined, { contentType: 'video/mp4' });
+      // Stage 1: shrink on the phone (≤1080p, ~4 Mbps). Falls back to the original on failure.
+      setStage('compressing');
+      const compression = startVideoCompression(picked.uri, picked, (p) => {
+        if (live()) setProgress(p);
+      });
+      cancelRef.current = compression.cancel;
+      blobUri = await compression.promise;
+
+      // Stage 2: resumable upload with a percentage.
+      if (!live()) return null;
+      setStage('uploading');
+      setProgress(0);
+      const blob = await fetch(blobUri).then((r) => r.blob());
+      if (!live()) return null;
+      const control: { cancel?: () => void } = {};
+      cancelRef.current = () => control.cancel?.();
+      await uploadFile(
+        filePath,
+        blob,
+        (p) => {
+          if (live()) setProgress(Math.min(1, p.percentage / 100));
+        },
+        { contentType: 'video/mp4' },
+        control
+      );
     } catch (err) {
-      setUploading(false);
-      const msg = err instanceof Error ? err.message : 'Upload failed';
-      setError(msg);
+      cancelRef.current = null;
+      // A cancel() bumped the run, so this is its aftermath, not a failure.
+      if (!live() || err instanceof CompressionCancelled) return null;
+      setStage('idle');
+      setProgress(0);
+      setError(err instanceof Error ? err.message : 'Upload failed');
       return null;
     }
+    cancelRef.current = null;
+    if (!live()) return null;
 
-    setUploading(false);
-    setProcessing(true);
+    // Stage 3: wait for compressVideo to write the job doc.
+    setStage('processing');
+    setProgress(0);
 
     // jobId must match the Cloud Function's computation exactly
     const jobId = btoa(filePath).replace(/[/+=]/g, '_');
     console.log('[useVideoUpload] upload complete — jobId:', jobId, '— waiting for Firestore job doc');
 
     return new Promise<string | null>((resolve) => {
+      finishRef.current = resolve;
+      const finish = (value: string | null) => {
+        stopListening();
+        finishRef.current = null;
+        resolve(value);
+      };
+
+      // Not a failure: compressVideo can run for up to 540 s. Say so, and keep listening.
       timeoutRef.current = setTimeout(() => {
-        console.log('[useVideoUpload] timeout — no completion after', TIMEOUT_MS / 1000, 's for jobId:', jobId);
-        unsubRef.current?.();
-        setProcessing(false);
-        setError('Processing timed out');
-        resolve(null);
-      }, TIMEOUT_MS);
+        if (live()) setSlow(true);
+      }, VIDEO_PROCESSING_TIMEOUT_MS);
 
       unsubRef.current = onSnapshot(
         doc(db, 'videoJobs', jobId),
         (snap) => {
-          if (!snap.exists()) {
-            console.log('[useVideoUpload] Firestore doc does not exist yet for jobId:', jobId);
-            return;
-          }
+          if (!live() || !snap.exists()) return;
           const data = snap.data() as VideoJobStatus;
-          console.log('[useVideoUpload] Firestore change — jobId:', jobId, '— data:', JSON.stringify(data));
+          console.log('[useVideoUpload] job change — jobId:', jobId, '— data:', JSON.stringify(data));
 
           if (data.status === 'done' && data.url) {
-            console.log('[useVideoUpload] status done — final URL:', data.url);
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            unsubRef.current?.();
-            setProcessing(false);
+            setStage('idle');
+            setSlow(false);
             setUrl(data.url);
-            resolve(data.url);
+            finish(data.url);
           } else if (data.status === 'error') {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            unsubRef.current?.();
-            setProcessing(false);
-            const msg = data.error ?? 'Video processing failed';
-            setError(msg);
-            resolve(null);
+            setStage('idle');
+            setSlow(false);
+            setError(data.error ?? 'Video processing failed');
+            finish(null);
           }
         },
         (err) => {
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          setProcessing(false);
+          if (!live()) return;
+          setStage('idle');
+          setSlow(false);
           setError(err.message);
-          resolve(null);
+          finish(null);
         }
       );
     });
   }
 
-  return { uploading, processing, url, error, uploadVideo };
+  return {
+    stage,
+    progress,
+    slow,
+    uploading: stage === 'compressing' || stage === 'uploading',
+    processing: stage === 'processing',
+    url,
+    error,
+    cancel,
+    uploadVideo,
+  };
 }

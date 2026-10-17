@@ -21,7 +21,7 @@ jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));
 jest.mock('@core/hooks/useVideoUpload', () => ({
-  useVideoUpload: () => ({ uploading: false, processing: false, uploadVideo: jest.fn() }),
+  useVideoUpload: () => ({ stage: 'idle', progress: 0, slow: false, error: null, cancel: jest.fn(), uploadVideo: jest.fn() }),
 }));
 
 const asset = (id: string): MediaAsset => ({

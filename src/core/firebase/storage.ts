@@ -49,7 +49,9 @@ export function uploadFile(
   path: string,
   blob: Blob,
   onProgress?: (progress: UploadProgress) => void,
-  metadata?: { contentType?: string }
+  metadata?: { contentType?: string },
+  /** Filled with a cancel() for the in-flight upload; cancelling rejects with storage/canceled. */
+  control?: { cancel?: () => void }
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const storageRef = ref(storage, path);
@@ -59,6 +61,8 @@ export function uploadFile(
       blob,
       contentType ? { ...metadata, contentType } : metadata
     );
+
+    if (control) control.cancel = () => { task.cancel(); };
 
     task.on(
       'state_changed',

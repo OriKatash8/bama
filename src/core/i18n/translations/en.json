@@ -1183,7 +1183,14 @@
     "caption_placeholder": "What is this work? Where was it shot?",
     "caption_save": "Save",
     "caption_skip": "Skip",
-    "info_label": "Information"
+    "info_label": "Information",
+    "video_compressing": "Compressing video…",
+    "video_uploading": "Uploading…",
+    "video_processing": "Processing…",
+    "video_processing_slow": "This is taking longer than usual. The video may still finish processing — keep this screen open.",
+    "video_upload_failed": "Upload failed. Check your connection and try again.",
+    "video_cancel": "Cancel",
+    "video_retry": "Try again"
   },
   "header": {
     "client_mode": "Client",

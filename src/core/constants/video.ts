@@ -15,3 +15,10 @@ export const VIDEO_COMPRESS_BITRATE = 4_000_000;
  * low-bitrate clip up to VIDEO_COMPRESS_BITRATE. Same shape the server accepts untouched.
  */
 export const VIDEO_SKIP_COMPRESS_MAX_BPS = 4_000_000;
+
+/**
+ * How long the app waits on videoJobs before saying "still processing". Must stay above
+ * compressVideo's timeoutSeconds (540 in functions/src/video/index.ts). After it fires the
+ * app keeps listening; it is a notice, not a failure.
+ */
+export const VIDEO_PROCESSING_TIMEOUT_MS = 600_000;

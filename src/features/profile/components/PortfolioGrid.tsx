@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
+import { VideoUploadStatus } from '@components/ui/VideoUploadStatus';
 import { PortfolioFeed, type PortfolioOwner } from './PortfolioFeed';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -79,8 +80,9 @@ export function PortfolioGrid({
   const [caption, setCaption] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
-  const videoActive = videoUploading || videoProcessing;
+  const { stage, progress, slow, error: uploadError, cancel: cancelUpload, uploadVideo } = useVideoUpload();
+  const videoActive = stage !== 'idle';
+  const [lastCaption, setLastCaption] = useState<string | null>(null);
 
   // Log video assets whenever the portfolio changes
   const videoAssets = assets.filter((a) => a.type === 'video');
@@ -137,8 +139,11 @@ export function PortfolioGrid({
     setSaving(true);
     try {
       if (pending.isVideo) {
+        setLastCaption(withCaption);
         const url = await uploadVideo('portfolio', user.id, pending.asset);
-        if (url && onAddVideo) await onAddVideo(url, withCaption);
+        // Failed or cancelled: keep the sheet (and caption) so Save / Retry can run it again.
+        if (!url) return;
+        if (onAddVideo) await onAddVideo(url, withCaption);
       } else if (onAdd) {
         await onAdd(pending.asset.uri, withCaption);
       }
@@ -153,17 +158,23 @@ export function PortfolioGrid({
     }
   }
 
+  const statusView = (
+    <VideoUploadStatus
+      stage={stage}
+      progress={progress}
+      slow={slow}
+      error={uploadError}
+      onCancel={cancelUpload}
+      onRetry={() => commitPending(lastCaption)}
+      accent={accent}
+      rtl={rtl}
+      t={t}
+    />
+  );
+
   return (
     <View>
-      {/* Processing indicator */}
-      {videoActive && (
-        <View style={styles.processingRow}>
-          <ActivityIndicator size="small" color={accent} />
-          <AppText style={styles.processingText}>
-            {videoUploading ? 'Uploading...' : t('media.processing_video')}
-          </AppText>
-        </View>
-      )}
+      {!pending && statusView}
 
       <View style={styles.grid} onLayout={(e) => handleGridLayout(e.nativeEvent.layout.width)}>
         {isEditing && (
@@ -241,6 +252,7 @@ export function PortfolioGrid({
               textAlign={rtl ? 'right' : 'left'}
               testID="caption-input"
             />
+            {statusView}
             <View style={[styles.captionActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               <TouchableOpacity
                 style={[styles.captionBtn, styles.captionBtnSkip]}
@@ -309,18 +321,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteIcon: { color: '#fff', fontSize: 16, lineHeight: 20 },
-  processingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  processingText: {
-    fontSize: 13,
-    color: '#000000',
-    fontWeight: '500',
-  },
   captionOverlay: {
     position: 'absolute',
     top: 0,

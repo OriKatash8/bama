@@ -36,7 +36,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 const mockUploadVideo = jest.fn();
 jest.mock('@core/hooks/useVideoUpload', () => ({
   useVideoUpload: () => ({
-    uploading: false, processing: false, uploadVideo: mockUploadVideo,
+    stage: 'idle', progress: 0, slow: false, error: null, cancel: jest.fn(), uploadVideo: mockUploadVideo,
   }),
 }));
 
@@ -141,4 +141,21 @@ it('Hebrew: the caption sheet reads right-to-left', async () => {
 
   expect(r.getByText(he.media.caption_title)).toBeTruthy();
   expect(r.getByTestId('caption-input').props.textAlign).toBe('right');
+});
+
+it('keeps the sheet and caption when a video upload fails or is cancelled', async () => {
+  pick.mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'file:///tmp/clip.mov', type: 'video' }],
+  } as unknown as ImagePicker.ImagePickerResult);
+  mockUploadVideo.mockResolvedValue(null);
+
+  const { r, onAddVideo } = setup();
+  await pressAdd(r);
+  fireEvent.changeText(r.getByTestId('caption-input'), 'keep me');
+  await act(async () => { fireEvent.press(r.getByText(en.media.caption_save)); });
+
+  expect(onAddVideo).not.toHaveBeenCalled();
+  expect(r.getByText(en.media.caption_title)).toBeTruthy();
+  expect(r.getByTestId('caption-input').props.value).toBe('keep me');
 });
