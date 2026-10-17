@@ -10,6 +10,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
+import { ensureVideoWithinLimit } from '@core/video/duration';
+import { MAX_PORTFOLIO_VIDEO_SECONDS } from '@core/constants/video';
 import { VideoUploadStatus } from '@components/ui/VideoUploadStatus';
 import { PortfolioFeed, type PortfolioOwner } from './PortfolioFeed';
 import { useAuthStore } from '@core/stores/authStore';
@@ -111,6 +113,8 @@ export function PortfolioGrid({
         mediaTypes: ['images', 'videos'] as const,
         allowsEditing: false,
         quality: 1,
+        // Only honoured by camera capture / iOS editing; the real limit is checked after the pick.
+        videoMaxDuration: MAX_PORTFOLIO_VIDEO_SECONDS,
         // No videoExportPreset: the old 720p preset made iOS transcode inside the picker (slow, no
         // progress, capped at 720p). useVideoUpload compresses on-device instead. If an iCloud-only
         // video stalls or throws PHPhotos 3164, restore videoExportPreset H264_1280x720 here.
@@ -130,6 +134,7 @@ export function PortfolioGrid({
     // Hold the pick and ask for a caption first — this is the only moment the
     // author gets to describe the work for the clients who will open it.
     const asset = result.assets[0];
+    if (asset.type === 'video' && !(await ensureVideoWithinLimit(asset, MAX_PORTFOLIO_VIDEO_SECONDS, t))) return;
     setCaption('');
     setPending({ asset, isVideo: asset.type === 'video' });
   }

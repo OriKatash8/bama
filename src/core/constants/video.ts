@@ -22,3 +22,9 @@ export const VIDEO_SKIP_COMPRESS_MAX_BPS = 4_000_000;
  * app keeps listening; it is a notice, not a failure.
  */
 export const VIDEO_PROCESSING_TIMEOUT_MS = 600_000;
+
+/** Longest portfolio video, seconds. */
+export const MAX_PORTFOLIO_VIDEO_SECONDS = 180;
+
+/** Slack for container/clock rounding, so a clip shown as "3:00" is not refused at 180.2 s. */
+export const VIDEO_DURATION_TOLERANCE_SECONDS = 0.5;

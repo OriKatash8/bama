@@ -159,3 +159,30 @@ it('keeps the sheet and caption when a video upload fails or is cancelled', asyn
   expect(r.getByText(en.media.caption_title)).toBeTruthy();
   expect(r.getByTestId('caption-input').props.value).toBe('keep me');
 });
+
+it('refuses a video over 3 minutes: message shown, sheet never opens, nothing uploaded', async () => {
+  const confirm = jest.spyOn(require('@utils/confirmDialog'), 'confirmDialog').mockResolvedValue(true);
+  pick.mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'file:///tmp/long.mov', type: 'video', duration: 200_000 }],
+  } as unknown as ImagePicker.ImagePickerResult);
+
+  const { r, onAddVideo } = setup();
+  await pressAdd(r);
+
+  expect(confirm).toHaveBeenCalledWith(en.media.video_too_long_title, expect.stringContaining('3 minutes'), expect.anything());
+  expect(r.queryByText(en.media.caption_title)).toBeNull();
+  expect(mockUploadVideo).not.toHaveBeenCalled();
+  expect(onAddVideo).not.toHaveBeenCalled();
+  confirm.mockRestore();
+});
+
+it('accepts exactly 3 minutes', async () => {
+  pick.mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'file:///tmp/ok.mov', type: 'video', duration: 180_000 }],
+  } as unknown as ImagePicker.ImagePickerResult);
+  const { r } = setup();
+  await pressAdd(r);
+  expect(r.getByText(en.media.caption_title)).toBeTruthy();
+});

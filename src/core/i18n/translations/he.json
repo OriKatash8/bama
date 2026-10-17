@@ -1190,7 +1190,13 @@
     "video_processing_slow": "הטיפול לוקח יותר זמן מהרגיל. ייתכן שהסרטון עדיין יסיים להיעבד — השאר את המסך פתוח.",
     "video_upload_failed": "ההעלאה נכשלה. בדוק את החיבור ונסה שוב.",
     "video_cancel": "ביטול",
-    "video_retry": "נסה שוב"
+    "video_retry": "נסה שוב",
+    "video_too_long_title": "הסרטון ארוך מדי",
+    "video_too_long_body": "אפשר להעלות סרטון באורך של עד {{limit}}. קצר את הסרטון ונסה שוב.",
+    "video_too_long_ok": "הבנתי",
+    "limit_one_minute": "דקה",
+    "limit_minutes": "דקות",
+    "limit_seconds": "שניות"
   },
   "header": {
     "client_mode": "לקוח/ה",

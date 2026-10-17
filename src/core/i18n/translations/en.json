@@ -1190,7 +1190,13 @@
     "video_processing_slow": "This is taking longer than usual. The video may still finish processing — keep this screen open.",
     "video_upload_failed": "Upload failed. Check your connection and try again.",
     "video_cancel": "Cancel",
-    "video_retry": "Try again"
+    "video_retry": "Try again",
+    "video_too_long_title": "Video is too long",
+    "video_too_long_body": "You can upload a video of up to {{limit}}. Trim it and try again.",
+    "video_too_long_ok": "Got it",
+    "limit_one_minute": "1 minute",
+    "limit_minutes": "minutes",
+    "limit_seconds": "seconds"
   },
   "header": {
     "client_mode": "Client",
