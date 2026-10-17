@@ -74,6 +74,8 @@ export function useVideoUpload(): UseVideoUploadResult {
   }, []);
 
   function cancel() {
+    // TODO: cancelling while 'processing' leaves compressVideo's *_compressed.mp4 orphaned in
+    // Storage (the server still finishes). Delete it from the client or a scheduled sweep.
     outcomeRef.current = 'cancelled';
     runRef.current += 1;
     cancelRef.current?.();

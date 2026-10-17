@@ -12,7 +12,8 @@ export const VIDEO_COMPRESS_BITRATE = 4_000_000;
 
 /**
  * A source already this small is uploaded as-is: manual mode would otherwise raise a
- * low-bitrate clip up to VIDEO_COMPRESS_BITRATE. Same shape the server accepts untouched.
+ * low-bitrate clip up to VIDEO_COMPRESS_BITRATE. Only applies when the codec is known to be
+ * H.264 (see isAlreadySmall); the picker does not report one, so on a phone this never fires.
  */
 export const VIDEO_SKIP_COMPRESS_MAX_BPS = 4_000_000;
 

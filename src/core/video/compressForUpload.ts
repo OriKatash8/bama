@@ -13,6 +13,11 @@ export type VideoSourceInfo = {
   duration?: number | null;
   /** bytes */
   fileSize?: number | null;
+  /**
+   * Source video codec, if known. ImagePicker assets and the compressor's metadata do not
+   * report one, so in practice this is unset and every clip is compressed.
+   */
+  codec?: string | null;
 };
 
 export class CompressionCancelled extends Error {
@@ -23,11 +28,14 @@ export class CompressionCancelled extends Error {
 }
 
 /**
- * True when the clip is already within 1080p and at or under the target bitrate, so
- * compressing could only make it bigger. Unknown size/duration => compress.
+ * True when the clip is provably H.264, within 1080p and at or under the target bitrate,
+ * so compressing could only make it bigger. Same codec rule as the server's skip: iPhones
+ * record HEVC by default, and a small HEVC clip must still be turned into H.264 here
+ * rather than re-encoded on the server. Unknown codec/size/duration => compress.
  */
 export function isAlreadySmall(info: VideoSourceInfo): boolean {
-  const { width, height, duration, fileSize } = info;
+  const { width, height, duration, fileSize, codec } = info;
+  if (!/^(h\.?264|avc1?)$/i.test(codec ?? '')) return false;
   if (!width || !height || !duration || !fileSize) return false;
   const fits =
     Math.max(width, height) <= VIDEO_COMPRESS_MAX_SIZE && Math.min(width, height) <= 1080;
