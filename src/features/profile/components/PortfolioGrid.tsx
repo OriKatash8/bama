@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Image, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform,
+  ActivityIndicator, TextInput, Modal,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -9,6 +9,7 @@ import { useModeAccent } from '@core/navigation/floatingTabBar';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useKeyboardHeight } from '@core/hooks/useKeyboardHeight';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { ensureVideoWithinLimit } from '@core/video/duration';
 import { MAX_PORTFOLIO_VIDEO_SECONDS } from '@core/constants/video';
@@ -81,6 +82,7 @@ export function PortfolioGrid({
   const [pending, setPending] = useState<PendingMedia | null>(null);
   const [caption, setCaption] = useState('');
   const [saving, setSaving] = useState(false);
+  const keyboardHeight = useKeyboardHeight();
 
   const { stage, progress, slow, error: uploadError, cancel: cancelUpload, uploadVideo } = useVideoUpload();
   const videoActive = stage !== 'idle';
@@ -238,11 +240,14 @@ export function PortfolioGrid({
       {/* Caption sheet — the one moment the author can describe this piece. */}
       {pending && (
         // A Modal, not an in-flow overlay: the overlay sat inside the scrolling profile page,
-        // so the keyboard covered it. KeyboardAvoidingView lifts the sheet above the keyboard.
+        // so the keyboard covered it. useKeyboardHeight lifts the sheet above the keyboard.
         <Modal transparent animationType="fade" visible onRequestClose={() => { if (!saving) setPending(null); }}>
-        <KeyboardAvoidingView
-          style={styles.captionOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        <View
+          style={[
+            styles.captionOverlay,
+            // Lift the sheet above the keyboard by hand: sit it right on top of the keyboard.
+            keyboardHeight > 0 && { paddingBottom: keyboardHeight + 12, justifyContent: 'flex-end' },
+          ]}
         >
           <View style={styles.captionSheet}>
             <AppText weight="bold" style={[styles.captionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -293,7 +298,7 @@ export function PortfolioGrid({
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
         </Modal>
       )}
     </View>
