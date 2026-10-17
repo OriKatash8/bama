@@ -12,7 +12,7 @@ const mockFeed = jest.fn();
 const mockViewer = jest.fn();
 jest.mock('../PortfolioFeed', () => ({ PortfolioFeed: (p: Record<string, unknown>) => { mockFeed(p); return null; } }));
 jest.mock('../PortfolioViewer', () => ({ PortfolioViewer: (p: Record<string, unknown>) => { mockViewer(p); return null; } }));
-jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), VideoExportPreset: {} }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: {} }));
 jest.mock('expo-video', () => ({ useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn() }), VideoView: 'VideoView' }));
 jest.mock('@core/stores/authStore', () => ({
   useAuthStore: (s: (x: { user: { id: string } }) => unknown) => s({ user: { id: 'u1' } }),

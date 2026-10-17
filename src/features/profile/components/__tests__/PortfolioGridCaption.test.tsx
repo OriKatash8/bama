@@ -19,7 +19,7 @@ import he from '@core/i18n/translations/he.json';
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
-  VideoExportPreset: { H264_1280x720: 'H264_1280x720' },
+  UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
 }));
 jest.mock('expo-video', () => ({
   useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn(), muted: false }),

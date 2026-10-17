@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { uploadFile } from '@core/firebase/storage';
+import { startVideoCompression } from '@core/video/compressForUpload';
 
 const TIMEOUT_MS = 3 * 60 * 1000;
 
@@ -51,26 +52,27 @@ export function useVideoUpload(): UseVideoUploadResult {
     setUrl(null);
     setError(null);
 
-    let uri: string;
+    let picked: ImagePicker.ImagePickerAsset;
     if (asset) {
-      uri = asset.uri;
+      picked = asset;
     } else {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['videos'] as const,
         quality: 1,
-        // A non-passthrough preset skips PHPicker's writeData fast-path (which streams the huge
-        // full-size iCloud original and stalls the upload) and instead loads + transcodes to 720p.
-        // loadVideoRepresentation auto-downloads iCloud-offloaded videos → also fixes PHPhotos 3164.
-        videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+        preferredAssetRepresentationMode:
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+        shouldDownloadFromNetwork: true,
       });
       if (result.canceled) return null;
-      uri = result.assets[0].uri;
+      picked = result.assets[0];
     }
     const filePath = `${destination}/${userId}/${Date.now()}.mp4`;
 
     console.log('[useVideoUpload] upload started — filePath:', filePath);
     setUploading(true);
     try {
+      // Shrink on the phone first (≤1080p, ~4 Mbps); falls back to the original on any failure.
+      const uri = await startVideoCompression(picked.uri, picked).promise;
       const blob = await fetch(uri).then((r) => r.blob());
       await uploadFile(filePath, blob, undefined, { contentType: 'video/mp4' });
     } catch (err) {

@@ -109,10 +109,12 @@ export function PortfolioGrid({
         mediaTypes: ['images', 'videos'] as const,
         allowsEditing: false,
         quality: 1,
-        // A non-passthrough preset skips PHPicker's writeData fast-path (which streams the huge
-        // full-size iCloud original and stalls the upload) and instead loads + transcodes to 720p.
-        // loadVideoRepresentation auto-downloads iCloud-offloaded videos → also fixes PHPhotos 3164.
-        videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+        // No videoExportPreset: the old 720p preset made iOS transcode inside the picker (slow, no
+        // progress, capped at 720p). useVideoUpload compresses on-device instead. If an iCloud-only
+        // video stalls or throws PHPhotos 3164, restore videoExportPreset H264_1280x720 here.
+        preferredAssetRepresentationMode:
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+        shouldDownloadFromNetwork: true,
       });
     } catch (e: unknown) {
       // iOS can throw here (e.g. PHPhotosErrorDomain 3164) when it can't export the
