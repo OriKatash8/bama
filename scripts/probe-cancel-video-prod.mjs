@@ -5,11 +5,12 @@
  * account against ANOTHER user's video path and other bad paths. Every attack row must
  * read DENIED; the side-effect row checks nothing was written for the victim's path.
  *
- *   PROBE_A_EMAIL=… PROBE_A_PASSWORD=… PROBE_B_EMAIL=… PROBE_B_PASSWORD=… \
- *     node scripts/probe-cancel-video-prod.mjs
+ *   PROBE_A_EMAIL=… PROBE_A_PASSWORD=… node scripts/probe-cancel-video-prod.mjs
  *
- *   A = the attacker (signed in for the calls), B = the victim (only its uid is used).
- *   Both are throwaway accounts that already exist in production. Optional
+ *   A = the attacker (a throwaway account that already exists in production). The victim
+ *   only needs to be a uid STRING: it defaults to a made-up one (no second account needed).
+ *   Set PROBE_VICTIM_UID to use a real user's uid, or PROBE_B_EMAIL/PROBE_B_PASSWORD to
+ *   sign in as a second account and use its uid. Nothing is created or deleted in Auth. Optional
  *   PROBE_CONTROL=1 adds a positive control (A cancels A's own path) which leaves one
  *   `cancelled` marker doc in videoJobs for a file that never existed; delete it afterwards.
  *
@@ -39,7 +40,9 @@ const auth = getAuth(app);
 const cancel = httpsCallable(getFunctions(app, 'europe-west1'), 'cancelVideoJob');
 const login = async (e, p) => { await signOut(auth).catch(() => {}); return (await signInWithEmailAndPassword(auth, e, p)).user.uid; };
 
-const uidB = await login(need('PROBE_B_EMAIL'), need('PROBE_B_PASSWORD'));
+const uidB = process.env.PROBE_B_EMAIL
+  ? await login(need('PROBE_B_EMAIL'), need('PROBE_B_PASSWORD'))
+  : (process.env.PROBE_VICTIM_UID ?? `probeVictim${Date.now().toString(36)}`);
 const uidA = await login(need('PROBE_A_EMAIL'), need('PROBE_A_PASSWORD'));
 const ts = Date.now();
 const victimPath = `portfolio/${uidB}/${ts}.mp4`;
