@@ -7,6 +7,8 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { randomUUID } from 'crypto';
 import { execFile } from 'child_process';
+import { deleteIfExists } from './cancel';
+export { cancelVideoJob } from './cancel';
 import {
   canSkipReencode,
   parseProbe,
@@ -93,11 +95,36 @@ export const compressVideo = functions.storage.onObjectFinalized(
 
     const jobId = Buffer.from(filePath).toString('base64').replace(/[/+=]/g, '_');
 
-    await admin.firestore().doc(`videoJobs/${jobId}`).set({
-      status: 'processing',
-      originalPath: filePath,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    const jobRef = admin.firestore().doc(`videoJobs/${jobId}`);
+
+    // The user may have cancelled while the upload was still finishing (cancelVideoJob writes
+    // `cancelled` first). Read and write in one transaction so that mark is never overwritten.
+    const cancelledAtStart = await admin.firestore().runTransaction(async (tx) => {
+      const snap = await tx.get(jobRef);
+      if (snap.exists && snap.data()?.cancelled) return true;
+      tx.set(jobRef, {
+        status: 'processing',
+        originalPath: filePath,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return false;
     });
+    if (cancelledAtStart) {
+      console.log('[compressVideo] cancelled before start, discarding', filePath);
+      await deleteIfExists(bucket.name, filePath);
+      await jobRef.delete();
+      return;
+    }
+
+    /** True if the user cancelled meanwhile. */
+    const isCancelled = async () => (await jobRef.get()).data()?.cancelled === true;
+    /** Throw away everything this upload produced, including the job doc. */
+    const discard = async () => {
+      console.log('[compressVideo] cancelled, discarding', filePath);
+      await deleteIfExists(bucket.name, compressedFilePath);
+      await deleteIfExists(bucket.name, filePath);
+      await jobRef.delete();
+    };
 
     const tempDir = os.tmpdir();
     const tempInput = path.join(tempDir, fileName);
@@ -119,6 +146,10 @@ export const compressVideo = functions.storage.onObjectFinalized(
         }
       }
       if (reencoded) await runFfmpeg(tempInput, tempOutput, REENCODE_OPTIONS);
+      if (await isCancelled()) {
+        await discard();
+        return;
+      }
       // Free the input now: /tmp is memory, and the upload below needs no source file.
       if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
 
@@ -138,13 +169,24 @@ export const compressVideo = functions.storage.onObjectFinalized(
       const encodedPath = encodeURIComponent(compressedFilePath);
       const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
 
-      await admin.firestore().doc(`videoJobs/${jobId}`).update({
-        status: 'done',
-        reencoded,
-        compressedPath: compressedFilePath,
-        url: publicUrl,
-        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Transaction: cancelVideoJob either marks `cancelled` before this (we discard) or sees
+      // `done` after it (it deletes the output). Never both, never neither.
+      const finished = await admin.firestore().runTransaction(async (tx) => {
+        const snap = await tx.get(jobRef);
+        if (snap.data()?.cancelled) return false;
+        tx.update(jobRef, {
+          status: 'done',
+          reencoded,
+          compressedPath: compressedFilePath,
+          url: publicUrl,
+          completedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return true;
       });
+      if (!finished) {
+        await discard();
+        return;
+      }
 
       // The job is already 'done'; a failed cleanup must not flip it back to 'error'.
       try {
@@ -154,6 +196,10 @@ export const compressVideo = functions.storage.onObjectFinalized(
       }
     } catch (error) {
       try {
+        if (await isCancelled()) {
+          await discard(); // the user is gone anyway; do not leave an error doc behind
+          return;
+        }
         await admin.firestore().doc(`videoJobs/${jobId}`).update({
           status: 'error',
           error: String(error),
