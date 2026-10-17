@@ -65,8 +65,12 @@ const REENCODE_OPTIONS = [
 
 export const compressVideo = functions.storage.onObjectFinalized(
   {
-    timeoutSeconds: 300,
-    memory: '1GiB',
+    // /tmp is RAM-backed on Cloud Functions: a 300 MB input plus the output and the
+    // encoder's own working set all count against `memory`. 4 GiB leaves ample headroom;
+    // 2 vCPU lets libx264 use two threads. 540 s is the ceiling for event-driven functions.
+    timeoutSeconds: 540,
+    memory: '4GiB',
+    cpu: 2,
     region: 'europe-west1',
   },
   async (event) => {
@@ -115,6 +119,8 @@ export const compressVideo = functions.storage.onObjectFinalized(
         }
       }
       if (reencoded) await runFfmpeg(tempInput, tempOutput, REENCODE_OPTIONS);
+      // Free the input now: /tmp is memory, and the upload below needs no source file.
+      if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
 
       // Generate a permanent Firebase Storage download URL with an embedded token.
       // This works regardless of GCS bucket ACL settings and is compatible with
@@ -140,12 +146,21 @@ export const compressVideo = functions.storage.onObjectFinalized(
         completedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      await bucket.file(filePath).delete();
+      // The job is already 'done'; a failed cleanup must not flip it back to 'error'.
+      try {
+        await bucket.file(filePath).delete();
+      } catch (delErr) {
+        console.warn('[compressVideo] could not delete original', filePath, delErr);
+      }
     } catch (error) {
-      await admin.firestore().doc(`videoJobs/${jobId}`).update({
-        status: 'error',
-        error: String(error),
-      });
+      try {
+        await admin.firestore().doc(`videoJobs/${jobId}`).update({
+          status: 'error',
+          error: String(error),
+        });
+      } catch (writeErr) {
+        console.error('[compressVideo] could not write error status', jobId, writeErr);
+      }
       throw error;
     } finally {
       if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
