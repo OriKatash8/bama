@@ -6,8 +6,62 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 import { randomUUID } from 'crypto';
+import { execFile } from 'child_process';
+import {
+  canSkipReencode,
+  parseProbe,
+  ProbeInfo,
+  REENCODE_MAXRATE_KBPS,
+  SCALE_TO_1080P_FILTER,
+} from './policy';
 
 ffmpeg.setFfmpegPath(ffmpegStatic as string);
+
+/** `ffmpeg -i file` always exits 1 (no output given); the stream info is on stderr. */
+function probe(file: string): Promise<ProbeInfo | null> {
+  return new Promise((resolve) => {
+    execFile(ffmpegStatic as string, ['-hide_banner', '-i', file], { maxBuffer: 4 * 1024 * 1024 }, (_err, _out, stderr) => {
+      try {
+        resolve(parseProbe(String(stderr)));
+      } catch {
+        resolve(null);
+      }
+    });
+  });
+}
+
+function runFfmpeg(input: string, output: string, options: string[]): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    ffmpeg(input)
+      .outputOptions(options)
+      .output(output)
+      .on('start', (cmd) => console.log('[ffmpeg] command:', cmd))
+      .on('stderr', (line) => console.log('[ffmpeg stderr]', line))
+      .on('end', () => resolve())
+      .on('error', (err: Error) => {
+        console.log('[ffmpeg] error stack:', err?.message);
+        reject(err);
+      })
+      .run();
+  });
+}
+
+// Already-compressed upload (the app's on-device pass): only rewrite the container so the
+// moov atom is up front for streaming. No decode/encode, takes seconds.
+const REMUX_OPTIONS = ['-c', 'copy', '-movflags', '+faststart'];
+
+const REENCODE_OPTIONS = [
+  '-vf', SCALE_TO_1080P_FILTER, // fit within 1080p, never upscale, even sides (yuv420p)
+  '-c:v', 'libx264',
+  '-preset', 'veryfast',
+  '-crf', '23',
+  '-maxrate', `${REENCODE_MAXRATE_KBPS}k`,
+  '-bufsize', `${REENCODE_MAXRATE_KBPS * 2}k`,
+  '-c:a', 'aac',
+  '-b:a', '128k',
+  '-movflags', '+faststart',
+  '-pix_fmt', 'yuv420p',
+];
 
 export const compressVideo = functions.storage.onObjectFinalized(
   {
@@ -48,28 +102,19 @@ export const compressVideo = functions.storage.onObjectFinalized(
     try {
       await bucket.file(filePath).download({ destination: tempInput });
 
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(tempInput)
-          .outputOptions([
-            '-vf', 'scale=-2:720',  // scale to 720p; -2 keeps width even (required by yuv420p)
-            '-c:v', 'libx264',
-            '-preset', 'veryfast',
-            '-crf', '23',
-            '-c:a', 'aac',
-            '-b:a', '128k',
-            '-movflags', '+faststart',
-            '-pix_fmt', 'yuv420p',
-          ])
-          .output(tempOutput)
-          .on('start', (cmd) => console.log('[ffmpeg] command:', cmd))
-          .on('stderr', (line) => console.log('[ffmpeg stderr]', line))
-          .on('end', () => resolve())
-          .on('error', (err: Error) => {
-            console.log('[ffmpeg] error stack:', err?.message);
-            reject(err);
-          })
-          .run();
-      });
+      const info = await probe(tempInput);
+      const skip = canSkipReencode(info, event.data.size ? Number(event.data.size) : fs.statSync(tempInput).size);
+      console.log('[compressVideo]', filePath, 'probe:', JSON.stringify(info), '→', skip ? 'remux only' : 're-encode');
+
+      let reencoded = !skip;
+      if (skip) {
+        try {
+          await runFfmpeg(tempInput, tempOutput, REMUX_OPTIONS);
+        } catch {
+          reencoded = true; // odd container/stream that will not copy cleanly: do it the long way
+        }
+      }
+      if (reencoded) await runFfmpeg(tempInput, tempOutput, REENCODE_OPTIONS);
 
       // Generate a permanent Firebase Storage download URL with an embedded token.
       // This works regardless of GCS bucket ACL settings and is compatible with
@@ -89,6 +134,7 @@ export const compressVideo = functions.storage.onObjectFinalized(
 
       await admin.firestore().doc(`videoJobs/${jobId}`).update({
         status: 'done',
+        reencoded,
         compressedPath: compressedFilePath,
         url: publicUrl,
         completedAt: admin.firestore.FieldValue.serverTimestamp(),
