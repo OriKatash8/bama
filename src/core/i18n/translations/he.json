@@ -1196,7 +1196,9 @@
     "video_too_long_ok": "הבנתי",
     "limit_one_minute": "דקה",
     "limit_minutes": "דקות",
-    "limit_seconds": "שניות"
+    "limit_seconds": "שניות",
+    "upload_in_progress": "פריט אחר עדיין בהעלאה. המתן לסיומו או בטל אותו קודם.",
+    "caption_close": "סגור"
   },
   "header": {
     "client_mode": "לקוח/ה",

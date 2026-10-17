@@ -14,6 +14,10 @@ jest.mock('firebase/firestore', () => ({
   doc: (_d: unknown, c: string, id: string) => ({ path: `${c}/${id}` }),
   onSnapshot: (_r: unknown, cb: (s: unknown) => void) => { snapCb = cb; return mockUnsub; },
 }));
+const mockCancelJob = jest.fn();
+jest.mock('@core/firebase/functions', () => ({
+  callFunction: (name: string) => (data: unknown) => mockCancelJob(name, data),
+}));
 jest.mock('@core/firebase/storage', () => ({ uploadFile: (...a: unknown[]) => mockUpload(...a) }));
 jest.mock('@core/video/compressForUpload', () => {
   class CompressionCancelled extends Error {}
@@ -32,6 +36,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
   snapCb = null;
+  mockCancelJob.mockResolvedValue({ ok: true });
   (global as { fetch: unknown }).fetch = jest.fn(async () => ({ blob: async () => ({}) }));
   mockStart.mockImplementation((uri: string, _i: unknown, onProgress: (p: number) => void) => {
     onProgress(0.5);
@@ -180,5 +185,87 @@ describe('getOutcome (lets callers tell Cancel from a failure)', () => {
     expect(result.current.getOutcome()).toBe('cancelled');
     act(() => { result.current.uploadVideo('chat-videos', 'u1', ASSET); });
     expect(result.current.getOutcome()).toBeNull();
+  });
+});
+
+
+describe('cancelling tells the server (cancelVideoJob) once it has the file', () => {
+  const uploadedPath = () => (mockUpload.mock.calls[0][0] as string);
+
+  it('cancel while processing calls the callable with the uploaded path', async () => {
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('portfolio', 'u1', ASSET); });
+    await flush();
+    expect(result.current.stage).toBe('processing');
+    act(() => result.current.cancel());
+    await flush();
+    expect(mockCancelJob).toHaveBeenCalledTimes(1);
+    expect(mockCancelJob).toHaveBeenCalledWith('cancelVideoJob', { filePath: uploadedPath() });
+    expect(uploadedPath()).toMatch(/^portfolio\/u1\/\d+\.mp4$/);
+  });
+
+  it('works for chat videos too (shared hook)', async () => {
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('chat-videos', 'u1', ASSET); });
+    await flush();
+    act(() => result.current.cancel());
+    await flush();
+    expect(mockCancelJob).toHaveBeenCalledWith('cancelVideoJob', { filePath: expect.stringMatching(/^chat-videos\/u1\//) });
+  });
+
+  it('cancel before the file is on the server does not call it', async () => {
+    let reject!: (e: Error) => void;
+    mockUpload.mockImplementation((_p: string, _b: unknown, _o: unknown, _m: unknown, control: { cancel?: () => void }) => {
+      control.cancel = () => reject(new Error('storage/canceled'));
+      return new Promise((_r, rej) => { reject = rej; });
+    });
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('portfolio', 'u1', ASSET); });
+    await flush();
+    act(() => result.current.cancel());
+    await flush();
+    expect(mockCancelJob).not.toHaveBeenCalled();
+  });
+
+  it('cancel in the instant the upload finishes still tells the server', async () => {
+    let finish!: () => void;
+    mockUpload.mockImplementation(() => new Promise<string>((r) => { finish = () => r('u'); }));
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('portfolio', 'u1', ASSET); });
+    await flush();
+    act(() => result.current.cancel());   // before the upload promise settles
+    finish();
+    await flush();
+    expect(mockCancelJob).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaving the screen while processing tells the server', async () => {
+    const { result, unmount } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('portfolio', 'u1', ASSET); });
+    await flush();
+    unmount();
+    await Promise.resolve();
+    expect(mockCancelJob).toHaveBeenCalledTimes(1);
+  });
+
+  it('a finished job is not cancelled on unmount', async () => {
+    const { result, unmount } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('portfolio', 'u1', ASSET); });
+    await flush();
+    act(() => snapCb!(snap({ status: 'done', url: 'https://v/a.mp4' })));
+    unmount();
+    expect(mockCancelJob).not.toHaveBeenCalled();
+  });
+
+  it('retries the callable once, then gives up quietly', async () => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    mockCancelJob.mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useVideoUpload());
+    act(() => { result.current.uploadVideo('portfolio', 'u1', ASSET); });
+    await flush();
+    act(() => result.current.cancel());
+    await flush();
+    await flush();
+    expect(mockCancelJob).toHaveBeenCalledTimes(2);
   });
 });

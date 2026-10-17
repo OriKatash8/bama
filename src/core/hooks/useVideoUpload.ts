@@ -5,6 +5,24 @@ import { db } from '@core/firebase/config';
 import { uploadFile } from '@core/firebase/storage';
 import { startVideoCompression, CompressionCancelled } from '@core/video/compressForUpload';
 import { VIDEO_PROCESSING_TIMEOUT_MS } from '@core/constants/video';
+import { callFunction } from '@core/firebase/functions';
+
+/**
+ * Tell the server to throw away an upload it already has (or is about to have): it deletes the
+ * compressed output and the job doc, or marks the job so compressVideo discards it. Best-effort,
+ * one retry; the server derives every path from the verified one, so a bad call just fails.
+ */
+export async function cancelServerJob(filePath: string): Promise<void> {
+  const call = callFunction<{ filePath: string }, unknown>('cancelVideoJob', 'europe-west1');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await call({ filePath });
+      return;
+    } catch (e) {
+      if (attempt === 1) console.warn('[useVideoUpload] cancelVideoJob failed for', filePath, e);
+    }
+  }
+}
 
 type VideoJobStatus = {
   status: 'processing' | 'done' | 'error';
@@ -54,6 +72,8 @@ export function useVideoUpload(): UseVideoUploadResult {
   const cancelRef = useRef<(() => void) | null>(null);
   const finishRef = useRef<((v: string | null) => void) | null>(null);
   const mountedRef = useRef(true);
+  // The path on the server once uploadFile has finished; null before that and after the job ends.
+  const serverPathRef = useRef<string | null>(null);
   const outcomeRef = useRef<'ok' | 'cancelled' | 'failed' | null>(null);
 
   function stopListening() {
@@ -70,12 +90,20 @@ export function useVideoUpload(): UseVideoUploadResult {
       runRef.current += 1;
       cancelRef.current?.();
       stopListening();
+      // Leaving the screen mid-processing abandons the upload: nobody will use the output.
+      if (serverPathRef.current) {
+        void cancelServerJob(serverPathRef.current);
+        serverPathRef.current = null;
+      }
     };
   }, []);
 
   function cancel() {
-    // TODO: cancelling while 'processing' leaves compressVideo's *_compressed.mp4 orphaned in
-    // Storage (the server still finishes). Delete it from the client or a scheduled sweep.
+    // Past the upload, the server has the file: have it drop the output and the job.
+    if (serverPathRef.current) {
+      void cancelServerJob(serverPathRef.current);
+      serverPathRef.current = null;
+    }
     outcomeRef.current = 'cancelled';
     runRef.current += 1;
     cancelRef.current?.();
@@ -96,6 +124,7 @@ export function useVideoUpload(): UseVideoUploadResult {
   ): Promise<string | null> {
     stopListening();
     outcomeRef.current = null;
+    serverPathRef.current = null;
     const run = ++runRef.current;
     const live = () => runRef.current === run && mountedRef.current;
 
@@ -159,7 +188,13 @@ export function useVideoUpload(): UseVideoUploadResult {
       return null;
     }
     cancelRef.current = null;
-    if (!live()) return null;
+    serverPathRef.current = filePath;
+    // Cancelled in the instant the upload finished: the server has it now, so tell it to drop it.
+    if (!live()) {
+      serverPathRef.current = null;
+      void cancelServerJob(filePath);
+      return null;
+    }
 
     // Stage 3: wait for compressVideo to write the job doc.
     setStage('processing');
@@ -191,12 +226,14 @@ export function useVideoUpload(): UseVideoUploadResult {
 
           if (data.status === 'done' && data.url) {
             outcomeRef.current = 'ok';
+            serverPathRef.current = null;
             setStage('idle');
             setSlow(false);
             setUrl(data.url);
             finish(data.url);
           } else if (data.status === 'error') {
             outcomeRef.current = 'failed';
+            serverPathRef.current = null;
             setStage('idle');
             setSlow(false);
             setError(data.error ?? 'Video processing failed');

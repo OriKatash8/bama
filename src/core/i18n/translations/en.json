@@ -1196,7 +1196,9 @@
     "video_too_long_ok": "Got it",
     "limit_one_minute": "1 minute",
     "limit_minutes": "minutes",
-    "limit_seconds": "seconds"
+    "limit_seconds": "seconds",
+    "upload_in_progress": "Another item is still uploading. Wait for it to finish or cancel it first.",
+    "caption_close": "Close"
   },
   "header": {
     "client_mode": "Client",
