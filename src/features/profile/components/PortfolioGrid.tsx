@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Image, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator, TextInput,
+  ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -237,7 +237,13 @@ export function PortfolioGrid({
 
       {/* Caption sheet — the one moment the author can describe this piece. */}
       {pending && (
-        <View style={styles.captionOverlay}>
+        // A Modal, not an in-flow overlay: the overlay sat inside the scrolling profile page,
+        // so the keyboard covered it. KeyboardAvoidingView lifts the sheet above the keyboard.
+        <Modal transparent animationType="fade" visible onRequestClose={() => { if (!saving) setPending(null); }}>
+        <KeyboardAvoidingView
+          style={styles.captionOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.captionSheet}>
             <AppText weight="bold" style={[styles.captionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('media.caption_title')}
@@ -287,7 +293,8 @@ export function PortfolioGrid({
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
+        </Modal>
       )}
     </View>
   );
