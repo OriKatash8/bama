@@ -10,6 +10,7 @@ import {
   TAB_ITEM_STYLE,
 } from '@core/navigation/floatingTabBar';
 import { TAB_SLIDE } from '@core/navigation/tabSlide';
+import { isPagerSwipeLocked } from '@core/navigation/pagerSwipeLock';
 import { GlassTabBarBackground } from '@core/navigation/GlassTabBarBackground';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -75,6 +76,8 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
   const tabPanResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => {
+        // A finger is on a horizontal strip inside the tab: that drag belongs to the strip.
+        if (isPagerSwipeLocked()) return false;
         if (lockedRef.current) return false;
         const startX = gs.moveX - gs.dx;
         const screenWidth = Dimensions.get('window').width;

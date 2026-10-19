@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { rtlSafe } from '@utils/formatters';
+import { tabSwipeLockProps } from '@core/navigation/pagerSwipeLock';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
@@ -478,6 +479,7 @@ export default function ProfessionalChatsScreen() {
             <ScrollView
               ref={categoryScrollRef}
               horizontal
+              {...tabSwipeLockProps}
               showsHorizontalScrollIndicator={false}
               // RTL row flows row-reverse, so its visual start is the right edge —
               // anchor the scroll there once the content is laid out.

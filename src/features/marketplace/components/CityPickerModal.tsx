@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import {
   Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
-  FlatList, StyleSheet,
+  FlatList, StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { X, MapPin } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { useKeyboardHeight } from '@core/hooks/useKeyboardHeight';
+import { locationSheetLayout } from '@features/crew/components/locationSheetLayout';
 import { findLocation, sameLocation, searchLocations } from '@core/constants/israelLocations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -38,6 +40,9 @@ export function CityPickerModal({ visible, value, onSelect, onClose }: Props) {
   const rtl = language === 'he';
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
+  // A Modal is its own window: the card must be fitted above the keyboard by hand (shared with the home picker).
+  const { height: windowHeight } = useWindowDimensions();
+  const layout = locationSheetLayout(windowHeight, useKeyboardHeight());
 
   const [search, setSearch] = useState('');
 
@@ -55,7 +60,7 @@ export function CityPickerModal({ visible, value, onSelect, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, layout.overlay]} testID="city-overlay">
           <TouchableWithoutFeedback>
             <View style={styles.box}>
               <View style={styles.nav}>
@@ -79,11 +84,14 @@ export function CityPickerModal({ visible, value, onSelect, onClose }: Props) {
               <FlatList
                 data={cities}
                 keyExtractor={(item) => item}
+                // 'handled': the first tap on a city selects it; dragging the list closes the keyboard.
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
                 initialNumToRender={15}
                 maxToRenderPerBatch={15}
                 windowSize={3}
-                style={styles.list}
+                testID="city-list"
+                style={[styles.list, { maxHeight: layout.listMaxHeight }]}
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
                 ListFooterComponent={showAdd ? (
                   <TouchableOpacity
