@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  ActivityIndicator, Modal, TouchableWithoutFeedback, useWindowDimensions, Keyboard, InputAccessoryView,
+  ActivityIndicator, Modal, TouchableWithoutFeedback, useWindowDimensions, Keyboard,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { PlainScreen } from '@components/layout/PlainScreen';
+import { KeyboardDoneBar } from '@components/ui/KeyboardDoneBar';
 import { useKeyboardHeight } from '@core/hooks/useKeyboardHeight';
 import { locationSheetLayout } from '@features/crew/components/locationSheetLayout';
 import { AppText } from '@components/ui/AppText';
@@ -1091,21 +1092,7 @@ export default function HomeScreen() {
           maxDate={calOpen === 'exec' && deadline && deadline !== 'flexible' ? deadline : undefined}
         />
       )}
-      {Platform.OS === 'ios' && (
-        <InputAccessoryView nativeID={DESCRIPTION_ACCESSORY_ID}>
-          <View testID="keyboard-done-bar" style={[styles.doneBar, { flexDirection: rtl ? 'row' : 'row-reverse' }]}>
-            <TouchableOpacity
-              onPress={Keyboard.dismiss}
-              hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel={t('builder.keyboard_done')}
-              testID="keyboard-done"
-            >
-              <Text style={[styles.doneText, { ...font.semiBold }]}>{t('builder.keyboard_done')}</Text>
-            </TouchableOpacity>
-          </View>
-        </InputAccessoryView>
-      )}
+      <KeyboardDoneBar nativeID={DESCRIPTION_ACCESSORY_ID} rtl={rtl} label={t('builder.keyboard_done')} />
     </HomeFrame>
   );
 }
@@ -1144,8 +1131,6 @@ function createStyles(
     /** Eats the leftover height on tall screens, pushing the button down. Used
      *  by all three steps so the button lands in the same place throughout. */
     grow: { flexGrow: 1 },
-    doneBar: { backgroundColor: '#F2F2F7', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#C7C7CC', paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center' },
-    doneText: { fontSize: 17, color: '#007AFF' },
 
     // Direction is set inline per render: the three segments are equal-flex
     // siblings coloured in order, so the row's direction IS the fill direction.

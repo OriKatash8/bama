@@ -1,7 +1,9 @@
+import { KEYBOARD_GAP, KEYBOARD_TOP_CLEARANCE, keyboardOverlayStyle, spaceAboveKeyboard } from '@core/layout/keyboardSpace';
+
 /**
- * Sizing for the home screen's location picker (a centred card inside a Modal, so the screen's
- * keyboard handling does not reach it). With the keyboard up, the card is centred in the space
- * ABOVE it and only the results list shrinks: the header and search field never leave the screen.
+ * Sizing for a location picker (a centred card with a search field and a results list). With the
+ * keyboard up, the card is centred in the space ABOVE it and only the list shrinks: the header and
+ * search field never leave the screen. Used by the home screen and the marketplace city picker.
  */
 
 /** Height of everything in the card except the list: padding, header row, search field. */
@@ -10,10 +12,8 @@ export const LOCATION_CHROME_HEIGHT = 108;
 export const LOCATION_LIST_MAX = 280;
 /** A short phone still shows about three results. */
 export const LOCATION_LIST_MIN = 88;
-/** Room kept above the card for the status bar / notch. */
-export const LOCATION_TOP_CLEARANCE = 56;
-/** Room kept between the card and the keyboard. */
-export const LOCATION_KEYBOARD_GAP = 12;
+export const LOCATION_TOP_CLEARANCE = KEYBOARD_TOP_CLEARANCE;
+export const LOCATION_KEYBOARD_GAP = KEYBOARD_GAP;
 
 export type LocationSheetLayout = {
   listMaxHeight: number;
@@ -22,11 +22,10 @@ export type LocationSheetLayout = {
 };
 
 export function locationSheetLayout(windowHeight: number, keyboardHeight: number): LocationSheetLayout {
-  if (keyboardHeight <= 0) return { listMaxHeight: LOCATION_LIST_MAX, overlay: {} };
-  const space = windowHeight - keyboardHeight - LOCATION_TOP_CLEARANCE - LOCATION_KEYBOARD_GAP;
-  const listMaxHeight = Math.min(LOCATION_LIST_MAX, Math.max(LOCATION_LIST_MIN, space - LOCATION_CHROME_HEIGHT));
+  const space = spaceAboveKeyboard(windowHeight, keyboardHeight);
+  if (space == null) return { listMaxHeight: LOCATION_LIST_MAX, overlay: {} };
   return {
-    listMaxHeight,
-    overlay: { paddingTop: LOCATION_TOP_CLEARANCE, paddingBottom: keyboardHeight + LOCATION_KEYBOARD_GAP },
+    listMaxHeight: Math.min(LOCATION_LIST_MAX, Math.max(LOCATION_LIST_MIN, space - LOCATION_CHROME_HEIGHT)),
+    overlay: keyboardOverlayStyle(keyboardHeight),
   };
 }

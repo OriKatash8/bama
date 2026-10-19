@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, TextInput,
-  StyleSheet, ScrollView, ActivityIndicator, type TextProps,
+  Modal, View, Text, TouchableOpacity, TextInput, Platform, useWindowDimensions,
+  StyleSheet, ScrollView, ActivityIndicator, type LayoutChangeEvent, type TextProps,
 } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -16,6 +16,9 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { localizeLocation } from '@core/constants/israelLocations';
 import { useAppFont } from '@core/hooks/useAppFont';
+import { useKeyboardHeight } from '@core/hooks/useKeyboardHeight';
+import { keyboardOverlayStyle, spaceAboveKeyboard } from '@core/layout/keyboardSpace';
+import { KeyboardDoneBar } from '@components/ui/KeyboardDoneBar';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition, RentalPeriod } from '../types';
@@ -23,6 +26,13 @@ import { brandLabel, PERIOD_SUFFIX_KEY, RENTAL_PERIODS, periodOf } from '../util
 import { normalizeCourseUrl as normalizeWebUrl } from '@features/courses/courseUrl';
 
 type Translations = typeof en;
+
+/** nativeID tying every text field of the form to the iOS "Done" bar above the keyboard. */
+const FORM_ACCESSORY_ID = 'listingFormDoneBar';
+/** Room left above a focused field when it is scrolled into view (its label sits there). */
+const FIELD_SCROLL_MARGIN = 34;
+/** The card never shrinks below this with the keyboard up (header + a few fields + the button). */
+const CARD_MIN_HEIGHT = 240;
 
 /** Every string in this sheet follows the APP LANGUAGE rather than the string's
  *  own script (which is what AppText does). In Hebrew mode that keeps the Latin
@@ -176,6 +186,41 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+
+  // This popup is a Modal (its own window), so the screen's keyboard handling does not reach it. With the
+  // keyboard up the card is lifted into the space above it; the header and the pinned Publish/Save button
+  // stay, and the form between them scrolls.
+  const { height: windowHeight } = useWindowDimensions();
+  const keyboardHeight = useKeyboardHeight();
+  const space = spaceAboveKeyboard(windowHeight, keyboardHeight);
+  const scrollRef = useRef<ScrollView>(null);
+  /** y of each field within the form's content, and which field has focus. */
+  const fieldY = useRef<Record<string, number>>({});
+  const focusedField = useRef<string | null>(null);
+
+  /** Scroll so the field (and a bit below it) is visible. Native only: web has no virtual keyboard. */
+  function scrollToField(name: string) {
+    if (Platform.OS === 'web') return;
+    const y = fieldY.current[name];
+    if (y == null) return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - FIELD_SCROLL_MARGIN), animated: true });
+  }
+  // Focus lands before the keyboard (and the smaller card) is in place: scroll again once it is up.
+  useEffect(() => {
+    if (keyboardHeight > 0 && focusedField.current) scrollToField(focusedField.current);
+  }, [keyboardHeight]);
+
+  /** Spread on a TextInput: scrolls it into view on focus and ties it to the Done bar. */
+  const fieldFocus = (name: string) => ({
+    onFocus: () => { focusedField.current = name; scrollToField(name); },
+    onBlur: () => { if (focusedField.current === name) focusedField.current = null; },
+    inputAccessoryViewID: Platform.OS === 'ios' ? FORM_ACCESSORY_ID : undefined,
+  });
+  /** Spread on the field itself (or the row that holds it): records where it sits in the form. */
+  const fieldLayout = (name: string) => ({
+    onLayout: (e: LayoutChangeEvent) => { fieldY.current[name] = e.nativeEvent.layout.y; },
+  });
+
   const [type, setType]               = useState<MarketplaceListingType>(editListing?.type ?? initialType);
   const [imageUri, setImageUri]       = useState<string | null>(editListing?.imageUrl ?? null);
   const [productName, setProductName] = useState(editListing?.productName ?? '');
@@ -270,9 +315,9 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, keyboardOverlayStyle(keyboardHeight)]} testID="listing-overlay">
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
-        <View style={styles.card}>
+        <View style={[styles.card, space != null && { maxHeight: Math.max(CARD_MIN_HEIGHT, space) }]} testID="listing-card">
           {/* Header */}
           <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
             <SheetText weight="bold" style={[styles.title, { textAlign: rtl ? 'right' : 'left' }]}>
@@ -285,7 +330,11 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
 
           {/* Scrollable form */}
           <ScrollView
-            automaticallyAdjustKeyboardInsets
+            ref={scrollRef}
+            testID="listing-scroll"
+            // No automaticallyAdjustKeyboardInsets: the card is already sized to the space above the
+            // keyboard, so an inset would only leave a gap. Dragging the form closes the keyboard.
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             style={styles.scroll}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
@@ -343,6 +392,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
               placeholderTextColor="rgba(0,0,0,0.3)"
               value={productName}
               onChangeText={setProductName}
+              {...fieldFocus('name')}
+              {...fieldLayout('name')}
             />
 
             {/* Rentals: the store that rents it, and the product page the rental opens. */}
@@ -358,6 +409,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                   placeholderTextColor="rgba(0,0,0,0.3)"
                   value={storeName}
                   onChangeText={setStoreName}
+                  {...fieldFocus('store')}
+                  {...fieldLayout('store')}
                 />
                 <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                   {t('marketplace.product_link')}
@@ -372,6 +425,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="url"
+                  {...fieldFocus('url')}
+                  {...fieldLayout('url')}
                 />
               </>
             )}
@@ -445,6 +500,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                       value={customBrand}
                       onChangeText={setCustomBrand}
                       autoFocus
+                      {...fieldFocus('customBrand')}
+                      {...fieldLayout('customBrand')}
                     />
                   )}
                 </>
@@ -457,6 +514,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                   placeholderTextColor="rgba(0,0,0,0.3)"
                   value={brand}
                   onChangeText={setBrand}
+                  {...fieldFocus('brand')}
+                  {...fieldLayout('brand')}
                 />
               )
             )}
@@ -516,7 +575,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
             <SheetText weight="semiBold" style={[styles.sectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('marketplace.label_price')}
             </SheetText>
-            <View style={[styles.priceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.priceRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]} {...fieldLayout('price')}>
               <TextInput
                 style={[styles.input, styles.priceInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
                 testID="input-price"
@@ -525,6 +584,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
                 value={price}
                 onChangeText={setPrice}
                 keyboardType="numeric"
+                {...fieldFocus('price')}
               />
               {type === 'rental' && (
                 <SheetText weight="semiBold" style={styles.priceSuffix} testID="price-suffix">{t(`marketplace.${PERIOD_SUFFIX_KEY[pricePeriod]}`)}</SheetText>
@@ -570,6 +630,8 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
           </View>
         </View>
       </View>
+
+      <KeyboardDoneBar nativeID={FORM_ACCESSORY_ID} rtl={rtl} label={t('builder.keyboard_done')} />
 
       <CityPickerModal
         visible={locationPickerOpen}
