@@ -123,7 +123,8 @@
     "clear_field_a11y": "נקה {{field}}",
     "not_selected_a11y": "לא נבחר",
     "start_date": "תאריך ביצוע",
-    "end_date": "תאריך סיום"
+    "end_date": "תאריך סיום",
+    "keyboard_done": "סיום"
   },
   "search": {
     "no_professionals_yet": "אין אנשי מקצוע עדיין",

@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  ActivityIndicator, Modal, TouchableWithoutFeedback, useWindowDimensions,
+  ActivityIndicator, Modal, TouchableWithoutFeedback, useWindowDimensions, Keyboard, InputAccessoryView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
+import { PlainScreen } from '@components/layout/PlainScreen';
 import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -133,6 +134,21 @@ const DESCRIPTION_EXAMPLES = {
 } as const;
 
 
+/** nativeID tying the description box to its iOS "Done" bar above the keyboard. */
+const DESCRIPTION_ACCESSORY_ID = 'descriptionDoneBar';
+/** Keeps the field label in view above the description box when scrolling it to the top. */
+const DESCRIPTION_SCROLL_MARGIN = 44;
+
+/**
+ * iOS: the page ScrollView adjusts for the keyboard itself (automaticallyAdjustKeyboardInsets), so
+ * the Screen's KeyboardAvoidingView is left out; stacking both adjusts twice and leaves a gap above
+ * the keyboard. Android and web keep the Screen exactly as before.
+ */
+function HomeFrame({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === 'ios') return <PlainScreen backgroundColor="#FFFFFF">{children}</PlainScreen>;
+  return <Screen scrollable={false} backgroundColor="#FFFFFF">{children}</Screen>;
+}
+
 export default function HomeScreen() {
   const { slots, totalCount, roleQuantity, setQuantity, slotCaps, setSlotCapability, removeCategory, loadSlots } = useCrewBuilder();
   const colors = useTheme();
@@ -193,6 +209,29 @@ export default function HomeScreen() {
    *  the height of everything above the card. */
   const cardY = useRef(0);
   const fieldY = useRef<Record<string, number>>({});
+  /** Mirrors focusedField for the keyboard listener below (which outlives renders). */
+  const descriptionFocused = useRef(false);
+
+  /**
+   * Bring the description box to the top of the visible page, so it and the date/location
+   * tiles right under it sit above the keyboard. Native only: web has no virtual keyboard
+   * and keeps its layout as it is.
+   */
+  function scrollDescriptionIntoView() {
+    if (Platform.OS === 'web') return;
+    const y = cardY.current + (fieldY.current.description ?? 0) - DESCRIPTION_SCROLL_MARGIN;
+    scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: true });
+  }
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    // Focus often lands before the keyboard (and before the scroll view's own inset) is in
+    // place, so scroll again once it has shown.
+    const sub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => {
+      if (descriptionFocused.current) scrollDescriptionIntoView();
+    });
+    return () => sub.remove();
+  }, []);
   const font = useAppFont();
   const styles = useMemo(
     () => createStyles(font.regular.fontFamily, font.bold.fontFamily, font.semiBold.fontFamily, font.medium.fontFamily),
@@ -442,7 +481,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <Screen scrollable={false} backgroundColor="#FFFFFF">
+    <HomeFrame>
       <View
         ref={pageRef}
         style={styles.page}
@@ -457,6 +496,10 @@ export default function HomeScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        // The keyboard must not hide the date/location tiles: the scroll view adds the keyboard's
+        // overlap as an inset (iOS) and the page can be dragged down to close it. Ignored on web.
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       >
       <Animated.View style={[styles.stepWrap, stepStyle]}>
         {/* ══════════════ STEP 1: Project details ══════════════ */}
@@ -498,7 +541,11 @@ export default function HomeScreen() {
               <Text style={[styles.label, { textAlign: rtl ? 'right' : 'left' }]}>
                 {rtl ? 'ספר לנו על הפרויקט' : 'Tell us about your project'}
               </Text>
-              <View style={[styles.focusRing, focusedField === 'description' && styles.focusRingOn]}>
+              <View
+                style={[styles.focusRing, focusedField === 'description' && styles.focusRingOn]}
+                // Card-relative, like the title ring (the input's own onLayout is relative to descriptionWrap).
+                onLayout={(e) => { fieldY.current.description = e.nativeEvent.layout.y; }}
+              >
               <View style={styles.descriptionWrap}>
               <TextInput
                 style={[
@@ -514,10 +561,19 @@ export default function HomeScreen() {
                 // The animated placeholder replaced the `placeholder` prop, so
                 // there is no placeholder text left to find this input by.
                 testID="description-input"
-                onLayout={(e) => { fieldY.current.description = e.nativeEvent.layout.y; }}
                 onChangeText={setDescription}
-                onFocus={() => { setDescriptionTouched(true); setFocusedField('description'); }}
-                onBlur={() => setFocusedField((f) => (f === 'description' ? null : f))}
+                onFocus={() => {
+                  setDescriptionTouched(true);
+                  setFocusedField('description');
+                  descriptionFocused.current = true;
+                  scrollDescriptionIntoView();
+                }}
+                onBlur={() => {
+                  descriptionFocused.current = false;
+                  setFocusedField((f) => (f === 'description' ? null : f));
+                }}
+                // iOS: a "Done" bar above the keyboard (Return only adds a new line here).
+                inputAccessoryViewID={Platform.OS === 'ios' ? DESCRIPTION_ACCESSORY_ID : undefined}
                 // No placeholder prop: the animated one is drawn behind this
                 // input instead, so typing it cannot re-render the field.
                 placeholderTextColor={PLACEHOLDER}
@@ -1025,7 +1081,22 @@ export default function HomeScreen() {
           maxDate={calOpen === 'exec' && deadline && deadline !== 'flexible' ? deadline : undefined}
         />
       )}
-    </Screen>
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={DESCRIPTION_ACCESSORY_ID}>
+          <View testID="keyboard-done-bar" style={[styles.doneBar, { flexDirection: rtl ? 'row' : 'row-reverse' }]}>
+            <TouchableOpacity
+              onPress={Keyboard.dismiss}
+              hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('builder.keyboard_done')}
+              testID="keyboard-done"
+            >
+              <Text style={[styles.doneText, { ...font.semiBold }]}>{t('builder.keyboard_done')}</Text>
+            </TouchableOpacity>
+          </View>
+        </InputAccessoryView>
+      )}
+    </HomeFrame>
   );
 }
 
@@ -1063,6 +1134,8 @@ function createStyles(
     /** Eats the leftover height on tall screens, pushing the button down. Used
      *  by all three steps so the button lands in the same place throughout. */
     grow: { flexGrow: 1 },
+    doneBar: { backgroundColor: '#F2F2F7', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#C7C7CC', paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center' },
+    doneText: { fontSize: 17, color: '#007AFF' },
 
     // Direction is set inline per render: the three segments are equal-flex
     // siblings coloured in order, so the row's direction IS the fill direction.
