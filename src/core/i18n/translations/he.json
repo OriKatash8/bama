@@ -635,7 +635,8 @@
     "courses": "קורסים",
     "communities": "קהילות",
     "marketplace": "מרקטפלייס",
-    "fees": "עמלות ובירורים"
+    "fees": "עמלות ובירורים",
+    "usage": "שימוש"
   },
   "admin_projects": {
     "title": "פרויקטים",
@@ -1717,5 +1718,41 @@
     "role_label": {
       "photographer": "צלם תמונות"
     }
+  },
+  "admin_usage": {
+    "title": "שימוש",
+    "greeting": "שימוש ב-Firebase",
+    "subtitle": "שימוש ב-Firebase",
+    "firestore_today": "Firestore היום",
+    "reads": "קריאות",
+    "writes": "כתיבות",
+    "deletes": "מחיקות",
+    "quota_of": "מתוך {{quota}}",
+    "quota_reset": "מתאפס כל יום בסביבות {{time}} שעון ישראל",
+    "month": "מתחילת החודש",
+    "storage": "אחסון",
+    "storage_app": "קבצי האפליקציה",
+    "storage_total": "כל הדליים",
+    "egress": "תעבורה יוצאת",
+    "egress_today": "תעבורה יוצאת היום",
+    "other_buckets": "הדליים הגדולים",
+    "functions": "פונקציות",
+    "invocations_today": "הפעלות היום",
+    "invocations_month": "הפעלות החודש",
+    "top_functions": "הפונקציות הפעילות היום",
+    "updated": "עודכן {{time}}",
+    "never_updated": "עדיין לא נאסף מידע",
+    "stale": "הנתונים ישנים מ-3 שעות",
+    "refresh": "רענן",
+    "refreshing": "מרענן…",
+    "refresh_failed_title": "הרענון נכשל",
+    "refresh_failed_body": "נתוני השימוש לא עודכנו. נסה שוב בעוד רגע.",
+    "refresh_ok": "אישור",
+    "partial": "חלק מהנתונים לא נקראו ומוצג הערך האחרון שלהם.",
+    "load_failed_title": "לא ניתן לטעון את נתוני השימוש",
+    "load_failed_body": "רק מנהלים יכולים לקרוא נתונים אלה. אם אתה מנהל, נסה שוב.",
+    "retry": "נסה שוב",
+    "empty": "עדיין אין נתוני שימוש. לחץ על רענן כדי לאסוף.",
+    "no_data": "—"
   }
 }

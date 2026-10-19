@@ -72,3 +72,9 @@ it('rows run left to right in English', () => {
   expect(StyleSheet.flatten(r.getByTestId('ops-courses').props.style).flexDirection).toBe('row');
   expect(StyleSheet.flatten(r.getByText(E.title).props.style).textAlign).toBe('left');
 });
+
+it('links to the Usage page', () => {
+  const r = render(<OperationsAdmin />);
+  fireEvent.press(r.getByTestId('ops-usage'));
+  expect(mockPush).toHaveBeenCalledWith('/admin/usage');
+});

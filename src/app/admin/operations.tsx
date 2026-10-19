@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
-import { BookOpen, MessagesSquare, ShoppingBag, Percent, type LucideIcon } from 'lucide-react-native';
+import { BookOpen, MessagesSquare, ShoppingBag, Percent, Activity, type LucideIcon } from 'lucide-react-native';
 import { AdminPage, Card, CardHead, NavRow, useScopedT, type Tone } from '@features/admin/ui';
 
-type OpsRoute = '/admin/courses' | '/admin/communities' | '/admin/marketplace' | '/admin/fees';
+type OpsRoute = '/admin/courses' | '/admin/communities' | '/admin/marketplace' | '/admin/fees' | '/admin/usage';
 
 /**
  * Operations: the hub for content and marketplace pages, in the admin
@@ -21,6 +21,8 @@ export default function OperationsAdmin() {
     // in — fee records are readable by nobody but the pro who owes them, so there
     // is no other surface this could hang off.
     { key: 'fees', label: t('fees'), route: '/admin/fees', icon: Percent, tone: 'bad' },
+    // Firebase usage vs the free quotas (Cloud Monitoring snapshot in adminStats/usage).
+    { key: 'usage', label: t('usage'), route: '/admin/usage', icon: Activity, tone: 'accent' },
   ];
 
   return (
