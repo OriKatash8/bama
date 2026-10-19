@@ -156,3 +156,18 @@ it('notes partially-failed collection', () => {
   mockHook = { ...mockHook, data: { ...DOC, errors: ['today.egress: boom'] } };
   expect(render(<AdminUsageScreen />).getByTestId('usage-partial')).toBeTruthy();
 });
+
+it('card contents are inset from the card edge (cards have no padding of their own)', () => {
+  const r = render(<AdminUsageScreen />);
+  const pad = (id: string) => StyleSheet.flatten(r.getByTestId(id).props.style).paddingHorizontal;
+  expect(pad('usage-today-body')).toBeGreaterThanOrEqual(16);
+  expect(pad('usage-month-body')).toBeGreaterThanOrEqual(16);
+  expect(pad('usage-status-row')).toBeGreaterThanOrEqual(16);
+});
+
+it('month and storage figures sit in tiles with the value above its label', () => {
+  const r = render(<AdminUsageScreen />);
+  const tile = r.getByTestId('month-reads');
+  expect(tile.children.length).toBe(2);
+  expect(text(r.getByTestId('month-reads-value'))).toBe('102,314');
+});

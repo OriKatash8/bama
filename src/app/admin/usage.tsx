@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertTriangle } from 'lucide-react-native';
@@ -26,13 +26,44 @@ function formatStamp(ms: number): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-function StatRow({ label, value, testID }: { label: string; value: string; testID: string }) {
+/** A small tile inside a card: big value on top, quiet label under it, both at the reading edge. */
+function MiniStat({ label, value, testID }: { label: string; value: string; testID: string }) {
+  const p = useAdminPalette();
+  const { textAlign } = useScopedT('admin_usage');
+  return (
+    <View style={[styles.mini, { backgroundColor: p.surface2, borderColor: p.border }]} testID={testID}>
+      <AdminText weight="bold" tabular numberOfLines={1} adjustsFontSizeToFit style={[styles.miniValue, { textAlign }]} testID={`${testID}-value`}>
+        {value}
+      </AdminText>
+      <AdminText numberOfLines={2} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{label}</AdminText>
+    </View>
+  );
+}
+
+/** Two tiles per line (one if the card has a single tile); rows mirror in Hebrew. */
+function MiniGrid({ children }: { children: React.ReactNode }) {
+  const { rowDir } = useScopedT('admin_usage');
+  return <View style={[styles.miniGrid, { flexDirection: rowDir }]}>{children}</View>;
+}
+
+/** name … value, with a hairline above every row but the first. `bar` (0..1) draws a thin proportion line. */
+function ListRow({
+  label, value, testID, first, bar, rank,
+}: { label: string; value: string; testID: string; first?: boolean; bar?: number; rank?: number }) {
   const p = useAdminPalette();
   const { rowDir, textAlign } = useScopedT('admin_usage');
   return (
-    <View style={[styles.statRow, { flexDirection: rowDir }]} testID={testID}>
-      <AdminText style={[styles.grow, { color: p.text2, textAlign }]} numberOfLines={1}>{label}</AdminText>
-      <AdminText weight="semiBold" tabular testID={`${testID}-value`}>{value}</AdminText>
+    <View style={[styles.listRow, !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.border }]} testID={testID}>
+      <View style={[styles.listLine, { flexDirection: rowDir }]}>
+        {rank != null ? <AdminText tabular style={[styles.rank, { color: p.text3 }]}>{rank}</AdminText> : null}
+        <AdminText style={[styles.grow, { color: p.text, textAlign }]} numberOfLines={1} ellipsizeMode="middle">{label}</AdminText>
+        <AdminText weight="semiBold" tabular style={styles.listValue} testID={`${testID}-value`}>{value}</AdminText>
+      </View>
+      {bar != null ? (
+        <View style={[styles.listTrack, { flexDirection: rowDir, backgroundColor: p.accentSoft }]}>
+          <View style={[styles.listFill, { width: `${Math.max(3, Math.round(bar * 100))}%`, backgroundColor: p.accent }]} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -96,9 +127,9 @@ export default function AdminUsageScreen() {
       ) : null}
 
       <Card testID="usage-status">
-        <View style={[styles.statusRow, { flexDirection: rowDir }]}>
+        <View style={[styles.statusRow, { flexDirection: rowDir }]} testID="usage-status-row">
           <View style={styles.grow}>
-            <AdminText style={{ color: stale ? p.warn : p.text2, textAlign }} testID="usage-updated">
+            <AdminText weight="semiBold" style={{ color: stale ? p.warn : p.text, textAlign }} numberOfLines={1} testID="usage-updated">
               {updatedMs != null ? t('updated', { time: formatStamp(updatedMs) }) : t('never_updated')}
             </AdminText>
             {stale ? (
@@ -125,73 +156,99 @@ export default function AdminUsageScreen() {
       {today?.firestore ? (
         <Card testID="usage-today">
           <CardHead title={t('firestore_today')} sub={resetTime ? t('quota_reset', { time: resetTime }) : undefined} />
-          {METRICS.map((m) => {
-            const used = today.firestore![m];
-            const quota = FIRESTORE_FREE_DAILY[m];
-            const frac = quotaFraction(used, quota);
-            const level = quotaLevel(frac);
-            return (
-              <View key={m} style={styles.quotaRow} testID={`quota-${m}`}>
-                <View style={[styles.quotaHead, { flexDirection: rowDir }]}>
-                  <AdminText weight="semiBold" style={{ textAlign }}>{t(m)}</AdminText>
+          <View style={styles.body} testID="usage-today-body">
+            {METRICS.map((m) => {
+              const used = today.firestore![m];
+              const quota = FIRESTORE_FREE_DAILY[m];
+              const frac = quotaFraction(used, quota);
+              const level = quotaLevel(frac);
+              const color = levelColor[level];
+              return (
+                <View key={m} style={styles.quotaRow} testID={`quota-${m}`}>
+                  <View style={[styles.quotaHead, { flexDirection: rowDir }]}>
+                    <AdminText weight="semiBold" style={[styles.grow, { textAlign }]}>{t(m)}</AdminText>
+                    <AdminText weight="semiBold" tabular style={{ color }} testID={`quota-${m}-pct`}>
+                      {Math.round(frac * 100)}%
+                    </AdminText>
+                  </View>
+                  {/* row-reverse in RTL so the bar fills from the right */}
+                  <View testID={`quota-${m}-track`} style={[styles.track, { flexDirection: rowDir, backgroundColor: p.accentSoft }]}>
+                    <View
+                      testID={`quota-${m}-fill`}
+                      style={[styles.fill, { width: `${Math.min(100, Math.round(frac * 100))}%`, backgroundColor: color }]}
+                    />
+                  </View>
                   <View style={[styles.quotaVals, { flexDirection: rowDir }]}>
-                    <AdminText tabular style={{ color: levelColor[level] }} testID={`quota-${m}-value`}>{formatCount(used)}</AdminText>
+                    <AdminText weight="bold" tabular style={[styles.quotaUsed, { color }]} testID={`quota-${m}-value`}>{formatCount(used)}</AdminText>
                     <AdminText tabular style={{ color: p.text3 }} testID={`quota-${m}-of`}>{t('quota_of', { quota: formatCount(quota) })}</AdminText>
                   </View>
                 </View>
-                {/* row-reverse in RTL so the bar fills from the right */}
-                <View testID={`quota-${m}-track`} style={[styles.track, { flexDirection: rowDir, backgroundColor: p.accentSoft }]}>
-                  <View
-                    testID={`quota-${m}-fill`}
-                    style={[styles.fill, { width: `${Math.min(100, Math.round(frac * 100))}%`, backgroundColor: levelColor[level] }]}
-                  />
-                </View>
-              </View>
-            );
-          })}
+              );
+            })}
+          </View>
         </Card>
       ) : null}
 
       {month ? (
         <Card testID="usage-month">
           <CardHead title={t('month')} />
-          {month.firestore ? METRICS.map((m) => (
-            <StatRow key={m} testID={`month-${m}`} label={t(m)} value={formatCount(month.firestore![m])} />
-          )) : null}
-          {month.egressBytes != null ? <StatRow testID="month-egress" label={t('egress')} value={formatBytes(month.egressBytes)} /> : null}
-          {month.functions ? <StatRow testID="month-invocations" label={t('invocations_month')} value={formatCount(month.functions.invocations)} /> : null}
+          <View style={styles.body} testID="usage-month-body">
+            <MiniGrid>
+              {month.firestore ? METRICS.map((m) => (
+                <MiniStat key={m} testID={`month-${m}`} label={t(m)} value={formatCount(month.firestore![m])} />
+              )) : null}
+              {month.functions ? <MiniStat testID="month-invocations" label={t('invocations_month')} value={formatCount(month.functions.invocations)} /> : null}
+              {month.egressBytes != null ? <MiniStat testID="month-egress" label={t('egress')} value={formatBytes(month.egressBytes)} /> : null}
+            </MiniGrid>
+          </View>
         </Card>
       ) : null}
 
       {storage || today?.egressBytes != null ? (
         <Card testID="usage-storage">
           <CardHead title={t('storage')} />
-          {storage?.appBucketBytes != null ? <StatRow testID="storage-app" label={t('storage_app')} value={formatBytes(storage.appBucketBytes)} /> : null}
-          {storage ? <StatRow testID="storage-total" label={t('storage_total')} value={formatBytes(storage.totalBytes)} /> : null}
-          {today?.egressBytes != null ? <StatRow testID="storage-egress" label={t('egress_today')} value={formatBytes(today.egressBytes)} /> : null}
-          {storage && storage.buckets.length > 1 ? (
-            <View style={styles.buckets}>
-              <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{t('other_buckets')}</AdminText>
-              {storage.buckets.map((b) => (
-                <StatRow key={b.name} testID={`bucket-${b.name}`} label={b.name} value={formatBytes(b.bytes)} />
-              ))}
-            </View>
-          ) : null}
+          <View style={styles.body}>
+            <MiniGrid>
+              {storage?.appBucketBytes != null ? <MiniStat testID="storage-app" label={t('storage_app')} value={formatBytes(storage.appBucketBytes)} /> : null}
+              {storage ? <MiniStat testID="storage-total" label={t('storage_total')} value={formatBytes(storage.totalBytes)} /> : null}
+              {today?.egressBytes != null ? <MiniStat testID="storage-egress" label={t('egress_today')} value={formatBytes(today.egressBytes)} /> : null}
+            </MiniGrid>
+            {storage && storage.buckets.length > 1 ? (
+              <View style={styles.listBlock}>
+                <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{t('other_buckets')}</AdminText>
+                {storage.buckets.map((b, i) => (
+                  <ListRow key={b.name} testID={`bucket-${b.name}`} first={i === 0} label={b.name} value={formatBytes(b.bytes)} />
+                ))}
+              </View>
+            ) : null}
+          </View>
         </Card>
       ) : null}
 
       {today?.functions ? (
         <Card testID="usage-functions">
           <CardHead title={t('functions')} />
-          <StatRow testID="fn-today" label={t('invocations_today')} value={formatCount(today.functions.invocations)} />
-          {today.functions.top.length > 0 ? (
-            <View style={styles.buckets}>
-              <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{t('top_functions')}</AdminText>
-              {today.functions.top.map((f) => (
-                <StatRow key={f.name} testID={`fn-${f.name}`} label={f.name} value={formatCount(f.count)} />
-              ))}
-            </View>
-          ) : null}
+          <View style={styles.body}>
+            <MiniGrid>
+              <MiniStat testID="fn-today" label={t('invocations_today')} value={formatCount(today.functions.invocations)} />
+            </MiniGrid>
+            {today.functions.top.length > 0 ? (
+              <View style={styles.listBlock}>
+                <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{t('top_functions')}</AdminText>
+                {today.functions.top.map((f, i) => (
+                  <ListRow
+                    key={f.name}
+                    testID={`fn-${f.name}`}
+                    first={i === 0}
+                    rank={i + 1}
+                    label={f.name}
+                    value={formatCount(f.count)}
+                    bar={today.functions!.top[0].count > 0 ? f.count / today.functions!.top[0].count : 0}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
         </Card>
       ) : null}
     </AdminPage>
@@ -199,15 +256,26 @@ export default function AdminUsageScreen() {
 }
 
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  errorBody: { gap: 10 },
+  grow: { flex: 1, minWidth: 0 },
+  errorBody: { gap: 10, padding: 18 },
   errorHead: { alignItems: 'center', gap: 10 },
-  statusRow: { alignItems: 'center', gap: 12 },
-  quotaRow: { paddingVertical: 8, gap: 6 },
-  quotaVals: { alignItems: 'center', gap: 6 },
-  quotaHead: { justifyContent: 'space-between', alignItems: 'center' },
-  track: { height: 8, borderRadius: 4, overflow: 'hidden' },
-  fill: { height: 8, borderRadius: 4 },
-  buckets: { marginTop: 8, gap: 2 },
-  statRow: { alignItems: 'center', gap: 12, paddingVertical: 6 },
+  // Cards have no inner padding of their own: CardHead pads itself, so every body block must too.
+  body: { paddingHorizontal: 18, paddingBottom: 18, gap: 16 },
+  statusRow: { alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingVertical: 14 },
+  quotaRow: { gap: 8 },
+  quotaHead: { alignItems: 'center', gap: 8 },
+  quotaVals: { alignItems: 'baseline', gap: 6 },
+  quotaUsed: { fontSize: 20 },
+  track: { height: 10, borderRadius: 5, overflow: 'hidden' },
+  fill: { height: 10, borderRadius: 5 },
+  miniGrid: { flexWrap: 'wrap', gap: 10 },
+  mini: { flexBasis: '47%', flexGrow: 1, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 12, gap: 2, minWidth: 130 },
+  miniValue: { fontSize: 22, letterSpacing: -0.4 },
+  listBlock: { gap: 0 },
+  listRow: { paddingVertical: 10, gap: 6 },
+  listLine: { alignItems: 'center', gap: 10 },
+  listValue: { flexShrink: 0 },
+  rank: { width: 16, textAlign: 'center', fontSize: 12 },
+  listTrack: { height: 3, borderRadius: 2, overflow: 'hidden' },
+  listFill: { height: 3, borderRadius: 2 },
 });
