@@ -63,7 +63,10 @@ describe('usePortfolio', () => {
     });
     expect(mockUploadFile).toHaveBeenCalledWith(
       expect.stringContaining('portfolio/u1/'),
-      expect.any(Blob)
+      expect.any(Blob),
+      expect.any(Function),
+      undefined,
+      expect.any(Object)
     );
     expect(mockSetDocument).toHaveBeenCalledWith(
       expect.stringContaining('users/u1/portfolio/'),
@@ -80,5 +83,60 @@ describe('usePortfolio', () => {
     });
     expect(mockDeleteDocument).toHaveBeenCalledWith('users/u1/portfolio/asset123');
     expect(mockDeleteFile).toHaveBeenCalledWith('portfolio/u1/asset123');
+  });
+});
+
+
+describe('usePortfolio photo upload: progress and cancel', () => {
+  const mount = () => renderHook(() => usePortfolio());
+  beforeEach(() => {
+    (global.fetch as jest.Mock).mockResolvedValue({ blob: async () => new Blob(['x']) });
+  });
+
+  it('reports progress as a 0..1 fraction', async () => {
+    mockUploadFile.mockImplementation(async (_p, _b, onProgress) => {
+      onProgress?.({ bytesTransferred: 5, totalBytes: 10, percentage: 50 });
+      return 'https://cdn/p.jpg';
+    });
+    const onProgress = jest.fn();
+    const { result } = mount();
+    await act(async () => { await result.current.upload('file://p.jpg', null, { onProgress }); });
+    expect(onProgress).toHaveBeenCalledWith(0.5);
+    expect(mockSetDocument).toHaveBeenCalled();
+  });
+
+  it('cancel during the Storage upload writes nothing and does not throw', async () => {
+    mockUploadFile.mockImplementation((_p, _b, _o, _m, task) =>
+      new Promise((_res, rej) => { (task as { cancel?: () => void }).cancel = () => rej(new Error('storage/canceled')); })
+    );
+    const control: { cancel?: () => void } = {};
+    const { result } = mount();
+    let done = false;
+    await act(async () => {
+      const p = result.current.upload('file://p.jpg', null, { control }).then(() => { done = true; });
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+      control.cancel?.();
+      await p;
+    });
+    expect(done).toBe(true);
+    expect(mockSetDocument).not.toHaveBeenCalled();
+  });
+
+  it('cancel right after Storage finishes deletes the file and writes no document', async () => {
+    const control: { cancel?: () => void } = {};
+    mockUploadFile.mockImplementation(async () => { control.cancel?.(); return 'https://cdn/p.jpg'; });
+    const { result } = mount();
+    await act(async () => { await result.current.upload('file://p.jpg', null, { control }); });
+    expect(mockSetDocument).not.toHaveBeenCalled();
+    expect(mockDeleteFile).toHaveBeenCalledWith(expect.stringContaining('portfolio/u1/'));
+  });
+
+  it('cancel before the Storage task exists skips the upload entirely', async () => {
+    const control: { cancel?: () => void } = {};
+    (global.fetch as jest.Mock).mockImplementation(async () => { control.cancel?.(); return { blob: async () => new Blob(['x']) }; });
+    const { result } = mount();
+    await act(async () => { await result.current.upload('file://p.jpg', null, { control }); });
+    expect(mockUploadFile).not.toHaveBeenCalled();
+    expect(mockSetDocument).not.toHaveBeenCalled();
   });
 });

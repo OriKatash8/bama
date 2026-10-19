@@ -121,7 +121,8 @@
       "expo-image",
       "expo-web-browser",
       "./plugins/withAndroidLtrLock",
-      "./plugins/withAndroidDevMenuNoFab"
+      "./plugins/withAndroidDevMenuNoFab",
+      "react-native-compressor"
     ],
     "experiments": {
       "typedRoutes": true

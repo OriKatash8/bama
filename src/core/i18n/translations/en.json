@@ -635,7 +635,8 @@
     "courses": "Courses",
     "communities": "Communities",
     "marketplace": "Marketplace",
-    "fees": "Fees & disputes"
+    "fees": "Fees & disputes",
+    "usage": "Usage"
   },
   "admin_projects": {
     "title": "Projects",
@@ -1183,7 +1184,22 @@
     "caption_placeholder": "What is this work? Where was it shot?",
     "caption_save": "Save",
     "caption_skip": "Skip",
-    "info_label": "Information"
+    "info_label": "Information",
+    "video_compressing": "Compressing video…",
+    "video_uploading": "Uploading…",
+    "video_processing": "Processing…",
+    "video_processing_slow": "This is taking longer than usual. The video may still finish processing — keep this screen open.",
+    "video_upload_failed": "Upload failed. Check your connection and try again.",
+    "video_cancel": "Cancel",
+    "video_retry": "Try again",
+    "video_too_long_title": "Video is too long",
+    "video_too_long_body": "You can upload a video of up to {{limit}}. Trim it and try again.",
+    "video_too_long_ok": "Got it",
+    "limit_one_minute": "1 minute",
+    "limit_minutes": "minutes",
+    "limit_seconds": "seconds",
+    "upload_in_progress": "Another item is still uploading. Wait for it to finish or cancel it first.",
+    "caption_close": "Close"
   },
   "header": {
     "client_mode": "Client",
@@ -1702,5 +1718,41 @@
     "role_label": {
       "photographer": "Photographer"
     }
+  },
+  "admin_usage": {
+    "title": "Usage",
+    "greeting": "Firebase usage",
+    "subtitle": "Firebase usage",
+    "firestore_today": "Firestore today",
+    "reads": "Reads",
+    "writes": "Writes",
+    "deletes": "Deletes",
+    "quota_of": "of {{quota}}",
+    "quota_reset": "Resets daily around {{time}} Israel time",
+    "month": "Month to date",
+    "storage": "Storage",
+    "storage_app": "App files",
+    "storage_total": "All buckets",
+    "egress": "Network egress",
+    "egress_today": "Egress today",
+    "other_buckets": "Largest buckets",
+    "functions": "Functions",
+    "invocations_today": "Invocations today",
+    "invocations_month": "Invocations this month",
+    "top_functions": "Most invoked today",
+    "updated": "Updated {{time}}",
+    "never_updated": "Not collected yet",
+    "stale": "Data is more than 3 hours old",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "refresh_failed_title": "Couldn't refresh",
+    "refresh_failed_body": "The usage numbers were not updated. Try again in a moment.",
+    "refresh_ok": "OK",
+    "partial": "Some numbers could not be read and show their last value.",
+    "load_failed_title": "Couldn't load usage",
+    "load_failed_body": "Only admins can read this data. If you are an admin, try again.",
+    "retry": "Try again",
+    "empty": "No usage data yet. Tap Refresh to collect it.",
+    "no_data": "—"
   }
 }

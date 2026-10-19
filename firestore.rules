@@ -1473,6 +1473,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── adminStats ─────────────────────────────────────────────────
+    // Usage snapshot (Firestore/Storage/Functions numbers from Cloud Monitoring) for the
+    // admin "Usage" screen. Written only by the collectUsageStats / refreshUsageStats
+    // functions (Admin SDK bypasses rules); readable by admins only.
+    match /adminStats/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ─── deny everything not explicitly listed ────────────────────────
     match /{document=**} {
       allow read, write: if false;

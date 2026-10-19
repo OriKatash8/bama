@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Image, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator, TextInput,
+  TextInput, Modal,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -9,7 +9,12 @@ import { useModeAccent } from '@core/navigation/floatingTabBar';
 import * as ImagePicker from 'expo-image-picker';
 import { Play, ImagePlus } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useKeyboardHeight } from '@core/hooks/useKeyboardHeight';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
+import { ensureVideoWithinLimit } from '@core/video/duration';
+import { MAX_PORTFOLIO_VIDEO_SECONDS } from '@core/constants/video';
+import { UploadingTile } from './UploadingTile';
+import type { PhotoUploadOptions } from '@features/profile/hooks/usePortfolio';
 import { PortfolioFeed, type PortfolioOwner } from './PortfolioFeed';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
@@ -52,7 +57,7 @@ function VideoThumbTile({ uri }: { uri: string }) {
 type PortfolioGridProps = {
   assets: MediaAsset[];
   isEditing: boolean;
-  onAdd?: (uri: string, caption: string | null) => Promise<void>;
+  onAdd?: (uri: string, caption: string | null, opts?: PhotoUploadOptions) => Promise<void>;
   onAddVideo?: (url: string, caption: string | null) => Promise<void>;
   onRemove?: (assetId: string) => Promise<void>;
   onError?: (message: string) => void;
@@ -63,6 +68,9 @@ type PortfolioGridProps = {
 // What the picker handed back, held whole while the author writes its caption —
 // uploadVideo reads more than the uri off it.
 type PendingMedia = { asset: ImagePicker.ImagePickerAsset; isVideo: boolean };
+
+// A pick whose caption is settled and whose upload is running (or has failed and can be retried).
+type ActiveUpload = PendingMedia & { caption: string | null };
 
 export function PortfolioGrid({
   assets, isEditing, onAdd, onAddVideo, onRemove, onError, owner,
@@ -78,10 +86,25 @@ export function PortfolioGrid({
   const [tileSize, setTileSize] = useState(0);
   const [pending, setPending] = useState<PendingMedia | null>(null);
   const [caption, setCaption] = useState('');
-  const [saving, setSaving] = useState(false);
+  const keyboardHeight = useKeyboardHeight();
 
-  const { uploading: videoUploading, processing: videoProcessing, uploadVideo } = useVideoUpload();
-  const videoActive = videoUploading || videoProcessing;
+  const { stage, progress, slow, error: uploadError, cancel: cancelUpload, getOutcome, uploadVideo } = useVideoUpload();
+
+  // The item being added. It lives on a tile in the grid (not in the caption sheet), so the
+  // sheet closes the moment the author taps Save/Skip and the tile's X is the one cancel control.
+  const [active, setActive] = useState<ActiveUpload | null>(null);
+  const [photo, setPhoto] = useState<{ progress: number; failed: boolean }>({ progress: 0, failed: false });
+  const photoControl = useRef<NonNullable<PhotoUploadOptions['control']>>({});
+  const runRef = useRef(0);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      runRef.current += 1;
+      photoControl.current.cancel?.();
+    };
+  }, []);
 
   // Log video assets whenever the portfolio changes
   const videoAssets = assets.filter((a) => a.type === 'video');
@@ -102,6 +125,11 @@ export function PortfolioGrid({
 
   async function handleAddMedia() {
     if (!user) return;
+    // One item at a time: a second pick would need a second tile. Say so rather than ignore the tap.
+    if (active) {
+      onError?.(t('media.upload_in_progress'));
+      return;
+    }
     console.log('[PortfolioGrid] Add Media pressed — userId:', user.id);
 
     let result: ImagePicker.ImagePickerResult;
@@ -110,10 +138,14 @@ export function PortfolioGrid({
         mediaTypes: ['images', 'videos'] as const,
         allowsEditing: false,
         quality: 1,
-        // A non-passthrough preset skips PHPicker's writeData fast-path (which streams the huge
-        // full-size iCloud original and stalls the upload) and instead loads + transcodes to 720p.
-        // loadVideoRepresentation auto-downloads iCloud-offloaded videos → also fixes PHPhotos 3164.
-        videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+        // Only honoured by camera capture / iOS editing; the real limit is checked after the pick.
+        videoMaxDuration: MAX_PORTFOLIO_VIDEO_SECONDS,
+        // No videoExportPreset: the old 720p preset made iOS transcode inside the picker (slow, no
+        // progress, capped at 720p). useVideoUpload compresses on-device instead. If an iCloud-only
+        // video stalls or throws PHPhotos 3164, restore videoExportPreset H264_1280x720 here.
+        preferredAssetRepresentationMode:
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+        shouldDownloadFromNetwork: true,
       });
     } catch (e: unknown) {
       // iOS can throw here (e.g. PHPhotosErrorDomain 3164) when it can't export the
@@ -127,54 +159,96 @@ export function PortfolioGrid({
     // Hold the pick and ask for a caption first — this is the only moment the
     // author gets to describe the work for the clients who will open it.
     const asset = result.assets[0];
+    if (asset.type === 'video' && !(await ensureVideoWithinLimit(asset, MAX_PORTFOLIO_VIDEO_SECONDS, t))) return;
     setCaption('');
     setPending({ asset, isVideo: asset.type === 'video' });
   }
 
-  async function commitPending(withCaption: string | null) {
-    if (!user || !pending) return;
-    setSaving(true);
+  /** Save / Skip: close the sheet now and carry on uploading on the grid tile. */
+  function commitPending(withCaption: string | null) {
+    if (!pending) return;
+    const item: ActiveUpload = { ...pending, caption: withCaption };
+    setPending(null);
+    setCaption('');
+    void runUpload(item);
+  }
+
+  async function runUpload(item: ActiveUpload) {
+    if (!user) return;
+    const run = ++runRef.current;
+    const live = () => runRef.current === run && mountedRef.current;
+    setActive(item);
+    setPhoto({ progress: 0, failed: false });
     try {
-      if (pending.isVideo) {
-        const url = await uploadVideo('portfolio', user.id, pending.asset);
-        if (url && onAddVideo) await onAddVideo(url, withCaption);
+      if (item.isVideo) {
+        const url = await uploadVideo('portfolio', user.id, item.asset);
+        if (!live()) return;
+        if (!url) {
+          // Cancelled: the tile is already gone. Failed: it stays, showing the error and Retry.
+          if (getOutcome() !== 'failed') setActive(null);
+          return;
+        }
+        if (onAddVideo) await onAddVideo(url, item.caption);
       } else if (onAdd) {
-        await onAdd(pending.asset.uri, withCaption);
+        const control: NonNullable<PhotoUploadOptions['control']> = {};
+        photoControl.current = control;
+        await onAdd(item.asset.uri, item.caption, {
+          control,
+          onProgress: (p) => { if (live()) setPhoto({ progress: p, failed: false }); },
+        });
+        if (!live()) return;
       }
-      setPending(null);
-      setCaption('');
+      setActive(null);
     } catch (e: unknown) {
-      const fallback = pending.isVideo ? t('media.video_error') : 'Failed to upload photo';
-      onError?.((e instanceof Error ? e.message : null) ?? fallback);
-      // Keep the sheet open so the typed caption survives a retry
-    } finally {
-      setSaving(false);
+      if (!live()) return;
+      onError?.((e instanceof Error ? e.message : null) ?? (item.isVideo ? t('media.video_error') : 'Failed to upload photo'));
+      if (item.isVideo) setActive(null); // a thrown video error (e.g. the Firestore write) has no retry state
+      else setPhoto({ progress: 0, failed: true });
     }
   }
 
+  /** The tile's X: stop in any stage, or dismiss a failed one. Nothing is added. */
+  function cancelActive() {
+    if (!active) return;
+    runRef.current += 1; // the pending runUpload() must not touch state after this
+    if (active.isVideo) cancelUpload();
+    else photoControl.current.cancel?.();
+    setActive(null);
+  }
+
+  const tileStage = active?.isVideo ? stage : 'uploading';
+  const tileProgress = active?.isVideo ? progress : photo.progress;
+  const tileFailed = active ? (active.isVideo ? stage === 'idle' && !!uploadError : photo.failed) : false;
+
   return (
     <View>
-      {/* Processing indicator */}
-      {videoActive && (
-        <View style={styles.processingRow}>
-          <ActivityIndicator size="small" color={accent} />
-          <AppText style={styles.processingText}>
-            {videoUploading ? 'Uploading...' : t('media.processing_video')}
-          </AppText>
-        </View>
-      )}
-
       <View style={styles.grid} onLayout={(e) => handleGridLayout(e.nativeEvent.layout.width)}>
         {isEditing && (
           <TouchableOpacity
             style={[styles.tile, styles.addTile, { width: tileSize, height: tileSize, borderColor: accent }]}
             onPress={handleAddMedia}
-            disabled={videoActive}
             activeOpacity={0.8}
           >
             <ImagePlus size={28} color={accent} strokeWidth={1.5} />
             <AppText style={[styles.addMediaLabel, { color: accent }]}>{t('profile_sections.add_media')}</AppText>
           </TouchableOpacity>
+        )}
+
+        {active && (
+          <UploadingTile
+            uri={active.asset.uri}
+            isVideo={active.isVideo}
+            stage={tileStage}
+            progress={tileProgress}
+            slow={slow}
+            failed={tileFailed}
+            onCancel={cancelActive}
+            onRetry={() => void runUpload(active)}
+            size={tileSize}
+            accent={accent}
+            rtl={rtl}
+            t={t}
+          />
         )}
 
         {assets.map((asset) => (
@@ -220,11 +294,32 @@ export function PortfolioGrid({
 
       {/* Caption sheet — the one moment the author can describe this piece. */}
       {pending && (
-        <View style={styles.captionOverlay}>
+        // A Modal, not an in-flow overlay: the overlay sat inside the scrolling profile page,
+        // so the keyboard covered it. useKeyboardHeight lifts the sheet above the keyboard.
+        <Modal transparent animationType="fade" visible onRequestClose={() => setPending(null)}>
+        <View
+          style={[
+            styles.captionOverlay,
+            // Lift the sheet above the keyboard by hand: sit it right on top of the keyboard.
+            keyboardHeight > 0 && { paddingBottom: keyboardHeight + 12, justifyContent: 'flex-end' },
+          ]}
+        >
           <View style={styles.captionSheet}>
-            <AppText weight="bold" style={[styles.captionTitle, { textAlign: rtl ? 'right' : 'left' }]}>
-              {t('media.caption_title')}
-            </AppText>
+            <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <AppText weight="bold" style={[styles.captionTitle, { textAlign: rtl ? 'right' : 'left', flex: 1 }]}>
+                {t('media.caption_title')}
+              </AppText>
+              {/* Back out of this pick without uploading anything. */}
+              <TouchableOpacity
+                onPress={() => setPending(null)}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('media.caption_close')}
+                testID="caption-close"
+              >
+                <Text style={styles.captionClose}>×</Text>
+              </TouchableOpacity>
+            </View>
             <AppText weight="regular" style={[styles.captionBody, { textAlign: rtl ? 'right' : 'left' }]}>
               {t('media.caption_body')}
             </AppText>
@@ -235,7 +330,6 @@ export function PortfolioGrid({
               placeholderTextColor="#9aa0b8"
               maxLength={CAPTION_MAX_LENGTH}
               multiline
-              editable={!saving}
               style={[styles.captionInput, { ...font.regular, textAlign: rtl ? 'right' : 'left' }]}
               textAlign={rtl ? 'right' : 'left'}
               testID="caption-input"
@@ -244,7 +338,6 @@ export function PortfolioGrid({
               <TouchableOpacity
                 style={[styles.captionBtn, styles.captionBtnSkip]}
                 onPress={() => commitPending(null)}
-                disabled={saving}
                 accessibilityRole="button"
                 accessibilityLabel={t('media.caption_skip')}
               >
@@ -255,21 +348,17 @@ export function PortfolioGrid({
               <TouchableOpacity
                 style={[styles.captionBtn, { backgroundColor: accent }]}
                 onPress={() => commitPending(caption.trim() || null)}
-                disabled={saving}
                 accessibilityRole="button"
                 accessibilityLabel={t('media.caption_save')}
               >
-                {saving
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : (
-                    <AppText weight="semiBold" style={styles.captionBtnSaveText}>
-                      {t('media.caption_save')}
-                    </AppText>
-                  )}
+                <AppText weight="semiBold" style={styles.captionBtnSaveText}>
+                  {t('media.caption_save')}
+                </AppText>
               </TouchableOpacity>
             </View>
           </View>
         </View>
+        </Modal>
       )}
     </View>
   );
@@ -308,18 +397,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteIcon: { color: '#fff', fontSize: 16, lineHeight: 20 },
-  processingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  processingText: {
-    fontSize: 13,
-    color: '#000000',
-    fontWeight: '500',
-  },
   captionOverlay: {
     position: 'absolute',
     top: 0,
@@ -341,6 +418,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(30,79,163,0.07)',
     ...shadow({ color: '#1e4fa3', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
   },
+  captionClose: { fontSize: 26, lineHeight: 28, color: '#6b7280', paddingHorizontal: 4 },
   captionTitle: { fontSize: 17, color: '#000000' },
   captionBody: { fontSize: 13, color: '#000000', marginTop: 6 },
   captionInput: {

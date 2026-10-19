@@ -8,6 +8,7 @@ export * from './moderation/lookup';
 export * from './moderation/blocking';
 export * from './moderation/reportAlert';
 export * from './system';
+export * from './usage';
 export * from './account/deletion';
 export * from './account/discardSignup';
 
