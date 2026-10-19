@@ -8,6 +8,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@components/layout/Screen';
 import { PlainScreen } from '@components/layout/PlainScreen';
+import { useKeyboardHeight } from '@core/hooks/useKeyboardHeight';
+import { locationSheetLayout } from '@features/crew/components/locationSheetLayout';
 import { AppText } from '@components/ui/AppText';
 import { PageTitle } from '@components/ui/PageTitle';
 import { GradientBand } from '@components/ui/GradientBand';
@@ -204,6 +206,9 @@ export default function HomeScreen() {
   const [tabBarOverlap, setTabBarOverlap] = useState<number | null>(null);
   const pageRef = useRef<View>(null);
   const { height: windowHeight } = useWindowDimensions();
+  // The location picker is a Modal (its own window), so the screen's keyboard handling does not reach it.
+  const keyboardHeight = useKeyboardHeight();
+  const locationLayout = locationSheetLayout(windowHeight, keyboardHeight);
   /** y of the card, and of each error-bearing field within it. Summed, they give
    *  a scroll offset; onLayout alone is parent-relative and would be short by
    *  the height of everything above the card. */
@@ -987,7 +992,7 @@ export default function HomeScreen() {
         onRequestClose={() => setLocationModalOpen(false)}
       >
         <TouchableWithoutFeedback onPress={() => setLocationModalOpen(false)}>
-          <View style={styles.locationOverlay}>
+          <View style={[styles.locationOverlay, locationLayout.overlay]} testID="location-overlay">
             <TouchableWithoutFeedback>
               <View style={styles.locationBox}>
                 {/* Header — mirrors MiniCalendar nav row */}
@@ -1016,11 +1021,16 @@ export default function HomeScreen() {
                 <FlatList
                   data={locations}
                   keyExtractor={(item) => item}
+                  // 'handled': the first tap on a result selects it instead of just closing the keyboard.
                   keyboardShouldPersistTaps="handled"
+                  // Dragging the list closes the keyboard. No automaticallyAdjustKeyboardInsets: the list is
+                  // already sized to the space above the keyboard, so an inset would only add an empty gap.
+                  keyboardDismissMode="on-drag"
                   initialNumToRender={15}
                   maxToRenderPerBatch={15}
                   windowSize={3}
-                  style={styles.locationList}
+                  testID="location-list"
+                  style={[styles.locationList, { maxHeight: locationLayout.listMaxHeight }]}
                   ItemSeparatorComponent={() => <View style={styles.locationSeparator} />}
                   ListFooterComponent={showLocationAdd ? (
                     <TouchableOpacity

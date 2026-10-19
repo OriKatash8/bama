@@ -1,6 +1,6 @@
 import React from 'react';
-import { Keyboard, Platform, ScrollView, StyleSheet } from 'react-native';
-import { render, fireEvent } from '@testing-library/react-native';
+import { Keyboard, Platform, ScrollView, StyleSheet, FlatList, Dimensions } from 'react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import HomeScreen from '../index';
 import { useUiStore } from '@core/stores/uiStore';
 import en from '@core/i18n/translations/en.json';
@@ -182,5 +182,61 @@ describe('web (no virtual keyboard): layout stays as it is', () => {
     const add = jest.spyOn(Keyboard, 'addListener');
     renderHome();
     expect(add).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('location picker modal (its own window: the screen keyboard handling does not reach it)', () => {
+  type Handler = (e: { endCoordinates: { height: number; screenY: number } }) => void;
+
+  function openLocation() {
+    const handlers: Record<string, Handler> = {};
+    jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: Handler) => {
+      handlers[ev] = cb;
+      return { remove: jest.fn() };
+    }) as never);
+    jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 390, height: 667, scale: 2, fontScale: 1 });
+    const r = render(<HomeScreen />);
+    fireEvent.press(r.getByTestId('tile-location'));
+    const showKeyboard = (height: number) =>
+      act(() => { handlers.keyboardWillChangeFrame?.({ endCoordinates: { height, screenY: 667 - height } }); });
+    return { r, showKeyboard };
+  }
+  const listMax = (r: ReturnType<typeof render>) => StyleSheet.flatten(r.getByTestId('location-list').props.style).maxHeight;
+  const overlay = (r: ReturnType<typeof render>) => StyleSheet.flatten(r.getByTestId('location-overlay').props.style);
+
+  it('keyboard closed: unchanged (centred card, 280pt list)', () => {
+    const { r } = openLocation();
+    expect(listMax(r)).toBe(280);
+    expect(overlay(r).padding).toBe(32);
+    expect(overlay(r).paddingBottom).toBeUndefined();
+    expect(overlay(r).justifyContent).toBe('center');
+  });
+
+  it('keyboard open: the card is lifted above it and only the list shrinks', () => {
+    const { r, showKeyboard } = openLocation();
+    showKeyboard(291);
+    expect(overlay(r).paddingBottom).toBe(291 + 12);
+    expect(overlay(r).paddingTop).toBe(56);
+    expect(listMax(r)).toBeLessThan(280);
+    expect(listMax(r)).toBeGreaterThanOrEqual(88);
+    expect(r.getByPlaceholderText(en.builder.search_city)).toBeTruthy(); // search stays mounted
+  });
+
+  it('the list closes the keyboard on drag, keeps the first tap for the result, and adds no inset', () => {
+    const { r } = openLocation();
+    const list = r.UNSAFE_getByType(FlatList);
+    expect(list.props.keyboardDismissMode).toBe('on-drag');
+    expect(list.props.keyboardShouldPersistTaps).toBe('handled');
+    expect(list.props.automaticallyAdjustKeyboardInsets).toBeUndefined();
+  });
+
+  it('web: no keyboard listener, layout unchanged', () => {
+    setOS('web');
+    const add = jest.spyOn(Keyboard, 'addListener');
+    const r = render(<HomeScreen />);
+    fireEvent.press(r.getByTestId('tile-location'));
+    expect(add).not.toHaveBeenCalled();
+    expect(listMax(r)).toBe(280);
   });
 });

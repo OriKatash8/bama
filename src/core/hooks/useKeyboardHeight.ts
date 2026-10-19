@@ -9,6 +9,8 @@ import { Keyboard, Platform } from 'react-native';
 export function useKeyboardHeight(): number {
   const [height, setHeight] = useState(0);
   useEffect(() => {
+    // No virtual keyboard on web: nothing to listen to, the layout stays as it is.
+    if (Platform.OS === 'web') return;
     const ios = Platform.OS === 'ios';
     const show = Keyboard.addListener(ios ? 'keyboardWillChangeFrame' : 'keyboardDidShow', (e) =>
       setHeight(e.endCoordinates.height > 0 && e.endCoordinates.screenY < 10000 ? e.endCoordinates.height : 0)
