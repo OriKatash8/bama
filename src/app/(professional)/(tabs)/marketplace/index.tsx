@@ -5,6 +5,7 @@ import {
   StyleSheet, ActivityIndicator, Platform, Modal,
 } from 'react-native';
 import { AppText } from '@components/ui/AppText';
+import { tabSwipeLockProps } from '@core/navigation/pagerSwipeLock';
 import { SlidersHorizontal, X, Search, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@components/layout/Screen';
@@ -283,6 +284,7 @@ export default function MarketplaceScreen() {
         <View style={styles.categoriesWrapper}>
           <ScrollView
             horizontal
+            {...tabSwipeLockProps}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesRow}
             style={styles.categoriesScroll}
@@ -305,6 +307,7 @@ export default function MarketplaceScreen() {
           <View style={styles.filterBarRow}>
             <ScrollView
               horizontal
+              {...tabSwipeLockProps}
               showsHorizontalScrollIndicator={false}
               style={styles.tagsScroll}
               contentContainerStyle={styles.tagsContent}
