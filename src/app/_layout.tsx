@@ -62,7 +62,15 @@ function AppShell() {
     'Heebo-ExtraBold':  require('../../assets/fonts/Heebo-ExtraBold.ttf'),
     'Heebo-Black':      require('../../assets/fonts/Heebo-Black.ttf'),
     PeaceSans:          require('../../assets/fonts/peace-sans.ttf'),
-    Montserrat: require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    // Static faces, one family per weight (like Heebo-*): Android cannot apply
+    // fontWeight to a variable font. See src/core/theme/fonts.ts.
+    'Montserrat-Light':     require('../../assets/fonts/Montserrat-Light.ttf'),
+    'Montserrat-Regular':   require('../../assets/fonts/Montserrat-Regular.ttf'),
+    'Montserrat-Medium':    require('../../assets/fonts/Montserrat-Medium.ttf'),
+    'Montserrat-SemiBold':  require('../../assets/fonts/Montserrat-SemiBold.ttf'),
+    'Montserrat-Bold':      require('../../assets/fonts/Montserrat-Bold.ttf'),
+    'Montserrat-ExtraBold': require('../../assets/fonts/Montserrat-ExtraBold.ttf'),
+    'Montserrat-Black':     require('../../assets/fonts/Montserrat-Black.ttf'),
   });
 
   const [langKey, setLangKey] = useState(i18n.language);

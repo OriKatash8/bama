@@ -13,8 +13,12 @@ function extractString(children: ReactNode): string {
   return '';
 }
 
+const NO_WEIGHT = { fontWeight: undefined } as const;
+
 export function AppText({ weight = 'regular', style, children, ...rest }: AppTextProps) {
   const font = useAppFont();
   const fontStyle = font.forText(extractString(children), weight);
-  return <Text style={[style, fontStyle]} {...rest}>{children}</Text>;
+  // fontWeight: undefined cancels one the caller's style may carry: the weight is in
+  // the static family, and on Android a second one would add synthetic bold.
+  return <Text style={[style, fontStyle, NO_WEIGHT]} {...rest}>{children}</Text>;
 }

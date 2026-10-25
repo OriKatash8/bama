@@ -113,7 +113,7 @@ describe('the font trap', () => {
 
   it('renders a Latin snippet in Montserrat', () => {
     const r = show({ replyTo: quote({ snippet: 'see above' }) });
-    expect(flat(r.getByTestId('reply-quote-snippet')).fontFamily).toBe('Montserrat');
+    expect(flat(r.getByTestId('reply-quote-snippet')).fontFamily).toMatch(/^Montserrat-/);
   });
 
   it('picks the face per STRING, so a Hebrew name over a Latin snippet still works', () => {
@@ -121,7 +121,7 @@ describe('the font trap', () => {
     // test alone. They have to disagree within a single render.
     const r = show({ names: { 'u-dana': 'דנה כהן' }, replyTo: quote({ snippet: 'see above' }) });
     expect(flat(r.getByTestId('reply-quote-name')).fontFamily).toMatch(/Heebo/);
-    expect(flat(r.getByTestId('reply-quote-snippet')).fontFamily).toBe('Montserrat');
+    expect(flat(r.getByTestId('reply-quote-snippet')).fontFamily).toMatch(/^Montserrat-/);
   });
 });
 
