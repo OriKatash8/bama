@@ -23,12 +23,11 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import {
   useAudioRecorder,
   useAudioPlayer,

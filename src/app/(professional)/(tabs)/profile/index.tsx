@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator, BackHandler, Platform,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  BackHandler,
+  Platform,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';

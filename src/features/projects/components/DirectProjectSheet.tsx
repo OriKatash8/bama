@@ -1,9 +1,16 @@
 import { useMemo, useState, useEffect } from 'react';
 import { formatShortDay, rtlSafe } from '@utils/formatters';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
-  StyleSheet, ActivityIndicator, TouchableWithoutFeedback,
+  Modal,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableWithoutFeedback,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { MapPin, X } from 'lucide-react-native';
 import { useAuthStore } from '@core/stores/authStore';
 import { useAppFont } from '@core/hooks/useAppFont';

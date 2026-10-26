@@ -6,11 +6,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star, User as UserIcon } from 'lucide-react-native';
 import { submitReviews } from '@features/reviews/services/submitReviews';

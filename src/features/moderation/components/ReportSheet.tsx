@@ -1,4 +1,5 @@
-import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';

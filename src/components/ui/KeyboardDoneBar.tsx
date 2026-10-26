@@ -1,4 +1,5 @@
-import { InputAccessoryView, Keyboard, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { InputAccessoryView, Keyboard, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useAppFont } from '@core/hooks/useAppFont';
 
 /**

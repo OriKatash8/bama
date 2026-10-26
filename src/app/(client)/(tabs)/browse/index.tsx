@@ -1,9 +1,17 @@
 import { Fragment, useState } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import {
-  View, Text, TextInput, TouchableOpacity, Modal, FlatList,
-  StyleSheet, ActivityIndicator, ScrollView, Pressable, Platform,
+  View,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  Pressable,
+  Platform,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react-native';

@@ -1,7 +1,11 @@
 import { useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { ChevronDown, X } from 'lucide-react-native';
 import { ROLES, getSpecializations, labelOf, type Labeled } from '@features/crew/data/categories';
 import {

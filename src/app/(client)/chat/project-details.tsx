@@ -10,11 +10,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { confirmDialog } from '@utils/confirmDialog';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { LinearGradient } from 'expo-linear-gradient';

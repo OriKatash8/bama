@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import type { PriceEntry } from '@core/types/project';
 

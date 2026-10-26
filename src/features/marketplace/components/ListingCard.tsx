@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { FittedPhoto } from './FittedPhoto';
 import { AppText } from '@components/ui/AppText';

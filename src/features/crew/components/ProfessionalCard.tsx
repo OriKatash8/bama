@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Star } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@core/hooks/useTheme';

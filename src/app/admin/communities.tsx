@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import {
   collection, onSnapshot, updateDoc, doc,
   query, where, orderBy, Timestamp, getDoc,

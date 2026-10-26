@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Linking, StyleSheet, TouchableOpacity, View, Text, Platform } from 'react-native';
+import { Linking, StyleSheet, TouchableOpacity, View, Platform } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 import { normalizePhone } from '@features/auth/utils/phone';

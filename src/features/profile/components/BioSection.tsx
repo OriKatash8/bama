@@ -1,4 +1,5 @@
-import { View, TextInput, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';

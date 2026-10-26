@@ -1,4 +1,5 @@
-import { Text, StyleSheet, type TextProps } from 'react-native';
+import { StyleSheet, type TextProps } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 

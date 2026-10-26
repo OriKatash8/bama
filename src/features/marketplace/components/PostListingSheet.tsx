@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, TextInput, Platform, useWindowDimensions,
-  StyleSheet, ScrollView, ActivityIndicator, type LayoutChangeEvent, type TextProps,
+  Modal,
+  View,
+  TouchableOpacity,
+  Platform,
+  useWindowDimensions,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  type LayoutChangeEvent,
+  type TextProps,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 
 const BLUE_CAM = require('../../../../assets/images/categories/blue-cam.png');

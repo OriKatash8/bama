@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Pressable, ScrollView, StyleSheet, View, Text, TouchableOpacity,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  TouchableOpacity,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { initialWindowMetrics } from 'react-native-safe-area-context';

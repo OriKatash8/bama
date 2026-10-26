@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
-  ScrollView, ActivityIndicator, StyleSheet,
+  Modal,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { X } from 'lucide-react-native';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@core/firebase/config';

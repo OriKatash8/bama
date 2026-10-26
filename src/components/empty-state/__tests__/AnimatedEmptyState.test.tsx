@@ -6,6 +6,13 @@ import { ROLES, labelOf } from '@features/crew/data/categories';
 import { EMPTY_STATE_GLYPHS } from '@features/crew/data/roleTiles';
 import { scaleLeft, fitTitleSize } from '../emptyStateLayout';
 
+/** The drop-in Text adds composite layers, so climb to the nearest host element (e.g. the pill View). */
+function hostAncestor(n: { parent: unknown }) {
+  let p = n.parent as { type: unknown; parent: unknown; props: Record<string, unknown> } | null;
+  while (p && typeof p.type !== 'string') p = p.parent as typeof p;
+  return p as { props: { style?: unknown } };
+}
+
 /**
  * The shared animated empty state: floating glass cards over soft glows, then
  * the screen's own title, subtitle, CTA and link. The cards are decoration —
@@ -117,10 +124,10 @@ describe('text and actions', () => {
 
   it('title is 26 / 800 in Heebo in Hebrew, Montserrat in English', () => {
     const he = StyleSheet.flatten(render(<AnimatedEmptyState variant="tiles" {...base} />).getByText(base.title).props.style);
-    expect([he.fontSize, he.fontWeight, he.fontFamily, he.color]).toEqual([26, '800', 'Heebo-ExtraBold', '#1A1530']);
+    expect([he.fontSize, he.fontWeight, he.fontFamily, he.color]).toEqual([26, undefined, 'Heebo-ExtraBold', '#1A1530']);
     mockLang = 'en';
     const en = StyleSheet.flatten(render(<AnimatedEmptyState variant="tiles" {...base} />).getByText(base.title).props.style);
-    expect(en.fontFamily).toBe('Montserrat');
+    expect(en.fontFamily).toBe('Montserrat-ExtraBold');
   });
 });
 
@@ -249,10 +256,10 @@ describe('card contents stay inside the card', () => {
     const r = render(<AnimatedEmptyState variant="board" {...base} />);
     const symbol = r.getAllByText('₪', H)[0];
     const text = StyleSheet.flatten(symbol.props.style);
-    expect(text.fontFamily).toBeUndefined();
+    expect(text.fontFamily).toBe('System');
     expect(text.textAlign).toBe('center');
     expect(text.includeFontPadding).toBe(false);
-    const pill = StyleSheet.flatten(symbol.parent!.parent!.props.style);
+    const pill = (StyleSheet.flatten(hostAncestor(symbol).props.style as never) as Record<string, unknown>);
     expect(typeof pill.height).toBe('number');
     expect(pill.alignItems).toBe('center');
     expect(pill.justifyContent).toBe('center');
@@ -315,7 +322,7 @@ describe('pro mode is blue throughout; client mode keeps its purple', () => {
     const r = render(<AnimatedEmptyState variant="board" {...base} />);
     const symbol = r.getAllByText('₪', H)[0];
     expect(flat(symbol).color).toBe('#1D4ED8');
-    expect(flat(symbol.parent!.parent!).backgroundColor).toBe('rgba(29,78,216,0.12)');
+    expect(flat(hostAncestor(symbol)).backgroundColor).toBe('rgba(29,78,216,0.12)');
     const card = flat(r.getByTestId('role-card-videographer', H));
     expect(card.borderColor).toBe('rgba(59,110,235,0.55)');
   });
@@ -331,7 +338,7 @@ describe('pro mode is blue throughout; client mode keeps its purple', () => {
     const r = render(<AnimatedEmptyState variant="board" {...base} />);
     const symbol = r.getAllByText('₪', H)[0];
     expect(flat(symbol).color).toBe('#4B34B8');
-    expect(flat(symbol.parent!.parent!).backgroundColor).toBe('rgba(110,88,226,0.14)');
+    expect(flat(hostAncestor(symbol)).backgroundColor).toBe('rgba(110,88,226,0.14)');
     expect(flat(r.getByTestId('role-card-videographer', H)).borderColor).toBe('rgba(165,150,235,0.55)');
   });
 });
@@ -498,7 +505,7 @@ describe("'listings' (the marketplace)", () => {
   it('text: title 24 / 800, subtitle 15 in #5A566C, CTA 240×52 with a 16pt label', () => {
     const r = render(<AnimatedEmptyState variant="listings" {...base} primaryCta={{ label: 'פרסמו ציוד', onPress: () => {} }} />);
     expect(flat(r.getByText(base.title)).fontSize).toBe(24);
-    expect(flat(r.getByText(base.title)).fontWeight).toBe('800');
+    expect(flat(r.getByText(base.title)).fontFamily).toMatch(/-ExtraBold$/); // weight 800, in the static family
     const sub = flat(r.getByText(base.subtitle));
     expect([sub.fontSize, sub.color]).toEqual([15, '#5A566C']);
     const fill = flat(r.getByTestId('empty-cta-fill'));

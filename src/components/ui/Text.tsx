@@ -19,6 +19,12 @@ import { resolveTextStyle } from '@core/theme/fonts';
  * component wants a named weight.
  */
 
+/** The instance types, under the same names, so `useRef<TextInput>()` and `ref: Text` keep working. */
+/* eslint-disable @typescript-eslint/no-redeclare */
+export type Text = RNText;
+export type TextInput = RNTextInput;
+/* eslint-enable @typescript-eslint/no-redeclare */
+
 /** A `Text` inside another `Text` inherits the parent's face unless it sets its own. */
 const InsideText = createContext(false);
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, ActivityIndicator, StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'lucide-react-native';

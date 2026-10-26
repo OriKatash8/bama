@@ -1,7 +1,12 @@
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, useWindowDimensions,
+  Modal,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';

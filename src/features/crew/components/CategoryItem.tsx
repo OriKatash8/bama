@@ -1,4 +1,5 @@
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useTheme } from '@core/hooks/useTheme';
 import { capabilityOf } from '../data/categories';
 import { SubCategoryRow } from './SubCategoryRow';

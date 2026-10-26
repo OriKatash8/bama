@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
-  View, StyleSheet, ScrollView, Pressable,
-  ActivityIndicator, Image, Modal, TextInput,
+  View,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Image,
+  Modal,
 } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import {
   collection, onSnapshot, updateDoc, deleteDoc, doc, getDoc, query, orderBy, where, Timestamp,
 } from 'firebase/firestore';

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { Text } from '@components/ui/Text';
 import Animated, {
   Easing, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue,
   withDelay, withRepeat, withSequence, withSpring, withTiming,
@@ -126,9 +127,9 @@ function cardLabel(id: RoleId, lang: 'he' | 'en'): string {
   return role ? labelOf(role, lang) : '';
 }
 
-/** Title weight 800: Heebo-ExtraBold in Hebrew, Montserrat 800 in English (as the app). */
+/** Title weight 800: Heebo-ExtraBold in Hebrew, Montserrat-ExtraBold in English (static families, no fontWeight). */
 function extraBold(rtl: boolean) {
-  return rtl ? { fontFamily: 'Heebo-ExtraBold', fontWeight: '800' as const } : { fontFamily: 'Montserrat', fontWeight: '800' as const };
+  return rtl ? { fontFamily: 'Heebo-ExtraBold' } : { fontFamily: 'Montserrat-ExtraBold' };
 }
 
 /**
@@ -505,6 +506,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   priceText: {
+    // The system font on purpose (see the comment above); 'System' keeps Text from applying Heebo.
+    fontFamily: 'System',
     fontSize: 11,
     lineHeight: 13,
     fontWeight: '700',

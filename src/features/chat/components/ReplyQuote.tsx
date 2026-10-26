@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { X } from 'lucide-react-native';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { isolate } from '@utils/formatters';

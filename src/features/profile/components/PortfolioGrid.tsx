@@ -1,8 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  View, Image, TouchableOpacity, Text, StyleSheet,
-  TextInput, Modal,
+  View,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useModeAccent } from '@core/navigation/floatingTabBar';

@@ -1,9 +1,15 @@
 import { useMemo, useState } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
-  FlatList, StyleSheet, useWindowDimensions,
+  Modal,
+  View,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  FlatList,
+  StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { X, MapPin } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';

@@ -1,4 +1,5 @@
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import type { MentionAutocompleteState, MentionRow } from '../hooks/useMentionAutocomplete';
 import { shadow } from '@core/theme/shadow';

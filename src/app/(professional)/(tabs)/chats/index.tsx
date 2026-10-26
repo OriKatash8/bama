@@ -2,10 +2,20 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import { tabSwipeLockProps } from '@core/navigation/pagerSwipeLock';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
-  ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
-  useWindowDimensions, Animated,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Linking,
+  useWindowDimensions,
+  Animated,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, Plus, ExternalLink } from 'lucide-react-native';

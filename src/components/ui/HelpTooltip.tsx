@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';

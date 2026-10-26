@@ -91,7 +91,7 @@ it('lists every match, newest first, with channel, sender, and the match in bold
 
   const bold = r.getAllByTestId('search-match');
   expect(bold[0].props.children).toBe('camera');
-  expect(StyleSheet.flatten(bold[0].props.style).fontWeight).toBe('700');
+  expect(StyleSheet.flatten(bold[0].props.style).fontFamily).toBe('Montserrat-Bold'); // the weight is in the static family
 });
 
 it('says when nothing matches', async () => {

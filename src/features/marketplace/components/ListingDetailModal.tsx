@@ -1,7 +1,15 @@
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Linking, useWindowDimensions,
+  Modal,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Linking,
+  useWindowDimensions,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 import { FittedPhoto } from './FittedPhoto';

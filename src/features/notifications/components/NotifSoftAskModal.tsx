@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Bell } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { useRouter } from 'expo-router';
 import { AlertTriangle, Receipt } from 'lucide-react-native';
 import { callFunction } from '@core/firebase/functions';

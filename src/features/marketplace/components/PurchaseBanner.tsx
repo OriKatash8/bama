@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { X } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useAppFont } from '@core/hooks/useAppFont';

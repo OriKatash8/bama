@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Modal, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { shadow } from '@core/theme/shadow';
 
 const MONTH_NAMES = [

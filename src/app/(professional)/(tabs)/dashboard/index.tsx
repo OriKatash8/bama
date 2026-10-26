@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { rtlSafe } from '@utils/formatters';
-import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions, Platform } from 'react-native';
+import { View, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions, Platform } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, History, Briefcase, LayoutGrid } from 'lucide-react-native';

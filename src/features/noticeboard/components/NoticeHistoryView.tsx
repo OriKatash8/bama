@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { increment, serverTimestamp } from 'firebase/firestore';
 import { Pencil, Check, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';

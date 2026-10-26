@@ -1,9 +1,15 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Platform, Modal,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  Modal,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { tabSwipeLockProps } from '@core/navigation/pagerSwipeLock';
 import { SlidersHorizontal, X, Search, Plus } from 'lucide-react-native';

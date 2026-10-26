@@ -1,8 +1,18 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  ActivityIndicator, Modal, TouchableWithoutFeedback, useWindowDimensions, Keyboard,
+  ScrollView,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  FlatList,
+  Platform,
+  ActivityIndicator,
+  Modal,
+  TouchableWithoutFeedback,
+  useWindowDimensions,
+  Keyboard,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';

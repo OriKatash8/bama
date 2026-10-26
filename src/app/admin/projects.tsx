@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { useRouter } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';

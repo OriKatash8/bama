@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { rtlSafe } from '@utils/formatters';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Search, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';

@@ -1,4 +1,5 @@
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useUiStore } from '@core/stores/uiStore';
 import { shadow } from '@core/theme/shadow';
 

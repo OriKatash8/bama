@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, type RefObject } from 'react';
 import { rtlSafe } from '@utils/formatters';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { useRouter, useSegments } from 'expo-router';
 import { Users, Search, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { Image } from 'expo-image';

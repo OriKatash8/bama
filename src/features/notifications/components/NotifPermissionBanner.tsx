@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { BellOff, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';

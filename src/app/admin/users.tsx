@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Linking, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { useRouter } from 'expo-router';
 import { Phone, Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
 import { where } from 'firebase/firestore';

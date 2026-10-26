@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 
 const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');

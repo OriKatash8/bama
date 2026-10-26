@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';

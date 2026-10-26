@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput, Switch, useWindowDimensions,
+  Modal,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { ChevronLeft, ChevronRight, Sparkles, X } from 'lucide-react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
