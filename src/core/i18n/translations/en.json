@@ -613,7 +613,7 @@
     "source_woocommerce": "WooCommerce store",
     "source_manual": "Manual",
     "field_source_url": "Store address",
-    "field_source_url_hint": "The store's site, e.g. https://store.co.il",
+    "field_source_url_hint": "https://store.co.il",
     "field_agreement": "Agreement signed",
     "agreement_yes": "Signed",
     "agreement_no": "Not yet",
