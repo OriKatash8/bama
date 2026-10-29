@@ -154,6 +154,7 @@ export default function RentalCompaniesAdmin() {
       {selected && (
         <>
           <CategoryMapCard
+            key={`map-${selected.id}-${JSON.stringify(selected.categoryMap ?? {})}`}
             company={selected}
             onSaved={() => { toast(t('map_saved'), 'success'); reload(); }}
             onError={(m) => toast(m, 'error')}

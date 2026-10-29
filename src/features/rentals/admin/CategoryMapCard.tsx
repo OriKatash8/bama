@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   AdminText, Card, CardHead, EmptyState, PillButton, TYPE, useAdminPalette, useScopedT,
@@ -12,7 +12,8 @@ import { errorText } from './CompanyForm';
  * Every category the store used in its last sync, each with where it goes in
  * BAMA (or "not mapped"). Saving re-applies the map to every item of the
  * company on the server — no store fetch. An item the admin sorted by hand
- * keeps its own category.
+ * keeps its own category. The screen keys this card by the saved map, so a new
+ * map from the server (a save, a sync) starts a fresh draft.
  */
 export function CategoryMapCard({
   company,
@@ -27,9 +28,6 @@ export function CategoryMapCard({
   const { t, rowDir, textAlign } = useScopedT('admin_rental_companies');
   const [draft, setDraft] = useState<Record<string, string>>(company.categoryMap ?? {});
   const [saving, setSaving] = useState(false);
-
-  // A new snapshot of the company (e.g. after a save or a sync) resets the draft.
-  useEffect(() => setDraft(company.categoryMap ?? {}), [company.categoryMap]);
 
   const external = company.externalCategories ?? [];
   const dirty = JSON.stringify(sorted(draft)) !== JSON.stringify(sorted(company.categoryMap ?? {}));

@@ -1228,6 +1228,18 @@
     "reserved_another_msg": "The seller accepted another buyer for this item.",
     "seller_price_note": "Paid directly to seller (outside the app)"
   },
+  "rentals": {
+    "partners_title": "Rental partners",
+    "partner_badge": "BAMA partner",
+    "partner_filter": "Partner: {{name}}",
+    "price_on_request": "Price on request",
+    "in_stock": "In stock",
+    "out_of_stock": "Out of stock",
+    "instead_of": "instead of ₪{{price}}",
+    "rent_through": "Rent through {{company}}",
+    "company": "Company",
+    "loading_more": "Loading more…"
+  },
   "auth": {
     "pw_length": "At least 8 characters",
     "pw_uppercase": "One uppercase letter",

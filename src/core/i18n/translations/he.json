@@ -1228,6 +1228,18 @@
     "reserved_another_msg": "המוכר קיבל קונה אחר עבור הפריט הזה.",
     "seller_price_note": "משולם ישירות למוכר (מחוץ לאפליקציה)"
   },
+  "rentals": {
+    "partners_title": "חברות השכרה שותפות",
+    "partner_badge": "שותף BAMA",
+    "partner_filter": "שותף: {{name}}",
+    "price_on_request": "מחיר לפי בקשה",
+    "in_stock": "במלאי",
+    "out_of_stock": "לא במלאי",
+    "instead_of": "במקום ₪{{price}}",
+    "rent_through": "השכרה דרך {{company}}",
+    "company": "חברה",
+    "loading_more": "טוען עוד…"
+  },
   "auth": {
     "pw_length": "לפחות 8 תווים",
     "pw_uppercase": "אות גדולה אחת",

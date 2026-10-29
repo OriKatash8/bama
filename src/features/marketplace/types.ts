@@ -41,4 +41,20 @@ export type MarketplaceListing = {
   pricePeriod?: RentalPeriod;
   /** Community ids this listing has been shared to (market channels). */
   sharedTo?: string[];
+  /**
+   * Set only on a rental company's synced item shown in the rental tab
+   * (src/features/rentals/listing.ts). Such a listing is not a document in
+   * marketplace_listings and has no poster.
+   */
+  source?: 'company';
+  companyId?: string;
+  rentalItemId?: string;
+  /** The store lists no price: show "price on request", never ₪0. */
+  priceOnRequest?: boolean;
+  inStock?: boolean;
+  /** On sale: `price` is the sale price and this is the regular one. */
+  regularPrice?: number | null;
+  /** The large image for the detail screen; `imageUrl` is the grid thumbnail. */
+  detailImageUrl?: string | null;
+  description?: string;
 };

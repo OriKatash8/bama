@@ -38,27 +38,33 @@ export function useAdminRentalCompanies() {
  * documents — no listener). `reload` after any change the admin makes.
  */
 export function useAdminCompanyItems(companyId: string | null) {
-  const [items, setItems] = useState<RentalItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  const key = companyId ? `${companyId}#${version}` : null;
+  // Each result names the request it answers; a reload keeps the old list on
+  // screen until the new one arrives.
+  const [result, setResult] = useState<{ key: string | null; companyId: string | null; items: RentalItem[]; error: string | null }>(
+    { key: null, companyId: null, items: [], error: null },
+  );
 
   useEffect(() => {
-    if (!companyId) { setItems([]); return; }
+    if (!companyId || !key) return;
     let cancelled = false;
-    setLoading(true);
     getDocs(toQuery(db, adminCompanyItemsSpec(companyId)))
       .then((snap) => {
         if (cancelled) return;
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as RentalItem);
-        setItems(list.sort((a, b) => a.name.localeCompare(b.name)));
-        setError(null);
+        setResult({ key, companyId, items: list.sort((a, b) => a.name.localeCompare(b.name)), error: null });
       })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .catch((e: Error) => { if (!cancelled) setResult({ key, companyId, items: [], error: e.message }); });
     return () => { cancelled = true; };
-  }, [companyId, version]);
+  }, [companyId, key]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
-  return { items, loading, error, reload };
+  const sameCompany = !!companyId && result.companyId === companyId;
+  return {
+    items: sameCompany ? result.items : [],
+    loading: !!key && result.key !== key,
+    error: sameCompany ? result.error : null,
+    reload,
+  };
 }

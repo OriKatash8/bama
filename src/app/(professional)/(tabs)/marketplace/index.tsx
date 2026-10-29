@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Platform,
   Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { Text, TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
@@ -39,6 +41,10 @@ import { brandLabel, emptyCase, sortByPrice } from '@features/marketplace/utils'
 import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 import { shadow } from '@core/theme/shadow';
+import { useRentalItems } from '@features/rentals/hooks/useRentalItems';
+import { usePartnerCompanies } from '@features/rentals/hooks/usePartnerCompanies';
+import { rentalItemToListing } from '@features/rentals/listing';
+import { PartnerRow } from '@features/rentals/components/PartnerRow';
 
 type Translations = typeof en;
 
@@ -124,6 +130,24 @@ export default function MarketplaceScreen() {
   );
   const rentalMail = useBamaMail(t('marketplace.rental_apply_subject'), t('mail_cta.failed'));
 
+  // Rental companies' synced items (src/features/rentals): paged from the server
+  // with the tab's category, partner, search, brand and price order, and merged
+  // with the admin's own rentals. Demo accounts see none, like every rental.
+  const isRentalTab = activeTab === 'rental';
+  const companyRentalsOn = isRentalTab && !hidesRentals(demoConfig, me);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
+  const { companies: partners } = usePartnerCompanies(companyRentalsOn);
+  const companyItems = useRentalItems({
+    category: selectedCategory === 'all' ? null : selectedCategory,
+    companyId: partnerId,
+    sort: priceSort === 'asc' ? 'price_asc' : priceSort === 'desc' ? 'price_desc' : 'name',
+    search: searchQuery,
+    brands: filterBrands,
+    enabled: companyRentalsOn,
+  });
+  const companyListings = useMemo(() => companyItems.items.map(rentalItemToListing), [companyItems.items]);
+  const partnerName = partners.find((c) => c.id === partnerId)?.name ?? '';
+
   // Deep-link: open a specific listing when arriving with ?listingId= (e.g. from a שוק card).
   const params = useLocalSearchParams<{ listingId?: string }>();
   const router = useRouter();
@@ -141,7 +165,8 @@ export default function MarketplaceScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.listingId]);
 
-  const filtered = useMemo(() => {
+  // The admin's own listings on this tab, filtered here (company items arrive filtered by the server).
+  const filteredOwn = useMemo(() => {
     const q = searchQuery.toLowerCase();
     let result = listings.filter((l) =>
       l.productName.toLowerCase().includes(q) ||
@@ -162,13 +187,38 @@ export default function MarketplaceScreen() {
     return result;
   }, [listings, searchQuery, selectedCategory, filterBrands, filterCondition, priceSort]);
 
+  // Rental tab: own rentals (none while a partner is chosen) + the loaded company
+  // items, in one price order when one is set — "price on request" always last.
+  const filtered = useMemo(() => {
+    if (!isRentalTab) return filteredOwn;
+    const merged = [...(partnerId ? [] : filteredOwn), ...companyListings];
+    if (priceSort !== 'asc' && priceSort !== 'desc') return merged;
+    const priced = merged.filter((l) => !l.priceOnRequest);
+    return [...sortByPrice(priced, priceSort), ...merged.filter((l) => l.priceOnRequest)];
+  }, [isRentalTab, filteredOwn, partnerId, companyListings, priceSort]);
+
+  /** Near the end of the page, the next page of company items. */
+  function onPageScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 600) companyItems.loadMore();
+  }
+
   // Which empty state, if any: nothing listed on this tab, or nothing matching.
-  const empty = emptyCase({ tab: activeTab, isLoading, total: listings.length, shown: filtered.length });
+  // A partner with visible items means the tab has rentals, so a search that
+  // finds nothing is 'filtered', not the "coming soon" state.
+  const partnerItems = isRentalTab ? partners.reduce((n, c) => n + (c.visibleCount ?? 0), 0) : 0;
+  const gridLoading = isLoading || (companyRentalsOn && companyItems.loading && filtered.length === 0);
+  const empty = emptyCase({ tab: activeTab, isLoading: gridLoading, total: listings.length + partnerItems, shown: filtered.length });
   const locked = !!empty && emptyFits;
 
   const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterCondition;
 
   const activeFilterTags: FilterTag[] = [
+    ...(partnerId ? [{
+      key: 'partner',
+      label: t('rentals.partner_filter').replace('{{name}}', partnerName),
+      onRemove: () => setPartnerId(null),
+    }] : []),
     ...(priceSort ? [{
       key: 'price',
       label: priceSort === 'asc' ? t('marketplace.filter_price_low') : t('marketplace.filter_price_high'),
@@ -217,6 +267,7 @@ export default function MarketplaceScreen() {
   function clearSearchAndFilters() {
     setSearchQuery('');
     setSelectedCategory('all');
+    setPartnerId(null);
     clearFilters();
   }
 
@@ -245,10 +296,12 @@ export default function MarketplaceScreen() {
         // when it fits the screen; a phone too short for it still scrolls.
         scrollEnabled={!locked}
         bounces={!locked}
+        onScroll={companyRentalsOn ? onPageScroll : undefined}
+        scrollEventThrottle={200}
       >
         {/* Toggle + mode description, on the violet band */}
         <GradientBand style={styles.band} flip>
-          <MarketplaceToggle active={activeTab} onChange={(tab) => { setActiveTab(tab); setFilterCondition(null); }} />
+          <MarketplaceToggle active={activeTab} onChange={(tab) => { setActiveTab(tab); setFilterCondition(null); setPartnerId(null); }} />
 
           {/* Mode description — switches with the selected toggle mode */}
           <AppText weight="regular" numberOfLines={1} style={styles.modeDesc}>
@@ -309,6 +362,17 @@ export default function MarketplaceScreen() {
           </ScrollView>
         </View>
 
+        {companyRentalsOn && (
+          <PartnerRow
+            companies={partners}
+            selectedId={partnerId}
+            onSelect={setPartnerId}
+            rtl={rtl}
+            title={t('rentals.partners_title')}
+            badge={t('rentals.partner_badge')}
+          />
+        )}
+
         {/* Active filter tags */}
         {activeFilterTags.length > 0 && (
           <View style={styles.filterBarRow}>
@@ -335,7 +399,7 @@ export default function MarketplaceScreen() {
         )}
 
         {/* Product grid */}
-        {isLoading ? (
+        {gridLoading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={BLUE} />
           </View>
@@ -373,6 +437,12 @@ export default function MarketplaceScreen() {
                 {pair.length === 1 && <View style={styles.halfItem} />}
               </View>
             ))}
+            {companyItems.loadingMore && (
+              <View style={styles.loadingMore} testID="rentals-loading-more">
+                <ActivityIndicator size="small" color={BLUE} />
+                <AppText style={styles.loadingMoreText}>{t('rentals.loading_more')}</AppText>
+              </View>
+            )}
           </View>
         )}
         </View>
@@ -466,7 +536,8 @@ export default function MarketplaceScreen() {
                 })}
               </View>
 
-              {/* Condition */}
+              {/* Condition — second-hand only: rentals have no condition. */}
+              {activeTab !== 'rental' && (<>
               <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
                 {t('marketplace.condition')}
               </AppText>
@@ -490,6 +561,7 @@ export default function MarketplaceScreen() {
                   );
                 })}
               </View>
+              </>)}
             </ScrollView>
 
             {/* Actions */}
@@ -530,6 +602,8 @@ export default function MarketplaceScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
+  loadingMoreText: { fontSize: 12, color: '#555555' },
   screen: { gap: 0 },
   flex: { flex: 1 },
   // Grows so the sheet reaches the bottom. paddingBottom is set inline: the
