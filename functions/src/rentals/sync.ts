@@ -6,7 +6,7 @@ import { copyImage, deletePrefix, mapLimit, type StoredImage } from './images';
 import { suggestCategory } from './keywords';
 import { withUtm } from './links';
 import { isVisible, resolveCategory } from './resolve';
-import { goneFromStore, isMassRemoval } from './removal';
+import { goneFromStore, isMassRemoval, MassRemovalError } from './removal';
 import { searchKeys } from './search';
 import { NO_PRICE_SORT, type RentalCompany, type RentalItem, type SyncStats } from './types';
 import { contentHash, fetchAllProducts, imagesHash, mapWooProduct, storeHostOf, type MappedItem } from './woo';
@@ -189,7 +189,7 @@ export async function syncRentalCompany(
     const gone = goneFromStore(existing, new Set([...mapped.keys()].map((e) => itemDocId(companyId, e))));
     const live = [...existing.values()].filter((it) => it.active).length;
     if (!force && isMassRemoval(gone.length, live)) {
-      throw new Error(
+      throw new MassRemovalError(
         `The store returned ${mapped.size} products; this would hide ${gone.length} of ${live} live items. ` +
         'Nothing was changed. Check the store, then use "Sync now" with force to apply it.',
       );

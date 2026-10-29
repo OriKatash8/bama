@@ -12,6 +12,7 @@ import {
 } from './sync';
 import type { RentalCompany, RentalItem, SourceType } from './types';
 import { storeHostOf } from './woo';
+import { MassRemovalError } from './removal';
 
 if (admin.apps.length === 0) admin.initializeApp();
 
@@ -56,6 +57,8 @@ function companyId(v: unknown): string {
 /** Turns an internal error into the code the admin screen shows. */
 function asHttps(e: unknown): HttpsError {
   if (e instanceof HttpsError) return e;
+  // The admin screen recognises this one and offers to apply the sync anyway (force).
+  if (e instanceof MassRemovalError) return new HttpsError('failed-precondition', e.message, { reason: 'mass-removal' });
   const msg = e instanceof Error ? e.message : String(e);
   if (msg === 'not-found') return new HttpsError('not-found', 'No such company');
   if (msg === 'already-running') return new HttpsError('failed-precondition', 'A sync is already running');

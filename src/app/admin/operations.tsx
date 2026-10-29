@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
-import { BookOpen, MessagesSquare, ShoppingBag, Percent, Activity, type LucideIcon } from 'lucide-react-native';
+import { BookOpen, MessagesSquare, ShoppingBag, Store, Percent, Activity, type LucideIcon } from 'lucide-react-native';
 import { AdminPage, Card, CardHead, NavRow, useScopedT, type Tone } from '@features/admin/ui';
 
-type OpsRoute = '/admin/courses' | '/admin/communities' | '/admin/marketplace' | '/admin/fees' | '/admin/usage';
+type OpsRoute = '/admin/courses' | '/admin/communities' | '/admin/marketplace' | '/admin/rental-companies' | '/admin/fees' | '/admin/usage';
 
 /**
  * Operations: the hub for content and marketplace pages, in the admin
@@ -17,6 +17,8 @@ export default function OperationsAdmin() {
     { key: 'courses', label: t('courses'), route: '/admin/courses', icon: BookOpen, tone: 'accent' },
     { key: 'communities', label: t('communities'), route: '/admin/communities', icon: MessagesSquare, tone: 'good' },
     { key: 'marketplace', label: t('marketplace'), route: '/admin/marketplace', icon: ShoppingBag, tone: 'warn' },
+    // Partners whose gear syncs from their own site (functions/src/rentals).
+    { key: 'rental_companies', label: t('rental_companies'), route: '/admin/rental-companies', icon: Store, tone: 'accent' },
     // Outstanding platform fees and anything flagged for a human. The only route
     // in — fee records are readable by nobody but the pro who owes them, so there
     // is no other surface this could hang off.

@@ -21,3 +21,11 @@ export function goneFromStore(
 export function isMassRemoval(gone: number, live: number): boolean {
   return live >= MIN_ITEMS_FOR_REMOVAL_GUARD && gone > live * MAX_REMOVAL_FRACTION;
 }
+
+/** Thrown before any write when a sync would hide most of a catalogue; "Sync now" can retry with force. */
+export class MassRemovalError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MassRemovalError';
+  }
+}
