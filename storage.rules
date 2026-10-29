@@ -204,6 +204,15 @@ service firebase.storage {
                             );
     }
 
+    // ─── rental companies: synced item images and logos ──────────────────
+    // `rentalCompanies/{companyId}/items/{externalId}/…` and `…/logo/…`, written
+    // only by functions/src/rentals (Admin SDK bypasses rules). The app loads
+    // them through tokenised download URLs stored on the item documents.
+    match /rentalCompanies/{companyId}/{allPaths=**} {
+      allow read:  if isAuth();
+      allow write: if false;
+    }
+
     // ─── report evidence ──────────────────────────────────────────────────
     // `reports/{reportId}/evidence/{reporterUid}/{file}`, written by all three
     // report flows via uploadReportEvidence (src/core/firebase/storage.ts).

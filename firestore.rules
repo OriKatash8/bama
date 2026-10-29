@@ -1254,6 +1254,29 @@ service cloud.firestore {
       allow delete: if isAuth() && (resource.data.posterId == request.auth.uid || isAdmin());
     }
 
+    // ─── rental companies (store-synced partners) ───────────────────
+    // Written ONLY by Cloud Functions (functions/src/rentals, Admin SDK): the
+    // sync, and admin callables that validate every field. No client write of
+    // any kind, admins included — the callables are the admin's write path.
+    //
+    // Reads are by CONTENT, and a list must prove it from the query (see the
+    // reviews note below): every app query carries the matching equality —
+    // src/features/rentals/querySpecs.ts, probed by scripts/probe-rental-rules.mjs.
+    //   rentalCompanies: active == true. A removed company is always inactive
+    //     (removeCompany and adminSetRentalCompanyActive guarantee it).
+    //   rentalItems: visible == true, which the sync sets only for an active
+    //     item of an active company in a real category — never 'unsorted' or
+    //     'hidden'. Inactive companies and unsorted items are admin-only.
+    match /rentalCompanies/{companyId} {
+      allow read: if isAdmin() || (isAuth() && resource.data.active == true);
+      allow write: if false;
+    }
+
+    match /rentalItems/{itemId} {
+      allow read: if isAdmin() || (isAuth() && resource.data.visible == true);
+      allow write: if false;
+    }
+
     // ─── reviews ────────────────────────────────────────────────────
     match /reviews/{reviewId} {
       // LATENT PLUMBING — READ THIS BEFORE WRITING `published: false` ANYWHERE.

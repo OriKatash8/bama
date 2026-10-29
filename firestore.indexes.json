@@ -310,6 +310,156 @@
         }
       ],
       "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortPrice",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortPrice",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortPrice",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortPrice",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeys",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalItems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeys",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "rentalCompanies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
