@@ -14,6 +14,7 @@
 
 export type Clause =
   | { kind: 'where'; field: string; op: '==' | '<' | 'array-contains'; value: string | number | boolean }
+  | { kind: 'where'; field: string; op: 'array-contains-any'; value: string[] }
   | { kind: 'orderBy'; field: string; dir: 'asc' | 'desc' }
   | { kind: 'limit'; n: number };
 
@@ -25,27 +26,44 @@ export const RENTAL_PAGE_SIZE = 30;
 export const PARTNER_COMPANIES_LIMIT = 50;
 /** sortPrice of a "price on request" item — same value as functions/src/rentals/types.ts. */
 export const NO_PRICE_SORT = 1_000_000_000;
+/** Firestore's limit on array-contains-any values. */
+export const MAX_BRAND_KEYS = 30;
 /** Longest search prefix the sync stores per word — same as functions/src/rentals/search.ts. */
 export const SEARCH_PREFIX_MAX = 15;
 
 export type RentalSort = 'name' | 'price_asc' | 'price_desc';
 
 /**
- * The rental tab's items. Search uses one word (the longest typed one) on the
- * server and is sorted by name; the other words and any price order are applied
- * to the loaded results. "price on request" items have no place in a high→low
- * order and are left out of it.
+ * The rental tab's items. `category` and `companyId` are equalities after
+ * visible == true, in any combination (firestore.indexes.json has an index for
+ * each). Only one array clause is allowed per query, so:
+ *   - search text: its longest word goes to the server (array-contains); any
+ *     brand filter is then matched on the loaded names;
+ *   - otherwise a brand filter goes to the server (array-contains-any of the
+ *     brands' keys: a company item matches when the brand is in its name).
+ * Either way the order is by name; a price order is applied to the loaded
+ * results. "price on request" items have no place in a high→low order and are
+ * left out of it.
  */
 export function rentalItemsSpec(opts: {
   category?: string | null;
+  companyId?: string | null;
   sort?: RentalSort;
   searchKey?: string | null;
+  brandKeys?: string[];
   pageSize?: number;
 } = {}): QuerySpec {
   const clauses: Clause[] = [{ kind: 'where', field: 'visible', op: '==', value: true }];
+  if (opts.companyId) clauses.push({ kind: 'where', field: 'companyId', op: '==', value: opts.companyId });
   if (opts.category) clauses.push({ kind: 'where', field: 'category', op: '==', value: opts.category });
-  const sort = opts.searchKey ? 'name' : opts.sort ?? 'name';
-  if (opts.searchKey) clauses.push({ kind: 'where', field: 'searchKeys', op: 'array-contains', value: opts.searchKey });
+  const brandKeys = (opts.brandKeys ?? []).slice(0, MAX_BRAND_KEYS);
+  const arrayFilter = !!opts.searchKey || brandKeys.length > 0;
+  if (opts.searchKey) {
+    clauses.push({ kind: 'where', field: 'searchKeys', op: 'array-contains', value: opts.searchKey });
+  } else if (brandKeys.length > 0) {
+    clauses.push({ kind: 'where', field: 'searchKeys', op: 'array-contains-any', value: brandKeys });
+  }
+  const sort = arrayFilter ? 'name' : opts.sort ?? 'name';
   if (sort === 'price_asc') {
     clauses.push({ kind: 'orderBy', field: 'sortPrice', dir: 'asc' });
   } else if (sort === 'price_desc') {

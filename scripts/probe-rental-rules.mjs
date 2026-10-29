@@ -195,6 +195,14 @@ async function main() {
     ['items: lens + price high→low', rentalItemsSpec({ category: 'lens', sort: 'price_desc' })],
     ['items: search', rentalItemsSpec({ searchKey: SEARCH })],
     ['items: lens + search', rentalItemsSpec({ category: 'lens', searchKey: SEARCH })],
+    ['items: partner', rentalItemsSpec({ companyId: CO_ACTIVE })],
+    ['items: partner + lens', rentalItemsSpec({ companyId: CO_ACTIVE, category: 'lens' })],
+    ['items: partner + price low→high', rentalItemsSpec({ companyId: CO_ACTIVE, sort: 'price_asc' })],
+    ['items: partner + lens + price high→low', rentalItemsSpec({ companyId: CO_ACTIVE, category: 'lens', sort: 'price_desc' })],
+    ['items: partner + search', rentalItemsSpec({ companyId: CO_ACTIVE, searchKey: SEARCH })],
+    ['items: partner + lens + search', rentalItemsSpec({ companyId: CO_ACTIVE, category: 'lens', searchKey: SEARCH })],
+    ['items: brands (array-contains-any)', rentalItemsSpec({ brandKeys: [SEARCH, 'aputure'] })],
+    ['items: lens + brands', rentalItemsSpec({ category: 'lens', brandKeys: [SEARCH] })],
   ];
   for (const [name, spec] of itemSpecs) record('allow', name, allow, await listOutcome(spec, { check: isVisibleItem }));
   record('allow', 'companies: partner row', allow, await listOutcome(partnerCompaniesSpec(), { check: isActiveCompany }));
@@ -212,6 +220,8 @@ async function main() {
     record('allow', 'search returns exactly the visible scratch items', [IT_VISIBLE, IT_ON_REQUEST].sort().join(','), ids);
     const d = await getDocs(toQuery(rentalItemsSpec({ searchKey: SEARCH, sort: 'price_desc' })));
     record('allow', 'search ignores sort (both scratch items, by name)', 2, d.size);
+    const b = await getDocs(toQuery(rentalItemsSpec({ brandKeys: [SEARCH] })));
+    record('allow', 'brand filter returns exactly the visible scratch items', 2, b.size);
   }
 
   console.log('\nUSER — must be denied:');

@@ -54,6 +54,41 @@ describe('rentalItemsSpec', () => {
   });
 });
 
+describe('partner filter and brands', () => {
+  it('a partner is an equality after visible, composable with category and price', () => {
+    expect(rentalItemsSpec({ companyId: 'c1', category: 'lens', sort: 'price_desc' }).clauses).toEqual([
+      visible,
+      { kind: 'where', field: 'companyId', op: '==', value: 'c1' },
+      { kind: 'where', field: 'category', op: '==', value: 'lens' },
+      { kind: 'where', field: 'sortPrice', op: '<', value: NO_PRICE_SORT },
+      { kind: 'orderBy', field: 'sortPrice', dir: 'desc' },
+      { kind: 'limit', n: RENTAL_PAGE_SIZE },
+    ]);
+  });
+
+  it('brands without search text go to the server as array-contains-any, ordered by name', () => {
+    expect(rentalItemsSpec({ brandKeys: ['sony', 'aputure'], sort: 'price_asc' }).clauses).toEqual([
+      visible,
+      { kind: 'where', field: 'searchKeys', op: 'array-contains-any', value: ['sony', 'aputure'] },
+      { kind: 'orderBy', field: 'name', dir: 'asc' },
+      { kind: 'limit', n: RENTAL_PAGE_SIZE },
+    ]);
+  });
+
+  it('with search text, the search key wins the one array clause (brands are matched on the loaded names)', () => {
+    const clauses = rentalItemsSpec({ searchKey: 'monitor', brandKeys: ['atomos'] }).clauses;
+    expect(clauses.filter((c) => c.kind === 'where' && c.field === 'searchKeys')).toEqual([
+      { kind: 'where', field: 'searchKeys', op: 'array-contains', value: 'monitor' },
+    ]);
+  });
+
+  it('caps brand keys at Firestore\'s 30', () => {
+    const keys = Array.from({ length: 40 }, (_, i) => `b${i}`);
+    const any = rentalItemsSpec({ brandKeys: keys }).clauses.find((c) => c.kind === 'where' && c.op === 'array-contains-any');
+    expect(any && any.kind === 'where' && Array.isArray(any.value) ? any.value.length : 0).toBe(30);
+  });
+});
+
 describe('company specs', () => {
   it('the partner row asks only for active companies', () => {
     expect(partnerCompaniesSpec().clauses[0]).toEqual({ kind: 'where', field: 'active', op: '==', value: true });
