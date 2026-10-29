@@ -44,5 +44,14 @@ export const UTM_PARAMS: Record<string, string> = { utm_source: 'bama' };
 export const CLICK_LIMIT_PER_WINDOW = 30;
 export const CLICK_WINDOW_MS = 60_000;
 
+/**
+ * A sync that would hide more than this share of a company's live items stops
+ * with an error instead (a store answering empty during maintenance must not
+ * wipe the catalogue). Only applies above MIN_ITEMS_FOR_REMOVAL_GUARD live items.
+ * The admin's "Sync now" can override it with force.
+ */
+export const MAX_REMOVAL_FRACTION = 0.5;
+export const MIN_ITEMS_FOR_REMOVAL_GUARD = 10;
+
 /** The error text kept on a company doc is cut to this. */
 export const SYNC_ERROR_MAX_CHARS = 500;

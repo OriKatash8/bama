@@ -6,6 +6,7 @@ import { copyImage, deletePrefix, mapLimit, type StoredImage } from './images';
 import { suggestCategory } from './keywords';
 import { withUtm } from './links';
 import { isVisible, resolveCategory } from './resolve';
+import { goneFromStore, isMassRemoval } from './removal';
 import { searchKeys } from './search';
 import { NO_PRICE_SORT, type RentalCompany, type RentalItem, type SyncStats } from './types';
 import { contentHash, fetchAllProducts, imagesHash, mapWooProduct, storeHostOf, type MappedItem } from './woo';
@@ -132,23 +133,23 @@ async function copyItemImages(
   companyId: string,
   m: MappedItem,
   fetchFn: typeof fetch,
-): Promise<{ images: StoredImage[]; bytes: number; errors: number; copies: number }> {
+): Promise<{ images: StoredImage[]; bytes: number; errors: number; copied: number }> {
   const prefix = itemStoragePrefix(companyId, m.externalId);
   await deletePrefix(prefix);
   const images: StoredImage[] = [];
-  let bytes = 0, errors = 0, copies = 0;
+  let bytes = 0, errors = 0, copied = 0;
   for (let i = 0; i < m.imageSources.length; i++) {
     try {
       const r = await copyImage(m.imageSources[i], prefix, i, fetchFn);
       images.push(r.image);
       bytes += r.bytes;
-      copies++;
+      copied++;
     } catch (e) {
       errors++;
       console.warn(`[rentals] image ${m.imageSources[i]} for ${companyId}/${m.externalId}:`, (e as Error).message);
     }
   }
-  return { images, bytes, errors, copies };
+  return { images, bytes, errors, copied };
 }
 
 /**
@@ -162,7 +163,11 @@ async function copyItemImages(
  * exactly the writes this avoids. The company's lastSyncAt says when the store
  * was last read in full.
  */
-export async function syncRentalCompany(companyId: string, fetchFn: typeof fetch = fetch): Promise<SyncStats> {
+export async function syncRentalCompany(
+  companyId: string,
+  fetchFn: typeof fetch = fetch,
+  { force = false }: { force?: boolean } = {},
+): Promise<SyncStats> {
   const started = Date.now();
   const ref = companiesCol().doc(companyId);
   const company = await acquireLock(ref);
@@ -180,9 +185,20 @@ export async function syncRentalCompany(companyId: string, fetchFn: typeof fetch
     const existingSnap = await itemsCol().where('companyId', '==', companyId).get();
     const existing = new Map(existingSnap.docs.map((d) => [d.id, d.data() as RentalItem]));
 
+    // Before any write or image copy: refuse a sync that would hide most of the catalogue.
+    const gone = goneFromStore(existing, new Set([...mapped.keys()].map((e) => itemDocId(companyId, e))));
+    const live = [...existing.values()].filter((it) => it.active).length;
+    if (!force && isMassRemoval(gone.length, live)) {
+      throw new Error(
+        `The store returned ${mapped.size} products; this would hide ${gone.length} of ${live} live items. ` +
+        'Nothing was changed. Check the store, then use "Sync now" with force to apply it.',
+      );
+    }
+
     const stats: SyncStats = {
       fetched: products.length, mapped: mapped.size, dropped: products.length - mapped.size,
-      created: 0, updated: 0, unchanged: 0, deactivated: 0, imageCopies: 0, imageErrors: 0, writes: 0, durationMs: 0,
+      created: 0, updated: 0, unchanged: 0, deactivated: 0, imagesCopied: 0, filesWritten: 0, imageErrors: 0,
+      writes: 0, durationMs: 0,
     };
     const ops: Op[] = [];
     const finalState = new Map<string, Pick<RentalItem, 'active' | 'visible' | 'category' | 'imageBytes'>>();
@@ -201,7 +217,8 @@ export async function syncRentalCompany(companyId: string, fetchFn: typeof fetch
       let imageBytes = stored?.imageBytes ?? 0;
       if (stored?.imagesHash !== wantImagesHash) {
         const r = await copyItemImages(companyId, m, fetchFn);
-        stats.imageCopies += r.copies;
+        stats.imagesCopied += r.copied;
+        stats.filesWritten += r.copied * 2;
         stats.imageErrors += r.errors;
         imageBytes = r.bytes;
         // A failed copy leaves imagesHash unset, so the next sync tries again.
@@ -237,9 +254,11 @@ export async function syncRentalCompany(companyId: string, fetchFn: typeof fetch
 
     // Gone from the store: inactive, never deleted (a shared link must still resolve).
     for (const [id, stored] of existing) {
-      if (finalState.has(id)) continue;
-      finalState.set(id, { active: false, visible: false, category: stored.category, imageBytes: stored.imageBytes ?? 0 });
-      if (!stored.active && !stored.visible) continue;
+      if (!finalState.has(id)) {
+        finalState.set(id, { active: false, visible: false, category: stored.category, imageBytes: stored.imageBytes ?? 0 });
+      }
+    }
+    for (const id of gone) {
       ops.push((b) => b.update(itemsCol().doc(id), { active: false, visible: false, updatedAt: FieldValue.serverTimestamp() }));
       stats.deactivated++;
     }

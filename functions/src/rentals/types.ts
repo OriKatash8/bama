@@ -84,7 +84,10 @@ export type SyncStats = {
   updated: number;
   unchanged: number;
   deactivated: number;
-  imageCopies: number;
+  /** Store images copied into Storage. Each one writes 2 files (thumbnail + detail). */
+  imagesCopied: number;
+  /** Storage files written: 2 × imagesCopied. */
+  filesWritten: number;
   imageErrors: number;
   /** Firestore document writes this sync made (items + the company doc). */
   writes: number;

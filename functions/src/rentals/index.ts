@@ -188,12 +188,12 @@ export const adminSetRentalItemCategories = onCall(LIGHT, async (request) => {
   }
 });
 
-/** "Sync now". */
+/** "Sync now". `force` applies a sync the mass-removal guard stopped (see MAX_REMOVAL_FRACTION). */
 export const adminSyncRentalCompany = onCall(HEAVY, async (request) => {
   requireAdmin(request.auth?.token);
   const id = companyId(request.data?.companyId);
   try {
-    return await syncRentalCompany(id);
+    return await syncRentalCompany(id, fetch, { force: request.data?.force === true });
   } catch (e) {
     throw asHttps(e);
   }

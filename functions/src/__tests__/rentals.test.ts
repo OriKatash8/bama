@@ -3,6 +3,7 @@ import { suggestCategory, tokenize, wordForms } from '../rentals/keywords';
 import { resolveCategory, isVisible } from '../rentals/resolve';
 import { mapWooProduct, toMajorUnits, productsUrl, contentHash, isOnHost, fetchAllProducts, type WooProduct } from '../rentals/woo';
 import { withUtm } from '../rentals/links';
+import { goneFromStore, isMassRemoval } from '../rentals/removal';
 
 const HOST = 'xn--6dbfboov3a.xn--4dbrk0ce';
 
@@ -177,5 +178,39 @@ describe('withUtm', () => {
   });
   it('does not duplicate it', () => {
     expect(withUtm('https://s.co/p/?utm_source=bama')).toBe('https://s.co/p/?utm_source=bama');
+  });
+});
+
+describe('goneFromStore (removal detection — by this sync’s ids, not lastSeenAt)', () => {
+  const live = { active: true, visible: true };
+  const existing = new Map([
+    ['co_1', live],
+    ['co_2', live],
+    ['co_3', { active: true, visible: false }],   // active but hidden (e.g. unsorted)
+    ['co_9', { active: false, visible: false }],  // already gone in an earlier sync
+  ]);
+  it('one product missing from the store → exactly that item', () => {
+    expect(goneFromStore(existing, new Set(['co_1', 'co_3']))).toEqual(['co_2']);
+  });
+  it('an active-but-hidden item that disappears is deactivated too', () => {
+    expect(goneFromStore(existing, new Set(['co_1', 'co_2']))).toEqual(['co_3']);
+  });
+  it('an already-inactive missing item is not written again', () => {
+    expect(goneFromStore(existing, new Set(['co_1', 'co_2', 'co_3']))).toEqual([]);
+  });
+  it('an empty store response deactivates everything still live', () => {
+    expect(goneFromStore(existing, new Set())).toEqual(['co_1', 'co_2', 'co_3']);
+  });
+});
+
+describe('isMassRemoval', () => {
+  it('stops a sync that would hide more than half of the live items', () => {
+    expect(isMassRemoval(324, 324)).toBe(true); // store answered empty
+    expect(isMassRemoval(163, 324)).toBe(true);
+    expect(isMassRemoval(162, 324)).toBe(false);
+    expect(isMassRemoval(1, 324)).toBe(false);  // one product gone: normal
+  });
+  it('does not apply to tiny catalogues', () => {
+    expect(isMassRemoval(5, 9)).toBe(false);
   });
 });
