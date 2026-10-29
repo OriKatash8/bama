@@ -1238,7 +1238,9 @@
     "instead_of": "instead of ₪{{price}}",
     "rent_through": "Rent through {{company}}",
     "company": "Company",
-    "loading_more": "Loading more…"
+    "loading_more": "Loading more…",
+    "filter_company": "Rental company",
+    "all_companies": "All companies"
   },
   "auth": {
     "pw_length": "At least 8 characters",

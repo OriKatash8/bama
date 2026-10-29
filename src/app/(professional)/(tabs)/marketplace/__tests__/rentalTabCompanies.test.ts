@@ -46,3 +46,25 @@ it('every new string exists in Hebrew and English', () => {
   for (const k of Object.keys(en.rentals)) expect(typeof (he.rentals as Record<string, string>)[k]).toBe('string');
   expect(he.rentals.rent_through).toBe('השכרה דרך {{company}}');
 });
+
+describe('the filter popup\'s "Rental company" section', () => {
+  it('rental tab only, and only with partners', () => {
+    expect(SRC).toMatch(/\{companyRentalsOn && partners\.length > 0 && \(\s*<>\s*<AppText[^>]*>\s*\{t\('rentals\.filter_company'\)\}/);
+  });
+
+  it('a draft of the same partnerId the row sets: opened from it, applied to it, cleared with it', () => {
+    expect(SRC).toMatch(/function openFilterModal\(\) \{[\s\S]*?setDraftPartnerId\(partnerId\);/);
+    expect(SRC).toMatch(/function applyFilters\(\) \{[\s\S]*?setPartnerId\(draftPartnerId\);/);
+    expect(SRC).toMatch(/function clearFilters\(\) \{[\s\S]*?setDraftPartnerId\(null\);[\s\S]*?setPartnerId\(null\);/);
+    expect(SRC).toMatch(/<CompanyFilterChips[\s\S]*?value=\{draftPartnerId\}[\s\S]*?onChange=\{setDraftPartnerId\}/);
+  });
+
+  it('a chosen company counts as an active filter', () => {
+    expect(SRC).toMatch(/const filtersActive = [^;]*!!partnerId;/);
+  });
+
+  it('Hebrew and English', () => {
+    expect([he.rentals.filter_company, he.rentals.all_companies]).toEqual(['חברת השכרה', 'כל החברות']);
+    expect([en.rentals.filter_company, en.rentals.all_companies]).toEqual(['Rental company', 'All companies']);
+  });
+});

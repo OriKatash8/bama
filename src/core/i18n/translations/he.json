@@ -1238,7 +1238,9 @@
     "instead_of": "במקום ₪{{price}}",
     "rent_through": "השכרה דרך {{company}}",
     "company": "חברה",
-    "loading_more": "טוען עוד…"
+    "loading_more": "טוען עוד…",
+    "filter_company": "חברת השכרה",
+    "all_companies": "כל החברות"
   },
   "auth": {
     "pw_length": "לפחות 8 תווים",

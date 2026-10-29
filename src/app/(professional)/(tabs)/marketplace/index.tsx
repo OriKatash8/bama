@@ -45,6 +45,7 @@ import { useRentalItems } from '@features/rentals/hooks/useRentalItems';
 import { usePartnerCompanies } from '@features/rentals/hooks/usePartnerCompanies';
 import { rentalItemToListing } from '@features/rentals/listing';
 import { PartnerRow } from '@features/rentals/components/PartnerRow';
+import { CompanyFilterChips } from '@features/rentals/components/CompanyFilterChips';
 
 type Translations = typeof en;
 
@@ -109,6 +110,8 @@ export default function MarketplaceScreen() {
   const [draftPriceSort, setDraftPriceSort]     = useState<'asc' | 'desc' | null>(null);
   const [draftBrands, setDraftBrands]           = useState<string[]>([]);
   const [draftCondition, setDraftCondition]     = useState<ProductCondition | null>(null);
+  /** Rental tab: the popup's "Rental company" choice, applied to `partnerId`. */
+  const [draftPartnerId, setDraftPartnerId]     = useState<string | null>(null);
 
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
@@ -211,7 +214,7 @@ export default function MarketplaceScreen() {
   const empty = emptyCase({ tab: activeTab, isLoading: gridLoading, total: listings.length + partnerItems, shown: filtered.length });
   const locked = !!empty && emptyFits;
 
-  const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterCondition;
+  const filtersActive = priceSort !== null || filterBrands.length > 0 || !!filterCondition || !!partnerId;
 
   const activeFilterTags: FilterTag[] = [
     ...(partnerId ? [{
@@ -243,6 +246,7 @@ export default function MarketplaceScreen() {
     setDraftPriceSort(priceSort);
     setDraftBrands(filterBrands);
     setDraftCondition(filterCondition);
+    setDraftPartnerId(partnerId);
     setFilterModalVisible(true);
   }
 
@@ -250,6 +254,7 @@ export default function MarketplaceScreen() {
     setPriceSort(draftPriceSort);
     setFilterBrands(draftBrands);
     setFilterCondition(draftCondition);
+    setPartnerId(draftPartnerId);
     setFilterModalVisible(false);
   }
 
@@ -257,9 +262,11 @@ export default function MarketplaceScreen() {
     setDraftPriceSort(null);
     setDraftBrands([]);
     setDraftCondition(null);
+    setDraftPartnerId(null);
     setPriceSort(null);
     setFilterBrands([]);
     setFilterCondition(null);
+    setPartnerId(null);
     setFilterModalVisible(false);
   }
 
@@ -510,6 +517,23 @@ export default function MarketplaceScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
+
+              {/* Rental company — rental tab only. The same partnerId as the partner
+                  row: its card, the filter tag and Clear always agree with this. */}
+              {companyRentalsOn && partners.length > 0 && (
+                <>
+                  <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                    {t('rentals.filter_company')}
+                  </AppText>
+                  <CompanyFilterChips
+                    companies={partners}
+                    value={draftPartnerId}
+                    onChange={setDraftPartnerId}
+                    allLabel={t('rentals.all_companies')}
+                    rtl={rtl}
+                  />
+                </>
+              )}
 
               {/* Brand */}
               <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>
