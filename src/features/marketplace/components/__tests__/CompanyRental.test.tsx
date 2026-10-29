@@ -43,7 +43,7 @@ const ITEM: RentalItem = {
 beforeEach(() => jest.clearAllMocks());
 
 describe('detail', () => {
-  it('"השכרה דרך [company]" opens the UTM link first, then counts the tap', () => {
+  it('"השכרה דרך [company]" starts the count first (not awaited), then opens the UTM link — in the same tap', () => {
     const order: string[] = [];
     jest.spyOn(Linking, 'openURL').mockImplementation(async (url) => { order.push(`open ${url}`); return true; });
     (trackRentalClick as jest.Mock).mockImplementation(async (id: string) => { order.push(`track ${id}`); return { counted: true }; });
@@ -51,7 +51,8 @@ describe('detail', () => {
     const btn = r.getByTestId('listing-rent-through');
     expect(within(btn).getByText(R.rent_through.replace('{{company}}', 'השכרת ציוד'))).toBeTruthy();
     fireEvent.press(btn);
-    expect(order).toEqual(['open https://store.example/p/?utm_source=bama', 'track co_1']);
+    // Both happened synchronously inside the press: the count is already in flight when the store opens.
+    expect(order).toEqual(['track co_1', 'open https://store.example/p/?utm_source=bama']);
   });
 
   it('a failed count never shows an error', async () => {

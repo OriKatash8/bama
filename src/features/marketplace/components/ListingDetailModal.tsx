@@ -118,17 +118,24 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
           ? ` · ${t('rentals.instead_of').replace('{{price}}', listing.regularPrice.toLocaleString())}` : '')
       : `₪${listing.price.toLocaleString()}`;
 
-  /** Opens the company's product page (link already carries utm_source=bama), then counts the tap. */
+  /**
+   * Counts the tap, then opens the company's product page (the link already
+   * carries utm_source=bama). The count is started first and not awaited: on a
+   * phone the app goes to the background as the browser opens, so the request
+   * must already be on its way. Both run in this one synchronous handler, so on
+   * web the browser still sees the open as part of the tap. A failed count is
+   * ignored — it must never stand between the user and the store.
+   */
   function rentThroughCompany() {
     if (!listing?.productUrl) return;
-    // Open first: on web the browser only allows it inside the tap itself.
+    if (listing.rentalItemId) {
+      // Loaded on the tap, not with the modal: it pulls in Firebase Functions, which
+      // every other listing (and every test of this modal) has no use for.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { trackRentalClick } = require('@features/rentals/rentalsService') as typeof import('@features/rentals/rentalsService');
+      trackRentalClick(listing.rentalItemId).catch(() => {});
+    }
     void Linking.openURL(listing.productUrl);
-    if (!listing.rentalItemId) return;
-    // Loaded on the tap, not with the modal: it pulls in Firebase Functions, which
-    // every other listing (and every test of this modal) has no use for.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { trackRentalClick } = require('@features/rentals/rentalsService') as typeof import('@features/rentals/rentalsService');
-    trackRentalClick(listing.rentalItemId).catch(() => {});
   }
 
   const isOwnListing = currentUserId === listing.posterId;
