@@ -134,12 +134,12 @@
     "adminSyncRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-29T01:19:31.240353412Z",
-      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
-      "commit": "1a9bd4f4",
+      "updateTime": "2026-10-29T03:56:59.783574099Z",
+      "treeSha": "1f298fa15f61d7e3dd805fdf0609836bfa0af108",
+      "commit": "5a57d2d9",
       "how": "deploy",
       "recordedOn": "2026-10-29",
-      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+      "note": "Redeploy of adminSyncRentalCompany only: the mass-removal stop is now failed-precondition {reason: 'mass-removal'} so the admin screen can offer force. Non-admins still denied (probe-rental-callables 13/13)."
     },
     "cancelProject": {
       "region": "us-central1",
