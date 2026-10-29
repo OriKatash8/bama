@@ -1,7 +1,9 @@
+import { Clapperboard, DoorOpen, LampFloor, Plug } from 'lucide-react-native';
 import type { MarketplaceCategory } from '@features/marketplace/components/CategoryTile';
 
 /** The marketplace's category ids, in the order the category row shows them. */
-export type MarketCategoryId = 'camera' | 'lens' | 'audio' | 'lighting' | 'drone' | 'accessories';
+export type MarketCategoryId =
+  | 'camera' | 'lens' | 'audio' | 'lighting' | 'drone' | 'studio' | 'accessories' | 'grip' | 'production';
 
 /**
  * The marketplace category row's data: label key and both icons. Shared by the
@@ -10,6 +12,10 @@ export type MarketCategoryId = 'camera' | 'lens' | 'audio' | 'lighting' | 'drone
  * `icon` is the blue glyph alone (market-*.png: the original icon with its
  * near-white square cut away), so the sheet or card shows through behind it.
  * `selectedIcon` keeps its gradient square — that is how a chosen one looks.
+ *
+ * The later categories are Lucide icons (`Icon`), drawn by CategoryTile in the
+ * same blue and the same chosen square. The clapperboard is production's now;
+ * accessories became a plug.
  */
 export const MARKET_CATEGORIES: (MarketplaceCategory & { id: MarketCategoryId })[] = [
   {
@@ -44,10 +50,8 @@ export const MARKET_CATEGORIES: (MarketplaceCategory & { id: MarketCategoryId })
     icon: require('../../../../assets/images/categories/market-drone.png'),
     selectedIcon: require('../../../../assets/images/categories/11.png'),
   },
-  {
-    id: 'accessories',
-    labelKey: 'category_accessories',
-    icon: require('../../../../assets/images/categories/market-studio.png'),
-    selectedIcon: require('../../../../assets/images/categories/14.png'),
-  },
+  { id: 'studio', labelKey: 'category_studio', Icon: DoorOpen },
+  { id: 'accessories', labelKey: 'category_accessories', Icon: Plug },
+  { id: 'grip', labelKey: 'category_grip', Icon: LampFloor },
+  { id: 'production', labelKey: 'category_production', Icon: Clapperboard },
 ];

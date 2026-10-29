@@ -62,3 +62,26 @@ it('a two-line label is centred under the icon', () => {
     expect(StyleSheet.flatten(r.getByText('Studio Accessories').props.style).textAlign).toBe('center');
   }
 });
+
+describe('a vector (Lucide) tile', () => {
+  const Glyph = (props: { color: string }) => React.createElement('Glyph', props);
+  const vcat = { id: 'grip', labelKey: 'category_grip', Icon: Glyph as never };
+  const vlayers = (r: ReturnType<typeof render>) => ({
+    plain: StyleSheet.flatten(r.getByTestId('cat-grip-icon').props.style),
+    colour: StyleSheet.flatten(r.getByTestId('cat-grip-icon-selected').props.style),
+  });
+
+  it('keeps both states mounted and shows the chosen one by opacity, like the PNG tiles', () => {
+    const r = render(<CategoryTile cat={vcat} label="Grip" isActive={false} onPress={jest.fn()} inactiveLabelColor="#000" />);
+    expect(vlayers(r)).toEqual(expect.objectContaining({ plain: expect.objectContaining({ opacity: 1 }), colour: expect.objectContaining({ opacity: 0 }) }));
+    r.rerender(<CategoryTile cat={vcat} label="Grip" isActive onPress={jest.fn()} inactiveLabelColor="#000" />);
+    expect(vlayers(r).plain.opacity).toBe(0);
+    expect(vlayers(r).colour.opacity).toBe(1);
+  });
+
+  it('the plain glyph is the tiles\' blue; the chosen one is white on the gradient square', () => {
+    const r = render(<CategoryTile cat={vcat} label="Grip" isActive onPress={jest.fn()} inactiveLabelColor="#000" />);
+    const colours = r.UNSAFE_getAllByType('Glyph' as never).map((g) => (g.props as { color: string }).color);
+    expect(colours).toEqual(['#0C4CB0', '#FFFFFF']);
+  });
+});

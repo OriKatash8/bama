@@ -71,6 +71,8 @@ const CATEGORIES: { id: string; labelKey: string }[] = [
   { id: 'drone',       labelKey: 'category_drone' },
   { id: 'studio',      labelKey: 'category_studio' },
   { id: 'accessories', labelKey: 'category_accessories' },
+  { id: 'grip',        labelKey: 'category_grip' },
+  { id: 'production',  labelKey: 'category_production' },
 ];
 
 const CONDITIONS: { value: ProductCondition; color: string }[] = [
