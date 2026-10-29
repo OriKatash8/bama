@@ -81,6 +81,66 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
+    "adminRemoveRentalCompany": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:34.140242139Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSaveRentalCompany": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:17:34.618283558Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSetRentalCategoryMap": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:32.581231280Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSetRentalCompanyActive": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:29.918229842Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSetRentalItemCategories": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:35.590287550Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSyncRentalCompany": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:31.240353412Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
     "cancelProject": {
       "region": "us-central1",
       "generation": 2,
@@ -610,6 +670,26 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "syncAllRentalCompanies": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:34.173069040Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "trackRentalClick": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:33.586562716Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
     }
   }
 }
