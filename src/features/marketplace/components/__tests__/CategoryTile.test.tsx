@@ -85,3 +85,16 @@ describe('a vector (Lucide) tile', () => {
     expect(colours).toEqual(['#0C4CB0', '#FFFFFF']);
   });
 });
+
+it('un-choosing it springs back to its resting size, the same animation reversed', () => {
+  const { Animated } = jest.requireActual('react-native');
+  const spring = jest.spyOn(Animated, 'spring');
+  const r = render(<CategoryTile cat={cat} label="Lenses" isActive onPress={jest.fn()} inactiveLabelColor="#000" />);
+  r.rerender(<CategoryTile cat={cat} label="Lenses" isActive={false} onPress={jest.fn()} inactiveLabelColor="#000" />);
+  const last = spring.mock.calls[spring.mock.calls.length - 1][1] as { toValue: number; useNativeDriver: boolean };
+  expect(last.toValue).toBe(0);
+  expect(last.useNativeDriver).toBe(true);
+  expect(StyleSheet.flatten(r.getByTestId('cat-lens-icon').props.style).opacity).toBe(1);
+  expect(StyleSheet.flatten(r.getByTestId('cat-lens-icon-selected').props.style).opacity).toBe(0);
+  spring.mockRestore();
+});

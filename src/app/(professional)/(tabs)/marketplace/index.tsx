@@ -362,7 +362,9 @@ export default function MarketplaceScreen() {
                 cat={cat}
                 label={t(`marketplace.${cat.labelKey}`)}
                 isActive={selectedCategory === cat.id}
-                onPress={() => setSelectedCategory(cat.id)}
+                // Tapping the chosen tile again goes back to every category; the
+                // tile springs back the same way it grew (CategoryTile).
+                onPress={() => setSelectedCategory((prev) => (prev === cat.id ? 'all' : cat.id))}
                 inactiveLabelColor={TEXT}
               />
             ))}
