@@ -1229,8 +1229,6 @@
     "seller_price_note": "משולם ישירות למוכר (מחוץ לאפליקציה)"
   },
   "rentals": {
-    "partners_title": "חברות השכרה שותפות",
-    "partner_badge": "שותף BAMA",
     "partner_filter": "שותף: {{name}}",
     "price_on_request": "מחיר לפי בקשה",
     "in_stock": "במלאי",

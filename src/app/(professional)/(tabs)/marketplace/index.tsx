@@ -44,7 +44,6 @@ import { shadow } from '@core/theme/shadow';
 import { useRentalItems } from '@features/rentals/hooks/useRentalItems';
 import { usePartnerCompanies } from '@features/rentals/hooks/usePartnerCompanies';
 import { rentalItemToListing } from '@features/rentals/listing';
-import { PartnerRow } from '@features/rentals/components/PartnerRow';
 import { CompanyFilterChips } from '@features/rentals/components/CompanyFilterChips';
 
 type Translations = typeof en;
@@ -371,17 +370,6 @@ export default function MarketplaceScreen() {
           </ScrollView>
         </View>
 
-        {companyRentalsOn && (
-          <PartnerRow
-            companies={partners}
-            selectedId={partnerId}
-            onSelect={setPartnerId}
-            rtl={rtl}
-            title={t('rentals.partners_title')}
-            badge={t('rentals.partner_badge')}
-          />
-        )}
-
         {/* Active filter tags */}
         {activeFilterTags.length > 0 && (
           <View style={styles.filterBarRow}>
@@ -520,8 +508,9 @@ export default function MarketplaceScreen() {
                 ))}
               </View>
 
-              {/* Rental company — rental tab only. The same partnerId as the partner
-                  row: its card, the filter tag and Clear always agree with this. */}
+              {/* Rental company — rental tab only, and the only place companies are
+                  listed. Applied as `partnerId`: shown as the "Partner: …" tag
+                  (✕ clears it) and counted in the filter button's badge. */}
               {companyRentalsOn && partners.length > 0 && (
                 <>
                   <AppText weight="semiBold" style={[styles.filterSectionLabel, { textAlign: rtl ? 'right' : 'left' }]}>

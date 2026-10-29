@@ -5,8 +5,9 @@ import he from '@core/i18n/translations/he.json';
 
 /**
  * The rental tab with rental companies' synced items: paged from the server,
- * merged with the admin's own rentals, never for demo accounts; a partner row
- * that filters; no condition filter; more items as the page nears its end.
+ * merged with the admin's own rentals, never for demo accounts; companies
+ * chosen in the filter popup; no condition filter; more items as the page
+ * nears its end.
  * (The paging itself: features/rentals/__tests__/useRentalItems.test.)
  */
 const SRC = readFileSync(join(__dirname, '..', 'index.tsx'), 'utf8');
@@ -27,8 +28,11 @@ it('merged with the own rentals (hidden while a partner is chosen); "price on re
   expect(SRC).toMatch(/return \[\.\.\.sortByPrice\(priced, priceSort\), \.\.\.merged\.filter\(\(l\) => l\.priceOnRequest\)\];/);
 });
 
-it('a partner row that filters, shown as a removable filter tag; clearing everything clears it', () => {
-  expect(SRC).toMatch(/<PartnerRow[\s\S]*?selectedId=\{partnerId\}[\s\S]*?onSelect=\{setPartnerId\}/);
+it('companies are listed only in the filter popup — no partner row above the grid', () => {
+  expect(SRC).not.toMatch(/PartnerRow/);
+});
+
+it('a chosen company is a removable filter tag (✕ clears it)', () => {
   expect(SRC).toMatch(/key: 'partner',[\s\S]*?onRemove: \(\) => setPartnerId\(null\)/);
 });
 
@@ -52,7 +56,7 @@ describe('the filter popup\'s "Rental company" section', () => {
     expect(SRC).toMatch(/\{companyRentalsOn && partners\.length > 0 && \(\s*<>\s*<AppText[^>]*>\s*\{t\('rentals\.filter_company'\)\}/);
   });
 
-  it('a draft of the same partnerId the row sets: opened from it, applied to it, cleared with it', () => {
+  it('a draft of partnerId: opened from it, applied to it, cleared with it', () => {
     expect(SRC).toMatch(/function openFilterModal\(\) \{[\s\S]*?setDraftPartnerId\(partnerId\);/);
     expect(SRC).toMatch(/function applyFilters\(\) \{[\s\S]*?setPartnerId\(draftPartnerId\);/);
     expect(SRC).toMatch(/function clearFilters\(\) \{[\s\S]*?setDraftPartnerId\(null\);[\s\S]*?setPartnerId\(null\);/);

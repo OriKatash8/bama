@@ -11,8 +11,8 @@ function initials(name: string): string {
 
 /**
  * The filter popup's "Rental company" choice: "All", then each partner with its
- * logo (or initials) and name. Single-select; the same companyId the partner
- * row sets, so the two always agree.
+ * logo (or initials) and name. Single-select; the rental tab's only list of
+ * companies.
  */
 export function CompanyFilterChips({
   companies,
