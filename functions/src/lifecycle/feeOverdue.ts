@@ -123,7 +123,7 @@ export const onFeeWrittenRecomputeBlock = onDocumentWritten(
 
 // ── Notifications ────────────────────────────────────────────────────────────
 
-type Lang = 'he' | 'en';
+export type Lang = 'he' | 'en';
 type NoticeKind = 'fee_due' | 'fee_overdue_soon' | 'fee_overdue';
 
 /**
@@ -147,7 +147,7 @@ const NOTICE_TEXT: Record<NoticeKind, Record<Lang, (amount: number) => string>> 
   },
 };
 
-async function langOf(userId: string): Promise<Lang> {
+export async function langOf(userId: string): Promise<Lang> {
   try {
     const v = (await db.doc(`users/${userId}`).get()).get('language');
     return v === 'en' ? 'en' : 'he';

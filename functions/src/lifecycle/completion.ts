@@ -419,7 +419,29 @@ export const cancelProject = onCall(async (request) => {
  * Do not copy either shape anywhere else. In particular, nothing that a payment
  * inside the app could switch off may ever depend on fee state.
  */
-async function settleFee(projectId: string, proId: string): Promise<{ paid: number }> {
+/**
+ * Who is recording the settlement, and (for an automatic charge) the proof. ONE
+ * settlement path serves both: the admin lever (`markFeePaid`) and a successful
+ * card charge, so paidAmount, feePaid, status, feePaidAt and the overdue-block
+ * recompute can never diverge between them.
+ */
+export type SettleSource =
+  | { source: 'admin' }
+  | {
+      source: 'charge';
+      providerRef?: string;
+      /** What the gateway actually took. Settling records exactly this or nothing:
+       *  if the fee no longer owes this amount (re-hire, admin settled meanwhile)
+       *  it throws 'amount-mismatch' and the caller flags the charge for review
+       *  instead of recording money against the wrong balance. */
+      chargedAmount: number;
+    };
+
+export async function settleFee(
+  projectId: string,
+  proId: string,
+  by: SettleSource = { source: 'admin' },
+): Promise<{ paid: number }> {
   const projRef = db.doc(`projects/${projectId}`);
   const fRef = feeRef(projectId, proId);
 
@@ -465,6 +487,9 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
       : outstandingOf(fee, baseAmount);
 
     if (outstanding <= 0) throw new HttpsError('failed-precondition', 'already-paid');
+    if (by.source === 'charge' && outstanding !== by.chargedAmount) {
+      throw new HttpsError('failed-precondition', 'amount-mismatch');
+    }
 
     const feeUpdate: Update = {
       paidAmount: FieldValue.increment(outstanding),
@@ -474,6 +499,8 @@ async function settleFee(projectId: string, proId: string): Promise<{ paid: numb
       slotActive: false,
       status: 'paid',
       projectId,
+      paidBy: by.source,
+      ...(by.source === 'charge' && by.providerRef ? { providerRef: by.providerRef } : {}),
     };
     if (!confirmed) {
       // Settled before completion: record what the fee was worth on that day.
