@@ -18,13 +18,16 @@ it('renders AnimatedEmptyState with the listings variant, spanning the sheet', (
 });
 
 it('picks the case from all listings vs the filtered ones', () => {
-  expect(SRC).toMatch(/emptyCase\(\{ tab: activeTab, isLoading, total: listings\.length, shown: filtered\.length \}\)/);
+  // On the rental tab a partner company's visible items count as listed, so a
+  // search that finds nothing is 'filtered', not the "coming soon" state.
+  expect(SRC).toMatch(/emptyCase\(\{ tab: activeTab, isLoading: gridLoading, total: listings\.length \+ partnerItems, shown: filtered\.length \}\)/);
+  expect(SRC).toMatch(/const partnerItems = isRentalTab \? partners\.reduce\(\(n, c\) => n \+ \(c\.visibleCount \?\? 0\), 0\) : 0;/);
 });
 
 it('market: posts through the same sheet as the +; rental: asks to join as a supplier by mail; filtered: clears everything', () => {
   expect(SRC).toMatch(/'marketplace\.empty_market_cta'[\s\S]{0,200}onPress: \(\) => setPostSheetVisible\(true\)/);
   expect(SRC).toMatch(/empty === 'rental'\s*\?\s*\{ label: t\('marketplace\.rental_apply_cta'\), onPress: \(\) => void rentalMail\.open\(\) \}/);
-  expect(SRC).toMatch(/function clearSearchAndFilters\(\) \{\s*setSearchQuery\(''\);\s*setSelectedCategory\('all'\);\s*clearFilters\(\);/);
+  expect(SRC).toMatch(/function clearSearchAndFilters\(\) \{\s*setSearchQuery\(''\);\s*setSelectedCategory\('all'\);\s*setPartnerId\(null\);\s*clearFilters\(\);/);
   expect(SRC).toMatch(/'marketplace\.empty_filtered_cta'[\s\S]{0,120}onPress: clearSearchAndFilters/);
 });
 

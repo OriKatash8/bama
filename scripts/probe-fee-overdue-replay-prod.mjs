@@ -18,8 +18,9 @@
  * The switch is ON for ~10 s (a hard timer forces it OFF at 30 s). Refuses within
  * 15 min of 03:00 Israel time or 5 min of the top of the hour.
  *
- *   node scripts/probe-fee-overdue-replay-prod.mjs [--run-file <path>]
+ *   node scripts/probe-fee-overdue-replay-prod.mjs --prod [--run-file <path>]
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync, writeFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import {

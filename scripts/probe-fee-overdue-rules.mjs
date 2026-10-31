@@ -6,11 +6,12 @@
  * The writes are the SHIPPED ones: usePriceOffer's priceOffers/bundleOffers
  * addDoc payloads and useProjectApplication's projectApplications addDoc.
  *
- *   FS_PORT=8580 AUTH_PORT=9599 node scripts/probe-fee-overdue-rules.mjs
+ *   FS_PORT=8580 AUTH_PORT=9599 node scripts/probe-fee-overdue-rules.mjs --emulator
  *
  * Creates only — the emulator is unreliable for `list` (docs/slice1-verification.md);
  * nothing here lists. Isolated emulator only.
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb, Timestamp } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';

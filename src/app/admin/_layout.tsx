@@ -79,6 +79,7 @@ export default function AdminTabsLayout() {
         <Tabs.Screen name="courses" options={{ href: null }} />
         <Tabs.Screen name="communities" options={{ href: null }} />
         <Tabs.Screen name="marketplace" options={{ href: null }} />
+        <Tabs.Screen name="rental-companies" options={{ href: null }} />
       <Tabs.Screen name="fees" options={{ href: null }} />
         <Tabs.Screen name="usage" options={{ href: null }} />
         <Tabs.Screen

@@ -17,8 +17,11 @@
  *
  * Touches ONLY its own scratch listing. Never a real one.
  *
- * Run: node scripts/probe-marketplace-rules.mjs [--baseline]
+ * Run: FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 node scripts/probe-marketplace-rules.mjs --emulator
+ *      node scripts/probe-marketplace-rules.mjs --prod [--baseline]     (a target flag is REQUIRED; there is no default)
  */
+import { requireProbeTarget } from './lib/probeTarget.mjs';
+requireProbeTarget('either', { envDriven: true }); // explicit --emulator or --prod required, no default target
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { initializeApp } from 'firebase/app';
@@ -33,6 +36,7 @@ import { getFirestore as adminFs } from 'firebase-admin/firestore';
 import { getAuth as adminAuth } from 'firebase-admin/auth';
 
 const BASELINE = process.argv.includes('--baseline');
+if (BASELINE && process.argv.includes('--emulator')) { console.error('REFUSING TO RUN - --baseline is a production mode; use it with --prod.'); process.exit(2); }
 
 function parseEnv() {
   const text = readFileSync(join(process.cwd(), '.env'), 'utf8');

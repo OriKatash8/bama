@@ -8,8 +8,9 @@
  * says. Nothing here touches production.
  *
  *   npx firebase emulators:start --only firestore,auth --project bama-af0a0
- *   node scripts/probe-admin-chat-rules.mjs
+ *   node scripts/probe-admin-chat-rules.mjs --emulator
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';

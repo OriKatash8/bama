@@ -13,8 +13,9 @@
  * check vacancy, and the checks below count only the throwaway pro's own
  * filledSlots entries, so the probe exercises the same paths as before.
  *
- *   node scripts/probe-slot-cap-prod.mjs
+ *   node scripts/probe-slot-cap-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';

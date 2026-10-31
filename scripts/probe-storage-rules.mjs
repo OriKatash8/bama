@@ -28,13 +28,14 @@
  * ONE COMMAND — starts the emulators, runs this, shuts them down:
  *
  *   npx firebase emulators:exec --only storage,firestore,auth --project bama-af0a0 \
- *     "node scripts/probe-storage-rules.mjs"
+ *     "node scripts/probe-storage-rules.mjs --emulator"
  *
  * `emulators:start` also works but is a FOREGROUND server: it holds the terminal
  * until you stop it, so the probe needs a second one. Pasting both into the same
  * shell just queues the probe behind an emulator that never exits.
  */
 
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';

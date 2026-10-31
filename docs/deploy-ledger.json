@@ -11,6 +11,16 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
+    "adminAcknowledgeChargeIssue": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-31T02:03:18.815933826Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+    },
     "adminCommunityAction": {
       "region": "us-central1",
       "generation": 2,
@@ -51,6 +61,16 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
+    "adminListChargeIssues": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-31T02:03:20.072179418Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+    },
     "adminListFlaggedProjects": {
       "region": "us-central1",
       "generation": 2,
@@ -80,6 +100,66 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "adminRemoveRentalCompany": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:34.140242139Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSaveRentalCompany": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:17:34.618283558Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSetRentalCategoryMap": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:32.581231280Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSetRentalCompanyActive": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:29.918229842Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSetRentalItemCategories": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:35.590287550Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "adminSyncRentalCompany": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T03:56:59.783574099Z",
+      "treeSha": "1f298fa15f61d7e3dd805fdf0609836bfa0af108",
+      "commit": "5a57d2d9",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Redeploy of adminSyncRentalCompany only: the mass-removal stop is now failed-precondition {reason: 'mass-removal'} so the admin screen can offer force. Non-admins still denied (probe-rental-callables 13/13)."
     },
     "cancelProject": {
       "region": "us-central1",
@@ -140,6 +220,16 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "createCardSaveSession": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-31T02:03:19.588258942Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
     },
     "createCommunityInvite": {
       "region": "europe-west1",
@@ -221,6 +311,26 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
+    "fakeCompleteCardSave": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-31T02:03:18.770557287Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+    },
+    "feeChargeCron": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-31T02:03:18.639636495Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+    },
     "feeOverdueCron": {
       "region": "us-central1",
       "generation": 2,
@@ -281,6 +391,16 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
+    "getMyPaymentMethod": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-31T02:03:20.789389134Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+    },
     "hireProfessional": {
       "region": "us-central1",
       "generation": 2,
@@ -294,12 +414,12 @@
     "lifecycleCron": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T04:49:25.698053560Z",
-      "treeSha": "cda4946e8d01e55a3f217f4bb8fa1de0db4c3550",
-      "commit": "14b0df34",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-31T02:03:12.728220570Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
     },
     "markDemandSent": {
       "region": "us-central1",
@@ -324,12 +444,12 @@
     "markFeePaid": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:09:07.243847405Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-31T02:03:07.640656422Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
     },
     "moderateUser": {
       "region": "us-central1",
@@ -531,6 +651,16 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
+    "removeMyPaymentMethod": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-31T02:03:22.397122703Z",
+      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
+      "commit": "d7e915e7",
+      "how": "deploy",
+      "recordedOn": "2026-10-31",
+      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+    },
     "requestCompletion": {
       "region": "us-central1",
       "generation": 2,
@@ -610,6 +740,26 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "syncAllRentalCompanies": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:34.173069040Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
+    },
+    "trackRentalClick": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-29T01:19:33.586562716Z",
+      "treeSha": "93a6afd7083c6cce99113698f0ba4433fbe3fd5c",
+      "commit": "1a9bd4f4",
+      "how": "deploy",
+      "recordedOn": "2026-10-29",
+      "note": "Rental companies (feature/rental-companies): 8 new europe-west1 functions, deployed by name. Verified: Cloud Scheduler job syncAllRentalCompanies enabled; all admin callables deny non-admins and signed-out callers (scripts/probe-rental-callables.mjs 13/13). No company created, no sync run."
     }
   }
 }

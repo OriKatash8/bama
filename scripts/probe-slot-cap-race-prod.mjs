@@ -15,8 +15,9 @@
  * does not check vacancy, so the race is still exercised. Offer notifications go
  * only to the two throwaway accounts.
  *
- *   node scripts/probe-slot-cap-race-prod.mjs
+ *   node scripts/probe-slot-cap-race-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';

@@ -11,14 +11,15 @@
  *   3. Re-reads production and prints PROOF of each, exiting non-zero on any
  *      leftover.
  *
- *   node scripts/probe-fee-overdue-sweep-prod.mjs --stamp probe1759370000000
- *   node scripts/probe-fee-overdue-sweep-prod.mjs --logins ~/bama-test-logins.txt
+ *   node scripts/probe-fee-overdue-sweep-prod.mjs --prod --stamp probe1759370000000
+ *   node scripts/probe-fee-overdue-sweep-prod.mjs --prod --logins ~/bama-test-logins.txt
  *
  * --logins reads TEST_STAMP and the TEST_*_UID lines from a manual-test logins
  * file. That file must live OUTSIDE the project: a stray .env-style file in the
  * project root is picked up by Metro's dev bundler and breaks the app (it did,
  * 2026-10-02). A path inside the project is refused.
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';

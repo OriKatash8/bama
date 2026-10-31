@@ -42,6 +42,7 @@ export function ListingCard({ listing, onPress }: Props) {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const isRental = listing.type === 'rental';
+  const isCompany = listing.source === 'company';
 
   return (
     <TouchableOpacity
@@ -104,9 +105,30 @@ export function ListingCard({ listing, onPress }: Props) {
             ).filter(Boolean).join(' · ')}
           </AppText>
         </View>
-        <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>
-          ₪{listing.price.toLocaleString()}{isRental ? t(`marketplace.${PERIOD_SUFFIX_KEY[periodOf(listing)]}`) : ''}
-        </Text>
+        {/* A rental company's item: the store may list no price, and says whether it is in stock. */}
+        {isCompany && listing.priceOnRequest ? (
+          <AppText weight="bold" testID="listing-card-price-on-request" style={[styles.onRequest, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('rentals.price_on_request')}
+          </AppText>
+        ) : (
+          <Text style={[styles.price, { textAlign: rtl ? 'right' : 'left' }]}>
+            ₪{listing.price.toLocaleString()}{isRental ? t(`marketplace.${PERIOD_SUFFIX_KEY[periodOf(listing)]}`) : ''}
+          </Text>
+        )}
+        {isCompany && listing.regularPrice != null && (
+          <AppText style={[styles.regular, { textAlign: rtl ? 'right' : 'left' }]}>
+            {t('rentals.instead_of').replace('{{price}}', listing.regularPrice.toLocaleString())}
+          </AppText>
+        )}
+        {isCompany && (
+          <AppText
+            weight="semiBold"
+            testID="listing-card-stock"
+            style={[styles.stock, { color: listing.inStock === false ? '#B4232A' : '#2F7A45', textAlign: rtl ? 'right' : 'left' }]}
+          >
+            {t(listing.inStock === false ? 'rentals.out_of_stock' : 'rentals.in_stock')}
+          </AppText>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -151,6 +173,9 @@ const styles = StyleSheet.create({
   meta: { fontSize: 11, color: '#000000' },
   metaFlex: { flex: 1 },
   price: { fontSize: 16, fontWeight: '800', color: '#000000', letterSpacing: -0.2, marginTop: 2 },
+  onRequest: { fontSize: 13.5, color: '#000000', marginTop: 2 },
+  regular: { fontSize: 11, color: '#6B6B76' },
+  stock: { fontSize: 11 },
   locationRow: { flexDirection: 'row', alignItems: 'center' },
   locationIcon: { width: 14, height: 14 },
 });
