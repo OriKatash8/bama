@@ -188,6 +188,10 @@ export type ProjectRequest = {
  *  withheld real-world work, and no in-app payment can clear it. */
 export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
+/** Where the automatic card charge of a fee stands. Absent = 'idle'. Informational
+ *  only: nothing in the app is gated on it. */
+export type ChargeState = 'idle' | 'charging' | 'succeeded' | 'failed' | 'needs_card';
+
 export type ProjectFee = {
   professionalId: ID;
   /** Denormalised so a collection-group read knows its project without walking
@@ -252,6 +256,12 @@ export type ProjectFee = {
    * may contest it. Set when the engagement completes, by either route.
    */
   chargeDueAt?: Timestamp;
+  /** Automatic card charge progress (read-only; written by the server). */
+  chargeState?: ChargeState;
+  chargeAttempts?: number;
+  nextChargeAt?: Timestamp | null;
+  lastChargeError?: { code: string; class: 'final' | 'retryable' | 'no_card'; at: Timestamp } | null;
+  providerRef?: string;
   /** When an admin recorded that the payment demand went out. Admin-SDK-written
    *  only (`markDemandSent`); the professional can neither set nor clear it.
    *

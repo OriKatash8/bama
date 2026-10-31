@@ -1556,7 +1556,27 @@
     "line_min": "עמלת מינימום ({{rate}}% מתוך ₪{{base}} = ₪{{calculated}})",
     "status_pending_charge": "תיגבה בתאריך {{date}}",
     "row_no_amount": "אין מה לשלם כל עוד הפנייה פתוחה",
-    "nothing_owed_but_open": "אין יתרה לתשלום"
+    "nothing_owed_but_open": "אין יתרה לתשלום",
+    "charge_state_idle": "ממתין לחיוב",
+    "charge_state_charging": "ממתין לחיוב",
+    "charge_state_succeeded": "חויב",
+    "charge_state_failed": "החיוב נכשל – נסה כרטיס אחר",
+    "charge_state_needs_card": "נדרש כרטיס",
+    "card_note": "עמלת התיווך מחויבת בכרטיס השמור שלך בתום תקופת הבדיקה. שום דבר באפליקציה לא ננעל אם החיוב נכשל — הפרויקטים, הביקורות והמשבצות שלך נשארים זמינים כרגיל."
+  },
+  "payment_method": {
+    "title": "אמצעי תשלום לעמלת תיווך",
+    "none": "לא הוגדר כרטיס",
+    "add": "הוסף",
+    "replace": "החלף",
+    "remove": "הסר",
+    "cancel": "ביטול",
+    "invalid": "לא ניתן לחייב את הכרטיס הזה. יש להוסיף כרטיס חדש.",
+    "note": "פרטי הכרטיס מוזנים בדף המאובטח של ספק התשלומים, לעולם לא באפליקציה. אין חובה בכרטיס כדי להשתמש באפליקציה.",
+    "confirm_remove": "להסיר את הכרטיס השמור?",
+    "removed": "הכרטיס הוסר",
+    "save_failed": "לא ניתן לשמור את הכרטיס. נסה שוב.",
+    "remove_failed": "לא ניתן להסיר את הכרטיס. נסה שוב."
   },
   "pricing": {
     "title": "תעריפים",
@@ -1614,7 +1634,20 @@
     "confirm_resolve_completed_price": "לסגור כהושלם במחיר המתוקן ₪{{price}}? העמלה תחושב מחדש לפי השיעור ועמלת המינימום של בעל המקצוע, ושעון התשלום מתחיל מחדש מעכשיו.",
     "confirm_resolve_cancelled": "לסגור ללא עמלה? העמלה מבוטלת ושום דבר לא לתשלום.",
     "resolve_done": "המחלוקת נסגרה",
-    "agreed_invalid": "יש להזין מחיר בין ₪{{min}} ל-₪{{max}}"
+    "agreed_invalid": "יש להזין מחיר בין ₪{{min}} ל-₪{{max}}",
+    "tab_charges": "בעיות חיוב",
+    "charges_sub": "עמלות תיווך שהחיוב האוטומטי שלהן דורש טיפול",
+    "empty_charges": "אין בעיות חיוב.",
+    "charges_load_failed": "לא ניתן לטעון את בעיות החיוב. הרשימה אינה משקפת את המצב האמיתי.",
+    "charge_reason_settle_mismatch": "הכרטיס חויב, אך הסכום אינו תואם ליתרה. יש להתאים, ולזכות אם זה חיוב כפול",
+    "charge_reason_attempts_exhausted": "כל ניסיונות החיוב נכשלו",
+    "charge_reason_unresolved_claim": "חיוב התחיל ותוצאתו לא ידועה",
+    "charge_taken": "חויב ₪{{charged}} · יתרה כעת ₪{{due}}",
+    "charge_failed_after": "{{n}} ניסיונות · נותרו ₪{{due}} לתשלום",
+    "charge_ref": "אסמכתה {{ref}}",
+    "charge_ack": "סמן כמטופל",
+    "confirm_charge_ack": "להסיר מהרשימה? הרשומה נשמרת.",
+    "charge_ack_done": "סומן כמטופל"
   },
   "engagement": {
     "complete_title": "לסמן את חלקך כמושלם",
