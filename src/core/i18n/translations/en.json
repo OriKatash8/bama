@@ -1490,7 +1490,20 @@
     "confirm_resolve_completed_price": "Resolve as completed at the corrected price of ₪{{price}}? The fee is recalculated with this professional's rate and minimum fee, and the payment clock restarts from now.",
     "confirm_resolve_cancelled": "Resolve with no fee? The fee is voided and nothing is owed.",
     "resolve_done": "Dispute resolved",
-    "agreed_invalid": "Enter a price between ₪{{min}} and ₪{{max}}"
+    "agreed_invalid": "Enter a price between ₪{{min}} and ₪{{max}}",
+    "tab_charges": "Charge issues",
+    "charges_sub": "Brokerage fees whose automatic card charge needs a person",
+    "empty_charges": "No charge issues.",
+    "charges_load_failed": "Could not load charge issues. This list does not reflect the real state.",
+    "charge_reason_settle_mismatch": "Card charged, but it does not match the balance. Reconcile, and refund if it is a duplicate",
+    "charge_reason_attempts_exhausted": "Every charge attempt failed",
+    "charge_reason_unresolved_claim": "A charge was started and its result is unknown",
+    "charge_taken": "Charged ₪{{charged}} · balance now ₪{{due}}",
+    "charge_failed_after": "{{n}} attempts · ₪{{due}} still owed",
+    "charge_ref": "Ref {{ref}}",
+    "charge_ack": "Mark handled",
+    "confirm_charge_ack": "Take this off the list? The record is kept.",
+    "charge_ack_done": "Marked as handled"
   },
   "engagement": {
     "complete_title": "Mark your part as finished",

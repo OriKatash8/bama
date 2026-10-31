@@ -1490,7 +1490,20 @@
     "confirm_resolve_completed_price": "לסגור כהושלם במחיר המתוקן ₪{{price}}? העמלה תחושב מחדש לפי השיעור ועמלת המינימום של בעל המקצוע, ושעון התשלום מתחיל מחדש מעכשיו.",
     "confirm_resolve_cancelled": "לסגור ללא עמלה? העמלה מבוטלת ושום דבר לא לתשלום.",
     "resolve_done": "המחלוקת נסגרה",
-    "agreed_invalid": "יש להזין מחיר בין ₪{{min}} ל-₪{{max}}"
+    "agreed_invalid": "יש להזין מחיר בין ₪{{min}} ל-₪{{max}}",
+    "tab_charges": "בעיות חיוב",
+    "charges_sub": "עמלות תיווך שהחיוב האוטומטי שלהן דורש טיפול",
+    "empty_charges": "אין בעיות חיוב.",
+    "charges_load_failed": "לא ניתן לטעון את בעיות החיוב. הרשימה אינה משקפת את המצב האמיתי.",
+    "charge_reason_settle_mismatch": "הכרטיס חויב, אך הסכום אינו תואם ליתרה. יש להתאים, ולזכות אם זה חיוב כפול",
+    "charge_reason_attempts_exhausted": "כל ניסיונות החיוב נכשלו",
+    "charge_reason_unresolved_claim": "חיוב התחיל ותוצאתו לא ידועה",
+    "charge_taken": "חויב ₪{{charged}} · יתרה כעת ₪{{due}}",
+    "charge_failed_after": "{{n}} ניסיונות · נותרו ₪{{due}} לתשלום",
+    "charge_ref": "אסמכתה {{ref}}",
+    "charge_ack": "סמן כמטופל",
+    "confirm_charge_ack": "להסיר מהרשימה? הרשומה נשמרת.",
+    "charge_ack_done": "סומן כמטופל"
   },
   "engagement": {
     "complete_title": "לסמן את חלקך כמושלם",
