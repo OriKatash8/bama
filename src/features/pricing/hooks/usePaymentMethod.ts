@@ -23,7 +23,20 @@ export function usePaymentMethod(uid: string | undefined) {
     }
   }, [uid]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  // The first load subscribes to the promise rather than awaiting inside the effect,
+  // so state is only set from a callback (and not after unmount).
+  useEffect(() => {
+    if (!uid) return;
+    let active = true;
+    getMyPaymentMethod({}).then(
+      (v) => { if (active) setView(v); },
+      (err: unknown) => {
+        console.error('[paymentMethod] load failed:', err);
+        if (active) setView(DISABLED);
+      },
+    );
+    return () => { active = false; };
+  }, [uid]);
 
   // Signed out: nothing to show, and no call was made.
   return { view: uid ? view : DISABLED, refresh };
