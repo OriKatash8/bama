@@ -1432,7 +1432,27 @@
     "line_min": "Minimum fee ({{rate}}% of ₪{{base}} = ₪{{calculated}})",
     "status_pending_charge": "Charges on {{date}}",
     "row_no_amount": "Nothing to pay while this is open",
-    "nothing_owed_but_open": "Nothing outstanding"
+    "nothing_owed_but_open": "Nothing outstanding",
+    "charge_state_idle": "Waiting to be charged",
+    "charge_state_charging": "Waiting to be charged",
+    "charge_state_succeeded": "Charged",
+    "charge_state_failed": "The charge failed – try another card",
+    "charge_state_needs_card": "A card is required",
+    "card_note": "Your brokerage fee is charged to your saved card when its review period ends. Nothing in the app is locked if the charge fails — your projects, reviews and slots stay available as normal."
+  },
+  "payment_method": {
+    "title": "Payment method for brokerage fee",
+    "none": "No card set up",
+    "add": "Add card",
+    "replace": "Replace card",
+    "remove": "Remove",
+    "cancel": "Cancel",
+    "invalid": "This card can’t be charged. Please add a new one.",
+    "note": "You enter card details on the payment provider’s secure page, never in the app. A card is not required to use the app.",
+    "confirm_remove": "Remove the saved card?",
+    "removed": "Card removed",
+    "save_failed": "Could not save the card. Please try again.",
+    "remove_failed": "Could not remove the card. Please try again."
   },
   "pricing": {
     "title": "Pricing",

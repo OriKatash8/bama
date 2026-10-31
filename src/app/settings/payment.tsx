@@ -15,6 +15,9 @@ import type { ProjectFee, ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
+import { PaymentMethodRow } from '@features/pricing/components/PaymentMethodRow';
+import { usePaymentMethod } from '@features/pricing/hooks/usePaymentMethod';
+import { chargeStateKey } from '@features/pricing/utils/chargeState';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -52,10 +55,10 @@ type Row = {
  * A professional's BAMA balance: what they owe in platform commission, per
  * completed project, and how to settle it.
  *
- * READ-ONLY. There is no charge button and no payment rail here — settlement
- * happens outside the app, by bank transfer or Bit, and an admin records it.
- * The screen must never claim a payment occurred, because nothing on it can
- * make one occur.
+ * READ-ONLY about money. There is no charge button here: settlement is either
+ * off-platform (an admin records it) or, for users the server has enabled, an
+ * automatic charge to a saved card (PaymentMethodRow, chargeStateKey). Either way
+ * the screen must never claim a payment occurred beyond what the fee record says.
  *
  * It also unlocks nothing. This used to be a pay screen that listed what the
  * money bought — a free slot and the publication of the client's review. Both of
@@ -81,6 +84,10 @@ export default function BalanceScreen() {
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
 
   const [rows, setRows] = useState<Row[] | null>(null);
+  // Per-user, server-computed. While it is not `enabled` this screen is exactly as it
+  // was: no card row, no charge lines, and the note that the app charges nothing.
+  const { view: cardView, refresh: refreshCard } = usePaymentMethod(userId);
+  const cardEnabled = cardView?.enabled === true;
 
   // A listener, not a fetch: this screen is reached from the chat list and the
   // project detail, and an admin recording a payment while it is open should
@@ -159,6 +166,7 @@ export default function BalanceScreen() {
   return (
     <Screen style={styles.content} scrollable>
       {back}
+      <PaymentMethodRow view={cardView} refresh={refreshCard} />
 
       {rows.length === 0 ? (
         <View style={styles.card}>
@@ -240,6 +248,20 @@ export default function BalanceScreen() {
                   {t('balance.status_pending_charge', { date: chargeDate(r.fee, rtl ? 'he-IL' : 'en-US') })}
                 </AppText>
               )}
+              {cardEnabled && chargeStateKey(r.fee) && (
+                <AppText
+                  weight="semiBold"
+                  style={[
+                    r.fee.chargeState === 'failed' || r.fee.chargeState === 'needs_card'
+                      ? styles.lineDisputed : styles.linePending,
+                    { textAlign: align },
+                    r.fee.chargeState === 'succeeded' && { color: SETTLED_GREEN },
+                  ]}
+                  testID={`charge-state-${r.projectId}`}
+                >
+                  {t(`balance.charge_state_${chargeStateKey(r.fee)}`)}
+                </AppText>
+              )}
               {r.owed <= 0 && r.note === 'disputed' && (
                 <AppText weight="regular" style={[styles.lineBreakdown, { color: colors.textMuted, textAlign: align }]}>
                   {t('balance.row_no_amount')}
@@ -258,7 +280,7 @@ export default function BalanceScreen() {
               {t('balance.how_body')}
             </AppText>
             <AppText weight="regular" style={[styles.howNote, { color: colors.textMuted, textAlign: align }]}>
-              {t('balance.no_charge_note')}
+              {t(cardEnabled ? 'balance.card_note' : 'balance.no_charge_note')}
             </AppText>
           </View>
         </>
