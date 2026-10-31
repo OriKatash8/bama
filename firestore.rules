@@ -1073,6 +1073,13 @@ service cloud.firestore {
         // id and the professionalId field are always the same value.
         allow read: if isAuth() && resource.data.professionalId == request.auth.uid;
         allow write: if false;
+
+        // One doc per automatic charge attempt (idempotency key, gateway reference,
+        // failure codes). Server-only in both directions: the pro sees the outcome on
+        // the fee itself, never the attempt log.
+        match /charges/{attemptId} {
+          allow read, write: if false;
+        }
       }
 
       // Removal requests — document ID is the professionalId being removed
@@ -1469,8 +1476,24 @@ service cloud.firestore {
     }
 
     match /config/{docId} {
-      allow read: if isAuth();
+      // paymentsPrivate holds the fake-provider tester list: server-only. Rules OR
+      // their matches, so the exclusion has to be HERE; a separate deny would not win.
+      allow read: if isAuth() && docId != 'paymentsPrivate';
       allow write: if false;
+    }
+
+    // ─── payments (Cloud Functions only) ─────────────────────────────
+    // Saved-card tokens, the webhook idempotency store and the fake provider's
+    // ledger. A client that could read a token could charge it; none may touch
+    // any of these. getMyPaymentMethod returns a token-free view.
+    match /paymentMethods/{uid} {
+      allow read, write: if false;
+    }
+    match /paymentEvents/{eventId} {
+      allow read, write: if false;
+    }
+    match /paymentFake/{key} {
+      allow read, write: if false;
     }
 
     // ─── adminStats ─────────────────────────────────────────────────
