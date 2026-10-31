@@ -112,6 +112,7 @@ export default function RentalCompaniesAdmin() {
       onBack={goBack}
       side={editing ? undefined : <PillButton variant="primary" label={t('add_company')} onPress={() => setEditing('new')} testID="add-company" />}
       testID="rental-companies-page"
+      keyboardAware
     >
       {editing && (
         <CompanyForm

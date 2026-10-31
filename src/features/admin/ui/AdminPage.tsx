@@ -1,5 +1,7 @@
 import { Children, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronRight, ShieldCheck, type LucideIcon } from 'lucide-react-native';
@@ -89,6 +91,11 @@ export function AdminColumn({ children, style }: { children: ReactNode; style?: 
  * A whole scrolling admin page. Pages built on a FlatList use the pieces
  * instead: `useAdminPageInsets()` for the content padding, and
  * `AdminHeaderBar` + `AdminTitle` in the list header.
+ *
+ * `keyboardAware`: for a page with a form in it. On a phone the keyboard would
+ * otherwise cover the lower fields and the save button; this shrinks the page
+ * above it the way Screen does (padding on iOS, height on Android) and lets a
+ * drag close the keyboard (the phone pad has no Return key). Web is unchanged.
  */
 export function AdminPage({
   title,
@@ -97,6 +104,7 @@ export function AdminPage({
   onBack,
   children,
   testID,
+  keyboardAware = false,
 }: {
   title: string;
   subtitle?: string;
@@ -104,18 +112,35 @@ export function AdminPage({
   onBack?: () => void;
   children: ReactNode;
   testID?: string;
+  keyboardAware?: boolean;
 }) {
   const p = useAdminPalette();
   const pad = useAdminPageInsets();
+  const scroll = (
+    <ScrollView
+      contentContainerStyle={pad}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={keyboardAware ? 'on-drag' : undefined}
+    >
+      <AdminHeaderBar onBack={onBack} />
+      <AdminColumn>
+        <AdminTitle title={title} subtitle={subtitle} side={side} />
+        {children}
+      </AdminColumn>
+    </ScrollView>
+  );
   return (
     <View style={[styles.root, { backgroundColor: p.bg }]} testID={testID}>
-      <ScrollView contentContainerStyle={pad} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <AdminHeaderBar onBack={onBack} />
-        <AdminColumn>
-          <AdminTitle title={title} subtitle={subtitle} side={side} />
-          {children}
-        </AdminColumn>
-      </ScrollView>
+      {keyboardAware && Platform.OS !== 'web' ? (
+        <KeyboardAvoidingView
+          style={styles.root}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          testID="admin-page-keyboard"
+        >
+          {scroll}
+        </KeyboardAvoidingView>
+      ) : scroll}
     </View>
   );
 }
