@@ -3,3 +3,4 @@
 export {
   getMyPaymentMethod, createCardSaveSession, removeMyPaymentMethod, fakeCompleteCardSave,
 } from './paymentMethods';
+export { feeChargeCron } from './feeChargeCron';
