@@ -81,7 +81,11 @@ const UID = cred.user.uid;
 // Verified, so createCardSaveSession gets past assertVerifiedEmail and is refused by the
 // payments switch itself; the token must be refreshed to carry email_verified.
 await adminAuth.updateUser(UID, { emailVerified: true });
-await cred.user.getIdToken(true);
+const idToken = await cred.user.getIdToken(true);
+{
+  const claims = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64url').toString());
+  console.log(`token: uid=${claims.user_id} email_verified=${claims.email_verified} provider=${claims.firebase?.sign_in_provider} aud=${claims.aud}`);
+}
 const PROJECT = `${STAMP}-proj`;
 const KEY = `${PROJECT}_${UID}_1`;
 const SECRET = `SECRET-TOKEN-${STAMP}`;
@@ -129,11 +133,15 @@ try {
   } catch (e) { check('fees collection-group query (listenToMyFees)', false, e.code); }
 
   console.log('\n3. getMyPaymentMethod never leaks the token:');
-  const view = await call('getMyPaymentMethod');
-  check('response does not contain the token', !JSON.stringify(view).includes(SECRET), JSON.stringify(view));
-  const allowed = new Set(['enabled', 'hasCard', 'last4', 'brand', 'expMonth', 'expYear', 'status']);
-  check('only whitelisted keys', Object.keys(view).every((k) => allowed.has(k)), Object.keys(view).join(','));
-  check('feature reads as OFF while paymentProvider is none', view.enabled === false && view.hasCard === false);
+  let view = null;
+  try { view = await call('getMyPaymentMethod'); }
+  catch (e) { check('getMyPaymentMethod call succeeds', false, `${e.code}: ${e.message} ${JSON.stringify(e.details ?? null)}`); }
+  if (view) {
+    check('response does not contain the token', !JSON.stringify(view).includes(SECRET), JSON.stringify(view));
+    const allowed = new Set(['enabled', 'hasCard', 'last4', 'brand', 'expMonth', 'expYear', 'status']);
+    check('only whitelisted keys', Object.keys(view).every((k) => allowed.has(k)), Object.keys(view).join(','));
+    check('feature reads as OFF while paymentProvider is none', view.enabled === false && view.hasCard === false);
+  }
 
   console.log('\n4. Callables refuse while payments are off:');
   await refused('createCardSaveSession (payments-disabled)', () => call('createCardSaveSession'), 'failed-precondition', 'payments-disabled');
