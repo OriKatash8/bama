@@ -85,6 +85,24 @@ export function feesCol(projectId: string) {
 export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
 /**
+ * Where an automatic card charge of this fee stands. Separate from
+ * `FeeSettlementStatus` on purpose: that says where the MONEY got to (and is read
+ * by the overdue rules); this says where the CHARGE ATTEMPT got to. Absent = 'idle'.
+ */
+export type ChargeState = 'idle' | 'charging' | 'succeeded' | 'failed' | 'needs_card';
+
+/** Why a charge needs a human, beyond what chargeState says. */
+export type ChargeReview = {
+  reason: 'settle_mismatch' | 'attempts_exhausted' | 'unresolved_claim';
+  at: admin.firestore.Timestamp;
+  /** What was charged / expected, so an admin can reconcile without digging. */
+  chargedAmount?: number;
+  feeDueAtReview?: number;
+  providerRef?: string;
+  note?: string;
+};
+
+/**
  * Why an engagement was released. `candidate_rejected` (the client) and
  * `candidate_declined` (the professional) are decisions taken during review
  * (candidates.ts), before the work started: neither is a withdrawal by or
@@ -156,6 +174,29 @@ export type FeeDoc = {
    *  for records written before the two collapsed. Read both through
    *  `contestWindowEndsAt()`, never either one directly. */
   chargeDueAt?: admin.firestore.Timestamp;
+  // ── Automatic card charge (payments/). Inert while paymentProvider is 'none'.
+  chargeState?: ChargeState;
+  /** Random id of the attempt currently holding the claim; cleared when it resolves. */
+  chargeClaimId?: string | null;
+  chargeClaimedAt?: admin.firestore.Timestamp | null;
+  /** Attempts started so far. The idempotency key of the next is attempts + 1. */
+  chargeAttempts?: number;
+  /** Earliest time a failed charge may be tried again. */
+  nextChargeAt?: admin.firestore.Timestamp | null;
+  lastChargeError?: { code: string; class: 'final' | 'retryable' | 'no_card'; at: admin.firestore.Timestamp } | null;
+  /** The gateway's reference for the successful charge. */
+  providerRef?: string;
+  /** Idempotency key of the attempt in flight, for webhook matching. */
+  chargeIdempotencyKey?: string | null;
+  /** True once chargeMaxAttempts retryable failures have been spent. */
+  chargeExhausted?: boolean;
+  /** Set when a human must look: money moved but could not be recorded, etc. */
+  chargeReview?: ChargeReview;
+  /** Dedupe marker so the "no card" push goes out once. */
+  noCardNotifiedAt?: admin.firestore.Timestamp;
+  /** Who recorded the settlement: an admin (markFeePaid) or an automatic charge. */
+  paidBy?: 'admin' | 'charge';
+
   /** Stub-charge bookkeeping — see charge.ts. */
   chargeAttemptCount?: number;
   wouldFailCount?: number;
