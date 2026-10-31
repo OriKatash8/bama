@@ -41,6 +41,12 @@ export const DEFAULT_CHARGE_WINDOW_DAYS = 4;
 export const DEFAULT_FEE_OVERDUE_BLOCK_DAYS = 7;
 /** Kill switch for the overdue-fee block. OFF unless config says exactly `true`. */
 export const DEFAULT_FEE_OVERDUE_BLOCK_ENABLED = false;
+/** Which payment provider charges brokerage fees. 'none' = today's stub. */
+export const DEFAULT_PAYMENT_PROVIDER: PaymentProviderName = 'none';
+/** Charge attempts per fee before it is parked for an admin (chargeExhausted). */
+export const DEFAULT_CHARGE_MAX_ATTEMPTS = 3;
+/** Hours between a retryable charge failure and the next attempt. */
+export const DEFAULT_CHARGE_RETRY_HOURS = 24;
 
 /**
  * DEAD. Nothing reads this.
@@ -158,6 +164,9 @@ export function canHireOnStatus(status: unknown): boolean {
  * The reader lives in lifecycle/config.ts, which needs Firestore. Everything
  * here is pure so it can be unit-tested without it.
  */
+export type PaymentProviderName = 'none' | 'fake' | 'grow';
+export const PAYMENT_PROVIDERS: readonly PaymentProviderName[] = ['none', 'fake', 'grow'];
+
 export type PricingConfig = {
   /** Commission rate as a PERCENT (3), not a fraction. `fees/{proId}.feeRate`
    *  stays a fraction (0.03) so existing documents need no migration — convert
@@ -189,6 +198,13 @@ export type PricingConfig = {
    *  hire gate and the offer rule skip it, and no overdue notices go out. The
    *  rules read this same field directly (feeOverdueBlocks in firestore.rules). */
   feeOverdueBlockEnabled: boolean;
+  /** Master switch for charging fees from a saved card. Anything but a known
+   *  name reads as 'none', so a typo can never turn charging on. */
+  paymentProvider: PaymentProviderName;
+  /** Charge attempts per fee (first try included) before an admin is asked. */
+  chargeMaxAttempts: number;
+  /** Hours between a retryable failure and the next attempt. */
+  chargeRetryHours: number;
 };
 
 export const CONFIG_DEFAULTS: PricingConfig = {
@@ -203,6 +219,9 @@ export const CONFIG_DEFAULTS: PricingConfig = {
   chargeWindowDays: DEFAULT_CHARGE_WINDOW_DAYS,
   feeOverdueBlockDays: DEFAULT_FEE_OVERDUE_BLOCK_DAYS,
   feeOverdueBlockEnabled: DEFAULT_FEE_OVERDUE_BLOCK_ENABLED,
+  paymentProvider: DEFAULT_PAYMENT_PROVIDER,
+  chargeMaxAttempts: DEFAULT_CHARGE_MAX_ATTEMPTS,
+  chargeRetryHours: DEFAULT_CHARGE_RETRY_HOURS,
 };
 
 type NumericConfigKey = { [K in keyof PricingConfig]: PricingConfig[K] extends number ? K : never }[keyof PricingConfig];
@@ -229,6 +248,10 @@ export function resolveConfig(raw: unknown): PricingConfig {
   // missing key or a failed read all leave it off — the failure mode of a kill
   // switch must be the safe one.
   out.feeOverdueBlockEnabled = data.feeOverdueBlockEnabled === true;
+  // Same fail-safe for the provider: only an exact known name counts.
+  out.paymentProvider = PAYMENT_PROVIDERS.includes(data.paymentProvider as PaymentProviderName)
+    ? (data.paymentProvider as PaymentProviderName)
+    : DEFAULT_PAYMENT_PROVIDER;
   return out;
 }
 

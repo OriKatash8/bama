@@ -37,3 +37,6 @@ export * from './communities/adminActions';
 
 // Rental companies: store-synced rental items (europe-west1).
 export * from './rentals';
+
+// Fee charging from a saved card token (europe-west1). Inert while paymentProvider is 'none'.
+export * from './payments';
