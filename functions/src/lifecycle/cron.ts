@@ -3,7 +3,8 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db, FieldValue, daysAgo, notify, feesCol , type FeeDoc } from './helpers';
 import { remindersDueFor, applyDerivedProjectState } from './derive';
 import { autoCloseCutoff, autoCloseEngagement } from './autoClose';
-import { chargeEngagementFee } from './charge';
+import { runStubChargeFor } from './charge';
+import { readConfig } from './config';
 import {
   AUTO_CONFIRM_DAYS, COMPLETION_REMINDER_DAYS, END_DATE_PROMPT_GRACE_DAYS,
   ARCHIVE_UNCONFIRMED_DAYS, REVIEW_FORCE_PUBLISH_DAYS, TIMEZONE,
@@ -218,28 +219,24 @@ export const lifecycleCron = onSchedule(
     //    stopped it. The engagement is left alone by a failure; nothing here
     //    changes state, because a charge that did not happen must not look like
     //    one that did.
-    await paginate(
-      db.collectionGroup('fees')
-        .where('engagementStatus', '==', 'completed')
-        .where('chargeDueAt', '<', admin.firestore.Timestamp.now())
-        .orderBy('chargeDueAt'),
-      async (doc) => {
-        const fee = doc.data() as FeeDoc;
-        if (fee.feePaid === true || fee.status === 'paid') return;   // already settled
-        if (fee.chargeAttemptCount) return;                          // already attempted
-        const projectId = doc.ref.parent.parent?.id;
-        if (!projectId) return;
-        const attempt = await chargeEngagementFee(projectId, doc.id);
-        if (attempt.outcome === 'would_fail_no_card') {
-          await notify({
-            userId: doc.id,
-            title: 'BAMA',
-            message: 'לא הצלחנו לגבות את עמלת התיווך. יש להסדיר את אמצעי התשלום.',
-            data: { type: 'charge_failed', projectId },
-          });
-        }
-      },
-    );
+    //
+    //    Runs ONLY while config/pricing.paymentProvider is 'none'. Once a provider
+    //    is on, feeChargeCron (payments/feeChargeCron.ts) owns charging; running
+    //    both would race the transactional claim with the stub's attempt count.
+    //    The block below is otherwise untouched, so 'none' behaves as it always did.
+    if ((await readConfig()).paymentProvider === 'none') {
+      await paginate(
+        db.collectionGroup('fees')
+          .where('engagementStatus', '==', 'completed')
+          .where('chargeDueAt', '<', admin.firestore.Timestamp.now())
+          .orderBy('chargeDueAt'),
+        async (doc) => {
+          const projectId = doc.ref.parent.parent?.id;
+          if (!projectId) return;
+          await runStubChargeFor(projectId, doc.id, doc.data() as FeeDoc);
+        },
+      );
+    }
 
     // 4) Backstop: publish anything still marked held.
     //

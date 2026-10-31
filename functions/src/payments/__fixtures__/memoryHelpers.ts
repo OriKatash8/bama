@@ -40,7 +40,9 @@ function applyPatch(base: Doc | undefined, patch: Doc, replace: boolean): Doc {
   return out;
 }
 
+let self: MemoryDb;
 export class MemoryDb {
+  constructor() { self = this; }
   data = new Map<string, Doc>();
   versions = new Map<string, number>();
   /** Yield between a transaction's read and its commit so racers interleave. */
@@ -76,6 +78,14 @@ export class MemoryDb {
 
   doc = (path: string): any => ({
     path, id: path.split('/').pop(),
+    get parent() {
+      const parts = path.split('/');
+      const colPath = parts.slice(0, -1);
+      return {
+        id: colPath[colPath.length - 1],
+        get parent() { return colPath.length > 1 ? self.doc(colPath.slice(0, -1).join('/')) : null; },
+      };
+    },
     get: async () => this.snap(path),
     set: async (data: Doc, o?: { merge?: boolean }) => this.commit([{ path, kind: 'set', data, merge: o?.merge }]),
     update: async (data: Doc) => this.commit([{ path, kind: 'update', data }]),
@@ -88,14 +98,26 @@ export class MemoryDb {
   });
 
   collectionGroup = (name: string): any => {
-    const filters: [string, any][] = [];
+    const filters: [string, string, any][] = [];
+    const num = (v: any) => (v && typeof v.toMillis === 'function' ? v.toMillis() : v);
+    const test = (actual: any, op: string, v: any) => {
+      switch (op) {
+        case '==': return actual === v;
+        case 'in': return (v as any[]).includes(actual);
+        case '>': return actual !== undefined && num(actual) > num(v);
+        case '>=': return actual !== undefined && num(actual) >= num(v);
+        case '<': return actual !== undefined && num(actual) < num(v);
+        case '<=': return actual !== undefined && num(actual) <= num(v);
+        default: throw new Error(`unsupported op ${op}`);
+      }
+    };
     const q: any = {
-      where: (f: string, _op: string, v: any) => { filters.push([f, v]); return q; },
+      where: (f: string, op: string, v: any) => { filters.push([f, op, v]); return q; },
       orderBy: () => q, limit: () => q, startAfter: () => q,
       get: async () => {
         const docs = [...this.data.keys()]
           .filter((p) => p.split('/').slice(-2)[0] === name && p.split('/').length % 2 === 0)
-          .filter((p) => filters.every(([f, v]) => this.data.get(p)![f] === v))
+          .filter((p) => filters.every(([f, op, v]) => test(this.data.get(p)![f], op, v)))
           .map((p) => ({ ...this.snap(p), ref: this.doc(p) }));
         return { docs, empty: docs.length === 0, size: docs.length };
       },

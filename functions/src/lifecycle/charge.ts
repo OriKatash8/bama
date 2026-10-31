@@ -1,4 +1,4 @@
-import { db, computeFee, type FeeDoc } from './helpers';
+import { db, computeFee, notify, type FeeDoc } from './helpers';
 import * as admin from 'firebase-admin';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
@@ -101,4 +101,25 @@ export async function chargeEngagementFee(
   } as Update, { merge: true });
 
   return attempt;
+}
+
+/**
+ * Today's behaviour for one completed fee past its window, exactly as
+ * lifecycleCron's sweep 6 ran it before payments existed: skip a settled fee or
+ * one already attempted, otherwise record the stub attempt and, if it "would have
+ * failed", tell the professional. Shared by that sweep (paymentProvider 'none')
+ * and by feeChargeCron for fees whose provider is off (fake provider, non-tester).
+ */
+export async function runStubChargeFor(projectId: string, proId: string, fee: FeeDoc): Promise<void> {
+  if (fee.feePaid === true || fee.status === 'paid') return;   // already settled
+  if (fee.chargeAttemptCount) return;                          // already attempted
+  const attempt = await chargeEngagementFee(projectId, proId);
+  if (attempt.outcome === 'would_fail_no_card') {
+    await notify({
+      userId: proId,
+      title: 'BAMA',
+      message: 'לא הצלחנו לגבות את עמלת התיווך. יש להסדיר את אמצעי התשלום.',
+      data: { type: 'charge_failed', projectId },
+    });
+  }
 }
