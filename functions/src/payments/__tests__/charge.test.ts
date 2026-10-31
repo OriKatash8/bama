@@ -162,6 +162,7 @@ describe('runCharge', () => {
     for (let i = 0; i < 3; i++) await runCharge(P, U, config, NOW + i * 25 * H);
     expect(fee()).toMatchObject({ chargeState: 'failed', chargeExhausted: true, chargeAttempts: 3, nextChargeAt: null });
     expect(fee().chargeReview).toMatchObject({ reason: 'attempts_exhausted' });
+    expect(fee().chargeNeedsAdmin).toBe(true);
     expect(notices()).toEqual(['charge_retry', 'charge_retry', 'charge_exhausted']);
     expect((await runCharge(P, U, config, NOW + 200 * H)).status).toBe('skipped');
     expect(fee().chargeAttempts).toBe(3);
@@ -266,6 +267,7 @@ describe('webhook-style results (applyChargeResult)', () => {
     expect(fee().chargeReview).toMatchObject({
       reason: 'settle_mismatch', chargedAmount: 100, feeDueAtReview: 60, providerRef: 'r9',
     });
+    expect(fee().chargeNeedsAdmin).toBe(true);
   });
 
   it('a second success (duplicate charge) is flagged for a refund, balance untouched', async () => {
@@ -324,6 +326,7 @@ describe('reconcileStaleClaim', () => {
       fakeProvider.lookupCharge = original;
     }
     expect(fee().chargeReview).toMatchObject({ reason: 'unresolved_claim' });
+    expect(fee().chargeNeedsAdmin).toBe(true);
     expect(fee().chargeState).toBe('charging');
   });
 });

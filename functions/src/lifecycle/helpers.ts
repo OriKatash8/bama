@@ -191,7 +191,10 @@ export type FeeDoc = {
   /** True once chargeMaxAttempts retryable failures have been spent. */
   chargeExhausted?: boolean;
   /** Set when a human must look: money moved but could not be recorded, etc. */
-  chargeReview?: ChargeReview;
+  chargeReview?: ChargeReview & { acknowledgedAt?: admin.firestore.Timestamp; acknowledgedBy?: string };
+  /** Queryable twin of "chargeReview is open": true until an admin acknowledges it.
+   *  adminListChargeIssues reads this; Firestore cannot query for field existence. */
+  chargeNeedsAdmin?: boolean;
   /** Dedupe marker so the "no card" push goes out once. */
   noCardNotifiedAt?: admin.firestore.Timestamp;
   /** Who recorded the settlement: an admin (markFeePaid) or an automatic charge. */

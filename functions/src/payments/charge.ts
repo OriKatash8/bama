@@ -218,7 +218,7 @@ export async function applyChargeResult(
     }
     if (plan.kind === 'exhausted') {
       tx.update(ref, {
-        ...release, chargeState: 'failed', nextChargeAt: null, chargeExhausted: true,
+        ...release, chargeState: 'failed', nextChargeAt: null, chargeExhausted: true, chargeNeedsAdmin: true,
         chargeReview: { reason: 'attempts_exhausted', at: Timestamp.fromMillis(now), chargedAmount: 0, feeDueAtReview: fee.feeDue ?? 0 },
       });
       return { notice: 'charge_exhausted' as const, amount };
@@ -265,6 +265,7 @@ async function recordSuccess(
     await ref.update({
       chargeState: 'succeeded',
       chargeClaimId: null, chargeClaimedAt: null, nextChargeAt: null,
+      chargeNeedsAdmin: true,
       ...(providerRef ? { providerRef } : {}),
       chargeReview: {
         reason: 'settle_mismatch',
@@ -305,6 +306,7 @@ export async function reconcileStaleClaim(
   if (found === undefined) {
     // No way to ask: a human has to decide. Keep the claim so nothing recharges.
     await ref.update({
+      chargeNeedsAdmin: true,
       chargeReview: { reason: 'unresolved_claim', at: Timestamp.fromMillis(now), feeDueAtReview: fee.feeDue ?? 0 },
     });
     return 'flagged';
