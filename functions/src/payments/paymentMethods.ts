@@ -48,6 +48,8 @@ export async function savePaymentMethod(
 ): Promise<void> {
   const ref = paymentMethodRef(uid);
   const prior = await ref.get();
+  // A plain set() REPLACES the document, which is what clears a previous invalidReason;
+  // FieldValue.delete() is not allowed in a set() without merge.
   await ref.set({
     provider,
     token: card.token,
@@ -56,8 +58,8 @@ export async function savePaymentMethod(
     expMonth: card.expMonth,
     expYear: card.expYear,
     status: 'active',
-    invalidReason: FieldValue.delete(),
-    createdAt: prior.exists ? prior.get('createdAt') : FieldValue.serverTimestamp(),
+    // Keep the first save's date; a doc without one (never written by this code) gets one now.
+    createdAt: prior.get('createdAt') ?? FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
   await requeueNeedsCardFees(uid);

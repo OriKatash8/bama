@@ -52,7 +52,22 @@ export class MemoryDb {
   seed(path: string, doc: Doc) { this.data.set(path, doc); this.versions.set(path, (this.versions.get(path) ?? 0) + 1); }
   read(path: string): Doc | undefined { const d = this.data.get(path); return d ? { ...d } : undefined; }
 
+  /** Firestore refuses FieldValue.delete() in create() and in set() without merge. */
+  private assertNoDelete(w: { path: string; kind: string; data?: Doc; merge?: boolean }) {
+    // Firestore (Admin SDK default) refuses undefined field values in every write.
+    for (const [k, v] of Object.entries(w.data ?? {})) {
+      if (v === undefined) throw new Error(`Cannot use "undefined" as a Firestore value (field "${k}")`);
+    }
+    if ((w.kind === 'set' && w.merge) || w.kind === 'update' || w.kind === 'delete') return;
+    for (const [k, v] of Object.entries(w.data ?? {})) {
+      if (v && typeof v === 'object' && FV in v && (v as any)[FV] === 'del') {
+        throw new Error(`FieldValue.delete() cannot be used in ${w.kind}() without merge (field "${k}")`);
+      }
+    }
+  }
+
   private commit(writes: { path: string; kind: 'set' | 'update' | 'create' | 'delete'; data?: Doc; merge?: boolean }[]) {
+    writes.forEach((w) => this.assertNoDelete(w));
     for (const w of writes) {
       const cur = this.data.get(w.path);
       if (w.kind === 'delete') this.data.delete(w.path);

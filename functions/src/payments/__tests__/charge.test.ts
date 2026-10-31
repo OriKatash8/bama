@@ -83,6 +83,32 @@ describe('claimFeeForCharge', () => {
   });
 });
 
+describe('the in-memory Firestore matches the real one on delete()', () => {
+  it('rejects FieldValue.delete() in set() without merge, allows it with merge and in update()', async () => {
+    const { FieldValue } = require('../__fixtures__/memoryHelpers');
+    await expect(mockDb.doc('x/1').set({ a: FieldValue.delete() })).rejects.toThrow('without merge');
+    await mockDb.doc('x/1').set({ a: 1, b: 2 });
+    await mockDb.doc('x/1').set({ a: FieldValue.delete() }, { merge: true });
+    await mockDb.doc('x/1').update({ b: FieldValue.delete() });
+    expect(mockDb.read('x/1')).toEqual({});
+  });
+  it('rejects undefined field values, as the Admin SDK does', async () => {
+    await expect(mockDb.doc('x/2').set({ a: undefined })).rejects.toThrow('undefined');
+  });
+  it('savePaymentMethod copes with an existing card doc that has no createdAt', async () => {
+    mockDb.seed(`paymentMethods/${U}`, { token: 'old', status: 'active' });
+    await savePaymentMethod(U, 'fake', { token: 'tok_ok', last4: '1', brand: 'visa', expMonth: 1, expYear: 2031 });
+    expect(mockDb.read(`paymentMethods/${U}`)!.createdAt).toBeDefined();
+  });
+  it('savePaymentMethod replaces an invalid card and clears invalidReason without using delete()', async () => {
+    mockDb.seed(`paymentMethods/${U}`, { token: 'old', status: 'invalid', invalidReason: 'fake_card_expired', createdAt: 'c0' });
+    await savePaymentMethod(U, 'fake', { token: 'tok_ok', last4: '1', brand: 'visa', expMonth: 1, expYear: 2031 });
+    const m = mockDb.read(`paymentMethods/${U}`)!;
+    expect(m).toMatchObject({ token: 'tok_ok', status: 'active', createdAt: 'c0' });
+    expect('invalidReason' in m).toBe(false);
+  });
+});
+
 describe('evaluateClaim refusals', () => {
   const ok = () => ({
     feeStatus: 'owed', engagementStatus: 'completed', feeDue: 50, feePaid: false, status: 'pending',
