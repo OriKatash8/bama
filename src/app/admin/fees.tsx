@@ -36,6 +36,19 @@ type FlaggedRow = {
 const listArrears = callFunction<
   Record<string, never>, { rows: ArrearsRow[]; graceDays: number }
 >('adminListArrears');
+/** A fee whose automatic card charge needs a person (see adminListChargeIssues). */
+type ChargeIssueRow = {
+  projectId: string; title: string; professionalId: string; displayName: string;
+  reason: 'settle_mismatch' | 'attempts_exhausted' | 'unresolved_claim';
+  chargeState: string; chargedAmount: number | null; feeDue: number; attempts: number;
+  providerRef: string | null; lastErrorCode: string | null; flaggedAt: number | null; note: string;
+};
+const listChargeIssues = callFunction<Record<string, never>, { rows: ChargeIssueRow[] }>(
+  'adminListChargeIssues', 'europe-west1',
+);
+const ackChargeIssue = callFunction<
+  { projectId: string; professionalId: string }, { ok: boolean }
+>('adminAcknowledgeChargeIssue', 'europe-west1');
 const listFlagged = callFunction<Record<string, never>, { rows: FlaggedRow[] }>(
   'adminListFlaggedProjects',
 );
@@ -58,7 +71,7 @@ function parseAgreed(raw: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : NaN;
 }
 
-type Tab = 'arrears' | 'flagged';
+type Tab = 'arrears' | 'flagged' | 'charges';
 
 function formatDate(ms: number | null, rtl: boolean): string {
   if (!ms) return '—';
@@ -101,6 +114,10 @@ export default function AdminFeesScreen() {
   const [arrears, setArrears] = useState<ArrearsRow[]>([]);
   const [graceDays, setGraceDays] = useState(0);
   const [flagged, setFlagged] = useState<FlaggedRow[]>([]);
+  const [charges, setCharges] = useState<ChargeIssueRow[]>([]);
+  /** Its own state: a failure here must not blank the two lists that loaded, and must
+   *  not read as "no charge issues" either. */
+  const [chargesState, setChargesState] = useState<'loading' | 'ok' | 'error'>('loading');
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   /** Corrected price typed per contested engagement, keyed `${projectId}:${proId}`. */
   const [agreed, setAgreed] = useState<Record<string, string>>({});
@@ -116,8 +133,16 @@ export default function AdminFeesScreen() {
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
 
   /** Both lists in one round; `state` starts as 'loading', so the first run needs no reset. */
+  const fetchCharges = useCallback(
+    () => Promise.resolve().then(() => listChargeIssues({})).then(
+      (r) => { setCharges(r.rows); setChargesState('ok'); },
+      (e: unknown) => { console.error('[admin/fees] charge issues load failed:', e); setChargesState('error'); },
+    ),
+    [],
+  );
+
   const fetchAll = useCallback(
-    () => Promise.all([listArrears({}), listFlagged({})]).then(
+    () => Promise.all([listArrears({}), listFlagged({}), fetchCharges()]).then(
       ([a, f]) => {
         setArrears(a.rows);
         setGraceDays(a.graceDays);
@@ -132,7 +157,7 @@ export default function AdminFeesScreen() {
         setState('error');
       },
     ),
-    [],
+    [fetchCharges],
   );
 
   const load = useCallback(async () => {
@@ -171,11 +196,13 @@ export default function AdminFeesScreen() {
     }
   }
 
-  const TABS: Tab[] = ['arrears', 'flagged'];
+  const TABS: Tab[] = ['arrears', 'flagged', 'charges'];
   // '—' rather than '(0)' while the data is unknown: a zero here makes the same
   // false claim the empty list did.
   const countOf = (tb: Tab) =>
-    state === 'ok' ? String(tb === 'arrears' ? arrears.length : flagged.length) : t('count_unknown');
+    tb === 'charges'
+      ? (chargesState === 'ok' ? String(charges.length) : t('count_unknown'))
+      : state === 'ok' ? String(tb === 'arrears' ? arrears.length : flagged.length) : t('count_unknown');
   const totalOwed = arrears.reduce((sum, r) => sum + r.totalOwed, 0);
   const known = state === 'ok';
 
@@ -210,6 +237,14 @@ export default function AdminFeesScreen() {
           loading={state === 'loading'}
           ring={known && flagged.length > 0}
           caption={!known ? t('count_unknown') : flagged.length > 0 ? tDash('attention') : tCa('all_clear')}
+        />
+        <StatTile
+          testID="tile-charges"
+          label={t('tab_charges')}
+          value={chargesState === 'ok' ? charges.length : null}
+          loading={chargesState === 'loading'}
+          ring={chargesState === 'ok' && charges.length > 0}
+          caption={chargesState !== 'ok' ? t('count_unknown') : charges.length > 0 ? tDash('attention') : tCa('all_clear')}
         />
       </StatGrid>
 
@@ -340,6 +375,64 @@ export default function AdminFeesScreen() {
                       </View>
                     );
                   })}
+                </View>
+              );
+            })
+          )}
+        </Card>
+      ) : tab === 'charges' ? (
+        <Card testID="charges-card">
+          <CardHead title={t('tab_charges')} sub={t('charges_sub')} />
+          {chargesState === 'error' ? (
+            <View style={[styles.errorBody, { alignItems: rtl ? 'flex-end' : 'flex-start' }]} testID="charges-error">
+              <AdminText style={[styles.body, { color: p.bad, textAlign }]}>{t('charges_load_failed')}</AdminText>
+              <PillButton label={t('retry')} onPress={() => void load()} testID="charges-retry" />
+            </View>
+          ) : charges.length === 0 ? (
+            <EmptyState text={t('empty_charges')} testID="charges-empty" />
+          ) : (
+            charges.map((row) => {
+              const key = `${row.projectId}:${row.professionalId}`;
+              const isBusy = busy[key] === true;
+              return (
+                <View
+                  key={key}
+                  testID={`charge-${key}`}
+                  style={[styles.flagRow, { flexDirection: rowDir, borderTopColor: p.border }]}
+                >
+                  <IconTile icon={AlertTriangle} tone={row.reason === 'settle_mismatch' ? 'bad' : 'warn'} />
+                  <View style={styles.grow}>
+                    <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                      {row.displayName || row.professionalId} · {row.title || row.projectId}
+                    </AdminText>
+                    <AdminText weight="semiBold" style={[TYPE.rowMeta, styles.reason, { color: p.bad, textAlign }]}>
+                      {t(`charge_reason_${row.reason}`)}
+                    </AdminText>
+                    <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                      {row.reason === 'settle_mismatch'
+                        ? t('charge_taken', { charged: (row.chargedAmount ?? 0).toLocaleString(), due: row.feeDue.toLocaleString() })
+                        : t('charge_failed_after', { n: row.attempts, due: row.feeDue.toLocaleString() })}
+                    </AdminText>
+                    <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                      {t('flagged_at', { date: formatDate(row.flaggedAt, rtl) })}
+                      {row.providerRef ? ` · ${t('charge_ref', { ref: row.providerRef })}` : ''}
+                      {row.lastErrorCode ? ` · ${row.lastErrorCode}` : ''}
+                    </AdminText>
+                    <View style={[styles.actions, { flexDirection: rowDir, marginTop: 6 }]}>
+                      {isBusy ? <ActivityIndicator size="small" color={p.accent} testID={`busy-${key}`} /> : null}
+                      <PillButton
+                        label={t('charge_ack')}
+                        disabled={isBusy}
+                        testID={`charge-ack-${key}`}
+                        onPress={() => act(
+                          key,
+                          t('confirm_charge_ack'),
+                          () => ackChargeIssue({ projectId: row.projectId, professionalId: row.professionalId }),
+                          t('charge_ack_done'),
+                        )}
+                      />
+                    </View>
+                  </View>
                 </View>
               );
             })
