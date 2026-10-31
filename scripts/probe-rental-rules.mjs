@@ -24,8 +24,11 @@
  * the Admin SDK only to seed and remove `zzz-probe-*` scratch documents and one
  * scratch Storage file. Teardown verifies everything is gone.
  *
- * Run: node scripts/probe-rental-rules.mjs [--emulator | --baseline]
+ * Run: node scripts/probe-rental-rules.mjs --emulator
+ *      node scripts/probe-rental-rules.mjs --prod [--baseline]     (a target flag is REQUIRED; there is no default)
  */
+import { requireProbeTarget } from './lib/probeTarget.mjs';
+requireProbeTarget('either', { envDriven: false }); // explicit --emulator or --prod required, no default target
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { initializeApp } from 'firebase/app';
@@ -47,6 +50,7 @@ import {
 
 const EMULATOR = process.argv.includes('--emulator');
 const BASELINE = process.argv.includes('--baseline');
+if (BASELINE && EMULATOR) { console.error('REFUSING TO RUN - --baseline is a production mode; use it with --prod.'); process.exit(2); }
 const MODE = EMULATOR ? 'EMULATOR (new rules)' : BASELINE ? 'PRODUCTION BASELINE (current rules)' : 'PRODUCTION (new rules)';
 
 function parseEnv() {

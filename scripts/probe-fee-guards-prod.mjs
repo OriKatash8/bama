@@ -7,8 +7,9 @@
  * fee doc, slotHolders, filledSlots and the group chat. A guard that also broke
  * hiring would be worse than the bug it fixes.
  *
- *   node scripts/probe-fee-guards-prod.mjs
+ *   node scripts/probe-fee-guards-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, collection, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';

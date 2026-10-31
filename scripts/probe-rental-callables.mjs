@@ -9,8 +9,9 @@
  * so no company or item can be created or changed. Teardown deletes the account
  * and the users/{uid} doc onUserCreate writes, and verifies both are gone.
  *
- * Run: node scripts/probe-rental-callables.mjs
+ * Run: node scripts/probe-rental-callables.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { initializeApp } from 'firebase/app';

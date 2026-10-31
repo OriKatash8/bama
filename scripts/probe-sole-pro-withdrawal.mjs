@@ -3,11 +3,12 @@
  * Sole-professional withdrawal must not complete the project — against the EMULATORS.
  *
  *   firebase emulators:start --only firestore,auth,functions --project bama-af0a0
- *   node scripts/probe-sole-pro-withdrawal.mjs
+ *   node scripts/probe-sole-pro-withdrawal.mjs --emulator
  *
  *  1 sole pro asks to withdraw, client accepts → project stays OPEN, re-hire allowed
  *  2 control: pro A completes, pro B withdraws → project COMPLETES (work was delivered)
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';

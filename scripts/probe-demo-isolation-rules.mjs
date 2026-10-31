@@ -6,7 +6,7 @@
  * says. Nothing here touches production.
  *
  *   npx firebase emulators:start --only firestore,auth --project bama-af0a0
- *   node scripts/probe-demo-isolation-rules.mjs
+ *   node scripts/probe-demo-isolation-rules.mjs --emulator
  *
  * Two states, each over the SAME flows, written in the app's exact shapes:
  *   A  config/demoAccounts ABSENT (production at deploy time): every flow is
@@ -16,6 +16,7 @@
  *      flows that reach only BAMA (reports, community requests, the own system
  *      chat, a chat with an admin) stay allowed for both sides.
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore, FieldValue as AFV } from 'firebase-admin/firestore';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';

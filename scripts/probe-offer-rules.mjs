@@ -3,7 +3,7 @@
  * Probe for the offer status state machine + project status transitions.
  *
  * Runnable against either ruleset so before/after can be diffed:
- *   FS_PORT=8580 AUTH_PORT=9599 node scripts/probe-offer-rules.mjs --json out.json
+ *   FS_PORT=8580 AUTH_PORT=9599 node scripts/probe-offer-rules.mjs --emulator --json out.json
  *
  * The rules constrain amount and identity but historically said nothing about
  * `status`, so the sharp cases here are the ones that move an offer INTO or OUT
@@ -12,6 +12,7 @@
  *
  * Isolated emulator only; the long-running instance on 8080/9099 is untouched.
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';

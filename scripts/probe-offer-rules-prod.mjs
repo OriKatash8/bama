@@ -12,8 +12,9 @@
  * now forbids a client from creating an 'accepted' offer at all.
  *
  * Teardown deletes auth accounts first, then docs, then re-reads both.
- *   node scripts/probe-offer-rules-prod.mjs
+ *   node scripts/probe-offer-rules-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import {

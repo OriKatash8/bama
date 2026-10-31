@@ -11,8 +11,9 @@
  * deleted first (so a leaked account cannot outlive the run), then the docs, then
  * everything is re-read to confirm it is gone.
  *
- *   node scripts/probe-chats-rules-prod.mjs
+ *   node scripts/probe-chats-rules-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 

@@ -5,12 +5,13 @@
  *
  *   npm --prefix functions run build
  *   firebase emulators:start --only auth,firestore --project demo-bama   # ports below
- *   FS_PORT=8580 AUTH_PORT=9599 node scripts/probe-payments-emulator.mjs
+ *   FS_PORT=8580 AUTH_PORT=9599 node scripts/probe-payments-emulator.mjs --emulator
  *
  * Isolated emulator only (project demo-bama, no import/export). Drives the compiled
  * functions/lib modules with the Admin SDK for the server logic, and the client SDK
  * for the rules.
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { createRequire } from 'node:module';
 import { initializeApp } from 'firebase/app';
 import {

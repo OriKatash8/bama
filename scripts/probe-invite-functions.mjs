@@ -11,8 +11,9 @@
  *
  *   npm --prefix functions run build
  *   npx firebase emulators:start --only functions,firestore,auth --project bama-af0a0
- *   node scripts/probe-invite-functions.mjs
+ *   node scripts/probe-invite-functions.mjs --emulator
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as adminFs, Timestamp } from 'firebase-admin/firestore';
 import { getAuth as adminAuth } from 'firebase-admin/auth';

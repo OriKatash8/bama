@@ -14,9 +14,10 @@
  * ASSERTED, not assumed, and the script exits non-zero if anything survives.
  *
  * Admin SDK / ADC, same setup as scripts/backfill-community-categories.mjs:
- *   node scripts/probe-community-notifications.mjs
+ *   node scripts/probe-community-notifications.mjs --prod
  */
 
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 

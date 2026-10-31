@@ -25,8 +25,9 @@
  * throwaway user (onUserCreate also writes users/<uid>, which is removed too) and seeds a
  * card + fee with the Admin SDK, then removes them. Section 5: PROBE_WEBHOOK=1 to include it.
  *
- *   node scripts/probe-payment-lockdown-prod.mjs
+ *   node scripts/probe-payment-lockdown-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import {

@@ -12,8 +12,9 @@
  * verified with the Admin SDK (gcloud Application Default Credentials). Teardown
  * is asserted: the account is deleted first, then its docs, then re-read.
  *
- *   node scripts/probe-contact-rules-prod.mjs
+ *   node scripts/probe-contact-rules-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import { initializeApp as initAdmin } from 'firebase-admin/app';

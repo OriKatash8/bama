@@ -24,13 +24,14 @@
  * carries `overdueAt` until the switch has been on for a completion, so while it
  * is on here no real professional can be blocked.
  *
- *   node scripts/probe-fee-overdue-prod.mjs [--run-file <path>]
+ *   node scripts/probe-fee-overdue-prod.mjs --prod [--run-file <path>]
  *
  * --run-file records { stamp, uids } as they are created, so
  * scripts/probe-fee-overdue-sweep-prod.mjs can restore the switch and clean up
  * even if this process dies. Teardown also runs on SIGINT/SIGTERM and on an
  * uncaught error, not only in `finally`.
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync, writeFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import {

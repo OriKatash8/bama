@@ -5,12 +5,13 @@
  * Runs against the Firestore EMULATOR with whatever firestore.rules says.
  *
  *   npx firebase emulators:start --only firestore,auth --project bama-af0a0
- *   node scripts/probe-rule-holes.mjs
+ *   node scripts/probe-rule-holes.mjs --emulator
  *
  * Two halves, both required: every write the app makes today is ALLOWED (in its
  * exact shape — both agreement orders, the admin community create), and each
  * abuse from the report is DENIED.
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';

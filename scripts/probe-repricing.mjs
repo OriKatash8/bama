@@ -3,7 +3,7 @@
  * V1 step (c) — price changes, end to end, against the EMULATORS.
  *
  *   firebase emulators:start --only firestore,auth,functions --project bama-af0a0
- *   node scripts/probe-repricing.mjs
+ *   node scripts/probe-repricing.mjs --emulator
  *
  *  1 range 1–50000 on create (0, 50001 refused; 1, 50000 accepted)
  *  2 the counter sequence while under review, one pending per role
@@ -15,6 +15,7 @@
  *  7 rules: no direct client create; reading own requests still works
  *  8 a push notification is written for the counterparty, both directions, and not on refusal
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb, FieldValue } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';

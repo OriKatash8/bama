@@ -7,8 +7,9 @@
  * Exit 0 = all three allowed. Exit 1 = something was denied (roll back the rules).
  * Cleanup runs in `finally` and is asserted.
  *
- *   node scripts/probe-fee-overdue-smoke-prod.mjs
+ *   node scripts/probe-fee-overdue-smoke-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';

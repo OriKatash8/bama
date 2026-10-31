@@ -8,8 +8,9 @@
  * a round-trip there would be testing the bug.
  *
  *   firebase emulators:start --only firestore,auth,functions   (ports below)
- *   FS_PORT=8680 AUTH_PORT=9699 FN_PORT=5101 node scripts/probe-slot-cap-roundtrip.mjs
+ *   FS_PORT=8680 AUTH_PORT=9699 FN_PORT=5101 node scripts/probe-slot-cap-roundtrip.mjs --emulator
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';
