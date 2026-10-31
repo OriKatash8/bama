@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getMyPaymentMethod, type PaymentMethodView } from '../services/paymentMethodService';
 
+const DISABLED: PaymentMethodView = { enabled: false, hasCard: false };
+
 /**
  * The signed-in professional's card state, or null while unknown.
  *
@@ -12,16 +14,17 @@ export function usePaymentMethod(uid: string | undefined) {
   const [view, setView] = useState<PaymentMethodView | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!uid) { setView({ enabled: false, hasCard: false }); return; }
+    if (!uid) return;
     try {
       setView(await getMyPaymentMethod({}));
     } catch (err) {
       console.error('[paymentMethod] load failed:', err);
-      setView({ enabled: false, hasCard: false });
+      setView(DISABLED);
     }
   }, [uid]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  return { view, refresh };
+  // Signed out: nothing to show, and no call was made.
+  return { view: uid ? view : DISABLED, refresh };
 }
