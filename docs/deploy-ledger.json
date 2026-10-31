@@ -161,6 +161,16 @@
       "recordedOn": "2026-10-29",
       "note": "Redeploy of adminSyncRentalCompany only: the mass-removal stop is now failed-precondition {reason: 'mass-removal'} so the admin screen can offer force. Non-admins still denied (probe-rental-callables 13/13)."
     },
+    "blockUser": {
+      "region": "us-central1",
+      "generation": 2,
+      "updateTime": "2026-10-13T15:43:29.422815737Z",
+      "treeSha": "4622b1c78fa7945dcd1da0f37cbf0a701a85a27f",
+      "commit": "7c208dca",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
+    },
     "cancelProject": {
       "region": "us-central1",
       "generation": 2,
@@ -170,6 +180,26 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "cancelVideoJob": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-17T19:29:36.933292912Z",
+      "treeSha": "5e8bcecb5cc825aac5afe3f3d2b2b872576e3c64",
+      "commit": "cb154047",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
+    },
+    "collectUsageStats": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-19T00:36:23.276856157Z",
+      "treeSha": "eb16fa465d2b39b658d5ed8e73061bb716a410b1",
+      "commit": "c3bea034",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "completeAllEngagements": {
       "region": "us-central1",
@@ -184,12 +214,12 @@
     "compressVideo": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-01T23:28:58.171889675Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-17T19:29:23.292726893Z",
+      "treeSha": "5e8bcecb5cc825aac5afe3f3d2b2b872576e3c64",
+      "commit": "cb154047",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "confirmCandidate": {
       "region": "us-central1",
@@ -264,12 +294,12 @@
     "deleteMyAccount": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-01T23:28:07.439231521Z",
-      "treeSha": "72a8bceec398db8516eacd19dc3b8c50774738cc",
-      "commit": "1aa31494",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-15T19:52:30.292229738Z",
+      "treeSha": "399b3ef9e6fb32a6c033ed453a6028884470b3ba",
+      "commit": "d85eaad7",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "deleteProject": {
       "region": "us-central1",
@@ -384,12 +414,12 @@
     "getContactPhone": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-03T06:17:07.514532761Z",
-      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
-      "commit": "abb4e491",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-11T13:11:28.337561298Z",
+      "treeSha": "da12369f3193f8d1b0847319091476f3e53b1308",
+      "commit": "bd58f029",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "getMyPaymentMethod": {
       "region": "europe-west1",
@@ -564,12 +594,12 @@
     "onNotificationCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-10-02T02:08:52.994Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-13T15:43:38.753Z",
+      "treeSha": "4622b1c78fa7945dcd1da0f37cbf0a701a85a27f",
+      "commit": "7c208dca",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "onPriceOfferAccepted": {
       "region": "us-central1",
@@ -584,22 +614,22 @@
     "onProjectClosed": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:08:51.819430761Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-11T13:11:20.403532917Z",
+      "treeSha": "da12369f3193f8d1b0847319091476f3e53b1308",
+      "commit": "bd58f029",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "onProjectCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-10-03T06:17:02.592Z",
-      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
-      "commit": "abb4e491",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-10-15T19:36:53.899Z",
+      "treeSha": "b0d4bfdbcd9af39bfd1841f745a3067ba5680b7d",
+      "commit": "def659f7",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "onProjectEndDateChange": {
       "region": "europe-west1",
@@ -621,6 +651,16 @@
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
     },
+    "onReportCreate": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-13T15:43:44.778837917Z",
+      "treeSha": "4622b1c78fa7945dcd1da0f37cbf0a701a85a27f",
+      "commit": "7c208dca",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
+    },
     "onReviewCreate": {
       "region": "europe-west1",
       "generation": 2,
@@ -640,6 +680,16 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "refreshUsageStats": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-10-19T00:36:30.304814892Z",
+      "treeSha": "eb16fa465d2b39b658d5ed8e73061bb716a410b1",
+      "commit": "c3bea034",
+      "how": "found-unrecorded",
+      "recordedOn": "2026-10-31",
+      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
     "rejectCandidate": {
       "region": "us-central1",
