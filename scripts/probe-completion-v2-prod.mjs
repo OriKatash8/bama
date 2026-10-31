@@ -18,8 +18,9 @@
  *   - teardown ASSERTS what it deleted, deletes the auth account before its
  *     documents, and sweeps again afterwards for what the create-trigger wrote.
  *
- *   node scripts/probe-completion-v2-prod.mjs
+ *   node scripts/probe-completion-v2-prod.mjs --prod
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import {

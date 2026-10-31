@@ -1,7 +1,11 @@
 import { useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, TextInput, Animated,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { ChevronDown, X } from 'lucide-react-native';
 import { ROLES, getSpecializations, labelOf, type Labeled } from '@features/crew/data/categories';
 import {
@@ -21,6 +25,7 @@ import { useModeAccent } from '@core/navigation/floatingTabBar';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { Review } from '@core/types/project';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -457,11 +462,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#EFEDF5',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#000', opacity: 0.05, radius: 6, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
   /* Segmented track */
   tabBar: {

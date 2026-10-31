@@ -12,6 +12,7 @@ import { useChatMedia } from '../hooks/useChatMedia';
 import { useCommunityMedia } from '../hooks/useCommunityMedia';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -148,11 +149,7 @@ export function ChatMediaSection({ chatId, community = false, titleColor }: {
 }
 
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3' as const,
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
+  ...shadow({ color: '#1e4fa3' as const, opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
 };
 
 const styles = StyleSheet.create({

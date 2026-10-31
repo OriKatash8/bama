@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Bell } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { requestNotificationPermission } from '@core/notifications/registerForPushNotifications';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -113,10 +115,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 20,
     gap: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   iconWrap: {
     width: 48,

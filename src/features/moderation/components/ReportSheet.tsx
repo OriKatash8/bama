@@ -1,4 +1,5 @@
-import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -6,6 +7,7 @@ import { useModeAccent } from '@core/navigation/floatingTabBar';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 export const MAX_EVIDENCE = 3;
 const MIN_REASON = 20;
@@ -163,10 +165,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
     gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   /** flexShrink, not flex:1 — the card is auto-height capped at maxHeight. */
   scroll: { flexShrink: 1 },

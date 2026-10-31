@@ -39,7 +39,9 @@ export const DELETED_ACCOUNT_NAME = 'חשבון שנמחק';
  * the identity becomes an anonymous marker, and other users keep coherent
  * history.
  *
- *   DELETED  Auth account · phone · profile (bio, equipment, prices, skills) ·
+ *   DELETED  Auth account · phone · launch stamp (platform, app version, last
+ *            seen: users/{uid}/private/presence, removed with the whole
+ *            `private` collection) · profile (bio, equipment, prices, skills) ·
  *            portfolio docs and files · avatars · chat videos · push tokens ·
  *            notifications · their open marketplace listings · their open
  *            posts nobody was hired on (with offers and linked notifications)

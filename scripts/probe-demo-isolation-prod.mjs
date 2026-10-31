@@ -2,8 +2,9 @@
 /**
  * PRODUCTION check of the demo-account isolation rules, as NORMAL users.
  *
- *   node scripts/probe-demo-isolation-prod.mjs --state absent                 # right after the rules deploy
- *   DEMO_PASSWORD=… node scripts/probe-demo-isolation-prod.mjs --state present  # after the seed
+ *   node scripts/probe-demo-isolation-prod.mjs --prod --state absent         # right after the rules deploy
+ *   (--emulator rehearses against emulators, with FIRESTORE_EMULATOR_HOST/FIREBASE_AUTH_EMULATOR_HOST exported)
+ *   DEMO_PASSWORD=… node scripts/probe-demo-isolation-prod.mjs --prod --state present  # after the seed
  *
  * Three throwaway real-shaped users (C client, P pro, Q other) perform every write
  * whose rule changed, in the app's exact shapes. Each must be ALLOWED. With
@@ -18,6 +19,8 @@
  * Teardown deletes everything it made, asserts it, waits for late trigger writes
  * and sweeps again. Exit 0 only when every case behaved and nothing is left.
  */
+import { requireProbeTarget } from './lib/probeTarget.mjs';
+requireProbeTarget('either', { envDriven: true }); // explicit --emulator or --prod required, no default target
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { initializeApp as initAdmin } from 'firebase-admin/app';

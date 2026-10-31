@@ -2,10 +2,20 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { rtlSafe } from '@utils/formatters';
 import { tabSwipeLockProps } from '@core/navigation/pagerSwipeLock';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
-  ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, Linking,
-  useWindowDimensions, Animated,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Linking,
+  useWindowDimensions,
+  Animated,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, Camera, Search, Play, Clock, BookOpen, BarChart2, SlidersHorizontal, Plus, ExternalLink } from 'lucide-react-native';
@@ -38,6 +48,7 @@ import { ROLE_CATEGORIES, categoryLabel, communityCategoryLabel } from '@feature
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useTabBarHeight, TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -838,11 +849,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     paddingTop: 16,
     paddingHorizontal: 20,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
   /** Cancels the sheet's 20pt padding so the chat list runs edge to edge. */
   listBleed: { marginHorizontal: -20 },
@@ -867,10 +874,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 14,
     gap: 8,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 5, offsetX: 0, offsetY: 2 }),
   },
   searchRowFocused: { borderColor: BLUE },
   searchInput: { flex: 1, fontSize: 14, color: TEXT },
@@ -993,11 +997,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 999,
-    shadowColor: '#1E3A8A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.36,
-    shadowRadius: 11,
-    elevation: 10,
+    ...shadow({ color: '#1E3A8A', opacity: 0.36, radius: 11, offsetX: 0, offsetY: 8, elevation: 10 }),
   },
   fabFill: { flex: 1, borderRadius: 999, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   emptyState: {
@@ -1014,11 +1014,7 @@ const styles = StyleSheet.create({
     borderColor: '#EFEDF5',
     borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 6, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
   coverArea: {
     width: '100%',
@@ -1076,10 +1072,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   /** flexShrink, not flex:1 — the card is auto-height capped at maxHeight. */
   modalScroll: { flexShrink: 1 },

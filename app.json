@@ -30,6 +30,10 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.bamaapp.bama",
       "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.CAMERA"
+      ],
       "blockedPermissions": [
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR"
@@ -116,6 +120,8 @@
       "@react-native-firebase/app-check",
       "expo-image",
       "expo-web-browser",
+      "./plugins/withAndroidLtrLock",
+      "./plugins/withAndroidDevMenuNoFab",
       "react-native-compressor"
     ],
     "experiments": {

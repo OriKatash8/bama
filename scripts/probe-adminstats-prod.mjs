@@ -4,7 +4,7 @@
  * It creates a throwaway email/password account, runs the checks, and deletes the account
  * (also on failure). Run it with no arguments:
  *
- *   node scripts/probe-adminstats-prod.mjs
+ *   node scripts/probe-adminstats-prod.mjs --prod
  *
  *   row                                            expected
  *   0 control: read my own users/{uid} doc         ALLOWED   (proves the session works)
@@ -16,6 +16,7 @@
  * script deletes the Auth user; the leftover users/{uid} doc is printed (as "LEFTOVER") so
  * the operator can remove it with admin credentials.
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';

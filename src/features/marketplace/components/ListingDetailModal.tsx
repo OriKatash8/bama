@@ -1,7 +1,15 @@
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Linking, useWindowDimensions,
+  Modal,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Linking,
+  useWindowDimensions,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 import { FittedPhoto } from './FittedPhoto';
@@ -30,6 +38,8 @@ const CONDITION_COLOR: Record<string, string> = {
 import type { MarketplaceListing } from '../types';
 import { PERIOD_SUFFIX_KEY, periodOf } from '../utils/rentalPrice';
 import { useState, useRef } from 'react';
+import { shadow } from '@core/theme/shadow';
+import { categoryLabelKey } from '@features/rentals/categories';
 
 type Translations = typeof en;
 
@@ -98,9 +108,35 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
 
   if (!listing) return null;
 
-  const priceLabel = listing.type === 'rental'
-    ? `₪${listing.price.toLocaleString()}${t(`marketplace.${PERIOD_SUFFIX_KEY[periodOf(listing)]}`)}`
-    : `₪${listing.price.toLocaleString()}`;
+  // A rental company's synced item (src/features/rentals/listing.ts): no poster, maybe no price.
+  const isCompany = listing.source === 'company';
+  const priceLabel = isCompany && listing.priceOnRequest
+    ? t('rentals.price_on_request')
+    : listing.type === 'rental'
+      ? `₪${listing.price.toLocaleString()}${t(`marketplace.${PERIOD_SUFFIX_KEY[periodOf(listing)]}`)}`
+        + (isCompany && listing.regularPrice != null
+          ? ` · ${t('rentals.instead_of').replace('{{price}}', listing.regularPrice.toLocaleString())}` : '')
+      : `₪${listing.price.toLocaleString()}`;
+
+  /**
+   * Counts the tap, then opens the company's product page (the link already
+   * carries utm_source=bama). The count is started first and not awaited: on a
+   * phone the app goes to the background as the browser opens, so the request
+   * must already be on its way. Both run in this one synchronous handler, so on
+   * web the browser still sees the open as part of the tap. A failed count is
+   * ignored — it must never stand between the user and the store.
+   */
+  function rentThroughCompany() {
+    if (!listing?.productUrl) return;
+    if (listing.rentalItemId) {
+      // Loaded on the tap, not with the modal: it pulls in Firebase Functions, which
+      // every other listing (and every test of this modal) has no use for.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { trackRentalClick } = require('@features/rentals/rentalsService') as typeof import('@features/rentals/rentalsService');
+      trackRentalClick(listing.rentalItemId).catch(() => {});
+    }
+    void Linking.openURL(listing.productUrl);
+  }
 
   const isOwnListing = currentUserId === listing.posterId;
   // A rental belongs to an outside store: it shows the store (never the poster)
@@ -234,8 +270,8 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             {/* Image */}
             {/* Every photo is shown whole, fitted over a soft blurred copy of itself. */}
             <View style={styles.imageWrap} testID="listing-image">
-              {listing.imageUrl ? (
-                <FittedPhoto testID="listing-detail-image" uri={listing.imageUrl} style={styles.image} />
+              {listing.detailImageUrl || listing.imageUrl ? (
+                <FittedPhoto testID="listing-detail-image" uri={(listing.detailImageUrl || listing.imageUrl)!} style={styles.image} />
               ) : (
                 <Text style={styles.imagePlaceholder}>📦</Text>
               )}
@@ -278,7 +314,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                   <View style={[styles.detailRow, { flexDirection: rowDir }]}>
                     <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.category')}</AppText>
                     <AppText weight="semiBold" style={[styles.detailValue, { textAlign: rtl ? 'left' : 'right' }]}>
-                      {t(`marketplace.category_${listing.category}`) || listing.category}
+                      {t(`marketplace.${categoryLabelKey(listing.category) ?? `category_${listing.category}`}`)}
                       {(() => {
                         const subs = Array.isArray(listing.subcategory)
                           ? listing.subcategory
@@ -320,6 +356,17 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                     <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.store')}</AppText>
                     <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>{listing.storeName}</AppText>
                   </View>
+                  {isCompany && (
+                    <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-stock-row">
+                      <AppText weight="regular" style={styles.detailLabel}>{t(listing.inStock === false ? 'rentals.out_of_stock' : 'rentals.in_stock')}</AppText>
+                      <View style={[styles.stockDot, { backgroundColor: listing.inStock === false ? '#B4232A' : '#2F7A45' }]} />
+                    </View>
+                  )}
+                  {isCompany && !!listing.description && (
+                    <AppText weight="regular" testID="listing-description" style={[styles.description, { textAlign: rtl ? 'right' : 'left' }]}>
+                      {listing.description}
+                    </AppText>
+                  )}
                 </View>
               ) : null
             ) : (
@@ -365,8 +412,24 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             </>
           )}
 
+          {/* A rental company's item: "Rent through [company]", counted. */}
+          {isCompany && !readOnly && !!listing.productUrl && (
+            <TouchableOpacity
+              testID="listing-rent-through"
+              style={[styles.buyBtn, styles.storeBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={rentThroughCompany}
+              activeOpacity={0.8}
+              accessibilityRole="link"
+            >
+              <AppText weight="bold" style={styles.buyText}>
+                {t('rentals.rent_through').replace('{{company}}', listing.storeName ?? '')}
+              </AppText>
+              <ExternalLink size={16} color="#fff" strokeWidth={2.4} />
+            </TouchableOpacity>
+          )}
+
           {/* Rental: the store's product page */}
-          {isRental && !isOwnListing && !readOnly && !!listing.productUrl && (
+          {isRental && !isCompany && !isOwnListing && !readOnly && !!listing.productUrl && (
             <TouchableOpacity
               testID="listing-primary-btn"
               style={[styles.buyBtn, styles.storeBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
@@ -474,6 +537,8 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
 }
 
 const styles = StyleSheet.create({
+  stockDot: { width: 10, height: 10, borderRadius: 5 },
+  description: { fontSize: 13, lineHeight: 19, color: '#333333', marginTop: 8 },
   pickerCard: {
     width: '88%',
     maxWidth: 420,
@@ -519,10 +584,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
 
   header: {

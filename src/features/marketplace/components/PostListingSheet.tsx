@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, TextInput, Platform, useWindowDimensions,
-  StyleSheet, ScrollView, ActivityIndicator, type LayoutChangeEvent, type TextProps,
+  Modal,
+  View,
+  TouchableOpacity,
+  Platform,
+  useWindowDimensions,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  type LayoutChangeEvent,
+  type TextProps,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 
 const BLUE_CAM = require('../../../../assets/images/categories/blue-cam.png');
@@ -24,6 +33,7 @@ import he from '@core/i18n/translations/he.json';
 import type { MarketplaceListing, MarketplaceListingType, ProductCondition, RentalPeriod } from '../types';
 import { brandLabel, PERIOD_SUFFIX_KEY, RENTAL_PERIODS, periodOf } from '../utils';
 import { normalizeCourseUrl as normalizeWebUrl } from '@features/courses/courseUrl';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -61,6 +71,8 @@ const CATEGORIES: { id: string; labelKey: string }[] = [
   { id: 'drone',       labelKey: 'category_drone' },
   { id: 'studio',      labelKey: 'category_studio' },
   { id: 'accessories', labelKey: 'category_accessories' },
+  { id: 'grip',        labelKey: 'category_grip' },
+  { id: 'production',  labelKey: 'category_production' },
 ];
 
 const CONDITIONS: { value: ProductCondition; color: string }[] = [
@@ -662,10 +674,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   header: {
     flexDirection: 'row',

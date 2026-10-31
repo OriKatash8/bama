@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { Text } from '@components/ui/Text';
 import Animated, {
   Easing, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue,
   withDelay, withRepeat, withSequence, withSpring, withTiming,
@@ -22,6 +23,7 @@ import {
   TILE_LAYOUT, fillToBottom, fitTitleSize, floatFor, illustrationHeightFor, textFitsOnScreen,
   scaleLeft, scaleTop, type MarketCategoryId, type Placement, type RoleId,
 } from './emptyStateLayout';
+import { shadow } from '@core/theme/shadow';
 
 export type EmptyStateVariant = 'tiles' | 'bubbles' | 'board' | 'listings';
 
@@ -125,9 +127,9 @@ function cardLabel(id: RoleId, lang: 'he' | 'en'): string {
   return role ? labelOf(role, lang) : '';
 }
 
-/** Title weight 800: Heebo-ExtraBold in Hebrew, Montserrat 800 in English (as the app). */
+/** Title weight 800: Heebo-ExtraBold in Hebrew, Montserrat-ExtraBold in English (static families, no fontWeight). */
 function extraBold(rtl: boolean) {
-  return rtl ? { fontFamily: 'Heebo-ExtraBold', fontWeight: '800' as const } : { fontFamily: 'Montserrat', fontWeight: '800' as const };
+  return rtl ? { fontFamily: 'Heebo-ExtraBold' } : { fontFamily: 'Montserrat-ExtraBold' };
 }
 
 /**
@@ -480,11 +482,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'rgba(255,255,255,0.58)',
     borderWidth: 1,
-    shadowColor: '#5A46C8',
-    shadowOpacity: 0.13,
-    shadowOffset: { width: 0, height: 12 },
-    shadowRadius: 30,
-    elevation: 4,
+    ...shadow({ color: '#5A46C8', opacity: 0.13, radius: 30, offsetX: 0, offsetY: 12, elevation: 4 }),
   },
   // Height follows the content (min 104): a fixed 104 overflowed on iPhone,
   // where the board's ₪ row made the cards taller still. 12pt vertical padding
@@ -508,6 +506,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   priceText: {
+    // The system font on purpose (see the comment above); 'System' keeps Text from applying Heebo.
+    fontFamily: 'System',
     fontSize: 11,
     lineHeight: 13,
     fontWeight: '700',

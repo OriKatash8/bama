@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { TouchableOpacity, Pressable, View, Text, StyleSheet, ScrollView } from 'react-native';
+import { TouchableOpacity, Pressable, View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';

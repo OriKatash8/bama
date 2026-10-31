@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
-  Modal, View, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, TextInput,
+  Modal,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';

@@ -5,7 +5,7 @@
  * ALLOWED / DENIED so the output can be compared before and after the deploy.
  *
  *   PROBE_A_EMAIL=… PROBE_A_PASSWORD=… PROBE_B_EMAIL=… PROBE_B_PASSWORD=… \
- *     node scripts/probe-block-prod.mjs
+ *     node scripts/probe-block-prod.mjs --prod
  *
  * A and B are two throwaway accounts that already exist in production (create
  * them in the app). The script never creates accounts and touches only
@@ -25,6 +25,7 @@
  * Row 4 leaves one `user_blocked` report in the admin queue (that is the feature);
  * delete it from Admin → Reports (Done tab) afterwards. Rows 4–5 end by unblocking.
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { initializeApp } from 'firebase/app';
 import {
   getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc, serverTimestamp,

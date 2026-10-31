@@ -566,11 +566,36 @@ service cloud.firestore {
       match /private/{docId} {
         allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId)
-          && docId == 'contact'
-          && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
-          && request.resource.data.phone is string
-          && request.resource.data.phone.matches('^[+][1-9][0-9]{7,14}$');
-        allow delete: if false;
+          && (
+            (docId == 'contact'
+              && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
+              && request.resource.data.phone is string
+              && request.resource.data.phone.matches('^[+][1-9][0-9]{7,14}$'))
+            || (docId == 'presence' && presenceDocOk())
+          );
+        // Only the launch stamp can be deleted, and only by an admin (the phone is
+        // removed by account deletion, which runs with the Admin SDK).
+        allow delete: if docId == 'presence' && isAdmin();
+      }
+
+      /**
+       * The launch stamp, `users/{uid}/private/presence` (recordLaunch): which
+       * platform and build this user last opened, and when. Private on purpose —
+       * `users/{uid}` is readable by every signed-in user, and nobody else should
+       * see when someone was last online or which device they use. Readable by
+       * the owner and admins (the private/{docId} read rule above). The app
+       * writes the whole doc every launch, so exactly these three keys, always:
+       * the platform is one the app runs on, the version is a short string, and
+       * `lastSeenAt` is the server's own clock (request.time), so a client
+       * cannot claim a time.
+       */
+      function presenceDocOk() {
+        return request.resource.data.keys().hasOnly(['lastPlatform', 'appVersion', 'lastSeenAt'])
+          && request.resource.data.keys().hasAll(['lastPlatform', 'appVersion', 'lastSeenAt'])
+          && request.resource.data.lastPlatform in ['ios', 'android', 'web']
+          && request.resource.data.appVersion is string
+          && request.resource.data.appVersion.size() <= 40
+          && request.resource.data.lastSeenAt == request.time;
       }
 
       match /portfolio/{assetId} {
@@ -1073,6 +1098,13 @@ service cloud.firestore {
         // id and the professionalId field are always the same value.
         allow read: if isAuth() && resource.data.professionalId == request.auth.uid;
         allow write: if false;
+
+        // One doc per automatic charge attempt (idempotency key, gateway reference,
+        // failure codes). Server-only in both directions: the pro sees the outcome on
+        // the fee itself, never the attempt log.
+        match /charges/{attemptId} {
+          allow read, write: if false;
+        }
       }
 
       // Removal requests — document ID is the professionalId being removed
@@ -1252,6 +1284,29 @@ service cloud.firestore {
            oneSide([resource.data.posterId]))
         );
       allow delete: if isAuth() && (resource.data.posterId == request.auth.uid || isAdmin());
+    }
+
+    // ─── rental companies (store-synced partners) ───────────────────
+    // Written ONLY by Cloud Functions (functions/src/rentals, Admin SDK): the
+    // sync, and admin callables that validate every field. No client write of
+    // any kind, admins included — the callables are the admin's write path.
+    //
+    // Reads are by CONTENT, and a list must prove it from the query (see the
+    // reviews note below): every app query carries the matching equality —
+    // src/features/rentals/querySpecs.ts, probed by scripts/probe-rental-rules.mjs.
+    //   rentalCompanies: active == true. A removed company is always inactive
+    //     (removeCompany and adminSetRentalCompanyActive guarantee it).
+    //   rentalItems: visible == true, which the sync sets only for an active
+    //     item of an active company in a real category — never 'unsorted' or
+    //     'hidden'. Inactive companies and unsorted items are admin-only.
+    match /rentalCompanies/{companyId} {
+      allow read: if isAdmin() || (isAuth() && resource.data.active == true);
+      allow write: if false;
+    }
+
+    match /rentalItems/{itemId} {
+      allow read: if isAdmin() || (isAuth() && resource.data.visible == true);
+      allow write: if false;
     }
 
     // ─── reviews ────────────────────────────────────────────────────
@@ -1469,8 +1524,24 @@ service cloud.firestore {
     }
 
     match /config/{docId} {
-      allow read: if isAuth();
+      // paymentsPrivate holds the fake-provider tester list: server-only. Rules OR
+      // their matches, so the exclusion has to be HERE; a separate deny would not win.
+      allow read: if isAuth() && docId != 'paymentsPrivate';
       allow write: if false;
+    }
+
+    // ─── payments (Cloud Functions only) ─────────────────────────────
+    // Saved-card tokens, the webhook idempotency store and the fake provider's
+    // ledger. A client that could read a token could charge it; none may touch
+    // any of these. getMyPaymentMethod returns a token-free view.
+    match /paymentMethods/{uid} {
+      allow read, write: if false;
+    }
+    match /paymentEvents/{eventId} {
+      allow read, write: if false;
+    }
+    match /paymentFake/{key} {
+      allow read, write: if false;
     }
 
     // ─── adminStats ─────────────────────────────────────────────────

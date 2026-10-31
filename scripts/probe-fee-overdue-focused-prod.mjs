@@ -22,8 +22,9 @@
  * Refuses to run within 15 min of lifecycleCron (03:00 Israel) or within 5 min of
  * the top of the hour (feeOverdueCron is hourly).
  *
- *   node scripts/probe-fee-overdue-focused-prod.mjs [--run-file <path>]
+ *   node scripts/probe-fee-overdue-focused-prod.mjs --prod [--run-file <path>]
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { readFileSync, writeFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';

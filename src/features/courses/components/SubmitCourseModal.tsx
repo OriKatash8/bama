@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
-  ScrollView, ActivityIndicator, StyleSheet,
+  Modal,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { X } from 'lucide-react-native';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
@@ -14,6 +19,7 @@ import {
 } from './CourseFormFields';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -138,10 +144,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   headerTitle: { fontSize: 18, color: TEXT, flex: 1 },

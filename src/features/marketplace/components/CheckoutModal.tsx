@@ -1,13 +1,19 @@
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, useWindowDimensions,
+  Modal,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -134,10 +140,7 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20, android: 'none' }),
   },
   header: {
     flexDirection: 'row',

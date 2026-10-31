@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { CalendarDays, Clock, MapPin, X } from 'lucide-react-native';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { PressableScale } from '@components/ui/PressableScale';

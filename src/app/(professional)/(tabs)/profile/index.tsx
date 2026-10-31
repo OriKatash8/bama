@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, TouchableOpacity, Text, StyleSheet,
-  ActivityIndicator, BackHandler, Platform,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  BackHandler,
+  Platform,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
@@ -28,6 +33,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { PriceEntry } from '@core/types/project';
 import { useTabBarClearance } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -312,11 +318,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 20,
     gap: 14,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
   saveBar: {
     position: 'absolute',

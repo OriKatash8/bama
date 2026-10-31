@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Linking, StyleSheet, TouchableOpacity, View, Text, Platform } from 'react-native';
+import { Linking, StyleSheet, TouchableOpacity, View, Platform } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { Image } from 'expo-image';
 import { normalizePhone } from '@features/auth/utils/phone';
@@ -24,6 +25,7 @@ import { isValidEmail, isNonEmpty } from '@utils/validators';
 import { TERMS_VERSION, legalUrl } from '@core/constants/legal';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -279,11 +281,7 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
     borderWidth: 1,
-    shadowColor: '#7b4fd4',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 32,
-    elevation: 12,
+    ...shadow({ color: '#7b4fd4', opacity: 0.5, radius: 32, offsetX: 0, offsetY: 0, elevation: 12 }),
   },
   appLogo: { width: '80%', height: 130, resizeMode: 'contain', alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 28, fontWeight: '900', color: '#004aad', marginBottom: 8, textAlign: 'center' },

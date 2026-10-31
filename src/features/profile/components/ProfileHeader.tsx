@@ -1,4 +1,5 @@
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { AverageRatingDisplay } from '@features/reviews/components/AverageRatingDisplay';
 import { useAppFont } from '@core/hooks/useAppFont';

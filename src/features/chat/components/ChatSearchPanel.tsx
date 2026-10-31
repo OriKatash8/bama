@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Search } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { getDocument } from '@core/firebase/firestore';

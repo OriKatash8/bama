@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Modal,
-  StyleSheet, ActivityIndicator,
+  View,
+  TouchableOpacity,
+  FlatList,
+  Modal,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { useRouter, useSegments } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';

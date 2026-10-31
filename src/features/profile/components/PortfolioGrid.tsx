@@ -1,8 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  View, Image, TouchableOpacity, Text, StyleSheet,
-  TextInput, Modal,
+  View,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
@@ -21,6 +25,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { CAPTION_MAX_LENGTH, type MediaAsset } from '@core/types/media';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -415,11 +420,7 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     borderColor: 'rgba(30,79,163,0.07)',
-    shadowColor: '#1e4fa3',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    ...shadow({ color: '#1e4fa3', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
   },
   captionClose: { fontSize: 26, lineHeight: 28, color: '#6b7280', paddingHorizontal: 4 },
   captionTitle: { fontSize: 17, color: '#000000' },

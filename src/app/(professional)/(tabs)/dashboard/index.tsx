@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { rtlSafe } from '@utils/formatters';
-import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions, Platform } from 'react-native';
+import { View, ScrollView, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, useWindowDimensions, Platform } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { AnimatedEmptyState } from '@components/empty-state/AnimatedEmptyState';
 import { MapPin, CalendarDays, CalendarCheck, MessageCircle, SlidersHorizontal, Search, History, Briefcase, LayoutGrid } from 'lucide-react-native';
@@ -44,6 +45,7 @@ import he from '@core/i18n/translations/he.json';
 import type { ProjectRequest, ProjectFee } from '@core/types/project';
 import type { Chat } from '@features/chat/types';
 import { useTabBarClearance, useModeAccent } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -82,11 +84,7 @@ const PAGE_BG = '#FAFAFC';
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3',
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
+  ...shadow({ color: '#1e4fa3', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
 } as const;
 
 export default function DashboardScreen() {
@@ -780,11 +778,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     paddingTop: 18,
     paddingHorizontal: 20,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
 
   // Section headers — white on the band
@@ -815,10 +809,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 12,
     gap: 8,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 5, offsetX: 0, offsetY: 2 }),
   },
   searchRowFocused: { borderColor: BLUE },
   searchInput: { flex: 1, fontSize: 14, color: TEXT },

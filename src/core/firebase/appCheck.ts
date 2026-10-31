@@ -74,6 +74,33 @@ export async function initAppCheck(app: FirebaseApp): Promise<void> {
       ? process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN
       : undefined;
 
+    /**
+     * Android only. Play Integrity cannot pass on an emulator or a locally
+     * signed build, and every failed attempt delays Firebase calls (then trips
+     * "Too many attempts"). So Android uses the debug provider in __DEV__, or in
+     * a release build made with EXPO_PUBLIC_APPCHECK_DEBUG=1 set in the build
+     * environment. Anything else — in particular the EAS production profile,
+     * which sets neither — gets Play Integrity. The flag is inlined at build time,
+     * so a binary built without it can never switch to debug at runtime.
+     */
+    const androidDebug =
+      __DEV__ || process.env.EXPO_PUBLIC_APPCHECK_DEBUG === '1';
+    // Same credential rules as above; also honoured for a flagged release build
+    // so one token registered in the console keeps working across emulator wipes.
+    const androidDebugToken = androidDebug
+      ? process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN
+      : undefined;
+
+    if (Platform.OS === 'android' && androidDebug) {
+      // With no fixed token, the native SDK generates one on first run and logs
+      // "Firebase App Check debug token: <uuid>" (adb logcat | grep -i "debug token").
+      console.warn(
+        androidDebugToken
+          ? '[appCheck] Android debug provider active (fixed debug token from env)'
+          : '[appCheck] Android debug provider active — find the generated debug token in logcat: "Firebase App Check debug token: <uuid>"',
+      );
+    }
+
     if (__DEV__ && !debugToken) {
       console.warn(
         '[appCheck] no EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN — dev traffic will stay unverified',
@@ -92,11 +119,11 @@ export async function initAppCheck(app: FirebaseApp): Promise<void> {
         provider: __DEV__ ? 'debug' : 'appAttestWithDeviceCheckFallback',
         ...(debugToken ? { debugToken } : {}),
       },
-      // Android is registered but NOT configured in the console yet — Play
-      // Integrity needs a Play-signed build. This line is ready for that day.
+      // Play Integrity needs a Play-signed build; see androidDebug above for
+      // when the debug provider is used instead.
       android: {
-        provider: __DEV__ ? 'debug' : 'playIntegrity',
-        ...(debugToken ? { debugToken } : {}),
+        provider: androidDebug ? 'debug' : 'playIntegrity',
+        ...(androidDebugToken ? { debugToken: androidDebugToken } : {}),
       },
     });
 

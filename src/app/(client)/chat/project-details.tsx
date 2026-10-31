@@ -10,11 +10,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { confirmDialog } from '@utils/confirmDialog';
 import { BottomSheet } from '@components/ui/BottomSheet';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -85,6 +84,7 @@ const confirmCompletion = callFunction<{ projectId: string }, { ok: boolean }>('
 import { Calendar, CalendarDays, CalendarPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Clapperboard, Clock, Flag, Link as LinkIcon, Mail, MapPin, Pencil, Phone, Trash2, Users, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -2963,11 +2963,7 @@ const DISPUTE_RED = '#b4453c';
 const COMPLETE_GREEN = '#2f8f62';
 
 const CARD_SHADOW = {
-  shadowColor: '#1e4fa3' as const,
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
+  ...shadow({ color: '#1e4fa3' as const, opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
 };
 
 /** Meeting length choices, in minutes. The default is DEFAULT_MEETING_MINUTES. */
@@ -3271,11 +3267,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     gap: 10,
-    shadowColor: '#1e4fa3',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    ...shadow({ color: '#1e4fa3', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 3, elevation: 3 }),
   },
   carouselCardInfo: {
     flex: 1,

@@ -8,7 +8,8 @@ import React from 'react';
 import { Slot, SplashScreen } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, ScrollView } from 'react-native';
+import { StyleSheet, View, ScrollView } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@core/hooks/useAuth';
 import { useNotificationRouting } from '@core/notifications/useNotificationRouting';
@@ -18,7 +19,6 @@ import { ModerationGate } from '@features/moderation/components/ModerationGate';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 import { LanguageSync } from '@components/layout/LanguageSync';
 import { I18nextProvider } from 'react-i18next';
-import { useAppFont } from '@core/hooks/useAppFont';
 import { setAudioModeAsync } from 'expo-audio';
 
 SplashScreen.preventAutoHideAsync();
@@ -62,12 +62,19 @@ function AppShell() {
     'Heebo-ExtraBold':  require('../../assets/fonts/Heebo-ExtraBold.ttf'),
     'Heebo-Black':      require('../../assets/fonts/Heebo-Black.ttf'),
     PeaceSans:          require('../../assets/fonts/peace-sans.ttf'),
-    Montserrat: require('../../assets/fonts/Montserrat-VariableFont_wght.ttf'),
+    // Static faces, one family per weight (like Heebo-*): Android cannot apply
+    // fontWeight to a variable font. See src/core/theme/fonts.ts.
+    'Montserrat-Light':     require('../../assets/fonts/Montserrat-Light.ttf'),
+    'Montserrat-Regular':   require('../../assets/fonts/Montserrat-Regular.ttf'),
+    'Montserrat-Medium':    require('../../assets/fonts/Montserrat-Medium.ttf'),
+    'Montserrat-SemiBold':  require('../../assets/fonts/Montserrat-SemiBold.ttf'),
+    'Montserrat-Bold':      require('../../assets/fonts/Montserrat-Bold.ttf'),
+    'Montserrat-ExtraBold': require('../../assets/fonts/Montserrat-ExtraBold.ttf'),
+    'Montserrat-Black':     require('../../assets/fonts/Montserrat-Black.ttf'),
   });
 
   const [langKey, setLangKey] = useState(i18n.language);
   const colors = useTheme();
-  const font = useAppFont();
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
@@ -79,16 +86,8 @@ function AppShell() {
     });
   }, []);
 
-  useEffect(() => {
-    (Text as unknown as Record<string, unknown>).defaultProps = {
-      ...((Text as unknown as Record<string, unknown>).defaultProps as object | undefined),
-      style: [{ ...font.regular }],
-    };
-    (TextInput as unknown as Record<string, unknown>).defaultProps = {
-      ...((TextInput as unknown as Record<string, unknown>).defaultProps as object | undefined),
-      style: [{ ...font.regular }],
-    };
-  }, [font.regular]);
+  // The default font for plain <Text>/<TextInput> comes from the drop-ins in
+  // src/components/ui/Text.tsx; React 19 ignores the old defaultProps approach.
 
   useEffect(() => {
     const handler = (lang: string) => setLangKey(lang);

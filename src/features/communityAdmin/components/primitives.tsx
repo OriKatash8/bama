@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type TextProps, type TextStyle, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, type StyleProp, type TextProps, type TextStyle, type ViewStyle } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useAdminPalette } from '../i18n';
 import {
   AVATAR_COLORS,

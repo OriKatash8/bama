@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { increment, serverTimestamp } from 'firebase/firestore';
 import { Pencil, Check, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
@@ -15,6 +16,7 @@ import type { PriceOffer, BundleOffer, ProjectRequest } from '@core/types/projec
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -277,8 +279,8 @@ const styles = StyleSheet.create({
 
   offerCard: {
     backgroundColor: '#ffffff', borderRadius: 16, borderWidth: 1, padding: 14, gap: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
-  },
+        ...shadow({ color: '#000', opacity: 0.08, radius: 8, offsetX: 0, offsetY: 2, elevation: 2 }),
+     },
   offerCardDim: { opacity: 0.7 },
   offerTop: { alignItems: 'center', gap: 8 },
   offerTitle: { flex: 1, fontSize: 16, color: '#000000' },

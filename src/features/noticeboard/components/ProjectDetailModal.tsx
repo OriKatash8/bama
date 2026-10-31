@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput, Switch, useWindowDimensions,
+  Modal,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { ChevronLeft, ChevronRight, Sparkles, X } from 'lucide-react-native';
 import type { ProjectRequest, CrewRequestSlot } from '@core/types/project';
@@ -24,6 +30,7 @@ import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import { grossFee, isMinimumFee } from '@features/pricing/utils/fee';
 import { showFeeOverdueDialog, isPermissionDenied } from '@features/pricing/utils/feeOverdueDialog';
+import { shadow } from '@core/theme/shadow';
 
 // Blue outline, black copy. The card used to be ringed in magenta with blue and
 // purple text scattered through it; the blue now lives in the chrome — the
@@ -553,10 +560,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 3,
     borderColor: BLUE,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 20, elevation: 20 }),
   },
   modalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   headerTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: INK, paddingRight: 8 },

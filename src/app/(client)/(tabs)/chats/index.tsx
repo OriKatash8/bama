@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { rtlSafe } from '@utils/formatters';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Search, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { ChatsScreen as ChatsList } from '@features/chat/screens/ChatsScreen';
@@ -18,6 +19,7 @@ import { useTheme } from '@core/hooks/useTheme';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useTabBarClearance, CLIENT_TAB_ACTIVE, useModeAccent } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 const PAGE_BG = '#FAFAFC';
 /** Chrome draws `outline: auto` over the focus border; RN's types have no 'none'. */
@@ -172,11 +174,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     paddingTop: 18,
     paddingHorizontal: 20,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
   },
   searchRow: {
     // Direction is set inline. Hardcoded 'row' left the magnifier on the visual
@@ -190,10 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 8,
     gap: 8,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 5, offsetX: 0, offsetY: 2 }),
   },
   searchRowFocused: { borderColor: '#8B5CF6' },
   /** Cancels the sheet's 20pt padding so the chat list runs edge to edge;

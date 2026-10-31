@@ -1,5 +1,40 @@
 # What's live in production (bama-af0a0)
 
+> ## ⚠ DEPLOY BASE: production = `feature/rental-companies` **+ `feature/payments`**
+>
+> Every future deploy (functions, rules, storage, indexes) must come from a branch that contains **both**.
+> Currently that is **`merge/partner-shops`** (= `feature/launch-stamp` + `integration/payments-rentals`, which is
+> `origin/feature/rental-companies` + `feature/payments`), and **`main` once that branch's PR is merged**. Until then
+> `integration/payments-rentals` is still a valid base (it is what production was deployed from), but it lacks the
+> launch stamp.
+>
+> Two rules, no exceptions:
+> - **Deploy functions only by name** (`--only functions:NAME[,functions:NAME…]`), **never a bare deploy**
+>   (`firebase deploy`, or `--only functions` with no names): a bare deploy also replaces rules, indexes and storage,
+>   and offers to delete every live function the branch does not have.
+> - **Never deploy from a branch missing rentals or payments.** Check first: `src/features/rentals/`,
+>   `functions/src/rentals/` and `functions/src/payments/charge.ts` must all exist.
+>
+> **Never deploy from `main` (until the PR above is merged), `feature/payments` or `feature/rental-companies` alone**: each lacks the other's
+> pieces, and a deploy from it would delete or revert live work. Checked on 2026-10-31: a full functions deploy from
+> `feature/payments` would delete the 8 rental functions (`adminSave/Remove/SetActive/SetCategoryMap/SetItemCategories/
+> SyncRentalCompany`, `trackRentalClick`, `syncAllRentalCompanies`); its rules would drop `rentalCompanies`/`rentalItems`
+> and the `rentalCompanies/**` storage block; its indexes would offer to delete 17 rental indexes and omit the
+> `rateLimits.expireAt` TTL override.
+>
+> Always: deploy by name (`--only functions:a,functions:b`), with `--non-interactive` and without `--force`, from a clean
+> worktree, then run `node scripts/check-deploy-drift.mjs --project bama-af0a0` and record the deploy.
+>
+> **Status (2026-10-31): DEPLOYED.** Production is now `feature/rental-companies` + `feature/payments`, deployed from a clean
+> worktree of `a5dfa85f` (`integration/payments-rentals`). The payments code is live and inert:
+> `config/pricing.paymentProvider = 'none'`, `config/paymentsPrivate = { paymentTestUids: [] }`. Live: the new rules, the
+> `fees.chargeState` / `fees.chargeNeedsAdmin` field overrides, 7 new europe-west1 functions and updated `lifecycleCron` and
+> `markFeePaid`. `paymentWebhook` is deliberately **not** deployed; it ships with the Grow step (allowlisted in
+> `scripts/deploy-drift-allowlist.json`). Verified after the deploy by `scripts/probe-payment-lockdown-prod.mjs --prod`
+> and `scripts/probe-rental-rules.mjs --prod`.
+>
+> When this branch pair changes, change this note in the same commit.
+
 Answers "what's deployed?" without diffing against the console. **Append a row every
 time you deploy rules or indexes, and only after verifying the live artefact against
 the commit** by downloading it and diffing (`scripts/check-deploy-drift.mjs`, or fetching the
@@ -171,6 +206,7 @@ notifications 0, `config/appLinks` absent.
 
 | Released (UTC) | Commit | Ruleset | How verified |
 |---|---|---|---|
+| 2026-10-31 01:54 | `a5dfa85f` (file last changed in the merge `d7e915e7`) | `16f4eb70-c663-43e3-a26b-4f01cfa655f8` (previous `2a340f3e-7df8-4506-90f7-603960585dbb`) | Payments rules only, on top of the rentals rules: `fees/*/charges`, `paymentMethods`, `paymentEvents`, `paymentFake` closed to clients; `config/{docId}` excludes `paymentsPrivate`. Pre-deploy: diff against the live ruleset showed additions only (nothing removed). Post-deploy: live ruleset byte-identical to the file (drift check ok); `probe-payment-lockdown-prod.mjs --prod` all passed, `probe-rental-rules.mjs --prod` 46/46 |
 | 2026-10-01 | `b0fccbc` | (not captured) | Admins may READ project group chats (`type == 'group'`) and their messages, for the read-only admin/project-chat page; never DMs or purchase chats, never write. Pre-deploy: `b0fccbc` is the only commit to the file since `da15871`; deployed from a clean worktree of `b0fccbc` (another session's uncommitted `channelUnread` line was NOT shipped). Same file passed 10/10 on the emulator (`scripts/probe-admin-chat-rules.mjs`); removing either new line failed its own case. Post-deploy: drift check rules ok against `b0fccbc` |
 | 2026-09-30 23:14 | `da15871` | (not captured) | Email addresses join phone numbers: `hasPhone` → `hasContact` with the combined RULES_CONTACT_PATTERN (one matches() per value). Pre-deploy: `da15871` is the only commit to the file since `bd7044b` (released 23:05); same file passed 26/26 on the emulator (`scripts/probe-contact-rules.mjs`), none denied by the 1000-expression limit. Post-deploy: drift check rules ok (released 2026-09-30T23:14:23Z); `scripts/probe-contact-rules-prod.mjs` 5/5 + teardown against production |
 | 2026-09-30 23:05 | `bd7044b` | (not captured) | No phone numbers in public profile text (Terms §6.8): `profile/data` gains `profileWriteOk` — key allowlist, `hasPhone` on bio / equipment (≤15, per position) only when changed, priceList unchanged-or-empty. Pre-deploy: `git log` shows `bd7044b` is the only commit to the file since the previous release (2026-09-27 23:17, **not recorded here**); same file passed 22/22 on the emulator (`scripts/probe-contact-rules.mjs`), none denied by the 1000-expression limit. Post-deploy: drift check rules ok (released 2026-09-30T23:05:52Z); `scripts/probe-contact-rules-prod.mjs` 4/4 + teardown against production |
@@ -200,6 +236,7 @@ Single-function deploys, verified by downloading the uploaded source from the
 
 | Released (UTC) | Function | Commit | Revision | How verified |
 |---|---|---|---|---|
+| 2026-10-31 02:03 | `getMyPaymentMethod`, `createCardSaveSession`, `removeMyPaymentMethod`, `fakeCompleteCardSave`, `feeChargeCron`, `adminListChargeIssues`, `adminAcknowledgeChargeIssue` (new, europe-west1) and `lifecycleCron`, `markFeePaid` (updated, us-central1) | `a5dfa85f` (functions/ tree identical at `d7e915e7`) | n/a | `firebase deploy --only functions:<9 names> --non-interactive`, no `--force`; nothing deleted (74 -> 81 functions, 0 removed). Recorded in `docs/deploy-ledger.json`. `paymentWebhook` held back. Indexes the same day: `fees.chargeState`, `fees.chargeNeedsAdmin` field overrides (READY), 33 composite indexes unchanged |
 | 2026-10-03 06:15–09:00 | `getCommunityInvite` (four `UpdateFunction` calls: 06:15:48, 06:16:37, 08:59:10, 09:00:08Z) | not known | not known | **Not recorded at the time.** Found in the Cloud Audit Logs on 2026-10-06 (principal `orikatash8@gmail.com`). Source not diffed |
 | 2026-10-02 15:01–15:13 | `adminDeleteCommunity`, `adminCommunityAction` (gen2, us-central1; `CreateFunction`, twice each) | not known | not known | **Not recorded at the time.** Found in the Cloud Audit Logs on 2026-10-06 while looking for the invite functions. Source not diffed |
 | 2026-10-01 23:29 | `createCommunityInvite`, `getCommunityInvite`, `revokeCommunityInvite`, `resolveCommunityInvite`, `onCommunityInviteJoinRequest`, `onCommunityDeleted` (`UpdateFunction`, twice each, 23:29:01–23:29:11Z) | `onCommunityInviteJoinRequest`'s uploaded `invites.ts` == `11f783a3`, `inviteCore.ts` == `00dd54a6`, `rateLimit.ts` == `acdaca40` | not known | **Not recorded at the time**, and contrary to the hold above. Found in the Cloud Audit Logs on 2026-10-06 (principal `orikatash8@gmail.com`). Uploaded source of `onCommunityInviteJoinRequest` downloaded from `gcf-v2-sources-*` and diffed on 2026-10-06; the other five were not |

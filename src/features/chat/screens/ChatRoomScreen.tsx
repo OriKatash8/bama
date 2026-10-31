@@ -23,12 +23,11 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import {
   useAudioRecorder,
   useAudioPlayer,
@@ -110,6 +109,7 @@ import type { Chat, Message } from '../types';
 import { GENERAL_CHANNEL_NAMES, type Channel } from '../communityChannels';
 import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
 import type { MediaAsset } from '@core/types/media';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -3024,11 +3024,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: '#ffffff',
     overflow: 'hidden',
-    shadowColor: '#1e4fa3',
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...shadow({ color: '#1e4fa3', opacity: 0.1, radius: 12, offsetX: 0, offsetY: 4, elevation: 4 }),
   },
   listingHeader: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 4 },
   listingHeaderRow: { alignItems: 'center', gap: 8 },
@@ -3046,11 +3042,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1e4fa3',
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    ...shadow({ color: '#1e4fa3', opacity: 0.18, radius: 6, offsetX: 0, offsetY: 2, elevation: 4 }),
   },
   listingImage: { width: '100%', height: 150, backgroundColor: '#eef0fa' },
   listingImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
@@ -3061,11 +3053,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    ...shadow({ color: '#000', opacity: 0.2, radius: 3, offsetX: 0, offsetY: 1, elevation: 2 }),
   },
   listingRibbonSale: { backgroundColor: '#004aad' },
   listingRibbonText: { fontSize: 12, color: '#ffffff' },

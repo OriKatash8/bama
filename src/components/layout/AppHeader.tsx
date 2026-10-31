@@ -7,10 +7,10 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 
@@ -34,6 +34,7 @@ import he from '@core/i18n/translations/he.json';
 import { shrinkAvatar } from '@features/profile/utils/shrinkAvatar';
 import { legalUrl } from '@core/constants/legal';
 import Constants from 'expo-constants';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -451,11 +452,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    ...shadow({ color: '#000', opacity: 0.06, radius: 4, offsetX: 0, offsetY: 2, elevation: 3 }),
   },
   logo: { width: 72, height: 72, marginVertical: -20 },
   leftGroup: { flex: 1 },
@@ -486,11 +483,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     width: 280,
-    shadowColor: '#000',
-    shadowOffset: { width: -4, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 20,
+    ...shadow({ color: '#000', opacity: 0.15, radius: 16, offsetX: -4, offsetY: 0, elevation: 20 }),
   },
   panelTopBar: {
     flexDirection: 'row',

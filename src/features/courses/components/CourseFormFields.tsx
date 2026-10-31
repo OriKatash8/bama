@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { uploadFile } from '@core/firebase/storage';

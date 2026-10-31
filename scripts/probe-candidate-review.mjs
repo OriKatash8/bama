@@ -3,7 +3,7 @@
  * V1 step (b) — the candidate review callables, end to end, against the EMULATORS.
  *
  *   firebase emulators:start --only firestore,auth,functions --project bama-af0a0 > emu.log
- *   EMU_LOG=emu.log node scripts/probe-candidate-review.mjs
+ *   EMU_LOG=emu.log node scripts/probe-candidate-review.mjs --emulator
  *
  * Scenarios:
  *  1 confirm + price-change lock + activation + crew message, idempotent
@@ -19,6 +19,7 @@
  * 10 item 3: who may call the professional callables
  * 11 a released BUNDLE candidate leaves the review (bundle 'removed', not stuck 'accepted')
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { readFileSync, existsSync } from 'node:fs';
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb } from 'firebase-admin/firestore';

@@ -1,8 +1,18 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  ScrollView, StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Platform,
-  ActivityIndicator, Modal, TouchableWithoutFeedback, useWindowDimensions, Keyboard,
+  ScrollView,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  FlatList,
+  Platform,
+  ActivityIndicator,
+  Modal,
+  TouchableWithoutFeedback,
+  useWindowDimensions,
+  Keyboard,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -43,6 +53,7 @@ import { formatShortDay, rtlSafe } from '@utils/formatters';
 import { CATEGORIES, CATEGORY_ICON } from '@features/crew/data/roleTiles';
 import { RADIUS, SPACE, TEXT } from '@core/constants/surface';
 import { useTabBarHeight } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 /**
  * The wizard's violet palette. Local on purpose: this pass restyles this screen
@@ -1156,11 +1167,7 @@ function createStyles(
       paddingHorizontal: 20,
       // paddingBottom (tab bar clearance) is set inline from the bar's measured
       // height, inside the white rather than below it.
-      shadowColor: '#4C1D95',
-      shadowOpacity: 0.09,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: -6 },
-      elevation: 6,
+      ...shadow({ color: '#4C1D95', opacity: 0.09, radius: 14, offsetX: 0, offsetY: -6, elevation: 6 }),
     },
 
     // alignSelf and flexDirection are set INLINE per call site: a plain View does
@@ -1261,11 +1268,7 @@ function createStyles(
     page: { flex: 1 },
     s2Float: { position: 'absolute', left: 20, right: 20 },
     s2CtaFloating: {
-      shadowColor: '#3B19A0',
-      shadowOpacity: 0.28,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 8,
+      ...shadow({ color: '#3B19A0', opacity: 0.28, radius: 12, offsetX: 0, offsetY: 6, elevation: 8 }),
     },
     s2CtaText: { fontSize: 17, fontWeight: '700', fontFamily: ffBold, color: '#FFFFFF' },
     sectionTitle: { fontSize: 20, fontWeight: '800', fontFamily: ffBold, marginBottom: 12 },
@@ -1340,11 +1343,7 @@ function createStyles(
       // Never seen (the gradient covers it), but Android draws elevation from
       // the view's background, and a transparent one casts no shadow.
       backgroundColor: '#6D28D9',
-      shadowColor: '#3B19A0',
-      shadowOpacity: 0.30,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 8,
+      ...shadow({ color: '#3B19A0', opacity: 0.30, radius: 10, offsetX: 0, offsetY: 8, elevation: 8 }),
     },
     submitFill: { flex: 1, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
     submitBtnPressed: { opacity: 0.88 },
@@ -1508,11 +1507,7 @@ function createStyles(
       padding: 14,
       backgroundColor: '#FFFFFF',
       borderColor: '#E4DBFA',
-      shadowColor: '#4C1D95',
-      shadowOpacity: 0.18,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 10,
+      ...shadow({ color: '#4C1D95', opacity: 0.18, radius: 18, offsetX: 0, offsetY: 8, elevation: 10 }),
     },
     locationNav: {
       flexDirection: 'row',

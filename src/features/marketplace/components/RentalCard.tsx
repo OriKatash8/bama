@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { AppText } from '@components/ui/AppText';
 
@@ -8,6 +9,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { localizeLocation } from '@core/constants/israelLocations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 
 type Translations = typeof en;
@@ -67,11 +69,7 @@ const styles = StyleSheet.create({
     margin: 5,
     borderWidth: 1,
     borderColor: 'rgba(0,74,173,0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    ...shadow({ color: '#000', opacity: 0.08, radius: 6, offsetX: 0, offsetY: 2, elevation: 3 }),
   },
   imageWrap: {
     height: 120,

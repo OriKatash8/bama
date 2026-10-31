@@ -10,6 +10,7 @@
     "@react-native-google-signin/google-signin": "^16.1.4",
     "expo": "~57.0.26",
     "expo-apple-authentication": "~57.0.2",
+    "expo-application": "~57.0.3",
     "expo-audio": "~57.0.5",
     "expo-blur": "~57.0.3",
     "expo-build-properties": "~57.0.22",
@@ -81,6 +82,7 @@
     "check:bundle": "node scripts/check-dev-bundle.mjs",
     "test:checked": "node scripts/jest-checked.mjs",
     "legal:build": "node scripts/build-legal-site.mjs",
+    "deploy:rules": "node scripts/deploy-rules.mjs",
     "legal:deploy": "node scripts/export-app-links.mjs --project bama-af0a0 --optional && npm run legal:build && firebase deploy --only hosting"
   },
   "private": true,

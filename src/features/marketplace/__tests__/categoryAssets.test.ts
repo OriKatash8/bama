@@ -86,13 +86,31 @@ it('decodes a known icon to the counts an independent decoder reports', () => {
 describe('unselected icons: the blue glyph alone, no near-white square', () => {
   const { MARKET_CATEGORIES } = jest.requireActual('@features/marketplace/data/categories');
   const CUT_OUT: Record<string, string> = {
-    camera: 'camera', lens: '101', audio: 'audio', lighting: 'teuraicon', drone: 'drone', accessories: 'studio',
+    camera: 'camera', lens: '101', audio: 'audio', lighting: 'teuraicon', drone: 'drone',
   };
 
-  it('the row (and the empty state\'s cards) use the cut-out of each icon', () => {
-    for (const c of MARKET_CATEGORIES) {
+  it('the PNG tiles (and the empty state\'s cards) use the cut-out of each icon', () => {
+    const png = MARKET_CATEGORIES.filter((c: { icon?: number }) => c.icon !== undefined);
+    expect(png.map((c: { id: string }) => c.id)).toEqual(Object.keys(CUT_OUT));
+    for (const c of png) {
       expect(c.icon).toBe(require(path.join(ICON_DIR, `market-${CUT_OUT[c.id]}.png`)));
     }
+  });
+
+  it('the later categories are the chosen Lucide icons (the clapperboard moved to production)', () => {
+    const lucide = jest.requireActual('lucide-react-native');
+    const vector = Object.fromEntries(
+      MARKET_CATEGORIES.filter((c: { Icon?: unknown }) => c.Icon).map((c: { id: string; Icon: unknown }) => [c.id, c.Icon]),
+    );
+    expect(vector).toEqual({
+      studio: lucide.DoorOpen, accessories: lucide.Plug, grip: lucide.LampFloor, production: lucide.Clapperboard,
+    });
+  });
+
+  it('the row: the PNG six minus accessories, then studio, accessories, grip, production — never unsorted or hidden', () => {
+    expect(MARKET_CATEGORIES.map((c: { id: string }) => c.id)).toEqual(
+      ['camera', 'lens', 'audio', 'lighting', 'drone', 'studio', 'accessories', 'grip', 'production'],
+    );
   });
 
   it('transparent where the square was, so the sheet or card colour shows through', () => {

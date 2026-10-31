@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useState } from 'react';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +17,7 @@ import he from '@core/i18n/translations/he.json';
 import { categoryLabel } from '@features/crew/data/categories';
 import { capabilityLabel } from '@features/noticeboard/matching';
 import { localizeLocation } from '@core/constants/israelLocations';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -391,11 +393,7 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     borderWidth: 1,
     backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    ...shadow({ color: '#000', opacity: 0.3, radius: 8, offsetX: 0, offsetY: 2, elevation: 4 }),
   },
   cardCompact: {
     marginHorizontal: 0,
@@ -406,11 +404,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#EFEDF5',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 6, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
 
   // --- Compact card: header ---
@@ -574,11 +568,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.26,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.26, radius: 8, offsetX: 0, offsetY: 6, elevation: 6 }),
   },
   offerPillPressed: { backgroundColor: '#1E40AF' },
   restorePill: { alignItems: 'center', gap: 6 },

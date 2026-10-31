@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { useAppFont } from '@core/hooks/useAppFont';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Props = { text: string };
 
@@ -110,11 +112,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3EEFE',
     padding: 10,
     maxWidth: POPOVER_WIDTH,
-    shadowColor: '#4C1D95',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    ...shadow({ color: '#4C1D95', opacity: 0.15, radius: 8, offsetX: 0, offsetY: 2, elevation: 6 }),
     zIndex: 999,
   },
   popoverText: {

@@ -5,7 +5,7 @@
  * account against ANOTHER user's video path and other bad paths. Every attack row must
  * read DENIED; the side-effect row checks nothing was written for the victim's path.
  *
- *   PROBE_A_EMAIL=… PROBE_A_PASSWORD=… node scripts/probe-cancel-video-prod.mjs
+ *   PROBE_A_EMAIL=… PROBE_A_PASSWORD=… node scripts/probe-cancel-video-prod.mjs --prod
  *
  *   A = the attacker (a throwaway account that already exists in production). The victim
  *   only needs to be a uid STRING: it defaults to a made-up one (no second account needed).
@@ -24,6 +24,7 @@
  *   7 videoJobs doc for B's path exists afterwards  NO (nothing written)
  *   8 (control) A cancels A's own path              ALLOWED
  */
+import './lib/requireProd.mjs'; // explicit --prod required, no default target
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';

@@ -1,4 +1,5 @@
-import { View, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { Film } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { videoStageLabel } from '@components/ui/VideoUploadStatus';

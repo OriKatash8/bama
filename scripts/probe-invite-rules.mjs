@@ -14,9 +14,10 @@
  * this file covers the invite additions, that one the base request behaviour.
  *
  *   npx firebase emulators:start --only firestore,auth --project bama-af0a0
- *   node scripts/probe-invite-rules.mjs [--json out.json]
+ *   node scripts/probe-invite-rules.mjs --emulator [--json out.json]
  */
 
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';

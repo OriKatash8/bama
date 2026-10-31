@@ -7,6 +7,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAgECKwk9l1gV-F8zbaNSWViXeG7Vc6Uz8",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "bama-af0a0.firebaseapp.com",
@@ -18,6 +21,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAgECKwk9l1gV-F8zbaNSWViXeG7Vc6Uz8",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "bama-af0a0.firebaseapp.com",
@@ -33,6 +39,9 @@
         "buildConfiguration": "Release",
         "distribution": "store",
         "image": "macos-tahoe-26.5-xcode-26.6"
+      },
+      "android": {
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAgECKwk9l1gV-F8zbaNSWViXeG7Vc6Uz8",

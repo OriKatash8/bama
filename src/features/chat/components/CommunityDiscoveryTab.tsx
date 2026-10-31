@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, type RefObject } from 'react';
 import { rtlSafe } from '@utils/formatters';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { useRouter, useSegments } from 'expo-router';
 import { Users, Search, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { Image } from 'expo-image';
@@ -15,6 +16,7 @@ import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { communityCategoryLabel } from '@features/crew/data/categories';
 import { TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -442,11 +444,7 @@ const styles = StyleSheet.create({
     borderColor: '#EFEDF5',
     borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 6, offsetX: 0, offsetY: 2, elevation: 2 }),
   },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#F0EEF6' },
   cardRow: { alignItems: 'center', gap: 11, paddingVertical: 11, paddingHorizontal: 14 },
@@ -483,10 +481,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 14,
     gap: 8,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    ...shadow({ color: '#4C1D95', opacity: 0.05, radius: 5, offsetX: 0, offsetY: 2 }),
   },
   searchRowFocused: { borderColor: BLUE },
   searchInput: { flex: 1, fontSize: 14, color: INK },
@@ -539,11 +534,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-    shadowColor: '#4C1D95',
-    shadowOpacity: 0.14,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    ...shadow({ color: '#4C1D95', opacity: 0.14, radius: 6, offsetX: 0, offsetY: 2, elevation: 4 }),
   },
   stripArrowLeft: { left: 0 },
   stripArrowRight: { right: 0 },

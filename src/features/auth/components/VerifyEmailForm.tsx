@@ -13,6 +13,7 @@ import { postStepRoute } from '@features/auth/utils/postStepRoute';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 const BAMA_LOGO = require('../../../../assets/images/bama-logo.png');
 
@@ -137,10 +138,7 @@ const styles = StyleSheet.create({
     gap: 12,
     borderWidth: 1,
     borderColor: '#EAE8F0',
-    shadowColor: '#7b4fd4',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
+    ...shadow({ color: '#7b4fd4', opacity: 0.3, radius: 24, offsetX: 0, offsetY: 0 }),
   },
   icon: { alignSelf: 'center' },
   title: { fontSize: 24, color: BRAND, textAlign: 'center' },

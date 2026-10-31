@@ -10,3 +10,7 @@ it('renders each category with CategoryTile', () => {
   // No single image swapping its source by selection.
   expect(SRC).not.toMatch(/isActive && cat\.selectedIcon \? cat\.selectedIcon : cat\.icon/);
 });
+
+it('tapping the chosen tile again goes back to all categories (both tabs share the strip)', () => {
+  expect(SRC).toMatch(/onPress=\{\(\) => setSelectedCategory\(\(prev\) => \(prev === cat\.id \? 'all' : cat\.id\)\)\}/);
+});

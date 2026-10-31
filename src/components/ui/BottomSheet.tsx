@@ -1,5 +1,6 @@
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
+import { shadow } from '@core/theme/shadow';
 
 type BottomSheetProps = {
   visible: boolean;
@@ -44,11 +45,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 26 + BOTTOM_INSET,
     gap: 14,
-    shadowColor: '#1A1626',
-    shadowOpacity: 0.3,
-    shadowRadius: 17,
-    shadowOffset: { width: 0, height: -10 },
-    elevation: 24,
+    ...shadow({ color: '#1A1626', opacity: 0.3, radius: 17, offsetX: 0, offsetY: -10, elevation: 24 }),
   },
   grabber: {
     width: 38,

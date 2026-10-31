@@ -16,9 +16,10 @@
  *       one slot of two. Exactly one may land.
  *
  *   firebase emulators:start --only firestore,auth,functions
- *   node scripts/probe-slot-cap-race.mjs            # both parts
- *   PART=tx node scripts/probe-slot-cap-race.mjs    # transactions only
+ *   node scripts/probe-slot-cap-race.mjs --emulator            # both parts
+ *   PART=tx node scripts/probe-slot-cap-race.mjs --emulator    # transactions only
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminDb, FieldValue } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';

@@ -1,9 +1,11 @@
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { BellOff, X } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -88,11 +90,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     padding: 14,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    ...shadow({ color: '#000', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 2, elevation: 3 }),
   },
   header: { alignItems: 'center', gap: 8 },
   title: { flex: 1, fontSize: 13, color: '#004aad' },

@@ -20,7 +20,7 @@ import { tabUnreadTotal } from '@features/chat/utils/tabUnreadTotal';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { LayoutDashboard, MessageCircle, ShoppingBag, User } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, PanResponder, View } from 'react-native';
+import { Dimensions, PanResponder, Platform, View } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Translations = typeof en;
@@ -113,7 +113,8 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
           screenOptions={{
             headerShown: false,
             // Full-width slide between tabs, like the stack's push/pop.
-            ...TAB_SLIDE,
+            // iOS only: on Android the full-width scene transform hangs the render thread.
+            ...(Platform.OS === 'ios' ? TAB_SLIDE : null),
             tabBarShowLabel: true,
             tabBarStyle: (locked || profileEditing) ? { display: 'none' } : getDockedTabBarStyle(insets.bottom),
             // Docked glass bar; it owns the bottom safe-area inset (the provider

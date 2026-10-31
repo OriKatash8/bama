@@ -6,11 +6,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star, User as UserIcon } from 'lucide-react-native';
 import { submitReviews } from '@features/reviews/services/submitReviews';
@@ -18,6 +17,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -263,11 +263,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...shadow({ color: '#000', opacity: 0.08, radius: 16, offsetX: 0, offsetY: 4, elevation: 4 }),
   },
   avatarWrap: { marginBottom: 4 },
   avatar: { width: 72, height: 72, borderRadius: 36 },

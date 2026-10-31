@@ -1,8 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  ScrollView, FlatList, StyleSheet, View, Text, TextInput, TouchableOpacity, Platform,
-  useWindowDimensions, Modal, Animated, TouchableWithoutFeedback, ActivityIndicator,
+  ScrollView,
+  FlatList,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Platform,
+  useWindowDimensions,
+  Modal,
+  Animated,
+  TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
+import { Text, TextInput } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { useTabBarClearance } from '@core/navigation/floatingTabBar';
 

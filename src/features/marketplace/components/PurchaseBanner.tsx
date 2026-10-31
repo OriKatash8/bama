@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
+import { Text } from '@components/ui/Text';
 import { X } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -18,6 +22,7 @@ import type { MarketplaceListing } from '../types';
 import type { Chat } from '@features/chat/types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
+import { shadow } from '@core/theme/shadow';
 
 type Translations = typeof en;
 
@@ -290,11 +295,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     padding: 14,
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    ...shadow({ color: '#000', opacity: 0.06, radius: 8, offsetX: 0, offsetY: 2, elevation: 3 }),
   },
   bannerHeader: {
     flexDirection: 'row',

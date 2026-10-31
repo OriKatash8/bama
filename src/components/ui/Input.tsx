@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, type TextInputProps } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, type TextInputProps } from 'react-native';
+import { TextInput } from '@components/ui/Text';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { AppText } from './AppText';

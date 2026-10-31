@@ -16,6 +16,7 @@ import { registerIfGranted } from '@core/notifications/registerForPushNotificati
 import { handleForegroundNotification } from '@core/notifications/foregroundHandler';
 import i18n from '@core/i18n';
 import { readLastMode, clearLastMode } from '@core/storage/lastMode';
+import { recordLaunch } from '@core/services/recordLaunch';
 import type { User, ProfessionalProfile } from '@core/types/user';
 
 type LegacyUserDoc = User & { role?: string };
@@ -110,6 +111,9 @@ export function useAuth() {
           // it here keeps a stale value from outliving the backfill.
           const { role: _role, email: _staleEmail, ...cleanUser } = userData as any;
           setUser({ ...cleanUser, email: firebaseUser.email ?? undefined } as User);
+          // Once per launch, for a user whose doc exists and who is not suspended: which
+          // platform and build they are on, and when. Fire-and-forget (see recordLaunch).
+          void recordLaunch(firebaseUser.uid);
           await restoreLastMode(firebaseUser.uid);
           setLoading(false);
           // A warning shows once: not again after the user acknowledged THIS

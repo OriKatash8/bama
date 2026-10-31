@@ -12,6 +12,13 @@ import { CLIENT_TAB_ACTIVE, PRO_TAB_ACTIVE } from '@core/navigation/floatingTabB
  */
 
 let mockSegment = '(client)';
+/** The drop-in Text adds composite layers, so climb to the nearest host element (e.g. the pill View). */
+function hostAncestor(n: { parent: unknown }) {
+  let p = n.parent as { type: unknown; parent: unknown; props: Record<string, unknown> } | null;
+  while (p && typeof p.type !== 'string') p = p.parent as typeof p;
+  return p as { props: { style?: unknown } };
+}
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
   useSegments: () => [mockSegment],
@@ -49,10 +56,10 @@ async function accentsFor(segment: string) {
   const r = render(<ChatsScreen chats={[chat]} />);
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
   const selectedChip = r.UNSAFE_root.findAll((n) => n.props.accessibilityState?.selected === true && n.props.style)[0];
-  const badge = r.getByText('3').parent!.parent!;
+  const badge = hostAncestor(r.getByText('3'));
   return {
     chip: StyleSheet.flatten(selectedChip.props.style).backgroundColor,
-    badge: StyleSheet.flatten(badge.props.style).backgroundColor,
+    badge: (StyleSheet.flatten(badge.props.style as never) as Record<string, unknown>).backgroundColor,
   };
 }
 
