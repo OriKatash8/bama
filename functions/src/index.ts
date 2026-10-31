@@ -34,3 +34,6 @@ export * from './lifecycle/disputeResolution';
 export * from './communities/invites';
 export * from './communities/adminDelete';
 export * from './communities/adminActions';
+
+// Fee charging from a saved card token (europe-west1). Inert while paymentProvider is 'none'.
+export * from './payments';
