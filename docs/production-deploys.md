@@ -3,8 +3,19 @@
 > ## ⚠ DEPLOY BASE: production = `feature/rental-companies` **+ `feature/payments`**
 >
 > Every future deploy (functions, rules, storage, indexes) must come from a branch that contains **both**.
-> Currently that is **`integration/payments-rentals`** (= `origin/feature/rental-companies` + `feature/payments`).
-> **Never deploy from `main`, `feature/payments` or `feature/rental-companies` alone**: each lacks the other's
+> Currently that is **`merge/partner-shops`** (= `feature/launch-stamp` + `integration/payments-rentals`, which is
+> `origin/feature/rental-companies` + `feature/payments`), and **`main` once that branch's PR is merged**. Until then
+> `integration/payments-rentals` is still a valid base (it is what production was deployed from), but it lacks the
+> launch stamp.
+>
+> Two rules, no exceptions:
+> - **Deploy functions only by name** (`--only functions:NAME[,functions:NAME…]`), **never a bare deploy**
+>   (`firebase deploy`, or `--only functions` with no names): a bare deploy also replaces rules, indexes and storage,
+>   and offers to delete every live function the branch does not have.
+> - **Never deploy from a branch missing rentals or payments.** Check first: `src/features/rentals/`,
+>   `functions/src/rentals/` and `functions/src/payments/charge.ts` must all exist.
+>
+> **Never deploy from `main` (until the PR above is merged), `feature/payments` or `feature/rental-companies` alone**: each lacks the other's
 > pieces, and a deploy from it would delete or revert live work. Checked on 2026-10-31: a full functions deploy from
 > `feature/payments` would delete the 8 rental functions (`adminSave/Remove/SetActive/SetCategoryMap/SetItemCategories/
 > SyncRentalCompany`, `trackRentalClick`, `syncAllRentalCompanies`); its rules would drop `rentalCompanies`/`rentalItems`
