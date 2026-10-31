@@ -13,11 +13,17 @@
  *   3. getMyPaymentMethod never returns the token, and tells a user the feature is
  *      off while paymentProvider is 'none'.
  *   4. createCardSaveSession / removeMyPaymentMethod / fakeCompleteCardSave refuse
- *      while payments are off; the admin callables refuse a non-admin.
+ *      while payments are off, each for THE RIGHT REASON (the throwaway user is made
+ *      email-verified first; an unverified password user would be refused by
+ *      createCardSaveSession's verified-email check instead, which would pass this
+ *      check for the wrong reason). The admin callables refuse a non-admin.
  *   5. paymentWebhook: GET is 405; a junk POST changes nothing and leaks nothing.
+ *      SKIPPED unless PROBE_WEBHOOK=1: paymentWebhook is held back from the first
+ *      deploy and ships with the Grow step.
  *
  * Needs paymentProvider 'none' in config/pricing (the shipped default). It creates a
- * throwaway user and seeds a card + fee with the Admin SDK, then removes them.
+ * throwaway user (onUserCreate also writes users/<uid>, which is removed too) and seeds a
+ * card + fee with the Admin SDK, then removes them. Section 5: PROBE_WEBHOOK=1 to include it.
  *
  *   node scripts/probe-payment-lockdown-prod.mjs
  */
@@ -47,8 +53,11 @@ const call = (name, data = {}) => httpsCallable(eu, name)(data).then((r) => r.da
 
 const { initializeApp: ia } = await import('firebase-admin/app');
 const { getFirestore: gdb } = await import('firebase-admin/firestore');
+const { getAuth: gAdminAuth } = await import('firebase-admin/auth');
 const STAMP = `probe${Date.now()}`;
-const adminDb = gdb(ia({ projectId: cfg.projectId }, STAMP));
+const adminApp = ia({ projectId: cfg.projectId }, STAMP);
+const adminDb = gdb(adminApp);
+const adminAuth = gAdminAuth(adminApp);
 
 let failures = 0;
 const check = (l, ok, d = '') => { console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${l}${d ? `  - ${d}` : ''}`); if (!ok) failures++; };
@@ -56,14 +65,22 @@ const denied = async (label, fn) => {
   try { await fn(); check(label, false, 'was ALLOWED'); }
   catch (e) { check(label, String(e.code ?? '').includes('permission-denied'), e.code); }
 };
-const refused = async (label, fn, codePart) => {
+/** Refused with this code AND this message: a refusal for some other reason is a failure. */
+const refused = async (label, fn, codePart, messagePart) => {
   try { await fn(); check(label, false, 'was ALLOWED'); }
-  catch (e) { check(label, String(e.code ?? '').includes(codePart), e.code); }
+  catch (e) {
+    const good = String(e.code ?? '').includes(codePart) && String(e.message ?? '').includes(messagePart);
+    check(label, good, `${e.code}: ${e.message}`);
+  }
 };
 
 const email = `${STAMP}@probe.invalid`;
 const cred = await createUserWithEmailAndPassword(auth, email, 'Probe-Password-123!');
 const UID = cred.user.uid;
+// Verified, so createCardSaveSession gets past assertVerifiedEmail and is refused by the
+// payments switch itself; the token must be refreshed to carry email_verified.
+await adminAuth.updateUser(UID, { emailVerified: true });
+await cred.user.getIdToken(true);
 const PROJECT = `${STAMP}-proj`;
 const KEY = `${PROJECT}_${UID}_1`;
 const SECRET = `SECRET-TOKEN-${STAMP}`;
@@ -118,28 +135,34 @@ try {
   check('feature reads as OFF while paymentProvider is none', view.enabled === false && view.hasCard === false);
 
   console.log('\n4. Callables refuse while payments are off:');
-  await refused('createCardSaveSession', () => call('createCardSaveSession'), 'failed-precondition');
-  await refused('removeMyPaymentMethod', () => call('removeMyPaymentMethod'), 'failed-precondition');
-  await refused('fakeCompleteCardSave', () => call('fakeCompleteCardSave', { token: 'tok_ok' }), 'failed-precondition');
-  await refused('adminListChargeIssues as non-admin', () => call('adminListChargeIssues'), 'permission-denied');
-  await refused('adminAcknowledgeChargeIssue as non-admin', () => call('adminAcknowledgeChargeIssue', { projectId: PROJECT, professionalId: UID }), 'permission-denied');
+  await refused('createCardSaveSession (payments-disabled)', () => call('createCardSaveSession'), 'failed-precondition', 'payments-disabled');
+  await refused('removeMyPaymentMethod (payments-disabled)', () => call('removeMyPaymentMethod'), 'failed-precondition', 'payments-disabled');
+  await refused('fakeCompleteCardSave (fake-provider-inactive)', () => call('fakeCompleteCardSave', { token: 'tok_ok' }), 'failed-precondition', 'fake-provider-inactive');
+  await refused('adminListChargeIssues as non-admin', () => call('adminListChargeIssues'), 'permission-denied', 'Admins only');
+  await refused('adminAcknowledgeChargeIssue as non-admin', () => call('adminAcknowledgeChargeIssue', { projectId: PROJECT, professionalId: UID }), 'permission-denied', 'Admins only');
   const stored = (await adminDb.doc(`paymentMethods/${UID}`).get()).data();
   check('the stored card is untouched by the refused calls', stored?.token === SECRET);
 
   console.log('\n5. paymentWebhook:');
-  const url = `https://europe-west1-${cfg.projectId}.cloudfunctions.net/paymentWebhook`;
-  const get = await fetch(url);
-  check('GET -> 405', get.status === 405, String(get.status));
-  const post = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ providerEventId: `${STAMP}-hook`, type: 'charge', idempotencyKey: KEY, outcome: 'succeeded' }) });
-  const body = await post.text();
-  check('junk POST answers with a generic body', post.status === 200 || post.status === 400, `${post.status} ${body}`);
-  const fee = (await adminDb.doc(`projects/${PROJECT}/fees/${UID}`).get()).data();
-  check('and moves nothing', fee?.chargeState === 'idle' && fee?.feePaid !== true, `chargeState=${fee?.chargeState}`);
-  const ev = await adminDb.doc(`paymentEvents/${STAMP}-hook`).get();
-  check('no event was recorded for it (provider is none)', !ev.exists, JSON.stringify(ev.data()));
+  if (process.env.PROBE_WEBHOOK !== '1') {
+    console.log('  skip  paymentWebhook is held back from this deploy (set PROBE_WEBHOOK=1 once it ships)');
+  } else {
+    const url = `https://europe-west1-${cfg.projectId}.cloudfunctions.net/paymentWebhook`;
+    const get = await fetch(url);
+    check('GET -> 405', get.status === 405, String(get.status));
+    const post = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ providerEventId: `${STAMP}-hook`, type: 'charge', idempotencyKey: KEY, outcome: 'succeeded' }) });
+    const body = await post.text();
+    check('junk POST answers with a generic body', post.status === 200 || post.status === 400, `${post.status} ${body}`);
+    const fee = (await adminDb.doc(`projects/${PROJECT}/fees/${UID}`).get()).data();
+    check('and moves nothing', fee?.chargeState === 'idle' && fee?.feePaid !== true, `chargeState=${fee?.chargeState}`);
+    const ev = await adminDb.doc(`paymentEvents/${STAMP}-hook`).get();
+    check('no event was recorded for it (provider is none)', !ev.exists, JSON.stringify(ev.data()));
+  }
 } finally {
+  // onUserCreate writes users/<uid> a moment after sign-up: give it time, or the delete races it.
+  await new Promise((r) => setTimeout(r, 4000));
   for (const p of [
-    `paymentMethods/${UID}`, `paymentEvents/${STAMP}`, `paymentEvents/${STAMP}x`, `paymentEvents/${STAMP}-hook`, `paymentFake/${KEY}`,
+    `paymentMethods/${UID}`, `paymentEvents/${STAMP}`, `paymentEvents/${STAMP}x`, `paymentEvents/${STAMP}-hook`, `paymentFake/${KEY}`, `users/${UID}`,
     `projects/${PROJECT}/fees/${UID}/charges/${KEY}`, `projects/${PROJECT}/fees/${UID}`, `projects/${PROJECT}`,
   ]) await adminDb.doc(p).delete().catch(() => {});
   await deleteUser(cred.user).catch(() => {});

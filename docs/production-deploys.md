@@ -1,5 +1,24 @@
 # What's live in production (bama-af0a0)
 
+> ## ⚠ DEPLOY BASE: production = `feature/rental-companies` **+ `feature/payments`**
+>
+> Every future deploy (functions, rules, storage, indexes) must come from a branch that contains **both**.
+> Currently that is **`integration/payments-rentals`** (= `origin/feature/rental-companies` + `feature/payments`).
+> **Never deploy from `main`, `feature/payments` or `feature/rental-companies` alone**: each lacks the other's
+> pieces, and a deploy from it would delete or revert live work. Checked on 2026-10-31: a full functions deploy from
+> `feature/payments` would delete the 8 rental functions (`adminSave/Remove/SetActive/SetCategoryMap/SetItemCategories/
+> SyncRentalCompany`, `trackRentalClick`, `syncAllRentalCompanies`); its rules would drop `rentalCompanies`/`rentalItems`
+> and the `rentalCompanies/**` storage block; its indexes would offer to delete 17 rental indexes and omit the
+> `rateLimits.expireAt` TTL override.
+>
+> Always: deploy by name (`--only functions:a,functions:b`), with `--non-interactive` and without `--force`, from a clean
+> worktree, then run `node scripts/check-deploy-drift.mjs --project bama-af0a0` and record the deploy.
+>
+> **Status (2026-10-31): the payments deploy is prepared but NOT yet done.** Until it lands, production is still
+> `feature/rental-companies` alone; update this block the day it lands. The payments code ships with
+> `config/pricing.paymentProvider = 'none'` (inert); `paymentWebhook` is deliberately held back until the Grow step.
+> When this branch pair changes, change this note in the same commit.
+
 Answers "what's deployed?" without diffing against the console. **Append a row every
 time you deploy rules or indexes, and only after verifying the live artefact against
 the commit** by downloading it and diffing (`scripts/check-deploy-drift.mjs`, or fetching the
