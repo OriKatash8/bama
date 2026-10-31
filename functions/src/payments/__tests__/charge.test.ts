@@ -1,4 +1,4 @@
-import { mockDb, Timestamp } from './memoryHelpers';
+import { mockDb, Timestamp } from '../__fixtures__/memoryHelpers';
 import {
   claimFeeForCharge, runCharge, applyChargeResult, reconcileStaleClaim,
 } from '../charge';
@@ -8,7 +8,7 @@ import { fakeProvider, fakeResolvePending } from '../fakeProvider';
 import { sendChargeNotice } from '../notices';
 import type { PaymentsConfig } from '../guard';
 
-jest.mock('../../lifecycle/helpers', () => require('./memoryHelpers').mockHelpers);
+jest.mock('../../lifecycle/helpers', () => require('../__fixtures__/memoryHelpers').mockHelpers);
 jest.mock('../../lifecycle/feeOverdue', () => ({
   recomputeFeeBlockSafely: jest.fn(async () => undefined),
   langOf: async () => 'he',
@@ -17,7 +17,7 @@ jest.mock('../notices', () => ({ sendChargeNotice: jest.fn(async () => undefined
 // A faithful miniature of settleFee's confirmed branch: same refusals, same fields.
 jest.mock('../../lifecycle/completion', () => {
   const { HttpsError: Err } = require('firebase-functions/v2/https');
-  const { mockDb: db } = require('./memoryHelpers');
+  const { mockDb: db } = require('../__fixtures__/memoryHelpers');
   return {
     settleFee: jest.fn(async (p: string, u: string, by: any) => {
       const path = `projects/${p}/fees/${u}`;

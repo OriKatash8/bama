@@ -13,6 +13,6 @@
   "compileOnSave": true,
   // Tests are run by the ROOT jest (they import the pure modules directly);
   // they must not be compiled into lib/ and shipped with the functions.
-  "exclude": ["src/**/__tests__/**"],
+  "exclude": ["src/**/__tests__/**", "src/**/__fixtures__/**"],
   "include": ["src"]
 }
