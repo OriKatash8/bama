@@ -566,11 +566,36 @@ service cloud.firestore {
       match /private/{docId} {
         allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId)
-          && docId == 'contact'
-          && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
-          && request.resource.data.phone is string
-          && request.resource.data.phone.matches('^[+][1-9][0-9]{7,14}$');
-        allow delete: if false;
+          && (
+            (docId == 'contact'
+              && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
+              && request.resource.data.phone is string
+              && request.resource.data.phone.matches('^[+][1-9][0-9]{7,14}$'))
+            || (docId == 'presence' && presenceDocOk())
+          );
+        // Only the launch stamp can be deleted, and only by an admin (the phone is
+        // removed by account deletion, which runs with the Admin SDK).
+        allow delete: if docId == 'presence' && isAdmin();
+      }
+
+      /**
+       * The launch stamp, `users/{uid}/private/presence` (recordLaunch): which
+       * platform and build this user last opened, and when. Private on purpose —
+       * `users/{uid}` is readable by every signed-in user, and nobody else should
+       * see when someone was last online or which device they use. Readable by
+       * the owner and admins (the private/{docId} read rule above). The app
+       * writes the whole doc every launch, so exactly these three keys, always:
+       * the platform is one the app runs on, the version is a short string, and
+       * `lastSeenAt` is the server's own clock (request.time), so a client
+       * cannot claim a time.
+       */
+      function presenceDocOk() {
+        return request.resource.data.keys().hasOnly(['lastPlatform', 'appVersion', 'lastSeenAt'])
+          && request.resource.data.keys().hasAll(['lastPlatform', 'appVersion', 'lastSeenAt'])
+          && request.resource.data.lastPlatform in ['ios', 'android', 'web']
+          && request.resource.data.appVersion is string
+          && request.resource.data.appVersion.size() <= 40
+          && request.resource.data.lastSeenAt == request.time;
       }
 
       match /portfolio/{assetId} {

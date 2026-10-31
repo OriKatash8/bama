@@ -5,7 +5,7 @@
  * Runs against the Firestore EMULATOR with whatever firestore.rules says.
  *
  *   npx firebase emulators:start --only firestore,auth --project bama-af0a0
- *   node scripts/probe-rule-holes.mjs --emulator
+ *   node scripts/probe-rule-holes.mjs --emulator   (FS_PORT / AUTH_PORT override 8080 / 9099)
  *
  * Two halves, both required: every write the app makes today is ALLOWED (in its
  * exact shape — both agreement orders, the admin community create), and each
@@ -22,8 +22,12 @@ import {
 } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
-process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080';
-process.env.FIREBASE_AUTH_EMULATOR_HOST ??= '127.0.0.1:9099';
+// The ports. This probe once ignored them and connected to 8080/9099 whatever was asked,
+// which on 2026-10-31 meant it ran against a developer's long-running emulator.
+const FS_PORT = process.env.FS_PORT ?? '8080';
+const AUTH_PORT = process.env.AUTH_PORT ?? '9099';
+process.env.FIRESTORE_EMULATOR_HOST ??= `127.0.0.1:${FS_PORT}`;
+process.env.FIREBASE_AUTH_EMULATOR_HOST ??= `127.0.0.1:${AUTH_PORT}`;
 setLogLevel('silent');
 const PROJECT = 'bama-af0a0';
 const adminApp = initAdmin({ projectId: PROJECT });
@@ -32,8 +36,8 @@ const aauth = getAdminAuth(adminApp);
 const app = initializeApp({ apiKey: 'emulator-key', projectId: PROJECT }, 'probe');
 const db = getFirestore(app);
 const auth = getAuth(app);
-connectFirestoreEmulator(db, '127.0.0.1', 8080);
-connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+connectFirestoreEmulator(db, '127.0.0.1', Number(FS_PORT));
+connectAuthEmulator(auth, `http://127.0.0.1:${AUTH_PORT}`, { disableWarnings: true });
 
 const PW = 'probe-password-123';
 const uid = {};
