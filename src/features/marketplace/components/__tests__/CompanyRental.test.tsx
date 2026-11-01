@@ -1,5 +1,5 @@
 import React from 'react';
-import { Linking } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 import { fireEvent, render, within } from '@testing-library/react-native';
 import { ListingDetailModal } from '../ListingDetailModal';
 import { ListingCard } from '../ListingCard';
@@ -101,5 +101,36 @@ describe('card', () => {
   it('a regular listing has no stock line', () => {
     const r = render(<ListingCard listing={{ ...rentalItemToListing(ITEM), source: undefined }} onPress={jest.fn()} />);
     expect(r.queryByTestId('listing-card-stock')).toBeNull();
+  });
+});
+
+describe('rental popup look', () => {
+  const flat = (el: { props: { style: unknown } }) => StyleSheet.flatten(el.props.style as never) as Record<string, unknown>;
+
+  it('every text is black, and a title sits on the first line of a two-line value', () => {
+    const r = render(<ListingDetailModal listing={rentalItemToListing({ ...ITEM, name: 'Aputure LS 600d Pro II with a very long name that wraps' })} onClose={jest.fn()} />);
+    const nameBox = r.getByTestId('listing-name-box');
+    const row = nameBox.children[0] as unknown as { props: { style: unknown } };
+    expect(flat(row).alignItems).toBe('flex-start');
+    for (const text of [R.in_stock, 'השכרת ציוד', 'פנס לד חזק']) {
+      expect(flat(r.getByText(text)).color).toBe('#000000');
+    }
+    expect(flat(r.getByText(/₪250/)).color).toBe('#000000');
+    // The title does not wrap with the value.
+    const label = within(nameBox).getAllByText(/:/)[0];
+    expect(flat(label)).toEqual(expect.objectContaining({ color: '#000000', flexShrink: 0 }));
+  });
+
+  it('the button keeps its design', () => {
+    const r = render(<ListingDetailModal listing={rentalItemToListing(ITEM)} onClose={jest.fn()} />);
+    expect(flat(r.getByTestId('listing-rent-through')).backgroundColor).toBe('#004aad');
+  });
+
+  it('the second-hand popup is unchanged', () => {
+    const sale = { ...rentalItemToListing(ITEM), type: 'secondhand', source: undefined, posterId: 'p1', posterName: 'Avi', storeName: null } as never;
+    const r = render(<ListingDetailModal listing={sale} onClose={jest.fn()} />);
+    const row = r.getByTestId('listing-name-box').children[0] as unknown as { props: { style: unknown } };
+    expect(flat(row).alignItems).toBe('center');
+    expect(flat(r.getByText('Avi')).color).toBe('#004aad');
   });
 });

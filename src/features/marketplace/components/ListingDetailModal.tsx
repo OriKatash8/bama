@@ -279,11 +279,11 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
 
             {/* Product name, right under the picture */}
             <View style={styles.detailsBox} testID="listing-name-box">
-              <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                <AppText weight="regular" style={styles.detailLabel}>
+              <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]}>
+                <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>
                   {`${t('marketplace.product_name')}:`}
                 </AppText>
-                <AppText weight="semiBold" style={[styles.detailValue, { textAlign: rtl ? 'left' : 'right' }]}>
+                <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText, { textAlign: rtl ? 'left' : 'right' }]}>
                   {listing.productName}
                 </AppText>
               </View>
@@ -293,8 +293,8 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             {(listing.condition || listing.brand || listing.category) && (
               <View style={styles.detailsBox}>
                 {listing.condition && (
-                  <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                    <AppText weight="regular" style={styles.detailLabel}>
+                  <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]}>
+                    <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>
                       {t('marketplace.condition')}
                     </AppText>
                     <View style={[styles.conditionBadge, { backgroundColor: CONDITION_COLOR[listing.condition] ?? '#888' }]}>
@@ -305,15 +305,15 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                   </View>
                 )}
                 {listing.brand && (
-                  <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                    <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.brand')}</AppText>
-                    <AppText weight="semiBold" style={[styles.detailValue, { textAlign: rtl ? 'left' : 'right' }]}>{listing.brand}</AppText>
+                  <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]}>
+                    <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t('marketplace.brand')}</AppText>
+                    <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText, { textAlign: rtl ? 'left' : 'right' }]}>{listing.brand}</AppText>
                   </View>
                 )}
                 {listing.category && (
-                  <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                    <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.category')}</AppText>
-                    <AppText weight="semiBold" style={[styles.detailValue, { textAlign: rtl ? 'left' : 'right' }]}>
+                  <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]}>
+                    <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t('marketplace.category')}</AppText>
+                    <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText, { textAlign: rtl ? 'left' : 'right' }]}>
                       {t(`marketplace.${categoryLabelKey(listing.category) ?? `category_${listing.category}`}`)}
                       {(() => {
                         const subs = Array.isArray(listing.subcategory)
@@ -329,22 +329,22 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
 
             {/* Location & price: a label on one side, the value on the other */}
             <View style={styles.detailsBox} testID="listing-info-box">
-              <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                <AppText weight="regular" style={styles.detailLabel}>{`${t('marketplace.location')}:`}</AppText>
+              <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]}>
+                <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{`${t('marketplace.location')}:`}</AppText>
                 <View style={[styles.locationRow, { flexDirection: rowDir, flexShrink: 1 }]}>
                   <Image
                     source={LOCATION_ICON}
                     style={[styles.locationIcon, { marginRight: rtl ? 0 : 4, marginLeft: rtl ? 4 : 0 }]}
                     contentFit="contain" cachePolicy="memory-disk"
                   />
-                  <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>
+                  <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText]} numberOfLines={1}>
                     {localizeLocation(listing.location, language)}
                   </AppText>
                 </View>
               </View>
-              <View style={[styles.detailRow, { flexDirection: rowDir }]}>
-                <AppText weight="regular" style={styles.detailLabel}>{`${t('marketplace.price')}:`}</AppText>
-                <Text style={styles.price}>{priceLabel}</Text>
+              <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]}>
+                <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{`${t('marketplace.price')}:`}</AppText>
+                <Text style={[styles.price, isRental && styles.rentalText]}>{priceLabel}</Text>
               </View>
             </View>
 
@@ -352,18 +352,18 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
             {isRental ? (
               listing.storeName ? (
                 <View style={styles.sellerBox}>
-                  <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-store-row">
-                    <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.store')}</AppText>
-                    <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>{listing.storeName}</AppText>
+                  <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]} testID="listing-store-row">
+                    <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t('marketplace.store')}</AppText>
+                    <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText]} numberOfLines={1}>{listing.storeName}</AppText>
                   </View>
                   {isCompany && (
-                    <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-stock-row">
-                      <AppText weight="regular" style={styles.detailLabel}>{t(listing.inStock === false ? 'rentals.out_of_stock' : 'rentals.in_stock')}</AppText>
+                    <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]} testID="listing-stock-row">
+                      <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t(listing.inStock === false ? 'rentals.out_of_stock' : 'rentals.in_stock')}</AppText>
                       <View style={[styles.stockDot, { backgroundColor: listing.inStock === false ? '#B4232A' : '#2F7A45' }]} />
                     </View>
                   )}
                   {isCompany && !!listing.description && (
-                    <AppText weight="regular" testID="listing-description" style={[styles.description, { textAlign: rtl ? 'right' : 'left' }]}>
+                    <AppText weight="regular" testID="listing-description" style={[styles.description, styles.rentalText, { textAlign: rtl ? 'right' : 'left' }]}>
                       {listing.description}
                     </AppText>
                   )}
@@ -371,9 +371,9 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
               ) : null
             ) : (
               <View style={styles.sellerBox}>
-                <View style={[styles.detailRow, { flexDirection: rowDir }]} testID="listing-seller-row">
-                  <AppText weight="regular" style={styles.detailLabel}>{t('marketplace.posted_by')}</AppText>
-                  <AppText weight="semiBold" style={styles.detailValue} numberOfLines={1}>{listing.posterName}</AppText>
+                <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]} testID="listing-seller-row">
+                  <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t('marketplace.posted_by')}</AppText>
+                  <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText]} numberOfLines={1}>{listing.posterName}</AppText>
                 </View>
               </View>
             )}
@@ -537,7 +537,7 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
 }
 
 const styles = StyleSheet.create({
-  stockDot: { width: 10, height: 10, borderRadius: 5 },
+  stockDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
   description: { fontSize: 13, lineHeight: 19, color: '#333333', marginTop: 8 },
   pickerCard: {
     width: '88%',
@@ -643,6 +643,12 @@ const styles = StyleSheet.create({
     color: '#004aad',
     flexShrink: 1,
   },
+  // Rentals: every text black, and a title stays on the first line of a value
+  // that wraps to two (the second-hand popup keeps its look).
+  rentalText: { color: '#000000' },
+  // The title never wraps: only the value does, under its own first line.
+  rentalLabel: { color: '#000000', flexShrink: 0 },
+  rentalRow: { alignItems: 'flex-start', gap: 12 },
   // Condition keeps its per-value colour (it carries meaning), as in the add sheet.
   conditionBadge: {
     borderRadius: 16,
