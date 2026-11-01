@@ -1,12 +1,12 @@
 # What's live in production (bama-af0a0)
 
-> ## ⚠ DEPLOY BASE: production = `feature/rental-companies` **+ `feature/payments`**
+> ## ⚠ DEPLOY BASE: **`main`** (production = rentals **+** payments)
 >
-> Every future deploy (functions, rules, storage, indexes) must come from a branch that contains **both**.
-> Currently that is **`merge/partner-shops`** (= `feature/launch-stamp` + `integration/payments-rentals`, which is
-> `origin/feature/rental-companies` + `feature/payments`), and **`main` once that branch's PR is merged**. Until then
-> `integration/payments-rentals` is still a valid base (it is what production was deployed from), but it lacks the
-> launch stamp.
+> Every future deploy (functions, rules, storage, indexes) comes from **`main`**, which since PR #1 (merge commit
+> `b1de07f`, 2026-10-31) contains both `feature/rental-companies` and `feature/payments` plus `feature/launch-stamp`.
+> Checked from `main` at `b1de07f`: `check-deploy-drift.mjs --project bama-af0a0` reports no drift (rules, storage, all 33
+> indexes, all 81 functions recorded and unchanged). `merge/partner-shops` and `integration/payments-rentals` are no
+> longer deploy bases: branch new work from `main`.
 >
 > Two rules, no exceptions:
 > - **Deploy functions only by name** (`--only functions:NAME[,functions:NAME…]`), **never a bare deploy**
@@ -15,7 +15,8 @@
 > - **Never deploy from a branch missing rentals or payments.** Check first: `src/features/rentals/`,
 >   `functions/src/rentals/` and `functions/src/payments/charge.ts` must all exist.
 >
-> **Never deploy from `main` (until the PR above is merged), `feature/payments` or `feature/rental-companies` alone**: each lacks the other's
+> **Never deploy from `feature/payments` or `feature/rental-companies` alone, or from any branch not up to date with
+> `main`**: each lacks the other's
 > pieces, and a deploy from it would delete or revert live work. Checked on 2026-10-31: a full functions deploy from
 > `feature/payments` would delete the 8 rental functions (`adminSave/Remove/SetActive/SetCategoryMap/SetItemCategories/
 > SyncRentalCompany`, `trackRentalClick`, `syncAllRentalCompanies`); its rules would drop `rentalCompanies`/`rentalItems`
@@ -33,7 +34,7 @@
 > `scripts/deploy-drift-allowlist.json`). Verified after the deploy by `scripts/probe-payment-lockdown-prod.mjs --prod`
 > and `scripts/probe-rental-rules.mjs --prod`.
 >
-> When this branch pair changes, change this note in the same commit.
+> When the deploy base changes, change this note in the same commit.
 
 Answers "what's deployed?" without diffing against the console. **Append a row every
 time you deploy rules or indexes, and only after verifying the live artefact against
