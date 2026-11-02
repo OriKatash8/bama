@@ -49,6 +49,8 @@ it('scrolling near the end loads the next page, with a spinner row', () => {
 it('every new string exists in Hebrew and English', () => {
   for (const k of Object.keys(en.rentals)) expect(typeof (he.rentals as Record<string, string>)[k]).toBe('string');
   expect(he.rentals.rent_through).toBe('השכרה דרך {{company}}');
+  // No price from the store or the admin: "price unknown" (never ₪0).
+  expect([he.rentals.price_on_request, en.rentals.price_on_request]).toEqual(['מחיר לא ידוע', 'Price unknown']);
 });
 
 describe('the filter popup\'s "Rental company" section', () => {
