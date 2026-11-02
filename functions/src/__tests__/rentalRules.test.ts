@@ -35,6 +35,12 @@ describe('rental rules', () => {
     );
   });
 
+  it('admin image uploads: create only, by an admin, into their own folder, images only', () => {
+    expect(block(storage, 'match /rentalUploads/{uid}/{fileName}')).toBe(
+      'match /rentalUploads/{uid}/{fileName} { allow create: if isAdmin() && isOwner(uid) && imageUpload() && resource == null; allow read, update, delete: if false; }',
+    );
+  });
+
   it('their Storage folder is read-only to signed-in users', () => {
     expect(block(storage, 'match /rentalCompanies/{companyId}/{allPaths=**}')).toBe(
       'match /rentalCompanies/{companyId}/{allPaths=**} { allow read: if isAuth(); allow write: if false; }',

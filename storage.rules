@@ -213,6 +213,19 @@ service firebase.storage {
       allow write: if false;
     }
 
+    // ─── rental companies: admin image uploads (staging) ─────────────────
+    // An admin adding a hand-entered item to a manual company uploads its
+    // picture here; adminSaveRentalItem (Admin SDK) reads it, stores the
+    // thumbnail + detail WebP under rentalCompanies/…, and deletes it. Only an
+    // admin, only into their own folder, images under 10 MB; nobody reads,
+    // overwrites or deletes here from a client (the scheduler sweeps leftovers).
+    // `resource == null` makes "new files only" explicit: the Storage emulator
+    // let an upload over an existing file through as a create.
+    match /rentalUploads/{uid}/{fileName} {
+      allow create:               if isAdmin() && isOwner(uid) && imageUpload() && resource == null;
+      allow read, update, delete: if false;
+    }
+
     // ─── report evidence ──────────────────────────────────────────────────
     // `reports/{reportId}/evidence/{reporterUid}/{file}`, written by all three
     // report flows via uploadReportEvidence (src/core/firebase/storage.ts).

@@ -250,6 +250,8 @@ async function main() {
   record('deny', 'write: bump click counter', 'denied', await outcome(() => updateDoc(doc(db, 'rentalCompanies', CO_ACTIVE), { clicks: 999 })));
   record('deny', 'storage: upload into rentalCompanies/', 'denied', await outcome(() =>
     uploadBytes(sref(storage, `rentalCompanies/${CO_ACTIVE}/items/1/forged.webp`), new Uint8Array([1, 2, 3]), { contentType: 'image/webp' })));
+  record('deny', 'storage: a non-admin uploads to the admin staging folder', 'denied', await outcome(() =>
+    uploadBytes(sref(storage, `rentalUploads/${auth.currentUser.uid}/${P}-x`), new Uint8Array([1, 2, 3]), { contentType: 'image/png' })));
 
   console.log('\nREGRESSION — the existing marketplace queries:');
   for (const type of ['rental', 'secondhand']) {
@@ -278,6 +280,17 @@ async function main() {
     record('admin', 'get: inactive company', 'ok', await outcome(() => getDoc(doc(db, 'rentalCompanies', CO_INACTIVE))));
     record('admin', 'write: still denied to the admin client (callables only)', 'denied',
       await outcome(() => updateDoc(doc(db, 'rentalCompanies', CO_INACTIVE), { active: true })));
+    const own = `rentalUploads/${a.user.uid}/${P}-img`;
+    record('admin', 'staging: upload an image into own folder', 'ok',
+      await outcome(() => uploadBytes(sref(storage, own), new Uint8Array([1, 2, 3]), { contentType: 'image/png' })));
+    record('admin', 'staging: not into another uid\'s folder', 'denied',
+      await outcome(() => uploadBytes(sref(storage, `rentalUploads/someone-else/${P}-img`), new Uint8Array([1, 2, 3]), { contentType: 'image/png' })));
+    record('admin', 'staging: not a non-image', 'denied',
+      await outcome(() => uploadBytes(sref(storage, `rentalUploads/${a.user.uid}/${P}-txt`), new Uint8Array([1, 2, 3]), { contentType: 'text/plain' })));
+    record('admin', 'staging: no read back', 'denied', await outcome(() => getMetadata(sref(storage, own))));
+    record('admin', 'staging: no overwrite', 'denied',
+      await outcome(() => uploadBytes(sref(storage, own), new Uint8Array([4, 5, 6]), { contentType: 'image/png' })));
+    await bucket.deleteFiles({ prefix: `rentalUploads/${a.user.uid}/`, force: true }).catch(() => {});
   }
 }
 

@@ -37,6 +37,8 @@ export type RentalCompany = {
   /** Bytes of this company's images in Storage (thumbnails + detail images). */
   storageBytes: number;
   clicks: number;
+  /** Manual companies: when the admin last added, changed or removed an item. */
+  manualUpdatedAt?: Timestamp | FieldValue | null;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
 };

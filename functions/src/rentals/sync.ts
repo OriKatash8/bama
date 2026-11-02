@@ -6,6 +6,7 @@ import { copyImage, deletePrefix, mapLimit, type StoredImage } from './images';
 import { suggestCategory } from './keywords';
 import { withUtm } from './links';
 import { isVisible, resolveCategory } from './resolve';
+import { isSyncedPlatform } from './platform';
 import { goneFromStore, isMassRemoval, MassRemovalError } from './removal';
 import { searchKeys } from './search';
 import { NO_PRICE_SORT, type RentalCompany, type RentalItem, type SyncStats } from './types';
@@ -21,7 +22,7 @@ export const companiesCol = () => db.collection('rentalCompanies');
 export const itemsCol = () => db.collection('rentalItems');
 export const itemDocId = (companyId: string, externalId: string) => `${companyId}_${externalId}`;
 export const companyStoragePrefix = (companyId: string) => `rentalCompanies/${companyId}`;
-const itemStoragePrefix = (companyId: string, externalId: string) =>
+export const itemStoragePrefix = (companyId: string, externalId: string) =>
   `${companyStoragePrefix(companyId)}/items/${externalId}`;
 
 type Doc = admin.firestore.DocumentReference;
@@ -172,7 +173,7 @@ export async function syncRentalCompany(
   const ref = companiesCol().doc(companyId);
   const company = await acquireLock(ref);
   try {
-    if (company.sourceType !== 'woocommerce') throw new Error('This company is not synced from a store');
+    if (!isSyncedPlatform(company)) throw new Error('This company is not synced from a store');
     const host = storeHostOf(company.sourceUrl);
     const products = await fetchAllProducts(company.sourceUrl, fetchFn);
 
@@ -343,7 +344,7 @@ export async function assignCategories(assignments: { itemId: string; category: 
   return writes;
 }
 
-async function refreshCounts(companyId: string): Promise<void> {
+export async function refreshCounts(companyId: string): Promise<void> {
   const snap = await itemsCol().where('companyId', '==', companyId).get();
   await companiesCol().doc(companyId).update({
     ...companyCounts(snap.docs.map((d) => d.data() as RentalItem)),

@@ -32,6 +32,8 @@ export type RentalCompany = {
   unsortedCount: number;
   storageBytes: number;
   clicks: number;
+  /** Manual companies: when the admin last added, changed or removed an item. */
+  manualUpdatedAt?: Timestamp | null;
 };
 
 export type RentalImage = { thumbUrl: string; url: string };

@@ -2,7 +2,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { initializeAuth, getAuth, connectAuthEmulator, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import i18n from '@core/i18n';
@@ -10,10 +10,10 @@ import { firebaseLanguageCode } from './languageCode';
 
 /**
  * DEV ONLY, OPT-IN: `EXPO_PUBLIC_USE_EMULATORS=1 npx expo start --web --clear` points
- * Auth, Firestore and Functions at the local emulators (scripts/dev-invite-fixture.mjs
- * seeds them). It switches to a `demo-` project id and a fake key, so nothing can
- * reach production even by mistake; Storage and the Realtime Database have no
- * emulator here and are left unreachable. Set it on the command line, not in a
+ * Auth, Firestore, Functions and Storage at the local emulators (scripts/dev-invite-fixture.mjs
+ * and scripts/dev-rental-fixture.mjs seed them). It switches to a `demo-` project id and a
+ * fake key, so nothing can reach production even by mistake; the Realtime Database has no
+ * emulator here and is left unreachable. Set it on the command line, not in a
  * .env file. `EXPO_PUBLIC_EMULATOR_HOST` is the machine running them (default
  * 127.0.0.1; a phone needs the computer's LAN address).
  */
@@ -89,5 +89,6 @@ if (USE_EMULATORS) {
   connectFirestoreEmulator(db, EMULATOR_HOST, 8080);
   connectFunctionsEmulator(functions, EMULATOR_HOST, 5001);
   connectFunctionsEmulator(functionsEU, EMULATOR_HOST, 5001);
+  connectStorageEmulator(storage, EMULATOR_HOST, 9199);
   console.warn(`[firebase] EMULATORS ON (${EMULATOR_HOST}) — project demo-bama, not production.`);
 }

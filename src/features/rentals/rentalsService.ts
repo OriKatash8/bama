@@ -1,4 +1,6 @@
+import { ref, uploadBytes } from 'firebase/storage';
 import { callFunction } from '@core/firebase/functions';
+import { storage } from '@core/firebase/config';
 
 /**
  * The rental functions (functions/src/rentals). All of them are deployed to
@@ -64,3 +66,42 @@ export const removeRentalCompany = (companyId: string) =>
 /** Counts a tap on "Rent through [company]". Never blocks opening the link. */
 export const trackRentalClick = (itemId: string) =>
   callFunction<{ itemId: string }, { counted: boolean }>('trackRentalClick', REGION)({ itemId });
+
+// ── manual companies: hand-entered items ──────────────────────────────────────
+
+/** Where an item's image comes from: the admin's staged upload, or a URL. */
+export type ManualImage = { uploadPath: string } | { url: string } | null;
+
+export type SaveRentalItemInput = {
+  companyId: string;
+  /** Present when editing. */
+  itemId?: string;
+  name: string;
+  /** ₪ per day; null = "price on request". */
+  pricePerDay: number | null;
+  category: string;
+  description?: string;
+  productUrl?: string | null;
+  /** Omit to keep the current image; null removes it. */
+  image?: ManualImage;
+};
+
+export const saveRentalItem = (input: SaveRentalItemInput) =>
+  callFunction<SaveRentalItemInput, { itemId: string }>('adminSaveRentalItem', REGION)(input);
+
+export const removeRentalItem = (itemId: string) =>
+  callFunction<{ itemId: string }, { removed: boolean }>('adminRemoveRentalItem', REGION)({ itemId });
+
+/**
+ * Uploads a picked image to the admin's own staging folder (storage.rules:
+ * rentalUploads/{uid}/…, create-only, images < 10 MB) and returns its path for
+ * saveRentalItem, which turns it into the item's thumbnail + detail image and
+ * deletes it. uploadBytes, not uploadFile: the folder is unreadable, so there is
+ * no download URL to fetch — the function reads the file itself.
+ */
+export async function uploadRentalImage(uid: string, localUri: string): Promise<string> {
+  const blob = await fetch(localUri).then((r) => r.blob());
+  const path = `rentalUploads/${uid}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  await uploadBytes(ref(storage, path), blob, { contentType: blob.type || 'image/jpeg' });
+  return path;
+}

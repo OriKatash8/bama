@@ -55,3 +55,10 @@ export const MIN_ITEMS_FOR_REMOVAL_GUARD = 10;
 
 /** The error text kept on a company doc is cut to this. */
 export const SYNC_ERROR_MAX_CHARS = 500;
+
+/** Hand-entered (manual) items: the highest price per day the admin may enter. */
+export const MANUAL_PRICE_MAX = 100_000;
+/** Admin image uploads for manual items land here first (storage.rules: rentalUploads/{uid}/…). */
+export const STAGING_PREFIX = 'rentalUploads';
+/** An upload no item claimed within this long is deleted by the scheduler. */
+export const STAGING_MAX_AGE_MS = 24 * 60 * 60_000;
