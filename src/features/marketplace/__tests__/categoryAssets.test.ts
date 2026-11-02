@@ -99,7 +99,7 @@ describe('unselected icons: the blue glyph alone, no near-white square', () => {
   });
 
   it('every tile is a PNG pair', () => {
-    expect(MARKET_CATEGORIES.every((c: { icon?: number; Icon?: unknown }) => c.icon !== undefined && !c.Icon)).toBe(true);
+    expect(MARKET_CATEGORIES.every((c: { icon?: number; selectedIcon?: number }) => c.icon !== undefined && c.selectedIcon !== undefined)).toBe(true);
   });
 
   it('the row (both tabs): no Studios or Production — and never unsorted or hidden', () => {
