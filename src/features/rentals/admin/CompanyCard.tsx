@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import {
   AdminText, Card, InitialsAvatar, PillButton, RADIUS, TABULAR, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
-import { platformOf } from '../platform';
+import { isSyncedPlatform } from '../platform';
 import type { RentalCompany } from '../types';
 
 export function fmtDateTime(seconds?: number | null): string {
@@ -47,7 +47,7 @@ export function CompanyCard({
   const c = company;
   const removed = !!c.removedAt;
   // A store-synced company shows its sync; a manual one, when its items last changed.
-  const synced = platformOf(c) === 'woocommerce';
+  const synced = isSyncedPlatform(c);
   const id = c.id;
 
   const state = removed

@@ -13,7 +13,7 @@ import { CategoryMapCard } from '@features/rentals/admin/CategoryMapCard';
 import { NeedsSortingCard } from '@features/rentals/admin/NeedsSortingCard';
 import { ItemsCard } from '@features/rentals/admin/ItemsCard';
 import { ManualItemsCard } from '@features/rentals/admin/ManualItemsCard';
-import { platformOf } from '@features/rentals/platform';
+import { isSyncedPlatform } from '@features/rentals/platform';
 import { removeRentalCompany, setRentalCompanyActive, syncRentalCompany } from '@features/rentals/rentalsService';
 import type { RentalCompany } from '@features/rentals/types';
 
@@ -154,7 +154,7 @@ export default function RentalCompaniesAdmin() {
         ))
       )}
 
-      {selected && platformOf(selected) === 'manual' && (
+      {selected && !isSyncedPlatform(selected) && (
         // A manual company: its items are entered here (no store, so no category
         // map, nothing to sort and no synced items to preview).
         itemsLoading && items.length === 0 ? (
@@ -166,7 +166,7 @@ export default function RentalCompaniesAdmin() {
         )
       )}
 
-      {selected && platformOf(selected) === 'woocommerce' && (
+      {selected && isSyncedPlatform(selected) && (
         <>
           <CategoryMapCard
             key={`map-${selected.id}-${JSON.stringify(selected.categoryMap ?? {})}`}

@@ -4,7 +4,10 @@ import { TextInput } from '@components/ui/Text';
 import {
   AdminText, Card, CardHead, HEEBO, PillButton, Segment, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
-import { saveRentalCompany, type SaveCompanyInput, type SourceType } from '../rentalsService';
+import { platformOf } from '../platform';
+import {
+  detectRentalPlatform, saveRentalCompany, type DetectResult, type SaveCompanyInput, type SourceType,
+} from '../rentalsService';
 import type { RentalCompany } from '../types';
 
 const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
@@ -43,7 +46,10 @@ export function CompanyForm({
     sourceUrl: company?.sourceUrl ?? '',
     logoSourceUrl: company?.logoSourceUrl ?? '',
   });
-  const [sourceType, setSourceType] = useState<SourceType>(company?.sourceType ?? 'woocommerce');
+  // Read through the same rule as the server: an unknown stored value shows as Manual.
+  const [sourceType, setSourceType] = useState<SourceType>(company ? platformOf(company) : 'woocommerce');
+  const [detecting, setDetecting] = useState(false);
+  const [detected, setDetected] = useState<DetectResult | null>(null);
   const [signed, setSigned] = useState<'yes' | 'no'>(company?.agreementSignedAt ? 'yes' : 'no');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +58,7 @@ export function CompanyForm({
 
   async function save() {
     if (!values.name.trim()) { setError(t('name_required')); return; }
-    if (sourceType === 'woocommerce' && !values.sourceUrl.trim()) { setError(t('url_required')); return; }
+    if (sourceType !== 'manual' && !values.sourceUrl.trim()) { setError(t('url_required')); return; }
     const keepDate = company?.agreementSignedAt ? company.agreementSignedAt.seconds * 1000 : Date.now();
     const input: SaveCompanyInput = {
       ...(company ? { companyId: company.id } : {}),
@@ -76,6 +82,32 @@ export function CompanyForm({
       setError(t('save_failed', { message: errorText(e) }));
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** A check's finding in the screen's language; an unknown code falls back to the server's English. */
+  function codeText(code: string | undefined, fallback: string): string {
+    const key = `detect_code_${code}`;
+    const text = code ? t(key) : '';
+    return text && !text.endsWith(key) ? text : fallback;
+  }
+
+  /** Asks the server what the site runs; fills in the platform and the store's address (saves nothing). */
+  async function detect() {
+    const url = values.sourceUrl.trim() || values.website.trim();
+    if (!url) { setError(t('url_required')); return; }
+    setDetecting(true);
+    setError(null);
+    setDetected(null);
+    try {
+      const r = await detectRentalPlatform(url);
+      setDetected(r);
+      setSourceType(r.platform);
+      setValues((prev) => ({ ...prev, sourceUrl: r.storeUrl }));
+    } catch (e) {
+      setError(t('detect_failed', { message: errorText(e) }));
+    } finally {
+      setDetecting(false);
     }
   }
 
@@ -121,15 +153,32 @@ export function CompanyForm({
           <Segment<SourceType>
             options={[
               { value: 'woocommerce', label: t('source_woocommerce') },
+              { value: 'shopify', label: t('source_shopify') },
               { value: 'manual', label: t('source_manual') },
             ]}
             value={sourceType}
-            onChange={setSourceType}
+            onChange={(v) => { setSourceType(v); setDetected(null); }}
             label={t('field_source_type')}
             testIDPrefix="company-source"
           />
         </View>
-        {sourceType === 'woocommerce' && field('sourceUrl', t('field_source_url'), { kind: 'url', hint: t('field_source_url_hint') })}
+        {/* The store's address: required for a synced store, optional for a manual one. */}
+        {field('sourceUrl', sourceType === 'manual' ? t('field_source_url_optional') : t('field_source_url'), { kind: 'url', hint: t('field_source_url_hint') })}
+        <View style={[styles.detectRow, { flexDirection: rowDir }]}>
+          <PillButton label={detecting ? t('detecting') : t('detect')} onPress={() => void detect()} disabled={detecting || saving} testID="company-detect" />
+        </View>
+        {detected ? (
+          <View style={styles.detected} testID="company-detected">
+            <AdminText weight="semiBold" style={[TYPE.rowMeta, { color: p.text, textAlign }]}>
+              {t(`detected_${detected.platform}`)}
+            </AdminText>
+            {detected.checked.map((c) => (
+              <AdminText key={c.url} numberOfLines={2} style={[TYPE.rowMeta, { color: p.text3, textAlign: 'left' }]}>
+                {`${c.url} — ${c.status ?? '—'} · ${codeText(c.code, c.result)}`}
+              </AdminText>
+            ))}
+          </View>
+        ) : null}
 
         <AdminText weight="medium" style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>{t('field_agreement')}</AdminText>
         <View style={{ flexDirection: rowDir }}>
@@ -159,4 +208,6 @@ const styles = StyleSheet.create({
   field: { gap: 4 },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
   actions: { gap: 8, marginTop: 6 },
+  detectRow: { gap: 8 },
+  detected: { gap: 2 },
 });

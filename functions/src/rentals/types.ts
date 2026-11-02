@@ -2,7 +2,7 @@ import type { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import type { CategoryMap } from './resolve';
 import type { StoredImage } from './images';
 
-export type SourceType = 'woocommerce' | 'manual';
+export type SourceType = 'woocommerce' | 'shopify' | 'manual';
 export type SyncStatus = 'never' | 'running' | 'ok' | 'error';
 
 /** rentalCompanies/{companyId}. Written only by functions (rules deny every client write). */

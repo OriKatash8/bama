@@ -17,7 +17,7 @@ export type RentalCompany = {
   phone: string;
   whatsapp: string;
   website: string;
-  sourceType: 'woocommerce' | 'manual';
+  sourceType: 'woocommerce' | 'shopify' | 'manual';
   sourceUrl: string;
   active: boolean;
   removedAt: Timestamp | null;

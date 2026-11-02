@@ -13,6 +13,7 @@ import {
   ManualItemError, manualMappedItem, newManualExternalId, parseManualItemInput, type ManualItemInput,
 } from './manual';
 import { isSyncedPlatform, platformOf } from './platform';
+import { detectPlatform } from './detect';
 import {
   assignCategories, companiesCol, companyStoragePrefix, derivedFields, itemDocId, itemStoragePrefix, itemsCol,
   reapplyCompany, refreshCounts, removeCompany, sourceFields, syncRentalCompany,
@@ -82,9 +83,10 @@ export const adminSaveRentalCompany = onCall(HEAVY, async (request) => {
   requireAdmin(request.auth?.token);
   const d = (request.data ?? {}) as Record<string, unknown>;
   const sourceType: SourceType | null =
-    d.sourceType === 'manual' ? 'manual' : d.sourceType === 'woocommerce' ? 'woocommerce' : null;
-  if (!sourceType) throw new HttpsError('invalid-argument', 'sourceType must be woocommerce or manual');
-  const sourceUrl = httpsUrl(d.sourceUrl, 'sourceUrl', sourceType === 'woocommerce');
+    d.sourceType === 'manual' || d.sourceType === 'woocommerce' || d.sourceType === 'shopify' ? d.sourceType : null;
+  if (!sourceType) throw new HttpsError('invalid-argument', 'sourceType must be woocommerce, shopify or manual');
+  // A store-synced company needs its store's address; a manual one may have none.
+  const sourceUrl = httpsUrl(d.sourceUrl, 'sourceUrl', sourceType !== 'manual');
   if (sourceUrl) storeHostOf(sourceUrl);
   const fields = {
     name: str(d.name, 'name', { required: true, max: 100 }),
@@ -195,6 +197,22 @@ export const adminSetRentalItemCategories = onCall(LIGHT, async (request) => {
     return { writes: await assignCategories(assignments) };
   } catch (e) {
     throw asHttps(e);
+  }
+});
+
+/**
+ * "Detect platform": asks a site, server-side (a browser is stopped by CORS),
+ * whether it is a WooCommerce or Shopify store, else 'manual'. Admin-only and
+ * read-only — it saves nothing; the admin applies the answer in the form.
+ * Only public https sites, and redirects only within the same site (detect.ts).
+ */
+export const adminDetectRentalPlatform = onCall({ ...LIGHT, timeoutSeconds: 120 }, async (request) => {
+  requireAdmin(request.auth?.token);
+  const url = str(request.data?.url, 'url', { required: true, max: 500 });
+  try {
+    return await detectPlatform(url);
+  } catch (e) {
+    throw new HttpsError('invalid-argument', (e as Error).message.slice(0, 300));
   }
 });
 

@@ -35,6 +35,7 @@ describe('manual items', () => {
   it.each([
     ['saveRentalItem', 'adminSaveRentalItem', () => svc.saveRentalItem({ companyId: 'c', name: 'x', pricePerDay: null, category: 'lens' })],
     ['removeRentalItem', 'adminRemoveRentalItem', () => svc.removeRentalItem('c_m1')],
+    ['detectRentalPlatform', 'adminDetectRentalPlatform', () => svc.detectRentalPlatform('shop.co.il')],
   ])('%s calls %s in europe-west1', async (_label, fn, call) => {
     await call();
     expect(mockCallFunction).toHaveBeenCalledWith(fn, 'europe-west1');

@@ -9,7 +9,7 @@ import { storage } from '@core/firebase/config';
  */
 const REGION = 'europe-west1' as const;
 
-export type SourceType = 'woocommerce' | 'manual';
+export type SourceType = 'woocommerce' | 'shopify' | 'manual';
 
 export type SaveCompanyInput = {
   companyId?: string;
@@ -55,6 +55,18 @@ export const setRentalCategoryMap = (companyId: string, categoryMap: Record<stri
 
 export const setRentalItemCategories = (assignments: Assignment[]) =>
   callFunction<{ assignments: Assignment[] }, { writes: number }>('adminSetRentalItemCategories', REGION)({ assignments });
+
+export type DetectResult = {
+  platform: SourceType;
+  /** The store's address after same-site redirects (e.g. with www.), to save as its address. */
+  storeUrl: string;
+  /** `code` is translated on screen (admin_rental_companies.detect_code_*); `result` is the English fallback. */
+  checked: { url: string; status: number | null; code?: string; result: string }[];
+};
+
+/** "Detect platform": the server asks the site (a browser would be stopped by CORS). Saves nothing. */
+export const detectRentalPlatform = (url: string) =>
+  callFunction<{ url: string }, DetectResult>('adminDetectRentalPlatform', REGION)({ url });
 
 /** "Sync now". `force` applies a sync the mass-removal guard stopped. */
 export const syncRentalCompany = (companyId: string, force = false) =>

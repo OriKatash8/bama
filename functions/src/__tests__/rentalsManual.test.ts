@@ -15,7 +15,7 @@ describe('platformOf (how a stored sourceType is read)', () => {
     expect(platformOf({ sourceType: 'manual' })).toBe('manual');
   });
   it('anything unrecognised is manual, and never synced', () => {
-    for (const v of ['shopify', 'wix', 'WooCommerce', 42, { x: 1 }]) {
+    for (const v of ['wix', 'WooCommerce', 'Shopify', 42, { x: 1 }]) {
       expect(platformOf({ sourceType: v })).toBe('manual');
       expect(isSyncedPlatform({ sourceType: v })).toBe(false);
     }

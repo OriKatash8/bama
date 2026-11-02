@@ -134,9 +134,10 @@ export function imagesHash(sources: string[]): string {
   return createHash('sha1').update(JSON.stringify(sources)).digest('hex');
 }
 
-type FetchFn = typeof fetch;
+export type FetchFn = typeof fetch;
 
-async function fetchWithRetry(url: string, fetchFn: FetchFn): Promise<Response> {
+/** GET with retries and back-off; 4xx other than 429 is returned at once (retrying will not help). */
+export async function fetchWithRetry(url: string, fetchFn: FetchFn): Promise<Response> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= FETCH_RETRIES; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, FETCH_RETRY_BASE_MS * 2 ** (attempt - 1)));
