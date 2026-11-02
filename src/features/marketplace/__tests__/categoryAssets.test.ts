@@ -87,6 +87,7 @@ describe('unselected icons: the blue glyph alone, no near-white square', () => {
   const { MARKET_CATEGORIES } = jest.requireActual('@features/marketplace/data/categories');
   const CUT_OUT: Record<string, string> = {
     camera: 'camera', lens: '101', audio: 'audio', lighting: 'teuraicon', drone: 'drone',
+    accessories: 'backdrop', grip: 'tripod',
   };
 
   it('the PNG tiles (and the empty state\'s cards) use the cut-out of each icon', () => {
@@ -97,19 +98,13 @@ describe('unselected icons: the blue glyph alone, no near-white square', () => {
     }
   });
 
-  it('the later categories are the chosen Lucide icons (the clapperboard moved to production)', () => {
-    const lucide = jest.requireActual('lucide-react-native');
-    const vector = Object.fromEntries(
-      MARKET_CATEGORIES.filter((c: { Icon?: unknown }) => c.Icon).map((c: { id: string; Icon: unknown }) => [c.id, c.Icon]),
-    );
-    expect(vector).toEqual({
-      studio: lucide.DoorOpen, accessories: lucide.Plug, grip: lucide.LampFloor, production: lucide.Clapperboard,
-    });
+  it('every tile is a PNG pair', () => {
+    expect(MARKET_CATEGORIES.every((c: { icon?: number; Icon?: unknown }) => c.icon !== undefined && !c.Icon)).toBe(true);
   });
 
-  it('the row: the PNG six minus accessories, then studio, accessories, grip, production — never unsorted or hidden', () => {
+  it('the row (both tabs): no Studios or Production — and never unsorted or hidden', () => {
     expect(MARKET_CATEGORIES.map((c: { id: string }) => c.id)).toEqual(
-      ['camera', 'lens', 'audio', 'lighting', 'drone', 'studio', 'accessories', 'grip', 'production'],
+      ['camera', 'lens', 'audio', 'lighting', 'drone', 'accessories', 'grip'],
     );
   });
 
@@ -119,5 +114,35 @@ describe('unselected icons: the blue glyph alone, no near-white square', () => {
       // 400px wide; just inside the old square's top-left corner (it spanned 94–306).
       expect(px[110 * 400 + 110].a).toBe(0);
     }
+  });
+});
+
+/**
+ * Studio Accessories (backdrop stand) and Grip & Support (tripod), rendered from
+ * SVG in the Lights/Drones format: 400px, the glyph alone in #0C4CB0, and the
+ * selected tile on the same gradient square with the glyph in white.
+ */
+describe('the backdrop and tripod tiles', () => {
+  it.each(['backdrop', 'tripod'])('%s: a 400px #0C4CB0 glyph on a transparent canvas, the size of the others', (name) => {
+    const px = readRgba(path.join(ICON_DIR, `market-${name}.png`));
+    expect(px).toHaveLength(400 * 400);
+    const solid = px.filter((p) => p.a >= 250);
+    expect(new Set(solid.map((p) => `${p.r},${p.g},${p.b}`))).toEqual(new Set(['12,76,176']));
+    // Footprint: Lights is 148×172px and Drones 184×79px on the same canvas.
+    const on = px.map((p, i) => ({ ...p, x: i % 400, y: Math.floor(i / 400) })).filter((p) => p.a >= 128);
+    const w = Math.max(...on.map((p) => p.x)) - Math.min(...on.map((p) => p.x));
+    const h = Math.max(...on.map((p) => p.y)) - Math.min(...on.map((p) => p.y));
+    expect(Math.max(w, h)).toBeGreaterThan(140);
+    expect(Math.max(w, h)).toBeLessThan(190);
+  });
+
+  it.each(['backdrop', 'tripod'])('%s-selected: the Drones tile\'s square and gradient, a white glyph', (name) => {
+    const px = readRgba(path.join(ICON_DIR, `${name}-selected.png`));
+    const drone = readRgba(path.join(ICON_DIR, '11.png'));
+    // Same square: the same pixels are opaque or clear as on the Drones tile.
+    expect(px.filter((p) => p.a >= 250)).toHaveLength(drone.filter((p) => p.a >= 250).length);
+    // Same gradient at the edges, where neither glyph reaches.
+    for (const i of [200 * 400 + 96, 200 * 400 + 304, 110 * 400 + 200]) expect(px[i]).toEqual(drone[i]);
+    expect(px.some((p) => p.a >= 250 && p.r > 240 && p.g > 240 && p.b > 240)).toBe(true);
   });
 });

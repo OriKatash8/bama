@@ -1,9 +1,7 @@
-import { Clapperboard, DoorOpen, LampFloor, Plug } from 'lucide-react-native';
 import type { MarketplaceCategory } from '@features/marketplace/components/CategoryTile';
 
 /** The marketplace's category ids, in the order the category row shows them. */
-export type MarketCategoryId =
-  | 'camera' | 'lens' | 'audio' | 'lighting' | 'drone' | 'studio' | 'accessories' | 'grip' | 'production';
+export type MarketCategoryId = 'camera' | 'lens' | 'audio' | 'lighting' | 'drone' | 'accessories' | 'grip';
 
 /**
  * The marketplace category row's data: label key and both icons. Shared by the
@@ -13,9 +11,13 @@ export type MarketCategoryId =
  * near-white square cut away), so the sheet or card shows through behind it.
  * `selectedIcon` keeps its gradient square — that is how a chosen one looks.
  *
- * The later categories are Lucide icons (`Icon`), drawn by CategoryTile in the
- * same blue and the same chosen square. The clapperboard is production's now;
- * accessories became a plug.
+ * Studio Accessories (a backdrop stand) and Grip & Support (a tripod) are PNG
+ * pairs in the same format, rendered from SVG: the glyph in #0C4CB0 on a 400px
+ * canvas, and the Drones tile's own gradient square with the glyph in white.
+ *
+ * The same row on BAMA Market and BAMA Rental. Studios and Production are no
+ * longer offered as tiles (their label keys stay: older listings and the
+ * listing form still name them).
  */
 export const MARKET_CATEGORIES: (MarketplaceCategory & { id: MarketCategoryId })[] = [
   {
@@ -50,8 +52,16 @@ export const MARKET_CATEGORIES: (MarketplaceCategory & { id: MarketCategoryId })
     icon: require('../../../../assets/images/categories/market-drone.png'),
     selectedIcon: require('../../../../assets/images/categories/11.png'),
   },
-  { id: 'studio', labelKey: 'category_studio', Icon: DoorOpen },
-  { id: 'accessories', labelKey: 'category_accessories', Icon: Plug },
-  { id: 'grip', labelKey: 'category_grip', Icon: LampFloor },
-  { id: 'production', labelKey: 'category_production', Icon: Clapperboard },
+  {
+    id: 'accessories',
+    labelKey: 'category_accessories',
+    icon: require('../../../../assets/images/categories/market-backdrop.png'),
+    selectedIcon: require('../../../../assets/images/categories/backdrop-selected.png'),
+  },
+  {
+    id: 'grip',
+    labelKey: 'category_grip',
+    icon: require('../../../../assets/images/categories/market-tripod.png'),
+    selectedIcon: require('../../../../assets/images/categories/tripod-selected.png'),
+  },
 ];
