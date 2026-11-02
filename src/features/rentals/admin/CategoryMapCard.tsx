@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import {
   AdminText, Card, CardHead, EmptyState, PillButton, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
+import { HIDDEN, isRentalCategory } from '../categories';
 import { setRentalCategoryMap } from '../rentalsService';
 import type { RentalCompany } from '../types';
 import { CategoryPicker } from './CategoryPicker';
@@ -26,7 +27,11 @@ export function CategoryMapCard({
 }) {
   const p = useAdminPalette();
   const { t, rowDir, textAlign } = useScopedT('admin_rental_companies');
-  const [draft, setDraft] = useState<Record<string, string>>(company.categoryMap ?? {});
+  // A mapping to a category rentals no longer offer (Studios, Production) starts
+  // as "not mapped": the server would refuse to save it.
+  const [draft, setDraft] = useState<Record<string, string>>(() => Object.fromEntries(
+    Object.entries(company.categoryMap ?? {}).filter(([, v]) => v === HIDDEN || isRentalCategory(v)),
+  ));
   const [saving, setSaving] = useState(false);
 
   const external = company.externalCategories ?? [];

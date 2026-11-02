@@ -1,10 +1,12 @@
 /**
- * BAMA's marketplace category ids, as the server sees them. Mirrors
- * MARKET_CATEGORIES in src/features/marketplace/data/categories.ts (the client
- * owns labels and icons; this file owns which ids a synced item may carry).
+ * The categories a synced rental item may carry, as the server sees them.
+ * Mirrors RENTAL_TAB_CATEGORIES in src/features/marketplace/data/categories.ts
+ * (the client owns labels and icons; this file owns which ids an item may get).
+ * Studios and Production are BAMA Market categories only: a category map or an
+ * admin choice naming them is refused, so no rental item can land in them.
  */
 export const BAMA_CATEGORIES = [
-  'camera', 'lens', 'audio', 'lighting', 'drone', 'studio', 'accessories', 'grip', 'production',
+  'camera', 'lens', 'audio', 'lighting', 'drone', 'accessories', 'grip',
 ] as const;
 export type BamaCategory = (typeof BAMA_CATEGORIES)[number];
 

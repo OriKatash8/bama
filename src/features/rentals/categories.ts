@@ -5,7 +5,8 @@
  *
  * 'hidden' is assignable (not gear: e.g. a store's consumables) but never shown
  * to users; 'unsorted' is never assignable and never shown. Neither may appear
- * as a category tile or in the second-hand listing form.
+ * as a category tile or in the second-hand listing form. Studios and
+ * Production are BAMA Market categories only, so they are not offered here.
  */
 export const RENTAL_CATEGORIES = [
   { id: 'camera', labelKey: 'category_camera' },
@@ -13,10 +14,8 @@ export const RENTAL_CATEGORIES = [
   { id: 'audio', labelKey: 'category_audio' },
   { id: 'lighting', labelKey: 'category_light' },
   { id: 'drone', labelKey: 'category_drone' },
-  { id: 'studio', labelKey: 'category_studio' },
   { id: 'accessories', labelKey: 'category_accessories' },
   { id: 'grip', labelKey: 'category_grip' },
-  { id: 'production', labelKey: 'category_production' },
 ] as const;
 
 export type RentalCategoryId = (typeof RENTAL_CATEGORIES)[number]['id'];
