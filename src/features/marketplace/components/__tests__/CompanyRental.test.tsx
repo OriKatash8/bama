@@ -65,12 +65,27 @@ describe('detail', () => {
     expect(mockToast).not.toHaveBeenCalled();
   });
 
-  it('no report, no share or owner actions, no generic store button; the description and stock show', () => {
+  it('no report, no share or owner actions, no generic store button, no stock line; the description shows', () => {
     const r = render(<ListingDetailModal listing={rentalItemToListing(ITEM)} onClose={jest.fn()} />);
     expect(r.queryByTestId('listing-report')).toBeNull();
     expect(r.queryByTestId('listing-primary-btn')).toBeNull();
     expect(r.getByTestId('listing-description')).toBeTruthy();
-    expect(within(r.getByTestId('listing-stock-row')).getByText(R.in_stock)).toBeTruthy();
+    // No stock line in the item's information.
+    expect(r.queryByTestId('listing-stock-row')).toBeNull();
+    expect(r.queryByText(/מלאי/)).toBeNull();
+  });
+
+  it('the description sits in its own "מידע" box, separate from the store', () => {
+    const r = render(<ListingDetailModal listing={rentalItemToListing(ITEM)} onClose={jest.fn()} />);
+    const info = r.getByTestId('listing-information-box');
+    expect(within(info).getByText(R.information)).toBeTruthy();
+    expect(within(info).getByText('פנס לד חזק')).toBeTruthy();
+    expect(within(r.getByTestId('listing-store-row')).queryByText('פנס לד חזק')).toBeNull();
+  });
+
+  it('no description, no information box', () => {
+    const r = render(<ListingDetailModal listing={rentalItemToListing({ ...ITEM, description: '' })} onClose={jest.fn()} />);
+    expect(r.queryByTestId('listing-information-box')).toBeNull();
   });
 
   it('the large image, not the thumbnail', () => {
@@ -91,28 +106,24 @@ describe('card', () => {
     expect(r.queryByText(/₪0/)).toBeNull();
   });
 
-  it('says whether it is in stock', () => {
-    const inStock = render(<ListingCard listing={rentalItemToListing(ITEM)} onPress={jest.fn()} />);
-    expect(within(inStock.getByTestId('listing-card-stock')).getByText(R.in_stock)).toBeTruthy();
-    const out = render(<ListingCard listing={rentalItemToListing({ ...ITEM, inStock: false })} onPress={jest.fn()} />);
-    expect(within(out.getByTestId('listing-card-stock')).getByText(R.out_of_stock)).toBeTruthy();
-  });
-
-  it('a regular listing has no stock line', () => {
-    const r = render(<ListingCard listing={{ ...rentalItemToListing(ITEM), source: undefined }} onPress={jest.fn()} />);
-    expect(r.queryByTestId('listing-card-stock')).toBeNull();
+  it('shows no stock line, in stock or not', () => {
+    for (const inStock of [true, false]) {
+      const r = render(<ListingCard listing={rentalItemToListing({ ...ITEM, inStock })} onPress={jest.fn()} />);
+      expect(r.queryByTestId('listing-card-stock')).toBeNull();
+      expect(r.queryByText(/מלאי/)).toBeNull();
+    }
   });
 });
 
 describe('rental popup look', () => {
-  const flat = (el: { props: { style: unknown } }) => StyleSheet.flatten(el.props.style as never) as Record<string, unknown>;
+  const flat = (el: { props: Record<string, unknown> }) => StyleSheet.flatten(el.props.style as never) as Record<string, unknown>;
 
   it('every text is black, and a title sits on the first line of a two-line value', () => {
     const r = render(<ListingDetailModal listing={rentalItemToListing({ ...ITEM, name: 'Aputure LS 600d Pro II with a very long name that wraps' })} onClose={jest.fn()} />);
     const nameBox = r.getByTestId('listing-name-box');
-    const row = nameBox.children[0] as unknown as { props: { style: unknown } };
+    const row = nameBox.children[0] as unknown as { props: Record<string, unknown> };
     expect(flat(row).alignItems).toBe('flex-start');
-    for (const text of [R.in_stock, 'השכרת ציוד', 'פנס לד חזק']) {
+    for (const text of ['השכרת ציוד', 'פנס לד חזק']) {
       expect(flat(r.getByText(text)).color).toBe('#000000');
     }
     expect(flat(r.getByText(/₪250/)).color).toBe('#000000');
@@ -129,7 +140,7 @@ describe('rental popup look', () => {
   it('the second-hand popup is unchanged', () => {
     const sale = { ...rentalItemToListing(ITEM), type: 'secondhand', source: undefined, posterId: 'p1', posterName: 'Avi', storeName: null } as never;
     const r = render(<ListingDetailModal listing={sale} onClose={jest.fn()} />);
-    const row = r.getByTestId('listing-name-box').children[0] as unknown as { props: { style: unknown } };
+    const row = r.getByTestId('listing-name-box').children[0] as unknown as { props: Record<string, unknown> };
     expect(flat(row).alignItems).toBe('center');
     expect(flat(r.getByText('Avi')).color).toBe('#004aad');
   });

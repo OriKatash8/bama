@@ -120,15 +120,6 @@ export function ListingCard({ listing, onPress }: Props) {
             {t('rentals.instead_of').replace('{{price}}', listing.regularPrice.toLocaleString())}
           </AppText>
         )}
-        {isCompany && (
-          <AppText
-            weight="semiBold"
-            testID="listing-card-stock"
-            style={[styles.stock, { color: listing.inStock === false ? '#B4232A' : '#2F7A45', textAlign: rtl ? 'right' : 'left' }]}
-          >
-            {t(listing.inStock === false ? 'rentals.out_of_stock' : 'rentals.in_stock')}
-          </AppText>
-        )}
       </View>
     </TouchableOpacity>
   );
@@ -175,7 +166,6 @@ const styles = StyleSheet.create({
   price: { fontSize: 16, fontWeight: '800', color: '#000000', letterSpacing: -0.2, marginTop: 2 },
   onRequest: { fontSize: 13.5, color: '#000000', marginTop: 2 },
   regular: { fontSize: 11, color: '#6B6B76' },
-  stock: { fontSize: 11 },
   locationRow: { flexDirection: 'row', alignItems: 'center' },
   locationIcon: { width: 14, height: 14 },
 });

@@ -356,17 +356,6 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                     <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t('marketplace.store')}</AppText>
                     <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText]} numberOfLines={1}>{listing.storeName}</AppText>
                   </View>
-                  {isCompany && (
-                    <View style={[styles.detailRow, isRental && styles.rentalRow, { flexDirection: rowDir }]} testID="listing-stock-row">
-                      <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t(listing.inStock === false ? 'rentals.out_of_stock' : 'rentals.in_stock')}</AppText>
-                      <View style={[styles.stockDot, { backgroundColor: listing.inStock === false ? '#B4232A' : '#2F7A45' }]} />
-                    </View>
-                  )}
-                  {isCompany && !!listing.description && (
-                    <AppText weight="regular" testID="listing-description" style={[styles.description, styles.rentalText, { textAlign: rtl ? 'right' : 'left' }]}>
-                      {listing.description}
-                    </AppText>
-                  )}
                 </View>
               ) : null
             ) : (
@@ -375,6 +364,18 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
                   <AppText weight="regular" style={[styles.detailLabel, isRental && styles.rentalLabel]}>{t('marketplace.posted_by')}</AppText>
                   <AppText weight="semiBold" style={[styles.detailValue, isRental && styles.rentalText]} numberOfLines={1}>{listing.posterName}</AppText>
                 </View>
+              </View>
+            )}
+
+            {/* A rental company's item: its information in a box of its own, under the store. */}
+            {isCompany && !!listing.description && (
+              <View style={[styles.sellerBox, styles.infoBox]} testID="listing-information-box">
+                <AppText weight="regular" style={[styles.detailLabel, styles.rentalLabel, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {t('rentals.information')}
+                </AppText>
+                <AppText weight="regular" testID="listing-description" style={[styles.description, styles.rentalText, { textAlign: rtl ? 'right' : 'left' }]}>
+                  {listing.description}
+                </AppText>
               </View>
             )}
           </ScrollView>
@@ -537,8 +538,9 @@ export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props
 }
 
 const styles = StyleSheet.create({
-  stockDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
-  description: { fontSize: 13, lineHeight: 19, color: '#333333', marginTop: 8 },
+  description: { fontSize: 13, lineHeight: 19, color: '#333333' },
+  // The information box: a title over the text, like the other boxes' labels.
+  infoBox: { gap: 6, marginTop: 12 },
   pickerCard: {
     width: '88%',
     maxWidth: 420,

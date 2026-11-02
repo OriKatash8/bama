@@ -1231,14 +1231,13 @@
   "rentals": {
     "partner_filter": "שותף: {{name}}",
     "price_on_request": "מחיר לפי בקשה",
-    "in_stock": "במלאי",
-    "out_of_stock": "לא במלאי",
     "instead_of": "במקום ₪{{price}}",
     "rent_through": "השכרה דרך {{company}}",
     "company": "חברה",
     "loading_more": "טוען עוד…",
     "filter_company": "חברת השכרה",
-    "all_companies": "כל החברות"
+    "all_companies": "כל החברות",
+    "information": "מידע"
   },
   "auth": {
     "pw_length": "לפחות 8 תווים",

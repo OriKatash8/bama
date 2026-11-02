@@ -1231,14 +1231,13 @@
   "rentals": {
     "partner_filter": "Partner: {{name}}",
     "price_on_request": "Price on request",
-    "in_stock": "In stock",
-    "out_of_stock": "Out of stock",
     "instead_of": "instead of ₪{{price}}",
     "rent_through": "Rent through {{company}}",
     "company": "Company",
     "loading_more": "Loading more…",
     "filter_company": "Rental company",
-    "all_companies": "All companies"
+    "all_companies": "All companies",
+    "information": "Information"
   },
   "auth": {
     "pw_length": "At least 8 characters",
