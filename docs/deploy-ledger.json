@@ -41,6 +41,16 @@
       "recordedOn": "2026-10-06",
       "note": "Found in the Cloud Audit Logs on 2026-10-06, not in docs/production-deploys.md when deployed. invite functions and callClaude: created 2026-09-30 21:12-21:15 UTC (callClaude had been deleted on 2026-09-26 12:56 UTC, deliberately; the 09-30 deploy re-created it), updated 2026-10-01 23:28-23:29; getCommunityInvite also 2026-10-03. adminDeleteCommunity and adminCommunityAction: created 2026-10-02 15:01-15:13 UTC. See docs/production-deploys.md."
     },
+    "adminDetectRentalPlatform": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-02T03:09:33.161071635Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
+      "how": "deploy",
+      "recordedOn": "2026-11-02",
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
+    },
     "adminFindUser": {
       "region": "us-central1",
       "generation": 2,
@@ -104,82 +114,82 @@
     "adminRemoveRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:49:01.488403548Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:40.938285464Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "adminRemoveRentalItem": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:48:50.815994437Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:40.422348367Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "adminSaveRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:49:01.689624711Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:35.648388875Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "adminSaveRentalItem": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:48:54.593030002Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:40.450143815Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "adminSetRentalCategoryMap": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:49:00.042006375Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:40.530244203Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "adminSetRentalCompanyActive": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:48:59.042576174Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:41.156917967Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "adminSetRentalItemCategories": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:49:00.034205773Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:41.627614540Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "adminSyncRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:49:01.712793972Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:41.143927990Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "blockUser": {
       "region": "us-central1",
@@ -814,22 +824,22 @@
     "syncAllRentalCompanies": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:48:58.703357062Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:42.757334525Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     },
     "trackRentalClick": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-02T02:48:58.024594794Z",
-      "treeSha": "3e425c5cc308542d32edd9f9287c80e53edf8a11",
-      "commit": "570cf827",
+      "updateTime": "2026-11-02T03:09:40.002288291Z",
+      "treeSha": "3b6d7dcb419c055d031289911a3ae7f84d351212",
+      "commit": "03dd07a8",
       "how": "deploy",
       "recordedOn": "2026-11-02",
-      "note": "Round A (manual rental items), commit 570cf827: the 10 rental functions deployed by name (adminSaveRentalItem + adminRemoveRentalItem created, 8 updated; also carries f9db28c1's category/keyword change). storage.rules released with the rentalUploads staging block. Probes: probe-rental-callables --prod 17/17, probe-rental-rules --prod 47/47."
+      "note": "Round B (Shopify + Detect platform), commit 03dd07a8: the 11 rental functions deployed by name (adminDetectRentalPlatform created, 10 updated). No rules change. probe-rental-callables --prod 19/19 (re-run once: the new function's allUsers invoker had not applied for the first call)."
     }
   }
 }
