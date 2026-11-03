@@ -435,7 +435,10 @@ export type SettleSource =
        *  it throws 'amount-mismatch' and the caller flags the charge for review
        *  instead of recording money against the wrong balance. */
       chargedAmount: number;
-    };
+    }
+  // A payment link paid on Grow's page and confirmed by Make. Same exact-amount
+  // rule as a charge: the link was created for a specific feeDue.
+  | { source: 'link'; providerRef: string; chargedAmount: number };
 
 export async function settleFee(
   projectId: string,
@@ -487,7 +490,7 @@ export async function settleFee(
       : outstandingOf(fee, baseAmount);
 
     if (outstanding <= 0) throw new HttpsError('failed-precondition', 'already-paid');
-    if (by.source === 'charge' && outstanding !== by.chargedAmount) {
+    if (by.source !== 'admin' && outstanding !== by.chargedAmount) {
       throw new HttpsError('failed-precondition', 'amount-mismatch');
     }
 
@@ -500,7 +503,7 @@ export async function settleFee(
       status: 'paid',
       projectId,
       paidBy: by.source,
-      ...(by.source === 'charge' && by.providerRef ? { providerRef: by.providerRef } : {}),
+      ...(by.source !== 'admin' && by.providerRef ? { providerRef: by.providerRef } : {}),
     };
     if (!confirmed) {
       // Settled before completion: record what the fee was worth on that day.

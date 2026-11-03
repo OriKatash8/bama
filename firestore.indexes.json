@@ -652,6 +652,25 @@
     },
     {
       "collectionGroup": "fees",
+      "fieldPath": "paidBy",
+      "ttl": false,
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "fees",
       "fieldPath": "chargeState",
       "ttl": false,
       "indexes": [

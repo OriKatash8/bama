@@ -89,7 +89,36 @@ export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
  * `FeeSettlementStatus` on purpose: that says where the MONEY got to (and is read
  * by the overdue rules); this says where the CHARGE ATTEMPT got to. Absent = 'idle'.
  */
-export type ChargeState = 'idle' | 'charging' | 'succeeded' | 'failed' | 'needs_card';
+export type ChargeState =
+  | 'idle' | 'charging' | 'succeeded' | 'failed' | 'needs_card'
+  // Link mode (grow_link): a payment link exists and the pro has not paid yet, or
+  // cannot be given one until they add the mobile phone Grow requires.
+  | 'awaiting_payment' | 'needs_phone';
+
+/** The single-use hosted payment link for a fee (link mode). One per fee. */
+export type PaymentLink = {
+  url: string;
+  /** Grow's paymentLinkProcessId; the primary match for an inbound payment. */
+  processId: string;
+  /** Whole shekels the link was created for. Valid only while it equals feeDue. */
+  amount: number;
+  createdAt: admin.firestore.Timestamp;
+  /** Set when feeDue changed or the fee was voided; a new link replaces it. */
+  superseded?: boolean;
+};
+
+/** Why a link payment or creation needs a human. Kept apart from `chargeReview`,
+ *  which blocks a fee from ever being claimed again: a bad link must not. */
+export type LinkReview = {
+  reason:
+    | 'link_superseded' | 'link_after_settled' | 'link_amount_mismatch'
+    | 'link_key_mismatch' | 'link_create_failed';
+  at: admin.firestore.Timestamp;
+  transactionId?: string;
+  processId?: string;
+  amount?: number;
+  note?: string;
+};
 
 /** Why a charge needs a human, beyond what chargeState says. */
 export type ChargeReview = {
@@ -198,7 +227,17 @@ export type FeeDoc = {
   /** Dedupe marker so the "no card" push goes out once. */
   noCardNotifiedAt?: admin.firestore.Timestamp;
   /** Who recorded the settlement: an admin (markFeePaid) or an automatic charge. */
-  paidBy?: 'admin' | 'charge';
+  paidBy?: 'admin' | 'charge' | 'link';
+
+  /** Link mode. See PaymentLink / LinkReview. */
+  paymentLink?: PaymentLink;
+  /** Creation lock for the link: a second sweep cannot create a second link. */
+  paymentLinkClaim?: { id: string; at: admin.firestore.Timestamp; attempts: number };
+  linkReview?: LinkReview;
+  /** Dedupe marker so the "link ready" push goes out once per link. */
+  linkNotifiedAt?: admin.firestore.Timestamp;
+  /** Dedupe marker so the "add a phone" push goes out once, like noCardNotifiedAt. */
+  needsPhoneNotifiedAt?: admin.firestore.Timestamp;
 
   /** Stub-charge bookkeeping — see charge.ts. */
   chargeAttemptCount?: number;

@@ -14,7 +14,7 @@ const closed = (path: string) =>
   new RegExp(`match ${path.replace(/[{}$]/g, '\\$&')} \\{ allow read, write: if false; \\}`).test(code);
 
 describe('payment rules', () => {
-  it.each(['/paymentMethods/{uid}', '/paymentEvents/{eventId}', '/paymentFake/{key}'])(
+  it.each(['/paymentMethods/{uid}', '/paymentEvents/{eventId}', '/paymentFake/{key}', '/paymentLinks/{processId}', '/paymentLinkIssues/{transactionId}'])(
     '%s is closed to clients', (path) => expect(closed(path)).toBe(true),
   );
 

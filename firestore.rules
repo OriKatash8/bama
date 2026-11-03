@@ -1540,6 +1540,13 @@ service cloud.firestore {
     match /paymentEvents/{eventId} {
       allow read, write: if false;
     }
+    // Link mode: processId -> fee pointer, and payments that matched no fee.
+    match /paymentLinks/{processId} {
+      allow read, write: if false;
+    }
+    match /paymentLinkIssues/{transactionId} {
+      allow read, write: if false;
+    }
     match /paymentFake/{key} {
       allow read, write: if false;
     }
