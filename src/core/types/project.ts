@@ -190,7 +190,20 @@ export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
 /** Where the automatic card charge of a fee stands. Absent = 'idle'. Informational
  *  only: nothing in the app is gated on it. */
-export type ChargeState = 'idle' | 'charging' | 'succeeded' | 'failed' | 'needs_card';
+export type ChargeState =
+  | 'idle' | 'charging' | 'succeeded' | 'failed' | 'needs_card'
+  // Payment-link mode: a link is waiting to be paid / no mobile phone on file yet.
+  | 'awaiting_payment' | 'needs_phone';
+
+/** The single-use hosted payment link for a fee (payment-link mode). Written by the
+ *  server only. It is payable only while `amount` equals the fee's current `feeDue`. */
+export type FeePaymentLink = {
+  url: string;
+  processId: string;
+  amount: number;
+  createdAt?: Timestamp;
+  superseded?: boolean;
+};
 
 export type ProjectFee = {
   professionalId: ID;
@@ -258,6 +271,7 @@ export type ProjectFee = {
   chargeDueAt?: Timestamp;
   /** Automatic card charge progress (read-only; written by the server). */
   chargeState?: ChargeState;
+  paymentLink?: FeePaymentLink;
   chargeAttempts?: number;
   nextChargeAt?: Timestamp | null;
   lastChargeError?: { code: string; class: 'final' | 'retryable' | 'no_card'; at: Timestamp } | null;

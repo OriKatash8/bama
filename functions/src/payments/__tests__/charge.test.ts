@@ -41,7 +41,7 @@ const feePath = `projects/${P}/fees/${U}`;
 const NOW = Date.now();
 const H = 3_600_000;
 const config: PaymentsConfig = {
-  paymentProvider: 'fake', paymentTestUids: [U], chargeMaxAttempts: 3, chargeRetryHours: 24,
+  paymentProvider: 'fake', paymentTestUids: [U], paymentLinkAudience: 'testers', chargeMaxAttempts: 3, chargeRetryHours: 24,
 };
 
 const seedFee = (over: Record<string, unknown> = {}) => mockDb.seed(feePath, {

@@ -25,7 +25,7 @@ const U = 'pro1';
 const feePath = `projects/${P}/fees/${U}`;
 const key = `${P}_${U}_1`;
 const NOW = Date.now();
-const config: PaymentsConfig = { paymentProvider: 'fake', paymentTestUids: [U], chargeMaxAttempts: 3, chargeRetryHours: 24 };
+const config: PaymentsConfig = { paymentProvider: 'fake', paymentTestUids: [U], paymentLinkAudience: 'testers', chargeMaxAttempts: 3, chargeRetryHours: 24 };
 const fee = () => mockDb.read(feePath)!;
 
 const charge = (eventId: string, outcome: 'succeeded' | 'failed' | 'pending', extra: object = {}): WebhookEvent => ({

@@ -16,6 +16,9 @@ export type PaymentMethodView = {
   expMonth?: number;
   expYear?: number;
   status?: 'active' | 'invalid';
+  /** True when fees are paid on a hosted payment link instead of a saved card. The
+   *  card UI stays hidden (`enabled` is false); the fee rows carry the pay button. */
+  linkMode?: true;
 };
 
 const REGION = 'europe-west1' as const;

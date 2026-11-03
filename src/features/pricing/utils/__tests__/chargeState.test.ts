@@ -1,4 +1,4 @@
-import { chargeStateKey } from '../chargeState';
+import { chargeStateKey, payLinkUrl } from '../chargeState';
 
 const done = { engagementStatus: 'completed' as const };
 
@@ -21,4 +21,23 @@ describe('chargeStateKey', () => {
     expect(chargeStateKey({ ...done, feePaid: true, status: 'paid' })).toBeNull();
     expect(chargeStateKey({ ...done, status: 'not_owed', chargeState: 'idle' })).toBeNull();
   });
+});
+
+
+describe('payLinkUrl', () => {
+  const fee = (over: Record<string, unknown> = {}) => ({
+    engagementStatus: 'completed', chargeState: 'awaiting_payment', feePaid: false, status: 'pending', feeDue: 30,
+    paymentLink: { url: 'https://pay.example/x', processId: 'L', amount: 30 }, ...over,
+  }) as never;
+  it('returns the url only for a live, https, matching-amount link on an unpaid fee', () => {
+    expect(payLinkUrl(fee())).toBe('https://pay.example/x');
+  });
+  it.each([
+    ['amount moved on', { feeDue: 20 }],
+    ['superseded', { paymentLink: { url: 'https://p/x', processId: 'L', amount: 30, superseded: true } }],
+    ['not https', { paymentLink: { url: 'http://p/x', processId: 'L', amount: 30 } }],
+    ['paid', { feePaid: true }],
+    ['other state', { chargeState: 'idle' }],
+    ['not completed', { engagementStatus: 'active' }],
+  ])('null when %s', (_n, over) => expect(payLinkUrl(fee(over))).toBeNull());
 });

@@ -162,7 +162,10 @@ export function useNotificationRouting(): void {
       // settle it are listed — the same place a failed charge goes.
       case 'fee_due':
       case 'fee_overdue_soon':
-      case 'fee_overdue': {
+      case 'fee_overdue':
+      // A payment link is ready, or one needs a phone number first: both are
+      // acted on from the fee row on the balance screen.
+      case 'fee_link': {
         await navigate('professional', '/settings/payment');
         return;
       }

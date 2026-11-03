@@ -14,7 +14,7 @@ jest.mock('firebase-functions/v2/scheduler', () => ({ onSchedule: (_o: unknown, 
 const NOW = Date.now();
 const H = 3_600_000;
 const cfg = (over: Partial<PaymentsConfig> = {}): PaymentsConfig => ({
-  paymentProvider: 'fake', paymentTestUids: ['tester'], chargeMaxAttempts: 3, chargeRetryHours: 24, ...over,
+  paymentProvider: 'fake', paymentTestUids: ['tester'], paymentLinkAudience: 'testers', chargeMaxAttempts: 3, chargeRetryHours: 24, ...over,
 });
 const seed = (proj: string, uid: string, over: Record<string, unknown> = {}) =>
   mockDb.seed(`projects/${proj}/fees/${uid}`, {

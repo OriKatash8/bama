@@ -1562,7 +1562,14 @@
     "charge_state_succeeded": "Charged",
     "charge_state_failed": "The charge failed – try another card",
     "charge_state_needs_card": "A card is required",
-    "card_note": "Your brokerage fee is charged to your saved card when its review period ends. Nothing in the app is locked if the charge fails — your projects, reviews and slots stay available as normal."
+    "card_note": "Your brokerage fee is charged to your saved card when its review period ends. Nothing in the app is locked if the charge fails — your projects, reviews and slots stay available as normal.",
+    "charge_state_awaiting_payment": "Ready to pay",
+    "charge_state_needs_phone": "Add a mobile phone number to pay the brokerage fee",
+    "pay_now": "Pay now",
+    "add_phone": "Add phone number",
+    "pay_open_failed": "Could not open the payment page. Please try again.",
+    "link_pending_confirm": "Updating your payment. This can take a few minutes.",
+    "link_note": "Your brokerage fee is paid on a secure payment page. You enter card details there, never in the app. Nothing in the app is locked while a payment is pending — your projects, reviews and slots stay available as normal."
   },
   "payment_method": {
     "title": "Payment method for brokerage fee",

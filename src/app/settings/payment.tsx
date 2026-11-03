@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
+import { useUiStore } from '@core/stores/uiStore';
 import { getDocument } from '@core/firebase/firestore';
 import { listenToMyFees } from '@features/pricing/services/feesService';
 import { outstandingFee, feePercent, isMinimumFee, calculatedFee } from '@features/pricing/utils/fee';
@@ -18,7 +21,7 @@ import { useModeAccent } from '@core/navigation/floatingTabBar';
 import { shadow } from '@core/theme/shadow';
 import { PaymentMethodRow } from '@features/pricing/components/PaymentMethodRow';
 import { usePaymentMethod } from '@features/pricing/hooks/usePaymentMethod';
-import { chargeStateKey } from '@features/pricing/utils/chargeState';
+import { chargeStateKey, payLinkUrl } from '@features/pricing/utils/chargeState';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -56,10 +59,12 @@ type Row = {
  * A professional's BAMA balance: what they owe in platform commission, per
  * completed project, and how to settle it.
  *
- * READ-ONLY about money. There is no charge button here: settlement is either
- * off-platform (an admin records it) or, for users the server has enabled, an
- * automatic charge to a saved card (PaymentMethodRow, chargeStateKey). Either way
- * the screen must never claim a payment occurred beyond what the fee record says.
+ * READ-ONLY about money. Settlement is off-platform (an admin records it) or, for
+ * users the server has enabled, an automatic charge to a saved card
+ * (PaymentMethodRow, chargeStateKey) or a payment on a hosted payment link, opened
+ * from the fee row ("Pay now"). Opening the link settles nothing: only the server,
+ * on the payment provider's confirmation, marks a fee paid. Either way the screen
+ * must never claim a payment occurred beyond what the fee record says.
  *
  * It also unlocks nothing. This used to be a pay screen that listed what the
  * money bought — a free slot and the publication of the client's review. Both of
@@ -89,6 +94,30 @@ export default function BalanceScreen() {
   // was: no card row, no charge lines, and the note that the app charges nothing.
   const { view: cardView, refresh: refreshCard } = usePaymentMethod(userId);
   const cardEnabled = cardView?.enabled === true;
+  // Payment-link mode: no card row; the fee rows carry the pay button instead.
+  const linkMode = cardView?.linkMode === true;
+  const showToast = useUiStore((s) => s.showToast);
+  // The project whose payment page is open, and those we came back from, so the row
+  // can say the payment is being confirmed until the server marks the fee paid.
+  const [opening, setOpening] = useState<string | null>(null);
+  const [returned, setReturned] = useState<Set<string>>(new Set());
+
+  const payNow = async (rowProjectId: string, url: string) => {
+    if (opening) return;
+    setOpening(rowProjectId);
+    try {
+      // Returns when the sheet closes or the success page redirects back to the app.
+      // Its result is NOT a payment confirmation; the fee row updates from the server.
+      await WebBrowser.openAuthSessionAsync(url, Linking.createURL('/settings/payment'));
+      setReturned((prev) => new Set(prev).add(rowProjectId));
+      await refreshCard();
+    } catch (err) {
+      console.error('[balance] opening the payment page failed:', err);
+      showToast(t('balance.pay_open_failed'), 'error');
+    } finally {
+      setOpening(null);
+    }
+  };
 
   // A listener, not a fetch: this screen is reached from the chat list and the
   // project detail, and an admin recording a payment while it is open should
@@ -249,11 +278,12 @@ export default function BalanceScreen() {
                   {t('balance.status_pending_charge', { date: chargeDate(r.fee, rtl ? 'he-IL' : 'en-US') })}
                 </AppText>
               )}
-              {cardEnabled && chargeStateKey(r.fee) && (
+              {(cardEnabled || linkMode) && chargeStateKey(r.fee) && (
                 <AppText
                   weight="semiBold"
                   style={[
                     r.fee.chargeState === 'failed' || r.fee.chargeState === 'needs_card'
+                      || r.fee.chargeState === 'needs_phone'
                       ? styles.lineDisputed : styles.linePending,
                     { textAlign: align },
                     r.fee.chargeState === 'succeeded' && { color: SETTLED_GREEN },
@@ -262,6 +292,42 @@ export default function BalanceScreen() {
                 >
                   {t(`balance.charge_state_${chargeStateKey(r.fee)}`)}
                 </AppText>
+              )}
+              {linkMode && payLinkUrl(r.fee) && (
+                <>
+                  {returned.has(r.projectId) && (
+                    <AppText
+                      weight="regular"
+                      style={[styles.linePending, { color: colors.textMuted, textAlign: align }]}
+                      testID={`link-pending-${r.projectId}`}
+                    >
+                      {t('balance.link_pending_confirm')}
+                    </AppText>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: accent, opacity: opening ? 0.6 : 1 }]}
+                    onPress={() => payNow(r.projectId, payLinkUrl(r.fee) as string)}
+                    disabled={opening !== null}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    testID={`pay-now-${r.projectId}`}
+                  >
+                    {opening === r.projectId
+                      ? <ActivityIndicator color="#ffffff" />
+                      : <AppText weight="bold" style={styles.actionBtnText}>{t('balance.pay_now')}</AppText>}
+                  </TouchableOpacity>
+                </>
+              )}
+              {linkMode && r.fee.chargeState === 'needs_phone' && chargeStateKey(r.fee) === 'needs_phone' && (
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: accent }]}
+                  onPress={() => router.push('/settings/phone')}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  testID={`add-phone-${r.projectId}`}
+                >
+                  <AppText weight="bold" style={styles.actionBtnText}>{t('balance.add_phone')}</AppText>
+                </TouchableOpacity>
               )}
               {r.owed <= 0 && r.note === 'disputed' && (
                 <AppText weight="regular" style={[styles.lineBreakdown, { color: colors.textMuted, textAlign: align }]}>
@@ -281,7 +347,7 @@ export default function BalanceScreen() {
               {t('balance.how_body')}
             </AppText>
             <AppText weight="regular" style={[styles.howNote, { color: colors.textMuted, textAlign: align }]}>
-              {t(cardEnabled ? 'balance.card_note' : 'balance.no_charge_note')}
+              {t(cardEnabled ? 'balance.card_note' : linkMode ? 'balance.link_note' : 'balance.no_charge_note')}
             </AppText>
           </View>
         </>
@@ -321,6 +387,8 @@ const styles = StyleSheet.create({
   lineTitle: { fontSize: 15, flex: 1 },
   lineAmount: { fontSize: 16 },
   lineBreakdown: { fontSize: 13 },
+  actionBtn: { marginTop: 8, borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+  actionBtnText: { color: '#ffffff', fontSize: 15 },
   lineDisputed: { fontSize: 12, color: DISPUTED_AMBER, marginTop: 2 },
   amountLabel: { fontSize: 13 },
   amount: { fontSize: 40, lineHeight: 48 },
