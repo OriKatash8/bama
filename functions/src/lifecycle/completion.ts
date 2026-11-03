@@ -413,11 +413,14 @@ export const cancelProject = onCall(async (request) => {
  *   1. this one, a bookkeeping guard on the ledger itself; and
  *   2. `feeBlocksNewHire`, which withholds the taking-on of new REAL-WORLD work
  *      from a professional past the grace period on an invoice an admin sent —
- *      unreachable by anyone with a clean account, and unclearable from inside
- *      the app.
+ *      unreachable by anyone with a clean account. Settling the fee lifts it
+ *      (settleFee recomputes the block), whether an admin recorded the payment or
+ *      the provider confirmed one made on its hosted page; nothing the app does
+ *      by itself clears it.
  *
- * Do not copy either shape anywhere else. In particular, nothing that a payment
- * inside the app could switch off may ever depend on fee state.
+ * Do not copy either shape anywhere else. In particular, no app feature, content
+ * or access may ever depend on fee state: the hire block withholds real-world
+ * work, and is the only thing that does.
  */
 /**
  * Who is recording the settlement, and (for an automatic charge) the proof. ONE

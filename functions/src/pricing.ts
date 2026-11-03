@@ -281,9 +281,14 @@ export function feeRateOf(config: PricingConfig): number {
  * only the taking-on of new real-world work, from someone already in arrears on
  * an invoice they were sent. Nobody with a clean account can reach it. The
  * professional keeps their profile, chat, browsing, portfolio, applications,
- * existing projects and published reviews throughout, and NOTHING they can do
- * inside the app clears it: settlement happens off-platform and an admin records
- * it. Never scale this ("pay more, take more") and never price it.
+ * existing projects and published reviews throughout. Nothing the app itself
+ * does clears it either: settling a fee does, and a fee is settled only by the
+ * server, on an admin's record (markFeePaid) or on the payment provider's own
+ * confirmation (a card charge, or a payment link paid on the provider's hosted
+ * page and confirmed by Make). All three go through settleFee, which recomputes
+ * the block (recomputeFeeBlock) the moment the fee is settled. Opening the pay
+ * page, or returning from it, settles nothing. Never scale this ("pay more, take
+ * more") and never price it.
  *
  * Every clause is a refusal to block:
  *  - not 'owed'          — exempt or legacy-subscription; no fee ever existed

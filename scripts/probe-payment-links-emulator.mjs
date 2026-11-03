@@ -40,6 +40,7 @@ const { runLinkIssue } = lib('payments/link.js');
 const { processWebhookEvent } = lib('payments/webhookCore.js');
 const { parseLinkPayment } = lib('payments/linkConfirm.js');
 const { paymentLinkConfirm } = lib('payments/paymentLinkConfirm.js');
+const { recomputeFeeBlock } = lib('lifecycle/feeOverdue.js');
 
 let failures = 0;
 const results = [];
@@ -225,6 +226,36 @@ await test('unknown processId: recorded in paymentLinkIssues, no fee touched', a
   const issue = await db.doc(`paymentLinkIssues/${ev.transactionId}`).get();
   ok(issue.exists && issue.data().reason === 'link_unmatched', 'issue recorded');
   ok(!(await feeOf(L.P, L.U)).feePaid, 'fee untouched');
+});
+
+console.log('\nFee block (settleFee -> recomputeFeeBlock):');
+
+const blockedFrom = async (U) => (await db.doc(`feeBlocks/${U}`).get()).data()?.blockedFrom?.toMillis?.() ?? null;
+const overdue = { overdueAt: Timestamp.fromMillis(NOW - 5 * H) };
+
+await test('an overdue fee blocks; paying its link lifts the block in the same step', async () => {
+  const L = await linked({ fee: overdue });
+  await recomputeFeeBlock(L.U);                       // what the fee trigger does
+  ok((await blockedFrom(L.U)) !== null, 'the overdue fee blocks before payment');
+  eq(await processWebhookEvent(pay(L), L.cfg, NOW), 'settled');
+  eq(await blockedFrom(L.U), null, 'blockedFrom after paying');
+});
+
+await test('a payment that is NOT applied (wrong amount) leaves the block in place', async () => {
+  const L = await linked({ fee: overdue });
+  await recomputeFeeBlock(L.U);
+  const before = await blockedFrom(L.U);
+  ok(before !== null, 'blocked');
+  eq(await processWebhookEvent(pay(L, { amount: 90 }), L.cfg, NOW), 'needs_review');
+  eq(await blockedFrom(L.U), before, 'block unchanged');
+});
+
+await test('opening the pay page changes nothing: creating a link does not touch the block', async () => {
+  const { P, U, cfg } = await seed({ fee: overdue });
+  await recomputeFeeBlock(U);
+  const before = await blockedFrom(U);
+  await runLinkIssue(P, U, cfg, NOW);
+  eq(await blockedFrom(U), before, 'block after link creation');
 });
 
 console.log('\nHTTP endpoint (handler invoked directly, secret from env):');

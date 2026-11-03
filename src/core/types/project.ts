@@ -185,7 +185,9 @@ export type ProjectRequest = {
  *  NOTHING inside the app is gated on either — no slot, no review, no feature.
  *  Fee state decides exactly one thing, server-side: whether a professional past
  *  an invoice's grace period may take on NEW work (see feeBlocksNewHire). That is
- *  withheld real-world work, and no in-app payment can clear it. */
+ *  withheld real-world work. Settling the fee lifts it, and a fee is settled only
+ *  by the server (an admin's record, or the payment provider's confirmation of a
+ *  payment made on its hosted page); opening that page settles nothing. */
 export type FeeSettlementStatus = 'pending' | 'paid' | 'disputed' | 'not_owed';
 
 /** Where the automatic card charge of a fee stands. Absent = 'idle'. Informational
