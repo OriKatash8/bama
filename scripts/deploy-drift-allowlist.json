@@ -15,6 +15,11 @@
       "name": "paymentWebhook",
       "reason": "Public provider callback. Inert while paymentProvider is 'none' and has no caller until Grow is wired; deploys with the Grow step (with its GROW_* secrets).",
       "addedOn": "2026-10-31"
+    },
+    {
+      "name": "paymentLinkConfirm",
+      "reason": "Public Make->us callback for paid payment links. Inert until MAKE_SHARED_SECRET exists and the Make scenarios are built; deploys with the payment-links step together with feeChargeCron's MAKE_* secrets.",
+      "addedOn": "2026-11-03"
     }
   ]
 }

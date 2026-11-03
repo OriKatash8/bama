@@ -50,6 +50,19 @@ export type WebhookEvent =
       idempotencyKey: string;
     } & ChargeResult)
   | {
+      // A payment link paid on Grow's page, confirmed by Make. providerEventId is
+      // `link_<transactionId>`: one bank transaction can only ever act once.
+      type: 'link_payment';
+      providerEventId: string;
+      processId: string;
+      /** Make's copy of Custom Field 1; absent when Grow did not return it. */
+      feeKey?: string | null;
+      /** Whole shekels, a number (Make converts Grow's string `sum`). */
+      amount: number;
+      transactionId: string;
+      asmachta?: string;
+    }
+  | {
       type: 'card_saved';
       providerEventId: string;
       uid: string;

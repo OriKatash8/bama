@@ -3,6 +3,7 @@ import { applyChargeResult } from './charge';
 import { parseIdempotencyKey } from './chargeLogic';
 import { isPaymentsEnabledFor, type PaymentsConfig } from './guard';
 import { savePaymentMethod } from './paymentMethods';
+import { applyLinkPayment } from './linkConfirm';
 import type { WebhookEvent } from './types';
 
 /**
@@ -15,7 +16,10 @@ import type { WebhookEvent } from './types';
  * (every handler below is itself idempotent), whereas marking first would lose the
  * event for good. Only a 'processed' record short-circuits.
  */
-export type WebhookOutcome = 'duplicate' | 'processed' | 'unmatched' | 'ignored';
+export type WebhookOutcome =
+  | 'duplicate' | 'processed' | 'unmatched' | 'ignored'
+  // Link payments: money applied to the fee, or recorded for an admin instead.
+  | 'settled' | 'needs_review';
 
 const eventDocId = (providerEventId: string) => encodeURIComponent(providerEventId).slice(0, 400);
 
@@ -54,6 +58,8 @@ async function dispatch(
     await savePaymentMethod(event.uid, config.paymentProvider, event.card);
     return 'processed';
   }
+
+  if (event.type === 'link_payment') return applyLinkPayment(event, now);
 
   const key = parseIdempotencyKey(event.idempotencyKey);
   if (!key) return 'unmatched';
