@@ -43,6 +43,7 @@ jest.mock('@core/firebase/functions', () => {
     markFeePaid: jest.fn(),
     adminListChargeIssues: jest.fn(),
     adminAcknowledgeChargeIssue: jest.fn(),
+    adminListPaymentLinks: jest.fn(),
   };
   return { callFunction: (name: string) => fns[name], __fns: fns };
 });
@@ -77,6 +78,7 @@ beforeEach(() => {
   fns.adminListFlaggedProjects.mockResolvedValue({ rows: [] });
   fns.adminListChargeIssues.mockResolvedValue(ROWS);
   fns.adminAcknowledgeChargeIssue.mockResolvedValue({ ok: true });
+  fns.adminListPaymentLinks.mockResolvedValue({ awaiting: [], paid: [] });
 });
 afterEach(() => jest.useRealTimers());
 
@@ -127,4 +129,75 @@ it('has Hebrew copy for every new key', () => {
   for (const k of Object.keys(E).filter((x) => x.includes('charge'))) {
     expect((H as Record<string, string>)[k]).toBeTruthy();
   }
+});
+
+const LINK = (over = {}) => ({
+  projectId: 'p5', title: 'Promo', professionalId: 'pro-5', displayName: 'Noa Bar', amount: 120,
+  processId: 'L5', createdAt: Date.UTC(2026, 0, 7, 12), stale: false, paidAt: null, transactionId: null, ...over,
+});
+
+describe('payment links', () => {
+  it('shows a Payment links tab counting links awaiting payment', async () => {
+    fns.adminListPaymentLinks.mockResolvedValue({ awaiting: [LINK(), LINK({ projectId: 'p6', stale: true })], paid: [] });
+    const r = await renderPage();
+    expect(r.getByText(`${E.tab_links} (2)`)).toBeTruthy();
+  });
+
+  it('lists awaiting and paid links, flagging an out-of-date one', async () => {
+    fns.adminListPaymentLinks.mockResolvedValue({
+      awaiting: [LINK({ stale: true })],
+      paid: [LINK({ projectId: 'p7', paidAt: Date.UTC(2026, 0, 9, 12), transactionId: 'T77', createdAt: null })],
+    });
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('tab-links'));
+    expect(r.getByTestId('link-awaiting-p5:pro-5')).toBeTruthy();
+    expect(r.getByText(E.link_stale)).toBeTruthy();
+    expect(r.getByText('₪120 · link created 07/01/2026')).toBeTruthy();
+    expect(r.getByText(/₪120 · paid 09\/01\/2026/)).toBeTruthy();
+    expect(r.getByTestId('link-paid-p7:pro-5')).toBeTruthy();
+  });
+
+  it('empty sections read as empty, not as an error', async () => {
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('tab-links'));
+    expect(r.getByText(E.empty_links_awaiting)).toBeTruthy();
+    expect(r.getByText(E.empty_links_paid)).toBeTruthy();
+  });
+
+  it('a failed load says so and does not blank the other tabs', async () => {
+    fns.adminListPaymentLinks.mockRejectedValue(new Error('denied'));
+    const r = await renderPage();
+    expect(r.getByText(`${E.tab_charges} (2)`)).toBeTruthy();
+    fireEvent.press(r.getByTestId('tab-links'));
+    expect(r.getByTestId('links-error')).toBeTruthy();
+    expect(r.queryByTestId('links-awaiting-empty')).toBeNull();
+  });
+
+  it('link review reasons are listed in Charge issues, with the received amount', async () => {
+    fns.adminListChargeIssues.mockResolvedValue({ rows: [{
+      projectId: 'p5', title: 'Promo', professionalId: 'pro-5', displayName: 'Noa Bar',
+      reason: 'link_superseded', chargeState: 'awaiting_payment', chargedAmount: 120, feeDue: 80, attempts: 0,
+      providerRef: 'T9', lastErrorCode: null, flaggedAt: Date.UTC(2026, 0, 8, 12), note: '',
+    }] });
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('tab-charges'));
+    expect(r.getByText(E.charge_reason_link_superseded)).toBeTruthy();
+    expect(r.getByText('Received ₪120 · balance now ₪80')).toBeTruthy();
+  });
+
+  it('an unmatched payment is acknowledged by its transaction id', async () => {
+    fns.adminListChargeIssues.mockResolvedValue({ rows: [{
+      projectId: '', title: '', professionalId: '', displayName: '', transactionId: 'T42',
+      reason: 'link_unmatched', chargeState: 'idle', chargedAmount: 50, feeDue: 0, attempts: 0,
+      providerRef: 'T42', lastErrorCode: null, flaggedAt: Date.UTC(2026, 0, 8, 12), note: 'processId X feeKey -',
+    }] });
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('tab-charges'));
+    await act(async () => { fireEvent.press(r.getByTestId('charge-ack-tx:T42')); });
+    expect(fns.adminAcknowledgeChargeIssue).toHaveBeenCalledWith({ transactionId: 'T42' });
+  });
+
+  it('every admin_fees key has Hebrew copy', () => {
+    for (const k of Object.keys(E)) expect((H as Record<string, string>)[k]).toBeTruthy();
+  });
 });

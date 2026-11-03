@@ -39,7 +39,12 @@ const listArrears = callFunction<
 /** A fee whose automatic card charge needs a person (see adminListChargeIssues). */
 type ChargeIssueRow = {
   projectId: string; title: string; professionalId: string; displayName: string;
-  reason: 'settle_mismatch' | 'attempts_exhausted' | 'unresolved_claim';
+  reason:
+    | 'settle_mismatch' | 'attempts_exhausted' | 'unresolved_claim'
+    | 'link_superseded' | 'link_after_settled' | 'link_amount_mismatch'
+    | 'link_key_mismatch' | 'link_create_failed' | 'link_unmatched';
+  /** Only 'link_unmatched': a payment that belongs to no fee, acknowledged by this id. */
+  transactionId?: string;
   chargeState: string; chargedAmount: number | null; feeDue: number; attempts: number;
   providerRef: string | null; lastErrorCode: string | null; flaggedAt: number | null; note: string;
 };
@@ -47,8 +52,17 @@ const listChargeIssues = callFunction<Record<string, never>, { rows: ChargeIssue
   'adminListChargeIssues', 'europe-west1',
 );
 const ackChargeIssue = callFunction<
-  { projectId: string; professionalId: string }, { ok: boolean }
+  { projectId: string; professionalId: string } | { transactionId: string }, { ok: boolean }
 >('adminAcknowledgeChargeIssue', 'europe-west1');
+/** A fee with a Grow payment link (see adminListPaymentLinks). */
+type PaymentLinkRow = {
+  projectId: string; title: string; professionalId: string; displayName: string;
+  amount: number; processId: string; createdAt: number | null; stale: boolean;
+  paidAt: number | null; transactionId: string | null;
+};
+const listPaymentLinks = callFunction<
+  Record<string, never>, { awaiting: PaymentLinkRow[]; paid: PaymentLinkRow[] }
+>('adminListPaymentLinks', 'europe-west1');
 const listFlagged = callFunction<Record<string, never>, { rows: FlaggedRow[] }>(
   'adminListFlaggedProjects',
 );
@@ -71,7 +85,7 @@ function parseAgreed(raw: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : NaN;
 }
 
-type Tab = 'arrears' | 'flagged' | 'charges';
+type Tab = 'arrears' | 'flagged' | 'charges' | 'links';
 
 function formatDate(ms: number | null, rtl: boolean): string {
   if (!ms) return '—';
@@ -118,6 +132,10 @@ export default function AdminFeesScreen() {
   /** Its own state: a failure here must not blank the two lists that loaded, and must
    *  not read as "no charge issues" either. */
   const [chargesState, setChargesState] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [awaitingLinks, setAwaitingLinks] = useState<PaymentLinkRow[]>([]);
+  const [paidLinks, setPaidLinks] = useState<PaymentLinkRow[]>([]);
+  /** Own state, like charges: a failure must not blank the other lists or read as "none". */
+  const [linksState, setLinksState] = useState<'loading' | 'ok' | 'error'>('loading');
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   /** Corrected price typed per contested engagement, keyed `${projectId}:${proId}`. */
   const [agreed, setAgreed] = useState<Record<string, string>>({});
@@ -141,8 +159,16 @@ export default function AdminFeesScreen() {
     [],
   );
 
+  const fetchLinks = useCallback(
+    () => Promise.resolve().then(() => listPaymentLinks({})).then(
+      (r) => { setAwaitingLinks(r.awaiting); setPaidLinks(r.paid); setLinksState('ok'); },
+      (e: unknown) => { console.error('[admin/fees] payment links load failed:', e); setLinksState('error'); },
+    ),
+    [],
+  );
+
   const fetchAll = useCallback(
-    () => Promise.all([listArrears({}), listFlagged({}), fetchCharges()]).then(
+    () => Promise.all([listArrears({}), listFlagged({}), fetchCharges(), fetchLinks()]).then(
       ([a, f]) => {
         setArrears(a.rows);
         setGraceDays(a.graceDays);
@@ -157,7 +183,7 @@ export default function AdminFeesScreen() {
         setState('error');
       },
     ),
-    [fetchCharges],
+    [fetchCharges, fetchLinks],
   );
 
   const load = useCallback(async () => {
@@ -196,12 +222,14 @@ export default function AdminFeesScreen() {
     }
   }
 
-  const TABS: Tab[] = ['arrears', 'flagged', 'charges'];
+  const TABS: Tab[] = ['arrears', 'flagged', 'charges', 'links'];
   // '—' rather than '(0)' while the data is unknown: a zero here makes the same
   // false claim the empty list did.
   const countOf = (tb: Tab) =>
     tb === 'charges'
       ? (chargesState === 'ok' ? String(charges.length) : t('count_unknown'))
+      : tb === 'links'
+      ? (linksState === 'ok' ? String(awaitingLinks.length) : t('count_unknown'))
       : state === 'ok' ? String(tb === 'arrears' ? arrears.length : flagged.length) : t('count_unknown');
   const totalOwed = arrears.reduce((sum, r) => sum + r.totalOwed, 0);
   const known = state === 'ok';
@@ -380,6 +408,57 @@ export default function AdminFeesScreen() {
             })
           )}
         </Card>
+      ) : tab === 'links' ? (
+        <Card testID="links-card">
+          <CardHead title={t('tab_links')} sub={t('links_sub')} />
+          {linksState === 'error' ? (
+            <View style={[styles.errorBody, { alignItems: rtl ? 'flex-end' : 'flex-start' }]} testID="links-error">
+              <AdminText style={[styles.body, { color: p.bad, textAlign }]}>{t('links_load_failed')}</AdminText>
+              <PillButton label={t('retry')} onPress={() => void load()} testID="links-retry" />
+            </View>
+          ) : (
+            (['awaiting', 'paid'] as const).map((section) => {
+              const list = section === 'awaiting' ? awaitingLinks : paidLinks;
+              return (
+                <View key={section} testID={`links-${section}`}>
+                  <AdminText weight="bold" style={[TYPE.rowName, { textAlign, marginTop: 8 }]}>
+                    {t(`links_${section}`)} ({list.length})
+                  </AdminText>
+                  {list.length === 0 ? (
+                    <EmptyState text={t(`empty_links_${section}`)} testID={`links-${section}-empty`} />
+                  ) : (
+                    list.map((row) => {
+                      const key = `${row.projectId}:${row.professionalId}`;
+                      return (
+                        <View
+                          key={key}
+                          testID={`link-${section}-${key}`}
+                          style={[styles.flagRow, { flexDirection: rowDir, borderTopColor: p.border }]}
+                        >
+                          <IconTile icon={Receipt} tone={section === 'paid' ? 'good' : row.stale ? 'warn' : 'accent'} />
+                          <View style={styles.grow}>
+                            <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                              {row.displayName || row.professionalId} · {row.title || row.projectId}
+                            </AdminText>
+                            <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                              {section === 'paid'
+                                ? t('link_paid_on', { amount: row.amount.toLocaleString(), date: formatDate(row.paidAt, rtl) })
+                                : t('link_created', { amount: row.amount.toLocaleString(), date: formatDate(row.createdAt, rtl) })}
+                              {row.transactionId ? ` · ${t('charge_ref', { ref: row.transactionId })}` : ''}
+                            </AdminText>
+                            {section === 'awaiting' && row.stale ? (
+                              <AdminText style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>{t('link_stale')}</AdminText>
+                            ) : null}
+                          </View>
+                        </View>
+                      );
+                    })
+                  )}
+                </View>
+              );
+            })
+          )}
+        </Card>
       ) : tab === 'charges' ? (
         <Card testID="charges-card">
           <CardHead title={t('tab_charges')} sub={t('charges_sub')} />
@@ -392,15 +471,20 @@ export default function AdminFeesScreen() {
             <EmptyState text={t('empty_charges')} testID="charges-empty" />
           ) : (
             charges.map((row) => {
-              const key = `${row.projectId}:${row.professionalId}`;
+              const key = row.transactionId
+                ? `tx:${row.transactionId}` : `${row.projectId}:${row.professionalId}`;
               const isBusy = busy[key] === true;
+              // Money was taken or received but not applied (as opposed to nothing
+              // being collected): the cases an admin may need to refund.
+              const moneyIn = row.reason === 'settle_mismatch'
+                || (row.reason.startsWith('link_') && row.reason !== 'link_create_failed');
               return (
                 <View
                   key={key}
                   testID={`charge-${key}`}
                   style={[styles.flagRow, { flexDirection: rowDir, borderTopColor: p.border }]}
                 >
-                  <IconTile icon={AlertTriangle} tone={row.reason === 'settle_mismatch' ? 'bad' : 'warn'} />
+                  <IconTile icon={AlertTriangle} tone={moneyIn ? 'bad' : 'warn'} />
                   <View style={styles.grow}>
                     <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
                       {row.displayName || row.professionalId} · {row.title || row.projectId}
@@ -409,8 +493,8 @@ export default function AdminFeesScreen() {
                       {t(`charge_reason_${row.reason}`)}
                     </AdminText>
                     <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
-                      {row.reason === 'settle_mismatch'
-                        ? t('charge_taken', { charged: (row.chargedAmount ?? 0).toLocaleString(), due: row.feeDue.toLocaleString() })
+                      {moneyIn
+                        ? t(row.reason.startsWith('link_') ? 'link_received' : 'charge_taken', { charged: (row.chargedAmount ?? 0).toLocaleString(), due: row.feeDue.toLocaleString() })
                         : t('charge_failed_after', { n: row.attempts, due: row.feeDue.toLocaleString() })}
                     </AdminText>
                     <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
@@ -427,7 +511,9 @@ export default function AdminFeesScreen() {
                         onPress={() => act(
                           key,
                           t('confirm_charge_ack'),
-                          () => ackChargeIssue({ projectId: row.projectId, professionalId: row.professionalId }),
+                          () => ackChargeIssue(row.transactionId
+                            ? { transactionId: row.transactionId }
+                            : { projectId: row.projectId, professionalId: row.professionalId }),
                           t('charge_ack_done'),
                         )}
                       />
