@@ -118,6 +118,8 @@ export type LinkReview = {
   processId?: string;
   amount?: number;
   note?: string;
+  acknowledgedAt?: admin.firestore.Timestamp;
+  acknowledgedBy?: string;
 };
 
 /** Why a charge needs a human, beyond what chargeState says. */

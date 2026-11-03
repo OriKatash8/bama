@@ -3,6 +3,7 @@ import { db, FieldValue, requireAuth } from '../lifecycle/helpers';
 import { assertVerifiedEmail } from '../auth/verifiedEmail';
 import { readPaymentsConfig, isPaymentsEnabledFor } from './guard';
 import { getProvider } from './getProvider';
+import { isLinkProviderName } from '../pricing';
 import { FAKE_TOKENS } from './fakeProvider';
 import { requeueNeedsCardFees } from './requeue';
 import type { CardDetails } from './types';
@@ -20,6 +21,10 @@ export type PaymentMethodView = {
   expMonth?: number;
   expYear?: number;
   status?: 'active' | 'invalid';
+  /** Present (true) only in link mode for an allowed user: fees are paid on a hosted
+   *  link, there is no card to save. `enabled` stays false then, so a client that
+   *  predates link mode shows no card UI at all. */
+  linkMode?: true;
 };
 
 /**
@@ -70,6 +75,11 @@ export const getMyPaymentMethod = onCall({ region: REGION }, async (request) => 
   const uid = requireAuth(request.auth?.uid);
   const config = await readPaymentsConfig();
   const enabled = isPaymentsEnabledFor(config, uid);
+  if (isLinkProviderName(config.paymentProvider)) {
+    return enabled
+      ? { enabled: false, hasCard: false, linkMode: true as const }
+      : toPaymentMethodView(undefined, false);
+  }
   // A disabled user learns nothing, not even whether a card exists.
   if (!enabled) return toPaymentMethodView(undefined, false);
   const snap = await paymentMethodRef(uid).get();

@@ -110,7 +110,7 @@ export async function releaseLinkClaim(
       // Epoch, not a delete: the attempt counter must survive until success.
       paymentLinkClaim: { id: claim.id, at: Timestamp.fromMillis(0), attempts: claim.attempts },
     };
-    if (claim.attempts >= LINK_MAX_ATTEMPTS && !fee.linkReview) {
+    if (claim.attempts >= LINK_MAX_ATTEMPTS && (!fee.linkReview || fee.linkReview.acknowledgedAt)) {
       update.linkReview = {
         reason: 'link_create_failed', at: Timestamp.fromMillis(now), amount: fee.feeDue,
         note: `Make failed ${claim.attempts} times`,

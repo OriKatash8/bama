@@ -6,4 +6,6 @@ export {
 export { feeChargeCron } from './feeChargeCron';
 export { paymentWebhook } from './paymentWebhook';
 export { paymentLinkConfirm } from './paymentLinkConfirm';
-export { adminListChargeIssues, adminAcknowledgeChargeIssue } from './adminChargeIssues';
+export {
+  adminListChargeIssues, adminAcknowledgeChargeIssue, adminListPaymentLinks,
+} from './adminChargeIssues';

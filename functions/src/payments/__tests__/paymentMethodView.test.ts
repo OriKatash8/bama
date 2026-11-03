@@ -27,3 +27,11 @@ describe('getMyPaymentMethod view', () => {
     expect(toPaymentMethodView({ ...stored, status: 'invalid' }, true).status).toBe('invalid');
   });
 });
+
+describe('link mode view', () => {
+  it('stays a plain card view unless linkMode is asked for (old clients unaffected)', () => {
+    expect(toPaymentMethodView(undefined, false)).not.toHaveProperty('linkMode');
+    expect(toPaymentMethodView(undefined, true)).not.toHaveProperty('linkMode');
+  });
+});
+
