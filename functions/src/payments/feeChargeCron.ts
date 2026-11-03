@@ -2,10 +2,12 @@ import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db, Timestamp, type FeeDoc } from '../lifecycle/helpers';
 import { runStubChargeFor } from '../lifecycle/charge';
-import { TIMEZONE } from '../pricing';
+import { TIMEZONE, isLinkProviderName } from '../pricing';
 import { readPaymentsConfig, type PaymentsConfig } from './guard';
 import { runCharge, reconcileStaleClaim } from './charge';
 import { isClaimStale } from './chargeLogic';
+import { runLinkIssue } from './link';
+import { MAKE_CREATE_LINK_URL, MAKE_SHARED_SECRET } from './growLinkProvider';
 
 const DAY = 86400_000;
 /**
@@ -46,6 +48,7 @@ export async function runFeeChargeSweep(
   if (config.paymentProvider === 'none') return tally;
 
   const seen = new Set<string>();
+  const linkMode = isLinkProviderName(config.paymentProvider);
   const handle = async (doc: Doc) => {
     if (seen.has(doc.ref.path)) return;
     seen.add(doc.ref.path);
@@ -54,6 +57,14 @@ export async function runFeeChargeSweep(
     const proId = doc.id;
     const fee = doc.data() as FeeDoc;
     try {
+      if (linkMode) {
+        // Link mode never charges a token and never runs the legacy stub: it makes
+        // (or reuses) one payment link per fee. A pro outside the audience is left
+        // exactly as they were.
+        const res = await runLinkIssue(projectId, proId, config, now);
+        if (res.status === 'created') tally.tried += 1;
+        return;
+      }
       if (fee.chargeState === 'charging') {
         if (isClaimStale(fee, now)) {
           await reconcileStaleClaim(projectId, proId, config, now);
@@ -79,8 +90,13 @@ export async function runFeeChargeSweep(
   // 1) Fees that already carry charge state: retries that are due, re-queued
   //    needs_card fees, and claims that may have gone stale. A small set.
   //    Needs the fees.chargeState COLLECTION_GROUP field override.
+  //    In link mode: fees waiting on a phone, or on a payment whose link may have
+  //    gone stale or been voided.
   await paginate(
-    db.collectionGroup('fees').where('chargeState', 'in', ['idle', 'failed', 'charging']),
+    db.collectionGroup('fees').where(
+      'chargeState', 'in',
+      linkMode ? ['idle', 'needs_phone', 'awaiting_payment'] : ['idle', 'failed', 'charging'],
+    ),
     handle,
   );
 
@@ -109,7 +125,11 @@ export async function runFeeChargeSweep(
  * 'none', and lifecycleCron's stub sweep covers that case unchanged.
  */
 export const feeChargeCron = onSchedule(
-  { region: 'europe-west1', schedule: 'every 60 minutes', timeZone: TIMEZONE, timeoutSeconds: 300 },
+  {
+    region: 'europe-west1', schedule: 'every 60 minutes', timeZone: TIMEZONE, timeoutSeconds: 300,
+    // Declared, not created: a deploy needs both set (firebase functions:secrets:set).
+    secrets: [MAKE_CREATE_LINK_URL, MAKE_SHARED_SECRET],
+  },
   async () => {
     const config = await readPaymentsConfig();
     if (config.paymentProvider === 'none') return;

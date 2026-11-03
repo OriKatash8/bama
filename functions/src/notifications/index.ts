@@ -27,6 +27,8 @@ const ESSENTIAL = [
   // The overdue-fee notices: money owed, and a deadline after which new work is
   // blocked. Exactly the kind of message muting must not hide.
   'fee_due', 'fee_overdue_soon', 'fee_overdue',
+  // A payment link is ready, or one cannot be made until a phone is added.
+  'fee_link',
   // A mention is addressed to you by name and already overrides mute; letting
   // notifPrefs silence it would make @ mean nothing.
   'mention',

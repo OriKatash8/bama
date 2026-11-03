@@ -41,3 +41,35 @@ export async function sendChargeNotice(
 }
 
 export const __NOTICE_TEXT = TEXT;
+
+/**
+ * Link-mode pushes. Their own essential type, 'fee_link', routed to
+ * /settings/payment, where the fee row carries the "pay now" button (or the "add
+ * a phone number" prompt).
+ */
+export type LinkNoticeKind = 'link_ready' | 'link_needs_phone';
+
+const LINK_TEXT: Record<LinkNoticeKind, Record<Lang, (amount: number) => string>> = {
+  link_ready: {
+    he: (a) => `עמלת התיווך – ${a} ₪, לחץ לתשלום`,
+    en: (a) => `Your brokerage fee – ₪${a}. Tap to pay.`,
+  },
+  link_needs_phone: {
+    he: (a) => `כדי לשלם את עמלת התיווך (${a} ₪) יש להוסיף מספר טלפון נייד`,
+    en: (a) => `To pay your ₪${a} brokerage fee, please add a mobile phone number.`,
+  },
+};
+
+export async function sendLinkNotice(
+  kind: LinkNoticeKind, proId: string, projectId: string, amount: number,
+): Promise<void> {
+  const lang = await langOf(proId);
+  await notify({
+    userId: proId,
+    title: 'BAMA',
+    message: LINK_TEXT[kind][lang](amount),
+    data: { type: 'fee_link', projectId },
+  });
+}
+
+export const __LINK_NOTICE_TEXT = LINK_TEXT;
