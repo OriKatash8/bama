@@ -14,6 +14,7 @@
  *   admin   — role=admin claim: read ok, delete ok, write DENIED (owner only)
  * And the public users/{uid} doc carries no special rule for these fields any more.
  */
+import './lib/requireEmulator.mjs'; // explicit --emulator required, no default target
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
@@ -24,13 +25,6 @@ import {
 import {
   getAuth, connectAuthEmulator, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
 } from 'firebase/auth';
-
-// Emulator only, and only on request: this branch has no shared target guard, so the
-// probe carries its own. (The Admin SDK is pinned to the emulator by the env vars below.)
-if (!process.argv.includes('--emulator')) {
-  console.error('This probe runs against the local emulators only. Pass --emulator.');
-  process.exit(2);
-}
 
 const FS_PORT = process.env.FS_PORT ?? '8080';
 const AUTH_PORT = process.env.AUTH_PORT ?? '9099';
