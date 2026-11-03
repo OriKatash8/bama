@@ -25,7 +25,9 @@ supersedes it and makes a new one; a payment on a superseded/voided/settled fee 
 `chargeNeedsAdmin` (admin "Charge issues"), never a settlement.
 
 ## Contract: scenario 1, BAMA -> Make (create link)
-`POST {MAKE_CREATE_LINK_URL}`, headers `Content-Type: application/json`, `X-Bama-Secret: {MAKE_SHARED_SECRET}`
+`POST {MAKE_CREATE_LINK_URL}`, headers `Content-Type: application/json`, `x-make-apikey: {MAKE_SHARED_SECRET}`
+and `X-Bama-Secret: {MAKE_SHARED_SECRET}` (same value). Turn on API-key auth in Make's custom webhook
+(header `x-make-apikey`): Make then rejects a call without it, so the scenario needs no filter.
 ```json
 {
   "requestId": "uuid of this creation attempt",
@@ -37,12 +39,14 @@ supersedes it and makes a new one; a payment on a superseded/voided/settled fee 
   "customField1": "<feeKey>"
 }
 ```
-Make runs Grow "Create Payment Link" (sending mode none, sum = amount, payer from `payer`, Custom Field 1 =
+Make runs Grow "Create Payment Link" (Payment Type = Payments, Custom Payments, Payments Number = 1;
+sending mode none, sum = amount, payer from `payer`, Custom Field 1 =
 `customField1`, notifyUrl = scenario 2 webhook, successUrl = `https://<hosting>/pay-return`) and answers the
 same request ("Webhook response", within 25s), status 200:
 ```json
 { "ok": true, "url": "https://...", "paymentLinkProcessId": "<string or number>" }
 ```
+VAT Exempt was rejected by the shared sandbox merchant; retest on the live merchant.
 Failure: any non-200, or `{ "ok": false, "error": "..." }`. BAMA retries on the next hourly run; after 5
 failures it flags `link_create_failed`. Treat `requestId` as an idempotency key if you add a data store.
 
@@ -63,7 +67,14 @@ failures it flags `link_create_failed`. Treat `requestId` as an idempotency key 
 `data.statusCode == "2"`, after Approve Transaction and Get Payment Link Info.
 Replies: `200 {"ok":true,"result":"settled"|"duplicate"|"needs_review"|"ignored"}` (treat any 200 as done),
 `401` bad/missing secret, `400` malformed, `429` rate limited, `500` transient (safe to retry).
-Idempotent per `transactionId`.
+Idempotent per `transactionId`. Confirmed with a real sandbox payment: Grow re-sends the same
+`transactionId` about every 5 minutes (seen 3 times) until Make approves the transaction, so Make may
+forward the same payment more than once; the second and later get `duplicate`.
+
+Grow's notification, as seen in the sandbox: `data.statusCode` "2", `data.sum` a string ("6"),
+`data.transactionId`, `data.transactionToken` (for Approve Transaction), `data.paymentLinkProcessId`,
+`data.asmachta`, and `data.customFields.cField1` (our feeKey, returned correctly). One variant also carries
+`productData` and `invoice_*` fields; the core fields are the same. Map `cField1` to `feeKey`.
 
 ## Deploy checklist (not done)
 1. Create both secrets (`firebase functions:secrets:set`). Without them `feeChargeCron` and `paymentLinkConfirm` fail to deploy.

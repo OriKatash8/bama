@@ -15,6 +15,9 @@ export const MAKE_SHARED_SECRET = defineSecret('MAKE_SHARED_SECRET');
 /** Make allows ~40s on a webhook response; stay well inside the cron's 300s. */
 export const MAKE_TIMEOUT_MS = 25_000;
 export const SECRET_HEADER = 'X-Bama-Secret';
+/** Make's custom webhook has built-in API-key auth on this header: with it set in the
+ *  scenario, Make itself refuses a call that lacks it, so no filter is needed there. */
+export const MAKE_APIKEY_HEADER = 'x-make-apikey';
 
 export type FetchLike = (
   url: string,
@@ -65,7 +68,13 @@ export function makeGrowLinkProvider(deps: {
       try {
         const res = await deps.fetchFn(deps.getUrl(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', [SECRET_HEADER]: deps.getSecret() },
+          headers: {
+            'Content-Type': 'application/json',
+            // Both carry the same secret: Make checks x-make-apikey itself; X-Bama-Secret
+            // is what the contract documents and what a Make filter could still read.
+            [MAKE_APIKEY_HEADER]: deps.getSecret(),
+            [SECRET_HEADER]: deps.getSecret(),
+          },
           body: JSON.stringify(buildMakeRequest(input)),
           signal: ctl.signal,
         });

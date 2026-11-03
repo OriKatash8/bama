@@ -93,6 +93,7 @@ describe('Make create-link contract', () => {
     const p = makeGrowLinkProvider({ getUrl: () => 'https://make/hook', getSecret: () => 's3', fetchFn: ok });
     await expect(p.createPaymentLink(input)).resolves.toEqual({ url: 'https://p/x', processId: 'A' });
     expect(calls[0].headers['X-Bama-Secret']).toBe('s3');
+    expect(calls[0].headers['x-make-apikey']).toBe('s3');
     const bad: FetchLike = async () => ({ ok: false, status: 502, json: async () => ({}) });
     await expect(makeGrowLinkProvider({ getUrl: () => 'u', getSecret: () => 's', fetchFn: bad })
       .createPaymentLink(input)).rejects.toThrow('http 502');
