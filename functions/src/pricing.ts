@@ -164,8 +164,15 @@ export function canHireOnStatus(status: unknown): boolean {
  * The reader lives in lifecycle/config.ts, which needs Firestore. Everything
  * here is pure so it can be unit-tested without it.
  */
-export type PaymentProviderName = 'none' | 'fake' | 'grow';
-export const PAYMENT_PROVIDERS: readonly PaymentProviderName[] = ['none', 'fake', 'grow'];
+export type PaymentProviderName = 'none' | 'fake' | 'grow' | 'grow_link' | 'fake_link';
+export const PAYMENT_PROVIDERS: readonly PaymentProviderName[] = [
+  'none', 'fake', 'grow', 'grow_link', 'fake_link',
+];
+/** Link-style providers (a hosted payment link per fee) versus token-style ones. */
+export type LinkProviderName = Extract<PaymentProviderName, 'grow_link' | 'fake_link'>;
+export function isLinkProviderName(name: PaymentProviderName): name is LinkProviderName {
+  return name === 'grow_link' || name === 'fake_link';
+}
 
 export type PricingConfig = {
   /** Commission rate as a PERCENT (3), not a fraction. `fees/{proId}.feeRate`

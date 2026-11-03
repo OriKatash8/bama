@@ -15,9 +15,13 @@ export function isEmulator(): boolean {
 export type PaymentsConfig = {
   paymentProvider: PaymentProviderName;
   paymentTestUids: readonly string[];
+  /** Who may be given a payment link. Private doc, default 'testers'. */
+  paymentLinkAudience: LinkAudience;
   chargeMaxAttempts: number;
   chargeRetryHours: number;
 };
+
+export type LinkAudience = 'testers' | 'all';
 
 export const PAYMENTS_PRIVATE_PATH = 'config/paymentsPrivate';
 
@@ -27,17 +31,26 @@ export function parseTestUids(raw: unknown): string[] {
   return Array.isArray(list) ? list.filter((u): u is string => typeof u === 'string' && u.length > 0) : [];
 }
 
-const TTL_MS = 60_000;
-let cache: { value: readonly string[]; at: number } | null = null;
+/** Pure: only the exact string 'all' widens the audience; anything else is 'testers'. */
+export function parseLinkAudience(raw: unknown): LinkAudience {
+  return (raw as { paymentLinkAudience?: unknown } | null | undefined)?.paymentLinkAudience === 'all'
+    ? 'all'
+    : 'testers';
+}
 
-async function readTestUids(): Promise<readonly string[]> {
+const TTL_MS = 60_000;
+type Private = { uids: readonly string[]; audience: LinkAudience };
+let cache: { value: Private; at: number } | null = null;
+
+async function readPrivate(): Promise<Private> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.value;
-  let value: readonly string[] = [];
+  // Fail closed: no testers, and the narrow audience.
+  let value: Private = { uids: [], audience: 'testers' };
   try {
     const snap = await db.doc(PAYMENTS_PRIVATE_PATH).get();
-    value = parseTestUids(snap.exists ? snap.data() : null);
+    const raw = snap.exists ? snap.data() : null;
+    value = { uids: parseTestUids(raw), audience: parseLinkAudience(raw) };
   } catch (err) {
-    // Fail closed: no testers means the fake provider runs for nobody.
     console.error('[payments] reading paymentsPrivate failed, using no test uids', err);
   }
   cache = { value, at: Date.now() };
@@ -45,10 +58,11 @@ async function readTestUids(): Promise<readonly string[]> {
 }
 
 export async function readPaymentsConfig(): Promise<PaymentsConfig> {
-  const [config, paymentTestUids] = await Promise.all([readConfig(), readTestUids()]);
+  const [config, priv] = await Promise.all([readConfig(), readPrivate()]);
   return {
     paymentProvider: config.paymentProvider,
-    paymentTestUids,
+    paymentTestUids: priv.uids,
+    paymentLinkAudience: priv.audience,
     chargeMaxAttempts: config.chargeMaxAttempts,
     chargeRetryHours: config.chargeRetryHours,
   };
@@ -67,15 +81,21 @@ export function __resetPaymentsConfigCache(): void {
  *   'grow'  -> everyone.
  *   'fake'  -> only a listed tester, or anyone under the emulator. In production
  *              the fake provider can therefore never touch a real pro's fee.
+ *   'grow_link' -> a listed tester, or everyone once paymentLinkAudience is 'all'.
+ *   'fake_link' -> like 'fake'.
  */
 export function isPaymentsEnabledFor(
-  config: Pick<PaymentsConfig, 'paymentProvider' | 'paymentTestUids'>,
+  config: Pick<PaymentsConfig, 'paymentProvider' | 'paymentTestUids'> &
+    Partial<Pick<PaymentsConfig, 'paymentLinkAudience'>>,
   uid: string,
   emulator: boolean = isEmulator(),
 ): boolean {
   switch (config.paymentProvider) {
     case 'grow': return true;
-    case 'fake': return emulator || config.paymentTestUids.includes(uid);
+    case 'grow_link':
+      return config.paymentLinkAudience === 'all' || config.paymentTestUids.includes(uid);
+    case 'fake':
+    case 'fake_link': return emulator || config.paymentTestUids.includes(uid);
     default: return false;
   }
 }

@@ -1,4 +1,4 @@
-import type { PaymentProviderName } from '../pricing';
+import type { LinkProviderName, PaymentProviderName } from '../pricing';
 
 /**
  * The seam between BAMA's fee-charging logic and whichever gateway holds the
@@ -9,7 +9,7 @@ import type { PaymentProviderName } from '../pricing';
  * page and BAMA stores only the token it gets back.
  */
 
-export type { PaymentProviderName };
+export type { PaymentProviderName, LinkProviderName };
 
 export type FailureClass = 'final' | 'retryable';
 
@@ -65,7 +65,7 @@ export type WebhookRequest = {
 };
 
 export interface PaymentProvider {
-  readonly name: Exclude<PaymentProviderName, 'none'>;
+  readonly name: Exclude<PaymentProviderName, 'none' | LinkProviderName>;
   /** A hosted page where the pro saves a card (token only, no charge). */
   createCardSaveSession(uid: string): Promise<{ url: string; sessionId: string }>;
   chargeToken(input: ChargeInput): Promise<ChargeResult>;
@@ -77,4 +77,29 @@ export interface PaymentProvider {
    * alternative, charging again, could bill twice.
    */
   lookupCharge?(idempotencyKey: string): Promise<ChargeResult | null>;
+}
+
+export type LinkFeeInput = {
+  /** `${projectId}_${proId}`: echoed back by Make as Custom Field 1. */
+  feeKey: string;
+  /** One per creation attempt, so Make can dedupe a retried request. */
+  requestId: string;
+  projectId: string;
+  proId: string;
+  /** Whole shekels, exactly `feeDue` when the link is created. */
+  amount: number;
+  currency: 'ILS';
+  description: string;
+  payer: { fullName: string; phone: string; email?: string };
+};
+
+/**
+ * The link-style seam: instead of charging a stored token, ask the gateway for a
+ * single-use hosted payment link and let the pro pay on it. The result arrives
+ * later through paymentLinkConfirm, never from this call.
+ */
+export interface LinkProvider {
+  readonly name: LinkProviderName;
+  /** Throws on any failure; the caller releases its claim and retries next run. */
+  createPaymentLink(input: LinkFeeInput): Promise<{ url: string; processId: string }>;
 }
