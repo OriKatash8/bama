@@ -10,7 +10,9 @@
  */
 export const E2E_TAG = 'plink-e2e';
 const HOUR = 3_600_000;
-const UID = /^[A-Za-z0-9]{10,64}$/;
+// Firebase Auth uids (custom ones too, e.g. demo-test1). No underscore: feeKey and the charge
+// idempotency key are split on '_'.
+const UID = /^[A-Za-z0-9][A-Za-z0-9-]{4,126}[A-Za-z0-9]$/;   // never starts with '-', so a flag can't pass as a uid
 
 export function assertUid(uid) {
   if (typeof uid !== 'string' || !UID.test(uid)) throw new Error('--uid <firebase uid of the test account> is required');

@@ -23,7 +23,7 @@ const argv = process.argv.slice(2);
 const apply = argv.includes('--apply');
 const cleanup = argv.includes('--cleanup');
 let uid;
-try { uid = assertUid(argv[argv.indexOf('--uid') + 1]); } catch (e) { console.error(`error: ${e.message}`); process.exit(2); }
+try { const i = argv.indexOf('--uid'); uid = assertUid(i >= 0 ? argv[i + 1] : undefined); } catch (e) { console.error(`error: ${e.message}`); process.exit(2); }
 
 initializeApp({ projectId: 'bama-af0a0' });
 const db = getFirestore();

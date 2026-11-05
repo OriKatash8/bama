@@ -15,6 +15,12 @@ test('parseTesters: absent -> null; trims; rejects junk, duplicates and too many
   assert.throws(() => parseTesters(Array.from({ length: 21 }, (_, i) => `u${String(i).padStart(12, '0')}`).join(',')), /at most/);
 });
 
+test('parseTesters accepts a custom hyphenated uid and rejects an underscore one', () => {
+  assert.deepEqual(parseTesters('demo-test1'), ['demo-test1']);
+  assert.throws(() => parseTesters('demo_test1'), /does not look like/);
+  assert.throws(() => parseTesters('--apply'), /does not look like/);
+});
+
 test('switching on for one tester writes the private doc and the provider', () => {
   const p = planLinkConfig({ provider: 'grow_link', audience: 'testers', testers: [UID] }, { pricing: pricing('none'), priv: priv() });
   assert.deepEqual(p.errors, []);

@@ -9,6 +9,9 @@ const ts = (ms) => ({ ms });
 
 test('assertUid accepts a Firebase uid and rejects anything else', () => {
   assert.equal(assertUid(UID), UID);
+  assert.equal(assertUid('demo-test1'), 'demo-test1');
+  assert.throws(() => assertUid('demo_test1'));
+  for (const flag of ['--prod', '--apply', '-abcdef', 'abcdef-']) assert.throws(() => assertUid(flag), flag);
   for (const bad of [undefined, '', 'short', 'has space in it ok', '../../x', `${UID}/x`]) assert.throws(() => assertUid(bad));
 });
 

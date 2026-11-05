@@ -8,7 +8,9 @@
 
 export const PROVIDERS = ['none', 'grow_link'];   // fake_link is a test provider: never set in prod
 export const AUDIENCES = ['testers', 'all'];
-const UID = /^[A-Za-z0-9]{10,64}$/;               // Firebase Auth uids
+// Firebase Auth uids (custom ones too, e.g. demo-test1). No underscore: feeKey and the charge
+// idempotency key are split on '_'.
+const UID = /^[A-Za-z0-9][A-Za-z0-9-]{4,126}[A-Za-z0-9]$/;   // never starts with '-', so a flag can't pass as a uid
 const MAX_TESTERS = 20;
 
 /** "a,b" -> ['a','b']; null when the flag is absent; throws on a malformed uid. */
