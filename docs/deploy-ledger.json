@@ -394,12 +394,12 @@
     "feeChargeCron": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-05T15:49:26.370366168Z",
-      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
-      "commit": "baef1d15",
+      "updateTime": "2026-11-05T19:56:22.530650184Z",
+      "treeSha": "d19c7df45b5ce36026c9b9beda2240fcbabf4dd0",
+      "commit": "19570184",
       "how": "deploy",
       "recordedOn": "2026-11-05",
-      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
+      "note": "Payment links: payer name/phone fix (growFullName: two words of 2+ chars, '<name> BAMA' fallback; israeliMobileLocal accepts +9725/9725/05, sent as 05XXXXXXXX) after Grow answered 427 on pageFieldSettings[fullName] for a one-word name. Deployed alone from a clean tree of 19570184 (feature/payment-links). Sandbox E2E then passed: link created, paid, settled via paymentLinkConfirm."
     },
     "feeOverdueCron": {
       "region": "us-central1",
