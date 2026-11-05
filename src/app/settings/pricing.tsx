@@ -5,6 +5,8 @@ import { Screen } from '@components/layout/Screen';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useAuthStore } from '@core/stores/authStore';
+import { usePaymentMethod } from '@features/pricing/hooks/usePaymentMethod';
 import { usePricingConfig } from '@features/pricing/hooks/usePricingConfig';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -55,6 +57,10 @@ export default function PricingScreen() {
   const align = rtl ? ('right' as const) : ('left' as const);
 
   const pricing = usePricingConfig();
+  // Server-computed per user; fails closed. In link mode fees are paid on a hosted
+  // page, so the settlement text is the one the balance screen shows (same key).
+  const userId = useAuthStore((st) => st.user?.id);
+  const linkMode = usePaymentMethod(userId).view?.linkMode === true;
   const vars = { rate: pricing.feePercent, min: pricing.minFeeAmount };
 
   return (
@@ -130,7 +136,7 @@ export default function PricingScreen() {
           weight="regular"
           style={[styles.body, { color: colors.text, textAlign: align }]}
         >
-          {t('balance.how_body')}
+          {t(linkMode ? 'balance.how_body_link' : 'balance.how_body')}
         </AppText>
         <AppText
           weight="regular"

@@ -1598,7 +1598,7 @@
     "how_title": "How to settle",
     "how_body": "Payment details are sent with the payment demand. Questions: bama.app.hk@gmail.com",
     "no_charge_note": "The app charges nothing. An outstanding balance blocks nothing — your projects, reviews and slots stay available as normal.",
-    "line_min": "Minimum fee ({{rate}}% of ₪{{base}} = ₪{{calculated}})",
+    "line_min": "{{rate}}% of ₪{{base}} = ₪{{calculated}} · ₪{{min}} minimum applies",
     "status_pending_charge": "Charges on {{date}}",
     "row_no_amount": "Nothing to pay while this is open",
     "nothing_owed_but_open": "Nothing outstanding",
@@ -1614,7 +1614,10 @@
     "add_phone": "Add phone number",
     "pay_open_failed": "Could not open the payment page. Please try again.",
     "link_pending_confirm": "Updating your payment. This can take a few minutes.",
-    "link_note": "Your brokerage fee is paid on a secure payment page. You enter card details there, never in the app. Nothing in the app is locked while a payment is pending — your projects, reviews and slots stay available as normal."
+    "link_note": "Your brokerage fee is paid on a secure payment page. You enter card details there, never in the app. Nothing in the app is locked while a payment is pending — your projects, reviews and slots stay available as normal.",
+    "how_body_link": "When a fee is due, a 'Pay now' button appears here and you get a notification. Payment is made on Grow's secure page, and the receipt is sent to you automatically. Questions: bama.app.hk@gmail.com",
+    "status_pending_link": "Payable from {{date}}",
+    "charge_state_idle_link": "Pending"
   },
   "payment_method": {
     "title": "Payment method for brokerage fee",

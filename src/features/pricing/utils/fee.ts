@@ -55,6 +55,29 @@ export function calculatedFee(
 }
 
 /**
+ * The percentage alone, NOT rounded — display only. `calculatedFee` rounds to a whole
+ * shekel like the server does, so 3% of ₪10 reads ₪0 there although it is ₪0.30; the
+ * minimum-fee line needs the real figure or it reads as if the fee were free.
+ */
+export function percentageAmount(
+  fee: Pick<ProjectFee, 'baseAmount' | 'feeRate'>,
+): number {
+  return Math.round((fee.baseAmount ?? 0) * (fee.feeRate ?? PLATFORM_FEE_RATE) * 100) / 100;
+}
+
+/**
+ * A shekel amount for display: whole amounts exactly as the rest of the app writes
+ * them (`toLocaleString()`), anything with agorot with exactly two decimals (₪0.30,
+ * ₪5.10), so a small amount is never shown rounded to ₪0.
+ */
+export function formatMoney(amount: number): string {
+  if (!Number.isFinite(amount)) return '0';
+  return Number.isInteger(amount)
+    ? amount.toLocaleString()
+    : amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/**
  * What this professional still owes.
  *
  * After completion the server stores `feeDue` already net of `paidAmount`, so

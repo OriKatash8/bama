@@ -1,4 +1,6 @@
-import { grossFee, outstandingFee, owesFee, feePercent, isMinimumFee, calculatedFee } from '../fee';
+import {
+  grossFee, outstandingFee, owesFee, feePercent, isMinimumFee, calculatedFee, percentageAmount, formatMoney,
+} from '../fee';
 import type { ProjectFee } from '@core/types/project';
 
 const fee = (over: Partial<ProjectFee> = {}): ProjectFee => ({
@@ -153,5 +155,36 @@ describe('feePercent', () => {
     expect(feePercent(fee())).toBe(3);
     expect(feePercent(fee({ feeRate: 0.05 }))).toBe(5);
     expect(feePercent(null)).toBe(3); // falls back to the pricing constant
+  });
+});
+
+
+describe('percentageAmount (display only, unrounded)', () => {
+  it('3% of ₪10 is ₪0.30, where calculatedFee rounds it to ₪0', () => {
+    expect(percentageAmount({ baseAmount: 10, feeRate: 0.03 })).toBe(0.3);
+    expect(calculatedFee({ baseAmount: 10, feeRate: 0.03 })).toBe(0);
+  });
+  it('keeps agorot and does not drift on floats', () => {
+    expect(percentageAmount({ baseAmount: 333, feeRate: 0.03 })).toBe(9.99);
+    expect(percentageAmount({ baseAmount: 170, feeRate: 0.03 })).toBe(5.1);
+    expect(percentageAmount({ baseAmount: 1000, feeRate: 0.03 })).toBe(30);
+    expect(percentageAmount({ baseAmount: 0, feeRate: 0.03 })).toBe(0);
+  });
+});
+
+describe('formatMoney', () => {
+  it('whole amounts are written as the rest of the app writes them', () => {
+    expect(formatMoney(30)).toBe((30).toLocaleString());
+    expect(formatMoney(1234)).toBe((1234).toLocaleString());
+    expect(formatMoney(0)).toBe('0');
+  });
+  it('agorot always have two decimals, so a small amount is never shown as ₪0', () => {
+    expect(formatMoney(0.3)).toBe('0.30');
+    expect(formatMoney(5.1)).toBe('5.10');
+    expect(formatMoney(9.99)).toBe('9.99');
+  });
+  it('is safe on garbage', () => {
+    expect(formatMoney(NaN)).toBe('0');
+    expect(formatMoney(Infinity)).toBe('0');
   });
 });

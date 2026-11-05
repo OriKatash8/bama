@@ -12,7 +12,7 @@ import { useAuthStore } from '@core/stores/authStore';
 import { useUiStore } from '@core/stores/uiStore';
 import { getDocument } from '@core/firebase/firestore';
 import { listenToMyFees } from '@features/pricing/services/feesService';
-import { outstandingFee, feePercent, isMinimumFee, calculatedFee } from '@features/pricing/utils/fee';
+import { outstandingFee, feePercent, isMinimumFee, percentageAmount, formatMoney } from '@features/pricing/utils/fee';
 import { showsOnBalance, balanceRowNote } from '@features/pricing/utils/balance';
 import type { ProjectFee, ProjectRequest } from '@core/types/project';
 import en from '@core/i18n/translations/en.json';
@@ -257,7 +257,10 @@ export default function BalanceScreen() {
                   ? t('balance.line_min', {
                       rate: feePercent(r.fee),
                       base: (r.fee.baseAmount ?? 0).toLocaleString(),
-                      calculated: calculatedFee(r.fee).toLocaleString(),
+                      // Unrounded: calculatedFee() is whole shekels, so 3% of ₪10 read ₪0.
+                      calculated: formatMoney(percentageAmount(r.fee)),
+                      // The floor this fee was hired under, never today's config.
+                      min: formatMoney(r.fee.minFeeApplied ?? 0),
                     })
                   : t('balance.line_breakdown', {
                       percent: feePercent(r.fee),
@@ -275,7 +278,9 @@ export default function BalanceScreen() {
               )}
               {r.note === 'pending_charge' && (
                 <AppText weight="semiBold" style={[styles.linePending, { color: colors.textMuted, textAlign: align }]}>
-                  {t('balance.status_pending_charge', { date: chargeDate(r.fee, rtl ? 'he-IL' : 'en-US') })}
+                  {/* Link mode never charges anything by itself: it opens the fee for payment. */}
+                  {t(linkMode ? 'balance.status_pending_link' : 'balance.status_pending_charge',
+                    { date: chargeDate(r.fee, rtl ? 'he-IL' : 'en-US') })}
                 </AppText>
               )}
               {(cardEnabled || linkMode) && chargeStateKey(r.fee) && (
@@ -290,7 +295,9 @@ export default function BalanceScreen() {
                   ]}
                   testID={`charge-state-${r.projectId}`}
                 >
-                  {t(`balance.charge_state_${chargeStateKey(r.fee)}`)}
+                  {t(linkMode && chargeStateKey(r.fee) === 'idle'
+                    ? 'balance.charge_state_idle_link'
+                    : `balance.charge_state_${chargeStateKey(r.fee)}`)}
                 </AppText>
               )}
               {linkMode && payLinkUrl(r.fee) && (
@@ -344,7 +351,7 @@ export default function BalanceScreen() {
               {t('balance.how_title')}
             </AppText>
             <AppText weight="regular" style={[styles.howBody, { color: colors.text, textAlign: align }]}>
-              {t('balance.how_body')}
+              {t(linkMode ? 'balance.how_body_link' : 'balance.how_body')}
             </AppText>
             <AppText weight="regular" style={[styles.howNote, { color: colors.textMuted, textAlign: align }]}>
               {t(cardEnabled ? 'balance.card_note' : linkMode ? 'balance.link_note' : 'balance.no_charge_note')}
