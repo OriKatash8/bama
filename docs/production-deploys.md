@@ -34,6 +34,10 @@
 > `scripts/deploy-drift-allowlist.json`). Verified after the deploy by `scripts/probe-payment-lockdown-prod.mjs --prod`
 > and `scripts/probe-rental-rules.mjs --prod`.
 >
+> **Payment links (2026-11-05): DEPLOYED, INERT.** Rules, the `fees.paidBy` index, 8 functions and the `/pay-return` page are live
+> from `fd915ec7`, with `paymentProvider` still `'none'`. Switching on is a config step only
+> (`scripts/admin-set-payment-link-config.mjs`); see `docs/payment-links.md`. Deploy from a branch that contains `main` and these commits.
+>
 > When the deploy base changes, change this note in the same commit.
 
 Answers "what's deployed?" without diffing against the console. **Append a row every
@@ -207,6 +211,7 @@ notifications 0, `config/appLinks` absent.
 
 | Released (UTC) | Commit | Ruleset | How verified |
 |---|---|---|---|
+| 2026-11-05 15:42 | `fd915ec7` (deployed with `npm run deploy:rules`) | `d59ca3ff-6518-4772-a870-0215c5f87410` (previous `cf9bcdf2-de9a-413e-977d-8b17599a029b`) | Payment links: `paymentLinks` and `paymentLinkIssues` closed to clients. Pre-deploy: diff against the live ruleset was 7 lines added, 0 removed (those two matches only), from a branch that contains `main`. Post-deploy: live ruleset byte-identical to the file (the script re-fetches it); drift check rules ok; `probe-payment-lockdown-prod.mjs --prod` all passed, `probe-rental-rules.mjs --prod` 47/47 |
 | 2026-10-31 01:54 | `a5dfa85f` (file last changed in the merge `d7e915e7`) | `16f4eb70-c663-43e3-a26b-4f01cfa655f8` (previous `2a340f3e-7df8-4506-90f7-603960585dbb`) | Payments rules only, on top of the rentals rules: `fees/*/charges`, `paymentMethods`, `paymentEvents`, `paymentFake` closed to clients; `config/{docId}` excludes `paymentsPrivate`. Pre-deploy: diff against the live ruleset showed additions only (nothing removed). Post-deploy: live ruleset byte-identical to the file (drift check ok); `probe-payment-lockdown-prod.mjs --prod` all passed, `probe-rental-rules.mjs --prod` 46/46 |
 | 2026-10-01 | `b0fccbc` | (not captured) | Admins may READ project group chats (`type == 'group'`) and their messages, for the read-only admin/project-chat page; never DMs or purchase chats, never write. Pre-deploy: `b0fccbc` is the only commit to the file since `da15871`; deployed from a clean worktree of `b0fccbc` (another session's uncommitted `channelUnread` line was NOT shipped). Same file passed 10/10 on the emulator (`scripts/probe-admin-chat-rules.mjs`); removing either new line failed its own case. Post-deploy: drift check rules ok against `b0fccbc` |
 | 2026-09-30 23:14 | `da15871` | (not captured) | Email addresses join phone numbers: `hasPhone` → `hasContact` with the combined RULES_CONTACT_PATTERN (one matches() per value). Pre-deploy: `da15871` is the only commit to the file since `bd7044b` (released 23:05); same file passed 26/26 on the emulator (`scripts/probe-contact-rules.mjs`), none denied by the 1000-expression limit. Post-deploy: drift check rules ok (released 2026-09-30T23:14:23Z); `scripts/probe-contact-rules-prod.mjs` 5/5 + teardown against production |
@@ -223,6 +228,7 @@ notifications 0, `config/appLinks` absent.
 
 | Checked (UTC) | Commit | How verified |
 |---|---|---|
+| 2026-11-05 15:48 | `fd915ec7` | Pre-deploy: the 33 composites equal live (normalised), and the only difference was the new `fees.paidBy` field override (used by the admin "paid links" list). Deployed `--only firestore:indexes --non-interactive`, nothing deleted. All three `paidBy` indexes READY, polled via the Firestore Admin API; drift check: all 33 composites present |
 | 2026-09-25 20:59 | `c987f39` | Pre-deploy drift check: the only missing composite was `messages (type ASC, timestamp ASC)` (the community dashboard's market-listings query). Deployed with the rules above; build polled via the Firestore Admin API: CREATING at 20:56:07Z, READY at 20:59:56Z. Drift check: all 16 present |
 | 2026-09-13 15:02 | `335c0ad` | Pre-deploy: live == local, same 14 composites and field overrides, no extras. Deployed `--only firestore:indexes`; new `communityInvites (communityId, createdBy, revoked)` confirmed READY via the Firestore Admin API at 15:02:24Z; drift check: all 15 present |
 | 2026-09-13 14:50 | `952f5d6` | Drift check: all 14 composite indexes in the file are present in production |
@@ -237,6 +243,7 @@ Single-function deploys, verified by downloading the uploaded source from the
 
 | Released (UTC) | Function | Commit | Revision | How verified |
 |---|---|---|---|---|
+| 2026-11-05 15:49 | `paymentLinkConfirm`, `adminListPaymentLinks` (new, europe-west1); `feeChargeCron`, `adminListChargeIssues`, `adminAcknowledgeChargeIssue`, `getMyPaymentMethod` (updated, europe-west1); `lifecycleCron`, `onNotificationCreate` (updated, us-central1 / gen1 trigger) | `fd915ec7` (`feature/payment-links` = `main` + payment links) | n/a | `firebase deploy --only functions:<8 names> --project bama-af0a0 --non-interactive`, no `--force`; nothing deleted (84 -> 86 functions). `paymentLinkConfirm` and `feeChargeCron` bind `MAKE_SHARED_SECRET` / `MAKE_CREATE_LINK_URL`, created by the operator beforehand. `lifecycleCron` is in the list so it knows `grow_link` before any config flip (an older one would read it as `none` and turn the legacy stub sweep on). `markFeePaid` and `paymentWebhook` not redeployed. `paymentProvider` is still `none`: inert. Post-deploy drift check: the 8 run exactly `fd915ec7`, the other 78 unchanged. Recorded in `docs/deploy-ledger.json`. `probe-payment-link-endpoint-prod.mjs --prod`: GET 405, no/wrong/empty secret 401. Hosting the same day: `/pay-return` (200, noindex, no-referrer) |
 | 2026-10-31 02:03 | `getMyPaymentMethod`, `createCardSaveSession`, `removeMyPaymentMethod`, `fakeCompleteCardSave`, `feeChargeCron`, `adminListChargeIssues`, `adminAcknowledgeChargeIssue` (new, europe-west1) and `lifecycleCron`, `markFeePaid` (updated, us-central1) | `a5dfa85f` (functions/ tree identical at `d7e915e7`) | n/a | `firebase deploy --only functions:<9 names> --non-interactive`, no `--force`; nothing deleted (74 -> 81 functions, 0 removed). Recorded in `docs/deploy-ledger.json`. `paymentWebhook` held back. Indexes the same day: `fees.chargeState`, `fees.chargeNeedsAdmin` field overrides (READY), 33 composite indexes unchanged |
 | 2026-10-03 06:15–09:00 | `getCommunityInvite` (four `UpdateFunction` calls: 06:15:48, 06:16:37, 08:59:10, 09:00:08Z) | not known | not known | **Not recorded at the time.** Found in the Cloud Audit Logs on 2026-10-06 (principal `orikatash8@gmail.com`). Source not diffed |
 | 2026-10-02 15:01–15:13 | `adminDeleteCommunity`, `adminCommunityAction` (gen2, us-central1; `CreateFunction`, twice each) | not known | not known | **Not recorded at the time.** Found in the Cloud Audit Logs on 2026-10-06 while looking for the invite functions. Source not diffed |

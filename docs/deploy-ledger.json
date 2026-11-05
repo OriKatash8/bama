@@ -14,12 +14,12 @@
     "adminAcknowledgeChargeIssue": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-31T02:03:18.815933826Z",
-      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
-      "commit": "d7e915e7",
+      "updateTime": "2026-11-05T15:49:27.090481882Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
       "how": "deploy",
-      "recordedOn": "2026-10-31",
-      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "adminCommunityAction": {
       "region": "us-central1",
@@ -74,12 +74,12 @@
     "adminListChargeIssues": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-31T02:03:20.072179418Z",
-      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
-      "commit": "d7e915e7",
+      "updateTime": "2026-11-05T15:49:28.092089543Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
       "how": "deploy",
-      "recordedOn": "2026-10-31",
-      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "adminListFlaggedProjects": {
       "region": "us-central1",
@@ -100,6 +100,16 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "adminListPaymentLinks": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-05T15:49:26.555440136Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
+      "how": "deploy",
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "adminListUsers": {
       "region": "us-central1",
@@ -384,12 +394,12 @@
     "feeChargeCron": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-31T02:03:18.639636495Z",
-      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
-      "commit": "d7e915e7",
+      "updateTime": "2026-11-05T15:49:26.370366168Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
       "how": "deploy",
-      "recordedOn": "2026-10-31",
-      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "feeOverdueCron": {
       "region": "us-central1",
@@ -454,12 +464,12 @@
     "getMyPaymentMethod": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-31T02:03:20.789389134Z",
-      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
-      "commit": "d7e915e7",
+      "updateTime": "2026-11-05T15:49:29.287972078Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
       "how": "deploy",
-      "recordedOn": "2026-10-31",
-      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "hireProfessional": {
       "region": "us-central1",
@@ -474,12 +484,12 @@
     "lifecycleCron": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-31T02:03:12.728220570Z",
-      "treeSha": "abbcb5431b6c77836e872e70f332bd0a4315e444",
-      "commit": "d7e915e7",
+      "updateTime": "2026-11-05T15:49:19.423030246Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
       "how": "deploy",
-      "recordedOn": "2026-10-31",
-      "note": "Payments rollout, paymentProvider none (inert): 7 new europe-west1 functions plus lifecycleCron (sweep 6 guarded by 'none') and markFeePaid (settleFee source param, writes paidBy). Deployed from a clean worktree of a5dfa85f (integration/payments-rentals); paymentWebhook held back until the Grow step. Rules and the chargeState/chargeNeedsAdmin field overrides deployed the same day."
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "markDemandSent": {
       "region": "us-central1",
@@ -624,12 +634,12 @@
     "onNotificationCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-10-13T15:43:38.753Z",
-      "treeSha": "4622b1c78fa7945dcd1da0f37cbf0a701a85a27f",
-      "commit": "7c208dca",
-      "how": "found-unrecorded",
-      "recordedOn": "2026-10-31",
-      "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
+      "updateTime": "2026-11-05T15:49:31.747Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
+      "how": "deploy",
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "onPriceOfferAccepted": {
       "region": "us-central1",
@@ -710,6 +720,16 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "paymentLinkConfirm": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-05T15:49:23.355750866Z",
+      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
+      "commit": "baef1d15",
+      "how": "deploy",
+      "recordedOn": "2026-11-05",
+      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
     },
     "refreshUsageStats": {
       "region": "europe-west1",
