@@ -76,11 +76,51 @@ Grow's notification, as seen in the sandbox: `data.statusCode` "2", `data.sum` a
 `data.asmachta`, and `data.customFields.cField1` (our feeKey, returned correctly). One variant also carries
 `productData` and `invoice_*` fields; the core fields are the same. Map `cField1` to `feeKey`.
 
-## Deploy checklist (not done)
-1. Create both secrets (`firebase functions:secrets:set`). Without them `feeChargeCron` and `paymentLinkConfirm` fail to deploy.
-2. Build the two Make scenarios to the contract above; set Grow's receipts in the Grow dashboard.
-3. Deploy functions, rules, indexes (`paidBy` override) and Hosting (`npm run legal:deploy`, for `/pay-return`).
-4. Remove the `paymentLinkConfirm` allowlist entry; record the deploy in `docs/deploy-ledger.json`.
-5. `scripts/probe-payment-link-endpoint-prod.mjs --prod --url ...`
-6. Set `paymentProvider: grow_link` with a tester uid; sandbox card 4580458045804580 (credit card only; Bit/Apple Pay/Google Pay are real money).
-7. The return hop (`/pay-return` -> `bama://settings/payment`) can only be verified on a TestFlight/production build, not Expo Go.
+## Deploy runbook (NOT yet run; every step needs its own go)
+
+Deploy base is `main`: this branch contains `origin/main` (merge `baef1d15`), so it has the live Round A/B
+rentals. Never deploy from a branch that lacks `src/features/rentals/`, `functions/src/rentals/` and
+`functions/src/payments/charge.ts`. Use a clean worktree of the exact commit, `--non-interactive`, no `--force`,
+functions by name only.
+
+**Pre-flight (read-only):** `node scripts/check-deploy-drift.mjs --project bama-af0a0` shows no drift;
+`node scripts/deploy-rules.mjs --dry` shows ONLY the added `paymentLinks` and `paymentLinkIssues` matches.
+
+1. Secrets, created by the operator (values never pass through Claude or logs):
+   `firebase functions:secrets:set MAKE_SHARED_SECRET --project bama-af0a0` and
+   `firebase functions:secrets:set MAKE_CREATE_LINK_URL --project bama-af0a0` (paste at the hidden prompt, no pipe).
+   Same value as `x-make-apikey` (scenario 1) and `X-Bama-Secret` (scenario 2). Check existence without printing:
+   `gcloud secrets list --project bama-af0a0 --filter="name~MAKE_"` (never `secrets:access`).
+2. `npm run deploy:rules` (read the diff, type `yes`).
+3. `firebase deploy --only firestore:indexes --project bama-af0a0 --non-interactive` (adds the `fees.paidBy` override; wait for READY).
+4. Functions, one command:
+   `firebase deploy --only functions:paymentLinkConfirm,functions:adminListPaymentLinks,functions:feeChargeCron,functions:adminListChargeIssues,functions:adminAcknowledgeChargeIssue,functions:getMyPaymentMethod,functions:lifecycleCron,functions:onNotificationCreate --project bama-af0a0 --non-interactive`
+   - `lifecycleCron` MUST be in it and deployed before the provider is switched: an older deployment reads `grow_link`
+     as `none` and turns the legacy stub sweep on for everyone.
+   - `onNotificationCreate` carries `fee_link` in its essential list (so muting cannot hide the pay push).
+   - `markFeePaid` and `paymentWebhook` are deliberately not redeployed.
+5. `npm run legal:deploy` (publishes `/pay-return`); expect `https://bama-af0a0.web.app/pay-return` to return 200.
+6. Verify and record: drift check (functions 81 -> 83), `--record-functions --only <the 8 names>`, rows in
+   `docs/production-deploys.md`, remove the `paymentLinkConfirm` entry from `scripts/deploy-drift-allowlist.json`
+   (`paymentWebhook` stays), `scripts/probe-payment-link-endpoint-prod.mjs --prod --url ...`,
+   `probe-payment-lockdown-prod.mjs --prod`, `probe-rental-rules.mjs --prod`.
+7. Provider stays `none` until here (parity). Then, dry run first:
+   `node scripts/admin-set-payment-link-config.mjs --prod --provider grow_link --audience testers --testers <uid>`
+   then the same line with `--apply`. Find the uid in Firebase Console > Authentication > Users ("User UID").
+8. End-to-end (sandbox card 4580458045804580, credit card only; Make scenario 2 switched ON):
+   `node scripts/seed-payment-link-test.mjs --prod --uid <uid>` (dry run), then `--apply`. No phone on the account first:
+   expect `needs_phone` and one push. Add a mobile (+9725...) in Settings > Phone. Run the sweep now instead of waiting
+   an hour: `gcloud scheduler jobs run firebase-schedule-feeChargeCron-europe-west1 --location europe-west1 --project bama-af0a0`
+   (confirm the name with `gcloud scheduler jobs list` first). Expect `awaiting_payment`, a `paymentLink`, the push, "שלם עכשיו";
+   pay; expect `feePaid`, `paidBy: 'link'`, `providerRef` = Grow's transactionId, `paymentEvents/link_<tx>` processed, and the
+   admin "Payment links" tab under Paid. Then `seed-payment-link-test.mjs ... --cleanup` (dry run, then `--apply`).
+   Tested on web (localhost:8081 reads `.env`, which names `bama-af0a0`, unless `EXPO_PUBLIC_USE_EMULATORS=1` is set);
+   the `/pay-return` -> app hop can only be verified on a TestFlight/production build.
+9. The return hop, `/pay-return` -> `bama://settings/payment`, is checked later on TestFlight.
+
+**Rollback, fastest first:** `admin-set-payment-link-config.mjs --prod --provider none --apply` (instant; links already
+issued stay payable and `paymentLinkConfirm` still settles them: it ignores the provider switch on purpose); turn Make
+scenario 1 off (scenario 2 stays on until nothing is outstanding); redeploy the same function names from the previous
+`main` tip, config flipped to `none` FIRST (an old `lifecycleCron` + `grow_link` re-enables the stub sweep); rules, index
+and hosting are additive/inert and can stay. A fee left `awaiting_payment` is ignored by old code and can be settled by
+hand with `markFeePaid`.
