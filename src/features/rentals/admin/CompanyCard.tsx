@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import {
   AdminText, Card, InitialsAvatar, PillButton, RADIUS, TABULAR, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
+import { isSyncedPlatform } from '../platform';
 import type { RentalCompany } from '../types';
 
 export function fmtDateTime(seconds?: number | null): string {
@@ -45,6 +46,8 @@ export function CompanyCard({
   const { t, rowDir, textAlign } = useScopedT('admin_rental_companies');
   const c = company;
   const removed = !!c.removedAt;
+  // A store-synced company shows its sync; a manual one, when its items last changed.
+  const synced = isSyncedPlatform(c);
   const id = c.id;
 
   const state = removed
@@ -84,7 +87,7 @@ export function CompanyCard({
           <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>{meta}</AdminText>
           <View style={[styles.chips, { flexDirection: rowDir }]}>
             <Pill {...state} testID={`company-state-${id}`} />
-            {c.sourceType === 'woocommerce' && <Pill {...sync} testID={`company-sync-status-${id}`} />}
+            {synced && <Pill {...sync} testID={`company-sync-status-${id}`} />}
           </View>
         </View>
       </View>
@@ -93,12 +96,17 @@ export function CompanyCard({
         <AdminText tabular style={[TYPE.rowMeta, TABULAR, { color: p.text, textAlign }]} testID={`company-numbers-${id}`}>
           {numbers}
         </AdminText>
-        {c.sourceType === 'woocommerce' && (
+        {synced && (
           <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
             {`${c.sourceUrl} · ${t('last_sync', { when: fmtDateTime(c.lastSyncAt?.seconds) })}`}
           </AdminText>
         )}
-        {c.syncStatus === 'error' && c.syncError ? (
+        {!synced && (
+          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]} testID={`company-manual-updated-${id}`}>
+            {c.manualUpdatedAt ? t('last_updated', { when: fmtDateTime(c.manualUpdatedAt.seconds) }) : t('never_updated')}
+          </AdminText>
+        )}
+        {synced && c.syncStatus === 'error' && c.syncError ? (
           <AdminText testID={`company-sync-error-${id}`} style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>
             {c.syncError}
           </AdminText>
@@ -107,7 +115,7 @@ export function CompanyCard({
         {!removed && (
           <View style={[styles.actions, { flexDirection: rowDir }]}>
             <PillButton variant={selected ? 'primary' : 'ghost'} label={t('manage')} onPress={onManage} testID={`company-manage-${id}`} />
-            {c.sourceType === 'woocommerce' && (
+            {synced && (
               <PillButton
                 label={busy === 'sync' || c.syncStatus === 'running' ? t('syncing') : t('sync_now')}
                 onPress={onSync}

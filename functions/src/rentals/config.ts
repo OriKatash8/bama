@@ -55,3 +55,20 @@ export const MIN_ITEMS_FOR_REMOVAL_GUARD = 10;
 
 /** The error text kept on a company doc is cut to this. */
 export const SYNC_ERROR_MAX_CHARS = 500;
+
+/** Hand-entered (manual) items: the highest price per day the admin may enter. */
+export const MANUAL_PRICE_MAX = 100_000;
+/** Admin image uploads for manual items land here first (storage.rules: rentalUploads/{uid}/…). */
+export const STAGING_PREFIX = 'rentalUploads';
+/** An upload no item claimed within this long is deleted by the scheduler. */
+export const STAGING_MAX_AGE_MS = 24 * 60 * 60_000;
+
+/** Shopify products.json paging. 250 is the endpoint's own maximum. */
+export const SHOPIFY_PER_PAGE = 250;
+/** A ceiling on pages per company, so a misbehaving store cannot loop the sync. */
+export const SHOPIFY_MAX_PAGES = 40;
+/** A Shopify product's store categories: its product type plus its first tags, at most this many. */
+export const SHOPIFY_MAX_CATEGORIES = 10;
+/** "Detect platform": time allowed per probe request, and same-site redirects followed. */
+export const DETECT_TIMEOUT_MS = 8_000;
+export const DETECT_MAX_REDIRECTS = 3;

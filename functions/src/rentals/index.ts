@@ -4,11 +4,19 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { requireAdmin, requireAuth } from '../lifecycle/helpers';
 import { SlidingWindowCounter } from '../communities/inviteCore';
-import { CLICK_LIMIT_PER_WINDOW, CLICK_WINDOW_MS, RENTALS_REGION, SYNC_SCHEDULE, SYNC_TIMEZONE } from './config';
-import { isAssignableCategory } from './categories';
-import { copyImage, deletePrefix } from './images';
 import {
-  assignCategories, companiesCol, companyStoragePrefix, itemsCol, reapplyCompany, removeCompany, syncRentalCompany,
+  CLICK_LIMIT_PER_WINDOW, CLICK_WINDOW_MS, RENTALS_REGION, STAGING_MAX_AGE_MS, STAGING_PREFIX, SYNC_SCHEDULE, SYNC_TIMEZONE,
+} from './config';
+import { isAssignableCategory } from './categories';
+import { copyImage, deletePrefix, storeImage, type StoredImage } from './images';
+import {
+  ManualItemError, manualMappedItem, newManualExternalId, parseManualItemInput, type ManualItemInput,
+} from './manual';
+import { isSyncedPlatform, platformOf } from './platform';
+import { detectPlatform } from './detect';
+import {
+  assignCategories, companiesCol, companyStoragePrefix, derivedFields, itemDocId, itemStoragePrefix, itemsCol,
+  reapplyCompany, refreshCounts, removeCompany, sourceFields, syncRentalCompany,
 } from './sync';
 import type { RentalCompany, RentalItem, SourceType } from './types';
 import { storeHostOf } from './woo';
@@ -75,9 +83,10 @@ export const adminSaveRentalCompany = onCall(HEAVY, async (request) => {
   requireAdmin(request.auth?.token);
   const d = (request.data ?? {}) as Record<string, unknown>;
   const sourceType: SourceType | null =
-    d.sourceType === 'manual' ? 'manual' : d.sourceType === 'woocommerce' ? 'woocommerce' : null;
-  if (!sourceType) throw new HttpsError('invalid-argument', 'sourceType must be woocommerce or manual');
-  const sourceUrl = httpsUrl(d.sourceUrl, 'sourceUrl', sourceType === 'woocommerce');
+    d.sourceType === 'manual' || d.sourceType === 'woocommerce' || d.sourceType === 'shopify' ? d.sourceType : null;
+  if (!sourceType) throw new HttpsError('invalid-argument', 'sourceType must be woocommerce, shopify or manual');
+  // A store-synced company needs its store's address; a manual one may have none.
+  const sourceUrl = httpsUrl(d.sourceUrl, 'sourceUrl', sourceType !== 'manual');
   if (sourceUrl) storeHostOf(sourceUrl);
   const fields = {
     name: str(d.name, 'name', { required: true, max: 100 }),
@@ -191,6 +200,22 @@ export const adminSetRentalItemCategories = onCall(LIGHT, async (request) => {
   }
 });
 
+/**
+ * "Detect platform": asks a site, server-side (a browser is stopped by CORS),
+ * whether it is a WooCommerce or Shopify store, else 'manual'. Admin-only and
+ * read-only — it saves nothing; the admin applies the answer in the form.
+ * Only public https sites, and redirects only within the same site (detect.ts).
+ */
+export const adminDetectRentalPlatform = onCall({ ...LIGHT, timeoutSeconds: 120 }, async (request) => {
+  requireAdmin(request.auth?.token);
+  const url = str(request.data?.url, 'url', { required: true, max: 500 });
+  try {
+    return await detectPlatform(url);
+  } catch (e) {
+    throw new HttpsError('invalid-argument', (e as Error).message.slice(0, 300));
+  }
+});
+
 /** "Sync now". `force` applies a sync the mass-removal guard stopped (see MAX_REMOVAL_FRACTION). */
 export const adminSyncRentalCompany = onCall(HEAVY, async (request) => {
   requireAdmin(request.auth?.token);
@@ -213,13 +238,20 @@ export const adminRemoveRentalCompany = onCall(HEAVY, async (request) => {
   }
 });
 
-/** Every store-synced company that is not removed, every SYNC_SCHEDULE. One failure never stops the rest. */
+/**
+ * Every store-synced company that is not removed, every SYNC_SCHEDULE. One
+ * failure never stops the rest. Which companies are synced is decided by
+ * platformOf in code (a company saved without sourceType is WooCommerce; an
+ * unknown value is manual), so the query reads them all — there are a handful.
+ * Then it deletes admin image uploads no manual item claimed within a day.
+ */
 export const syncAllRentalCompanies = onSchedule(
   { schedule: SYNC_SCHEDULE, timeZone: SYNC_TIMEZONE, ...HEAVY },
   async () => {
-    const snap = await companiesCol().where('sourceType', '==', 'woocommerce').get();
+    const snap = await companiesCol().get();
     for (const doc of snap.docs) {
-      if ((doc.data() as RentalCompany).removedAt) continue;
+      const company = doc.data() as RentalCompany;
+      if (company.removedAt || !isSyncedPlatform(company)) continue;
       try {
         const stats = await syncRentalCompany(doc.id);
         console.log(`[rentals] synced ${doc.id}`, JSON.stringify(stats));
@@ -227,8 +259,146 @@ export const syncAllRentalCompanies = onSchedule(
         console.error(`[rentals] sync of ${doc.id} failed:`, (e as Error).message);
       }
     }
+    try {
+      const swept = await sweepStagingUploads();
+      if (swept) console.log(`[rentals] deleted ${swept} unclaimed admin upload(s)`);
+    } catch (e) {
+      console.error('[rentals] staging sweep failed:', (e as Error).message);
+    }
   },
 );
+
+/** Deletes admin uploads older than STAGING_MAX_AGE_MS (a claimed one is deleted when it is used). */
+async function sweepStagingUploads(now = Date.now()): Promise<number> {
+  const [files] = await admin.storage().bucket().getFiles({ prefix: `${STAGING_PREFIX}/` });
+  const stale = files.filter((f) => now - Date.parse(String(f.metadata.timeCreated ?? '')) > STAGING_MAX_AGE_MS);
+  await Promise.all(stale.map((f) => f.delete({ ignoreNotFound: true })));
+  return stale.length;
+}
+
+// ── manual companies: hand-entered items ────────────────────────────────────
+
+/**
+ * The company a manual-item call may write to: it exists, is not removed, and
+ * is manual (a synced store's items come only from its store).
+ */
+async function manualCompany(companyId: string): Promise<RentalCompany> {
+  const snap = await companiesCol().doc(companyId).get();
+  if (!snap.exists) throw new HttpsError('not-found', 'No such company');
+  const company = snap.data() as RentalCompany;
+  if (company.removedAt) throw new HttpsError('failed-precondition', 'This company was removed');
+  if (platformOf(company) !== 'manual') {
+    throw new HttpsError('failed-precondition', 'Items of a store-synced company come from its store');
+  }
+  return company;
+}
+
+/**
+ * Add or edit a hand-entered item of a manual company. Validated in
+ * manual.ts (content, not just shape); built with the same helpers as a synced
+ * item, so the rental tab treats it exactly alike. The admin's category is the
+ * item's manualCategory. A new image (an upload from the caller's own staging
+ * folder, or a URL) replaces the old one in the same thumbnail + detail WebP.
+ */
+export const adminSaveRentalItem = onCall(HEAVY, async (request) => {
+  requireAdmin(request.auth?.token);
+  const uid = requireAuth(request.auth?.uid);
+  let input: ManualItemInput;
+  try {
+    input = parseManualItemInput(request.data, uid);
+  } catch (e) {
+    if (e instanceof ManualItemError) throw new HttpsError('invalid-argument', e.message);
+    throw e;
+  }
+  try {
+    const company = await manualCompany(input.companyId);
+    let stored: RentalItem | null = null;
+    let externalId: string;
+    if (input.itemId) {
+      const snap = await itemsCol().doc(input.itemId).get();
+      stored = snap.exists ? (snap.data() as RentalItem) : null;
+      if (!stored || stored.companyId !== input.companyId) throw new HttpsError('not-found', 'No such item');
+      externalId = stored.externalId;
+    } else {
+      externalId = newManualExternalId();
+    }
+    const id = itemDocId(input.companyId, externalId);
+
+    // Image: keep (undefined), clear (null), or replace from the upload or the URL.
+    let imageFields: Pick<RentalItem, 'images' | 'imageBytes' | 'imageSources' | 'imagesHash'> | null = null;
+    if (input.image !== undefined) {
+      await deletePrefix(itemStoragePrefix(input.companyId, externalId));
+      if (input.image === null) {
+        imageFields = { images: [], imageBytes: 0, imageSources: [], imagesHash: null };
+      } else {
+        const prefix = itemStoragePrefix(input.companyId, externalId);
+        let saved: { image: StoredImage; bytes: number };
+        let source: string;
+        if ('uploadPath' in input.image) {
+          const file = admin.storage().bucket().file(input.image.uploadPath);
+          const [exists] = await file.exists();
+          if (!exists) throw new HttpsError('not-found', 'The uploaded image was not found; upload it again');
+          const [buf] = await file.download();
+          saved = await storeImage(buf, prefix, 0);
+          await file.delete({ ignoreNotFound: true });
+          source = 'upload';
+        } else {
+          saved = await copyImage(input.image.url, prefix, 0);
+          source = input.image.url;
+        }
+        imageFields = { images: [saved.image], imageBytes: saved.bytes, imageSources: [source], imagesHash: null };
+      }
+    }
+
+    const imageSources = imageFields?.imageSources ?? stored?.imageSources ?? [];
+    const mapped = manualMappedItem(input, externalId, company.website || company.sourceUrl || null, imageSources);
+    const src = { ...sourceFields(mapped), suggestedCategory: null };
+    const derived = derivedFields(company, { externalCategories: [], manualCategory: input.category, active: true });
+    const ref = itemsCol().doc(id);
+    if (!stored) {
+      const doc: RentalItem = {
+        companyId: input.companyId, source: 'company', ...src, ...derived, manualCategory: input.category,
+        active: true, images: [], imagesHash: null, imageBytes: 0, ...(imageFields ?? {}),
+        lastSeenAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(), clicks: 0,
+      };
+      await ref.set(doc);
+    } else {
+      await ref.update({
+        ...src, ...derived, manualCategory: input.category, active: true, ...(imageFields ?? {}),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    await refreshCounts(input.companyId);
+    await companiesCol().doc(input.companyId).update({ manualUpdatedAt: FieldValue.serverTimestamp() });
+    return { itemId: id };
+  } catch (e) {
+    if (e instanceof ManualItemError) throw new HttpsError('invalid-argument', e.message);
+    throw asHttps(e);
+  }
+});
+
+/** Remove a hand-entered item: hidden and inactive, its images deleted; the record is kept (like synced items). */
+export const adminRemoveRentalItem = onCall(LIGHT, async (request) => {
+  requireAdmin(request.auth?.token);
+  const itemId = str(request.data?.itemId, 'itemId', { required: true, max: 300 });
+  if (itemId.includes('/')) throw new HttpsError('invalid-argument', 'Bad itemId');
+  try {
+    const snap = await itemsCol().doc(itemId).get();
+    if (!snap.exists) throw new HttpsError('not-found', 'No such item');
+    const item = snap.data() as RentalItem;
+    await manualCompany(item.companyId);
+    await deletePrefix(itemStoragePrefix(item.companyId, item.externalId));
+    await snap.ref.update({
+      active: false, visible: false, images: [], imagesHash: null, imageBytes: 0, updatedAt: FieldValue.serverTimestamp(),
+    });
+    await refreshCounts(item.companyId);
+    await companiesCol().doc(item.companyId).update({ manualUpdatedAt: FieldValue.serverTimestamp() });
+    return { removed: true };
+  } catch (e) {
+    throw asHttps(e);
+  }
+});
 
 /** Per-instance first pass: enough to stop a loop from inflating counts. */
 const clickLimiter = new SlidingWindowCounter({ limit: CLICK_LIMIT_PER_WINDOW, windowMs: CLICK_WINDOW_MS, maxKeys: 5000 });

@@ -22,8 +22,13 @@ import {
 } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
-// The ports. This probe once ignored them and connected to 8080/9099 whatever was asked,
-// which on 2026-10-31 meant it ran against a developer's long-running emulator.
+// Emulator only, and only on request. This probe used to ignore the port settings and
+// connect to 127.0.0.1:8080/9099 whatever was asked, which on 2026-10-31 meant it ran
+// against a developer's long-running emulator and left test accounts in it.
+if (!process.argv.includes('--emulator')) {
+  console.error('This probe runs against the local emulators only. Pass --emulator (FS_PORT / AUTH_PORT select the ports).');
+  process.exit(2);
+}
 const FS_PORT = process.env.FS_PORT ?? '8080';
 const AUTH_PORT = process.env.AUTH_PORT ?? '9099';
 process.env.FIRESTORE_EMULATOR_HOST ??= `127.0.0.1:${FS_PORT}`;

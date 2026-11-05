@@ -6,6 +6,8 @@ import { copyImage, deletePrefix, mapLimit, type StoredImage } from './images';
 import { suggestCategory } from './keywords';
 import { withUtm } from './links';
 import { isVisible, resolveCategory } from './resolve';
+import { isSyncedPlatform, platformOf } from './platform';
+import { fetchShopifyMapped } from './shopify';
 import { goneFromStore, isMassRemoval, MassRemovalError } from './removal';
 import { searchKeys } from './search';
 import { NO_PRICE_SORT, type RentalCompany, type RentalItem, type SyncStats } from './types';
@@ -21,7 +23,7 @@ export const companiesCol = () => db.collection('rentalCompanies');
 export const itemsCol = () => db.collection('rentalItems');
 export const itemDocId = (companyId: string, externalId: string) => `${companyId}_${externalId}`;
 export const companyStoragePrefix = (companyId: string) => `rentalCompanies/${companyId}`;
-const itemStoragePrefix = (companyId: string, externalId: string) =>
+export const itemStoragePrefix = (companyId: string, externalId: string) =>
   `${companyStoragePrefix(companyId)}/items/${externalId}`;
 
 type Doc = admin.firestore.DocumentReference;
@@ -111,6 +113,26 @@ export function companyCounts(items: Pick<RentalItem, 'active' | 'visible' | 'ca
   return { itemCount, visibleCount, unsortedCount, storageBytes };
 }
 
+/**
+ * The store's products as MappedItems, from whichever platform the company is
+ * on. Everything after this — upserts, images, categories, removal, counts —
+ * is the same for every platform.
+ */
+export async function fetchMapped(
+  company: Pick<RentalCompany, 'sourceType' | 'sourceUrl'>,
+  fetchFn: typeof fetch,
+): Promise<{ fetched: number; items: MappedItem[] }> {
+  const platform = platformOf(company);
+  if (platform === 'shopify') return fetchShopifyMapped(company.sourceUrl, fetchFn);
+  if (platform === 'woocommerce') {
+    const host = storeHostOf(company.sourceUrl);
+    const products = await fetchAllProducts(company.sourceUrl, fetchFn);
+    const items = products.map((p) => mapWooProduct(p, host)).filter((m): m is MappedItem => m !== null);
+    return { fetched: products.length, items };
+  }
+  throw new Error('This company is not synced from a store');
+}
+
 /** Takes the company's sync lock, or throws 'already-running'. */
 async function acquireLock(ref: Doc): Promise<RentalCompany> {
   return db.runTransaction(async (tx) => {
@@ -172,15 +194,10 @@ export async function syncRentalCompany(
   const ref = companiesCol().doc(companyId);
   const company = await acquireLock(ref);
   try {
-    if (company.sourceType !== 'woocommerce') throw new Error('This company is not synced from a store');
-    const host = storeHostOf(company.sourceUrl);
-    const products = await fetchAllProducts(company.sourceUrl, fetchFn);
-
+    if (!isSyncedPlatform(company)) throw new Error('This company is not synced from a store');
+    const { fetched, items } = await fetchMapped(company, fetchFn);
     const mapped = new Map<string, MappedItem>();
-    for (const p of products) {
-      const m = mapWooProduct(p, host);
-      if (m && !mapped.has(m.externalId)) mapped.set(m.externalId, m);
-    }
+    for (const m of items) if (!mapped.has(m.externalId)) mapped.set(m.externalId, m);
 
     const existingSnap = await itemsCol().where('companyId', '==', companyId).get();
     const existing = new Map(existingSnap.docs.map((d) => [d.id, d.data() as RentalItem]));
@@ -196,7 +213,7 @@ export async function syncRentalCompany(
     }
 
     const stats: SyncStats = {
-      fetched: products.length, mapped: mapped.size, dropped: products.length - mapped.size,
+      fetched, mapped: mapped.size, dropped: fetched - mapped.size,
       created: 0, updated: 0, unchanged: 0, deactivated: 0, imagesCopied: 0, filesWritten: 0, imageErrors: 0,
       writes: 0, durationMs: 0,
     };
@@ -343,7 +360,7 @@ export async function assignCategories(assignments: { itemId: string; category: 
   return writes;
 }
 
-async function refreshCounts(companyId: string): Promise<void> {
+export async function refreshCounts(companyId: string): Promise<void> {
   const snap = await itemsCol().where('companyId', '==', companyId).get();
   await companiesCol().doc(companyId).update({
     ...companyCounts(snap.docs.map((d) => d.data() as RentalItem)),

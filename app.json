@@ -75,7 +75,8 @@
                 "name": "RecaptchaInterop",
                 "modular_headers": true
               }
-            ]
+            ],
+            "enableSceneSupport": true
           }
         }
       ],

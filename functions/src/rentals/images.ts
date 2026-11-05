@@ -1,28 +1,13 @@
 import * as admin from 'firebase-admin';
 import { randomUUID } from 'crypto';
-import { isIP } from 'net';
 import sharp from 'sharp';
+import { isPublicHttpsUrl } from './urls';
 import { DETAIL_WIDTH, FETCH_TIMEOUT_MS, MAX_SOURCE_IMAGE_BYTES, THUMB_WIDTH, WEBP_QUALITY } from './config';
 
 export type StoredImage = { thumbUrl: string; url: string };
 
-/**
- * Whether a store-supplied image URL may be downloaded: https, a real hostname
- * (no IP literals, no localhost or internal names). The sync runs inside
- * Google's network, so a store must not be able to point it at internal hosts.
- */
-export function isFetchableImageUrl(src: string): boolean {
-  try {
-    const u = new URL(src);
-    if (u.protocol !== 'https:') return false;
-    const host = u.hostname.toLowerCase();
-    if (isIP(host.replace(/^\[|\]$/g, ''))) return false;
-    if (host === 'localhost' || !host.includes('.')) return false;
-    return !/\.(internal|local|localhost)$/.test(host);
-  } catch {
-    return false;
-  }
-}
+/** Whether a store-supplied image URL may be downloaded (see urls.ts). */
+export const isFetchableImageUrl = isPublicHttpsUrl;
 
 async function download(src: string, fetchFn: typeof fetch): Promise<Buffer> {
   if (!isFetchableImageUrl(src)) throw new Error(`Image URL not allowed: ${src}`);
@@ -65,17 +50,15 @@ async function upload(path: string, data: Buffer): Promise<string> {
 }
 
 /**
- * Copies one store image into Storage as a grid thumbnail and a detail image.
+ * Stores one image as a grid thumbnail and a detail image (both WebP).
  * `prefix` is the item's folder; the file names carry a nonce so a changed
  * image never collides with a cached old one.
  */
-export async function copyImage(
-  src: string,
+export async function storeImage(
+  original: Buffer,
   prefix: string,
   index: number,
-  fetchFn: typeof fetch = fetch,
 ): Promise<{ image: StoredImage; bytes: number }> {
-  const original = await download(src, fetchFn);
   const [thumb, detail] = await Promise.all([toWebp(original, THUMB_WIDTH), toWebp(original, DETAIL_WIDTH)]);
   const nonce = randomUUID().slice(0, 8);
   const [thumbUrl, url] = await Promise.all([
@@ -83,6 +66,16 @@ export async function copyImage(
     upload(`${prefix}/${index}-${nonce}.webp`, detail),
   ]);
   return { image: { thumbUrl, url }, bytes: thumb.length + detail.length };
+}
+
+/** Copies one store image (downloaded from `src`) into Storage — see storeImage. */
+export async function copyImage(
+  src: string,
+  prefix: string,
+  index: number,
+  fetchFn: typeof fetch = fetch,
+): Promise<{ image: StoredImage; bytes: number }> {
+  return storeImage(await download(src, fetchFn), prefix, index);
 }
 
 /** Deletes every file under a Storage folder. Missing files are not an error. */

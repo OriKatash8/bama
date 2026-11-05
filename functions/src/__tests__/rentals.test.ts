@@ -1,5 +1,5 @@
 import { decodeEntities, stripHtml, truncate } from '../rentals/text';
-import { suggestCategory, tokenize, wordForms } from '../rentals/keywords';
+import { KEYWORD_RULES, suggestCategory, tokenize, wordForms } from '../rentals/keywords';
 import { resolveCategory, isVisible } from '../rentals/resolve';
 import { mapWooProduct, toMajorUnits, productsUrl, contentHash, isOnHost, fetchAllProducts, type WooProduct } from '../rentals/woo';
 import { withUtm } from '../rentals/links';
@@ -129,12 +129,17 @@ describe('keywords', () => {
     ['פנס לד Aputure STORM 1200x', 'lighting'],
     ['גימבל למצלמה DJI RS4', 'grip'],
     ['מצלמה Sony FX3', 'camera'],
-    ['סט 4 מכשירי קשר', 'production'],
     ['מוניטור במאי ATOMOS SUMO 19 SE', 'accessories'],
-    ['רקע נייר', 'studio'],
   ])('%s → %s', (name, cat) => {
     expect(suggestCategory(name)).toBe(cat);
   });
+  it('never suggests Studios or Production (BAMA Market categories only)', () => {
+    for (const name of ['סט 4 מכשירי קשר', 'רקע נייר', 'גנרטור מושתק', 'מכונת עשן', 'מסך ירוק']) {
+      expect(['studio', 'production']).not.toContain(suggestCategory(name));
+    }
+    expect(KEYWORD_RULES.map((r) => r.category)).toEqual(['camera', 'drone', 'audio', 'lighting', 'lens', 'accessories', 'grip']);
+  });
+
   it('has no bare "mm" rule and never matches inside a word', () => {
     expect(suggestCategory('Rod 15mm זוג מוטות')).toBe('lens'); // a focal-length-shaped token is a lens hint…
     expect(suggestCategory('שק mm')).toBeNull();               // …but "mm" alone is nothing
@@ -153,6 +158,11 @@ describe('resolveCategory', () => {
   it('uses the first external category that has a valid mapping', () => {
     expect(resolveCategory({ externalCategories: ['בלגן', 'מבצעים', 'ציוד תאורה להשכרה'], categoryMap: map })).toBe('lighting');
   });
+  it('a mapping or admin choice to Studios or Production is not a rental category: unsorted', () => {
+    expect(resolveCategory({ externalCategories: ['הפקה'], categoryMap: { 'הפקה': 'production' } })).toBe('unsorted');
+    expect(resolveCategory({ manualCategory: 'studio', externalCategories: [], categoryMap: null })).toBe('unsorted');
+  });
+
   it('maps to hidden', () => {
     expect(resolveCategory({ externalCategories: ['חומרי גלם'], categoryMap: map })).toBe('hidden');
   });

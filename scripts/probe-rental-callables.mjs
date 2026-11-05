@@ -41,6 +41,11 @@ const CALLS = [
   ['adminSetRentalItemCategories', { assignments: [{ itemId: `${NONE}_1`, category: 'lens' }] }],
   ['adminSyncRentalCompany', { companyId: NONE }],
   ['adminRemoveRentalCompany', { companyId: NONE }],
+  // Manual items: invalid fields and a company that does not exist — nothing could be written.
+  ['adminSaveRentalItem', { companyId: NONE, name: '', pricePerDay: -1, category: 'nope' }],
+  ['adminRemoveRentalItem', { itemId: `${NONE}_1` }],
+  // Detect: an address it refuses anyway — a missing admin check could fetch nothing.
+  ['adminDetectRentalPlatform', { url: 'localhost' }],
 ];
 const results = [];
 async function code(name, data) {

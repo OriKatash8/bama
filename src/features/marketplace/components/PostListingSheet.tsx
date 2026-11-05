@@ -63,16 +63,15 @@ function makeT(translations: Translations) {
   };
 }
 
+// The same categories as the marketplace's tile row: no Studios or Production.
 const CATEGORIES: { id: string; labelKey: string }[] = [
   { id: 'camera',      labelKey: 'category_camera' },
   { id: 'lens',        labelKey: 'category_lens' },
   { id: 'audio',       labelKey: 'category_audio' },
   { id: 'lighting',    labelKey: 'category_light' },
   { id: 'drone',       labelKey: 'category_drone' },
-  { id: 'studio',      labelKey: 'category_studio' },
   { id: 'accessories', labelKey: 'category_accessories' },
   { id: 'grip',        labelKey: 'category_grip' },
-  { id: 'production',  labelKey: 'category_production' },
 ];
 
 const CONDITIONS: { value: ProductCondition; color: string }[] = [

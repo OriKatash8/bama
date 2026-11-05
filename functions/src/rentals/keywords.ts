@@ -80,20 +80,6 @@ export const KEYWORD_RULES: KeywordRule[] = [
       'combo', 'קומבו', 'baby legs', 'hi hat', 'fluid head', 'ראש וידאו', 'ראש גריפ', 'turtle base',
     ],
   },
-  {
-    category: 'production',
-    terms: [
-      'מכשירי קשר', 'walkie', 'walkie talkie', 'אוזניות תקשורת', 'intercom', 'כיסא', 'chair', 'שולחן', 'table',
-      'אוהל', 'גזיבו', 'gazebo', 'גנרטור', 'generator', 'סוללה', 'סוללת', 'battery', 'v lock', 'vlock',
-      'np f', 'מטען', 'charger', 'מפצל', 'd tap', 'חשמל', 'מאוורר', 'fan', 'עשן', 'smoke', 'ערפל', 'haze',
-      'hazer', 'מראה', 'מראת', 'clapper', 'קלאפר', 'טלפרומפטר', 'teleprompter', 'תנור', 'עגלה', 'עגלת',
-      'cart', 'magliner', 'מקרן', 'projector',
-    ],
-  },
-  {
-    category: 'studio',
-    terms: ['סטודיו', 'studio', 'רקע', 'רקעים', 'backdrop', 'מסך ירוק', 'green screen'],
-  },
 ];
 
 const HEBREW_PREFIXES = 'בלהו';

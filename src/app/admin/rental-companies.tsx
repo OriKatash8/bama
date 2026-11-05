@@ -12,6 +12,8 @@ import { CompanyForm, errorText } from '@features/rentals/admin/CompanyForm';
 import { CategoryMapCard } from '@features/rentals/admin/CategoryMapCard';
 import { NeedsSortingCard } from '@features/rentals/admin/NeedsSortingCard';
 import { ItemsCard } from '@features/rentals/admin/ItemsCard';
+import { ManualItemsCard } from '@features/rentals/admin/ManualItemsCard';
+import { isSyncedPlatform } from '@features/rentals/platform';
 import { removeRentalCompany, setRentalCompanyActive, syncRentalCompany } from '@features/rentals/rentalsService';
 import type { RentalCompany } from '@features/rentals/types';
 
@@ -112,6 +114,7 @@ export default function RentalCompaniesAdmin() {
       onBack={goBack}
       side={editing ? undefined : <PillButton variant="primary" label={t('add_company')} onPress={() => setEditing('new')} testID="add-company" />}
       testID="rental-companies-page"
+      keyboardAware
     >
       {editing && (
         <CompanyForm
@@ -151,7 +154,19 @@ export default function RentalCompaniesAdmin() {
         ))
       )}
 
-      {selected && (
+      {selected && !isSyncedPlatform(selected) && (
+        // A manual company: its items are entered here (no store, so no category
+        // map, nothing to sort and no synced items to preview).
+        itemsLoading && items.length === 0 ? (
+          <ActivityIndicator size="small" color={p.accent} style={styles.spinner} testID="items-loading" />
+        ) : itemsError ? (
+          <AdminText style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>{t('load_failed', { message: itemsError })}</AdminText>
+        ) : (
+          <ManualItemsCard key={`manual-${selected.id}`} company={selected} items={items} onChanged={reload} onToast={toast} />
+        )
+      )}
+
+      {selected && isSyncedPlatform(selected) && (
         <>
           <CategoryMapCard
             key={`map-${selected.id}-${JSON.stringify(selected.categoryMap ?? {})}`}

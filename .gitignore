@@ -76,5 +76,5 @@ legal-site/static/app-links.json
 .jest-last-run.json
 .jest-failures/
 
-# Local emulator data (scripts/dev-rental-fixture.mjs; --import/--export-on-exit)
+# Firebase emulator import/export data (firebase emulators:start --import/--export-on-exit)
 .emulator-data/

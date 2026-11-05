@@ -1,27 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import type { LucideIcon } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 
-/** A category drawn from PNGs (the original six) or from a Lucide icon (the later ones). */
-export type MarketplaceCategory = { id: string; labelKey: string } & (
-  | {
-      icon: number;
-      /** The coloured icon shown while this category is chosen. */
-      selectedIcon?: number;
-      Icon?: never;
-    }
-  | { Icon: LucideIcon; icon?: never; selectedIcon?: never }
-);
-
-/**
- * A vector tile drawn to match the PNG ones, sampled from them: the glyph's blue,
- * and the chosen state's rounded square with its blue-to-violet gradient.
- */
-const VECTOR_GLYPH = '#0C4CB0';
-const VECTOR_GRADIENT = ['#064BAF', '#C66BE5'] as const;
+export type MarketplaceCategory = {
+  id: string;
+  labelKey: string;
+  icon: number;
+  /** The coloured icon shown while this category is chosen. */
+  selectedIcon?: number;
+};
 
 type Props = {
   cat: MarketplaceCategory;
@@ -56,44 +44,27 @@ export function CategoryTile({ cat, label, isActive, onPress, inactiveLabelColor
   }, [isActive, anim]);
 
   const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.33] });
-  const showSelected = isActive && (!!cat.selectedIcon || !!cat.Icon);
-  const Icon = cat.Icon;
+  const showSelected = isActive && !!cat.selectedIcon;
 
   return (
     <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.75}>
       <Animated.View style={{ transform: [{ scale }] }}>
         <View style={styles.icon}>
-          {Icon ? (
-            // Same rule as the images: both states mounted, the chosen one shown by opacity.
-            <>
-              <View testID={`cat-${cat.id}-icon`} style={[StyleSheet.absoluteFill, styles.vector, { opacity: showSelected ? 0 : 1 }]}>
-                <Icon size={26} color={VECTOR_GLYPH} strokeWidth={2.2} />
-              </View>
-              <View testID={`cat-${cat.id}-icon-selected`} style={[StyleSheet.absoluteFill, styles.vector, { opacity: showSelected ? 1 : 0 }]}>
-                <LinearGradient colors={VECTOR_GRADIENT} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.square}>
-                  <Icon size={22} color="#FFFFFF" strokeWidth={2.2} />
-                </LinearGradient>
-              </View>
-            </>
-          ) : (
-            <>
-              <Image
-                testID={`cat-${cat.id}-icon`}
-                source={cat.icon}
-                style={[StyleSheet.absoluteFill, { opacity: showSelected ? 0 : 1 }]}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
-              {cat.selectedIcon !== undefined && (
-                <Image
-                  testID={`cat-${cat.id}-icon-selected`}
-                  source={cat.selectedIcon}
-                  style={[StyleSheet.absoluteFill, { opacity: showSelected ? 1 : 0 }]}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-              )}
-            </>
+          <Image
+            testID={`cat-${cat.id}-icon`}
+            source={cat.icon}
+            style={[StyleSheet.absoluteFill, { opacity: showSelected ? 0 : 1 }]}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
+          {cat.selectedIcon !== undefined && (
+            <Image
+              testID={`cat-${cat.id}-icon-selected`}
+              source={cat.selectedIcon}
+              style={[StyleSheet.absoluteFill, { opacity: showSelected ? 1 : 0 }]}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
           )}
         </View>
       </Animated.View>
@@ -114,9 +85,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   icon: { width: 72, height: 72 },
-  vector: { alignItems: 'center', justifyContent: 'center' },
-  // 214 of the PNG's 400px, at 72pt.
-  square: { width: 39, height: 39, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   // The visible gap is not `gap` — that was already 2. It is transparent padding
   // baked into the 72×72 contentFit="contain" icons, so the label is pulled up
   // into it rather than the spacing being reduced. Icon hit area is unchanged.

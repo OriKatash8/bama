@@ -17,7 +17,7 @@ export type RentalCompany = {
   phone: string;
   whatsapp: string;
   website: string;
-  sourceType: 'woocommerce' | 'manual';
+  sourceType: 'woocommerce' | 'shopify' | 'manual';
   sourceUrl: string;
   active: boolean;
   removedAt: Timestamp | null;
@@ -32,6 +32,8 @@ export type RentalCompany = {
   unsortedCount: number;
   storageBytes: number;
   clicks: number;
+  /** Manual companies: when the admin last added, changed or removed an item. */
+  manualUpdatedAt?: Timestamp | null;
 };
 
 export type RentalImage = { thumbUrl: string; url: string };
