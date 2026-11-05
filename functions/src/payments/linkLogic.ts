@@ -22,14 +22,48 @@ export function parseFeeKey(key: unknown): { projectId: string; proId: string } 
 }
 
 /**
- * Grow's Create Payment Link needs a valid Israeli MOBILE number. The app stores
- * E.164 (+9725XXXXXXXX for mobile); Grow wants the local form (05XXXXXXXX).
- * Landlines, VoIP (+9727...) and foreign numbers return null: no link is made.
+ * Grow's Create Payment Link needs a valid Israeli MOBILE number in the local form
+ * (05XXXXXXXX). The app stores E.164 (+9725XXXXXXXX), but the same number also
+ * arrives as 9725XXXXXXXX or already local, so all three are accepted. Landlines,
+ * VoIP (+9727...) and foreign numbers return null: no link is made (needs_phone).
  */
-export function israeliMobileLocal(e164: unknown): string | null {
-  if (typeof e164 !== 'string') return null;
-  const m = /^\+9725(\d{8})$/.exec(e164);
-  return m ? `05${m[1]}` : null;
+export function israeliMobileLocal(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const s = raw.trim();
+  const intl = /^\+?9725(\d{8})$/.exec(s);
+  if (intl) return `05${intl[1]}`;
+  return /^05\d{8}$/.test(s) ? s : null;
+}
+
+/** Grow's cap on the payer name; cut conservatively. */
+export const GROW_NAME_MAX = 50;
+const FALLBACK_NAME = 'משתמש BAMA';
+
+/**
+ * A name Grow's fullName field accepts: at least two words, each at least two
+ * characters, trimmed and single-spaced. A name that already qualifies is kept; a
+ * single word becomes "<name> BAMA"; words under two characters are dropped first
+ * (Grow rejects them), and a name with nothing usable left is "משתמש BAMA". Never
+ * longer than GROW_NAME_MAX, cut on a word boundary.
+ */
+export function growFullName(raw: unknown): string {
+  const chars = (w: string) => Array.from(w).length;
+  const words = (typeof raw === 'string' ? raw : '').trim().split(/\s+/).filter(Boolean);
+  const usable = words.filter((w) => chars(w) >= 2);
+  let out: string[];
+  if (words.length >= 2 && usable.length === words.length) out = words;
+  else if (usable.length >= 2) out = usable;
+  else if (usable.length === 1) out = [usable[0], 'BAMA'];
+  else return FALLBACK_NAME;
+
+  const kept: string[] = [];
+  for (const w of out) {
+    if ([...kept, w].join(' ').length > GROW_NAME_MAX) break;
+    kept.push(w);
+  }
+  if (kept.length >= 2) return kept.join(' ');
+  // A single word too long to sit beside another: shorten it and add the suffix.
+  return `${Array.from(out[0]).slice(0, GROW_NAME_MAX - 5).join('')} BAMA`;
 }
 
 const ms = (t: unknown): number | undefined =>

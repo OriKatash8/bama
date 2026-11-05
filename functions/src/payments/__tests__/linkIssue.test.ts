@@ -40,7 +40,7 @@ beforeEach(() => { mockDb.reset(); jest.clearAllMocks(); });
 describe('israeliMobileLocal', () => {
   it('accepts only +9725XXXXXXXX and returns the local form', () => {
     expect(israeliMobileLocal('+972501234567')).toBe('0501234567');
-    for (const bad of ['+97231234567', '+972771234567', '+14155550123', '0501234567', null, 5]) {
+    for (const bad of ['+97231234567', '+972771234567', '+14155550123', '0771234567', '031234567', null, 5]) {
       expect(israeliMobileLocal(bad)).toBeNull();
     }
   });

@@ -6,7 +6,7 @@ import {
 import { getLinkProvider } from './getProvider';
 import type { PaymentsConfig } from './guard';
 import {
-  evaluateLinkClaim, feeKeyOf, isFeeClosed, israeliMobileLocal, LINK_MAX_ATTEMPTS,
+  evaluateLinkClaim, feeKeyOf, growFullName, isFeeClosed, israeliMobileLocal, LINK_MAX_ATTEMPTS,
 } from './linkLogic';
 import { sendLinkNotice } from './notices';
 import type { LinkProvider } from './types';
@@ -40,12 +40,12 @@ export async function loadPayer(proId: string, projectId: string): Promise<Payer
   ]);
   const phone = israeliMobileLocal(contactSnap.data()?.phone);
   if (!phone) return { ok: false, reason: 'no-mobile' };
-  const name = userSnap.data()?.displayName;
   const title = projSnap.data()?.title;
   return {
     ok: true,
     payer: {
-      fullName: typeof name === 'string' && name.trim() ? name.trim() : 'BAMA',
+      // Grow rejects a one-word name (427 on pageFieldSettings[fullName]).
+      fullName: growFullName(userSnap.data()?.displayName),
       phone,
       ...(authUser?.email ? { email: authUser.email } : {}),
     },
