@@ -1130,6 +1130,14 @@ export default function ProjectDetailsScreen() {
   const isReadOnly = isCompleted || isCancelled;
   const isTeamMember = (project.filledSlots ?? []).some((s) => s.professionalId === currentUserId);
 
+  /** Press handler opening a member's read-only profile; undefined (not
+   *  pressable) for the viewer's own row. Absolute path in the viewer's own
+   *  stack, as pushProfile does in the chat room. */
+  const profilePressFor = (uid: string): (() => void) | undefined =>
+    !uid || uid === currentUserId
+      ? undefined
+      : () => router.push(`/${chatGroup}/(tabs)/browse/profile/${uid}` as never);
+
   /**
    * Whose price is frozen — the professionals who have finished their part.
    *
@@ -1494,6 +1502,7 @@ export default function ProjectDetailsScreen() {
             roles={[t('project_details.project_client')]}
             badge={t('project_details.client')}
             rtl={rtl}
+            onPressProfile={profilePressFor(project.clientId)}
             // The pro sees the client's number once their own part has ended.
             phoneFor={{ projectId, userId: project.clientId, eligible: !isClient && PHONE_SHARED.has(myFee?.engagementStatus ?? '') }}
             onReport={!isClient ? () => { setReportedUserId(project.clientId); setReportedUserName(clientUser.displayName); setReportVisible(true); } : undefined}
@@ -1525,6 +1534,7 @@ export default function ProjectDetailsScreen() {
               photoURL={member?.photoURL ?? null}
               roles={roles}
               rtl={rtl}
+              onPressProfile={member ? profilePressFor(professionalId) : undefined}
               isPendingRemoval={isClient && isPendingRemoval}
               isRemoving={removingId === professionalId}
               onRemove={isClient && !isReadOnly ? () => handleRequestRemoval(professionalId) : undefined}
@@ -2733,7 +2743,11 @@ function MemberRow({
   onContest,
   contestWindowEndsAt,
   phoneFor,
+  onPressProfile,
 }: {
+  /** Opens this member's read-only profile. Absent for the viewer's own row and
+   *  for members whose user doc is missing. */
+  onPressProfile?: () => void;
   displayName: string;
   photoURL: string | null;
   roles: string[];
@@ -2780,7 +2794,15 @@ function MemberRow({
   return (
     <View style={styles.memberCard}>
       {/* Top row: avatar + name/role + price */}
-      <View style={[styles.memberTopRow, { flexDirection: rowDir }]}>
+      <TouchableOpacity
+        testID="member-profile"
+        style={[styles.memberTopRow, { flexDirection: rowDir }]}
+        onPress={onPressProfile}
+        disabled={!onPressProfile}
+        activeOpacity={0.7}
+        accessibilityRole={onPressProfile ? 'button' : undefined}
+        accessibilityLabel={onPressProfile ? displayName : undefined}
+      >
         {photoURL ? (
           <Image source={{ uri: photoURL }} style={styles.avatar} />
         ) : (
@@ -2821,7 +2843,7 @@ function MemberRow({
           </View>
         )}
 
-      </View>
+      </TouchableOpacity>
 
       {/* Phone — only once the professional's part has ended; tapping calls. */}
       {contact?.kind === 'phone' && (

@@ -223,6 +223,12 @@ describe('reading a channel message back', () => {
     expect(channelDocToMessage('m9', { senderId: 'me', text: 'hello' }).replyTo).toBeUndefined();
   });
 
+  it('carries a voice note (audioUrl + audioDuration)', () => {
+    const m = channelDocToMessage('m9', { senderId: 'me', text: '', audioUrl: 'a', audioDuration: 7 });
+    expect(m.audioUrl).toBe('a');
+    expect(m.audioDuration).toBe(7);
+  });
+
   it('still maps the shared-listing payload, which only this collection has', () => {
     const m = channelDocToMessage('m9', {
       senderId: 'me', text: 'Tripod · ₪200', readBy: ['me'],
