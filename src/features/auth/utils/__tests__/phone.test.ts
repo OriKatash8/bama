@@ -29,6 +29,17 @@ describe('normalizePhone', () => {
     expect(normalizePhone(input)).toBeNull();
   });
 
+  it.each([
+    ['\u202A050-123-4567\u202C', 'iOS bidi embedding (autofill in Hebrew)'],
+    ['\u200E050\u00A0123\u00A04567', 'LRM + non-breaking spaces'],
+    ['050\u2011123\u20114567', 'non-breaking hyphens (contact card)'],
+    ['050\u2013123\u20144567', 'en / em dashes'],
+    ['\u2066+972\u00A050\u2011123\u20114567\u2069', 'isolates around +972'],
+    ['\uFF10\uFF15\uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17', 'full-width digits'],
+  ])('tolerates invisible / look-alike characters: %p (%s)', (input) => {
+    expect(normalizePhone(input)).toBe('+972501234567');
+  });
+
   it('+972 followed by a leading 0 still normalises', () => {
     expect(normalizePhone('+972 050 123 4567')).toBe('+972501234567');
   });
