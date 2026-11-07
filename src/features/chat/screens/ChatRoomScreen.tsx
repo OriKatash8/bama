@@ -1094,6 +1094,9 @@ export function ChatRoomScreen({ chatId }: Props) {
         } else {
           setChatName(data.name ?? 'Group Chat');
         }
+      } else if (data.type === 'community' && data.name) {
+        // The owner can rename a community while members have it open.
+        setChatName(data.name as string);
       }
     }, (err) => {
       // A permission-denied here is what a removed member gets: they are no

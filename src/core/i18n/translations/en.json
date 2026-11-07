@@ -1558,7 +1558,8 @@
       "home_cta": "Back to the app",
       "retry": "Try again",
       "join_failed": "Couldn't send your request. Please try again.",
-      "request_sent_toast": "Request sent"
+      "request_sent_toast": "Request sent",
+      "joined_toast": "Joined"
     },
     "errors": {
       "signed_out": "Sign in to continue.",
@@ -1575,6 +1576,17 @@
     }
   },
   "community_details": {
+    "name_edit": "Edit community name",
+    "name_placeholder": "Community name",
+    "name_save": "Save",
+    "name_cancel": "Cancel",
+    "name_saved": "Name updated",
+    "name_invalid": "Enter a name (1–60 characters)",
+    "name_failed": "Couldn't update the name. Please try again.",
+    "open_label": "Open community",
+    "open_note_open": "Anyone can join right away, with no approval needed.",
+    "open_note_private": "Private: people send a request and you approve who joins.",
+    "join_mode_failed": "Couldn't change who can join. Please try again.",
     "header": "Community details",
     "manage": "Manage community",
     "about": "About",

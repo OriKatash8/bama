@@ -1558,7 +1558,8 @@
       "home_cta": "חזרה לאפליקציה",
       "retry": "נסה שוב",
       "join_failed": "לא הצלחנו לשלוח את הבקשה. נסה שוב.",
-      "request_sent_toast": "הבקשה נשלחה"
+      "request_sent_toast": "הבקשה נשלחה",
+      "joined_toast": "הצטרפת לקהילה"
     },
     "errors": {
       "signed_out": "יש להתחבר כדי להמשיך.",
@@ -1575,6 +1576,17 @@
     }
   },
   "community_details": {
+    "name_edit": "עריכת שם הקהילה",
+    "name_placeholder": "שם הקהילה",
+    "name_save": "שמירה",
+    "name_cancel": "ביטול",
+    "name_saved": "השם עודכן",
+    "name_invalid": "יש להזין שם (1–60 תווים)",
+    "name_failed": "לא ניתן היה לעדכן את השם. נסו שוב.",
+    "open_label": "קהילה פתוחה",
+    "open_note_open": "כל אחד יכול להצטרף מיד, ללא אישור.",
+    "open_note_private": "פרטית: אנשים שולחים בקשה ואתם מאשרים מי מצטרף.",
+    "join_mode_failed": "לא ניתן היה לשנות מי יכול להצטרף. נסו שוב.",
     "header": "פרטי הקהילה",
     "manage": "ניהול הקהילה",
     "about": "אודות",

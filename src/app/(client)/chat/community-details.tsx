@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -13,7 +14,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Search, Share2, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Pencil, Search, Share2, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -30,7 +31,9 @@ import { communityCategoryLabel } from '@features/crew/data/categories';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
 import {
   muteChat,
+  setCommunityJoinMode,
   unmuteChat,
+  updateCommunityName,
 } from '@features/chat/services/chatService';
 import { leaveCommunity } from '@features/chat/services/communityMembership';
 import { createCommunityInvite } from '@features/communities/invites/inviteService';
@@ -91,6 +94,9 @@ export default function CommunityDetailsScreen() {
   // Above the early returns below: hooks must run on every render.
   const showToast = useUiStore((s) => s.showToast);
   const [inviteBusy, setInviteBusy] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   // Live, not a one-shot read: the member list changes when the owner approves a
   // join request while this page is open, and leaving has to be reflected too.
@@ -203,6 +209,37 @@ export default function CommunityDetailsScreen() {
     }
   }
 
+  async function handleSaveName() {
+    const next = nameDraft.trim();
+    if (savingName || !chatId) return;
+    if (next.length < 1 || next.length > 60) {
+      showToast(t('community_details.name_invalid'), 'error');
+      return;
+    }
+    if (next === (community?.name ?? '')) { setEditingName(false); return; }
+    setSavingName(true);
+    try {
+      await updateCommunityName(chatId, next);
+      setEditingName(false);
+      showToast(t('community_details.name_saved'), 'success');
+    } catch (err) {
+      console.error('[community-details] rename failed:', err);
+      showToast(t('community_details.name_failed'), 'error');
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  async function handleToggleOpen(open: boolean) {
+    if (!chatId) return;
+    try {
+      await setCommunityJoinMode(chatId, open ? 'open' : 'approval');
+    } catch (err) {
+      console.error('[community-details] join mode change failed:', err);
+      showToast(t('community_details.join_mode_failed'), 'error');
+    }
+  }
+
   async function handleToggleMute(next: boolean) {
     if (!currentUserId || !chatId) return;
     setMuted(next); // optimistic, reverted below on failure
@@ -287,9 +324,58 @@ export default function CommunityDetailsScreen() {
             button, or the category for everyone else. */}
         <View style={styles.identityCard}>
           <CommunityAvatar community={community} size={96} />
-          <AppText weight="bold" style={styles.communityName} numberOfLines={2}>
-            {community.name}
-          </AppText>
+          {isOwner && editingName ? (
+            <View style={styles.nameEditBlock}>
+              <TextInput
+                testID="community-name-input"
+                value={nameDraft}
+                onChangeText={setNameDraft}
+                maxLength={60}
+                autoFocus
+                style={[styles.nameInput, { textAlign: rtl ? 'right' : 'left' }]}
+                placeholder={t('community_details.name_placeholder')}
+                returnKeyType="done"
+                onSubmitEditing={handleSaveName}
+              />
+              <View style={[styles.nameEditActions, { flexDirection: rowDir }]}>
+                <TouchableOpacity
+                  testID="community-name-save"
+                  style={[styles.manageBtn, { backgroundColor: colors.primary }, savingName && { opacity: 0.6 }]}
+                  onPress={handleSaveName}
+                  disabled={savingName}
+                  accessibilityRole="button"
+                >
+                  <AppText weight="semiBold" style={styles.manageBtnText}>{t('community_details.name_save')}</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID="community-name-cancel"
+                  style={styles.nameCancelBtn}
+                  onPress={() => setEditingName(false)}
+                  disabled={savingName}
+                  accessibilityRole="button"
+                >
+                  <AppText weight="semiBold" style={styles.nameCancelText}>{t('community_details.name_cancel')}</AppText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.nameRow, { flexDirection: rowDir }]}>
+              <AppText weight="bold" style={[styles.communityName, { flexShrink: 1 }]} numberOfLines={2}>
+                {community.name}
+              </AppText>
+              {isOwner && (
+                <TouchableOpacity
+                  testID="community-name-edit"
+                  onPress={() => { setNameDraft(community.name ?? ''); setEditingName(true); }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('community_details.name_edit')}
+                >
+                  <Pencil size={16} color={colors.primary} strokeWidth={2} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
           {isOwner ? (
             <TouchableOpacity
               style={[styles.manageBtn, { flexDirection: rowDir, backgroundColor: colors.primary }]}
@@ -433,6 +519,27 @@ export default function CommunityDetailsScreen() {
             as on project details. Hidden when there is none. */}
         <ChatMediaSection chatId={chatId} community titleColor={colors.text} />
 
+        {/* Who can join — the owner only. Open: tap Join and you're in. Private
+            (the default when unset): the owner approves every request. */}
+        {isOwner && (
+          <View style={styles.settingCard} testID="community-join-mode-card">
+            <View style={[styles.settingRow, { flexDirection: rowDir }]}>
+              <Users size={18} color={colors.primary} strokeWidth={1.8} />
+              <AppText weight="semiBold" style={[styles.settingLabel, { textAlign: align }]}>
+                {t('community_details.open_label')}
+              </AppText>
+              <ToggleSwitch
+                value={community.joinMode === 'open'}
+                onValueChange={handleToggleOpen}
+                accessibilityLabel={t('community_details.open_label')}
+              />
+            </View>
+            <AppText weight="regular" style={[styles.settingNote, { textAlign: align }]}>
+              {t(community.joinMode === 'open' ? 'community_details.open_note_open' : 'community_details.open_note_private')}
+            </AppText>
+          </View>
+        )}
+
         {/* Notifications */}
         <View style={styles.settingCard}>
           <View style={[styles.settingRow, { flexDirection: rowDir }]}>
@@ -525,6 +632,21 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(30,79,163,0.07)',
     ...CARD_SHADOW,
   },
+  nameRow: { alignItems: 'center', justifyContent: 'center', gap: 8 },
+  nameEditBlock: { alignSelf: 'stretch', gap: 10, alignItems: 'center' },
+  nameInput: {
+    alignSelf: 'stretch',
+    borderWidth: 1,
+    borderColor: 'rgba(30,79,163,0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: '#1e4fa3',
+  },
+  nameEditActions: { alignItems: 'center', gap: 10 },
+  nameCancelBtn: { paddingHorizontal: 12, paddingVertical: 8 },
+  nameCancelText: { fontSize: 14, color: '#6B6880' },
   communityName: { fontSize: 20, color: '#1e4fa3', textAlign: 'center', lineHeight: 26 },
   categoryChip: {
     backgroundColor: 'rgba(30,79,163,0.08)',

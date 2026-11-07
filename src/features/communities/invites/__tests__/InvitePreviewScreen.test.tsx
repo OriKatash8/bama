@@ -18,6 +18,15 @@ jest.mock('expo-image', () => ({
 }));
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock('@core/firebase/config', () => ({ db: {}, auth: {} }));
+const mockChatData = jest.fn((): Record<string, unknown> | undefined => ({}));
+jest.mock('firebase/firestore', () => ({
+  doc: (_db: unknown, ...seg: string[]) => ({ path: seg.join('/') }),
+  getDoc: async () => ({ data: () => mockChatData() }),
+}));
+const mockJoinOpen = jest.fn(async (..._a: unknown[]) => undefined);
+jest.mock('@features/chat/services/communityMembership', () => ({
+  joinOpenCommunity: (...a: unknown[]) => mockJoinOpen(...a),
+}));
 const mockGet = jest.fn();
 jest.mock('../inviteService', () => ({ getCommunityInvite: (x: string) => mockGet(x) }));
 const mockJoin = jest.fn(async (_p: unknown) => undefined);
@@ -38,6 +47,7 @@ async function open(result: unknown) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockChatData.mockReturnValue({});
   useSettingsStore.setState({ language: 'en' } as never);
   useAuthStore.setState({ user: { id: 'u1', displayName: 'Dana' } as never, activeMode: 'client' });
   useUiStore.setState({ toasts: [] } as never);
@@ -160,4 +170,30 @@ describe('leaving the screen always names a route group (client + professional)'
 it('no copy key is missing in either language', () => {
   const keys = Object.keys(pv);
   expect(Object.keys(he.community_invite.preview).sort()).toEqual(keys.sort());
+});
+
+describe('an open community', () => {
+  it('joins straight away, with no request and no "owner reviews" note', async () => {
+    mockChatData.mockReturnValue({ joinMode: 'open' });
+    const r = await open(ready('none'));
+    expect(r.queryByText(pv.join_note)).toBeNull();
+    await act(async () => { fireEvent.press(r.getByTestId('invite-join')); });
+    expect(mockJoinOpen).toHaveBeenCalledWith('chat1', 'u1');
+    expect(mockJoin).not.toHaveBeenCalled();
+  });
+
+  it('falls back to a request if the owner closed it a moment ago', async () => {
+    mockChatData.mockReturnValue({ joinMode: 'open' });
+    mockJoinOpen.mockRejectedValueOnce({ code: 'permission-denied' });
+    const r = await open(ready('none'));
+    await act(async () => { fireEvent.press(r.getByTestId('invite-join')); });
+    expect(mockJoin).toHaveBeenCalledTimes(1);
+  });
+
+  it('a private community still sends a request', async () => {
+    const r = await open(ready('none'));
+    await act(async () => { fireEvent.press(r.getByTestId('invite-join')); });
+    expect(mockJoinOpen).not.toHaveBeenCalled();
+    expect(mockJoin).toHaveBeenCalledTimes(1);
+  });
 });

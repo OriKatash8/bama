@@ -58,6 +58,20 @@ export async function withEvents<T>(what: string, write: (withEvents: boolean) =
 }
 
 /**
+ * Join an OPEN community: user → members and 'join' logged, in one batch. The
+ * rules admit this only while the community's joinMode is 'open' and only as
+ * "add exactly myself".
+ */
+export async function joinOpenCommunity(chatId: string, userId: string): Promise<void> {
+  await withEvents('join-open', async (events) => {
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'chats', chatId), { members: arrayUnion(userId) });
+    if (events) logEvent(batch, chatId, 'join', userId);
+    await batch.commit();
+  });
+}
+
+/**
  * Approve one request: request → approved, user → members, 'join' logged — all
  * or nothing. Resolves false (writing nothing) if the request is no longer
  * pending, e.g. the requester withdrew it or another device already decided.

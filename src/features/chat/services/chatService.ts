@@ -99,6 +99,7 @@ function docToChat(doc: QueryDocumentSnapshot<DocumentData>): Chat {
     lastMessage: data.lastMessage ?? null,
     createdAt: data.createdAt,
     unreadCount: data.unreadCount,
+    joinMode: data.joinMode === 'open' ? 'open' : data.joinMode === 'approval' ? 'approval' : undefined,
     purchaseListingId: data.purchaseListingId,
     buyerName: data.buyerName,
     archived: data.archived ?? false,
@@ -353,4 +354,17 @@ export async function sendMessage(
   }
 
   await updateDoc(chatRef, updatePayload);
+}
+
+
+/** Owner only (the rules enforce it). Trimmed, 1–60 characters. */
+export async function updateCommunityName(chatId: string, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (trimmed.length < 1 || trimmed.length > 60) throw new Error('invalid community name');
+  await updateDoc(doc(db, 'chats', chatId), { name: trimmed });
+}
+
+/** Owner only (the rules enforce it). 'open' = anyone can join; 'approval' = owner approves. */
+export async function setCommunityJoinMode(chatId: string, mode: 'open' | 'approval'): Promise<void> {
+  await updateDoc(doc(db, 'chats', chatId), { joinMode: mode });
 }

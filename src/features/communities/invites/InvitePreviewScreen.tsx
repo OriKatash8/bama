@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@core/firebase/config';
 import { Stack, useRouter } from 'expo-router';
 import { Users } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
@@ -15,6 +17,7 @@ import { getCommunityInvite, type InviteLookup } from './inviteService';
 import { inviteErrorKey, type InviteErrorKey } from './inviteErrors';
 import { inviteExitHref } from './inviteExitHref';
 import { requestToJoinViaInvite } from './joinViaInvite';
+import { joinOpenCommunity } from '@features/chat/services/communityMembership';
 
 type Ready = Extract<InviteLookup, { exists: true; revoked: false }>;
 type Load =
@@ -48,6 +51,9 @@ export function InvitePreviewScreen({ tokenOrCode }: { tokenOrCode: string }) {
   const { showToast } = useUiStore();
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [joining, setJoining] = useState(false);
+  // Read from the chat doc (readable by any signed-in user) so no Functions
+  // change is needed. Best effort: unknown behaves as 'approval', the old flow.
+  const [openJoin, setOpenJoin] = useState(false);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
 
@@ -60,7 +66,13 @@ export function InvitePreviewScreen({ tokenOrCode }: { tokenOrCode: string }) {
       if (!mounted.current) return;
       if (!r.exists) setLoad({ status: 'missing' });
       else if (r.revoked) setLoad({ status: 'revoked' });
-      else setLoad({ status: 'ready', invite: r });
+      else {
+        setLoad({ status: 'ready', invite: r });
+        try {
+          const snap = await getDoc(doc(db, 'chats', r.communityId));
+          if (mounted.current) setOpenJoin(snap.data()?.joinMode === 'open');
+        } catch { /* unknown → approval flow */ }
+      }
     } catch (e) {
       if (mounted.current) setLoad({ status: 'error', key: inviteErrorKey(e) });
     }
@@ -73,6 +85,18 @@ export function InvitePreviewScreen({ tokenOrCode }: { tokenOrCode: string }) {
     if (!user || joining) return;
     setJoining(true);
     try {
+      if (openJoin) {
+        try {
+          await joinOpenCommunity(invite.communityId, user.id);
+          if (!mounted.current) return;
+          setLoad({ status: 'ready', invite: { ...invite, membership: 'member' } });
+          showToast(t('preview.joined_toast'), 'success');
+          return;
+        } catch (e) {
+          // Closed since we looked: fall through to an ordinary request.
+          if ((e as { code?: string } | null)?.code !== 'permission-denied') throw e;
+        }
+      }
       await requestToJoinViaInvite({
         chatId: invite.communityId,
         token: invite.token,
@@ -145,7 +169,9 @@ export function InvitePreviewScreen({ tokenOrCode }: { tokenOrCode: string }) {
               disabled={joining}
               testID="invite-join"
             />
-            <AppText style={[styles.note, center, { color: colors.textMuted }]}>{t('preview.join_note')}</AppText>
+            {openJoin ? null : (
+              <AppText style={[styles.note, center, { color: colors.textMuted }]}>{t('preview.join_note')}</AppText>
+            )}
           </>
         ) : invite.membership === 'pending' ? (
           <>

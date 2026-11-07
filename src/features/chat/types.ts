@@ -106,6 +106,9 @@ export interface Chat {
    *  onNewCommunityMessage; each reader zeroes their own entry. */
   channelUnread?: Record<string, Record<string, number>>;
   category?: string;
+  /** Communities only. 'open': anyone taps Join and is in. 'approval' (also when
+   *  absent): the owner approves each request. Owner-written. */
+  joinMode?: 'open' | 'approval';
   purchaseListingId?: string;
   buyerName?: string;
   sellerAgreed?: boolean;
