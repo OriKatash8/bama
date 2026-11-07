@@ -16,6 +16,11 @@ const mockShowToast = jest.fn();
 const mockCreate = jest.fn();
 const mockShare = jest.fn();
 
+jest.mock('@features/communities/ownerTransfer/ownerTransferService', () => ({
+  useOwnerOffer: () => null,
+  respondOwnershipTransfer: jest.fn(),
+  ownerTransferErrorKey: () => 'generic',
+}));
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useLocalSearchParams: () => ({ chatId: 'c1' }),

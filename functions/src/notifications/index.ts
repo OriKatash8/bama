@@ -32,6 +32,8 @@ const ESSENTIAL = [
   'mention',
   // A report or block reaching the admin: Guideline 1.2 needs these seen.
   'admin_report',
+  // A community ownership offer, and its answer: a decision someone is waiting on.
+  'community_ownership_offer', 'community_ownership_result',
 ];
     if (type && !ESSENTIAL.includes(type)) {
       const userDoc = await db.collection('users').doc(notification.userId).get();

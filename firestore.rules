@@ -1002,6 +1002,15 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      // A pending ownership hand-over: one doc, `current`. Written only by the
+      // requestOwnershipTransfer / respondOwnershipTransfer / cancelOwnershipTransfer
+      // callables (Admin SDK). Members may read it so the invited member can see and
+      // answer the offer and the owner can see it is pending; nobody writes it.
+      match /ownerTransfer/{docId} {
+        allow read: if isAuth() && request.auth.uid in chatMembers(chatId);
+        allow write: if false;
+      }
+
       // Per-member message counts, kept by the onNewCommunityMessage trigger.
       // Admin SDK only; the owner reads them for the dashboard's activity bars.
       match /memberStats/{userId} {

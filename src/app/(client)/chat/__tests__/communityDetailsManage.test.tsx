@@ -15,6 +15,11 @@ import he from '@core/i18n/translations/he.json';
 let mockUid = 'owner-1';
 const mockPush = jest.fn();
 
+jest.mock('@features/communities/ownerTransfer/ownerTransferService', () => ({
+  useOwnerOffer: () => null,
+  respondOwnershipTransfer: jest.fn(),
+  ownerTransferErrorKey: () => 'generic',
+}));
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useLocalSearchParams: () => ({ chatId: 'c1' }),

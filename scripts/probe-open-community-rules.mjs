@@ -131,6 +131,26 @@ await attempt('owner', 't. member opens the community', 'oc-member', false, {}, 
 await attempt('owner', 'u. stranger opens the community', 'oc-other', false, {}, () => updateDoc(chatRef, { joinMode: 'open' }));
 await attempt('owner', 'v. owner still approves a member (members add)', 'oc-owner', true, {}, () => updateDoc(chatRef, { members: arrayUnion(OTHER) }));
 
+// ── Ownership hand-over offer doc (written only by callables) ───────────────
+const offerRef = doc(db, 'chats', CHAT, 'ownerTransfer', 'current');
+const seedOffer = async () => adminDb.doc(`chats/${CHAT}/ownerTransfer/current`).set({
+  fromUid: OWNER, toUid: MEMBER, status: 'pending', createdAt: new Date(), expiresAt: new Date(Date.now() + 1e9),
+});
+const withOffer = async (identity, expected, name, run) => {
+  await reseed({}); await seedOffer(); await as(identity);
+  let allowed = true; let error = '';
+  try { await run(); } catch (e) { allowed = false; error = e.code ?? String(e.message ?? e); }
+  rows.push({ section: 'handover', name, expected, allowed, error });
+};
+const { getDoc, setDoc, deleteDoc } = await import('firebase/firestore');
+await withOffer('oc-member', true, 'w. invited member reads the offer', () => getDoc(offerRef));
+await withOffer('oc-owner', true, 'x. owner reads the offer', () => getDoc(offerRef));
+await withOffer('oc-other', false, 'y. non-member reads the offer', () => getDoc(offerRef));
+await withOffer('oc-owner', false, 'z. owner writes an offer directly', () => setDoc(offerRef, { fromUid: OWNER, toUid: OTHER, status: 'pending' }));
+await withOffer('oc-member', false, 'z2. invited member accepts by writing it', () => setDoc(offerRef, { status: 'accepted' }));
+await withOffer('oc-owner', false, 'z3. owner deletes the offer directly', () => deleteDoc(offerRef));
+await withOffer('oc-member', false, 'z4. member makes themselves owner', () => updateDoc(chatRef, { ownerId: MEMBER }));
+
 let mismatches = 0;
 for (const section of [...new Set(rows.map((r) => r.section))]) {
   console.log(`\n${section.toUpperCase()}`);
@@ -141,5 +161,6 @@ for (const section of [...new Set(rows.map((r) => r.section))]) {
   }
 }
 console.log(`\n${rows.length} cases, ${mismatches} not as expected`);
+await adminDb.doc(`chats/${CHAT}/ownerTransfer/current`).delete().catch(() => {});
 await adminDb.collection('chats').doc(CHAT).delete();
 process.exit(mismatches === 0 ? 0 : 1);

@@ -14,6 +14,11 @@ const mockShowToast = jest.fn();
 const mockRename = jest.fn(async (..._a: unknown[]) => undefined);
 const mockSetMode = jest.fn(async (..._a: unknown[]) => undefined);
 
+jest.mock('@features/communities/ownerTransfer/ownerTransferService', () => ({
+  useOwnerOffer: () => null,
+  respondOwnershipTransfer: jest.fn(),
+  ownerTransferErrorKey: () => 'generic',
+}));
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useLocalSearchParams: () => ({ chatId: 'c1' }),

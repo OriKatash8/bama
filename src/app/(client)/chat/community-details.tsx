@@ -36,6 +36,11 @@ import {
   updateCommunityName,
 } from '@features/chat/services/chatService';
 import { leaveCommunity } from '@features/chat/services/communityMembership';
+import {
+  ownerTransferErrorKey,
+  respondOwnershipTransfer,
+  useOwnerOffer,
+} from '@features/communities/ownerTransfer/ownerTransferService';
 import { createCommunityInvite } from '@features/communities/invites/inviteService';
 import { inviteErrorI18nKey } from '@features/communities/invites/inviteErrors';
 import { shareInviteLink } from '@features/communities/invites/shareInviteLink';
@@ -94,6 +99,8 @@ export default function CommunityDetailsScreen() {
   // Above the early returns below: hooks must run on every render.
   const showToast = useUiStore((s) => s.showToast);
   const [inviteBusy, setInviteBusy] = useState(false);
+  const [answering, setAnswering] = useState(false);
+  const offer = useOwnerOffer(chatId, !!currentUserId);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -206,6 +213,21 @@ export default function CommunityDetailsScreen() {
       showToast(t(inviteErrorI18nKey(e)), 'error');
     } finally {
       setInviteBusy(false);
+    }
+  }
+
+  /** The invited member answers a hosting offer. Nothing changes hands until they accept. */
+  async function handleAnswerOffer(accept: boolean) {
+    if (answering || !chatId) return;
+    setAnswering(true);
+    try {
+      await respondOwnershipTransfer(chatId, accept);
+      showToast(t(accept ? 'owner_transfer.accepted_toast' : 'owner_transfer.declined_toast'), 'success');
+    } catch (err) {
+      console.error('[community-details] answering host offer failed:', err);
+      showToast(t(`owner_transfer.errors.${ownerTransferErrorKey(err)}`), 'error');
+    } finally {
+      setAnswering(false);
     }
   }
 
@@ -398,6 +420,39 @@ export default function CommunityDetailsScreen() {
             </View>
           ) : null}
         </View>
+
+        {/* A hosting offer addressed to me. Accepting is the only thing that moves the
+            community to me; until then the current host stays in charge. */}
+        {offer && offer.toUid === currentUserId && community.ownerId !== currentUserId && (
+          <View style={styles.settingCard} testID="host-offer-banner">
+            <AppText weight="bold" style={[styles.settingLabel, { textAlign: align, color: colors.text }]}>
+              {t('owner_transfer.banner_title')}
+            </AppText>
+            <AppText weight="regular" style={[styles.settingNote, { textAlign: align }]}>
+              {t('owner_transfer.banner_body', { name: memberUsers[offer.fromUid]?.displayName ?? '…' })}
+            </AppText>
+            <View style={[styles.settingRow, { flexDirection: rowDir, marginTop: 10 }]}>
+              <TouchableOpacity
+                testID="host-offer-accept"
+                style={[styles.manageBtn, { backgroundColor: colors.primary }, answering && { opacity: 0.6 }]}
+                onPress={() => handleAnswerOffer(true)}
+                disabled={answering}
+                accessibilityRole="button"
+              >
+                <AppText weight="semiBold" style={styles.manageBtnText}>{t('owner_transfer.accept')}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="host-offer-decline"
+                style={styles.nameCancelBtn}
+                onPress={() => handleAnswerOffer(false)}
+                disabled={answering}
+                accessibilityRole="button"
+              >
+                <AppText weight="semiBold" style={styles.nameCancelText}>{t('owner_transfer.decline')}</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Search in chat — members only: nobody else can read the messages. */}
         {members.includes(currentUserId) && (

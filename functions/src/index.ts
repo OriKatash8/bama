@@ -34,6 +34,7 @@ export * from './lifecycle/disputeResolution';
 export * from './communities/invites';
 export * from './communities/adminDelete';
 export * from './communities/adminActions';
+export * from './communities/ownerTransfer';
 
 // Rental companies: store-synced rental items (europe-west1).
 export * from './rentals';

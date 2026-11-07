@@ -282,6 +282,10 @@ export const onCommunityDeleted = onDocumentDeleted(
     await db.recursiveDelete(db.collection(`chats/${chatId}/joinRequestNotices`))
       .catch((e) => console.warn('[onCommunityDeleted] could not remove joinRequestNotices', (e as Error)?.message));
 
+    // The pending ownership offer, if any (a subcollection doc, so it outlives the chat).
+    await db.recursiveDelete(db.collection(`chats/${chatId}/ownerTransfer`))
+      .catch((e) => console.warn('[onCommunityDeleted] could not remove ownerTransfer', (e as Error)?.message));
+
     for (;;) {
       const page = await invitesCol().where('communityId', '==', chatId).limit(200).get();
       if (page.empty) return;

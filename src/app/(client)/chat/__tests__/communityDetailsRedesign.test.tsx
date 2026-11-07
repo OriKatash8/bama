@@ -24,6 +24,11 @@ const mockReplace = jest.fn();
 const mockBack = jest.fn();
 let mockCanGoBack = true;
 
+jest.mock('@features/communities/ownerTransfer/ownerTransferService', () => ({
+  useOwnerOffer: () => null,
+  respondOwnershipTransfer: jest.fn(),
+  ownerTransferErrorKey: () => 'generic',
+}));
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useLocalSearchParams: () => ({ chatId: 'c1' }),

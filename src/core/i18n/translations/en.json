@@ -1598,7 +1598,7 @@
     "leave": "Leave community",
     "leave_confirm_title": "Leave community",
     "leave_confirm_body": "Leave this community? You will need to send a new join request to come back.",
-    "owner_cannot_leave": "The community owner cannot leave. Contact support to close the community or hand it over.",
+    "owner_cannot_leave": "The community host cannot leave. Hand the hosting to another member from the dashboard first, then you can leave.",
     "not_found": "Community not found"
   },
   "balance": {
@@ -1788,6 +1788,42 @@
     "pro_client": "the client",
     "client_instruction": "Before you start, let's check it's a fit! Worth talking about — the project's scope, the main needs, how much raw material there is and how many rounds are needed. So the price still matches the amount of work.",
     "pro_instruction": "Before you start, let's check it's a fit! Worth talking about — the project's scope, the main needs, how much raw material there is and how many rounds are needed. So the price still matches the amount of work."
+  },
+  "owner_transfer": {
+    "make_host": "Make host",
+    "make_host_a11y": "Make {{name}} the host",
+    "confirm_title": "Hand over hosting to {{name}}?",
+    "confirm_body": "{{name}} will be asked to accept. Until they do, you stay the host. If they accept, you stay in the community as a regular member. The offer expires in 7 days.",
+    "confirm_cta": "Send offer",
+    "sent_toast": "Offer sent to {{name}}",
+    "pending_title": "Hosting offer pending",
+    "pending_body": "Waiting for {{name}} to accept. Expires {{date}}.",
+    "pending_chip": "Offered",
+    "cancel_offer": "Cancel offer",
+    "cancelled_toast": "Offer cancelled",
+    "banner_title": "You've been asked to host this community",
+    "banner_body": "{{name}} wants to hand over hosting to you. If you accept, you decide who joins, you manage the invite link and the community settings, and {{name}} stays on as a member.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted_toast": "You're now the host",
+    "declined_toast": "Offer declined",
+    "errors": {
+      "not_owner": "Only the host can do this.",
+      "bad_target": "Choose another member.",
+      "target_not_member": "That person is no longer a member of the community.",
+      "community_suspended": "This community is suspended.",
+      "offer_pending": "There is already a pending offer. Cancel it first.",
+      "no_offer": "This offer is no longer available.",
+      "offer_expired": "This offer has expired.",
+      "not_recipient": "This offer is not addressed to you.",
+      "owner_changed": "The community's host changed, so this offer is void.",
+      "recipient_left": "You are no longer a member of this community.",
+      "email_not_verified": "Verify your email address first.",
+      "demo_isolation": "This action isn't available for this account.",
+      "rate_limited": "Too many attempts. Please try again in a little while.",
+      "network": "Connection problem. Please try again.",
+      "generic": "Something went wrong. Please try again."
+    }
   },
   "community_admin": {
     "title": "Community console",
