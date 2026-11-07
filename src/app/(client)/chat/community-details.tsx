@@ -399,7 +399,16 @@ export default function CommunityDetailsScreen() {
                         style={[styles.hairline, rtl ? { marginRight: MEMBER_DIVIDER_INSET } : { marginLeft: MEMBER_DIVIDER_INSET }]}
                       />
                     )}
-                    <View testID={`member-row-${uid}`} style={[styles.memberRow, { flexDirection: rowDir }]}>
+                    <TouchableOpacity
+                      testID={`member-row-${uid}`}
+                      style={[styles.memberRow, { flexDirection: rowDir }]}
+                      // Own row and members with no user doc are not tappable.
+                      disabled={uid === currentUserId || !member}
+                      onPress={() => router.push(`/${chatGroup}/(tabs)/browse/profile/${uid}` as never)}
+                      activeOpacity={0.7}
+                      accessibilityRole={uid === currentUserId || !member ? undefined : 'button'}
+                      accessibilityLabel={uid === currentUserId || !member ? undefined : name}
+                    >
                       {member?.photoURL ? (
                         <Image source={{ uri: member.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
                       ) : (
@@ -421,7 +430,7 @@ export default function CommunityDetailsScreen() {
                           </View>
                         )}
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   </View>
                 );
               })}
