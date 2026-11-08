@@ -423,7 +423,8 @@
     "add_photo": "Tap the picture to add a profile photo",
     "continue": "Continue",
     "saving": "Saving…",
-    "save_failed": "Could not save your profile. Please try again."
+    "save_failed": "Could not save your profile. Please try again.",
+    "photo_failed": "Your profile was saved, but the photo could not be uploaded. You can add it later from your profile."
   },
   "profile": {
     "error_no_contact": "Phone numbers and email addresses can't be published on your profile. Contact details are shared once you're hired on a project.",

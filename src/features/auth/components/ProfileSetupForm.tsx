@@ -52,6 +52,26 @@ const C = {
 const AVATAR = 116;
 
 /**
+ * No save step may hang the page. Firestore write promises resolve only on the
+ * server's acknowledgement and a Storage upload on a stalled connection never
+ * settles, so without a cap the spinner could run until the app was killed.
+ * A timed-out Firestore write stays queued and lands later; pressing Continue
+ * again simply repeats the same (idempotent) writes.
+ */
+const WRITE_TIMEOUT_MS = 20_000;
+const PHOTO_TIMEOUT_MS = 45_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    p.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
+/**
  * The name / picture (/ phone) page. Two routes show it:
  *   /(auth)/setup          a brand-new account, before mode select
  *   /(client)/onboarding   an older account entering client mode for the first time
@@ -100,39 +120,66 @@ export function ProfileSetupForm({
   }
 
   const phoneEntered = needsPhone && phone.trim().length > 0;
-  const phoneOk = !phoneEntered || normalizePhone(phone) !== null;
-  const canContinue = name.trim().length > 0 && phoneOk && !saving;
+  // The phone does NOT disable Continue. It used to, and a number the check
+  // rejected left a greyed-out button with no message at all (the error was
+  // only set on press, and a disabled button cannot be pressed). Now pressing
+  // shows what is wrong, and so does leaving the field.
+  const canContinue = name.trim().length > 0 && !saving;
+
+  function checkPhone(): boolean {
+    if (phoneEntered && normalizePhone(phone) === null) {
+      setPhoneError(t('auth.err_phone_invalid'));
+      return false;
+    }
+    return true;
+  }
 
   async function handleContinue() {
     if (!user || !canContinue) return;
+    if (!checkPhone()) return;
     const e164 = phoneEntered ? normalizePhone(phone) : null;
-    if (phoneEntered && !e164) {
-      setPhoneError(t('auth.err_phone_invalid'));
-      return;
-    }
     setSaving(true);
     try {
       // The private contact doc, never the public user doc — as the phone screen does.
       if (e164) {
-        await savePhone(user.id, e164);
+        await withTimeout(savePhone(user.id, e164), WRITE_TIMEOUT_MS);
         setHasPhone(true);
       }
+      // The picture is optional, so it never blocks the account: if it cannot
+      // be uploaded the page carries on without it (it can be added later from
+      // the profile) and says so.
       let photoURL = user.photoURL;
+      let photoFailed = false;
       if (photoUri) {
-        const blob = await fetch(await shrinkAvatar(photoUri)).then((r) => r.blob());
-        photoURL = await uploadFile(`users/${user.id}/avatar/${Date.now()}.jpg`, blob);
+        try {
+          photoURL = await withTimeout(
+            (async () => {
+              const blob = await fetch(await shrinkAvatar(photoUri)).then((r) => r.blob());
+              return uploadFile(`users/${user.id}/avatar/${Date.now()}.jpg`, blob);
+            })(),
+            PHOTO_TIMEOUT_MS,
+          );
+        } catch (err) {
+          console.warn('[setup] photo upload failed, continuing without it:', err);
+          photoFailed = true;
+        }
       }
       const trimmed = name.trim();
-      await updateDocument(`users/${user.id}`, {
-        displayName: trimmed,
-        photoURL,
-        clientOnboarded: true,
-        ...extraFields,
-      });
+      await withTimeout(
+        updateDocument(`users/${user.id}`, {
+          displayName: trimmed,
+          photoURL,
+          clientOnboarded: true,
+          ...extraFields,
+        }),
+        WRITE_TIMEOUT_MS,
+      );
       setUser({ ...user, displayName: trimmed, photoURL, ...extraFields });
       setClientOnboarded(true);
+      if (photoFailed) showToast(t('client_onboarding.photo_failed'), 'error');
       onDone();
-    } catch {
+    } catch (err) {
+      console.warn('[setup] save failed:', err);
       showToast(t('client_onboarding.save_failed'), 'error');
     } finally {
       setSaving(false);
@@ -203,7 +250,7 @@ export function ProfileSetupForm({
               autoComplete="tel"
               textContentType="telephoneNumber"
               onFocus={() => setFocused('phone')}
-              onBlur={() => setFocused(null)}
+              onBlur={() => { setFocused(null); checkPhone(); }}
               style={fieldStyle('phone', !!phoneError)}
             />
             {phoneError ? <Text style={[styles.error, font.regular, { textAlign }]}>{phoneError}</Text> : null}

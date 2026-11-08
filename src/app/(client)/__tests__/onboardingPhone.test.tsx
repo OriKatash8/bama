@@ -54,13 +54,43 @@ it('continues with the name only, saving no number', async () => {
   expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
 });
 
-it('a number that is given must be valid', async () => {
+it('a number that is given must be valid — and pressing says why, instead of a dead button', async () => {
   const r = render(<ClientOnboardingScreen />);
   fireEvent.changeText(r.getByTestId('setup-phone'), '12');
-  expect(continueBtn(r).props.accessibilityState.disabled).toBe(true);
+  // Never silently disabled by the phone: that is how a new account got stuck.
+  expect(continueBtn(r).props.accessibilityState.disabled).toBe(false);
   await act(async () => { fireEvent.press(continueBtn(r)); });
+  expect(r.getByText(en.auth.err_phone_invalid)).toBeTruthy();
   expect(savePhone).not.toHaveBeenCalled();
   expect(updateDocument).not.toHaveBeenCalled();
+});
+
+it('an invalid number is flagged when leaving the field', () => {
+  const r = render(<ClientOnboardingScreen />);
+  fireEvent.changeText(r.getByTestId('setup-phone'), '12');
+  fireEvent(r.getByTestId('setup-phone'), 'blur');
+  expect(r.getByText(en.auth.err_phone_invalid)).toBeTruthy();
+});
+
+it('accepts an iOS-autofilled number with invisible direction marks and a non-breaking hyphen', async () => {
+  const r = render(<ClientOnboardingScreen />);
+  fireEvent.changeText(r.getByTestId('setup-phone'), '\u202A050\u2011123\u20114567\u202C');
+  await act(async () => { fireEvent.press(continueBtn(r)); });
+  expect(savePhone).toHaveBeenCalledWith('u1', '+972501234567');
+  expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
+});
+
+it('a photo that cannot be uploaded does not block the account', async () => {
+  const picker = require('expo-image-picker');
+  picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///p.jpg' }] });
+  const { uploadFile } = require('@core/firebase/storage');
+  uploadFile.mockRejectedValue(new Error('storage/unknown'));
+  (global as any).fetch = jest.fn(async () => ({ blob: async () => ({}) }));
+  const r = render(<ClientOnboardingScreen />);
+  await act(async () => { fireEvent.press(r.getByTestId('setup-photo')); });
+  await act(async () => { fireEvent.press(continueBtn(r)); });
+  expect(updateDocument).toHaveBeenCalledWith('users/u1', expect.objectContaining({ displayName: 'Noa Levi', photoURL: null }));
+  expect(mockReplace).toHaveBeenCalledWith('/(client)/(tabs)/home');
 });
 
 it('saves the number with the name, then goes home', async () => {
