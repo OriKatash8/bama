@@ -3,7 +3,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { TextInput } from '@components/ui/Text';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Search } from 'lucide-react-native';
-import { useAdminPalette, useAdminT } from '../i18n';
+import { useAdminPalette, useAdminT, useScopedT } from '../i18n';
 import { EASE_OUT, HEEBO, MOTION, RADIUS, SPACE, TYPE } from '../theme';
 import { AdminText, Card, Chip, EmptyState, InitialsAvatar, PillButton, Row, WhoBlock } from './primitives';
 import { CollapseOut } from './CollapseOut';
@@ -28,6 +28,8 @@ export function MembersCard({
   query,
   onQuery,
   onRemove,
+  onMakeHost,
+  offeredTo,
   onGone,
 }: {
   rows: { item: MemberRowData; leaving: boolean }[];
@@ -35,6 +37,10 @@ export function MembersCard({
   query: string;
   onQuery: (q: string) => void;
   onRemove: (m: MemberRowData) => void;
+  /** Offer this member the hosting. Absent: the action is not shown. */
+  onMakeHost?: (m: MemberRowData) => void;
+  /** The member a live offer is out to, if any. While one is out, no second can be sent. */
+  offeredTo?: string | null;
   onGone: (userId: string) => void;
 }) {
   const p = useAdminPalette();
@@ -70,7 +76,14 @@ export function MembersCard({
         ) : (
           rows.map(({ item, leaving }) => (
             <CollapseOut key={item.userId} leaving={leaving} onGone={() => onGone(item.userId)}>
-              <MemberRow member={item} leaving={leaving} onRemove={() => onRemove(item)} />
+              <MemberRow
+                member={item}
+                leaving={leaving}
+                onRemove={() => onRemove(item)}
+                onMakeHost={onMakeHost ? () => onMakeHost(item) : undefined}
+                offered={offeredTo === item.userId}
+                offerOut={!!offeredTo}
+              />
             </CollapseOut>
           ))
         )}
@@ -84,8 +97,23 @@ export function MembersCard({
  * count, Remove. Remove is a two-tap inline confirm — Alert.alert silently
  * does nothing on web — and the armed state resets itself after 4s.
  */
-function MemberRow({ member, leaving, onRemove }: { member: MemberRowData; leaving: boolean; onRemove: () => void }) {
+function MemberRow({
+  member,
+  leaving,
+  onRemove,
+  onMakeHost,
+  offered,
+  offerOut,
+}: {
+  member: MemberRowData;
+  leaving: boolean;
+  onRemove: () => void;
+  onMakeHost?: () => void;
+  offered: boolean;
+  offerOut: boolean;
+}) {
   const { t, rowDir, textAlign } = useAdminT();
+  const { t: tt } = useScopedT('owner_transfer');
   const [armed, setArmed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -114,10 +142,20 @@ function MemberRow({ member, leaving, onRemove }: { member: MemberRowData; leavi
       <InitialsAvatar name={member.name} />
       <WhoBlock name={member.name} meta={member.meta} textAlign={textAlign} />
       {member.isOwner && <Chip label={t('owner_chip')} tone="accent" />}
+      {offered && <Chip label={tt('pending_chip')} tone="accent" />}
       <ActivityBar fraction={member.activity} hot={member.aboveMedian} label={t('messages_a11y', { n: member.messages })} />
       <Chip label={member.messages.toLocaleString('en-US')} tabular />
       {!member.isOwner && (
         <View style={[styles.actions, { flexDirection: rowDir }]}>
+          {onMakeHost && (
+            <PillButton
+              label={tt('make_host')}
+              accessibilityLabel={tt('make_host_a11y', { name: member.name })}
+              onPress={onMakeHost}
+              disabled={leaving || offerOut}
+              testID={`make-host-${member.userId}`}
+            />
+          )}
           <PillButton
             variant="danger"
             label={armed ? t('confirm_remove') : t('remove')}

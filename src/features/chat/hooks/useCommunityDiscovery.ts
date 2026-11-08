@@ -6,6 +6,7 @@ import { db } from '@core/firebase/config';
 import type { Chat } from '../types';
 import { useDemoStore } from '@core/stores/demoStore';
 import { isCommunityOnSide } from '@core/demo/demoSides';
+import { joinOpenCommunity } from '../services/communityMembership';
 
 export type JoinStatus = 'pending' | 'approved' | 'rejected' | null;
 
@@ -68,6 +69,17 @@ export function useCommunityDiscovery(userId: string | undefined) {
 
   async function requestToJoin(communityId: string, displayName: string) {
     if (!userId) return;
+    // An OPEN community needs no approval: join straight away (the myCommunities
+    // listener picks it up). If the owner closed it a moment ago the rules refuse
+    // the write, and we fall through to an ordinary request.
+    if (discoverCommunities.find((c) => c.id === communityId)?.joinMode === 'open') {
+      try {
+        await joinOpenCommunity(communityId, userId);
+        return;
+      } catch (e) {
+        if ((e as { code?: string } | null)?.code !== 'permission-denied') throw e;
+      }
+    }
     await setDoc(doc(db, 'chats', communityId, 'joinRequests', userId), {
       userId,
       displayName,

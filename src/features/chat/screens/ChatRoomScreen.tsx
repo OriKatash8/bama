@@ -1094,6 +1094,9 @@ export function ChatRoomScreen({ chatId }: Props) {
         } else {
           setChatName(data.name ?? 'Group Chat');
         }
+      } else if (data.type === 'community' && data.name) {
+        // The owner can rename a community while members have it open.
+        setChatName(data.name as string);
       }
     }, (err) => {
       // A permission-denied here is what a removed member gets: they are no
@@ -1743,9 +1746,21 @@ export function ChatRoomScreen({ chatId }: Props) {
       const blob = await fetch(uri).then(r => r.blob());
       const path = `chat-audio/${chatId}/${Date.now()}-${currentUserId}.m4a`;
       const audioUrl = await uploadFile(path, blob);
-      await sendMessage(chatId, currentUserId, '', { audioUrl, audioDuration: duration });
+      if (chatType === 'community' && activeChannelId) {
+        // Community chats live under channels/{id}/messages, not chats/{id}/messages.
+        await addDoc(
+          collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages'),
+          { senderId: currentUserId, text: '', timestamp: serverTimestamp(), readBy: [currentUserId], audioUrl, audioDuration: duration },
+        );
+        await updateDoc(doc(db, 'chats', chatId, 'channels', activeChannelId), {
+          lastMessage: { text: '[voice message]', senderId: currentUserId, timestamp: serverTimestamp() },
+        });
+      } else {
+        await sendMessage(chatId, currentUserId, '', { audioUrl, audioDuration: duration });
+      }
     } catch (e) {
       console.error('[voiceRecord] send failed:', e);
+      Alert.alert('Error', 'Could not send the voice message. Please try again.');
     }
   }
 

@@ -12,6 +12,7 @@ import {
 } from '@features/chat/services/communityMembership';
 import * as hooks from '../hooks';
 import { confirmDialog } from '@utils/confirmDialog';
+import { requestOwnershipTransfer } from '@features/communities/ownerTransfer/ownerTransferService';
 
 /**
  * The owner dashboard (checkpoint 3: header, title, requests, members).
@@ -24,6 +25,12 @@ let mockUid = 'owner';
 let mockWidth = 400;
 
 jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
+jest.mock('@features/communities/ownerTransfer/ownerTransferService', () => ({
+  useOwnerOffer: () => null,
+  requestOwnershipTransfer: jest.fn(),
+  cancelOwnershipTransfer: jest.fn(),
+  ownerTransferErrorKey: () => 'generic',
+}));
 jest.mock('expo-blur', () => ({ BlurView: () => null }));
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
@@ -259,6 +266,30 @@ describe('join requests ask first', () => {
     const r = render(<CommunityAdminScreen chatId="c1" />);
     await act(async () => { fireEvent.press(r.getByTestId('approve-r1')); });
     expect(confirm.mock.calls[0][0]).toBe(H.confirm_approve_title.replace('{{name}}', 'Noa Bareket'));
+  });
+});
+
+describe('handing over hosting', () => {
+  it('the owner has no make-host on their own row, and a member has it', () => {
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    expect(r.queryByTestId('make-host-owner')).toBeNull();
+    expect(r.getByTestId('make-host-m1')).toBeTruthy();
+  });
+
+  it('asks first, then sends the offer for that member', async () => {
+    (confirmDialog as jest.Mock).mockResolvedValue(true);
+    (requestOwnershipTransfer as jest.Mock).mockResolvedValue({ ok: true });
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    await act(async () => { fireEvent.press(r.getByTestId('make-host-m1')); });
+    expect(confirmDialog).toHaveBeenCalled();
+    expect(requestOwnershipTransfer).toHaveBeenCalledWith('c1', 'm1');
+  });
+
+  it('sends nothing when the owner cancels the confirmation', async () => {
+    (confirmDialog as jest.Mock).mockResolvedValue(false);
+    const r = render(<CommunityAdminScreen chatId="c1" />);
+    await act(async () => { fireEvent.press(r.getByTestId('make-host-m1')); });
+    expect(requestOwnershipTransfer).not.toHaveBeenCalled();
   });
 });
 

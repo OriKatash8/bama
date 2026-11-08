@@ -751,7 +751,7 @@ service cloud.firestore {
       }
       // community: owner only.
       function chatOwnerFields() {
-        return ['name', 'photoURL', 'description', 'category'];
+        return ['name', 'photoURL', 'description', 'category', 'joinMode'];
       }
       // group: any member may change the PHOTO — that is shipped behaviour. `name`
       // is deliberately absent: createProjectGroup sets it once and no client path
@@ -808,7 +808,35 @@ service cloud.firestore {
         //    writes both as true, but the other one is already true then, so it
         //    is not a change (hole 4 of the rule-holes report).
         && (!touchedKeys().hasAny(['sellerAgreed']) || isPurchaseSeller())
-        && (!touchedKeys().hasAny(['buyerAgreed']) || !isPurchaseSeller());
+        && (!touchedKeys().hasAny(['buyerAgreed']) || !isPurchaseSeller())
+        // 6. Owner-set values: a community name is a real string of sane length,
+        //    and joinMode is one of the two modes (absent == 'approval').
+        && (!touchedKeys().hasAny(['name'])
+            || (request.resource.data.name is string
+                && request.resource.data.name.trim().size() >= 1
+                && request.resource.data.name.size() <= 60))
+        && (!touchedKeys().hasAny(['joinMode'])
+            || request.resource.data.joinMode in ['open', 'approval']);
+
+      // Open communities: a non-member may add THEMSELVES, and only that. Firestore
+      // ORs multiple `allow update`s, and the member-gated one above can never
+      // admit a non-member. A community with no joinMode is 'approval' (the
+      // owner approves every request), so this stays shut until an owner opts in.
+      function isOpenSelfJoin() {
+        let d = request.resource.data;
+        return isAuth() && verified()
+          && resource.data.get('type', '') == 'community'
+          && resource.data.get('joinMode', 'approval') == 'open'
+          && resource.data.get('status', '') != 'suspended'
+          && touchedKeys().hasOnly(['members'])
+          && !(request.auth.uid in resource.data.members)
+          && d.members == resource.data.members.concat([request.auth.uid])
+          && d.members.size() == resource.data.members.size() + 1
+          // Demo isolation: a demo community takes demo users only, and the reverse.
+          && communityOnCallerSide(chatId)
+          && oneSide(d.members);
+      }
+      allow update: if isOpenSelfJoin();
 
       allow delete: if false;
 
@@ -966,8 +994,21 @@ service cloud.firestore {
             || isAdmin()
             // A member logging their own leave.
             || (request.resource.data.type == 'leave' && request.resource.data.userId == request.auth.uid)
+            // Someone joining an OPEN community logging their own join.
+            || (request.resource.data.type == 'join'
+                && request.resource.data.userId == request.auth.uid
+                && chatAfter().get('joinMode', 'approval') == 'open')
           );
         allow update, delete: if false;
+      }
+
+      // A pending ownership hand-over: one doc, `current`. Written only by the
+      // requestOwnershipTransfer / respondOwnershipTransfer / cancelOwnershipTransfer
+      // callables (Admin SDK). Members may read it so the invited member can see and
+      // answer the offer and the owner can see it is pending; nobody writes it.
+      match /ownerTransfer/{docId} {
+        allow read: if isAuth() && request.auth.uid in chatMembers(chatId);
+        allow write: if false;
       }
 
       // Per-member message counts, kept by the onNewCommunityMessage trigger.

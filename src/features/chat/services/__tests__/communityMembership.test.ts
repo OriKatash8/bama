@@ -55,6 +55,7 @@ jest.mock('firebase/firestore', () => ({
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 
 import {
+  joinOpenCommunity,
   approveJoinRequest,
   approveAllJoinRequests,
   rejectJoinRequest,
@@ -70,6 +71,27 @@ beforeEach(() => {
   mockCommits = 0;
   mockCommitErrors = [];
   mockTxDocs = {};
+});
+
+describe('joinOpenCommunity', () => {
+  it('adds only the caller and logs their join — in one batch', async () => {
+    await joinOpenCommunity('c1', 'u1');
+    expect(mockCommits).toBe(1);
+    expect(memberWrites()[0].data).toEqual({ members: { op: 'union', v: ['u1'] } });
+    expect(events().map((e) => e.data)).toEqual([{ type: 'join', userId: 'u1', at: 'SERVER_TS' }]);
+  });
+
+  it('still joins, without the event, when older rules refuse the event', async () => {
+    mockCommitErrors = [{ code: 'permission-denied' }];
+    await joinOpenCommunity('c1', 'u1');
+    expect(memberWrites()).toHaveLength(1);
+    expect(events()).toHaveLength(0);
+  });
+
+  it('surfaces a refusal of the membership change itself', async () => {
+    mockCommitErrors = [{ code: 'permission-denied' }, { code: 'permission-denied' }];
+    await expect(joinOpenCommunity('c1', 'u1')).rejects.toMatchObject({ code: 'permission-denied' });
+  });
 });
 
 describe('approveJoinRequest', () => {

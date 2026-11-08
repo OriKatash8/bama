@@ -50,8 +50,8 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
  * The same job as `docToMessage`, for `chats/{id}/channels/{cid}/messages`.
  *
  * Two mappers rather than one because the two collections genuinely differ: a
- * channel message never carries audio or `system`, and only a channel message
- * carries the shared-listing payload. They are side by side here so the
+ * channel message never carries `system`, and only a channel message carries
+ * the shared-listing payload. Both carry voice notes (audioUrl/audioDuration). They are side by side here so the
  * difference is visible — it used to live inline in ChatRoomScreen, where
  * adding a field to one and forgetting the other was invisible until a bubble
  * rendered wrong.
@@ -67,6 +67,8 @@ export function channelDocToMessage(id: string, data: DocumentData): Message {
     readBy: (data.readBy as string[]) ?? [],
     imageURL: data.imageURL as string | undefined,
     videoUrl: data.videoUrl as string | undefined,
+    audioUrl: data.audioUrl as string | undefined,
+    audioDuration: data.audioDuration as number | undefined,
     mentions: data.mentions as string[] | undefined,
     mentionsEveryone: data.mentionsEveryone as boolean | undefined,
     replyTo: data.replyTo as Message['replyTo'],
@@ -99,6 +101,7 @@ function docToChat(doc: QueryDocumentSnapshot<DocumentData>): Chat {
     lastMessage: data.lastMessage ?? null,
     createdAt: data.createdAt,
     unreadCount: data.unreadCount,
+    joinMode: data.joinMode === 'open' ? 'open' : data.joinMode === 'approval' ? 'approval' : undefined,
     purchaseListingId: data.purchaseListingId,
     buyerName: data.buyerName,
     archived: data.archived ?? false,
@@ -353,4 +356,17 @@ export async function sendMessage(
   }
 
   await updateDoc(chatRef, updatePayload);
+}
+
+
+/** Owner only (the rules enforce it). Trimmed, 1–60 characters. */
+export async function updateCommunityName(chatId: string, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (trimmed.length < 1 || trimmed.length > 60) throw new Error('invalid community name');
+  await updateDoc(doc(db, 'chats', chatId), { name: trimmed });
+}
+
+/** Owner only (the rules enforce it). 'open' = anyone can join; 'approval' = owner approves. */
+export async function setCommunityJoinMode(chatId: string, mode: 'open' | 'approval'): Promise<void> {
+  await updateDoc(doc(db, 'chats', chatId), { joinMode: mode });
 }

@@ -14,7 +14,7 @@ import {
 import { flowSeries, latestJoinByUser, weeklyBuckets, type RangeDays } from './aggregate';
 import { marketWeeks } from './chartGeometry';
 import { tileStats } from './stats';
-import { useAdminPalette, useAdminT } from './i18n';
+import { useAdminPalette, useAdminT, useScopedT } from './i18n';
 import { useCommunity, useCommunityEvents, useJoinRequests, useMarketListings, useMemberStats, usePeople } from './hooks';
 import { buildMemberRows, buildRequestRows, filterMembers } from './rows';
 import { useVanishingList } from './useVanishingList';
@@ -23,6 +23,13 @@ import { AdminHeader, CONTENT_MAX, TitleBlock } from './components/AdminHeader';
 import { AdminText } from './components/primitives';
 import { RequestsCard, type RequestRowData } from './components/RequestsCard';
 import { MembersCard, type MemberRowData } from './components/MembersCard';
+import { HostOfferCard } from './components/HostOfferCard';
+import {
+  cancelOwnershipTransfer,
+  ownerTransferErrorKey,
+  requestOwnershipTransfer,
+  useOwnerOffer,
+} from '@features/communities/ownerTransfer/ownerTransferService';
 import { AdminToast, useAdminToast } from './components/AdminToast';
 import { StatTiles } from './components/StatTiles';
 import { MemberFlowChart } from './components/MemberFlowChart';
@@ -39,6 +46,7 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   const router = useRouter();
   const p = useAdminPalette();
   const { t, lang, rowDir } = useAdminT();
+  const { t: tt } = useScopedT('owner_transfer');
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const uid = useAuthStore((s) => s.user?.id);
@@ -50,13 +58,16 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
   const [range, setRange] = useState<RangeDays>(30);
   const [query, setQuery] = useState('');
   const toast = useAdminToast();
+  const [offerBusy, setOfferBusy] = useState(false);
 
+  const offer = useOwnerOffer(chatId, isOwner);
   const requests = useJoinRequests(chatId, isOwner);
   const events = useCommunityEvents(chatId, isOwner);
   const counts = useMemberStats(chatId, isOwner);
   const listingDates = useMarketListings(chatId, isOwner);
   const members = useMemo(() => community?.members ?? [], [community?.members]);
   const people = usePeople(useMemo(() => [...members, ...requests.map((r) => r.userId)], [members, requests]));
+  const offeredName = offer ? people[offer.toUid]?.name || tt('pending_chip') : '';
 
   // One `now` per render so every "X ago" on screen agrees.
   const now = new Date();
@@ -164,6 +175,40 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
     }
   }
 
+  async function makeHost(m: MemberRowData) {
+    if (offerBusy) return;
+    const sure = await confirmDialog(tt('confirm_title', { name: m.name }), tt('confirm_body', { name: m.name }), {
+      confirm: tt('confirm_cta'),
+      cancel: t('cancel'),
+      destructive: false,
+    });
+    if (!sure) return;
+    setOfferBusy(true);
+    try {
+      await requestOwnershipTransfer(chatId, m.userId);
+      toast.show(tt('sent_toast', { name: m.name }));
+    } catch (err) {
+      console.error('[community-admin] host offer failed:', err);
+      toast.show(tt(`errors.${ownerTransferErrorKey(err)}`));
+    } finally {
+      setOfferBusy(false);
+    }
+  }
+
+  async function cancelOffer() {
+    if (offerBusy) return;
+    setOfferBusy(true);
+    try {
+      await cancelOwnershipTransfer(chatId);
+      toast.show(tt('cancelled_toast'));
+    } catch (err) {
+      console.error('[community-admin] cancel host offer failed:', err);
+      toast.show(tt(`errors.${ownerTransferErrorKey(err)}`));
+    } finally {
+      setOfferBusy(false);
+    }
+  }
+
   return (
     <View style={[styles.root, { backgroundColor: p.bg }]}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
@@ -213,12 +258,17 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
               style={width >= TWO_COL_MIN_WIDTH ? styles.marketWide : undefined}
             />
           </View>
+          {offer && (
+            <HostOfferCard name={offeredName} expiresAtMs={offer.expiresAtMs} busy={offerBusy} onCancel={cancelOffer} />
+          )}
           <MembersCard
             rows={mem.rows.filter((r) => shownIds.has(r.item.userId))}
             memberCount={members.length}
             query={query}
             onQuery={setQuery}
             onRemove={remove}
+            onMakeHost={makeHost}
+            offeredTo={offer?.toUid ?? null}
             onGone={mem.finish}
           />
         </View>

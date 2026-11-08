@@ -115,6 +115,14 @@ export function useNotificationRouting(): void {
         await navigate(null, `/${modeSegment(current)}/chat/community-admin?chatId=${data.chatId}`);
         return;
       }
+      // A hosting offer (or its answer): the community page, where the invited member
+      // sees Accept / Decline and the host sees the result. Both route groups have it.
+      case 'community_ownership_offer':
+      case 'community_ownership_result': {
+        if (!data.chatId) return;
+        await navigate(null, `/${modeSegment(current)}/chat/community-details?chatId=${data.chatId}`);
+        return;
+      }
       case 'offer_accepted': {
         await navigate(
           'professional',

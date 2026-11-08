@@ -121,6 +121,15 @@ it('the launch tap arriving again through the listener is handled once', async (
   expect(mockReplace.mock.calls.length + mockPush.mock.calls.length).toBe(1);
 });
 
+describe('a hosting offer (or its answer) opens the community page', () => {
+  it.each(['community_ownership_offer', 'community_ownership_result'])('%s', async (type) => {
+    mockGetLast.mockReturnValue(tap('ho1', { type, chatId: 'c1' }));
+    renderHook(() => useNotificationRouting());
+    await flush();
+    expect(mockReplace).toHaveBeenCalledWith('/(client)/chat/community-details?chatId=c1');
+  });
+});
+
 describe('the owner\'s join-request push opens the community dashboard', () => {
   it.each([
     ['client', '/(client)/chat/community-admin?chatId=c1'],

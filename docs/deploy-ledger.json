@@ -211,6 +211,16 @@
       "recordedOn": "2026-10-31",
       "note": "Deployed 2026-10-11..19 without a ledger row; found by the drift check on 2026-10-31 and recorded after the fact. Source verified by tree hash."
     },
+    "cancelOwnershipTransfer": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-07T18:43:21.663078287Z",
+      "treeSha": "b7d335cfdff600ece8a1768f426c4feef88481a9",
+      "commit": "d48f6423",
+      "how": "deploy",
+      "recordedOn": "2026-11-07",
+      "note": "Community ownership hand-over (new callables, europe-west1), deployed by name from feat/community-owner-transfer at d48f6423; rules deployed first (ruleset cdba04c7)"
+    },
     "cancelProject": {
       "region": "us-central1",
       "generation": 2,
@@ -791,6 +801,16 @@
       "recordedOn": "2026-11-08",
       "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
     },
+    "requestOwnershipTransfer": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-07T18:43:22.531173934Z",
+      "treeSha": "b7d335cfdff600ece8a1768f426c4feef88481a9",
+      "commit": "d48f6423",
+      "how": "deploy",
+      "recordedOn": "2026-11-07",
+      "note": "Community ownership hand-over (new callables, europe-west1), deployed by name from feat/community-owner-transfer at d48f6423; rules deployed first (ruleset cdba04c7)"
+    },
     "resolveFeeDispute": {
       "region": "us-central1",
       "generation": 2,
@@ -800,6 +820,16 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "respondOwnershipTransfer": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-07T18:43:22.223223037Z",
+      "treeSha": "b7d335cfdff600ece8a1768f426c4feef88481a9",
+      "commit": "d48f6423",
+      "how": "deploy",
+      "recordedOn": "2026-11-07",
+      "note": "Community ownership hand-over (new callables, europe-west1), deployed by name from feat/community-owner-transfer at d48f6423; rules deployed first (ruleset cdba04c7)"
     },
     "respondToEngagementEnd": {
       "region": "us-central1",
