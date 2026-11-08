@@ -19,8 +19,15 @@ export function assertUid(uid) {
   return uid;
 }
 
-/** The two documents to create. `ts(ms)` turns epoch ms into a Firestore Timestamp. */
-export function buildSeed(uid, now, ts) {
+const DAY = 24 * HOUR;
+
+/**
+ * The two documents to create. `ts(ms)` turns epoch ms into a Firestore Timestamp.
+ * `inWindow` seeds a fee that is completed but STILL INSIDE its 4-day contest window
+ * (chargeDueAt = now + 4 days): feeChargeCron ignores it, so the only way a link
+ * appears is the pro tapping "Pay now" (requestMyPaymentLinkNow).
+ */
+export function buildSeed(uid, now, ts, { inWindow = false } = {}) {
   const projectId = `${E2E_TAG}-${now}`;
   return {
     projectId,
@@ -43,7 +50,7 @@ export function buildSeed(uid, now, ts) {
       feeDue: 6,                       // 3% of 200: matches the ₪6 sandbox payment
       paidAmount: 0,
       slotActive: false,
-      chargeDueAt: ts(now - HOUR),     // the contest window closed an hour ago
+      chargeDueAt: inWindow ? ts(now + 4 * DAY) : ts(now - HOUR),   // window still open / closed an hour ago
       e2eTest: true,
     },
   };

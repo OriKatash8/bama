@@ -5,6 +5,7 @@
  *
  *   node scripts/seed-payment-link-test.mjs --prod --uid <test uid>                # show what would be created
  *   node scripts/seed-payment-link-test.mjs --prod --uid <test uid> --apply        # create it
+ *   ... --in-window                                                                # fee still inside its 4-day contest window (early-pay E2E: no cron, the link comes from the Pay now tap)
  *   node scripts/seed-payment-link-test.mjs --prod --uid <test uid> --cleanup      # show what would be deleted
  *   node scripts/seed-payment-link-test.mjs --prod --uid <test uid> --cleanup --apply
  *
@@ -22,6 +23,7 @@ import { assertUid, buildSeed, cleanupPlan, E2E_TAG } from './lib/paymentLinkE2e
 const argv = process.argv.slice(2);
 const apply = argv.includes('--apply');
 const cleanup = argv.includes('--cleanup');
+const inWindow = argv.includes('--in-window');
 let uid;
 try { const i = argv.indexOf('--uid'); uid = assertUid(i >= 0 ? argv[i + 1] : undefined); } catch (e) { console.error(`error: ${e.message}`); process.exit(2); }
 
@@ -32,14 +34,14 @@ const ts = (ms) => Timestamp.fromMillis(ms);
 if (!cleanup) {
   const user = await db.doc(`users/${uid}`).get();
   if (!user.exists) throw new Error(`users/${uid} does not exist: wrong uid?`);
-  const { projectId, project, fee } = buildSeed(uid, Date.now(), ts);
+  const { projectId, project, fee } = buildSeed(uid, Date.now(), ts, { inWindow });
   console.log(`test account: ${uid} (${user.get('displayName') ?? 'no name'})`);
   console.log(`would create projects/${projectId}`, JSON.stringify({ ...project, createdAt: '<now>' }));
-  console.log(`would create projects/${projectId}/fees/${uid}`, JSON.stringify({ ...fee, chargeDueAt: '<now - 1h>' }));
+  console.log(`would create projects/${projectId}/fees/${uid}`, JSON.stringify({ ...fee, chargeDueAt: inWindow ? '<now + 4 days>' : '<now - 1h>' }));
   if (!apply) { console.log('dry run; pass --apply to create'); process.exit(0); }
   await db.doc(`projects/${projectId}`).create(project);
   await db.doc(`projects/${projectId}/fees/${uid}`).create(fee);
-  console.log(`created ${projectId}. Next: let feeChargeCron run (or run its scheduler job), then watch the fee doc.`);
+  console.log(`created ${projectId}. ${inWindow ? 'Inside the contest window: feeChargeCron will NOT act; tap Pay now in the app.' : 'Next: let feeChargeCron run (or run its scheduler job), then watch the fee doc.'}`);
   process.exit(0);
 }
 
