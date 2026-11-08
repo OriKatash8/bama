@@ -143,6 +143,13 @@ describe('applyLinkPayment via processWebhookEvent', () => {
     expect(fee().feePaid).toBe(false);
   });
 
+  it('payment on a contested fee (link was in flight): link_superseded, nothing settles', async () => {
+    seedLinked({ engagementStatus: 'disputed', adminReviewPending: true });
+    expect(await run()).toBe('needs_review');
+    expect(fee()).toMatchObject({ feePaid: false, linkReview: { reason: 'link_superseded' } });
+    expect(settleFee).not.toHaveBeenCalled();
+  });
+
   it('payment on a voided fee: link_superseded', async () => {
     seedLinked({ status: 'not_owed', feeDue: 0 });
     expect(await run()).toBe('needs_review');

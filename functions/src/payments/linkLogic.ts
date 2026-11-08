@@ -93,10 +93,13 @@ export type LinkVerdict =
  *  - a live link already exists -> no (ONE link per fee; reminders reuse it)
  *  - a creation claim is still fresh -> no
  *  - creation has failed LINK_MAX_ATTEMPTS times -> no (a human has been told)
+ * `opts.early` waives the window refusal only (see requestMyPaymentLinkNow).
  * A stale link (feeDue moved on) is not a refusal: it is replaced, and `replaces`
  * names it so the caller supersedes it in the same transaction.
  */
-export function evaluateLinkClaim(fee: FeeDoc | undefined, now: number): LinkVerdict {
+export function evaluateLinkClaim(
+  fee: FeeDoc | undefined, now: number, opts: { early?: boolean } = {},
+): LinkVerdict {
   const no = (reason: string): LinkVerdict => ({ ok: false, reason });
   if (!fee) return no('no-fee');
   if (fee.feeStatus !== 'owed') return no('not-owed');
@@ -108,8 +111,10 @@ export function evaluateLinkClaim(fee: FeeDoc | undefined, now: number): LinkVer
   const amount = fee.feeDue;
   if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) return no('nothing-due');
 
+  // `early` (the pro asked to pay now) skips ONLY this refusal; a contested, paid,
+  // zero or already-claimed fee is still refused. Paying early accepts the amount.
   const dueAt = ms(contestWindowEndsAt(fee));
-  if (dueAt === undefined || now < dueAt) return no('window-open');
+  if (!opts.early && (dueAt === undefined || now < dueAt)) return no('window-open');
 
   const state = fee.chargeState ?? 'idle';
   if (state !== 'idle' && state !== 'needs_phone' && state !== 'awaiting_payment') return no(`state-${state}`);

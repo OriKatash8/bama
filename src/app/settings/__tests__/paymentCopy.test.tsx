@@ -55,6 +55,7 @@ jest.mock('@features/pricing/services/feesService', () => ({
     return () => undefined;
   },
 }));
+jest.mock('@features/pricing/services/paymentMethodService', () => ({ requestMyPaymentLinkNow: jest.fn() }));
 jest.mock('@features/pricing/hooks/usePaymentMethod', () => ({
   usePaymentMethod: () => ({ view: mockView, refresh: jest.fn(async () => undefined) }),
 }));
@@ -138,10 +139,11 @@ describe('how to settle', () => {
 });
 
 describe('a fee that is not yet due', () => {
-  it('link mode: "Payable from" and "Pending"', async () => {
+  it('link mode: the early-pay hint replaces "Payable from" (the fee is payable now), still "Pending"', async () => {
     mockView = { enabled: false, hasCard: false, linkMode: true };
     const r = await balance();
-    expect(r.getByText('Payable from Nov 9')).toBeTruthy();
+    expect(r.queryByText('Payable from Nov 9')).toBeNull();
+    expect(r.getByTestId('pay-early-hint-p1').props.children).toContain('Nov 9');
     expect(r.getByTestId('charge-state-p1').props.children).toBe('Pending');
     expect(r.queryByText(/Charges on/)).toBeNull();
     expect(r.queryByText('Waiting to be charged')).toBeNull();
@@ -152,7 +154,8 @@ describe('a fee that is not yet due', () => {
     mockView = { enabled: false, hasCard: false, linkMode: true };
     const r = await balance();
     expect(r.getByTestId('charge-state-p1').props.children).toBe('ממתין');
-    expect(r.getByText(/^פתוחה לתשלום החל מ-/)).toBeTruthy();
+    expect(r.queryByText(/^פתוחה לתשלום החל מ-/)).toBeNull();
+    expect(r.getByText(/^אפשר לשלם כבר עכשיו, או עד/)).toBeTruthy();
     expect(r.queryByText(/^תיגבה בתאריך/)).toBeNull();
   });
 

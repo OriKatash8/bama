@@ -603,6 +603,51 @@ export const markFeePaid = onCall(async (request) => {
  * objection. Same word, opposite party, opposite side of the confirmation.
  */
 /**
+ * Both contest paths (contestEngagement and the old-build alias) write through this,
+ * in ONE transaction, so a pay-now confirmation and a contest cannot both win.
+ *
+ *  - A PAID fee cannot be contested: paying accepts the amount. The pro is told
+ *    before he pays (balance screen); this is the server backstop.
+ *  - The window is checked through the one accessor, inside the transaction.
+ *  - A LIVE payment link is superseded in the same write. Without that, a pro could
+ *    open an early link, contest the amount, and still pay it: applyLinkPayment
+ *    would settle a fee that is in front of an admin. A payment that still lands
+ *    on the superseded link is flagged for refund, never silently settled.
+ */
+async function contestFeeAtomically(
+  engRef: admin.firestore.DocumentReference,
+  build: (eng: FeeDoc) => Update,
+): Promise<void> {
+  await db.runTransaction(async (tx) => {
+    const eng = (await tx.get(engRef)).data() as FeeDoc | undefined;
+    if (!eng) throw new HttpsError('not-found', 'no-engagement');
+    if (eng.feePaid === true || eng.status === 'paid') {
+      throw new HttpsError('failed-precondition', 'fee-already-paid');
+    }
+    // The window is the charge date. Past it the money has moved (or would have),
+    // and a contest becomes a support conversation rather than a state change.
+    const dueAt = contestWindowEndsAt(eng)?.toMillis();
+    if (typeof dueAt !== 'number') {
+      throw new HttpsError('failed-precondition', 'no-charge-window');
+    }
+    if (Date.now() > dueAt) {
+      throw new HttpsError('failed-precondition', 'contest-window-closed');
+    }
+    const update = build(eng);
+    const link = eng.paymentLink;
+    if (link && link.superseded !== true) {
+      update.paymentLink = { ...link, superseded: true };
+      tx.set(
+        db.doc(`paymentLinks/${link.processId}`),
+        { supersededAt: FieldValue.serverTimestamp() },
+        { merge: true },
+      );
+    }
+    tx.update(engRef, update);
+  });
+}
+
+/**
  * TEMPORARY ALIAS, kept only for installed builds — the same treatment
  * `requestCompletion` got.
  *
@@ -617,23 +662,12 @@ export const disputeFeeByPro = onCall(async (request) => {
   if (!projectId) throw new HttpsError('invalid-argument', 'projectId required');
 
   const engRef = feeRef(projectId, uid);
-  const eng = (await engRef.get()).data() as FeeDoc | undefined;
-  if (!eng) throw new HttpsError('not-found', 'no-engagement');
-
-  // The SAME window contestEngagement enforces, through the same accessor. The
-  // first version of this alias checked no window at all, which would have let a
+  const note = boundedReason(request.data?.reason);
+  // The SAME guards as contestEngagement, through the same transaction. The first
+  // version of this alias checked no window at all, which would have let a
   // professional on an old build dispute a fee indefinitely — the precise failure
   // that having two fields invites.
-  const dueAt = contestWindowEndsAt(eng)?.toMillis();
-  if (typeof dueAt !== 'number') {
-    throw new HttpsError('failed-precondition', 'no-charge-window');
-  }
-  if (Date.now() > dueAt) {
-    throw new HttpsError('failed-precondition', 'contest-window-closed');
-  }
-
-  const note = boundedReason(request.data?.reason);
-  await engRef.update({
+  await contestFeeAtomically(engRef, () => ({
     engagementStatus: 'disputed',
     disputedAt: FieldValue.serverTimestamp(),
     ...(note ? { disputeReason: note } : {}),
@@ -643,7 +677,7 @@ export const disputeFeeByPro = onCall(async (request) => {
       at: FieldValue.serverTimestamp(),
       ...(note ? { note } : {}),
     },
-  } as Update);
+  } as Update));
 
   // THE SLOT COMES BACK. Completing released it (see completeEngagementInternal),
   // so without this a professional could complete, contest, and walk away with
@@ -919,21 +953,8 @@ export const contestEngagement = onCall(async (request) => {
   }
 
   const engRef = feeRef(projectId, uid);
-  const eng = (await engRef.get()).data() as FeeDoc | undefined;
-  if (!eng) throw new HttpsError('not-found', 'no-engagement');
-
-  // The window is the charge date. Past it the money has moved (or would have),
-  // and a contest becomes a support conversation rather than a state change.
-  const dueAt = contestWindowEndsAt(eng)?.toMillis();
-  if (typeof dueAt !== 'number') {
-    throw new HttpsError('failed-precondition', 'no-charge-window');
-  }
-  if (Date.now() > dueAt) {
-    throw new HttpsError('failed-precondition', 'contest-window-closed');
-  }
-
   const note = boundedReason(request.data?.note);
-  await engRef.update({
+  await contestFeeAtomically(engRef, (eng) => ({
     engagementStatus: 'disputed',
     // What the fee was before this contest touched it. `didnt_happen` zeroes
     // feeDue and voids the status below; resolveFeeDispute('completed') puts
@@ -959,7 +980,7 @@ export const contestEngagement = onCall(async (request) => {
       at: FieldValue.serverTimestamp(),
       ...(note ? { note } : {}),
     },
-  } as Update);
+  } as Update));
 
   // THE SLOT COMES BACK. Completing released it (see completeEngagementInternal),
   // so without this a professional could complete, contest, and walk away with

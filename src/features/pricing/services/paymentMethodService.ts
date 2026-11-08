@@ -36,3 +36,16 @@ export const removeMyPaymentMethod = callFunction<Record<string, never>, { ok: b
 export const fakeCompleteCardSave = callFunction<{ token?: string }, { ok: boolean }>(
   'fakeCompleteCardSave', REGION,
 );
+
+/** "Pay now": what the server answers when a professional asks for his fee's link. */
+export type PayNowResult =
+  | { status: 'ready'; url: string }
+  /** Another request is creating the link; the fee row flips to Pay now when done. */
+  | { status: 'pending' }
+  | { status: 'needs_phone' }
+  | { status: 'unavailable' };
+
+/** Runs the same transactional link claim as the cron, so a fee still has ONE link. */
+export const requestMyPaymentLinkNow = callFunction<{ projectId: string }, PayNowResult>(
+  'requestMyPaymentLinkNow', REGION,
+);

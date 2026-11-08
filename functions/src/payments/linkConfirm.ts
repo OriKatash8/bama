@@ -124,6 +124,10 @@ export async function applyLinkPayment(
   if (
     ptr.supersededAt || fee.paymentLink?.processId !== ev.processId || fee.paymentLink?.superseded === true
     || fee.status === 'not_owed' || fee.feeStatus !== 'owed'
+    // A contested fee is in front of an admin: a payment must not settle it behind
+    // their back. contestEngagement supersedes the live link in its own transaction;
+    // this catches a payment that was already in flight.
+    || fee.engagementStatus === 'disputed' || fee.adminReviewPending === true
   ) return flag('link_superseded', ev, now, where);
   if (!sameAmount(ev.amount, ptr.amount) || !sameAmount(ev.amount, fee.paymentLink.amount)) {
     return flag('link_amount_mismatch', ev, now, where);

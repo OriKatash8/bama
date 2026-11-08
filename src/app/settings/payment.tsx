@@ -21,7 +21,8 @@ import { useModeAccent } from '@core/navigation/floatingTabBar';
 import { shadow } from '@core/theme/shadow';
 import { PaymentMethodRow } from '@features/pricing/components/PaymentMethodRow';
 import { usePaymentMethod } from '@features/pricing/hooks/usePaymentMethod';
-import { chargeStateKey, payLinkUrl } from '@features/pricing/utils/chargeState';
+import { chargeStateKey, payLinkUrl, canPayEarly } from '@features/pricing/utils/chargeState';
+import { requestMyPaymentLinkNow } from '@features/pricing/services/paymentMethodService';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -102,10 +103,24 @@ export default function BalanceScreen() {
   const [opening, setOpening] = useState<string | null>(null);
   const [returned, setReturned] = useState<Set<string>>(new Set());
 
-  const payNow = async (rowProjectId: string, url: string) => {
+  const payNow = async (rowProjectId: string, fee: ProjectFee) => {
     if (opening) return;
     setOpening(rowProjectId);
     try {
+      // A live link is opened as is. Otherwise (inside the contest window, or the old
+      // link went stale) the server makes one — through the same claim as the
+      // automatic one, so tapping twice still means one link.
+      let url = payLinkUrl(fee);
+      if (!url) {
+        const res = await requestMyPaymentLinkNow({ projectId: rowProjectId });
+        if (res.status === 'needs_phone') { router.push('/settings/phone'); return; }
+        if (res.status === 'pending') { showToast(t('balance.pay_preparing'), 'info'); return; }
+        if (res.status !== 'ready' || !res.url.startsWith('https://')) {
+          showToast(t('balance.pay_open_failed'), 'error');
+          return;
+        }
+        url = res.url;
+      }
       // Returns when the sheet closes or the success page redirects back to the app.
       // Its result is NOT a payment confirmation; the fee row updates from the server.
       await WebBrowser.openAuthSessionAsync(url, Linking.createURL('/settings/payment'));
@@ -276,7 +291,8 @@ export default function BalanceScreen() {
                   {t('balance.status_disputed')}
                 </AppText>
               )}
-              {r.note === 'pending_charge' && (
+              {r.note === 'pending_charge'
+                && !(linkMode && (payLinkUrl(r.fee) !== null || canPayEarly(r.fee))) && (
                 <AppText weight="semiBold" style={[styles.linePending, { color: colors.textMuted, textAlign: align }]}>
                   {/* Link mode never charges anything by itself: it opens the fee for payment. */}
                   {t(linkMode ? 'balance.status_pending_link' : 'balance.status_pending_charge',
@@ -300,8 +316,28 @@ export default function BalanceScreen() {
                     : `balance.charge_state_${chargeStateKey(r.fee)}`)}
                 </AppText>
               )}
-              {linkMode && payLinkUrl(r.fee) && (
+              {linkMode && (payLinkUrl(r.fee) !== null || canPayEarly(r.fee)) && (
                 <>
+                  {/* Inside the contest window the button is offered early, so say
+                      so, and say what paying does: it accepts the amount. */}
+                  {r.note === 'pending_charge' && (
+                    <>
+                      <AppText
+                        weight="regular"
+                        style={[styles.linePending, { color: colors.textMuted, textAlign: align }]}
+                        testID={`pay-early-hint-${r.projectId}`}
+                      >
+                        {t('balance.pay_early_hint', { date: chargeDate(r.fee, rtl ? 'he-IL' : 'en-US') })}
+                      </AppText>
+                      <AppText
+                        weight="semiBold"
+                        style={[styles.linePending, { color: colors.text, textAlign: align }]}
+                        testID={`pay-early-confirm-${r.projectId}`}
+                      >
+                        {t('balance.pay_early_confirm')}
+                      </AppText>
+                    </>
+                  )}
                   {returned.has(r.projectId) && (
                     <AppText
                       weight="regular"
@@ -313,7 +349,7 @@ export default function BalanceScreen() {
                   )}
                   <TouchableOpacity
                     style={[styles.actionBtn, { backgroundColor: accent, opacity: opening ? 0.6 : 1 }]}
-                    onPress={() => payNow(r.projectId, payLinkUrl(r.fee) as string)}
+                    onPress={() => payNow(r.projectId, r.fee)}
                     disabled={opening !== null}
                     activeOpacity={0.8}
                     accessibilityRole="button"

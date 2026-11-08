@@ -9,3 +9,4 @@ export { paymentLinkConfirm } from './paymentLinkConfirm';
 export {
   adminListChargeIssues, adminAcknowledgeChargeIssue, adminListPaymentLinks,
 } from './adminChargeIssues';
+export { requestMyPaymentLinkNow } from './requestPaymentLinkNow';

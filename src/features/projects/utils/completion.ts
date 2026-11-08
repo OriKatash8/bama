@@ -38,11 +38,14 @@ export function canDispute(
   /** THIS professional's engagement. The window is per engagement now — the
    *  project-level field is a roll-up of everyone's and describes somebody else's
    *  deadline as often as it describes this one's. */
-  engagement: Pick<ProjectFee, 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt'> | null | undefined,
+  engagement: Pick<ProjectFee, 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'feePaid' | 'status'> | null | undefined,
   now: number = Date.now(),
 ): boolean {
   if (!engagement) return false;
   if (engagement.engagementStatus !== 'completed') return false;
+  // Paying accepts the amount (the balance screen says so before the pro pays), so a
+  // paid fee can no longer be contested. The server refuses it too: 'fee-already-paid'.
+  if (engagement.feePaid === true || engagement.status === 'paid') return false;
   const endsAt = contestWindowEndsAt(engagement);
   if (endsAt === null) return false;
   return now <= endsAt;

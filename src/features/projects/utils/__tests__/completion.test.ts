@@ -3,7 +3,7 @@ import type { ProjectFee } from '@core/types/project';
 
 const ts = (ms: number) => ({ seconds: Math.floor(ms / 1000), nanoseconds: 0 });
 type DisputeInput = Pick<
-  ProjectFee, 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt'
+  ProjectFee, 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'feePaid' | 'status'
 >;
 const engagement = (over: Partial<DisputeInput> = {}): DisputeInput => ({
   engagementStatus: 'completed',
@@ -31,6 +31,11 @@ describe('canDispute', () => {
 
   it('refuses one millisecond after', () => {
     expect(canDispute(engagement(), 2_000_000_001)).toBe(false);
+  });
+
+  it('refuses once the fee is paid — paying accepts the amount', () => {
+    expect(canDispute(engagement({ feePaid: true }), 1_000)).toBe(false);
+    expect(canDispute(engagement({ status: 'paid' }), 1_000)).toBe(false);
   });
 
   it.each(['hired', 'end_requested_by_pro', 'disputed', 'withdrawn', 'cancelled'] as const)(

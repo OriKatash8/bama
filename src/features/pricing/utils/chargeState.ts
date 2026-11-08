@@ -39,3 +39,27 @@ export function payLinkUrl(
   if (!link || link.superseded === true || link.amount !== fee.feeDue) return null;
   return typeof link.url === 'string' && link.url.startsWith('https://') ? link.url : null;
 }
+
+/**
+ * May this professional ask for his payment link RIGHT NOW, without waiting for the
+ * contest window to end? ("Pay now" during the window.)
+ *
+ * Completed and owed (feeDue > 0), not paid, and not contested: a contested fee is in
+ * front of an admin and gets no button until it is resolved. `needs_phone` is left to
+ * the "add phone" prompt, and a fee with a live link is served by `payLinkUrl`
+ * instead; this is the case where no usable link exists yet (or the old one went
+ * stale), so tapping asks the server for one. The server runs the same guards, so
+ * this only decides whether to offer the button.
+ */
+export function canPayEarly(
+  fee: Pick<ProjectFee,
+    'chargeState' | 'engagementStatus' | 'feePaid' | 'status' | 'feeStatus' | 'feeDue'
+    | 'paymentLink' | 'adminReviewPending'>,
+): boolean {
+  if (fee.feeStatus !== undefined && fee.feeStatus !== 'owed') return false;
+  if (fee.adminReviewPending === true) return false;
+  if (!(typeof fee.feeDue === 'number' && fee.feeDue > 0)) return false;
+  const key = chargeStateKey(fee);
+  if (key !== 'idle' && key !== 'awaiting_payment') return false;
+  return payLinkUrl(fee) === null;
+}

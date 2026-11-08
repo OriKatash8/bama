@@ -1,4 +1,4 @@
-import { chargeStateKey, payLinkUrl } from '../chargeState';
+import { chargeStateKey, payLinkUrl, canPayEarly } from '../chargeState';
 
 const done = { engagementStatus: 'completed' as const };
 
@@ -40,4 +40,35 @@ describe('payLinkUrl', () => {
     ['other state', { chargeState: 'idle' }],
     ['not completed', { engagementStatus: 'active' }],
   ])('null when %s', (_n, over) => expect(payLinkUrl(fee(over))).toBeNull());
+});
+
+describe('canPayEarly', () => {
+  const fee = (over: Record<string, unknown> = {}) => ({
+    engagementStatus: 'completed', feeStatus: 'owed', chargeState: 'idle', feePaid: false, status: 'pending',
+    feeDue: 30, ...over,
+  }) as Parameters<typeof canPayEarly>[0];
+  it('completed, owed, nothing yet: yes (no chargeState at all counts as idle)', () => {
+    expect(canPayEarly(fee())).toBe(true);
+    expect(canPayEarly(fee({ chargeState: undefined }))).toBe(true);
+  });
+  it('a stale or missing link on an awaiting fee: yes, a fresh one can be asked for', () => {
+    expect(canPayEarly(fee({ chargeState: 'awaiting_payment', paymentLink: { url: 'https://x', processId: 'L', amount: 99 } }))).toBe(true);
+    expect(canPayEarly(fee({ chargeState: 'awaiting_payment' }))).toBe(true);
+  });
+  it('a live link is served by payLinkUrl, not by asking again', () => {
+    expect(canPayEarly(fee({ chargeState: 'awaiting_payment', paymentLink: { url: 'https://x', processId: 'L', amount: 30 } }))).toBe(false);
+  });
+  it.each([
+    ['contested', { engagementStatus: 'disputed' }],
+    ['in review', { adminReviewPending: true }],
+    ['paid', { feePaid: true, status: 'paid' }],
+    ['voided', { status: 'not_owed', feeDue: 0 }],
+    ['nothing due', { feeDue: 0 }],
+    ['exempt', { feeStatus: 'exempt' }],
+    ['not completed', { engagementStatus: 'hired' }],
+    ['waiting on a phone', { chargeState: 'needs_phone' }],
+    ['card-mode states', { chargeState: 'charging' }],
+  ])('no when %s', (_n, over) => {
+    expect(canPayEarly(fee(over))).toBe(false);
+  });
 });

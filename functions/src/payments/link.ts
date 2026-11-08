@@ -53,11 +53,21 @@ export async function loadPayer(proId: string, projectId: string): Promise<Payer
   };
 }
 
+/**
+ * Who is asking for the link. 'cron' is the automatic one at chargeDueAt.
+ * 'user' is the pro tapping "Pay now" (requestMyPaymentLinkNow), possibly inside the
+ * contest window (`early`). A user-initiated failure must not spend the cron's
+ * retry budget or page an admin: taps are cheap, so a Make outage would otherwise
+ * raise a review within seconds. The cron stays the retry path.
+ */
+export type LinkSource = 'cron' | 'user';
+export type LinkOpts = { early?: boolean; source?: LinkSource };
+
 export type LinkRunResult =
   | { status: 'no-provider' }
   | { status: 'skipped'; reason: string }
   | { status: 'needs_phone' }
-  | { status: 'created'; processId: string }
+  | { status: 'created'; processId: string; url: string }
   | { status: 'failed' }
   | { status: 'voided' };
 
@@ -72,18 +82,24 @@ type ClaimOut =
 
 /** Transactionally take the creation lock; supersede a stale link in the same step. */
 export async function claimFeeForLink(
-  projectId: string, proId: string, now: number = Date.now(),
+  projectId: string, proId: string, now: number = Date.now(), opts: LinkOpts = {},
 ): Promise<ClaimOut> {
   const ref = feeRef(projectId, proId);
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    const verdict = evaluateLinkClaim(snap.exists ? (snap.data() as FeeDoc) : undefined, now);
+    const verdict = evaluateLinkClaim(
+      snap.exists ? (snap.data() as FeeDoc) : undefined, now, { early: opts.early },
+    );
     if (!verdict.ok) return { claimed: false as const, reason: verdict.reason };
     const fee = snap.data() as FeeDoc;
 
     const claimId = randomUUID();
     const update: Record<string, unknown> = {
-      paymentLinkClaim: { id: claimId, at: Timestamp.fromMillis(now), attempts: verdict.attempt },
+      // A user tap does not count toward LINK_MAX_ATTEMPTS (see LinkSource).
+      paymentLinkClaim: {
+        id: claimId, at: Timestamp.fromMillis(now),
+        attempts: opts.source === 'user' ? verdict.attempt - 1 : verdict.attempt,
+      },
       projectId,
     };
     if (verdict.replaces && fee.paymentLink) {
@@ -98,6 +114,7 @@ export async function claimFeeForLink(
 /** Make failed or timed out: free the lock now, keep the attempt count. */
 export async function releaseLinkClaim(
   projectId: string, proId: string, claimId: string, now: number = Date.now(),
+  source: LinkSource = 'cron',
 ): Promise<void> {
   const ref = feeRef(projectId, proId);
   await db.runTransaction(async (tx) => {
@@ -110,7 +127,7 @@ export async function releaseLinkClaim(
       // Epoch, not a delete: the attempt counter must survive until success.
       paymentLinkClaim: { id: claim.id, at: Timestamp.fromMillis(0), attempts: claim.attempts },
     };
-    if (claim.attempts >= LINK_MAX_ATTEMPTS && (!fee.linkReview || fee.linkReview.acknowledgedAt)) {
+    if (source === 'cron' && claim.attempts >= LINK_MAX_ATTEMPTS && (!fee.linkReview || fee.linkReview.acknowledgedAt)) {
       update.linkReview = {
         reason: 'link_create_failed', at: Timestamp.fromMillis(now), amount: fee.feeDue,
         note: `Make failed ${claim.attempts} times`,
@@ -163,14 +180,14 @@ export async function storeLink(
 
 /** No usable mobile: park the fee at needs_phone and push once. */
 export async function markNeedsPhone(
-  projectId: string, proId: string, now: number = Date.now(),
+  projectId: string, proId: string, now: number = Date.now(), opts: LinkOpts = {},
 ): Promise<boolean> {
   const ref = feeRef(projectId, proId);
   const amount = await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) return null;
     const fee = snap.data() as FeeDoc;
-    if (!evaluateLinkClaim({ ...fee, paymentLinkClaim: undefined }, now).ok) return null;
+    if (!evaluateLinkClaim({ ...fee, paymentLinkClaim: undefined }, now, { early: opts.early }).ok) return null;
     const first = fee.needsPhoneNotifiedAt === undefined;
     const update: Record<string, unknown> = { chargeState: 'needs_phone', projectId };
     if (fee.paymentLink && fee.paymentLink.superseded !== true && fee.paymentLink.amount !== fee.feeDue) {
@@ -207,7 +224,7 @@ export async function voidDeadLink(projectId: string, proId: string): Promise<bo
 /** One fee, one pass: create (or replace) its link if it is due one. */
 export async function runLinkIssue(
   projectId: string, proId: string, config: PaymentsConfig,
-  now: number = Date.now(), deps: LinkDeps = {},
+  now: number = Date.now(), deps: LinkDeps = {}, opts: LinkOpts = {},
 ): Promise<LinkRunResult> {
   const provider = deps.provider !== undefined
     ? deps.provider
@@ -219,16 +236,16 @@ export async function runLinkIssue(
   if (fee && fee.chargeState === 'awaiting_payment' && isFeeClosed(fee)) {
     if (await voidDeadLink(projectId, proId)) return { status: 'voided' };
   }
-  const pre = evaluateLinkClaim(fee, now);
+  const pre = evaluateLinkClaim(fee, now, { early: opts.early });
   if (!pre.ok) return { status: 'skipped', reason: pre.reason };
 
   const payerLookup = await (deps.loadPayer ?? loadPayer)(proId, projectId);
   if (!payerLookup.ok) {
-    await markNeedsPhone(projectId, proId, now);
+    await markNeedsPhone(projectId, proId, now, opts);
     return { status: 'needs_phone' };
   }
 
-  const claim = await claimFeeForLink(projectId, proId, now);
+  const claim = await claimFeeForLink(projectId, proId, now, opts);
   if (!claim.claimed) return { status: 'skipped', reason: claim.reason };
 
   let link: { url: string; processId: string };
@@ -244,15 +261,16 @@ export async function runLinkIssue(
     });
   } catch (err) {
     console.error('[link] create failed; will retry next run', projectId, proId, err);
-    await releaseLinkClaim(projectId, proId, claim.claimId, now);
+    await releaseLinkClaim(projectId, proId, claim.claimId, now, opts.source);
     return { status: 'failed' };
   }
 
   const stored = await storeLink(projectId, proId, claim, link, now);
   if (!stored.stored) {
-    await releaseLinkClaim(projectId, proId, claim.claimId, now);
+    await releaseLinkClaim(projectId, proId, claim.claimId, now, opts.source);
     return { status: 'skipped', reason: stored.reason };
   }
-  await sendLinkNotice('link_ready', proId, projectId, claim.amount);
-  return { status: 'created', processId: link.processId };
+  // The pro who just tapped "Pay now" is looking at the link: no push for that one.
+  if (opts.source !== 'user') await sendLinkNotice('link_ready', proId, projectId, claim.amount);
+  return { status: 'created', processId: link.processId, url: link.url };
 }

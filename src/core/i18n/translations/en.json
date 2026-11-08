@@ -1617,7 +1617,10 @@
     "link_note": "Your brokerage fee is paid on a secure payment page. You enter card details there, never in the app. Nothing in the app is locked while a payment is pending — your projects, reviews and slots stay available as normal.",
     "how_body_link": "When a fee is due, a 'Pay now' button appears here and you get a notification. Payment is made on Grow's secure page, and the receipt is sent to you automatically. Questions: bama.app.hk@gmail.com",
     "status_pending_link": "Payable from {{date}}",
-    "charge_state_idle_link": "Pending"
+    "charge_state_idle_link": "Pending",
+    "pay_early_hint": "You can pay now, or by {{date}}. The link is also created automatically then.",
+    "pay_early_confirm": "Paying now confirms the amount.",
+    "pay_preparing": "Preparing your payment link. It will appear here in a moment."
   },
   "payment_method": {
     "title": "Payment method for brokerage fee",

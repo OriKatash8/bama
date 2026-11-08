@@ -41,6 +41,8 @@ const { processWebhookEvent } = lib('payments/webhookCore.js');
 const { parseLinkPayment } = lib('payments/linkConfirm.js');
 const { paymentLinkConfirm } = lib('payments/paymentLinkConfirm.js');
 const { recomputeFeeBlock } = lib('lifecycle/feeOverdue.js');
+const { requestPaymentLinkNow } = lib('payments/requestPaymentLinkNow.js');
+const { contestEngagement } = lib('lifecycle/completion.js');
 
 let failures = 0;
 const results = [];
@@ -308,6 +310,122 @@ await test('right secret, good body: 200 settled; replay: 200 duplicate', async 
   eq([b.status, b.body], [200, { ok: true, result: 'duplicate' }]);
   eq((await feeOf(L.P, L.U)).paidAmount, 100);
 });
+
+console.log('\nEarly payment ("Pay now" inside the contest window):');
+
+const DAY = 24 * H;
+const inWindow = { chargeDueAt: Timestamp.fromMillis(NOW + 3 * DAY) };
+const pointersFor = async (P, U) =>
+  (await db.collection('paymentLinks').where('projectId', '==', P).where('proId', '==', U).get()).size;
+const rejects = async (fn, msg) => {
+  try { await fn(); } catch (e) { if (e.message === msg) return; throw new Error(`wrong error: ${e.message}`); }
+  throw new Error(`was ALLOWED, expected ${msg}`);
+};
+const contest = (U, P, data = {}) => contestEngagement.run({ auth: { uid: U }, data: { projectId: P, ...data } });
+
+await test('(a) early pay during the window: link made, payment settles with source link, contest then closed', async () => {
+  const { P, U, cfg } = await seed({ fee: inWindow });
+  const r = await requestPaymentLinkNow(P, U, cfg, NOW);
+  eq(r.status, 'ready');
+  const fee = await feeOf(P, U);
+  eq([fee.chargeState, fee.paymentLink.amount, fee.paymentLink.url], ['awaiting_payment', 100, r.url]);
+  const L = { P, U, cfg, processId: fee.paymentLink.processId, amount: 100 };
+  eq(await processWebhookEvent(pay(L), cfg, NOW), 'settled');
+  const after = await feeOf(P, U);
+  eq([after.feePaid, after.paidBy, after.status], [true, 'link', 'paid']);
+  await rejects(() => contest(U, P, { reason: 'amount_disputed' }), 'fee-already-paid');
+  eq((await feeOf(P, U)).engagementStatus, 'completed', 'engagement untouched by the refused contest');
+});
+
+await test('(b) tap twice (and a third time in parallel): ONE link, ONE pointer, same URL', async () => {
+  const { P, U, cfg } = await seed({ fee: inWindow });
+  const a = await requestPaymentLinkNow(P, U, cfg, NOW);
+  const rest = await Promise.all([requestPaymentLinkNow(P, U, cfg, NOW), requestPaymentLinkNow(P, U, cfg, NOW)]);
+  eq(a.status, 'ready');
+  for (const r of rest) { eq(r.status, 'ready'); eq(r.url, a.url, 'same url'); }
+  eq(await pointersFor(P, U), 1, 'pointers');
+});
+
+await test('(b2) 12 parallel first taps: exactly one pointer; every answer is ready/pending with one URL', async () => {
+  const { P, U, cfg } = await seed({ fee: inWindow });
+  const rs = await Promise.all(Array.from({ length: 12 }, () => requestPaymentLinkNow(P, U, cfg, NOW)));
+  for (const r of rs) ok(r.status === 'ready' || r.status === 'pending', `unexpected ${r.status}`);
+  eq(new Set(rs.filter((r) => r.status === 'ready').map((r) => r.url)).size, 1, 'one url');
+  eq(await pointersFor(P, U), 1, 'pointers');
+});
+
+await test('(c) contested fee: no link, no pointer (flag path and the real contest path)', async () => {
+  const flagged = await seed({ fee: { ...inWindow, engagementStatus: 'disputed', adminReviewPending: true } });
+  await rejects(() => requestPaymentLinkNow(flagged.P, flagged.U, flagged.cfg, NOW), 'contested');
+  eq(await pointersFor(flagged.P, flagged.U), 0);
+  // The real thing: contest through the callable, then ask.
+  const real = await seed({ fee: inWindow });
+  await contest(real.U, real.P, { reason: 'amount_disputed' });
+  await rejects(() => requestPaymentLinkNow(real.P, real.U, real.cfg, NOW), 'contested');
+  eq(await pointersFor(real.P, real.U), 0);
+  // And the cron does not make one either.
+  eq((await runLinkIssue(real.P, real.U, real.cfg, NOW + 5 * DAY)).status, 'skipped');
+});
+
+await test('(d) cron sweep + taps at the same moment: one link, one pointer', async () => {
+  const { P, U, cfg } = await seed();            // window already over: the cron may act
+  await Promise.all([
+    runFeeChargeSweep(NOW, { ...base, paymentTestUids: [U] }),
+    requestPaymentLinkNow(P, U, cfg, NOW),
+    requestPaymentLinkNow(P, U, cfg, NOW),
+  ]);
+  eq(await pointersFor(P, U), 1, 'pointers');
+  const fee = await feeOf(P, U);
+  eq(fee.chargeState, 'awaiting_payment'); ok(!fee.paymentLinkClaim, 'claim cleared');
+});
+
+await test('(d2) an early link is reused by the cron at chargeDueAt (no second link)', async () => {
+  const { P, U, cfg } = await seed({ fee: inWindow });
+  await requestPaymentLinkNow(P, U, cfg, NOW);
+  const before = (await feeOf(P, U)).paymentLink;
+  eq((await runLinkIssue(P, U, cfg, NOW + 4 * DAY)).reason, 'link-live');
+  eq((await feeOf(P, U)).paymentLink.processId, before.processId);
+  eq(await pointersFor(P, U), 1);
+});
+
+await test('(e) contest after paying is refused; before paying it still works', async () => {
+  const paid = await seed({ fee: inWindow });
+  await settleForProbe(paid);
+  await rejects(() => contest(paid.U, paid.P, { reason: 'didnt_happen' }), 'fee-already-paid');
+  const open = await seed({ fee: inWindow });
+  eq((await contest(open.U, open.P, { reason: 'amount_disputed' })).ok, true);
+  const f = await feeOf(open.P, open.U);
+  eq([f.engagementStatus, f.adminReviewPending], ['disputed', true]);
+});
+
+await test('(f) contest with a live link supersedes it; a payment that still arrives is flagged, never settled', async () => {
+  const { P, U, cfg } = await seed({ fee: inWindow });
+  await requestPaymentLinkNow(P, U, cfg, NOW);
+  const L = { P, U, cfg, processId: (await feeOf(P, U)).paymentLink.processId, amount: 100 };
+  await contest(U, P, { reason: 'amount_disputed' });
+  const f = await feeOf(P, U);
+  eq(f.paymentLink.superseded, true);
+  ok((await db.doc(`paymentLinks/${L.processId}`).get()).data().supersededAt, 'pointer superseded');
+  eq(await processWebhookEvent(pay(L), cfg, NOW), 'needs_review');
+  const after = await feeOf(P, U);
+  eq([after.feePaid, after.linkReview?.reason], [false, 'link_superseded']);
+});
+
+await test('(f2) a payment already in flight on a contested fee whose link was NOT superseded is still flagged', async () => {
+  const { P, U, cfg } = await seed({ fee: inWindow });
+  await requestPaymentLinkNow(P, U, cfg, NOW);
+  const L = { P, U, cfg, processId: (await feeOf(P, U)).paymentLink.processId, amount: 100 };
+  await db.doc(`projects/${L.P}/fees/${L.U}`).update({ engagementStatus: 'disputed', adminReviewPending: true });
+  eq(await processWebhookEvent(pay(L), L.cfg, NOW), 'needs_review');
+  eq((await feeOf(L.P, L.U)).feePaid, false);
+});
+
+async function settleForProbe({ P, U, cfg }) {
+  const r = await requestPaymentLinkNow(P, U, cfg, NOW);
+  ok(r.status === 'ready', 'link for settle');
+  const f = await feeOf(P, U);
+  eq(await processWebhookEvent(pay({ P, U, cfg, processId: f.paymentLink.processId, amount: 100 }), cfg, NOW), 'settled');
+}
 
 console.log('\nRules (client SDK against the real firestore.rules):');
 const app = initializeApp({ apiKey: 'k', projectId: 'demo-bama' }, 'link-rules');

@@ -41,6 +41,7 @@ jest.mock('@features/pricing/services/feesService', () => ({
     return () => undefined;
   },
 }));
+jest.mock('@features/pricing/services/paymentMethodService', () => ({ requestMyPaymentLinkNow: jest.fn() }));
 jest.mock('@features/pricing/hooks/usePaymentMethod', () => ({
   usePaymentMethod: () => ({
     view: { enabled: mockEnabled, hasCard: false }, refresh: jest.fn(async () => undefined),
