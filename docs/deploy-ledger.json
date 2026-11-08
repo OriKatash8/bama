@@ -284,12 +284,12 @@
     "contestEngagement": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:08:57.255488978Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-08T22:03:06.987124815Z",
+      "treeSha": "a5007f23b56a9f71cb2b1b7a1ad89332f41ef0c4",
+      "commit": "2eb9cb67",
+      "how": "deploy",
+      "recordedOn": "2026-11-08",
+      "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
     },
     "createCardSaveSession": {
       "region": "europe-west1",
@@ -374,12 +374,12 @@
     "disputeFeeByPro": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:09:01.088760447Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-08T22:03:06.204161097Z",
+      "treeSha": "a5007f23b56a9f71cb2b1b7a1ad89332f41ef0c4",
+      "commit": "2eb9cb67",
+      "how": "deploy",
+      "recordedOn": "2026-11-08",
+      "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
     },
     "fakeCompleteCardSave": {
       "region": "europe-west1",
@@ -394,12 +394,12 @@
     "feeChargeCron": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-05T19:56:22.530650184Z",
-      "treeSha": "d19c7df45b5ce36026c9b9beda2240fcbabf4dd0",
-      "commit": "19570184",
+      "updateTime": "2026-11-08T22:03:33.355707534Z",
+      "treeSha": "a5007f23b56a9f71cb2b1b7a1ad89332f41ef0c4",
+      "commit": "2eb9cb67",
       "how": "deploy",
-      "recordedOn": "2026-11-05",
-      "note": "Payment links: payer name/phone fix (growFullName: two words of 2+ chars, '<name> BAMA' fallback; israeliMobileLocal accepts +9725/9725/05, sent as 05XXXXXXXX) after Grow answered 427 on pageFieldSettings[fullName] for a one-word name. Deployed alone from a clean tree of 19570184 (feature/payment-links). Sandbox E2E then passed: link created, paid, settled via paymentLinkConfirm."
+      "recordedOn": "2026-11-08",
+      "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
     },
     "feeOverdueCron": {
       "region": "us-central1",
@@ -724,12 +724,12 @@
     "paymentLinkConfirm": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-05T15:49:23.355750866Z",
-      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
-      "commit": "baef1d15",
+      "updateTime": "2026-11-08T22:03:32.451507376Z",
+      "treeSha": "a5007f23b56a9f71cb2b1b7a1ad89332f41ef0c4",
+      "commit": "2eb9cb67",
       "how": "deploy",
-      "recordedOn": "2026-11-05",
-      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
+      "recordedOn": "2026-11-08",
+      "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
     },
     "refreshUsageStats": {
       "region": "europe-west1",
@@ -780,6 +780,16 @@
       "how": "baseline",
       "recordedOn": "2026-10-06",
       "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+    },
+    "requestMyPaymentLinkNow": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-08T22:03:24.443724337Z",
+      "treeSha": "a5007f23b56a9f71cb2b1b7a1ad89332f41ef0c4",
+      "commit": "2eb9cb67",
+      "how": "deploy",
+      "recordedOn": "2026-11-08",
+      "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
     },
     "resolveFeeDispute": {
       "region": "us-central1",
