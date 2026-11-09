@@ -144,11 +144,13 @@ export function PortfolioGrid({
         quality: 1,
         // Only honoured by camera capture / iOS editing; the real limit is checked after the pick.
         videoMaxDuration: MAX_PORTFOLIO_VIDEO_SECONDS,
-        // No videoExportPreset: the old 720p preset made iOS transcode inside the picker (slow, no
-        // progress, capped at 720p). useVideoUpload compresses on-device instead. If an iCloud-only
-        // video stalls or throws PHPhotos 3164, restore videoExportPreset H264_1280x720 here.
+        // Current: iOS hands back the original file at once. Compatible (and the old 720p
+        // videoExportPreset) made iOS transcode HEVC/HEIC inside the picker — slow, no progress.
+        // Videos are compressed on-device by useVideoUpload; images are prepared on upload
+        // (usePortfolio). If an iCloud-only video stalls or throws PHPhotos 3164, try
+        // videoExportPreset H264_1280x720 here.
         preferredAssetRepresentationMode:
-          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
         shouldDownloadFromNetwork: true,
       });
     } catch (e: unknown) {

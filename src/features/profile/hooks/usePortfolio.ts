@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
 import { subscribeToCollection, setDocument, deleteDocument } from '@core/firebase/firestore';
 import { uploadFile, deleteFile } from '@core/firebase/storage';
+import { prepareImageForUpload, PORTFOLIO_IMAGE } from '@core/media/prepareImageForUpload';
 import { CAPTION_MAX_LENGTH, type MediaAsset } from '@core/types/media';
 
 // A skipped caption and a whitespace-only one are the same thing: store null, so the
@@ -49,7 +50,7 @@ export function usePortfolio() {
 
     let blob: Blob;
     try {
-      blob = await fetch(uri).then((r) => r.blob());
+      blob = await fetch(await prepareImageForUpload(uri, PORTFOLIO_IMAGE)).then((r) => r.blob());
     } catch (fetchErr: any) {
       console.error('[usePortfolio] fetch blob failed — code:', fetchErr?.code, 'message:', fetchErr?.message);
       console.error('[usePortfolio] fetch full error:', fetchErr);

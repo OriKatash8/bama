@@ -141,7 +141,7 @@ export function useVideoUpload(): UseVideoUploadResult {
         mediaTypes: ['videos'] as const,
         quality: 1,
         preferredAssetRepresentationMode:
-          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
         shouldDownloadFromNetwork: true,
       });
       if (result.canceled) return null;

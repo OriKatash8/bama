@@ -80,6 +80,7 @@ import { channelDocToMessage, listenToMessages, sendMessage, hideChatForUser } f
 import { confirmDialog } from '@utils/confirmDialog';
 import { VideoUploadStatus } from '@components/ui/VideoUploadStatus';
 import { ensureVideoWithinLimit } from '@core/video/duration';
+import { prepareImageForUpload, CHAT_IMAGE } from '@core/media/prepareImageForUpload';
 import { MAX_CHAT_VIDEO_SECONDS } from '@core/constants/video';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { showsOnBalance } from '@features/pricing/utils/balance';
@@ -879,6 +880,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const { stage: videoStage, progress: videoProgress, slow: videoSlow, cancel: cancelVideo, getOutcome, uploadVideo } = useVideoUpload();
   const videoActive = videoStage !== 'idle';
   const [imageUploading, setImageUploading] = useState(false);
+  const [pickingMedia, setPickingMedia] = useState(false);
   const mediaActive = videoActive || imageUploading;
   const [viewingMedia, setViewingMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [pendingMedia, setPendingMedia] = useState<{
@@ -1581,6 +1583,8 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   async function handleAttachMedia() {
     if (!currentUserId) return;
+    // Spinner on the + button from the tap until the preview opens (iCloud download etc.).
+    setPickingMedia(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'] as const,
@@ -1588,8 +1592,10 @@ export function ChatRoomScreen({ chatId }: Props) {
         quality: 1,
         // Only honoured by camera capture / iOS editing; the real limit is checked below.
         videoMaxDuration: MAX_CHAT_VIDEO_SECONDS,
+        // Current = the original file, straight away. Compatible made iOS transcode HEVC/HEIC
+        // inside the picker; videos are compressed later by useVideoUpload, images on Send.
         preferredAssetRepresentationMode:
-          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
         shouldDownloadFromNetwork: true,
       });
       if (result.canceled) return;
@@ -1598,6 +1604,8 @@ export function ChatRoomScreen({ chatId }: Props) {
       setPendingMedia({ uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image', asset });
     } catch {
       Alert.alert(t('chats.error'), t('chats.media_load_failed'));
+    } finally {
+      setPickingMedia(false);
     }
   }
 
@@ -1637,7 +1645,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       } else {
         setImageUploading(true);
         try {
-          const blob = await fetch(asset.uri).then((r) => r.blob());
+          const blob = await fetch(await prepareImageForUpload(asset.uri, CHAT_IMAGE)).then((r) => r.blob());
           const path = `chat-images/${chatId}/${Date.now()}.jpg`;
           const imageURL = await uploadFile(path, blob);
           await addDoc(msgRef, { senderId: currentUserId, text: caption, timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
@@ -1654,7 +1662,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       } else {
         setImageUploading(true);
         try {
-          const blob = await fetch(asset.uri).then((r) => r.blob());
+          const blob = await fetch(await prepareImageForUpload(asset.uri, CHAT_IMAGE)).then((r) => r.blob());
           const path = `chat-images/${chatId}/${Date.now()}.jpg`;
           const imageURL = await uploadFile(path, blob);
           await sendMessage(chatId, currentUserId, caption, { imageURL });
@@ -2491,8 +2499,12 @@ export function ChatRoomScreen({ chatId }: Props) {
             )
           ) : (
             <>
-              <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} activeOpacity={0.7}>
-                <Plus size={24} color={menuOpen ? colors.text : modeAccent} strokeWidth={2} />
+              <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} disabled={pickingMedia} activeOpacity={0.7}>
+                {pickingMedia ? (
+                  <ActivityIndicator size="small" color={modeAccent} />
+                ) : (
+                  <Plus size={24} color={menuOpen ? colors.text : modeAccent} strokeWidth={2} />
+                )}
               </TouchableOpacity>
               <TextInput
                 ref={inputRef}

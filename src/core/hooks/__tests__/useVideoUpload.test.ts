@@ -7,7 +7,7 @@ const mockUnsub = jest.fn();
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
-  UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
+  UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible', Current: 'current' },
 }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 jest.mock('firebase/firestore', () => ({
@@ -268,4 +268,14 @@ describe('cancelling tells the server (cancelVideoJob) once it has the file', ()
     await flush();
     expect(mockCancelJob).toHaveBeenCalledTimes(2);
   });
+});
+
+it('picks the original asset (Current), leaving compression to startVideoCompression', async () => {
+  const ImagePicker = require('expo-image-picker');
+  ImagePicker.launchImageLibraryAsync.mockResolvedValue({ canceled: true });
+  const { result } = renderHook(() => useVideoUpload());
+  await act(async () => { await result.current.uploadVideo('portfolio', 'u1'); });
+  expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
+    expect.objectContaining({ preferredAssetRepresentationMode: 'current', shouldDownloadFromNetwork: true }),
+  );
 });

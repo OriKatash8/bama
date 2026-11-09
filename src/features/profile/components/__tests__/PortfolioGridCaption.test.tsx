@@ -19,7 +19,7 @@ import he from '@core/i18n/translations/he.json';
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
-  UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
+  UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible', Current: 'current' },
 }));
 jest.mock('expo-video', () => ({
   useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn(), muted: false }),
@@ -300,4 +300,13 @@ describe('uploading tile: the single cancel control', () => {
     expect(x.left).toBe(6);
     expect(x.right).toBeUndefined();
   });
+});
+
+it('asks the picker for the original asset, not a transcoded copy', async () => {
+  const { r } = setup();
+  await pressAdd(r);
+
+  expect(pick).toHaveBeenCalledWith(
+    expect.objectContaining({ preferredAssetRepresentationMode: 'current', shouldDownloadFromNetwork: true }),
+  );
 });
