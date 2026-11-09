@@ -169,6 +169,70 @@ for (const [type, seed] of SHARED) {
   }
 }
 
+// ── Multi-category communities ───────────────────────────────────────────────
+// Each row states the EXPECTED verdict, so a regression reads as MISMATCH. The legacy
+// seed above (category only, no `categories`) is what every pre-change community
+// looks like; the multi seed is one written since.
+const MULTI = 'probe-community-multi';
+const multiSeed = { ...communitySeed, category: 'Editor', categories: ['Editor', 'Video Photographer'] };
+const CAT_CASES = [
+  // [label, seed, payload, { owner: bool, member: bool }]
+  ['1.0.x owner: rename (no category touched)',           communitySeed, () => ({ name: 'New name' }),                    { owner: true,  member: false }],
+  ['1.0.x owner: photoURL',                               communitySeed, () => ({ photoURL: 'https://x.invalid/p.jpg' }), { owner: true,  member: false }],
+  ['1.0.x owner: joinMode',                               communitySeed, () => ({ joinMode: 'open' }),                    { owner: true,  member: false }],
+  ['1.0.x owner: category only, legacy doc',              communitySeed, () => ({ category: 'Editor' }),                  { owner: true,  member: false }],
+  ['1.0.x owner: category non-string, legacy doc',        communitySeed, () => ({ category: 7 }),                         { owner: false, member: false }],
+  ['new: categories + category[0]',                       communitySeed, () => ({ categories: ['Editor', 'Video Photographer'], category: 'Editor' }), { owner: true, member: false }],
+  ['new: all 8 roles',                                    communitySeed, () => ({ categories: ['Video Photographer','Still Photographer','Editor','Graphic Designer','Social Media','Studio & Audio','Sound Recordist','Lighting Tech'], category: 'Video Photographer' }), { owner: true, member: false }],
+  ['new: empty list',                                     communitySeed, () => ({ categories: [], category: 'Editor' }),   { owner: false, member: false }],
+  ['new: unknown role string',                            communitySeed, () => ({ categories: ['Editor', 'Wizard'], category: 'Editor' }), { owner: false, member: false }],
+  ['new: duplicate item',                                 communitySeed, () => ({ categories: ['Editor', 'Editor'], category: 'Editor' }), { owner: false, member: false }],
+  ['new: not a list',                                     communitySeed, () => ({ categories: 'Editor', category: 'Editor' }), { owner: false, member: false }],
+  ['new: category != categories[0]',                      communitySeed, () => ({ categories: ['Editor', 'Video Photographer'], category: 'Video Photographer' }), { owner: false, member: false }],
+  ['new: categories without category (legacy has one)',   communitySeed, () => ({ categories: ['Editor'] }),               { owner: false, member: false }],
+  ['multi doc: rename only',                              multiSeed,     () => ({ name: 'New name' }),                     { owner: true,  member: false }],
+  // Same value as stored: nothing is touched, so it is a no-op the rules rightly pass.
+  ['multi doc: category rewritten to its own value (no-op)', multiSeed,   () => ({ category: 'Editor' }),                   { owner: true,  member: true }],
+  ['multi doc: category only, new value (drift)',         multiSeed,     () => ({ category: 'Lighting Tech' }),            { owner: false, member: false }],
+  ['multi doc: both, reordered',                          multiSeed,     () => ({ categories: ['Video Photographer', 'Editor'], category: 'Video Photographer' }), { owner: true, member: false }],
+  ['multi doc: lastMessage write by a member (hot path)', multiSeed,     function () { return { lastMessage: { text: 'hi', senderId: this.uid, timestamp: serverTimestamp() } }; }, { owner: true, member: true }],
+];
+const catRows = [];
+for (const [label, seed, payloadFn, expect] of CAT_CASES) {
+  for (const identity of ['owner', 'member']) {
+    const uid = identity === 'owner' ? OWNER : MEMBER;
+    const allowed = await attempt({ chatId: MULTI, seed, chatType: 'community-multi', name: label, identity, payload: payloadFn.bind({ uid }) });
+    catRows.push({ label, identity, expected: expect[identity], allowed });
+  }
+}
+
+// communityRequests create: any signed-in user. `categories` is shape-checked only when present.
+const REQ_CASES = [
+  ['request: categories + category[0]',          { name: 'n', categories: ['Editor', 'Still Photographer'], category: 'Editor' }, true],
+  ['request: categories only',                   { name: 'n', categories: ['Editor'] }, true],
+  ['request: 1.0.x, category only',              { name: 'n', category: 'Editor' }, true],
+  ['request: 1.0.x, no category at all',         { name: 'n' }, true],
+  ['request: empty categories',                  { name: 'n', categories: [], category: 'Editor' }, false],
+  ['request: unknown role string',               { name: 'n', categories: ['Wizard'], category: 'Wizard' }, false],
+  ['request: duplicate item',                    { name: 'n', categories: ['Editor', 'Editor'] }, false],
+  ['request: not a list',                        { name: 'n', categories: 'Editor' }, false],
+  ['request: category != categories[0]',         { name: 'n', categories: ['Editor', 'Still Photographer'], category: 'Still Photographer' }, false],
+];
+await as('member');
+for (const [label, data, expected] of REQ_CASES) {
+  let allowed = true;
+  try { await setDoc(doc(db, 'communityRequests', `probe-${Math.random().toString(36).slice(2)}`), data); } catch { allowed = false; }
+  catRows.push({ label, identity: 'member', expected, allowed });
+}
+console.log('\nMULTI-CATEGORY (expected vs actual)');
+let mismatches = 0;
+for (const r of catRows) {
+  const ok = r.expected === r.allowed;
+  if (!ok) mismatches++;
+  console.log(`  ${ok ? 'ok      ' : 'MISMATCH'} ${r.label.padEnd(58)} ${r.identity.padEnd(7)} expect ${r.expected ? 'ALLOW' : 'deny '}  got ${r.allowed ? 'ALLOW' : 'deny '}`);
+}
+console.log(`\n${mismatches === 0 ? 'ALL AS EXPECTED' : mismatches + ' MISMATCH(ES)'} (${catRows.length} checks)`);
+
 // ── Report ───────────────────────────────────────────────────────────────────
 function table(filter, title) {
   console.log(`\n${title}`);

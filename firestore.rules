@@ -12,6 +12,23 @@ service cloud.firestore {
     function isOwner(uid) {
       return isAuth() && request.auth.uid == uid;
     }
+    // Community categories (see categoriesOk in /chats and /communityRequests): the
+    // legacy role strings of ROLE_CATEGORIES. A new role must be added here too, or
+    // an owner cannot select it.
+    function communityCategoryValues() {
+      return ['Video Photographer', 'Still Photographer', 'Editor', 'Graphic Designer',
+              'Social Media', 'Studio & Audio', 'Sound Recordist', 'Lighting Tech'];
+    }
+    // 1+ unique known role strings. 30 is an abuse guard, well above the 8 roles — not
+    // a product limit. hasOnly pins every item to a known string (rules cannot loop to
+    // check "is a string" item by item).
+    function validCategoryList(cats) {
+      return cats is list
+        && cats.size() >= 1 && cats.size() <= 30
+        && cats.hasOnly(communityCategoryValues())
+        && cats.toSet().size() == cats.size();
+    }
+
     // A verified email, for writes that create user-visible content. Google and
     // Apple accounts arrive verified, so only a PASSWORD sign-in must carry
     // email_verified (the app's gate: useOnboardingGate → /(auth)/verify-email).
@@ -730,6 +747,25 @@ service cloud.firestore {
         return isAuth() && resource.data.get('ownerId', '') == request.auth.uid;
       }
 
+      // Community categories. `categories` is the list; `category` is the single
+      // legacy field 1.0.x clients still read, always categories[0]. Both are checked
+      // ONLY when an update touches one of them, so a 1.0.x owner renaming or
+      // re-photographing a community, or toggling joinMode, is unaffected.
+      function categoriesOk() {
+        let d = request.resource.data;
+        return !touchedKeys().hasAny(['categories', 'category'])
+          // New shape: the list is valid and category mirrors its first item, so the
+          // two cannot drift. Writing `category` alone onto a doc that has
+          // `categories` lands here too (the list is on the result), and is refused
+          // unless `categories` is rewritten with it.
+          || (d.get('categories', null) != null
+              ? (touchedKeys().hasAny(['categories'])
+                 && validCategoryList(d.categories)
+                 && d.get('category', null) == d.categories[0])
+              // Legacy shape (no list on the doc): a 1.0.x client writing a plain string.
+              : (d.get('category', '') is string));
+      }
+
       // Any member: the message hot path, plus the purchase handshake and
       // archival, which marketplaceService writes from the client for BOTH
       // parties (PurchaseBanner -> acceptDeal / cancelPurchase / confirmReceived).
@@ -751,7 +787,7 @@ service cloud.firestore {
       }
       // community: owner only.
       function chatOwnerFields() {
-        return ['name', 'photoURL', 'description', 'category', 'joinMode'];
+        return ['name', 'photoURL', 'description', 'category', 'categories', 'joinMode'];
       }
       // group: any member may change the PHOTO — that is shipped behaviour. `name`
       // is deliberately absent: createProjectGroup sets it once and no client path
@@ -816,7 +852,9 @@ service cloud.firestore {
                 && request.resource.data.name.trim().size() >= 1
                 && request.resource.data.name.size() <= 60))
         && (!touchedKeys().hasAny(['joinMode'])
-            || request.resource.data.joinMode in ['open', 'approval']);
+            || request.resource.data.joinMode in ['open', 'approval'])
+        // 7. Categories: a list of 1+ known role strings mirrored into `category`.
+        && categoriesOk();
 
       // Open communities: a non-member may add THEMSELVES, and only that. Firestore
       // ORs multiple `allow update`s, and the member-gated one above can never
@@ -1024,7 +1062,13 @@ service cloud.firestore {
 
     // ─── communityRequests ──────────────────────────────────────────
     match /communityRequests/{requestId} {
-      allow create: if isAuth();
+      // A request may carry `categories` (1+ known role strings, `category` ==
+      // categories[0]) or, from a 1.0.x client, only the legacy `category`; both
+      // forms are accepted. Shape-checked only when `categories` is present.
+      allow create: if isAuth()
+        && (!('categories' in request.resource.data)
+            || (validCategoryList(request.resource.data.categories)
+                && request.resource.data.get('category', request.resource.data.categories[0]) == request.resource.data.categories[0]));
       allow read, update, delete: if isAdmin();
     }
 
