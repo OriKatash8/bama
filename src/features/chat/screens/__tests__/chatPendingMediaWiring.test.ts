@@ -29,7 +29,7 @@ it('renders the bubble as the list footer, for its own chat and channel only', (
 it('has the strings in both languages', () => {
   const en = JSON.parse(readFileSync(join(__dirname, '../../../../core/i18n/translations/en.json'), 'utf8'));
   const he = JSON.parse(readFileSync(join(__dirname, '../../../../core/i18n/translations/he.json'), 'utf8'));
-  for (const k of ['crop', 'crop_free', 'crop_reset', 'crop_done', 'crop_rotate', 'crop_failed', 'media_send_in_progress', 'media_preparing', 'leave_sending_title', 'leave_sending_video', 'leave_sending_image', 'leave_sending_leave', 'leave_sending_stay']) {
+  for (const k of ['crop', 'crop_free', 'crop_reset', 'crop_done', 'crop_rotate', 'crop_failed', 'trim', 'trim_done', 'trim_working', 'trim_failed_title', 'trim_failed_body', 'trim_failed_close', 'media_send_in_progress', 'media_preparing', 'leave_sending_title', 'leave_sending_video', 'leave_sending_image', 'leave_sending_leave', 'leave_sending_stay']) {
     expect(en.chats[k]).toBeTruthy();
     expect(he.chats[k]).toBeTruthy();
   }
@@ -57,5 +57,29 @@ describe('crop in the preview', () => {
   });
   it('Android back closes the editor first, not the whole preview', () => {
     expect(SRC).toMatch(/onRequestClose=\{\(\) => \{\s*if \(cropping\) \{ setCropping\(false\); return; \}/);
+  });
+});
+
+describe('trim in the preview', () => {
+  it('offers Trim for videos only, behind the flag', () => {
+    expect(SRC).toMatch(/pendingMedia\?\.type === 'video' && canTrimVideo\(\) && \(\s*<TouchableOpacity\s+testID="media-trim-button"/);
+  });
+  it('hides the preview Modal while the native trimmer is up', () => {
+    expect(SRC).toMatch(/visible=\{pendingMedia !== null && !trimming\}/);
+  });
+  it('replaces the too-long dialog with the trimmer, capped at the chat limit', () => {
+    const fn = SRC.slice(SRC.indexOf('async function handleAttachMedia()'));
+    const body = fn.slice(0, fn.indexOf('\n  }\n'));
+    expect(body).toMatch(/exceedsDuration\(await getVideoSeconds\(asset\), MAX_CHAT_VIDEO_SECONDS\)/);
+    expect(body).toMatch(/if \(canTrimVideo\(\)\) \{\s*const trimmed = await trimAsset\(asset\);\s*if \(!trimmed\) return;/);
+    expect(body).toMatch(/else if \(!\(await ensureVideoWithinLimit\(asset, MAX_CHAT_VIDEO_SECONDS, t\)\)\) return;/);
+    expect(SRC).toMatch(/maxDurationMs: MAX_CHAT_VIDEO_SECONDS \* 1000/);
+  });
+  it('the trimmed file is still compressed: it only swaps the asset uri/duration', () => {
+    expect(SRC).toMatch(/\{ \.\.\.asset, uri: out\.uri, duration: out\.durationMs, fileSize: undefined \}/);
+    expect(SRC).not.toMatch(/startVideoCompression/);
+  });
+  it('cleans the temporary copies only when nothing previews or uploads one', () => {
+    expect(SRC).toMatch(/trimmedRef\.current && !pendingMedia && !mediaSend\.pending && !trimming/);
   });
 });

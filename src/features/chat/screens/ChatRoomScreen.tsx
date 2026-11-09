@@ -59,7 +59,7 @@ import {
 } from 'firebase/firestore';
 import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
-import { Plus, Crop, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search, MoreVertical } from 'lucide-react-native';
+import { Plus, Crop, Scissors, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search, MoreVertical } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -83,7 +83,8 @@ import { CropEditor } from '@components/media/CropEditor';
 import { PendingMediaBubble } from '../components/PendingMediaBubble';
 import { useChatMediaSend, pendingHasLanded } from '../hooks/useChatMediaSend';
 import { useLeaveGuard } from '../hooks/useLeaveGuard';
-import { ensureVideoWithinLimit } from '@core/video/duration';
+import { ensureVideoWithinLimit, exceedsDuration, getVideoSeconds } from '@core/video/duration';
+import { canTrimVideo, openVideoTrimmer, cleanTrimmedFiles } from '@core/video/trimVideo';
 import { MAX_CHAT_VIDEO_SECONDS } from '@core/constants/video';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { showsOnBalance } from '@features/pricing/utils/balance';
@@ -891,6 +892,9 @@ export function ChatRoomScreen({ chatId }: Props) {
   // The crop editor opens inside the preview Modal (not a second Modal); the caption stays mounted.
   const [cropping, setCropping] = useState(false);
   useEffect(() => { if (!pendingMedia) setCropping(false); }, [pendingMedia]);
+  // The native trimmer sits above everything, so the preview Modal steps aside while it is open.
+  const [trimming, setTrimming] = useState(false);
+  const trimmedRef = useRef(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [purchaseListing, setPurchaseListing] = useState<MarketplaceListing | null>(null);
   const [showPurchaseNotice, setShowPurchaseNotice] = useState(false);
@@ -917,6 +921,13 @@ export function ChatRoomScreen({ chatId }: Props) {
     },
     mediaSend.cancel,
   );
+  // Trimmed copies are temporary: delete them once nothing is previewing or uploading one.
+  useEffect(() => {
+    if (trimmedRef.current && !pendingMedia && !mediaSend.pending && !trimming) {
+      trimmedRef.current = false;
+      cleanTrimmedFiles();
+    }
+  }, [pendingMedia, mediaSend.pending, trimming]);
 
   // The send in flight, only in the chat/channel it was sent to, and only until the real
   // message (same file URL) shows up in the list — then it simply isn't rendered any more.
@@ -1620,6 +1631,43 @@ export function ChatRoomScreen({ chatId }: Props) {
     }
   }
 
+  /**
+   * Open the trimmer on a video, capped at the chat limit. Returns the trimmed asset, or null if
+   * the user backed out (or the cut is somehow still too long). The preview Modal is hidden
+   * while the native editor is up, and given time to finish dismissing first.
+   */
+  async function trimAsset(asset: ImagePicker.ImagePickerAsset): Promise<ImagePicker.ImagePickerAsset | null> {
+    setTrimming(true);
+    try {
+      if (pendingMedia) await new Promise((r) => setTimeout(r, 400)); // let the Modal finish closing
+      const out = await openVideoTrimmer(asset.uri, {
+        maxDurationMs: MAX_CHAT_VIDEO_SECONDS * 1000,
+        accent: modeAccent,
+        labels: {
+          done: t('chats.trim_done'),
+          cancel: t('media.video_cancel'),
+          working: t('chats.trim_working'),
+          failedTitle: t('chats.trim_failed_title'),
+          failedBody: t('chats.trim_failed_body'),
+          failedClose: t('chats.trim_failed_close'),
+        },
+      });
+      if (!out) return null;
+      trimmedRef.current = true;
+      const next = { ...asset, uri: out.uri, duration: out.durationMs, fileSize: undefined } as ImagePicker.ImagePickerAsset;
+      // The cut is frame-accurate, so this only fires if something is badly off.
+      return (await ensureVideoWithinLimit(next, MAX_CHAT_VIDEO_SECONDS, t)) ? next : null;
+    } finally {
+      setTrimming(false);
+    }
+  }
+
+  async function handleTrimPending() {
+    if (!pendingMedia || pendingMedia.type !== 'video') return;
+    const next = await trimAsset(pendingMedia.asset);
+    if (next) setPendingMedia((p) => p && { ...p, uri: next.uri, asset: next });
+  }
+
   async function handleAttachMedia() {
     if (!currentUserId || !mediaSend.canStartNew()) return;
     // Spinner on the + button from the tap until the preview opens (iCloud download etc.).
@@ -1642,8 +1690,17 @@ export function ChatRoomScreen({ chatId }: Props) {
       });
       timing.mark('picker resolved');
       if (result.canceled) return;
-      const asset = result.assets[0];
-      if (asset.type === 'video' && !(await ensureVideoWithinLimit(asset, MAX_CHAT_VIDEO_SECONDS, t))) return;
+      let asset = result.assets[0];
+      if (asset.type === 'video') {
+        if (exceedsDuration(await getVideoSeconds(asset), MAX_CHAT_VIDEO_SECONDS)) {
+          // Too long: let them cut it down instead of just refusing (the dialog is the fallback).
+          if (canTrimVideo()) {
+            const trimmed = await trimAsset(asset);
+            if (!trimmed) return;
+            asset = trimmed;
+          } else if (!(await ensureVideoWithinLimit(asset, MAX_CHAT_VIDEO_SECONDS, t))) return;
+        }
+      }
       setPendingMedia({ uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image', asset });
       timing.mark('preview shown');
     } catch {
@@ -2608,7 +2665,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
     {/* Media preview modal — confirm before sending */}
     <Modal
-      visible={pendingMedia !== null}
+      visible={pendingMedia !== null && !trimming}
       transparent
       animationType="fade"
       onRequestClose={() => {
@@ -2624,6 +2681,19 @@ export function ChatRoomScreen({ chatId }: Props) {
           <TouchableOpacity onPress={() => { setPendingMedia(null); setPendingCaption(''); }} activeOpacity={0.7}>
             <X size={26} color="#fff" strokeWidth={2} />
           </TouchableOpacity>
+          {pendingMedia?.type === 'video' && canTrimVideo() && (
+            <TouchableOpacity
+              testID="media-trim-button"
+              onPress={handleTrimPending}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t('chats.trim')}
+              style={previewStyles.editBtn}
+            >
+              <Scissors size={22} color="#fff" strokeWidth={2} />
+              <AppText weight="semiBold" style={previewStyles.editBtnText}>{t('chats.trim')}</AppText>
+            </TouchableOpacity>
+          )}
           {pendingMedia?.type === 'image' && (
             <TouchableOpacity
               testID="media-crop-button"

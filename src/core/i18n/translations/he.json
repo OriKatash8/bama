@@ -244,7 +244,13 @@
     "crop_reset": "איפוס",
     "crop_done": "סיום",
     "crop_rotate": "סיבוב",
-    "crop_failed": "לא ניתן לפתוח את התמונה לחיתוך"
+    "crop_failed": "לא ניתן לפתוח את התמונה לחיתוך",
+    "trim": "גזירה",
+    "trim_done": "סיום",
+    "trim_working": "גוזר…",
+    "trim_failed_title": "לא ניתן לגזור",
+    "trim_failed_body": "לא ניתן היה לפתוח את הסרטון לגזירה.",
+    "trim_failed_close": "סגירה"
   },
   "mentions": {
     "loading": "טוען חברים…",

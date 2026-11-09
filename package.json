@@ -52,6 +52,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
+    "react-native-video-trim": "8.2.4",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "^0.10.1",
     "tslib": "^2.8.1",

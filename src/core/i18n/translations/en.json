@@ -244,7 +244,13 @@
     "crop_reset": "Reset",
     "crop_done": "Done",
     "crop_rotate": "Rotate",
-    "crop_failed": "Couldn't open this photo for cropping"
+    "crop_failed": "Couldn't open this photo for cropping",
+    "trim": "Trim",
+    "trim_done": "Done",
+    "trim_working": "Trimming…",
+    "trim_failed_title": "Can't trim",
+    "trim_failed_body": "This video couldn't be opened for trimming.",
+    "trim_failed_close": "Close"
   },
   "mentions": {
     "loading": "Loading members…",

@@ -50,3 +50,11 @@ export const MAX_CHAT_VIDEO_SECONDS = 180;
 
 /** Slack for container/clock rounding, so a clip shown as "3:00" is not refused at 180.2 s. */
 export const VIDEO_DURATION_TOLERANCE_SECONDS = 0.5;
+
+/**
+ * Show "Trim" for videos (and open the trimmer instead of the "too long" dialog). A kill switch:
+ * react-native-video-trim is a native module with a bundled FFmpeg, so if it ever breaks on an
+ * Expo/React Native upgrade, flip this to false and the app falls back to the old behaviour
+ * with no code removed. Also off on web, which has no native module.
+ */
+export const VIDEO_TRIM_ENABLED = true;
